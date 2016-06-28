@@ -1,0 +1,12 @@
+applicationID: simple
+applicationdesc: A simple example service
+applicationowner: uberfx@uber.com
+modules:
+  http:
+    roles: 
+      - worker
+      - web
+    port: 8082
+  kafka:
+    roles: worker
+    zk: http://zk/1234

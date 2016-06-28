@@ -1,0 +1,7 @@
+applicationID: keyvalue
+applicationdesc: A simple keyvalue service
+applicationowner: uberfx@uber.com
+modules:
+  keyvalue:
+    bind: :28941
+
