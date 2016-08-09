@@ -85,6 +85,16 @@ func (cv ConfigurationValue) Provider() string {
 	return cv.provider.Name()
 }
 
+// TODO: Support enumerating child keys
+// 1. Add a method on ConfigurationProvider to get the child keys for a given prefix
+// 2. Implement in the various providers
+// 3. Merge the list here
+// 4. Return the set of keys.
+
+func (cv ConfigurationValue) ChildKeys() []string {
+	return []string{}
+}
+
 func (cv ConfigurationValue) TryAsString() (string, bool) {
 	if val, err := convertValue(cv.value, reflect.TypeOf("")); cv.value != nil && err == nil {
 		return val.(string), true
@@ -177,6 +187,8 @@ func getBucket(t reflect.Type) int {
 	case reflect.Interface:
 	case reflect.Func:
 	case reflect.Map:
+		// TODO: Support bucketMap.  Needs a way to enumerate
+		// the child keys of a value.
 		return bucketInvalid
 	case reflect.Array:
 	case reflect.Slice:

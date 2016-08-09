@@ -1,6 +1,12 @@
 applicationID: simple
 applicationdesc: A simple example service
 applicationowner: uberfx@uber.com
+
+service: 
+  timeout: 500
+  max_things: 12
+  info_prefix: blah
+
 modules:
   http:
     roles: 

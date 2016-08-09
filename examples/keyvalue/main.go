@@ -8,6 +8,7 @@ import (
 func main() {
 
 	service := core.NewService(
+		&ServiceApp{},
 		nil,
 		rpc.ThriftModule("keyvalue", nil, rpc.CreateThriftServiceFunc(NewYarpcThriftHandler)),
 	)

@@ -8,6 +8,7 @@ import (
 func main() {
 
 	service := core.NewService(
+		&Service{},
 		nil,
 		http.Module("http", nil),
 	)

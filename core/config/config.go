@@ -23,10 +23,14 @@ func Global() ConfigurationProvider {
 	return global
 }
 
-func SetGlobal(provider ConfigurationProvider) {
+func ServiceName() string {
+	return Global().GetValue(ApplicationIDKey, "").AsString()
+}
+
+func SetGlobal(provider ConfigurationProvider, force bool) {
 	setupMux.Lock()
 	defer setupMux.Unlock()
-	if locked {
+	if locked && !force {
 		panic("Global provider must be set before any configuration access")
 	}
 	global = provider

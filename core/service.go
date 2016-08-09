@@ -5,17 +5,21 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"reflect"
 	"sync"
 
 	"github.com/uber-go/uberfx/core/config"
+	cm "github.com/uber-go/uberfx/core/metrics"
 )
 
 type Service struct {
-	name    string
-	desc    string
-	owner   string
-	modules []Module
-	roles   []string
+	name     string
+	desc     string
+	owner    string
+	modules  []Module
+	roles    []string
+	instance ServiceInstance
+	scope    metrics.Scope
 
 	// Shutdown fields.
 	shutdownMu     sync.Mutex
@@ -24,6 +28,21 @@ type Service struct {
 	closeChan      chan ServiceExit
 	started        bool
 	config         serviceConfig
+}
+
+// ServiceInstance is the interface that is implemented by user service/
+// code.
+type ServiceInstance interface {
+
+	// OnInit will be called after the service has been initialized
+	OnInit(service *Service) error
+
+	// OnShutdown is called before the service shuts down
+	OnShutdown(reason ServiceExit)
+
+	// OnCriticalError is called in response to a critical error.  If false
+	// is returned the service will shut down, otherwise the error will be ignored.
+	OnCriticalError(err error) bool
 }
 
 type ServiceExit struct {
@@ -43,7 +62,7 @@ type serviceConfig struct {
 
 type ModuleCreateFunc func(svc *Service) ([]Module, error)
 
-func NewService(cfg config.ConfigurationProvider, moduleCreators ...ModuleCreateFunc) *Service {
+func NewService(instance ServiceInstance, cfg config.ConfigurationProvider, moduleCreators ...ModuleCreateFunc) *Service {
 
 	if cfg == nil {
 		cfg = config.Global()
@@ -56,8 +75,12 @@ func NewService(cfg config.ConfigurationProvider, moduleCreators ...ModuleCreate
 		owner:   cfg.MustGetValue(config.ApplicationOwnerKey).AsString(),
 		modules: []Module{},
 	}
+
+	// TODO: Make this load independently
+	svc.scope = cm.Global(true)
+
 	// load config
-	cfg.GetValue("", &svc.config).PopulateStruct(&svc.config)
+	cfg.GetValue("", nil).PopulateStruct(&svc.config)
 
 	modulesToAdd := []Module{}
 
@@ -102,6 +125,31 @@ func NewService(cfg config.ConfigurationProvider, moduleCreators ...ModuleCreate
 		}
 	}
 
+	// if we have an instance, look for a property called "config" and load the service
+	// node into that config.
+	if instance != nil {
+
+		instanceType := reflect.TypeOf(instance)
+
+		// get the actual value
+		for instanceType.Kind() == reflect.Ptr {
+			instanceType = instanceType.Elem()
+		}
+
+		if configField, found := instanceType.FieldByName("Config"); found {
+			configValue := reflect.New(configField.Type)
+
+			// Try to load the service config
+			if cfg.GetValue("service", nil).PopulateStruct(configValue.Interface()) {
+				instanceValue := reflect.ValueOf(instance).Elem()
+				instanceValue.FieldByName("Config").Set(configValue.Elem())
+			}
+		}
+
+		svc.instance = instance
+	}
+
+	svc.Scope().Counter("boot").Inc(1)
 	return svc
 }
 
@@ -120,6 +168,9 @@ func (s *Service) Roles() []string {
 	return s.roles
 }
 
+func (s *Service) Scope() metrics.Scope {
+	return s.scope
+}
 func (s *Service) Modules() []Module {
 	mods := make([]Module, len(s.modules))
 	copy(mods, s.modules)
@@ -131,7 +182,9 @@ func (s *Service) isRunning() bool {
 }
 
 func (s *Service) OnCriticalError(err error) {
-	s.shutdown(err, "", nil)
+	if !s.instance.OnCriticalError(err) {
+		s.shutdown(err, "", nil)
+	}
 }
 
 func (s *Service) shutdown(err error, reason string, exitCode *int) (bool, error) {
@@ -179,7 +232,10 @@ func (s *Service) shutdown(err error, reason string, exitCode *int) (bool, error
 	s.closeChan <- *s.shutdownReason
 	close(s.closeChan)
 
-	return true, nil
+	if s.instance != nil {
+		s.instance.OnShutdown(*s.shutdownReason)
+	}
+	return true, err
 }
 
 // Start runs the serve loop. If Shutdown() was called then the shutdown reason
@@ -195,6 +251,11 @@ func (s *Service) Start(waitForShutdown bool) (<-chan ServiceExit, error) {
 		return s.closeChan, nil
 	} else {
 
+		if s.instance != nil {
+			if err := s.instance.OnInit(s); err != nil {
+				return nil, err
+			}
+		}
 		s.shutdownReason = nil
 		s.closeChan = make(chan ServiceExit)
 		errs := s.startModules()
