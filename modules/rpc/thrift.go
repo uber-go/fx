@@ -8,6 +8,7 @@ import (
 	"github.com/uber-go/uberfx/core/metrics"
 	"github.com/thriftrw/thriftrw-go/protocol"
 	"github.com/thriftrw/thriftrw-go/wire"
+	"github.com/yarpc/yarpc-go"
 	"github.com/yarpc/yarpc-go/encoding/thrift"
 )
 
@@ -61,12 +62,16 @@ func (sw serviceWrapper) wrapHandler(name string, handler thrift.Handler) thrift
 	reporter := sw.mod.Reporter()
 
 	return thrift.HandlerFunc(
-		func(req *thrift.ReqMeta, body wire.Value) (thrift.Response, error) {
+		func(req yarpc.ReqMeta, body wire.Value) (thrift.Response, error) {
 
-			data := map[string]string{
+			data := map[string]string{}
+
+			if cid, ok := req.Headers().Get("cid"); ok {
 				// todo, what's the right tchannel header name?
-				metrics.TrafficCorrelationID: req.Headers["cid"],
+
+				data[metrics.TrafficCorrelationID] = cid
 			}
+
 			key := fmt.Sprintf("rpc.%s.%s", sw.service.Name(), name)
 			tracker := reporter.Start(key, data, 90*time.Second)
 			res, err := handler.Handle(req, body)

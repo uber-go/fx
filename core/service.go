@@ -33,10 +33,10 @@ type ServiceExit struct {
 }
 
 type serviceConfig struct {
-	ServiceName        string   `yaml: "applicationid" required:"true"`
-	ServiceOwner       string   `yaml: "applicationowner"  required:"true"`
-	ServiceDescription string   `yaml: "applicationdesc"`
-	ServiceRoles       []string `yaml: "roles"`
+	ServiceName        string   `yaml:"applicationid" required:"true"`
+	ServiceOwner       string   `yaml:"applicationowner" required:"true"`
+	ServiceDescription string   `yaml:"applicationdesc"`
+	ServiceRoles       []string `yaml:"roles"`
 }
 
 // type LoadModuleServicesFunc func(*Service) []Module
@@ -105,22 +105,22 @@ func NewService(cfg config.ConfigurationProvider, moduleCreators ...ModuleCreate
 	return svc
 }
 
-func (s Service) Name() string {
+func (s *Service) Name() string {
 	return s.name
 }
 
-func (s Service) Description() string {
+func (s *Service) Description() string {
 	return s.desc
 }
 
-func (s Service) Owner() string {
+func (s *Service) Owner() string {
 	return s.owner
 }
-func (s Service) Roles() []string {
+func (s *Service) Roles() []string {
 	return s.roles
 }
 
-func (s Service) Modules() []Module {
+func (s *Service) Modules() []Module {
 	mods := make([]Module, len(s.modules))
 	copy(mods, s.modules)
 	return mods

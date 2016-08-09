@@ -82,7 +82,7 @@ func newHttpModule(name string, service *core.Service, roles []string) (*HttpMod
 
 	config.Global().GetValue(getConfigKey(name), nil).PopulateStruct(cfg)
 
-	reporter := &metrics.LoggingTrafficReporter{service.Name()}
+	reporter := &metrics.LoggingTrafficReporter{Prefix: service.Name()}
 
 	module := &HttpModule{
 		ModuleBase: *core.NewModuleBase(HTTPModuleType, name, service, reporter, roles),

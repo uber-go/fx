@@ -5,6 +5,7 @@ import (
 
 	"github.com/uber-go/uberfx/core"
 	"github.com/uber-go/uberfx/examples/keyvalue/kv"
+	"github.com/yarpc/yarpc-go"
 	"github.com/yarpc/yarpc-go/encoding/thrift"
 )
 
@@ -18,7 +19,7 @@ func NewYarpcThriftHandler(svc *core.Service) (thrift.Service, error) {
 	return kv.New(&YarpcHandler{items: map[string]string{}}), nil
 }
 
-func (h *YarpcHandler) GetValue(req *thrift.ReqMeta, key *string) (string, *thrift.ResMeta, error) {
+func (h *YarpcHandler) GetValue(req yarpc.ReqMeta, key *string) (string, yarpc.ResMeta, error) {
 	h.RLock()
 	defer h.RUnlock()
 
@@ -29,7 +30,7 @@ func (h *YarpcHandler) GetValue(req *thrift.ReqMeta, key *string) (string, *thri
 	return "", nil, &kv.ResourceDoesNotExist{Key: *key}
 }
 
-func (h *YarpcHandler) SetValue(req *thrift.ReqMeta, key *string, value *string) (*thrift.ResMeta, error) {
+func (h *YarpcHandler) SetValue(req yarpc.ReqMeta, key *string, value *string) (yarpc.ResMeta, error) {
 	h.Lock()
 
 	h.items[*key] = *value

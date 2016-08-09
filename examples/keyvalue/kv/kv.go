@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"strings"
 
+	yarpc "github.com/yarpc/yarpc-go"
+
 	"github.com/thriftrw/thriftrw-go/protocol"
 	"github.com/thriftrw/thriftrw-go/wire"
 	"github.com/yarpc/yarpc-go/encoding/thrift"
@@ -12,8 +14,8 @@ import (
 )
 
 type Interface interface {
-	GetValue(reqMeta *thrift.ReqMeta, key *string) (string, *thrift.ResMeta, error)
-	SetValue(reqMeta *thrift.ReqMeta, key *string, value *string) (*thrift.ResMeta, error)
+	GetValue(reqMeta yarpc.ReqMeta, key *string) (string, yarpc.ResMeta, error)
+	SetValue(reqMeta yarpc.ReqMeta, key *string, value *string) (yarpc.ResMeta, error)
 }
 
 func New(impl Interface) thrift.Service {
@@ -36,7 +38,7 @@ func (s service) Handlers() map[string]thrift.Handler {
 
 type handler struct{ impl Interface }
 
-func (h handler) GetValue(reqMeta *thrift.ReqMeta, body wire.Value) (thrift.Response, error) {
+func (h handler) GetValue(reqMeta yarpc.ReqMeta, body wire.Value) (thrift.Response, error) {
 	var args keyvalue.GetValueArgs
 	if err := args.FromWire(body); err != nil {
 		return thrift.Response{}, err
@@ -48,12 +50,12 @@ func (h handler) GetValue(reqMeta *thrift.ReqMeta, body wire.Value) (thrift.Resp
 	if err == nil {
 		response.IsApplicationError = hadError
 		response.Meta = resMeta
-		response.Body, err = result.ToWire()
+		response.Body = result
 	}
 	return response, err
 }
 
-func (h handler) SetValue(reqMeta *thrift.ReqMeta, body wire.Value) (thrift.Response, error) {
+func (h handler) SetValue(reqMeta yarpc.ReqMeta, body wire.Value) (thrift.Response, error) {
 	var args keyvalue.SetValueArgs
 	if err := args.FromWire(body); err != nil {
 		return thrift.Response{}, err
@@ -65,7 +67,7 @@ func (h handler) SetValue(reqMeta *thrift.ReqMeta, body wire.Value) (thrift.Resp
 	if err == nil {
 		response.IsApplicationError = hadError
 		response.Meta = resMeta
-		response.Body, err = result.ToWire()
+		response.Body = result
 	}
 	return response, err
 }

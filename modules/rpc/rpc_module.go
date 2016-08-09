@@ -7,10 +7,10 @@ import (
 	"github.com/uber-go/uberfx/core/config"
 	"github.com/uber-go/uberfx/core/metrics"
 	"github.com/uber/tchannel-go"
-	"github.com/yarpc/yarpc-go"
 
 	"log"
 
+	"github.com/yarpc/yarpc-go"
 	"github.com/yarpc/yarpc-go/transport"
 	tch "github.com/yarpc/yarpc-go/transport/tchannel"
 )
@@ -19,7 +19,7 @@ import (
 
 type YarpcModule struct {
 	core.ModuleBase
-	rpc      yarpc.RPC
+	rpc      yarpc.Dispatcher
 	register registerServiceFunc
 	config   RPCConfig
 }
@@ -45,7 +45,7 @@ func newYarpcModule(name string, service *core.Service, roles []string, reg regi
 
 	config.Global().GetValue(fmt.Sprintf("modules.%s", name), nil).PopulateStruct(cfg)
 
-	reporter := &metrics.LoggingTrafficReporter{service.Name()}
+	reporter := &metrics.LoggingTrafficReporter{Prefix: service.Name()}
 	if name == "" {
 		name = service.Name()
 	}
@@ -67,7 +67,7 @@ func (m *YarpcModule) Start() chan error {
 		log.Fatalln(err)
 	}
 
-	m.rpc = yarpc.New(yarpc.Config{
+	m.rpc = yarpc.NewDispatcher(yarpc.Config{
 		Name: m.config.AdvertiseName,
 		Inbounds: []transport.Inbound{
 			tch.NewInbound(channel, tch.ListenAddr(m.config.Bind)),

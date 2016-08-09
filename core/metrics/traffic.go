@@ -77,7 +77,7 @@ func (dtt *DefaultTrafficTracker) Discard() {
 	dtt.done = true
 }
 
-func (dtt DefaultTrafficTracker) Elapsed() (time.Duration, bool) {
+func (dtt *DefaultTrafficTracker) Elapsed() (time.Duration, bool) {
 	if !dtt.done {
 		return time.Duration(0), false
 	}
