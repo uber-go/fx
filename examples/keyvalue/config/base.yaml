@@ -5,3 +5,6 @@ modules:
   keyvalue:
     bind: :28941
 
+service:
+  some_number: 42
+
