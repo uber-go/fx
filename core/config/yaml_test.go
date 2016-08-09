@@ -64,5 +64,4 @@ func TestExtends(t *testing.T) {
 
 	devValue := provider.GetValue("value_override", nil).AsString()
 	assert.Equal(t, "dev_setting", devValue)
-
 }

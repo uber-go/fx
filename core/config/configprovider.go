@@ -11,13 +11,14 @@ type ConfigurationProvider interface {
 	MustGetValue(key string) ConfigurationValue
 }
 
-type ConfigurationChangeCallback func(key string, provider string)
+type ConfigurationChangeCallback func(key string, provider string, configdata interface{})
 
 type DynamicConfigurationProvider interface {
 	ConfigurationProvider
 
 	RegisterChangeCallback(key string, callback ConfigurationChangeCallback) string
 	UnregisterChangeCallback(token string) bool
+	Shutdown()
 }
 
 func keyNotFound(key string) error {

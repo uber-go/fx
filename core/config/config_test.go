@@ -157,5 +157,4 @@ func TestDefault(t *testing.T) {
 	assert.True(t, v.HasValue())
 	assert.True(t, v.PopulateStruct(target))
 	assert.Equal(t, "default_name", target.Name)
-
 }

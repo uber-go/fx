@@ -34,7 +34,7 @@ type ServiceExit struct {
 
 type serviceConfig struct {
 	ServiceName        string   `yaml:"applicationid" required:"true"`
-	ServiceOwner       string   `yaml:"applicationowner" required:"true"`
+	ServiceOwner       string   `yaml:"applicationowner"  required:"true"`
 	ServiceDescription string   `yaml:"applicationdesc"`
 	ServiceRoles       []string `yaml:"roles"`
 }

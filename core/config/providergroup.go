@@ -6,9 +6,17 @@ type ProviderGroup struct {
 }
 
 func NewProviderGroup(name string, providers ...ConfigurationProvider) ConfigurationProvider {
-	return &ProviderGroup{
+	return ProviderGroup{
 		name:      name,
 		providers: providers,
+	}
+}
+
+// WithProvider updates the current ConfigurationProvider
+func (p ProviderGroup) WithProvider(provider ConfigurationProvider) ConfigurationProvider {
+	return ProviderGroup{
+		name:      p.name,
+		providers: append(p.providers, provider),
 	}
 }
 
@@ -29,7 +37,6 @@ func (cc ProviderGroup) GetValue(key string, defaultValue interface{}) Configura
 	// PopulateStructs will look for values.
 	cv.root = cc
 	return cv
-
 }
 
 func (p ProviderGroup) Name() string {

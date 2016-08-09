@@ -33,7 +33,6 @@ func SetGlobal(provider ConfigurationProvider) {
 }
 
 // UBERSPECIFIC
-
 func getUberConfigFiles() []string {
 
 	env := os.Getenv("UBER_ENVIRONMENT")
@@ -51,7 +50,6 @@ func getUberConfigFiles() []string {
 	files = append(files, fmt.Sprintf("./config/%s.yaml", env), "./config/base.yaml")
 
 	return files
-
 }
 
 func init() {
@@ -66,10 +64,5 @@ func init() {
 	resolver := NewRelativeResolver(paths...)
 
 	// do the default thing
-
-	global = NewProviderGroup(
-		"global",
-		NewYamlProviderFromFiles(false, resolver, getUberConfigFiles()...),
-		NewEnvProvider(defaultEnvPrefix, nil),
-	)
+	global = NewProviderGroup("global", NewYamlProviderFromFiles(false, resolver, getUberConfigFiles()...), NewEnvProvider(defaultEnvPrefix, nil))
 }
