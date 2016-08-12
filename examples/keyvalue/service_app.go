@@ -6,21 +6,23 @@ import (
 	"github.com/uber-go/uberfx/core"
 )
 
-type ServiceApp struct {
+// Define your service instance
+type MyService struct {
 	core.Service
-	Config serviceConfig
+	Config   serviceConfig
+	someFlag bool
 }
 
-var _ core.ServiceInstance = &ServiceApp{}
+// These will be called for doing tasks at init and shutdown
 
-func (service *ServiceApp) OnInit(svc *core.Service) error {
+func (service *MyService) OnInit(svc *core.Service) error {
 	fmt.Printf("The config value is %v\n", service.Config.SomeNumber)
 	return nil
 }
 
-func (service *ServiceApp) OnShutdown(reason core.ServiceExit) {
+func (service *MyService) OnShutdown(reason core.ServiceExit) {
 }
 
-func (service *ServiceApp) OnCriticalError(err error) bool {
+func (service *MyService) OnCriticalError(err error) bool {
 	return false
 }

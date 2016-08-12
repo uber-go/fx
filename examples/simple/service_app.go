@@ -1,6 +1,8 @@
 package main
 
 import (
+	"fmt"
+
 	"github.com/uber-go/uberfx/core"
 )
 
@@ -12,6 +14,7 @@ type Service struct {
 var _ core.ServiceInstance = &Service{}
 
 func (service *Service) OnInit(svc *core.Service) error {
+	fmt.Println(service.Name())
 	return nil
 }
 

@@ -13,13 +13,13 @@ import (
 )
 
 type Service struct {
-	name     string
-	desc     string
-	owner    string
-	modules  []Module
-	roles    []string
-	instance ServiceInstance
-	scope    metrics.Scope
+	locked         bool
+	standardConfig serviceConfig
+	modules        []Module
+	roles          []string
+	instance       ServiceInstance
+	scope          metrics.Scope
+	configProvider config.ConfigurationProvider
 
 	// Shutdown fields.
 	shutdownMu     sync.Mutex
@@ -27,7 +27,6 @@ type Service struct {
 	shutdownReason *ServiceExit // Protected by shutdownMu
 	closeChan      chan ServiceExit
 	started        bool
-	config         serviceConfig
 }
 
 // ServiceInstance is the interface that is implemented by user service/
@@ -62,6 +61,119 @@ type serviceConfig struct {
 
 type ModuleCreateFunc func(svc *Service) ([]Module, error)
 
+func New(instance ServiceInstance, options ...ServiceOption) *Service {
+
+	cfg := config.Global()
+
+	svc := &Service{
+		// TODO: get these out of config struct instead
+		modules:        []Module{},
+		configProvider: cfg,
+	}
+
+	// prepend the default options.
+	// TODO: This isn't right.  Do we order the options so we make sure to use
+	// the passed in options?
+	//
+	WithConfiguration(cfg)(svc)
+
+	// load standard config
+	svc.configProvider.GetValue("", nil).PopulateStruct(&svc.standardConfig)
+
+	WithMetricsScope(cm.Global(true))(svc)
+
+	// Run the rest of the options
+	for _, opt := range options {
+		if optionErr := opt(svc); optionErr != nil {
+			panic(optionErr)
+		}
+	}
+
+	// make sure they all have unique names
+	nameLookup := map[string]bool{}
+
+	// hash up the roles
+	rolesHash := map[string]bool{}
+	for _, r := range svc.standardConfig.ServiceRoles {
+		rolesHash[r] = true
+	}
+
+	for i := len(svc.modules) - 1; i >= 0; i-- {
+		v := svc.modules[i]
+		if _, ok := nameLookup[v.Name()]; ok {
+			panic(fmt.Sprintf("Duplicate modules of name '%s'", v.Name()))
+		}
+		nameLookup[v.Name()] = true
+
+		moduleRoles := v.Roles()
+		shouldAdd := true
+		if len(rolesHash) > 0 && len(moduleRoles) > 0 {
+			shouldAdd = false
+			// make sure this modules roles intersect with the roles specified by the service
+			//
+			for _, r := range moduleRoles {
+				if _, ok := rolesHash[r]; ok {
+					shouldAdd = true
+					break
+				}
+			}
+		}
+		if !shouldAdd {
+			// remove from the list
+			svc.modules = append(svc.modules[0:i], svc.modules[i+1])
+		}
+	}
+
+	// if we have an instance, look for a property called "config" and load the service
+	// node into that config.
+	if instance != nil {
+
+		loadInstanceConfig(svc.configProvider, "service", instance)
+		setupServiceInstance(instance, svc)
+		svc.instance = instance
+	}
+
+	svc.Scope().Counter("boot").Inc(1)
+	return svc
+}
+
+func loadInstanceConfig(cfg config.ConfigurationProvider, key string, instance interface{}) bool {
+	instanceType := reflect.TypeOf(instance)
+
+	// get the actual value
+	for instanceType.Kind() == reflect.Ptr {
+		instanceType = instanceType.Elem()
+	}
+
+	if configField, found := instanceType.FieldByName("Config"); found {
+		configValue := reflect.New(configField.Type)
+
+		// Try to load the service config
+		if cfg.GetValue(key, nil).PopulateStruct(configValue.Interface()) {
+			instanceValue := reflect.ValueOf(instance).Elem()
+			instanceValue.FieldByName("Config").Set(configValue.Elem())
+			return true
+		}
+	}
+	return false
+}
+
+func setupServiceInstance(instance ServiceInstance, service *Service) {
+	// walk the fields looking for ones of type Service
+	//
+	val := reflect.ValueOf(instance).Elem()
+	serviceType := reflect.TypeOf(Service{})
+	for i := 0; i < val.NumField(); i++ {
+		field := val.FieldByIndex([]int{i})
+
+		// is it service type field?
+		if serviceType.AssignableTo(field.Type()) {
+			field.Set(reflect.ValueOf(*service))
+			return
+		}
+	}
+}
+
 func NewService(instance ServiceInstance, cfg config.ConfigurationProvider, moduleCreators ...ModuleCreateFunc) *Service {
 
 	if cfg == nil {
@@ -70,17 +182,18 @@ func NewService(instance ServiceInstance, cfg config.ConfigurationProvider, modu
 
 	svc := &Service{
 		// TODO: get these out of config struct instead
-		name:    cfg.MustGetValue(config.ApplicationIDKey).AsString(),
-		desc:    cfg.MustGetValue(config.ApplicationDescriptionKey).AsString(),
-		owner:   cfg.MustGetValue(config.ApplicationOwnerKey).AsString(),
-		modules: []Module{},
+		// name:           cfg.MustGetValue(config.ApplicationIDKey).AsString(),
+		// desc:           cfg.MustGetValue(config.ApplicationDescriptionKey).AsString(),
+		// owner:          cfg.MustGetValue(config.ApplicationOwnerKey).AsString(),
+		modules:        []Module{},
+		configProvider: cfg,
 	}
 
 	// TODO: Make this load independently
 	svc.scope = cm.Global(true)
 
 	// load config
-	cfg.GetValue("", nil).PopulateStruct(&svc.config)
+	cfg.GetValue("", nil).PopulateStruct(&svc.standardConfig)
 
 	modulesToAdd := []Module{}
 
@@ -97,7 +210,7 @@ func NewService(instance ServiceInstance, cfg config.ConfigurationProvider, modu
 
 	// hash up the roles
 	rolesHash := map[string]bool{}
-	for _, r := range svc.config.ServiceRoles {
+	for _, r := range svc.standardConfig.ServiceRoles {
 		rolesHash[r] = true
 	}
 
@@ -146,6 +259,7 @@ func NewService(instance ServiceInstance, cfg config.ConfigurationProvider, modu
 			}
 		}
 
+		setupServiceInstance(instance, svc)
 		svc.instance = instance
 	}
 
@@ -153,19 +267,27 @@ func NewService(instance ServiceInstance, cfg config.ConfigurationProvider, modu
 	return svc
 }
 
+func (s *Service) addModule(module Module) error {
+	if s.locked {
+		return errors.New("ServiceAlreadyStarted")
+	}
+	s.modules = append(s.modules, module)
+	return nil
+}
+
 func (s *Service) Name() string {
-	return s.name
+	return s.standardConfig.ServiceName
 }
 
 func (s *Service) Description() string {
-	return s.desc
+	return s.standardConfig.ServiceDescription
 }
 
 func (s *Service) Owner() string {
-	return s.owner
+	return s.standardConfig.ServiceOwner
 }
 func (s *Service) Roles() []string {
-	return s.roles
+	return s.standardConfig.ServiceRoles
 }
 
 func (s *Service) Scope() metrics.Scope {
@@ -242,6 +364,7 @@ func (s *Service) shutdown(err error, reason string, exitCode *int) (bool, error
 // will be returned.
 func (s *Service) Start(waitForShutdown bool) (<-chan ServiceExit, error) {
 	var err error
+	s.locked = true
 	s.shutdownMu.Lock()
 	defer s.shutdownMu.Unlock()
 

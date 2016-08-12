@@ -7,10 +7,9 @@ import (
 
 func main() {
 
-	service := core.NewService(
+	service := core.New(
 		&Service{},
-		nil,
-		http.Module("http", nil),
+		WithModules(http.Module("http", nil)),
 	)
 	service.Start(true)
 }

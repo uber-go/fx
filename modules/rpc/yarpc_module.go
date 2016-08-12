@@ -2,14 +2,14 @@ package rpc
 
 import (
 	"fmt"
+	"log"
 
 	"github.com/uber-go/uberfx/core"
 	"github.com/uber-go/uberfx/core/config"
 	"github.com/uber-go/uberfx/core/metrics"
+	"github.com/uber-go/uberfx/modules"
+
 	"github.com/uber/tchannel-go"
-
-	"log"
-
 	"github.com/yarpc/yarpc-go"
 	"github.com/yarpc/yarpc-go/transport"
 	tch "github.com/yarpc/yarpc-go/transport/tchannel"
@@ -18,7 +18,7 @@ import (
 // module
 
 type YarpcModule struct {
-	core.ModuleBase
+	modules.ModuleBase
 	rpc      yarpc.Dispatcher
 	register registerServiceFunc
 	config   RPCConfig
@@ -31,7 +31,7 @@ type registerServiceFunc func(module *YarpcModule)
 const RPCModuleType = "rpc"
 
 type RPCConfig struct {
-	core.ModuleConfig
+	modules.ModuleConfig
 	Bind          string `yaml:"bind"`
 	AdvertiseName string `yaml:"advertise_name"`
 }
@@ -50,7 +50,7 @@ func newYarpcModule(name string, service *core.Service, roles []string, reg regi
 		name = service.Name()
 	}
 	module := &YarpcModule{
-		ModuleBase: *core.NewModuleBase(RPCModuleType, name, service, reporter, roles),
+		ModuleBase: *modules.NewModuleBase(RPCModuleType, name, service, reporter, roles),
 		register:   reg,
 		config:     *cfg,
 	}

@@ -6,6 +6,8 @@ import (
 
 	"github.com/uber-go/uberfx/core"
 	"github.com/uber-go/uberfx/core/metrics"
+	"github.com/uber-go/uberfx/modules"
+
 	"github.com/thriftrw/thriftrw-go/protocol"
 	"github.com/thriftrw/thriftrw-go/wire"
 	"github.com/yarpc/yarpc-go"
@@ -14,7 +16,7 @@ import (
 
 type CreateThriftServiceFunc func(service *core.Service) (thrift.Service, error)
 
-func ThriftModule(name string, moduleRoles []string, hookup CreateThriftServiceFunc) core.ModuleCreateFunc {
+func ThriftModule(name string, moduleRoles []string, hookup CreateThriftServiceFunc, options ...modules.ModuleOption) core.ModuleCreateFunc {
 	return func(svc *core.Service) ([]core.Module, error) {
 		if mod, err := newYarpcThriftModule(name, svc, moduleRoles, hookup); err != nil {
 			return nil, err
