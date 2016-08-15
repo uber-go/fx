@@ -91,18 +91,18 @@ func (y yamlConfigProvider) Name() string {
 	return "yaml"
 }
 
-func (y yamlConfigProvider) GetValue(key string, defaultValue interface{}) ConfigurationValue {
+func (y yamlConfigProvider) GetValue(key string) ConfigurationValue {
 
 	node := y.getNode(key)
 
 	if node == nil {
-		return NewConfigurationValue(y, key, defaultValue, getValueType(defaultValue), true, nil)
+		return NewConfigurationValue(y, key, nil, false, Invalid, nil)
 	}
-	return NewConfigurationValue(y, key, node.value, getValueType(node.value), false, nil)
+	return NewConfigurationValue(y, key, node.value, true, getValueType(node.value), nil)
 }
 
-func (y yamlConfigProvider) MustGetValue(key string) ConfigurationValue {
-	return mustGetValue(y, key)
+func (sp yamlConfigProvider) Scope(prefix string) ConfigurationProvider {
+	return newScopedProvider(prefix, sp)
 }
 
 func deref(value reflect.Value) reflect.Value {

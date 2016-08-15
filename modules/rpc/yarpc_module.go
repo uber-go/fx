@@ -36,32 +36,43 @@ type RPCConfig struct {
 	AdvertiseName string `yaml:"advertise_name"`
 }
 
-func newYarpcModule(name string, service *core.Service, roles []string, reg registerServiceFunc) (*YarpcModule, error) {
+func newYarpcModule(mi core.ModuleCreateInfo, reg registerServiceFunc, options ...modules.ModuleOption) (*YarpcModule, error) {
+
+	for _, opt := range options {
+		opt(mi)
+	}
 
 	cfg := &RPCConfig{
-		AdvertiseName: service.Name(),
+		AdvertiseName: mi.Host.Name(),
 		Bind:          ":0",
 	}
 
-	config.Global().GetValue(fmt.Sprintf("modules.%s", name), nil).PopulateStruct(cfg)
-
-	reporter := &metrics.LoggingTrafficReporter{Prefix: service.Name()}
-	if name == "" {
-		name = service.Name()
+	name := "yarpc"
+	if mi.Name != "" {
+		name = mi.Name
 	}
+
+	reporter := &metrics.LoggingTrafficReporter{Prefix: mi.Host.Name()}
+
 	module := &YarpcModule{
-		ModuleBase: *modules.NewModuleBase(RPCModuleType, name, service, reporter, roles),
+		ModuleBase: *modules.NewModuleBase(RPCModuleType, name, mi.Host, reporter, []string{}),
 		register:   reg,
 		config:     *cfg,
 	}
+
+	if config.Global().GetValue(fmt.Sprintf("modules.%s", module.Name())).PopulateStruct(cfg) {
+		// found values, update module
+		module.config = *cfg
+	}
+
 	return module, nil
 }
 
-func (m *YarpcModule) Initialize(service *core.Service) error {
+func (m *YarpcModule) Initialize(service core.ServiceHost) error {
 	return nil
 }
 
-func (m *YarpcModule) Start() chan error {
+func (m *YarpcModule) Start() <-chan error {
 	channel, err := tchannel.NewChannel(m.config.AdvertiseName, nil)
 	if err != nil {
 		log.Fatalln(err)

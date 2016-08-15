@@ -12,17 +12,17 @@ type ModuleConfig struct {
 type ModuleBase struct {
 	moduleType string
 	name       string
-	service    *core.Service
+	host       core.ServiceHost
 	isRunning  bool
 	reporter   metrics.TrafficReporter
 	roles      []string
 }
 
-func NewModuleBase(moduleType string, name string, service *core.Service, reporter metrics.TrafficReporter, roles []string) *ModuleBase {
+func NewModuleBase(moduleType string, name string, service core.ServiceHost, reporter metrics.TrafficReporter, roles []string) *ModuleBase {
 	return &ModuleBase{
 		moduleType: moduleType,
 		name:       name,
-		service:    service,
+		host:       service,
 		reporter:   reporter,
 		roles:      roles,
 	}

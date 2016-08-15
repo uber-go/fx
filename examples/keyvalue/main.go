@@ -8,26 +8,15 @@ import (
 
 func main() {
 
-	service := core.New(
+	service := core.NewService(
 		&MyService{},
 		core.WithModules(
-
 			// Create a YARPC module that exposes endpoints
 			rpc.ThriftModule(
-				"rpc",
-				nil,
 				rpc.CreateThriftServiceFunc(NewYarpcThriftHandler),
 				modules.WithRoles("service")),
-
-			// // Create a kakfa module that works on a topic
-			// //
-			// messaging.Kafka(
-			// 	NewMyTopicHandler,
-			// 	messaging.WithTopic("my_topic"),
-			// 	modules.WithRoles("worker"),
-			// ),
 		),
 	)
-	service.Start(true)
 
+	service.Start(true)
 }

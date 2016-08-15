@@ -18,7 +18,7 @@ modules:
 func TestYamlSimple(t *testing.T) {
 	provider := NewYamlProviderFromString(yamlConfig1)
 
-	c := provider.MustGetValue("modules.rpc.bind")
+	c := provider.GetValue("modules.rpc.bind")
 	assert.True(t, c.HasValue())
 	assert.NotNil(t, c.Value())
 
@@ -36,7 +36,7 @@ func TestYamlStructRoot(t *testing.T) {
 
 	cs := &configStruct{}
 
-	assert.True(t, provider.GetValue("", nil).PopulateStruct(cs))
+	assert.True(t, provider.GetValue("").PopulateStruct(cs))
 
 	assert.Equal(t, "keyvalue", cs.AppID)
 	assert.Equal(t, "uberfx@uber.com", cs.Owner)
@@ -51,7 +51,7 @@ func TestYamlStructChild(t *testing.T) {
 
 	cs := &rpcStruct{}
 
-	assert.True(t, provider.GetValue("modules.rpc", nil).PopulateStruct(cs))
+	assert.True(t, provider.GetValue("modules.rpc").PopulateStruct(cs))
 
 	assert.Equal(t, ":28941", cs.Bind)
 }
@@ -59,9 +59,9 @@ func TestYamlStructChild(t *testing.T) {
 func TestExtends(t *testing.T) {
 	provider := NewYamlProviderFromFiles(false, NewRelativeResolver("./test"), "base.yaml", "dev.yaml")
 
-	baseValue := provider.GetValue("value", nil).AsString()
+	baseValue := provider.GetValue("value").AsString()
 	assert.Equal(t, "base_only", baseValue)
 
-	devValue := provider.GetValue("value_override", nil).AsString()
+	devValue := provider.GetValue("value_override").AsString()
 	assert.Equal(t, "dev_setting", devValue)
 }

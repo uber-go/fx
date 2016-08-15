@@ -15,7 +15,8 @@ type YarpcHandler struct {
 	items map[string]string
 }
 
-func NewYarpcThriftHandler(svc *core.Service) (thrift.Service, error) {
+func NewYarpcThriftHandler(svc core.ServiceHost) (thrift.Service, error) {
+
 	return kv.New(&YarpcHandler{items: map[string]string{}}), nil
 }
 

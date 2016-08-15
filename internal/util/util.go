@@ -25,7 +25,7 @@ func FindField(instance interface{}, name *string, rt reflect.Type) (reflect.Val
 		}
 		// if we got this far, return the value.
 		//
-		val := reflect.ValueOf(instance)
+		val := reflect.Indirect(reflect.ValueOf(instance))
 		return val.FieldByIndex(field.Index), true
 	}
 	return reflect.Value{}, false

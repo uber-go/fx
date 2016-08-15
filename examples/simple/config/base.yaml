@@ -12,7 +12,7 @@ modules:
     roles: 
       - worker
       - web
-    port: 8082
+    port: 8080
   kafka:
     roles: worker
     zk: http://zk/1234

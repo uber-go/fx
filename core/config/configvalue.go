@@ -49,25 +49,25 @@ func getValueType(value interface{}) ValueType {
 }
 
 type ConfigurationValue struct {
-	root      ConfigurationProvider
-	provider  ConfigurationProvider
-	key       string
-	value     interface{}
-	found     bool
-	isDefault bool
-	Timestamp time.Time
-	Type      ValueType
+	root         ConfigurationProvider
+	provider     ConfigurationProvider
+	key          string
+	value        interface{}
+	found        bool
+	defaultValue interface{}
+	Timestamp    time.Time
+	Type         ValueType
 }
 
-func NewConfigurationValue(provider ConfigurationProvider, key string, value interface{}, t ValueType, isDefault bool, timestamp *time.Time) ConfigurationValue {
+func NewConfigurationValue(provider ConfigurationProvider, key string, value interface{}, found bool, t ValueType, timestamp *time.Time) ConfigurationValue {
 
 	cv := ConfigurationValue{
-		provider:  provider,
-		key:       key,
-		value:     value,
-		isDefault: isDefault && value != nil,
-		Type:      t,
-		found:     !isDefault,
+		provider:     provider,
+		key:          key,
+		value:        value,
+		defaultValue: nil,
+		Type:         t,
+		found:        found,
 	}
 
 	if timestamp == nil {
@@ -78,11 +78,28 @@ func NewConfigurationValue(provider ConfigurationProvider, key string, value int
 	return cv
 }
 
-func (cv ConfigurationValue) Provider() string {
+func (cv ConfigurationValue) Source() string {
 	if cv.provider == nil {
 		return ""
 	}
 	return cv.provider.Name()
+}
+
+func (cv ConfigurationValue) LastUpdated() time.Time {
+	if !cv.HasValue() {
+		return time.Time{} // zero value if never updated?
+	}
+	return cv.Timestamp
+}
+
+func (cv ConfigurationValue) WithDefault(value interface{}) ConfigurationValue {
+	// TODO: create a "DefaultProvider" and chain that into the bottom of the current provider:
+	//
+	// provider = NewProviderGroup(defaultProvider, cv.provider)
+	//
+	cv2 := cv
+	cv2.defaultValue = value
+	return cv2
 }
 
 // TODO: Support enumerating child keys
@@ -96,14 +113,16 @@ func (cv ConfigurationValue) ChildKeys() []string {
 }
 
 func (cv ConfigurationValue) TryAsString() (string, bool) {
-	if val, err := convertValue(cv.value, reflect.TypeOf("")); cv.value != nil && err == nil {
+	v := cv.Value()
+	if val, err := convertValue(v, reflect.TypeOf("")); v != nil && err == nil {
 		return val.(string), true
 	}
 	return "", false
 }
 
 func (cv ConfigurationValue) TryAsInt() (int, bool) {
-	if val, err := convertValue(cv.value, reflect.TypeOf(0)); cv.value != nil && err == nil {
+	v := cv.Value()
+	if val, err := convertValue(v, reflect.TypeOf(0)); v != nil && err == nil {
 		return val.(int), true
 	}
 	return 0, false
@@ -111,7 +130,8 @@ func (cv ConfigurationValue) TryAsInt() (int, bool) {
 }
 
 func (cv ConfigurationValue) TryAsBool() (bool, bool) {
-	if val, err := convertValue(cv.value, reflect.TypeOf(true)); cv.value != nil && err == nil {
+	v := cv.Value()
+	if val, err := convertValue(v, reflect.TypeOf(true)); v != nil && err == nil {
 		return val.(bool), true
 	}
 	return false, false
@@ -120,7 +140,8 @@ func (cv ConfigurationValue) TryAsBool() (bool, bool) {
 
 func (cv ConfigurationValue) TryAsFloat() (float32, bool) {
 	f := float32(0)
-	if val, err := convertValue(cv.value, reflect.TypeOf(f)); cv.value != nil && err == nil {
+	v := cv.Value()
+	if val, err := convertValue(v, reflect.TypeOf(f)); v != nil && err == nil {
 		return val.(float32), true
 	}
 	return f, false
@@ -129,7 +150,7 @@ func (cv ConfigurationValue) TryAsFloat() (float32, bool) {
 func (cv ConfigurationValue) AsString() string {
 	s, ok := cv.TryAsString()
 	if !ok {
-		panic(fmt.Sprintf("Can't convert to string: %v", cv.value))
+		panic(fmt.Sprintf("Can't convert to string: %v", cv.Value()))
 	}
 	return s
 }
@@ -137,7 +158,7 @@ func (cv ConfigurationValue) AsString() string {
 func (cv ConfigurationValue) AsInt() int {
 	s, ok := cv.TryAsInt()
 	if !ok {
-		panic(fmt.Sprintf("Can't convert to int: %v", cv.value))
+		panic(fmt.Sprintf("Can't convert to int: %v", cv.Value()))
 	}
 	return s
 }
@@ -145,7 +166,7 @@ func (cv ConfigurationValue) AsInt() int {
 func (cv ConfigurationValue) AsFloat() float32 {
 	s, ok := cv.TryAsFloat()
 	if !ok {
-		panic(fmt.Sprintf("Can't convert to float32: %v", cv.value))
+		panic(fmt.Sprintf("Can't convert to float32: %v", cv.Value()))
 	}
 	return s
 }
@@ -153,21 +174,24 @@ func (cv ConfigurationValue) AsFloat() float32 {
 func (cv ConfigurationValue) AsBool() bool {
 	s, ok := cv.TryAsBool()
 	if !ok {
-		panic(fmt.Sprintf("Can't convert to bool: %v", cv.value))
+		panic(fmt.Sprintf("Can't convert to bool: %v", cv.Value()))
 	}
 	return s
 }
 
 func (cv ConfigurationValue) IsDefault() bool {
-	return cv.isDefault
+	return !cv.found && cv.defaultValue != nil
 }
 
 func (cv ConfigurationValue) HasValue() bool {
-	return cv.found
+	return cv.found || cv.IsDefault()
 }
 
 func (cv ConfigurationValue) Value() interface{} {
-	return cv.value
+	if cv.found {
+		return cv.value
+	}
+	return cv.defaultValue
 }
 
 const (
@@ -256,7 +280,7 @@ func (cv ConfigurationValue) PopulateStruct(target interface{}) bool {
 		return false
 	}
 
-	_, found, _ := cv.GetValueStruct(cv.key, target)
+	_, found, _ := cv.getValueStruct(cv.key, target)
 
 	return found
 }
@@ -268,7 +292,7 @@ func (cv ConfigurationValue) getGlobalProvider() ConfigurationProvider {
 	return cv.root
 }
 
-func (cv ConfigurationValue) GetValueStruct(key string, target interface{}) (interface{}, bool, error) {
+func (cv ConfigurationValue) getValueStruct(key string, target interface{}) (interface{}, bool, error) {
 
 	// walk through the struct and start asking the providers for values at each key.
 	//
@@ -312,7 +336,7 @@ func (cv ConfigurationValue) GetValueStruct(key string, target interface{}) (int
 			var val interface{}
 			// For primative values, just get the value and set it into the field
 			//
-			if v2 := global.GetValue(childKey, fieldValue.Interface()); v2.HasValue() {
+			if v2 := global.GetValue(childKey); v2.HasValue() {
 				val = v2.Value()
 				found = true
 			} else if fieldInfo.Required {
@@ -332,7 +356,7 @@ func (cv ConfigurationValue) GetValueStruct(key string, target interface{}) (int
 		case bucketObject:
 			ntt := derefType(fieldType)
 			newTarget := reflect.New(ntt)
-			if v2 := global.GetValue(childKey, nil); v2.HasValue() {
+			if v2 := global.GetValue(childKey); v2.HasValue() {
 
 				v2.PopulateStruct(newTarget.Interface())
 
@@ -358,12 +382,12 @@ func (cv ConfigurationValue) GetValueStruct(key string, target interface{}) (int
 				var itemValue interface{}
 				switch bucket {
 				case bucketPrimative:
-					if v2 := global.GetValue(arrayKey, nil); v2.HasValue() {
+					if v2 := global.GetValue(arrayKey); v2.HasValue() {
 						itemValue = v2.Value()
 					}
 				case bucketObject:
 					newTarget := reflect.New(elementType)
-					if v2 := global.GetValue(arrayKey, nil); v2.HasValue() {
+					if v2 := global.GetValue(arrayKey); v2.HasValue() {
 						v2.PopulateStruct(newTarget.Interface())
 						itemValue = reflect.Indirect(newTarget).Interface()
 					}

@@ -1,11 +1,6 @@
 package http
 
 import (
-	"github.com/uber-go/uberfx/core"
-	"github.com/uber-go/uberfx/core/config"
-	"github.com/uber-go/uberfx/core/metrics"
-	"github.com/uber-go/annotate"
-
 	"encoding/json"
 	"fmt"
 
@@ -19,6 +14,13 @@ import (
 	"time"
 
 	"net"
+
+	"github.com/uber-go/uberfx/core"
+	"github.com/uber-go/uberfx/core/config"
+	"github.com/uber-go/uberfx/core/metrics"
+	"github.com/uber-go/uberfx/modules"
+
+	"github.com/uber-go/annotate"
 )
 
 type HTTPContext struct {
@@ -37,7 +39,7 @@ func (hctx *HTTPContext) Response() http.ResponseWriter {
 // module
 
 type HttpModule struct {
-	core.ModuleBase
+	modules.ModuleBase
 	title              string
 	config             HttpConfig
 	createHandlerFuncs []CreateHandlerFunc
@@ -51,7 +53,7 @@ var _ core.Module = &HttpModule{}
 const HTTPModuleType = "HTTP"
 
 type HttpConfig struct {
-	core.ModuleConfig
+	modules.ModuleConfig
 	Port           int `yaml:"port"`
 	TimeoutSeconds int `yaml:"timeout_seconds"`
 }
@@ -62,9 +64,9 @@ func getConfigKey(name string) string {
 	return fmt.Sprintf("modules.%s", name)
 }
 
-func Module(name string, moduleRoles []string) core.ModuleCreateFunc {
-	return func(svc *core.Service) ([]core.Module, error) {
-		if mod, err := newHttpModule(name, svc, moduleRoles); err != nil {
+func Module(options ...modules.ModuleOption) core.ModuleCreateFunc {
+	return func(mi core.ModuleCreateInfo) ([]core.Module, error) {
+		if mod, err := newHttpModule(mi, options...); err != nil {
 			return nil, err
 		} else {
 			return []core.Module{mod}, nil
@@ -72,7 +74,7 @@ func Module(name string, moduleRoles []string) core.ModuleCreateFunc {
 	}
 }
 
-func newHttpModule(name string, service *core.Service, roles []string) (*HttpModule, error) {
+func newHttpModule(mi core.ModuleCreateInfo, options ...modules.ModuleOption) (*HttpModule, error) {
 	// setup config defaults
 	//
 	cfg := &HttpConfig{
@@ -80,18 +82,25 @@ func newHttpModule(name string, service *core.Service, roles []string) (*HttpMod
 		TimeoutSeconds: 60,
 	}
 
-	config.Global().GetValue(getConfigKey(name), nil).PopulateStruct(cfg)
+	for _, option := range options {
+		option(mi)
+	}
 
-	reporter := &metrics.LoggingTrafficReporter{Prefix: service.Name()}
+	if mi.Name == "" {
+		mi.Name = "http"
+	}
+	reporter := &metrics.LoggingTrafficReporter{Prefix: mi.Host.Name()}
 
 	module := &HttpModule{
-		ModuleBase: *core.NewModuleBase(HTTPModuleType, name, service, reporter, roles),
-		config:     *cfg,
+		ModuleBase: *modules.NewModuleBase(HTTPModuleType, mi.Name, mi.Host, reporter, []string{}),
 	}
+
+	config.Global().GetValue(getConfigKey(mi.Name)).PopulateStruct(cfg)
+	module.config = *cfg
 	return module, nil
 }
 
-func (m *HttpModule) Initialize(service *core.Service) error {
+func (m *HttpModule) Initialize(host core.ServiceHost) error {
 	return nil
 }
 
@@ -115,7 +124,7 @@ func getTypeKey(si *annotate.StructInfo) string {
 	return ""
 }
 
-func (m *HttpModule) Start() chan error {
+func (m *HttpModule) Start() <-chan error {
 	// use annotate to discover endpoints
 	// load them into the endpoint map
 	handlers := annotate.

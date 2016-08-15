@@ -40,7 +40,7 @@ func Global(serviceScope bool) metrics.Scope {
 		if *target == nil {
 			// load the Configuration
 			cfg := &metrics.Configuration{}
-			if v := config.Global().GetValue("metrics", nil); v.HasValue() {
+			if v := config.Global().GetValue("metrics"); v.HasValue() {
 				v.PopulateStruct(cfg)
 			}
 
@@ -52,7 +52,7 @@ func Global(serviceScope bool) metrics.Scope {
 			//    baz: boo
 			//
 			tags := &metricsTags{}
-			if v := config.Global().GetValue("metrics", nil); v.HasValue() {
+			if v := config.Global().GetValue("metrics"); v.HasValue() {
 				log.Info(v.AsString())
 				log.Infof("Loading tags: %v", v.PopulateStruct(tags))
 			}
@@ -60,7 +60,7 @@ func Global(serviceScope bool) metrics.Scope {
 			scopeName := ""
 
 			if serviceScope {
-				if v := config.Global().GetValue("metrics.scope", ""); v.HasValue() {
+				if v := config.Global().GetValue("metrics.scope"); v.HasValue() {
 					scopeName = v.AsString()
 
 					// replace tokens with values
@@ -81,8 +81,7 @@ func Global(serviceScope bool) metrics.Scope {
 			} else {
 
 				// fault in the tags if we have any
-				log.Infof("Found %d tags!", len(tags.Tags))
-
+				// (currently won't work until we teach config to load map[string]string)
 				if len(tags.Tags) > 0 {
 					scope = scope.Tagged(tags.Tags)
 				}

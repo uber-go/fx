@@ -2,25 +2,28 @@ package rpc
 
 import (
 	"github.com/uber-go/uberfx/core"
+	"github.com/uber-go/uberfx/modules"
+
 	"github.com/yarpc/yarpc-go/encoding/json"
 )
 
-type CreateJsonRegistrantsFunc func(service *core.Service) []json.Registrant
+type CreateJsonRegistrantsFunc func(service core.ServiceHost) []json.Registrant
 
-func JsonModule(name string, moduleRoles []string, hookup CreateJsonRegistrantsFunc) core.ModuleCreateFunc {
-	return func(svc *core.Service) ([]core.Module, error) {
-		if mod, err := newYarpcJsonModule(name, svc, moduleRoles, hookup); err != nil {
-			return nil, err
-		} else {
+func JsonModule(hookup CreateJsonRegistrantsFunc, options ...modules.ModuleOption) core.ModuleCreateFunc {
+	return func(mi core.ModuleCreateInfo) ([]core.Module, error) {
+		if mod, err := newYarpcJsonModule(mi, hookup, options...); err == nil {
 			return []core.Module{mod}, nil
+		} else {
+			return nil, err
 		}
+
 	}
 }
 
-func newYarpcJsonModule(name string, service *core.Service, roles []string, createService CreateJsonRegistrantsFunc) (*YarpcModule, error) {
+func newYarpcJsonModule(mi core.ModuleCreateInfo, createService CreateJsonRegistrantsFunc, options ...modules.ModuleOption) (*YarpcModule, error) {
 
 	reg := func(mod *YarpcModule) {
-		procs := createService(service)
+		procs := createService(mi.Host)
 
 		if procs != nil {
 			for _, proc := range procs {
@@ -29,5 +32,5 @@ func newYarpcJsonModule(name string, service *core.Service, roles []string, crea
 		}
 	}
 
-	return newYarpcModule(name, service, roles, reg)
+	return newYarpcModule(mi, reg, options...)
 }

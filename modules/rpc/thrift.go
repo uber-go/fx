@@ -14,11 +14,11 @@ import (
 	"github.com/yarpc/yarpc-go/encoding/thrift"
 )
 
-type CreateThriftServiceFunc func(service *core.Service) (thrift.Service, error)
+type CreateThriftServiceFunc func(service core.ServiceHost) (thrift.Service, error)
 
-func ThriftModule(name string, moduleRoles []string, hookup CreateThriftServiceFunc, options ...modules.ModuleOption) core.ModuleCreateFunc {
-	return func(svc *core.Service) ([]core.Module, error) {
-		if mod, err := newYarpcThriftModule(name, svc, moduleRoles, hookup); err != nil {
+func ThriftModule(hookup CreateThriftServiceFunc, options ...modules.ModuleOption) core.ModuleCreateFunc {
+	return func(mi core.ModuleCreateInfo) ([]core.Module, error) {
+		if mod, err := newYarpcThriftModule(mi, hookup, options...); err != nil {
 			return nil, err
 		} else {
 			return []core.Module{mod}, nil
@@ -26,9 +26,9 @@ func ThriftModule(name string, moduleRoles []string, hookup CreateThriftServiceF
 	}
 }
 
-func newYarpcThriftModule(name string, service *core.Service, roles []string, createService CreateThriftServiceFunc) (*YarpcModule, error) {
+func newYarpcThriftModule(mi core.ModuleCreateInfo, createService CreateThriftServiceFunc, options ...modules.ModuleOption) (*YarpcModule, error) {
 
-	svc, err := createService(service)
+	svc, err := createService(mi.Host)
 	if err != nil {
 		return nil, err
 	}
@@ -37,7 +37,7 @@ func newYarpcThriftModule(name string, service *core.Service, roles []string, cr
 		wrappedService := serviceWrapper{mod: mod, service: svc}
 		thrift.Register(mod.rpc, wrappedService)
 	}
-	return newYarpcModule(name, service, roles, reg)
+	return newYarpcModule(mi, reg, options...)
 }
 
 type serviceWrapper struct {

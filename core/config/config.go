@@ -24,7 +24,7 @@ func Global() ConfigurationProvider {
 }
 
 func ServiceName() string {
-	return Global().GetValue(ApplicationIDKey, "").AsString()
+	return Global().GetValue(ApplicationIDKey).AsString()
 }
 
 func SetGlobal(provider ConfigurationProvider, force bool) {

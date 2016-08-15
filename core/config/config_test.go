@@ -79,15 +79,34 @@ func TestDirectAccess(t *testing.T) {
 		NewEnvProvider(defaultEnvPrefix, mapEnvironmentProvider{values: env}),
 	)
 
-	v := provider.GetValue("n1.id1", "xxx")
+	v := provider.GetValue("n1.id1").WithDefault("xxx")
 
 	assert.True(t, v.HasValue())
 	assert.Equal(t, 111, v.Value())
 
-	v2 := provider.GetValue("n1.id2", "xxx")
+	v2 := provider.GetValue("n1.id2").WithDefault("xxx")
 
 	assert.True(t, v2.HasValue())
 	assert.Equal(t, "-1", v2.Value())
+}
+
+func TestScopedAccess(t *testing.T) {
+	provider := NewProviderGroup(
+		"test",
+		NewYamlProviderFromString(nestedYaml),
+		NewEnvProvider(defaultEnvPrefix, mapEnvironmentProvider{values: env}),
+	)
+
+	provider = provider.Scope("n1")
+
+	v1 := provider.GetValue("id1")
+	v2 := provider.GetValue("idx").WithDefault("nope")
+
+	assert.True(t, v1.HasValue())
+	assert.Equal(t, 111, v1.AsInt())
+	assert.True(t, v2.IsDefault())
+	assert.True(t, v2.HasValue())
+	assert.Equal(t, v2.AsString(), "nope")
 }
 
 func TestOverrideSimple(t *testing.T) {
@@ -99,7 +118,7 @@ func TestOverrideSimple(t *testing.T) {
 	)
 
 	rpc := &rpcStruct{}
-	v := provider.GetValue("modules.rpc", nil)
+	v := provider.GetValue("modules.rpc")
 	assert.True(t, v.HasValue())
 	v.PopulateStruct(rpc)
 	assert.Equal(t, ":8888", rpc.Bind)
@@ -115,7 +134,7 @@ func TestNestedStructs(t *testing.T) {
 
 	str := &root{}
 
-	v := provider.GetValue("", nil)
+	v := provider.GetValue("")
 
 	assert.True(t, v.HasValue())
 	v.PopulateStruct(str)
@@ -138,7 +157,7 @@ func TestArrayOfStructs(t *testing.T) {
 
 	target := &arrayOfStructs{}
 
-	v := provider.GetValue("", nil)
+	v := provider.GetValue("")
 
 	assert.True(t, v.HasValue())
 	assert.True(t, v.PopulateStruct(target))
@@ -153,8 +172,27 @@ func TestDefault(t *testing.T) {
 		NewEnvProvider(defaultEnvPrefix, mapEnvironmentProvider{values: env}),
 	)
 	target := &nested{}
-	v := provider.GetValue("", nil)
+	v := provider.GetValue("")
 	assert.True(t, v.HasValue())
 	assert.True(t, v.PopulateStruct(target))
 	assert.Equal(t, "default_name", target.Name)
+}
+
+func TestDefaultValue(t *testing.T) {
+	provider := NewProviderGroup(
+		"test",
+		NewEnvProvider(defaultEnvPrefix, mapEnvironmentProvider{values: env}),
+	)
+	v := provider.GetValue("stuff")
+	assert.False(t, v.HasValue())
+
+	v = v.WithDefault("ok")
+
+	assert.True(t, v.HasValue())
+	assert.True(t, v.IsDefault())
+	assert.Equal(t, "ok", v.Value())
+
+	v2 := provider.GetValue("other_stuff")
+	assert.False(t, v2.HasValue())
+
 }

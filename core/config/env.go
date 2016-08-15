@@ -40,21 +40,18 @@ func (p envConfigProvider) Name() string {
 	return "env"
 }
 
-func (p envConfigProvider) GetValue(key string, def interface{}) ConfigurationValue {
+func (p envConfigProvider) GetValue(key string) ConfigurationValue {
 	env := toEnvString(p.prefix, key)
 
 	var cv ConfigurationValue
-	if value, found := p.provider.GetValue(env); found {
-		cv = NewConfigurationValue(p, key, value, String, false, nil)
-	} else {
-		cv = NewConfigurationValue(p, key, def, String, true, nil)
-	}
+	value, found := p.provider.GetValue(env)
+	cv = NewConfigurationValue(p, key, value, found, String, nil)
 	return cv
 
 }
 
-func (p envConfigProvider) MustGetValue(key string) ConfigurationValue {
-	return mustGetValue(p, key)
+func (sp envConfigProvider) Scope(prefix string) ConfigurationProvider {
+	return newScopedProvider(prefix, sp)
 }
 
 type osEnvironmentProvider struct{}

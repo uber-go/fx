@@ -1,35 +1,30 @@
 package modules
 
-import (
-	"reflect"
+import "github.com/uber-go/uberfx/core"
 
-	"github.com/uber-go/uberfx/core"
-	"github.com/uber-go/uberfx/util"
-)
-
-type ModuleOption func(core.Module) error
+type ModuleOption func(core.ModuleCreateInfo) error
 
 func WithName(name string) ModuleOption {
-	return func(module core.Module) error {
-		if mb := findModuleInfo(module); mb != nil {
-			mb.name = name
-		}
+	return func(mi core.ModuleCreateInfo) error {
+		mi.Name = name
 		return nil
 	}
 }
 
 func WithRoles(roles ...string) ModuleOption {
-	return func(module core.Module) error {
-		if mb := findModuleInfo(module); mb != nil {
-			mb.roles = roles
-		}
+	return func(mi core.ModuleCreateInfo) error {
+		// if mb := findModuleInfo(module); mb != nil {
+		// 	mb.roles = roles
+		// }
+		mi.Roles = roles
 		return nil
 	}
 }
 
-func findModuleInfo(module core.Module) *ModuleBase {
-	if val, ok := util.FindField(module, nil, reflect.TypeOf(ModuleBase{})); ok {
-		return val.Interface().(*ModuleBase)
-	}
-	return nil
-}
+// func findModuleInfo(module core.Module) *ModuleBase {
+// 	if val, ok := util.FindField(module, nil, reflect.TypeOf(ModuleBase{})); ok {
+// 		mb := reflect.Indirect(val).Interface().(ModuleBase)
+// 		return &mb
+// 	}
+// 	return nil
+// }
