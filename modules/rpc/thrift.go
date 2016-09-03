@@ -12,6 +12,7 @@ import (
 	"github.com/thriftrw/thriftrw-go/wire"
 	"github.com/yarpc/yarpc-go"
 	"github.com/yarpc/yarpc-go/encoding/thrift"
+	"golang.org/x/net/context"
 )
 
 type CreateThriftServiceFunc func(service core.ServiceHost) (thrift.Service, error)
@@ -64,7 +65,7 @@ func (sw serviceWrapper) wrapHandler(name string, handler thrift.Handler) thrift
 	reporter := sw.mod.Reporter()
 
 	return thrift.HandlerFunc(
-		func(req yarpc.ReqMeta, body wire.Value) (thrift.Response, error) {
+		func(ctx context.Context, req yarpc.ReqMeta, body wire.Value) (thrift.Response, error) {
 
 			data := map[string]string{}
 
@@ -76,7 +77,7 @@ func (sw serviceWrapper) wrapHandler(name string, handler thrift.Handler) thrift
 
 			key := fmt.Sprintf("rpc.%s.%s", sw.service.Name(), name)
 			tracker := reporter.Start(key, data, 90*time.Second)
-			res, err := handler.Handle(req, body)
+			res, err := handler.Handle(ctx, req, body)
 			tracker.Finish("", res, err)
 			return res, err
 		},
