@@ -158,7 +158,7 @@ func (cv ConfigurationValue) AsString() string {
 func (cv ConfigurationValue) AsInt() int {
 	s, ok := cv.TryAsInt()
 	if !ok {
-		panic(fmt.Sprintf("Can't convert to int: %v", cv.Value()))
+		panic(fmt.Sprintf("Can't convert to int: %T %v", cv.Value(), cv.Value()))
 	}
 	return s
 }

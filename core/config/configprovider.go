@@ -27,7 +27,8 @@ func keyNotFound(key string) error {
 
 type scopedProvider struct {
 	prefix string
-	child  ConfigurationProvider
+
+	child ConfigurationProvider
 }
 
 func newScopedProvider(prefix string, provider ConfigurationProvider) ConfigurationProvider {
