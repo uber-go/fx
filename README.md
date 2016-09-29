@@ -1,16 +1,19 @@
 # UberFx Service Framework
+
 This framework is a flexable, modularized basis for building robust and performant services at Uber with the minimum amount of developer code.
 
 ## Concepts
+
 Here is an overview of the main components of the framework
 
 
 ## Service Model
+
 A service a container for a set of **modules**, controlling their lifecycle.  A service can have any number of modules that are responsible for a specific type of functionality, such as a Kafka message ingestion, exposing an HTTP server, or a set of RPC service endpoints.
 
 The core service is responsible for loading basic configuration and starting and stopping a set of these modules.  Each module gets a reference to the service to access standard values such as the Service name or basic configuration.
 
-#### Core Service Code
+### Core Service Code
 
 This model results in a simple, consistent way to start a service.  For example, in the case of a simple TChannel Service, `main.go` might look like this:
 
@@ -18,29 +21,27 @@ This model results in a simple, consistent way to start a service.  For example,
 package main
 
 import (
-	"github.com/uber-go/uberfx/core"
-	"github.com/uber-go/uberfx/core/config"
-	"github.com/uber-go/uberfx/modules/rpc"
+  "github.com/uber-go/uberfx/core"
+  "github.com/uber-go/uberfx/core/config"
+  "github.com/uber-go/uberfx/modules/rpc"
 )
 
 func main() {
-
   // Create the service object
-	service := core.NewService(
+  service := core.NewService(
 
     // Initialize with global (default) configuration provider
-  		nil,
+    nil,
 
-    // The list of module creators for this service, in this case 
+    // The list of module creators for this service, in this case
     // creates a Thrift RPC module called "keyvalue"
-		rpc.ThriftModule("keyvalue", rpc.CreateThriftServiceFunc(NewYarpcThriftHandler)),
-	)
+    rpc.ThriftModule("keyvalue", rpc.CreateThriftServiceFunc(NewYarpcThriftHandler)),
+  )
 
-  // Start the service, with "true" meaning: 
+  // Start the service, with "true" meaning:
   // * Wait for service exit
   // * Report a non-zero exit code if shutdown is caused by an error
-	service.Start(true)
-
+  service.Start(true)
 }
 ```
 
@@ -48,24 +49,19 @@ func main() {
 
 It's common for a service to handle many different workloads.  For example, a service may expose RPC endpoints and also ingest Kafka messages.  In the Python world, this means different deployments that run with different entry points.  Due to Python's threading model, this was required.
 
-In the Go service, we can have a simpler model where we create a single binary, but turn it's modules on and off based on roles which are specified via the commmand line.  
+In the Go service, we can have a simpler model where we create a single binary, but turn it's modules on and off based on roles which are specified via the commmand line.
 
 For example, imagine we wanted a "worker" and a "service" role that handled Kafka and TChannel, respectively:
 
 ```
-
-
 func main() {
+  service := core.NewService(
+    nil,
+    kafka.Module("kakfa_topic1", []string{"worker"}),
+    rpc.ThriftModule("keyvalue", []string{"service"}, rpc.CreateThriftServiceFunc(NewYarpcThriftHandler)),
+  )
 
-	service := core.NewService(
-		nil,
-		kafka.Module("kakfa_topic1", []string{"worker"}), 
-		rpc.ThriftModule("keyvalue", []string{"service"}, rpc.CreateThriftServiceFunc(NewYarpcThriftHandler)),
-	)
-
-	service.Start(true)
-
-
+  service.Start(true)
 ```
 
 Which then allows us to set the roles either via a command line variable:
@@ -103,32 +99,31 @@ modules:
     bind: :28941
     advertise_name: kvserver
   http:
-  	port: 8080
-  	timeout_seconds: 60
-  	
+    port: 8080
+    timeout_seconds: 60
+
 ```
 
 In this example, a module named: "rpc" would lookup it's advertise name as `modules.rpc.advertise_name`.  The contents of each modules's configuration are module-specific.
 
 #### HTTP Module
+
 The HTTP module leverages an annotation-based module for easy hookup and discovery of HTTP endpoints.
 
 ```
-
 package main
 
 import (
-	"github.com/uber-go/uberfx/core"
-	"github.com/uber-go/uberfx/modules/http"
+  "github.com/uber-go/uberfx/core"
+  "github.com/uber-go/uberfx/modules/http"
 )
 
 func main() {
-
-	service := core.NewService(
-		nil,
-		http.Module("http", nil),
-	)
-	service.Start(true)
+  service := core.NewService(
+    nil,
+    http.Module("http", nil),
+  )
+  service.Start(true)
 }
 ```
 
@@ -142,10 +137,10 @@ The developer process is to:
 // @uhttp.HTTPHandler{Verb: "GET", Path:"/health"}
 // @uhttp.HTTPAuth{AllowAnonymous: true}
 func (h Handlers) HandleHealth(req *http.Request) *uhttp.HTTPResponse {
-	return &uhttp.HTTPResponse{
-		Status: 200,
-		Body:   ";-)",
-	}
+  return &uhttp.HTTPResponse{
+    Status: 200,
+    Body:   ";-)",
+  }
 }
 
 ```
@@ -153,6 +148,7 @@ func (h Handlers) HandleHealth(req *http.Request) *uhttp.HTTPResponse {
 Which says to route calls to `GET /health` to this handler and allow non-auth'd calls.  This is all that's necessary and the HTTP module will then discover these endpoints, hook them up, and invoke them when the appropriate path is called.
 
 #### RPC Module
+
 The RPC module wraps [YARPC](https://github.com/yarpc/yarpc-go) and exposes creators for both JSON- and Thrift-encoded messages.
 
 This module works in a way that's pretty similar to existing RPC projects:
@@ -165,38 +161,34 @@ This module works in a way that's pretty similar to existing RPC projects:
 
 ```
 func NewMyServiceHandler(svc *core.Service) (thrift.Service, error) {
-	return myservice.New(&MyServiceHandler{}), nil
+  return myservice.New(&MyServiceHandler{}), nil
 }
 ```
 
 * Pass that method into the module initialization:
 
 ```
-
 func main() {
+  service := core.NewService(
+    nil,
+    rpc.ThriftModule("rpc", nil, rpc.CreateThriftServiceFunc(NewMyServiceHandler)),
+  )
 
-	service := core.NewService(
-		nil,
-		rpc.ThriftModule("rpc", nil, rpc.CreateThriftServiceFunc(NewMyServiceHandler)),
-	)
-
-	service.Start(true)
-
+  service.Start(true)
 }
-
 ```
 
 This will spin up the service.
 
-### Metrics 
+### Metrics
 
-UberFx also exposes a simple, consistent way to track metrics for module-handler invocations.  For modules that invoke handlers, they also support a consistent interface for reporting metrics.  
+UberFx also exposes a simple, consistent way to track metrics for module-handler invocations.  For modules that invoke handlers, they also support a consistent interface for reporting metrics.
 
 * Handler Call Counts
 * Success/Failure
 * Timings
 
-Internally, this uses a pluggable mechanism for reporting these values, so they can be reported to M3, logging, etc., at the service owner's discretion.  By default the metrics will be reported to M3 but can easily be expanded for logging and other needs.  
+Internally, this uses a pluggable mechanism for reporting these values, so they can be reported to M3, logging, etc., at the service owner's discretion.  By default the metrics will be reported to M3 but can easily be expanded for logging and other needs.
 
 For the HTTP and RPC modules, this happens automatically:
 
@@ -240,33 +232,32 @@ stuff:
 
 UberFx Config allows direct key access, such as `foo.bar.baz`:
 
-``` 
+```
   cfg := config.Global()
-	if value := cfg.GetValue("foo.bar.baz"); value.HasValue() {
-		fmt.Print("Say %s", value.AsString()) // "Say hello"
-	}
-
+  if value := cfg.GetValue("foo.bar.baz"); value.HasValue() {
+    fmt.Printf("Say %s", value.AsString()) // "Say hello"
+  }
 ```
 
 Or via a strongly typed structure, even as a nest value, such as:
 
 ```
- type myStuff struct {
-    Port  int   `yaml:"port" default:"8080"`
-    Greeting string `yaml:"greeting"`
- }
+type myStuff struct {
+  Port     int    `yaml:"port" default:"8080"`
+  Greeting string `yaml:"greeting"`
+}
 
- // ....
+// ....
 
- target := &myStuff{}
- cfg := config.Global()
- if !cfg.GetValue("stuff.server").PopulateStruct(target) { 
- 		// fail, we didn't find it.
- }
+target := &myStuff{}
+cfg := config.Global()
+if !cfg.GetValue("stuff.server").PopulateStruct(target) {
+  // fail, we didn't find it.
+}
 
- fmt.Printf("Port is: %v", target.Port) '
-
+fmt.Printf("Port is: %v", target.Port)
 ```
+
 Prints **Port is 8081**
 
 This model respects priority of providers to allow overriding of individual values.  In this example, we override the server port via an environment variable:
@@ -279,6 +270,9 @@ Then running the above example will result in **Port is 3000**
 
 ### Component Configuration
 
+
 This model departs from the existing model where the core service reads all of the configuration and then hands pieces of it down to components.  For example, the logging configuration is typically loaded as a field in a structure defined in the service, then passed to the logging system.
 
 Longer term, we'd like to break this coupling such that the configuation for logging is expected in a specific location by the logging components so they can access it directly.
+
+Services can get involved in this by modifying the list of configuration providers to supply override values to the component.
