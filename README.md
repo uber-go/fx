@@ -1,23 +1,29 @@
 # UberFx Service Framework
 
-This framework is a flexable, modularized basis for building robust and performant services at Uber with the minimum amount of developer code.
+This framework is a flexable, modularized basis for building robust and
+performant services at Uber with the minimum amount of developer code.
 
 ## Concepts
 
 Here is an overview of the main components of the framework
 
-
 ## Service Model
 
-A service a container for a set of **modules**, controlling their lifecycle.  A service can have any number of modules that are responsible for a specific type of functionality, such as a Kafka message ingestion, exposing an HTTP server, or a set of RPC service endpoints.
+A service a container for a set of **modules**, controlling their lifecycle.  A
+service can have any number of modules that are responsible for a specific type
+of functionality, such as a Kafka message ingestion, exposing an HTTP server, or
+a set of RPC service endpoints.
 
-The core service is responsible for loading basic configuration and starting and stopping a set of these modules.  Each module gets a reference to the service to access standard values such as the Service name or basic configuration.
+The core service is responsible for loading basic configuration and starting and
+stopping a set of these modules.  Each module gets a reference to the service to
+access standard values such as the Service name or basic configuration.
 
 ### Core Service Code
 
-This model results in a simple, consistent way to start a service.  For example, in the case of a simple TChannel Service, `main.go` might look like this:
+This model results in a simple, consistent way to start a service.  For example,
+in the case of a simple TChannel Service, `main.go` might look like this:
 
-```
+```go
 package main
 
 import (
@@ -93,7 +99,7 @@ Modules are given named keys by the developer for the purpose of looking up thei
 
 In any case, module configuration is done in a standarized layout as follows:
 
-```
+```yaml
 modules:
   rpc:
     bind: :28941
@@ -101,7 +107,6 @@ modules:
   http:
     port: 8080
     timeout_seconds: 60
-
 ```
 
 In this example, a module named: "rpc" would lookup it's advertise name as `modules.rpc.advertise_name`.  The contents of each modules's configuration are module-specific.
@@ -110,7 +115,7 @@ In this example, a module named: "rpc" would lookup it's advertise name as `modu
 
 The HTTP module leverages an annotation-based module for easy hookup and discovery of HTTP endpoints.
 
-```
+```go
 package main
 
 import (
@@ -132,8 +137,7 @@ The developer process is to:
 1. Create a service with an HTTP Module
 2. Add a struct with functions decorated with annotations as below
 
-```
-
+```go
 // @uhttp.HTTPHandler{Verb: "GET", Path:"/health"}
 // @uhttp.HTTPAuth{AllowAnonymous: true}
 func (h Handlers) HandleHealth(req *http.Request) *uhttp.HTTPResponse {
@@ -142,24 +146,31 @@ func (h Handlers) HandleHealth(req *http.Request) *uhttp.HTTPResponse {
     Body:   ";-)",
   }
 }
-
 ```
 
-Which says to route calls to `GET /health` to this handler and allow non-auth'd calls.  This is all that's necessary and the HTTP module will then discover these endpoints, hook them up, and invoke them when the appropriate path is called.
+Which says to route calls to `GET /health` to this handler and allow non-auth'd
+calls.  This is all that's necessary and the HTTP module will then discover
+these endpoints, hook them up, and invoke them when the appropriate path is
+called.
 
 #### RPC Module
 
-The RPC module wraps [YARPC](https://github.com/yarpc/yarpc-go) and exposes creators for both JSON- and Thrift-encoded messages.
+The RPC module wraps [YARPC](https://github.com/yarpc/yarpc-go) and exposes
+creators for both JSON- and Thrift-encoded messages.
 
 This module works in a way that's pretty similar to existing RPC projects:
 
-* Create an IDL file and run the appropriate tools on it (e.g. **thriftrw**) to generate the service and handler interfaces
+* Create an IDL file and run the appropriate tools on it (e.g. **thriftrw**) to
+  generate the service and handler interfaces
 
 * Implement the service interface handlers as method receivers on a struct
 
-* Implement a top-level function, conforming to the `rpc.CreateThriftServiceFunc` signature (`uberfx/modules/rpc/thrift.go` that returns a `thrift.Service` YARPC implementation from the handler (if using the Thrift encoding):
+* Implement a top-level function, conforming to the
+  `rpc.CreateThriftServiceFunc` signature (`uberfx/modules/rpc/thrift.go` that
+  returns a `thrift.Service` YARPC implementation from the handler (if using
+  the Thrift encoding):
 
-```
+```go
 func NewMyServiceHandler(svc *core.Service) (thrift.Service, error) {
   return myservice.New(&MyServiceHandler{}), nil
 }
@@ -167,7 +178,7 @@ func NewMyServiceHandler(svc *core.Service) (thrift.Service, error) {
 
 * Pass that method into the module initialization:
 
-```
+```go
 func main() {
   service := core.NewService(
     nil,
@@ -217,7 +228,7 @@ So by stacking these providers, we can have a priority system for defining confi
 
 As an example, imagine a YAML config that looks like:
 
-```
+```yaml
 foo:
   bar:
     boo: 1
@@ -227,21 +238,20 @@ stuff:
   server:
     port: 8081
     greeting: Hello There!
-
 ```
 
 UberFx Config allows direct key access, such as `foo.bar.baz`:
 
-```
-  cfg := config.Global()
-  if value := cfg.GetValue("foo.bar.baz"); value.HasValue() {
-    fmt.Printf("Say %s", value.AsString()) // "Say hello"
-  }
+```go
+cfg := config.Global()
+if value := cfg.GetValue("foo.bar.baz"); value.HasValue() {
+  fmt.Printf("Say %s", value.AsString()) // "Say hello"
+}
 ```
 
 Or via a strongly typed structure, even as a nest value, such as:
 
-```
+```go
 type myStuff struct {
   Port     int    `yaml:"port" default:"8080"`
   Greeting string `yaml:"greeting"`
@@ -260,9 +270,11 @@ fmt.Printf("Port is: %v", target.Port)
 
 Prints **Port is 8081**
 
-This model respects priority of providers to allow overriding of individual values.  In this example, we override the server port via an environment variable:
+This model respects priority of providers to allow overriding of individual
+values.  In this example, we override the server port via an environment
+variable:
 
-```
+```sh
 export CONFIG__stuff__server__port=3000
 ```
 
@@ -270,9 +282,5 @@ Then running the above example will result in **Port is 3000**
 
 ### Component Configuration
 
-
-This model departs from the existing model where the core service reads all of the configuration and then hands pieces of it down to components.  For example, the logging configuration is typically loaded as a field in a structure defined in the service, then passed to the logging system.
-
-Longer term, we'd like to break this coupling such that the configuation for logging is expected in a specific location by the logging components so they can access it directly.
-
-Services can get involved in this by modifying the list of configuration providers to supply override values to the component.
+Services can get involved in this by modifying the list of configuration
+providers to supply override values to the component.
