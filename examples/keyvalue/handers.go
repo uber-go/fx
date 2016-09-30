@@ -25,8 +25,8 @@ import (
 
 	"github.com/uber-go/uberfx/core"
 	"github.com/uber-go/uberfx/examples/keyvalue/kv"
-	"github.com/yarpc/yarpc-go"
-	"github.com/yarpc/yarpc-go/encoding/thrift"
+	"go.uber.org/yarpc"
+	"go.uber.org/yarpc/encoding/thrift"
 )
 
 type YarpcHandler struct {

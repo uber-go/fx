@@ -28,10 +28,10 @@ import (
 	"github.com/uber-go/uberfx/core/metrics"
 	"github.com/uber-go/uberfx/modules"
 
-	"github.com/thriftrw/thriftrw-go/protocol"
-	"github.com/thriftrw/thriftrw-go/wire"
-	"github.com/yarpc/yarpc-go"
-	"github.com/yarpc/yarpc-go/encoding/thrift"
+	"go.uber.org/thriftrw/protocol"
+	"go.uber.org/thriftrw/wire"
+	"go.uber.org/yarpc"
+	"go.uber.org/yarpc/encoding/thrift"
 	"golang.org/x/net/context"
 )
 

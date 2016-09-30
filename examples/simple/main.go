@@ -23,7 +23,7 @@ package main
 import (
 	"github.com/uber-go/uberfx/core"
 	"github.com/uber-go/uberfx/modules/rpc"
-	"github.com/yarpc/yarpc-go/encoding/json"
+	"go.uber.org/yarpc/encoding/json"
 )
 
 func registerJSONers(service core.ServiceHost) []json.Registrant {

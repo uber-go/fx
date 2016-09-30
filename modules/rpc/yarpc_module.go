@@ -30,9 +30,9 @@ import (
 	"github.com/uber-go/uberfx/modules"
 
 	"github.com/uber/tchannel-go"
-	"github.com/yarpc/yarpc-go"
-	"github.com/yarpc/yarpc-go/transport"
-	tch "github.com/yarpc/yarpc-go/transport/tchannel"
+	"go.uber.org/yarpc"
+	"go.uber.org/yarpc/transport"
+	tch "go.uber.org/yarpc/transport/tchannel"
 )
 
 // module

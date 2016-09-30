@@ -24,7 +24,7 @@ import (
 	"github.com/uber-go/uberfx/core"
 	"github.com/uber-go/uberfx/modules"
 
-	"github.com/yarpc/yarpc-go/encoding/json"
+	"go.uber.org/yarpc/encoding/json"
 )
 
 type CreateJsonRegistrantsFunc func(service core.ServiceHost) []json.Registrant

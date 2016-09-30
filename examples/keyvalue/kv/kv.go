@@ -25,12 +25,12 @@ import (
 	"fmt"
 	"strings"
 
-	yarpc "github.com/yarpc/yarpc-go"
+	yarpc "go.uber.org/yarpc"
 
-	"github.com/thriftrw/thriftrw-go/protocol"
-	"github.com/thriftrw/thriftrw-go/wire"
-	"github.com/yarpc/yarpc-go/encoding/thrift"
-	"github.com/yarpc/yarpc-go/examples/thrift/keyvalue/kv/service/keyvalue"
+	"go.uber.org/thriftrw/protocol"
+	"go.uber.org/thriftrw/wire"
+	"go.uber.org/yarpc/encoding/thrift"
+	"go.uber.org/yarpc/examples/thrift/keyvalue/kv/service/keyvalue"
 	"golang.org/x/net/context"
 )
 
