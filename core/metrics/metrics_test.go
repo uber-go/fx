@@ -23,8 +23,8 @@ package metrics
 import (
 	"testing"
 
-	"github.com/uber-go/uberfx/core/config"
 	"github.com/stretchr/testify/assert"
+	"github.com/uber-go/uberfx/core/config"
 )
 
 const yamlMetricsTags = `
