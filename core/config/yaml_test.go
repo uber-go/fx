@@ -77,7 +77,7 @@ func TestYamlStructChild(t *testing.T) {
 }
 
 func TestExtends(t *testing.T) {
-	provider := NewYamlProviderFromFiles(false, NewRelativeResolver("./test"), "base.yaml", "dev.yaml")
+	provider := NewYamlProviderFromFiles(false, NewRelativeResolver("./testdata"), "base.yaml", "dev.yaml")
 
 	baseValue := provider.GetValue("value").AsString()
 	assert.Equal(t, "base_only", baseValue)

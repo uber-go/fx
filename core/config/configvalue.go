@@ -158,11 +158,11 @@ func (cv ConfigurationValue) TryAsBool() (bool, bool) {
 
 }
 
-func (cv ConfigurationValue) TryAsFloat() (float32, bool) {
-	f := float32(0)
+func (cv ConfigurationValue) TryAsFloat() (float64, bool) {
+	f := float64(0)
 	v := cv.Value()
 	if val, err := convertValue(v, reflect.TypeOf(f)); v != nil && err == nil {
-		return val.(float32), true
+		return val.(float64), true
 	}
 	return f, false
 }
@@ -183,10 +183,10 @@ func (cv ConfigurationValue) AsInt() int {
 	return s
 }
 
-func (cv ConfigurationValue) AsFloat() float32 {
+func (cv ConfigurationValue) AsFloat() float64 {
 	s, ok := cv.TryAsFloat()
 	if !ok {
-		panic(fmt.Sprintf("Can't convert to float32: %v", cv.Value()))
+		panic(fmt.Sprintf("Can't convert to float64: %v", cv.Value()))
 	}
 	return s
 }
