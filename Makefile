@@ -12,6 +12,10 @@ ifneq ($(filter $(LINTABLE_MINOR_VERSIONS),$(GO_MINOR_VERSION)),)
 SHOULD_LINT := true
 endif
 
+BUILD_GC_FLAGS ?= -gcflags "-trimpath=$(GOPATH)/src"
+
+TEST_FLAGS += $(BUILD_GC_FLAGS)
+RACE ?= -race
 
 .PHONY: all
 all: lint test
@@ -62,7 +66,7 @@ endif
 
 .PHONY: test
 test:
-	go test -race $(PKGS)
+	go test $(RACE) $(TEST_FLAGS) $(PKGS)
 
 .PHONY: coveralls
 coveralls:
