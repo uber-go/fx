@@ -34,6 +34,11 @@ endif
 # Disable printf-like invocation checking due to testify.assert.Error()
 VET_RULES := -printf=false
 
+LINT_EXCLUDES = examples
+# Create a pipeline filter for go vet/golint. Patterns specified in LINT_EXCLUDES are
+# converted to a grep -v pipeline. If there are no filters, cat is used.
+FILTER_LINT := $(if $(LINT_EXCLUDES), grep -v $(foreach file, $(LINT_EXCLUDES),-e $(file)),cat)
+
 .PHONY: lint
 lint:
 ifdef SHOULD_LINT
@@ -43,7 +48,7 @@ ifdef SHOULD_LINT
 	@echo "Installing test dependencies for vet..."
 	@go test -i $(PKGS)
 	@echo "Checking vet..."
-	@$(foreach dir,$(PKG_FILES),go tool vet $(VET_RULES) $(dir) 2>&1 | tee -a lint.log;)
+	@$(foreach dir,$(PKG_FILES),go tool vet $(VET_RULES) $(dir) 2>&1 | $(FILTER_LINT) | tee -a lint.log;)
 	@echo "Checking lint..."
 	@$(foreach dir,$(PKGS),golint $(dir) 2>&1 | tee -a lint.log;)
 	@echo "Checking for unresolved FIXMEs..."
