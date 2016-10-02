@@ -152,8 +152,6 @@ The developer process is to:
 * Add a struct with functions decorated with annotations as below
 
 TODO(ai) come up with non-annotation-based solution
-```go
-```
 
 Which says to route calls to `GET /health` to this handler and allow non-auth'd
 calls.  This is all that's necessary and the HTTP module will then discover

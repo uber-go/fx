@@ -1,3 +1,6 @@
 /vendor
 *.test
 *.log
+*.out
+*.html
+*.coverprofile
