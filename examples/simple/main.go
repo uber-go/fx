@@ -34,7 +34,7 @@ func main() {
 	service := core.NewService(
 		&MyService{},
 		core.WithModules(
-			rpc.JsonModule(rpc.CreateJsonRegistrantsFunc(registerJSONers)),
+			rpc.JSONModule(rpc.CreateJSONRegistrantsFunc(registerJSONers)),
 		),
 	)
 	service.Start(true)

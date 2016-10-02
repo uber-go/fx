@@ -35,15 +35,18 @@ import (
 	"golang.org/x/net/context"
 )
 
+// CreateThriftServiceFunc creates a Thrift service from a service host
 type CreateThriftServiceFunc func(service core.ServiceHost) (thrift.Service, error)
 
+// ThriftModule creates a Thrift Module from a service func
 func ThriftModule(hookup CreateThriftServiceFunc, options ...modules.ModuleOption) core.ModuleCreateFunc {
 	return func(mi core.ModuleCreateInfo) ([]core.Module, error) {
-		if mod, err := newYarpcThriftModule(mi, hookup, options...); err != nil {
+		mod, err := newYarpcThriftModule(mi, hookup, options...)
+		if err != nil {
 			return nil, err
-		} else {
-			return []core.Module{mod}, nil
 		}
+
+		return []core.Module{mod}, nil
 	}
 }
 
@@ -68,10 +71,12 @@ type serviceWrapper struct {
 	callback thrift.HandlerFunc
 }
 
+// Name returns a service's name
 func (sw serviceWrapper) Name() string {
 	return sw.service.Name()
 }
 
+// Protocol returns a service's protocol
 func (sw serviceWrapper) Protocol() protocol.Protocol {
 	return sw.service.Protocol()
 }
@@ -91,7 +96,6 @@ func (sw serviceWrapper) wrapHandler(name string, handler thrift.Handler) thrift
 
 			if cid, ok := req.Headers().Get("cid"); ok {
 				// todo, what's the right tchannel header name?
-
 				data[metrics.TrafficCorrelationID] = cid
 			}
 

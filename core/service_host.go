@@ -21,7 +21,6 @@
 package core
 
 import (
-	"errors"
 	"fmt"
 	"log"
 	"os"
@@ -52,7 +51,7 @@ var _ ServiceOwner = &serviceHost{}
 
 func (s *serviceHost) addModule(module Module) error {
 	if s.locked {
-		return errors.New("ServiceAlreadyStarted")
+		return fmt.Errorf("ServiceAlreadyStarted")
 	}
 	s.modules = append(s.modules, module)
 	return nil
@@ -147,7 +146,7 @@ func (s *serviceHost) Start(waitForShutdown bool) (<-chan ServiceExit, error) {
 	defer s.shutdownMu.Unlock()
 
 	if s.inShutdown {
-		return nil, errors.New("errShuttingDown")
+		return nil, fmt.Errorf("errShuttingDown")
 	} else if s.IsRunning() {
 		return s.closeChan, nil
 	} else {
@@ -232,10 +231,11 @@ func (s *serviceHost) stopModules() map[Module]error {
 	return results
 }
 
+// A ServiceExitCallback is a function to handle a service shutdown and provide
+// an exit code
 type ServiceExitCallback func(shutdown ServiceExit) int
 
 func (s *serviceHost) WaitForShutdown(exitCallback ServiceExitCallback) {
-
 	shutdown := <-s.closeChan
 	log.Printf("\nShutting down because %q\n", shutdown.Reason)
 
@@ -248,16 +248,15 @@ func (s *serviceHost) WaitForShutdown(exitCallback ServiceExitCallback) {
 	os.Exit(exit)
 }
 
-func (svc *serviceHost) transitionState(to ServiceState) {
-
-	if to < svc.state {
-		panic(fmt.Sprintf("Can't down from state %v -> %v", svc.state, to))
+func (s *serviceHost) transitionState(to ServiceState) {
+	if to < s.state {
+		panic(fmt.Sprintf("Can't down from state %v -> %v", s.state, to))
 	}
 
-	for svc.state < to {
-		old := svc.state
-		new := svc.state
-		switch svc.state {
+	for s.state < to {
+		old := s.state
+		new := s.state
+		switch s.state {
 		case Uninitialized:
 			new = Initialized
 		case Initialized:
@@ -270,8 +269,8 @@ func (svc *serviceHost) transitionState(to ServiceState) {
 			new = Stopped
 		case Stopped:
 		}
-		if svc.instance != nil {
-			svc.instance.OnStateChange(old, new)
+		if s.instance != nil {
+			s.instance.OnStateChange(old, new)
 		}
 	}
 }

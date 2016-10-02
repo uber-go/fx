@@ -24,6 +24,7 @@ import (
 	"github.com/uber-go/uberfx/core/config"
 )
 
+// A ServiceHost represents the hosting environment for a service instance
 type ServiceHost interface {
 	Name() string
 	Description() string

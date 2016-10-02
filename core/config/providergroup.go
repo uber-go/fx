@@ -20,24 +20,33 @@
 
 package config
 
-type ProviderGroup struct {
+type providerGroup struct {
 	name      string
 	providers []ConfigurationProvider
 }
 
+// NewProviderGroup creates a configuration provider from a group of backends
 func NewProviderGroup(name string, providers ...ConfigurationProvider) ConfigurationProvider {
-	return ProviderGroup{
+	return providerGroup{
 		name:      name,
 		providers: providers,
 	}
 }
 
-func (cc ProviderGroup) GetValue(key string) ConfigurationValue {
-	cv := NewConfigurationValue(cc, key, nil, false, getValueType(nil), nil)
+// WithProvider updates the current ConfigurationProvider
+func (p providerGroup) WithProvider(provider ConfigurationProvider) ConfigurationProvider {
+	return providerGroup{
+		name:      p.name,
+		providers: append(p.providers, provider),
+	}
+}
+
+func (p providerGroup) GetValue(key string) ConfigurationValue {
+	cv := NewConfigurationValue(p, key, nil, false, getValueType(nil), nil)
 
 	// loop through the providers and return the value defined by the highest priority (e.g. last) provider
-	for i := len(cc.providers) - 1; i >= 0; i-- {
-		provider := cc.providers[i]
+	for i := len(p.providers) - 1; i >= 0; i-- {
+		provider := p.providers[i]
 		if val := provider.GetValue(key); val.HasValue() && !val.IsDefault() {
 			cv = val
 			break
@@ -46,21 +55,21 @@ func (cc ProviderGroup) GetValue(key string) ConfigurationValue {
 
 	// here we add a new root, which defines the "scope" at which
 	// PopulateStructs will look for values.
-	cv.root = cc
+	cv.root = p
 	return cv
 }
 
-func (p ProviderGroup) Name() string {
+func (p providerGroup) Name() string {
 	return p.name
 }
 
-func (cc ProviderGroup) RegisterChangeCallback(key string, callback ConfigurationChangeCallback) string {
+func (p providerGroup) RegisterChangeCallback(key string, callback ConfigurationChangeCallback) string {
 	return ""
 }
-func (cc ProviderGroup) UnregisterChangeCallback(token string) bool {
+func (p providerGroup) UnregisterChangeCallback(token string) bool {
 	return false
 }
 
-func (cc ProviderGroup) Scope(prefix string) ConfigurationProvider {
-	return newScopedProvider(prefix, cc)
+func (p providerGroup) Scope(prefix string) ConfigurationProvider {
+	return newScopedProvider(prefix, p)
 }

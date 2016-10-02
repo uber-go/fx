@@ -137,15 +137,8 @@ The developer process is to:
 1. Create a service with an HTTP Module
 2. Add a struct with functions decorated with annotations as below
 
+TODO(ai) come up with non-annotation-based solution
 ```go
-// @uhttp.HTTPHandler{Verb: "GET", Path:"/health"}
-// @uhttp.HTTPAuth{AllowAnonymous: true}
-func (h Handlers) HandleHealth(req *http.Request) *uhttp.HTTPResponse {
-  return &uhttp.HTTPResponse{
-    Status: 200,
-    Body:   ";-)",
-  }
-}
 ```
 
 Which says to route calls to `GET /health` to this handler and allow non-auth'd

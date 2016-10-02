@@ -24,6 +24,7 @@ import (
 	"golang.org/x/net/context"
 )
 
+// HandlerCreateFunc creates a handler for a topic name
 type HandlerCreateFunc func(topic string) (Handler, error)
 
 // Handler handles a single transport-level request.

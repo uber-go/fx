@@ -26,17 +26,17 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-const yamlConfig1 = `
+var yamlConfig1 = []byte(`
 appid: keyvalue
 desc: A simple keyvalue service
 appowner: uberfx@uber.com
 modules:
   rpc:
     bind: :28941
-`
+`)
 
 func TestYamlSimple(t *testing.T) {
-	provider := NewYamlProviderFromString(yamlConfig1)
+	provider := NewYAMLProviderFromBytes(yamlConfig1)
 
 	c := provider.GetValue("modules.rpc.bind")
 	assert.True(t, c.HasValue())
@@ -52,7 +52,7 @@ type configStruct struct {
 }
 
 func TestYamlStructRoot(t *testing.T) {
-	provider := NewYamlProviderFromString(yamlConfig1)
+	provider := NewYAMLProviderFromBytes(yamlConfig1)
 
 	cs := &configStruct{}
 
@@ -67,7 +67,7 @@ type rpcStruct struct {
 }
 
 func TestYamlStructChild(t *testing.T) {
-	provider := NewYamlProviderFromString(yamlConfig1)
+	provider := NewYAMLProviderFromBytes(yamlConfig1)
 
 	cs := &rpcStruct{}
 
@@ -77,7 +77,7 @@ func TestYamlStructChild(t *testing.T) {
 }
 
 func TestExtends(t *testing.T) {
-	provider := NewYamlProviderFromFiles(false, NewRelativeResolver("./testdata"), "base.yaml", "dev.yaml")
+	provider := NewYAMLProviderFromFiles(false, NewRelativeResolver("./testdata"), "base.yaml", "dev.yaml")
 
 	baseValue := provider.GetValue("value").AsString()
 	assert.Equal(t, "base_only", baseValue)

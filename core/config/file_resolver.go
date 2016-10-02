@@ -26,24 +26,23 @@ import (
 	"path"
 )
 
+// A FileResolver resolves references to files
 type FileResolver interface {
-	Resolve(file string) io.Reader
+	Resolve(file string) io.ReadCloser
 }
 
+// A RelativeResolver resolves files relative to the given paths
 type RelativeResolver struct {
 	paths []string
 }
 
+// NewRelativeResolver returns a file resolver relative to the given paths
 func NewRelativeResolver(paths ...string) FileResolver {
+	pathList := make([]string, len(paths))
 
-	pathList := make([]string, 0, len(paths))
-
-	for _, v := range paths {
-		pathList = append(pathList, v)
-	}
+	copy(pathList, paths)
 
 	// add the current cwd
-	//
 	if cwd, err := os.Getwd(); err == nil {
 		pathList = append(pathList, cwd)
 	}
@@ -56,8 +55,8 @@ func NewRelativeResolver(paths ...string) FileResolver {
 	}
 }
 
-func (rr RelativeResolver) Resolve(file string) io.Reader {
-
+// Resolve finds a reader relative to the given resolver
+func (rr RelativeResolver) Resolve(file string) io.ReadCloser {
 	if path.IsAbs(file) {
 		if reader, err := os.Open(file); err == nil {
 			return reader
@@ -65,7 +64,6 @@ func (rr RelativeResolver) Resolve(file string) io.Reader {
 	}
 
 	// loop the paths
-	//
 	for _, v := range rr.paths {
 		fp := path.Join(v, file)
 		if reader, err := os.Open(fp); err == nil {

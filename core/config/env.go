@@ -33,6 +33,7 @@ type envConfigProvider struct {
 
 const defaultEnvPrefix = "CONFIG"
 
+// An EnvironmentValueProvider provides configuration from your environment
 type EnvironmentValueProvider interface {
 	GetValue(key string) (string, bool)
 }
@@ -44,6 +45,7 @@ func toEnvString(prefix string, key string) string {
 	return fmt.Sprintf("%s__%s", prefix, strings.Replace(key, ".", "__", -1))
 }
 
+// NewEnvProvider creates a configuration provider backed by an environment
 func NewEnvProvider(prefix string, provider EnvironmentValueProvider) ConfigurationProvider {
 	e := envConfigProvider{
 		prefix:   prefix,
@@ -70,8 +72,8 @@ func (p envConfigProvider) GetValue(key string) ConfigurationValue {
 
 }
 
-func (sp envConfigProvider) Scope(prefix string) ConfigurationProvider {
-	return newScopedProvider(prefix, sp)
+func (p envConfigProvider) Scope(prefix string) ConfigurationProvider {
+	return newScopedProvider(prefix, p)
 }
 
 type osEnvironmentProvider struct{}

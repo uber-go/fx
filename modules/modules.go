@@ -25,10 +25,12 @@ import (
 	"github.com/uber-go/uberfx/core/metrics"
 )
 
+// A ModuleConfig holds configuration for a mobule
 type ModuleConfig struct {
 	Roles []string `yaml:"roles"`
 }
 
+// ModuleBase is an embeddable base for all UberFx modules
 type ModuleBase struct {
 	moduleType string
 	name       string
@@ -38,6 +40,7 @@ type ModuleBase struct {
 	roles      []string
 }
 
+// NewModuleBase configures a new ModuleBase
 func NewModuleBase(moduleType string, name string, service core.ServiceHost, reporter metrics.TrafficReporter, roles []string) *ModuleBase {
 	return &ModuleBase{
 		moduleType: moduleType,
@@ -48,17 +51,22 @@ func NewModuleBase(moduleType string, name string, service core.ServiceHost, rep
 	}
 }
 
+// Roles returns the module's roles
 func (mb ModuleBase) Roles() []string {
 	return mb.roles
 }
+
+// Type returns the module's type
 func (mb ModuleBase) Type() string {
 	return mb.moduleType
 }
 
+// Name returns the module's name
 func (mb ModuleBase) Name() string {
 	return mb.name
 }
 
+// Reporter returns the module's traffic reporter
 func (mb ModuleBase) Reporter() metrics.TrafficReporter {
 	return mb.reporter
 }

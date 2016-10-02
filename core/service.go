@@ -28,19 +28,25 @@ import (
 	"github.com/uber-go/uberfx/internal/util"
 )
 
+// A ServiceState represents the state of a service
 type ServiceState int
 
 const (
+	// Uninitialized means a service has not yet been initialized
 	Uninitialized = iota + 1
+	// Initialized means a service has been initialized
 	Initialized
+	// Starting represents a service in the process of starting
 	Starting
+	// Running represents a running service
 	Running
+	// Stopping represents a service in the process of stopping
 	Stopping
+	// Stopped represents a service that has been shut down
 	Stopped
 )
 
-type StateChangeCallback func(ServiceState, ServiceState)
-
+// A ServiceOwner encapsulates service ownership
 type ServiceOwner interface {
 	ServiceHost
 	Start(waitForExit bool) (<-chan ServiceExit, error)
@@ -66,6 +72,7 @@ type ServiceInstance interface {
 	OnCriticalError(err error) bool
 }
 
+// ServiceExit is a signal for a service that needs to exit
 type ServiceExit struct {
 	Reason   string
 	Error    error
@@ -73,12 +80,14 @@ type ServiceExit struct {
 }
 
 type serviceConfig struct {
-	ServiceName        string   `yaml:"applicationid" required:"true"`
-	ServiceOwner       string   `yaml:"applicationowner"  required:"true"`
-	ServiceDescription string   `yaml:"applicationdesc"`
+	ServiceName        string   `yaml:"applicationID" required:"true"`
+	ServiceOwner       string   `yaml:"applicationOwner"  required:"true"`
+	ServiceDescription string   `yaml:"applicationDesc"`
 	ServiceRoles       []string `yaml:"roles"`
 }
 
+// NewService creates a service owner from a set of service instances and
+// options
 func NewService(instance ServiceInstance, options ...ServiceOption) ServiceOwner {
 
 	cfg := config.Global()

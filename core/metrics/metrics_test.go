@@ -27,12 +27,12 @@ import (
 	"github.com/uber-go/uberfx/core/config"
 )
 
-const yamlMetricsTags = `
+var yamlMetricsTags = []byte(`
 metrics:
   tags:
     foo: bar
     baz: boing
-`
+`)
 
 var globalConfig config.ConfigurationProvider
 
@@ -47,7 +47,7 @@ func reset() {
 func TestTags(t *testing.T) {
 	defer reset()
 
-	config.SetGlobal(config.NewYamlProviderFromString(yamlMetricsTags), true)
+	config.SetGlobal(config.NewYAMLProviderFromBytes(yamlMetricsTags), true)
 
 	scope := Global(false)
 

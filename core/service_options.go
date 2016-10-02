@@ -25,6 +25,7 @@ import (
 	"github.com/uber-go/uberfx/core/metrics"
 )
 
+// A ServiceOption configures a service host
 type ServiceOption func(ServiceHost) error
 
 // func WithModules(modules ...ModuleInit) ServiceOption {
@@ -47,6 +48,7 @@ type ServiceOption func(ServiceHost) error
 // 	}
 // }
 
+// WithModules adds the given modules to a service host
 func WithModules(modules ...ModuleCreateFunc) ServiceOption {
 	return func(svc ServiceHost) error {
 		svc2 := svc.(*serviceHost)
@@ -54,7 +56,7 @@ func WithModules(modules ...ModuleCreateFunc) ServiceOption {
 			var err error
 			mi := ModuleCreateInfo{
 				Host:  svc,
-				Roles: []string{},
+				Roles: nil,
 				Items: map[string]interface{}{},
 			}
 
@@ -75,16 +77,20 @@ func WithModules(modules ...ModuleCreateFunc) ServiceOption {
 	}
 }
 
+// WithConfiguration adds configuration to a service host
 func WithConfiguration(config config.ConfigurationProvider) ServiceOption {
 	return func(svc ServiceHost) error {
+		// TODO(ai) verify type assertion is correct
 		svc2 := svc.(*serviceHost)
 		svc2.configProvider = config
 		return nil
 	}
 }
 
+// WithMetricsScope configures a service host with metrics
 func WithMetricsScope(scope xm.Scope) ServiceOption {
 	return func(svc ServiceHost) error {
+		// TODO(ai) verify type assertion is correct
 		svc2 := svc.(*serviceHost)
 		svc2.scope = metrics.Global(true)
 		return nil

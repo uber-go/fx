@@ -21,7 +21,6 @@
 package metrics
 
 import (
-	"errors"
 	"fmt"
 	"log"
 	"sync"
@@ -29,22 +28,26 @@ import (
 )
 
 const (
+	// TrafficCorrelationID is a key for handlers to correlate a request
 	TrafficCorrelationID = "traffic_id"
-	TrafficCallerName    = "traffic_cn"
 )
 
+// A TrafficReporter handles reporting traffic data for requests
 type TrafficReporter interface {
 	Start(name string, data map[string]string, timeout time.Duration) TrafficTracker
 }
 
+// A TrafficTracker is used for a single request to track traffic
 type TrafficTracker interface {
 	Finish(desc string, result interface{}, err error) bool
 	Elapsed() (time.Duration, bool)
 	Discard()
 }
 
+// A TrafficReportCallback is used to send a finished traffic report
 type TrafficReportCallback func(name string, desc string, elapsed time.Duration, data map[string]string, result interface{}, err error)
 
+// The DefaultTrafficTracker is used to track generic requests
 type DefaultTrafficTracker struct {
 	name     string
 	data     map[string]string
@@ -56,6 +59,7 @@ type DefaultTrafficTracker struct {
 	callback TrafficReportCallback
 }
 
+// NewDefaultTrafficTracker creates a new traffic tracker based on configuration
 func NewDefaultTrafficTracker(name string, data map[string]string, timeout time.Duration, callback TrafficReportCallback) *DefaultTrafficTracker {
 	dtt := &DefaultTrafficTracker{
 		name:     name,
@@ -69,12 +73,13 @@ func NewDefaultTrafficTracker(name string, data map[string]string, timeout time.
 		go func() {
 			// wait on the timer
 			<-dtt.timeout.C
-			dtt.Finish(fmt.Sprintf("Timed out after %s", timeout.String()), nil, errors.New("Timeout"))
+			dtt.Finish(fmt.Sprintf("Timed out after %s", timeout.String()), nil, fmt.Errorf("Timeout"))
 		}()
 	}
 	return dtt
 }
 
+// Finish closes a traffic tracking session
 func (dtt *DefaultTrafficTracker) Finish(desc string, result interface{}, err error) bool {
 	dtt.doneMux.Lock()
 	defer dtt.doneMux.Unlock()
@@ -89,6 +94,7 @@ func (dtt *DefaultTrafficTracker) Finish(desc string, result interface{}, err er
 	return true
 }
 
+// Discard throws away the current tracking data
 func (dtt *DefaultTrafficTracker) Discard() {
 	dtt.doneMux.Lock()
 	defer dtt.doneMux.Unlock()
@@ -97,6 +103,7 @@ func (dtt *DefaultTrafficTracker) Discard() {
 	dtt.done = true
 }
 
+// Elapsed returns the duration of traffic tracking
 func (dtt *DefaultTrafficTracker) Elapsed() (time.Duration, bool) {
 	if !dtt.done {
 		return time.Duration(0), false
@@ -105,10 +112,12 @@ func (dtt *DefaultTrafficTracker) Elapsed() (time.Duration, bool) {
 	return dtt.end.Sub(dtt.start), true
 }
 
+// LoggingTrafficReporter logs traffic requests
 type LoggingTrafficReporter struct {
 	Prefix string
 }
 
+// Start begins logging traffic data
 func (ltr LoggingTrafficReporter) Start(name string, data map[string]string, timeout time.Duration) TrafficTracker {
 
 	key := fmt.Sprintf("%s.%s", ltr.Prefix, name)

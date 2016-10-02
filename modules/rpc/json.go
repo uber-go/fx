@@ -27,21 +27,22 @@ import (
 	"go.uber.org/yarpc/encoding/json"
 )
 
-type CreateJsonRegistrantsFunc func(service core.ServiceHost) []json.Registrant
+// CreateJSONRegistrantsFunc returns a slice of registrants from a service host
+type CreateJSONRegistrantsFunc func(service core.ServiceHost) []json.Registrant
 
-func JsonModule(hookup CreateJsonRegistrantsFunc, options ...modules.ModuleOption) core.ModuleCreateFunc {
+// JSONModule instantiates a core module from a registrant func
+func JSONModule(hookup CreateJSONRegistrantsFunc, options ...modules.ModuleOption) core.ModuleCreateFunc {
 	return func(mi core.ModuleCreateInfo) ([]core.Module, error) {
-		if mod, err := newYarpcJsonModule(mi, hookup, options...); err == nil {
+		mod, err := newYarpcJSONModule(mi, hookup, options...)
+		if err == nil {
 			return []core.Module{mod}, nil
-		} else {
-			return nil, err
 		}
 
+		return nil, err
 	}
 }
 
-func newYarpcJsonModule(mi core.ModuleCreateInfo, createService CreateJsonRegistrantsFunc, options ...modules.ModuleOption) (*YarpcModule, error) {
-
+func newYarpcJSONModule(mi core.ModuleCreateInfo, createService CreateJSONRegistrantsFunc, options ...modules.ModuleOption) (*YarpcModule, error) {
 	reg := func(mod *YarpcModule) {
 		procs := createService(mi.Host)
 

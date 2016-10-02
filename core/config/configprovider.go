@@ -20,19 +20,21 @@
 
 package config
 
-import (
-	"errors"
-	"fmt"
-)
+import "fmt"
 
+// A ConfigurationProvider provides a unified interface to accessing
+// configuration systems.
 type ConfigurationProvider interface {
 	Name() string // the name of the provider (YAML, Env, etc)
 	GetValue(key string) ConfigurationValue
 	Scope(prefix string) ConfigurationProvider
 }
 
+// ConfigurationChangeCallback is called for updates of configuration data
 type ConfigurationChangeCallback func(key string, provider string, configdata interface{})
 
+// A DynamicConfigurationProvider provides configuration access as well as
+// callback registration and shutdown hooks for dynamic config providers
 type DynamicConfigurationProvider interface {
 	ConfigurationProvider
 
@@ -42,7 +44,7 @@ type DynamicConfigurationProvider interface {
 }
 
 func keyNotFound(key string) error {
-	return errors.New(fmt.Sprintf("Couldn't find key %q", key))
+	return fmt.Errorf("couldn't find key %q", key)
 }
 
 type scopedProvider struct {

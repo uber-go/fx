@@ -41,8 +41,8 @@ const (
 	serviceNameToken = "__servicename__"
 )
 
+// Global returns the global metric scope
 func Global(serviceScope bool) metrics.Scope {
-
 	var target *metrics.Scope
 
 	switch serviceScope {

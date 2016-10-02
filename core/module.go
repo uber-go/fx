@@ -22,8 +22,10 @@ package core
 
 import "github.com/uber-go/uberfx/core/metrics"
 
+// A ModuleType is a human-friendly module type name
 type ModuleType string
 
+// A Module is the basic building block of an UberFx service
 type Module interface {
 	Initialize(host ServiceHost) error
 	Type() string
@@ -34,6 +36,7 @@ type Module interface {
 	Reporter() metrics.TrafficReporter
 }
 
+// ModuleCreateInfo is used to configure module instantiation
 type ModuleCreateInfo struct {
 	Name  string
 	Roles []string
@@ -41,4 +44,5 @@ type ModuleCreateInfo struct {
 	Host  ServiceHost
 }
 
+// A ModuleCreateFunc handles instantiating modules from creation configuration
 type ModuleCreateFunc func(ModuleCreateInfo) ([]Module, error)

@@ -20,13 +20,11 @@
 
 package util
 
-import (
-	"reflect"
-)
+import "reflect"
 
+// FindField descends a struct looking for a field by name
 func FindField(instance interface{}, name *string, rt reflect.Type) (reflect.Value, bool) {
 	// walk the fields looking for ones of type Service
-	//
 	objType := reflect.TypeOf(instance)
 
 	for objType.Kind() == reflect.Ptr || objType.Kind() == reflect.Interface {
@@ -44,7 +42,6 @@ func FindField(instance interface{}, name *string, rt reflect.Type) (reflect.Val
 			continue
 		}
 		// if we got this far, return the value.
-		//
 		val := reflect.Indirect(reflect.ValueOf(instance))
 		return val.FieldByIndex(field.Index), true
 	}

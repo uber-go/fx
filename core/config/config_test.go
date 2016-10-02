@@ -42,10 +42,10 @@ type nested struct {
 	ID2  string `yaml:"id2"`
 }
 
-const nest1 = `
+var nest1 = []byte(`
 id1: 1
 id2: 2
-`
+`)
 
 type root struct {
 	ID        int      `yaml:"id"`
@@ -54,7 +54,7 @@ type root struct {
 	NestedPtr *nested  `yaml:"nptr"`
 }
 
-const nestedYaml = `
+var nestedYaml = []byte(`
 id: 1234
 names:
   - aiden
@@ -70,23 +70,23 @@ nptr:
   name: ptr
   id1: 	1111
   id2:  2222
-`
+`)
 
-const structArrayYaml = `
+var structArrayYaml = []byte(`
 things:
   - id1: 0
   - id1: 1
   - id1: 2
-`
+`)
 
-const yamlConfig2 = `
+var yamlConfig2 = []byte(`
 appid: keyvalue
 desc: A simple keyvalue service
 appowner: uberfx@uber.com
 modules:
   rpc:
     bind: :28941
-`
+`)
 
 type arrayOfStructs struct {
 	Things []nested `yaml:"things"`
@@ -95,7 +95,7 @@ type arrayOfStructs struct {
 func TestDirectAccess(t *testing.T) {
 	provider := NewProviderGroup(
 		"test",
-		NewYamlProviderFromString(nestedYaml),
+		NewYAMLProviderFromBytes(nestedYaml),
 		NewEnvProvider(defaultEnvPrefix, mapEnvironmentProvider{values: env}),
 	)
 
@@ -113,7 +113,7 @@ func TestDirectAccess(t *testing.T) {
 func TestScopedAccess(t *testing.T) {
 	provider := NewProviderGroup(
 		"test",
-		NewYamlProviderFromString(nestedYaml),
+		NewYAMLProviderFromBytes(nestedYaml),
 		NewEnvProvider(defaultEnvPrefix, mapEnvironmentProvider{values: env}),
 	)
 
@@ -133,7 +133,7 @@ func TestOverrideSimple(t *testing.T) {
 
 	provider := NewProviderGroup(
 		"test",
-		NewYamlProviderFromString(yamlConfig2),
+		NewYAMLProviderFromBytes(yamlConfig2),
 		NewEnvProvider(defaultEnvPrefix, mapEnvironmentProvider{values: env}),
 	)
 
@@ -148,7 +148,7 @@ func TestOverrideSimple(t *testing.T) {
 func TestNestedStructs(t *testing.T) {
 	provider := NewProviderGroup(
 		"test",
-		NewYamlProviderFromString(nestedYaml),
+		NewYAMLProviderFromBytes(nestedYaml),
 		NewEnvProvider(defaultEnvPrefix, mapEnvironmentProvider{values: env}),
 	)
 
@@ -171,7 +171,7 @@ func TestNestedStructs(t *testing.T) {
 func TestArrayOfStructs(t *testing.T) {
 	provider := NewProviderGroup(
 		"test",
-		NewYamlProviderFromString(structArrayYaml),
+		NewYAMLProviderFromBytes(structArrayYaml),
 		NewEnvProvider(defaultEnvPrefix, mapEnvironmentProvider{values: env}),
 	)
 
@@ -188,7 +188,7 @@ func TestArrayOfStructs(t *testing.T) {
 func TestDefault(t *testing.T) {
 	provider := NewProviderGroup(
 		"test",
-		NewYamlProviderFromString(nest1),
+		NewYAMLProviderFromBytes(nest1),
 		NewEnvProvider(defaultEnvPrefix, mapEnvironmentProvider{values: env}),
 	)
 	target := &nested{}

@@ -35,34 +35,33 @@ import (
 	tch "go.uber.org/yarpc/transport/tchannel"
 )
 
-// module
-
+// YarpcModule is an implementation of a core module using YARPC
 type YarpcModule struct {
 	modules.ModuleBase
 	rpc      yarpc.Dispatcher
 	register registerServiceFunc
-	config   RPCConfig
+	config   yarpcConfig
 }
 
 var _ core.Module = &YarpcModule{}
 
 type registerServiceFunc func(module *YarpcModule)
 
+// RPCModuleType represents the type of an RPC module
 const RPCModuleType = "rpc"
 
-type RPCConfig struct {
+type yarpcConfig struct {
 	modules.ModuleConfig
 	Bind          string `yaml:"bind"`
 	AdvertiseName string `yaml:"advertise_name"`
 }
 
 func newYarpcModule(mi core.ModuleCreateInfo, reg registerServiceFunc, options ...modules.ModuleOption) (*YarpcModule, error) {
-
 	for _, opt := range options {
 		opt(mi)
 	}
 
-	cfg := &RPCConfig{
+	cfg := &yarpcConfig{
 		AdvertiseName: mi.Host.Name(),
 		Bind:          ":0",
 	}
@@ -88,10 +87,12 @@ func newYarpcModule(mi core.ModuleCreateInfo, reg registerServiceFunc, options .
 	return module, nil
 }
 
+// Initialize sets up a YAPR-backed module
 func (m *YarpcModule) Initialize(service core.ServiceHost) error {
 	return nil
 }
 
+// Start begins serving requests over YARPC
 func (m *YarpcModule) Start() <-chan error {
 	channel, err := tchannel.NewChannel(m.config.AdvertiseName, nil)
 	if err != nil {
@@ -113,6 +114,7 @@ func (m *YarpcModule) Start() <-chan error {
 	return ret
 }
 
+// Stop shuts down a YARPC module
 func (m *YarpcModule) Stop() error {
 
 	// TODO: thread safety
@@ -124,6 +126,8 @@ func (m *YarpcModule) Stop() error {
 	return nil
 }
 
+// IsRunning returns whether a module is running
 func (m *YarpcModule) IsRunning() bool {
+	// TODO: thread safety
 	return m.rpc != nil
 }

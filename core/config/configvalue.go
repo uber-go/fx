@@ -21,22 +21,29 @@
 package config
 
 import (
-	"errors"
 	"fmt"
 	"reflect"
 	"strconv"
 	"time"
 )
 
+// A ValueType is a type-description of a configuration value
 type ValueType int
 
 const (
+	// Invalid represents an unset or invalid config type
 	Invalid ValueType = iota
+	// String is, well, you know what it is
 	String
+	// Integer holds numbers without decimals
 	Integer
+	// Bool is, well... go check Wikipedia. It's complicated.
 	Bool
+	// Float is an easy one. They don't sink in pools.
 	Float
+	// Slice will cut you.
 	Slice
+	// Dictionary contains words and their definitions
 	Dictionary
 )
 
@@ -68,6 +75,7 @@ func getValueType(value interface{}) ValueType {
 	return Invalid
 }
 
+// A ConfigurationValue holds the value of a configuration
 type ConfigurationValue struct {
 	root         ConfigurationProvider
 	provider     ConfigurationProvider
@@ -79,6 +87,8 @@ type ConfigurationValue struct {
 	Type         ValueType
 }
 
+// NewConfigurationValue creates a configuration value from a provider and a set
+// of parameters describing the key
 func NewConfigurationValue(provider ConfigurationProvider, key string, value interface{}, found bool, t ValueType, timestamp *time.Time) ConfigurationValue {
 
 	cv := ConfigurationValue{
@@ -98,6 +108,7 @@ func NewConfigurationValue(provider ConfigurationProvider, key string, value int
 	return cv
 }
 
+// Source returns a configuration provider's name
 func (cv ConfigurationValue) Source() string {
 	if cv.provider == nil {
 		return ""
@@ -105,6 +116,7 @@ func (cv ConfigurationValue) Source() string {
 	return cv.provider.Name()
 }
 
+// LastUpdated returns when the configuration value was last updated
 func (cv ConfigurationValue) LastUpdated() time.Time {
 	if !cv.HasValue() {
 		return time.Time{} // zero value if never updated?
@@ -112,6 +124,8 @@ func (cv ConfigurationValue) LastUpdated() time.Time {
 	return cv.Timestamp
 }
 
+// WithDefault creates a shallow copy of the current configuration value and
+// sets its default.
 func (cv ConfigurationValue) WithDefault(value interface{}) ConfigurationValue {
 	// TODO: create a "DefaultProvider" and chain that into the bottom of the current provider:
 	//
@@ -128,10 +142,13 @@ func (cv ConfigurationValue) WithDefault(value interface{}) ConfigurationValue {
 // 3. Merge the list here
 // 4. Return the set of keys.
 
+// ChildKeys returns the child keys
+// TODO(ai) what is this and do we need to keep it?
 func (cv ConfigurationValue) ChildKeys() []string {
-	return []string{}
+	return nil
 }
 
+// TryAsString attempts to return the configuration value as a string
 func (cv ConfigurationValue) TryAsString() (string, bool) {
 	v := cv.Value()
 	if val, err := convertValue(v, reflect.TypeOf("")); v != nil && err == nil {
@@ -140,6 +157,7 @@ func (cv ConfigurationValue) TryAsString() (string, bool) {
 	return "", false
 }
 
+// TryAsInt attempts to return the confniguration value as an int
 func (cv ConfigurationValue) TryAsInt() (int, bool) {
 	v := cv.Value()
 	if val, err := convertValue(v, reflect.TypeOf(0)); v != nil && err == nil {
@@ -149,6 +167,7 @@ func (cv ConfigurationValue) TryAsInt() (int, bool) {
 
 }
 
+// TryAsBool attempts to return the configuration value as a bool
 func (cv ConfigurationValue) TryAsBool() (bool, bool) {
 	v := cv.Value()
 	if val, err := convertValue(v, reflect.TypeOf(true)); v != nil && err == nil {
@@ -158,6 +177,7 @@ func (cv ConfigurationValue) TryAsBool() (bool, bool) {
 
 }
 
+// TryAsFloat attempts to return the configuration value as a float
 func (cv ConfigurationValue) TryAsFloat() (float64, bool) {
 	f := float64(0)
 	v := cv.Value()
@@ -167,6 +187,8 @@ func (cv ConfigurationValue) TryAsFloat() (float64, bool) {
 	return f, false
 }
 
+// AsString returns the configuration value as a string, or panics if not
+// string-able
 func (cv ConfigurationValue) AsString() string {
 	s, ok := cv.TryAsString()
 	if !ok {
@@ -175,6 +197,8 @@ func (cv ConfigurationValue) AsString() string {
 	return s
 }
 
+// AsInt returns the configuration value as an int, or panics if not
+// int-able
 func (cv ConfigurationValue) AsInt() int {
 	s, ok := cv.TryAsInt()
 	if !ok {
@@ -183,6 +207,8 @@ func (cv ConfigurationValue) AsInt() int {
 	return s
 }
 
+// AsFloat returns the configuration value as an float64, or panics if not
+// float64-able
 func (cv ConfigurationValue) AsFloat() float64 {
 	s, ok := cv.TryAsFloat()
 	if !ok {
@@ -191,6 +217,8 @@ func (cv ConfigurationValue) AsFloat() float64 {
 	return s
 }
 
+// AsBool returns the configuration value as an bool, or panics if not
+// bool-able
 func (cv ConfigurationValue) AsBool() bool {
 	s, ok := cv.TryAsBool()
 	if !ok {
@@ -199,14 +227,19 @@ func (cv ConfigurationValue) AsBool() bool {
 	return s
 }
 
+// IsDefault returns whether the return value is the default.
 func (cv ConfigurationValue) IsDefault() bool {
+	// TODO(ai) what should the semantics be if the provider has a value that's
+	// the same as the default value?
 	return !cv.found && cv.defaultValue != nil
 }
 
+// HasValue returns whether the configuration has a value that can be used
 func (cv ConfigurationValue) HasValue() bool {
 	return cv.found || cv.IsDefault()
 }
 
+// Value returns the underlying configuration's value
 func (cv ConfigurationValue) Value() interface{} {
 	if cv.found {
 		return cv.value
@@ -291,11 +324,11 @@ func convertValue(value interface{}, targetType reflect.Type) (interface{}, erro
 		}
 	}
 
-	return nil, errors.New(fmt.Sprintf("Can't convert %v to %v", valueType, targetType))
+	return nil, fmt.Errorf("can't convert %v to %v", valueType, targetType)
 }
 
+// PopulateStruct fills in a struct from configuration
 func (cv ConfigurationValue) PopulateStruct(target interface{}) bool {
-
 	if !cv.HasValue() {
 		return false
 	}
@@ -360,16 +393,17 @@ func (cv ConfigurationValue) getValueStruct(key string, target interface{}) (int
 				val = v2.Value()
 				found = true
 			} else if fieldInfo.Required {
-				return nil, false, errors.New(fmt.Sprintf("Field %q must have value for key %q", fieldName, childKey))
+				return nil, false, fmt.Errorf("Field %q must have value for key %q", fieldName, childKey)
 			} else if fieldInfo.DefaultValue != "" {
 				val = fieldInfo.DefaultValue
 			}
 			if val != nil {
-				if v3, err := convertValue(val, fieldValue.Type()); err != nil {
+				v3, err := convertValue(val, fieldValue.Type())
+				if err != nil {
 					return nil, false, err
-				} else {
-					val = v3
 				}
+
+				val = v3
 				fieldValue.Set(reflect.ValueOf(val))
 			}
 			continue

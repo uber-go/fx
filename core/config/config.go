@@ -27,15 +27,23 @@ import (
 )
 
 const (
-	ApplicationIDKey          = "applicationid"
-	ApplicationDescriptionKey = "applicationdesc"
-	ApplicationOwnerKey       = "applicationowner"
+	// ApplicationIDKey is the identifier of an application ID
+	ApplicationIDKey = "applicationID"
+	// ApplicationDescriptionKey is the configuration key of the application's
+	// description
+	ApplicationDescriptionKey = "applicationDesc"
+	// ApplicationOwnerKey is the configuration key for an application's owner
+	ApplicationOwnerKey = "applicationOwner"
 )
 
-var global ConfigurationProvider
-var locked bool
-var setupMux sync.Mutex
+// TODO(ai) underscore-prefix these per Uber style
+var (
+	global   ConfigurationProvider
+	locked   bool
+	setupMux sync.Mutex
+)
 
+// Global returns the singleton configuration provider
 func Global() ConfigurationProvider {
 	setupMux.Lock()
 	defer setupMux.Unlock()
@@ -43,10 +51,12 @@ func Global() ConfigurationProvider {
 	return global
 }
 
+// ServiceName returns the service's names
 func ServiceName() string {
 	return Global().GetValue(ApplicationIDKey).AsString()
 }
 
+// SetGlobal sets the singleton configuration provider
 func SetGlobal(provider ConfigurationProvider, force bool) {
 	setupMux.Lock()
 	defer setupMux.Unlock()
@@ -56,6 +66,7 @@ func SetGlobal(provider ConfigurationProvider, force bool) {
 	global = provider
 }
 
+// TODO(ai) pull this out
 // UBERSPECIFIC
 func getUberConfigFiles() []string {
 
@@ -77,7 +88,8 @@ func getUberConfigFiles() []string {
 }
 
 func init() {
-
+	// TODO(ai) see if we can do this without all the type assertions and long
+	// lines
 	paths := []string{}
 
 	configDir := os.Getenv("UBER_CONFIG_DIR")
@@ -88,5 +100,5 @@ func init() {
 	resolver := NewRelativeResolver(paths...)
 
 	// do the default thing
-	global = NewProviderGroup("global", NewYamlProviderFromFiles(false, resolver, getUberConfigFiles()...), NewEnvProvider(defaultEnvPrefix, nil))
+	global = NewProviderGroup("global", NewYAMLProviderFromFiles(false, resolver, getUberConfigFiles()...), NewEnvProvider(defaultEnvPrefix, nil))
 }

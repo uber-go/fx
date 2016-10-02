@@ -37,8 +37,7 @@ type yamlConfigProvider struct {
 
 var _ ConfigurationProvider = &yamlConfigProvider{}
 
-func newYamlProviderCore(files ...io.Reader) ConfigurationProvider {
-
+func newYAMLProviderCore(files ...io.ReadCloser) ConfigurationProvider {
 	roots := make([]*yamlNode, len(files))
 
 	for n, v := range files {
@@ -54,14 +53,16 @@ func newYamlProviderCore(files ...io.Reader) ConfigurationProvider {
 	}
 }
 
-func NewYamlProviderFromFiles(mustExist bool, resolver FileResolver, files ...string) ConfigurationProvider {
+// NewYAMLProviderFromFiles creates a configration provider from a set of YAML file
+// names
+func NewYAMLProviderFromFiles(mustExist bool, resolver FileResolver, files ...string) ConfigurationProvider {
 
 	if resolver == nil {
 		resolver = NewRelativeResolver()
 	}
 
 	// load the files, read their bytes
-	readers := []io.Reader{}
+	readers := []io.ReadCloser{}
 
 	// TODO: Work out how to recurse with "extends"
 	//
@@ -72,22 +73,26 @@ func NewYamlProviderFromFiles(mustExist bool, resolver FileResolver, files ...st
 			readers = append(readers, reader)
 		}
 	}
-	return newYamlProviderCore(readers...)
+	return newYAMLProviderCore(readers...)
 }
 
-func NewYamlProviderFromReader(reader io.Reader) ConfigurationProvider {
-	return newYamlProviderCore(reader)
+// NewYamlProviderFromReader creates a configuration provider from an
+// io.ReadCloser
+func NewYamlProviderFromReader(reader io.ReadCloser) ConfigurationProvider {
+	return newYAMLProviderCore(reader)
 }
 
-func NewYamlProviderFromString(yaml string) ConfigurationProvider {
-
-	reader := bytes.NewReader([]byte(yaml))
-	if node, err := newyamlNode(reader); err == nil {
-		return &yamlConfigProvider{
-			roots: []*yamlNode{node},
-		}
-	} else {
+// NewYAMLProviderFromBytes creates a config provider from a byte-backed YAML
+// blob.
+func NewYAMLProviderFromBytes(yaml []byte) ConfigurationProvider {
+	reader := bytes.NewReader(yaml)
+	node, err := newyamlNode(ioutil.NopCloser(reader))
+	if err != nil {
 		panic(err)
+	}
+
+	return &yamlConfigProvider{
+		roots: []*yamlNode{node},
 	}
 }
 
@@ -107,12 +112,13 @@ func (y yamlConfigProvider) getNode(key string) *yamlNode {
 	return found
 }
 
+// Name returns the config provider name
 func (y yamlConfigProvider) Name() string {
 	return "yaml"
 }
 
+// GetValue returns a configuration value by name
 func (y yamlConfigProvider) GetValue(key string) ConfigurationValue {
-
 	node := y.getNode(key)
 
 	if node == nil {
@@ -121,8 +127,9 @@ func (y yamlConfigProvider) GetValue(key string) ConfigurationValue {
 	return NewConfigurationValue(y, key, node.value, true, getValueType(node.value), nil)
 }
 
-func (sp yamlConfigProvider) Scope(prefix string) ConfigurationProvider {
-	return newScopedProvider(prefix, sp)
+// Scope returns a scoped configuration provider
+func (y yamlConfigProvider) Scope(prefix string) ConfigurationProvider {
+	return newScopedProvider(prefix, y)
 }
 
 func deref(value reflect.Value) reflect.Value {
@@ -159,7 +166,8 @@ func (n yamlNode) Type() reflect.Type {
 	return reflect.TypeOf(n.value)
 }
 
-func newyamlNode(reader io.Reader) (*yamlNode, error) {
+func newyamlNode(reader io.ReadCloser) (*yamlNode, error) {
+	defer reader.Close()
 	m := make(map[interface{}]interface{})
 
 	if data, err := ioutil.ReadAll(reader); err != nil {

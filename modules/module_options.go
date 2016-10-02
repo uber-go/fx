@@ -22,8 +22,10 @@ package modules
 
 import "github.com/uber-go/uberfx/core"
 
+// ModuleOption is a function that configures module creation
 type ModuleOption func(core.ModuleCreateInfo) error
 
+// WithName is an option to set a module name
 func WithName(name string) ModuleOption {
 	return func(mi core.ModuleCreateInfo) error {
 		mi.Name = name
@@ -31,6 +33,7 @@ func WithName(name string) ModuleOption {
 	}
 }
 
+// WithRoles is an option to set module roles
 func WithRoles(roles ...string) ModuleOption {
 	return func(mi core.ModuleCreateInfo) error {
 		// if mb := findModuleInfo(module); mb != nil {
