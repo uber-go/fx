@@ -53,11 +53,17 @@ func main() {
 
 #### Roles
 
-It's common for a service to handle many different workloads.  For example, a service may expose RPC endpoints and also ingest Kafka messages.  In the Python world, this means different deployments that run with different entry points.  Due to Python's threading model, this was required.
+It's common for a service to handle many different workloads.  For example, a
+service may expose RPC endpoints and also ingest Kafka messages.  In the Python
+world, this means different deployments that run with different entry points.
+Due to Python's threading model, this was required.
 
-In the Go service, we can have a simpler model where we create a single binary, but turn it's modules on and off based on roles which are specified via the commmand line.
+In the Go service, we can have a simpler model where we create a single binary,
+but turn it's modules on and off based on roles which are specified via the
+commmand line.
 
-For example, imagine we wanted a "worker" and a "service" role that handled Kafka and TChannel, respectively:
+For example, imagine we wanted a "worker" and a "service" role that handled
+Kafka and TChannel, respectively:
 
 ```
 func main() {
@@ -82,7 +88,9 @@ Or via the service parameters, we would activate in the following ways:
 
 ### Modules
 
-Modules are pluggable components that provide an encapsulated set of functionality that is managed by the service.  One can imagine lots of kinds of modules:
+Modules are pluggable components that provide an encapsulated set of
+functionality that is managed by the service.  One can imagine lots of kinds of
+modules:
 
 * Kafka ingester
 * TChannel server
@@ -95,7 +103,10 @@ This prototype of the Service Framework implements two modules as a POC.
 
 #### Module Configuration
 
-Modules are given named keys by the developer for the purpose of looking up their configuration.  This naming is arbitrary and only needs to be unique across modules and exists because it's possible that a service may have multiple modules of the same type, such as multiple Kafka ingesters.
+Modules are given named keys by the developer for the purpose of looking up
+their configuration.  This naming is arbitrary and only needs to be unique
+across modules and exists because it's possible that a service may have multiple
+modules of the same type, such as multiple Kafka ingesters.
 
 In any case, module configuration is done in a standarized layout as follows:
 
@@ -109,11 +120,14 @@ modules:
     timeout_seconds: 60
 ```
 
-In this example, a module named: "rpc" would lookup it's advertise name as `modules.rpc.advertise_name`.  The contents of each modules's configuration are module-specific.
+In this example, a module named: "rpc" would lookup it's advertise name as
+`modules.rpc.advertise_name`.  The contents of each modules's configuration are
+module-specific.
 
 #### HTTP Module
 
-The HTTP module leverages an annotation-based module for easy hookup and discovery of HTTP endpoints.
+The HTTP module leverages an annotation-based module for easy hookup and
+discovery of HTTP endpoints.
 
 ```go
 package main
@@ -134,8 +148,8 @@ func main() {
 
 The developer process is to:
 
-1. Create a service with an HTTP Module
-2. Add a struct with functions decorated with annotations as below
+* Create a service with an HTTP Module
+* Add a struct with functions decorated with annotations as below
 
 TODO(ai) come up with non-annotation-based solution
 ```go
@@ -186,13 +200,18 @@ This will spin up the service.
 
 ### Metrics
 
-UberFx also exposes a simple, consistent way to track metrics for module-handler invocations.  For modules that invoke handlers, they also support a consistent interface for reporting metrics.
+UberFx also exposes a simple, consistent way to track metrics for module-handler
+invocations.  For modules that invoke handlers, they also support a consistent
+interface for reporting metrics.
 
 * Handler Call Counts
 * Success/Failure
 * Timings
 
-Internally, this uses a pluggable mechanism for reporting these values, so they can be reported to M3, logging, etc., at the service owner's discretion.  By default the metrics will be reported to M3 but can easily be expanded for logging and other needs.
+Internally, this uses a pluggable mechanism for reporting these values, so they
+can be reported to M3, logging, etc., at the service owner's discretion.  By
+default the metrics will be reported to M3 but can easily be expanded for
+logging and other needs.
 
 For the HTTP and RPC modules, this happens automatically:
 
@@ -210,14 +229,22 @@ For the HTTP and RPC modules, this happens automatically:
 
 ## Simple Configuration Interface
 
-UberFx introduces a simplified configuration model that provides a consistent interface to configuration from pluggable configuration sources.  This interface defines methods for accessing values directly (as strings) or into strongly typed structs.
+UberFx introduces a simplified configuration model that provides a consistent
+interface to configuration from pluggable configuration sources.  This interface
+defines methods for accessing values directly (as strings) or into strongly
+typed structs.
 
-The configuration system wraps a set of _providers_ that each know how to get values from an  underlying source:
+The configuration system wraps a set of _providers_ that each know how to get
+values from an  underlying source:
 
 * Static YAML configuration
 * Overrides from environment variables, etc.
 
-So by stacking these providers, we can have a priority system for defining configuration that can be overridden by higher priority providers.  For example, the static YAML configuration would be the lowest priority and those values should be overridden by values specified as environment variables.  This system makes that easy to codify.
+So by stacking these providers, we can have a priority system for defining
+configuration that can be overridden by higher priority providers.  For example,
+the static YAML configuration would be the lowest priority and those values
+should be overridden by values specified as environment variables.  This system
+makes that easy to codify.
 
 As an example, imagine a YAML config that looks like:
 

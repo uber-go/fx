@@ -2,14 +2,14 @@ applicationID: simple
 applicationdesc: A simple example service
 applicationowner: uberfx@uber.com
 
-service: 
+service:
   timeout: 500
   max_things: 12
   info_prefix: blah
 
 modules:
   http:
-    roles: 
+    roles:
       - worker
       - web
     port: 8080

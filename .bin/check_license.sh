@@ -1,11 +1,11 @@
 #!/bin/bash
 
-text=`head -1 LICENSE.txt`
+text=$(head -1 LICENSE.txt)
 
 ERROR_COUNT=0
-while read file
+while read -r file
 do
-    head -1 ${file} | grep -q "${text}"
+    head -1 "${file}" | grep -q "${text}"
     if [ $? -ne 0 ]; then
         echo "$file is missing license header."
         (( ERROR_COUNT++ ))
