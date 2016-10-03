@@ -1,9 +1,10 @@
 SHELL := /bin/bash
 PROJECT_ROOT := github.com/uber-go/uberfx
 
-include .build/flags.mk
-include .build/verbosity.mk
-include .build/deps.mk
+SUPPORT_FILES := .build
+include $(SUPPORT_FILES)/flags.mk
+include $(SUPPORT_FILES)/verbosity.mk
+include $(SUPPORT_FILES)/deps.mk
 
 .PHONY: all
 all: lint test
@@ -51,7 +52,7 @@ BENCH ?= .
 bench:
 	$(ECHO_V)$(foreach pkg,$(PKGS),go test -bench=$(BENCH) -run="^$$" $(BENCH_FLAGS) $(pkg);)
 
-include .build/lint.mk
+include $(SUPPORT_FILES)/lint.mk
 
 .PHONY: clean
 clean::

@@ -5,6 +5,9 @@ FILTER_LINT := $(if $(LINT_EXCLUDES), grep -v $(foreach file, $(LINT_EXCLUDES),-
 
 LINT_LOG := lint.log
 
+_THIS_MAKEFILE := $(lastword $(MAKEFILE_LIST))
+_THIS_DIR := $(dir $(_THIS_MAKEFILE))
+
 .PHONY: lint
 lint:
 ifdef SHOULD_LINT
@@ -18,9 +21,9 @@ ifdef SHOULD_LINT
 	@echo "Checking lint..."
 	$(ECHO_V)$(foreach dir,$(PKGS),golint $(dir) 2>&1 | $(FILTER_LINT) | tee -a $(LINT_LOG);)
 	@echo "Checking for unresolved FIXMEs..."
-	$(ECHO_V)git grep -i fixme | grep -v -e vendor -e $(lastword $(MAKEFILE_LIST)) | tee -a $(LINT_LOG)
+	$(ECHO_V)git grep -i fixme | grep -v -e vendor -e $(_THIS_MAKEFILE) | tee -a $(LINT_LOG)
 	@echo "Checking for license headers..."
-	$(ECHO_V).bin/check_license.sh | tee -a $(LINT_LOG)
+	$(ECHO_V)$(_THIS_DIR)/check_license.sh | tee -a $(LINT_LOG)
 	$(ECHO_V)[ ! -s $(LINT_LOG) ]
 else
 	@echo "Skipping linters on" $(GO_VERSION)
