@@ -22,6 +22,11 @@ PreCommit:
   GoVet:
     enabled: true
 
+  LicenceHeader:
+    enabled: true
+    include:
+      - '**/*.go'
+
   # Markdown lint
   Mdl:
     enabled: true
