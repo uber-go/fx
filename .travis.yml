@@ -1,0 +1,28 @@
+language: go
+sudo: false
+go:
+  - 1.7
+  - tip
+
+go_import_path: github.com/uber-go/uberfx
+
+matrix:
+  # Fail the build as soon as the first job fails
+  fast_finish: true
+
+cache:
+  directories:
+    - vendor
+
+install:
+  # Blocked on https://github.com/uber-go/uberfx/issues/22 -- remove all
+  # internal imports
+  # - make dependencies
+
+script:
+  - make lint
+  # Also blocked on internal imports
+  # - make test
+
+after_success:
+  - make coveralls
