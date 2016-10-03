@@ -28,8 +28,6 @@ _FILTER_OVERALLS = grep -v "^Processing:"
 endif
 
 $(COV_REPORT): $(PKG_FILES)
-	@# TODO enable race flag https://github.com/go-playground/overalls/issues/8
-	@# TODO use $(TEST_VERBOSITY_FLAG)
 	$(ECHO_V)$(OVERALLS) -project=$(PROJECT_ROOT) \
 		-ignore "$(OVERALLS_IGNORE)" \
 		-covermode=atomic \
@@ -53,8 +51,9 @@ BENCH ?= .
 bench:
 	$(ECHO_V)$(foreach pkg,$(PKGS),go test -bench=$(BENCH) -run="^$$" $(BENCH_FLAGS) $(pkg);)
 
+include .build/lint.mk
+
 .PHONY: clean
 clean::
-	@rm -f $(COV_REPORT) $(COV_HTML)
+	@rm -f $(COV_REPORT) $(COV_HTML) $(LINT_LOG)
 
-include .build/lint.mk
