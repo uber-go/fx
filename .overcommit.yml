@@ -46,7 +46,7 @@ PreCommit:
   ExecutePermissions:
     enabled: true
     exclude:
-      - '.bin/*.sh'
+      - '.build/*.sh'
 
 #PostCheckout:
 #  ALL: # Special hook name that customizes all hooks of this type
