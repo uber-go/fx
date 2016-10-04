@@ -28,6 +28,18 @@ git clone git@github.com:uber-go/uberfx.git
 Dependencies are tracked via `glide.yaml`. If you're not familiar with `glide`,
 read the [docs](https://github.com/Masterminds/glide#usage).
 
+## Licence headers
+
+This project is Open Source Software, and requires a header at the beginning of
+all source files. This is enforced by commit hooks and TravisCI.
+
+To add licence headers, use
+[uber-licence](https://github.com/uber/uber-licence):
+
+```lang=bash
+uber-licence --file "*.go"
+```
+
 ## Commit Messages
 
 Overcommit adds some requirements to your commit messages. At Uber, we follow the
