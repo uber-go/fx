@@ -37,7 +37,7 @@ To add licence headers, use
 [uber-licence](https://github.com/uber/uber-licence):
 
 ```lang=bash
-uber-licence --file "*.go"
+make add-uber-licence
 ```
 
 ## Commit Messages

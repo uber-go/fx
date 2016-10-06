@@ -53,6 +53,7 @@ bench:
 	$(ECHO_V)$(foreach pkg,$(PKGS),go test -bench=$(BENCH) -run="^$$" $(BENCH_FLAGS) $(pkg);)
 
 include $(SUPPORT_FILES)/lint.mk
+include $(SUPPORT_FILES)/licence.mk
 
 .PHONY: clean
 clean::
