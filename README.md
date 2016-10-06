@@ -1,6 +1,6 @@
 # UberFx Service Framework
 
-This framework is a flexable, modularized basis for building robust and
+This framework is a flexible, modularized basis for building robust and
 performant services at Uber with the minimum amount of developer code.
 
 ## Concepts
