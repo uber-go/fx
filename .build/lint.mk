@@ -10,7 +10,6 @@ _THIS_DIR := $(dir $(_THIS_MAKEFILE))
 
 .PHONY: lint
 lint:
-ifdef SHOULD_LINT
 	$(ECHO_V)rm -rf $(LINT_LOG)
 	@echo "Checking formatting..."
 	$(ECHO_V)gofmt -d -s $(PKG_FILES) 2>&1 | tee $(LINT_LOG)
@@ -25,6 +24,3 @@ ifdef SHOULD_LINT
 	@echo "Checking for license headers..."
 	$(ECHO_V)$(_THIS_DIR)/check_license.sh | tee -a $(LINT_LOG)
 	$(ECHO_V)[ ! -s $(LINT_LOG) ]
-else
-	@echo "Skipping linters on" $(GO_VERSION)
-endif
