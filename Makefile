@@ -11,6 +11,11 @@ all: lint test
 
 COV_REPORT := overalls.coverprofile
 
+# all .go files that don't exist in hidden directories
+ALL_SRC := $(shell find . -name "*.go" | grep -v -e vendor \
+  -e ".*/\..*" \
+  -e ".*/_.*")
+
 .PHONY: test
 test: $(COV_REPORT)
 
@@ -28,7 +33,7 @@ else
 _FILTER_OVERALLS = grep -v "^Processing:"
 endif
 
-$(COV_REPORT): $(PKG_FILES)
+$(COV_REPORT): $(PKG_FILES) $(ALL_SRC)
 	$(ECHO_V)$(OVERALLS) -project=$(PROJECT_ROOT) \
 		-ignore "$(OVERALLS_IGNORE)" \
 		-covermode=atomic \
