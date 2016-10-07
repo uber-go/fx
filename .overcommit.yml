@@ -48,6 +48,11 @@ PreCommit:
     exclude:
       - '.build/*.sh'
 
+PrePush:
+  UberfxGoLint:
+    enabled: true
+    required_executable: './.build/check_lint.sh'
+
 #PostCheckout:
 #  ALL: # Special hook name that customizes all hooks of this type
 #    quiet: true # Change all post-checkout hooks to only display output on failure
