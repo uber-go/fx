@@ -59,3 +59,8 @@ PrePush:
 #
 #  IndexTags:
 #    enabled: true # Generate a tags file with `ctags` each time HEAD changes
+
+
+# This doesn't seem to be working well and is having us consider turning off
+# overcommit.
+verify_signatures: false

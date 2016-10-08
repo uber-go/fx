@@ -9,7 +9,7 @@ This doc is intended for contributors to UberFx (hopefully that's you!)
 
 * [Overcommit](https://github.com/brigade/overcommit), a git hook manager.
   Install `overcommit` into your path with `sudo gem install overcommit`.
-  Enable it on this repo with `overcommit --install && overcommit --sign`.
+  Enable it on this repo with `overcommit --install`.
   We use Overcommit to enforce a variety of style, semantic, and legal things
   (e.g. licence headers on all source files).
 
