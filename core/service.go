@@ -89,7 +89,6 @@ type serviceConfig struct {
 // NewService creates a service owner from a set of service instances and
 // options
 func NewService(instance ServiceInstance, options ...ServiceOption) ServiceOwner {
-
 	cfg := config.Global()
 
 	svc := &serviceHost{

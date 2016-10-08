@@ -54,7 +54,7 @@ func (s *serviceHost) addModule(module Module) error {
 		return fmt.Errorf("ServiceAlreadyStarted")
 	}
 	s.modules = append(s.modules, module)
-	return nil
+	return module.Initialize(s)
 }
 
 func (s *serviceHost) supportsRole(roles ...string) bool {
@@ -150,7 +150,6 @@ func (s *serviceHost) Start(waitForShutdown bool) (<-chan ServiceExit, error) {
 	} else if s.IsRunning() {
 		return s.closeChan, nil
 	} else {
-
 		if s.instance != nil {
 			if err := s.instance.OnInit(s); err != nil {
 				return nil, err
@@ -187,7 +186,6 @@ func (s *serviceHost) Stop(reason string, exitCode int) error {
 }
 
 func (s *serviceHost) startModules() map[Module]error {
-
 	results := map[Module]error{}
 	wg := sync.WaitGroup{}
 
