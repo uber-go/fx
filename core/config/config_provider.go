@@ -25,7 +25,9 @@ import "fmt"
 // A ConfigurationProvider provides a unified interface to accessing
 // configuration systems.
 type ConfigurationProvider interface {
-	Name() string // the name of the provider (YAML, Env, etc)
+	// the Name of the provider (YAML, Env, etc)
+	Name() string
+	// GetValue pulls a config value
 	GetValue(key string) ConfigurationValue
 	Scope(prefix string) ConfigurationProvider
 }
@@ -48,24 +50,20 @@ func keyNotFound(key string) error {
 }
 
 type scopedProvider struct {
-	prefix string
+	ConfigurationProvider
 
-	child ConfigurationProvider
+	prefix string
 }
 
 func newScopedProvider(prefix string, provider ConfigurationProvider) ConfigurationProvider {
-	return &scopedProvider{prefix, provider}
-}
-
-func (sp scopedProvider) Name() string {
-	return sp.child.Name()
+	return &scopedProvider{provider, prefix}
 }
 
 func (sp scopedProvider) GetValue(key string) ConfigurationValue {
 	if sp.prefix != "" {
 		key = fmt.Sprintf("%s.%s", sp.prefix, key)
 	}
-	return sp.child.GetValue(key)
+	return sp.ConfigurationProvider.GetValue(key)
 }
 
 func (sp scopedProvider) Scope(prefix string) ConfigurationProvider {
