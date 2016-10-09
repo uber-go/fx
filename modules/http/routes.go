@@ -18,40 +18,29 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package rpc
+package http
 
 import (
-	"github.com/uber-go/uberfx/core"
-	"github.com/uber-go/uberfx/modules"
+	"net/http"
 
-	"go.uber.org/yarpc/encoding/json"
+	"github.com/gorilla/mux"
 )
 
-// CreateJSONRegistrantsFunc returns a slice of registrants from a service host
-type CreateJSONRegistrantsFunc func(service core.ServiceHost) []json.Registrant
+// A RouteOption gives you the ability to mangle routes
+type RouteOption func(r *mux.Route) *mux.Route
 
-// JSONModule instantiates a core module from a registrant func
-func JSONModule(hookup CreateJSONRegistrantsFunc, options ...modules.Option) core.ModuleCreateFunc {
-	return func(mi core.ModuleCreateInfo) ([]core.Module, error) {
-		mod, err := newYarpcJSONModule(mi, hookup, options...)
-		if err == nil {
-			return []core.Module{mod}, nil
-		}
-
-		return nil, err
-	}
+// A RouteHandler is an HTTP handler for a single route
+type RouteHandler struct {
+	Path    string
+	Handler http.Handler
+	Options []RouteOption
 }
 
-func newYarpcJSONModule(mi core.ModuleCreateInfo, createService CreateJSONRegistrantsFunc, options ...modules.Option) (*YarpcModule, error) {
-	reg := func(mod *YarpcModule) {
-		procs := createService(mi.Host)
-
-		if procs != nil {
-			for _, proc := range procs {
-				json.Register(mod.rpc, proc)
-			}
-		}
+// NewRouteHandler creates a route handler given the options
+func NewRouteHandler(path string, handler http.Handler, options ...RouteOption) RouteHandler {
+	return RouteHandler{
+		Path:    path,
+		Handler: handler,
+		Options: options,
 	}
-
-	return newYarpcModule(mi, reg, options...)
 }

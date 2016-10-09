@@ -39,7 +39,7 @@ import (
 type CreateThriftServiceFunc func(service core.ServiceHost) (thrift.Service, error)
 
 // ThriftModule creates a Thrift Module from a service func
-func ThriftModule(hookup CreateThriftServiceFunc, options ...modules.ModuleOption) core.ModuleCreateFunc {
+func ThriftModule(hookup CreateThriftServiceFunc, options ...modules.Option) core.ModuleCreateFunc {
 	return func(mi core.ModuleCreateInfo) ([]core.Module, error) {
 		mod, err := newYarpcThriftModule(mi, hookup, options...)
 		if err != nil {
@@ -50,7 +50,7 @@ func ThriftModule(hookup CreateThriftServiceFunc, options ...modules.ModuleOptio
 	}
 }
 
-func newYarpcThriftModule(mi core.ModuleCreateInfo, createService CreateThriftServiceFunc, options ...modules.ModuleOption) (*YarpcModule, error) {
+func newYarpcThriftModule(mi core.ModuleCreateInfo, createService CreateThriftServiceFunc, options ...modules.Option) (*YarpcModule, error) {
 
 	svc, err := createService(mi.Host)
 	if err != nil {

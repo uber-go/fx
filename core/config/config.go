@@ -66,6 +66,13 @@ func SetGlobal(provider ConfigurationProvider, force bool) {
 	global = provider
 }
 
+// ResetGlobal is used for tests
+func ResetGlobal() {
+	setupMux.Lock()
+	defer setupMux.Unlock()
+	global = nil
+}
+
 // TODO(ai) pull this out
 // UBERSPECIFIC
 func getUberConfigFiles() []string {

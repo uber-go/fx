@@ -18,40 +18,43 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package rpc
+package testutils
 
 import (
-	"github.com/uber-go/uberfx/core"
-	"github.com/uber-go/uberfx/modules"
+	"fmt"
+	"math/rand"
 
-	"go.uber.org/yarpc/encoding/json"
+	"github.com/uber-go/uberfx/core/config"
 )
 
-// CreateJSONRegistrantsFunc returns a slice of registrants from a service host
-type CreateJSONRegistrantsFunc func(service core.ServiceHost) []json.Registrant
+const (
+	confTemplate = `
+applicationID: %s
+`
+)
 
-// JSONModule instantiates a core module from a registrant func
-func JSONModule(hookup CreateJSONRegistrantsFunc, options ...modules.Option) core.ModuleCreateFunc {
-	return func(mi core.ModuleCreateInfo) ([]core.Module, error) {
-		mod, err := newYarpcJSONModule(mi, hookup, options...)
-		if err == nil {
-			return []core.Module{mod}, nil
-		}
-
-		return nil, err
+// WithConfig sets a global config and returns a function to defer reset
+func WithConfig(applicationID *string) func() {
+	if applicationID == nil {
+		_appID := "test" + randStringBytes(10)
+		applicationID = &_appID
 	}
+	yamlConfig := []byte(fmt.Sprintf(confTemplate, *applicationID))
+
+	config.SetGlobal(config.NewProviderGroup(
+		"test",
+		config.NewYAMLProviderFromBytes(yamlConfig),
+	), true)
+
+	return config.ResetGlobal
 }
 
-func newYarpcJSONModule(mi core.ModuleCreateInfo, createService CreateJSONRegistrantsFunc, options ...modules.Option) (*YarpcModule, error) {
-	reg := func(mod *YarpcModule) {
-		procs := createService(mi.Host)
+const letterBytes = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
-		if procs != nil {
-			for _, proc := range procs {
-				json.Register(mod.rpc, proc)
-			}
-		}
+func randStringBytes(n int) string {
+	b := make([]byte, n)
+	for i := range b {
+		b[i] = letterBytes[rand.Intn(len(letterBytes))]
 	}
-
-	return newYarpcModule(mi, reg, options...)
+	return string(b)
 }

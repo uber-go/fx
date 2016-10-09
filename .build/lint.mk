@@ -20,7 +20,7 @@ lint:
 	@echo "Checking lint..."
 	$(ECHO_V)$(foreach dir,$(PKGS),golint $(dir) 2>&1 | $(FILTER_LINT) | tee -a $(LINT_LOG);)
 	@echo "Checking for unresolved FIXMEs..."
-	$(ECHO_V)git grep -i fixme | grep -v -e vendor -e $(_THIS_MAKEFILE) | tee -a $(LINT_LOG)
+	$(ECHO_V)git grep -i fixme | grep -v -e vendor -e $(_THIS_MAKEFILE) -e CONTRIBUTING.md | tee -a $(LINT_LOG)
 	@echo "Checking for license headers..."
 	$(ECHO_V)$(_THIS_DIR)/check_license.sh | tee -a $(LINT_LOG)
 	$(ECHO_V)[ ! -s $(LINT_LOG) ]

@@ -56,9 +56,9 @@ type yarpcConfig struct {
 	AdvertiseName string `yaml:"advertise_name"`
 }
 
-func newYarpcModule(mi core.ModuleCreateInfo, reg registerServiceFunc, options ...modules.ModuleOption) (*YarpcModule, error) {
+func newYarpcModule(mi core.ModuleCreateInfo, reg registerServiceFunc, options ...modules.Option) (*YarpcModule, error) {
 	for _, opt := range options {
-		opt(mi)
+		opt(&mi)
 	}
 
 	cfg := &yarpcConfig{
@@ -93,7 +93,7 @@ func (m *YarpcModule) Initialize(service core.ServiceHost) error {
 }
 
 // Start begins serving requests over YARPC
-func (m *YarpcModule) Start() <-chan error {
+func (m *YarpcModule) Start(readyCh chan<- struct{}) <-chan error {
 	channel, err := tchannel.NewChannel(m.config.AdvertiseName, nil)
 	if err != nil {
 		log.Fatalln(err)
@@ -111,6 +111,7 @@ func (m *YarpcModule) Start() <-chan error {
 	log.Printf("Service %q listening on port %v\n", m.config.AdvertiseName, m.config.Bind)
 
 	ret <- m.rpc.Start()
+	readyCh <- struct{}{}
 	return ret
 }
 

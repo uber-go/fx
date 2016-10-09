@@ -26,25 +26,21 @@ import (
 	"github.com/uber-go/uberfx/core"
 )
 
-type MyService struct {
+type myService struct {
 	core.ServiceHost
 	ServiceConfig serviceConfig
 }
 
-var _ core.ServiceInstance = &MyService{}
+var _ core.ServiceInstance = &myService{}
 
-func (service *MyService) OnInit(svc core.ServiceHost) error {
-	fmt.Println(service.Name())
+func (s *myService) OnInit(svc core.ServiceHost) error {
+	fmt.Println(s.Name())
 	return nil
 }
 
-func (service *MyService) OnStateChange(old core.ServiceState, new core.ServiceState) {
+func (s *myService) OnStateChange(old core.ServiceState, new core.ServiceState) {}
+func (s *myService) OnShutdown(reason core.ServiceExit)                         {}
 
-}
-
-func (service *MyService) OnShutdown(reason core.ServiceExit) {
-}
-
-func (service *MyService) OnCriticalError(err error) bool {
+func (s *myService) OnCriticalError(err error) bool {
 	return false
 }

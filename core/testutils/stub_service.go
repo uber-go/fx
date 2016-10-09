@@ -18,40 +18,40 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package rpc
+package testutils
 
-import (
-	"github.com/uber-go/uberfx/core"
-	"github.com/uber-go/uberfx/modules"
+import "github.com/uber-go/uberfx/core"
 
-	"go.uber.org/yarpc/encoding/json"
-)
+type _stubService struct {
+	core.ServiceHost
 
-// CreateJSONRegistrantsFunc returns a slice of registrants from a service host
-type CreateJSONRegistrantsFunc func(service core.ServiceHost) []json.Registrant
-
-// JSONModule instantiates a core module from a registrant func
-func JSONModule(hookup CreateJSONRegistrantsFunc, options ...modules.Option) core.ModuleCreateFunc {
-	return func(mi core.ModuleCreateInfo) ([]core.Module, error) {
-		mod, err := newYarpcJSONModule(mi, hookup, options...)
-		if err == nil {
-			return []core.Module{mod}, nil
-		}
-
-		return nil, err
-	}
+	state         core.ServiceState
+	shutdown      bool
+	init          bool
+	criticalError bool
+	initError     error
 }
 
-func newYarpcJSONModule(mi core.ModuleCreateInfo, createService CreateJSONRegistrantsFunc, options ...modules.Option) (*YarpcModule, error) {
-	reg := func(mod *YarpcModule) {
-		procs := createService(mi.Host)
+var _ core.ServiceInstance = &_stubService{}
 
-		if procs != nil {
-			for _, proc := range procs {
-				json.Register(mod.rpc, proc)
-			}
-		}
-	}
+func (s *_stubService) OnInit(svc core.ServiceHost) error {
+	s.init = true
+	return s.initError
+}
 
-	return newYarpcModule(mi, reg, options...)
+func (s *_stubService) OnStateChange(old core.ServiceState, newState core.ServiceState) {
+	s.state = newState
+}
+
+func (s *_stubService) OnShutdown(reason core.ServiceExit) {
+	s.shutdown = true
+}
+
+func (s *_stubService) OnCriticalError(err error) bool {
+	s.criticalError = true
+	return false
+}
+
+func svcInstance() core.ServiceInstance {
+	return &_stubService{}
 }

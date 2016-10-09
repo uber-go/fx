@@ -22,20 +22,20 @@ package modules
 
 import "github.com/uber-go/uberfx/core"
 
-// ModuleOption is a function that configures module creation
-type ModuleOption func(core.ModuleCreateInfo) error
+// Option is a function that configures module creation
+type Option func(*core.ModuleCreateInfo) error
 
 // WithName is an option to set a module name
-func WithName(name string) ModuleOption {
-	return func(mi core.ModuleCreateInfo) error {
+func WithName(name string) Option {
+	return func(mi *core.ModuleCreateInfo) error {
 		mi.Name = name
 		return nil
 	}
 }
 
 // WithRoles is an option to set module roles
-func WithRoles(roles ...string) ModuleOption {
-	return func(mi core.ModuleCreateInfo) error {
+func WithRoles(roles ...string) Option {
+	return func(mi *core.ModuleCreateInfo) error {
 		// if mb := findModuleInfo(module); mb != nil {
 		// 	mb.roles = roles
 		// }
@@ -43,11 +43,3 @@ func WithRoles(roles ...string) ModuleOption {
 		return nil
 	}
 }
-
-// func findModuleInfo(module core.Module) *ModuleBase {
-// 	if val, ok := util.FindField(module, nil, reflect.TypeOf(ModuleBase{})); ok {
-// 		mb := reflect.Indirect(val).Interface().(ModuleBase)
-// 		return &mb
-// 	}
-// 	return nil
-// }

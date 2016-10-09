@@ -18,40 +18,36 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package rpc
+package modules
 
 import (
-	"github.com/uber-go/uberfx/core"
-	"github.com/uber-go/uberfx/modules"
+	"testing"
 
-	"go.uber.org/yarpc/encoding/json"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"github.com/uber-go/uberfx/core"
 )
 
-// CreateJSONRegistrantsFunc returns a slice of registrants from a service host
-type CreateJSONRegistrantsFunc func(service core.ServiceHost) []json.Registrant
+func TestWithName_OK(t *testing.T) {
+	h := mci()
+	option := WithName("foo")
+	err := option(h)
+	require.NoError(t, err, "Should be able to set name")
 
-// JSONModule instantiates a core module from a registrant func
-func JSONModule(hookup CreateJSONRegistrantsFunc, options ...modules.Option) core.ModuleCreateFunc {
-	return func(mi core.ModuleCreateInfo) ([]core.Module, error) {
-		mod, err := newYarpcJSONModule(mi, hookup, options...)
-		if err == nil {
-			return []core.Module{mod}, nil
-		}
-
-		return nil, err
-	}
+	assert.Equal(t, "foo", h.Name)
 }
 
-func newYarpcJSONModule(mi core.ModuleCreateInfo, createService CreateJSONRegistrantsFunc, options ...modules.Option) (*YarpcModule, error) {
-	reg := func(mod *YarpcModule) {
-		procs := createService(mi.Host)
+func TestWithRoles_OK(t *testing.T) {
+	h := mci()
+	option := WithRoles("foo", "bar")
+	err := option(h)
+	require.NoError(t, err, "Should be able to set name")
 
-		if procs != nil {
-			for _, proc := range procs {
-				json.Register(mod.rpc, proc)
-			}
-		}
+	assert.Equal(t, []string{"foo", "bar"}, h.Roles)
+}
+
+func mci() *core.ModuleCreateInfo {
+	return &core.ModuleCreateInfo{
+		Host: core.NullServiceHost(),
 	}
-
-	return newYarpcModule(mi, reg, options...)
 }

@@ -20,7 +20,7 @@ ALL_SRC := $(shell find . -name "*.go" | grep -v -e vendor \
 test: $(COV_REPORT)
 
 TEST_IGNORES = vendor .git
-COVER_IGNORES = $(TEST_IGNORES) examples
+COVER_IGNORES = $(TEST_IGNORES) examples testutils
 
 comma := ,
 null :=

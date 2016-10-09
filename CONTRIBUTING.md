@@ -46,6 +46,19 @@ Overcommit adds some requirements to your commit messages. At Uber, we follow th
 [Chris Beams](http://chris.beams.io/posts/git-commit/) guide to writing git
 commit messages. Read it, follow it, learn it, love it.
 
+## FIXMEs
+
+If you ever are in the middle of writing code and remember a thing you need to
+do, leave a comment like:
+
+```go
+// FIXME(ai) make this actually work
+```
+
+Your initials in the parens are optional but a good practice. This is better
+than a TODO because our CI checks for unresolved FIXMEs, so if you forget to fix
+it, your code won't get merged.
+
 ## Testing
 
 Run all the tests with coverage and race detector enabled:

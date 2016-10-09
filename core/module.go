@@ -30,7 +30,7 @@ type Module interface {
 	Initialize(host ServiceHost) error
 	Type() string
 	Name() string
-	Start() <-chan error
+	Start(ready chan<- struct{}) <-chan error
 	Stop() error
 	IsRunning() bool
 	Reporter() metrics.TrafficReporter

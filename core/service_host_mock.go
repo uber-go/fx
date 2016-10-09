@@ -18,40 +18,18 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package rpc
+package core
 
-import (
-	"github.com/uber-go/uberfx/core"
-	"github.com/uber-go/uberfx/modules"
+import "github.com/uber-go/uberfx/core/config"
 
-	"go.uber.org/yarpc/encoding/json"
-)
-
-// CreateJSONRegistrantsFunc returns a slice of registrants from a service host
-type CreateJSONRegistrantsFunc func(service core.ServiceHost) []json.Registrant
-
-// JSONModule instantiates a core module from a registrant func
-func JSONModule(hookup CreateJSONRegistrantsFunc, options ...modules.Option) core.ModuleCreateFunc {
-	return func(mi core.ModuleCreateInfo) ([]core.Module, error) {
-		mod, err := newYarpcJSONModule(mi, hookup, options...)
-		if err == nil {
-			return []core.Module{mod}, nil
-		}
-
-		return nil, err
+// NullServiceHost is to be used in tests
+func NullServiceHost() ServiceHost {
+	return &serviceCore{
+		standardConfig: serviceConfig{
+			ServiceName:        "dummy",
+			ServiceOwner:       "root@example.com",
+			ServiceDescription: "does cool stuff",
+		},
+		configProvider: config.StaticProvider(nil),
 	}
-}
-
-func newYarpcJSONModule(mi core.ModuleCreateInfo, createService CreateJSONRegistrantsFunc, options ...modules.Option) (*YarpcModule, error) {
-	reg := func(mod *YarpcModule) {
-		procs := createService(mi.Host)
-
-		if procs != nil {
-			for _, proc := range procs {
-				json.Register(mod.rpc, proc)
-			}
-		}
-	}
-
-	return newYarpcModule(mi, reg, options...)
 }

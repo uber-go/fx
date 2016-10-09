@@ -18,40 +18,24 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package rpc
+package testutils
 
-import (
-	"github.com/uber-go/uberfx/core"
-	"github.com/uber-go/uberfx/modules"
+import "github.com/uber-go/uberfx/core"
 
-	"go.uber.org/yarpc/encoding/json"
-)
-
-// CreateJSONRegistrantsFunc returns a slice of registrants from a service host
-type CreateJSONRegistrantsFunc func(service core.ServiceHost) []json.Registrant
-
-// JSONModule instantiates a core module from a registrant func
-func JSONModule(hookup CreateJSONRegistrantsFunc, options ...modules.Option) core.ModuleCreateFunc {
-	return func(mi core.ModuleCreateInfo) ([]core.Module, error) {
-		mod, err := newYarpcJSONModule(mi, hookup, options...)
-		if err == nil {
-			return []core.Module{mod}, nil
-		}
-
-		return nil, err
-	}
+// WithService is a test helper to instantiate a service
+func WithService(module core.ModuleCreateFunc, instance core.ServiceInstance, fn func(core.ServiceOwner)) {
+	WithServices([]core.ModuleCreateFunc{module}, instance, fn)
 }
 
-func newYarpcJSONModule(mi core.ModuleCreateInfo, createService CreateJSONRegistrantsFunc, options ...modules.Option) (*YarpcModule, error) {
-	reg := func(mod *YarpcModule) {
-		procs := createService(mi.Host)
-
-		if procs != nil {
-			for _, proc := range procs {
-				json.Register(mod.rpc, proc)
-			}
-		}
+// WithServices is a test helper to instantiate a service with multiple modules
+func WithServices(modules []core.ModuleCreateFunc, instance core.ServiceInstance, fn func(core.ServiceOwner)) {
+	if instance == nil {
+		instance = svcInstance()
 	}
+	svc := core.NewService(
+		instance,
+		core.WithModules(modules...),
+	)
 
-	return newYarpcModule(mi, reg, options...)
+	fn(svc)
 }

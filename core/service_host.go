@@ -26,9 +26,14 @@ import (
 	"os"
 	"reflect"
 	"sync"
+	"time"
 
 	"github.com/uber-go/uberfx/core/config"
 	"github.com/uber-go/uberfx/internal/util"
+)
+
+const (
+	defaultStartupWait = time.Second
 )
 
 type serviceHost struct {
@@ -195,9 +200,17 @@ func (s *serviceHost) startModules() map[Module]error {
 	for _, mod := range s.modules {
 		go func(m Module) {
 			if !m.IsRunning() {
-				startResult := m.Start()
+				readyCh := make(chan struct{}, 1)
+				startResult := m.Start(readyCh)
 				if startError := <-startResult; startError != nil {
 					results[m] = startError
+				}
+				select {
+				case <-readyCh:
+					// TODO structured logging
+					log.Printf("Started up cleanly")
+				case <-time.After(defaultStartupWait):
+					results[m] = fmt.Errorf("module didn't start after %v", defaultStartupWait)
 				}
 			}
 			wg.Done()
