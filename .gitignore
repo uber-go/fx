@@ -4,3 +4,4 @@
 *.out
 *.html
 *.coverprofile
+node_modules
