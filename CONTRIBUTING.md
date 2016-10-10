@@ -64,7 +64,7 @@ it, your code won't get merged.
 Run all the tests with coverage and race detector enabled:
 
 ```bash
-make test
+make test RACE=-race
 ```
 
 ### Disabling the race detector
@@ -72,7 +72,7 @@ make test
 The race detector makes the tests run way slower. To disable it:
 
 ```bash
-make test RACE=''
+make test
 ```
 
 TODO(ai) come up with something better for this.

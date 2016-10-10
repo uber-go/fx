@@ -2,9 +2,9 @@ SHELL := /bin/bash
 PROJECT_ROOT := github.com/uber-go/uberfx
 
 SUPPORT_FILES := .build
+include $(SUPPORT_FILES)/deps.mk
 include $(SUPPORT_FILES)/flags.mk
 include $(SUPPORT_FILES)/verbosity.mk
-include $(SUPPORT_FILES)/deps.mk
 
 .PHONY: all
 all: lint test
@@ -33,8 +33,11 @@ else
 _FILTER_OVERALLS = grep -v "^Processing:"
 endif
 
+# This is the default for overalls
+COVER_OUT := profile.coverprofile
+
 $(COV_REPORT): $(PKG_FILES) $(ALL_SRC)
-	$(ECHO_V)$(OVERALLS) -project=$(PROJECT_ROOT) \
+		$(ECHO_V)$(OVERALLS) -project=$(PROJECT_ROOT) \
 		-ignore "$(OVERALLS_IGNORE)" \
 		-covermode=atomic \
 		$(DEBUG_FLAG) -- \
@@ -62,5 +65,6 @@ include $(SUPPORT_FILES)/licence.mk
 
 .PHONY: clean
 clean::
-	@rm -f $(COV_REPORT) $(COV_HTML) $(LINT_LOG)
+	$(ECHO_V)rm -f $(COV_REPORT) $(COV_HTML) $(LINT_LOG)
+	$(ECHO_V)find $(subst /...,,$(PKGS)) -name $(COVER_OUT) -delete
 

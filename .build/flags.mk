@@ -10,5 +10,7 @@ GO_VERSION := $(shell go version | cut -d " " -f 3)
 BUILD_GC_FLAGS ?= -gcflags "-trimpath=$(GOPATH)/src"
 
 TEST_FLAGS += $(BUILD_GC_FLAGS)
+ifneq ($(CI),)
 RACE ?= -race
+endif
 
