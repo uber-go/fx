@@ -49,23 +49,27 @@ func keyNotFound(key string) error {
 	return fmt.Errorf("couldn't find key %q", key)
 }
 
-type scopedProvider struct {
+// ScopedProvider defines recursive interface of providers based on the prefix
+type ScopedProvider struct {
 	ConfigurationProvider
 
 	prefix string
 }
 
-func newScopedProvider(prefix string, provider ConfigurationProvider) ConfigurationProvider {
-	return &scopedProvider{provider, prefix}
+// NewScopedProvider creates a child provider given a prefix
+func NewScopedProvider(prefix string, provider ConfigurationProvider) ConfigurationProvider {
+	return &ScopedProvider{provider, prefix}
 }
 
-func (sp scopedProvider) GetValue(key string) ConfigurationValue {
+// GetValue returns configuration value
+func (sp ScopedProvider) GetValue(key string) ConfigurationValue {
 	if sp.prefix != "" {
 		key = fmt.Sprintf("%s.%s", sp.prefix, key)
 	}
 	return sp.ConfigurationProvider.GetValue(key)
 }
 
-func (sp scopedProvider) Scope(prefix string) ConfigurationProvider {
-	return newScopedProvider(prefix, sp)
+// Scope returns new scoped provider, given a prefix
+func (sp ScopedProvider) Scope(prefix string) ConfigurationProvider {
+	return NewScopedProvider(prefix, sp)
 }

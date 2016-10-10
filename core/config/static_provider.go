@@ -52,7 +52,7 @@ func (s *staticProvider) GetValue(key string) ConfigurationValue {
 	defer s.RUnlock()
 
 	val, found := s.data[key]
-	return NewConfigurationValue(s, key, val, found, getValueType(val), nil)
+	return NewConfigurationValue(s, key, val, found, GetValueType(val), nil)
 }
 
 func (s *staticProvider) Scope(prefix string) ConfigurationProvider {

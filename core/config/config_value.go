@@ -47,8 +47,8 @@ const (
 	Dictionary
 )
 
-func getValueType(value interface{}) ValueType {
-
+// GetValueType returns GO type of the provided object
+func GetValueType(value interface{}) ValueType {
 	if value == nil {
 		return Invalid
 	}
@@ -90,7 +90,6 @@ type ConfigurationValue struct {
 // NewConfigurationValue creates a configuration value from a provider and a set
 // of parameters describing the key
 func NewConfigurationValue(provider ConfigurationProvider, key string, value interface{}, found bool, t ValueType, timestamp *time.Time) ConfigurationValue {
-
 	cv := ConfigurationValue{
 		provider:     provider,
 		key:          key,
@@ -302,7 +301,6 @@ func derefType(t reflect.Type) reflect.Type {
 // a couple of cases and complains if it finds one it doen't like.
 // needs a bunch more cases.
 func convertValue(value interface{}, targetType reflect.Type) (interface{}, error) {
-
 	if value == nil {
 		return reflect.Zero(targetType).Interface(), nil
 	}
@@ -346,7 +344,6 @@ func (cv ConfigurationValue) getGlobalProvider() ConfigurationProvider {
 }
 
 func (cv ConfigurationValue) getValueStruct(key string, target interface{}) (interface{}, bool, error) {
-
 	// walk through the struct and start asking the providers for values at each key.
 	//
 	// - for individual values, we terminate

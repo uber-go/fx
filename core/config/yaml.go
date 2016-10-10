@@ -124,12 +124,12 @@ func (y yamlConfigProvider) GetValue(key string) ConfigurationValue {
 	if node == nil {
 		return NewConfigurationValue(y, key, nil, false, Invalid, nil)
 	}
-	return NewConfigurationValue(y, key, node.value, true, getValueType(node.value), nil)
+	return NewConfigurationValue(y, key, node.value, true, GetValueType(node.value), nil)
 }
 
 // Scope returns a scoped configuration provider
 func (y yamlConfigProvider) Scope(prefix string) ConfigurationProvider {
-	return newScopedProvider(prefix, y)
+	return NewScopedProvider(prefix, y)
 }
 
 func deref(value reflect.Value) reflect.Value {

@@ -42,7 +42,7 @@ func (p providerGroup) WithProvider(provider ConfigurationProvider) Configuratio
 }
 
 func (p providerGroup) GetValue(key string) ConfigurationValue {
-	cv := NewConfigurationValue(p, key, nil, false, getValueType(nil), nil)
+	cv := NewConfigurationValue(p, key, nil, false, GetValueType(nil), nil)
 
 	// loop through the providers and return the value defined by the highest priority (e.g. last) provider
 	for i := len(p.providers) - 1; i >= 0; i-- {
@@ -71,5 +71,5 @@ func (p providerGroup) UnregisterChangeCallback(token string) bool {
 }
 
 func (p providerGroup) Scope(prefix string) ConfigurationProvider {
-	return newScopedProvider(prefix, p)
+	return NewScopedProvider(prefix, p)
 }

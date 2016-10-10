@@ -73,7 +73,7 @@ func (p envConfigProvider) GetValue(key string) ConfigurationValue {
 }
 
 func (p envConfigProvider) Scope(prefix string) ConfigurationProvider {
-	return newScopedProvider(prefix, p)
+	return NewScopedProvider(prefix, p)
 }
 
 type osEnvironmentProvider struct{}
