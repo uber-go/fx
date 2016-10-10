@@ -43,7 +43,9 @@ $(COV_REPORT): $(PKG_FILES) $(ALL_SRC)
 		$(TEST_FLAGS) $(RACE) $(TEST_VERBOSITY_FLAG) | \
 		grep -v "No Go Test files" | \
 		$(_FILTER_OVERALLS)
-	$(ECHO_V)$(GOCOV) convert $@ | $(GOCOV) report
+	$(ECHO_V)if [ -a $(COV_REPORT) ]; then \
+		$(GOCOV) convert $@ | $(GOCOV) report ; \
+	fi
 
 COV_HTML := coverage.html
 
