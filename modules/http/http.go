@@ -175,7 +175,8 @@ func (m *Module) Start(ready chan<- struct{}) <-chan error {
 	m.listener = listener
 
 	go func() {
-		ret <- http.Serve(m.listener, m.mux)
+		listener := m.accessListener()
+		ret <- http.Serve(listener, m.mux)
 	}()
 	ready <- struct{}{}
 	return ret
@@ -193,12 +194,17 @@ func (m *Module) Stop() error {
 	return nil
 }
 
+// Thread-safe access to the listener object
+func (m *Module) accessListener() net.Listener {
+	m.listenMu.RLock()
+	defer m.listenMu.RLock()
+
+	return m.listener
+}
+
 // IsRunning returns whether the module is currently running
 func (m *Module) IsRunning() bool {
-	m.listenMu.RLock()
-	defer m.listenMu.RUnlock()
-
-	return m.listener != nil
+	return m.accessListener() != nil
 }
 
 func getConfigKey(name string) string {
