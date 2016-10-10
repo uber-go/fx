@@ -197,7 +197,7 @@ func (m *Module) Stop() error {
 // Thread-safe access to the listener object
 func (m *Module) accessListener() net.Listener {
 	m.listenMu.RLock()
-	defer m.listenMu.RLock()
+	defer m.listenMu.RUnlock()
 
 	return m.listener
 }
