@@ -43,7 +43,7 @@ func TestNewHTTPModule_OK(t *testing.T) {
 	})
 }
 
-func TestNewHTTpModule_WithOptions(t *testing.T) {
+func TestNewHTTPModule_WithOptions(t *testing.T) {
 	defer WithConfig(nil)()
 
 	options := []modules.Option{

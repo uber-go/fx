@@ -39,6 +39,7 @@ COVER_OUT := profile.coverprofile
 $(COV_REPORT): $(PKG_FILES) $(ALL_SRC)
 		$(ECHO_V)$(OVERALLS) -project=$(PROJECT_ROOT) \
 		-ignore "$(OVERALLS_IGNORE)" \
+		-covermode=atomic \
 		$(DEBUG_FLAG) -- \
 		$(TEST_FLAGS) $(RACE) $(TEST_VERBOSITY_FLAG) | \
 		grep -v "No Go Test files" | \

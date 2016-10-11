@@ -172,13 +172,15 @@ func (m *Module) Start(ready chan<- struct{}) <-chan error {
 		ret <- err
 		return ret
 	}
+	m.listenMu.Lock()
 	m.listener = listener
+	m.listenMu.Unlock()
 
 	go func() {
 		listener := m.accessListener()
+		ready <- struct{}{}
 		ret <- http.Serve(listener, m.mux)
 	}()
-	ready <- struct{}{}
 	return ret
 }
 
