@@ -21,9 +21,9 @@
 package main
 
 import (
-	"github.com/uber-go/uberfx/core"
-	uhttp "github.com/uber-go/uberfx/modules/http"
-	"github.com/uber-go/uberfx/modules/rpc"
+	"go.uber.org/fx/core"
+	uhttp "go.uber.org/fx/modules/http"
+	"go.uber.org/fx/modules/rpc"
 	"go.uber.org/yarpc/encoding/json"
 )
 

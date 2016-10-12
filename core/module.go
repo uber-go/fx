@@ -20,7 +20,7 @@
 
 package core
 
-import "github.com/uber-go/uberfx/core/metrics"
+import "go.uber.org/fx/core/metrics"
 
 // A ModuleType is a human-friendly module type name
 type ModuleType string

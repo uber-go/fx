@@ -21,9 +21,9 @@
 package main
 
 import (
-	"github.com/uber-go/uberfx/core"
-	"github.com/uber-go/uberfx/modules"
-	"github.com/uber-go/uberfx/modules/rpc"
+	"go.uber.org/fx/core"
+	"go.uber.org/fx/modules"
+	"go.uber.org/fx/modules/rpc"
 )
 
 func main() {

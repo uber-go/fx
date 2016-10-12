@@ -25,7 +25,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/uber-go/uberfx/core"
+	"go.uber.org/fx/core"
 )
 
 func TestWithName_OK(t *testing.T) {

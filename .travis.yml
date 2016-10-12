@@ -4,7 +4,7 @@ go:
   - 1.7
   - tip
 
-go_import_path: github.com/uber-go/uberfx
+go_import_path: go.uber.org/fx
 
 matrix:
   # Fail the build as soon as the first job fails

@@ -24,7 +24,7 @@ import (
 	"fmt"
 	"math/rand"
 
-	"github.com/uber-go/uberfx/core/config"
+	"go.uber.org/fx/core/config"
 )
 
 const (

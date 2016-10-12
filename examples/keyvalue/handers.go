@@ -23,8 +23,8 @@ package main
 import (
 	"sync"
 
-	"github.com/uber-go/uberfx/core"
-	"github.com/uber-go/uberfx/examples/keyvalue/kv"
+	"go.uber.org/fx/core"
+	"go.uber.org/fx/examples/keyvalue/kv"
 	"go.uber.org/yarpc"
 	"go.uber.org/yarpc/encoding/thrift"
 )

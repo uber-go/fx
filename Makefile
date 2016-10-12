@@ -1,5 +1,5 @@
 SHELL := /bin/bash
-PROJECT_ROOT := github.com/uber-go/uberfx
+PROJECT_ROOT := go.uber.org/fx
 
 SUPPORT_FILES := .build
 include $(SUPPORT_FILES)/deps.mk

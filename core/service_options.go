@@ -21,8 +21,8 @@
 package core
 
 import (
-	"github.com/uber-go/uberfx/core/config"
-	"github.com/uber-go/uberfx/core/metrics"
+	"go.uber.org/fx/core/config"
+	"go.uber.org/fx/core/metrics"
 )
 
 // A ServiceOption configures a service host

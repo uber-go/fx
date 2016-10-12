@@ -25,7 +25,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/uber-go/uberfx/core/config"
+	"go.uber.org/fx/core/config"
 )
 
 var globalRootScope metrics.Scope

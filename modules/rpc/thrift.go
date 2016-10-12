@@ -24,9 +24,9 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/uber-go/uberfx/core"
-	"github.com/uber-go/uberfx/core/metrics"
-	"github.com/uber-go/uberfx/modules"
+	"go.uber.org/fx/core"
+	"go.uber.org/fx/core/metrics"
+	"go.uber.org/fx/modules"
 
 	"go.uber.org/thriftrw/protocol"
 	"go.uber.org/thriftrw/wire"

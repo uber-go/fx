@@ -28,8 +28,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/uber-go/uberfx/core/config"
-	"github.com/uber-go/uberfx/internal/util"
+	"go.uber.org/fx/core/config"
+	"go.uber.org/fx/internal/util"
 )
 
 const (

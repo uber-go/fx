@@ -24,10 +24,10 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/uber-go/uberfx/core"
-	"github.com/uber-go/uberfx/core/config"
-	"github.com/uber-go/uberfx/core/metrics"
-	"github.com/uber-go/uberfx/modules"
+	"go.uber.org/fx/core"
+	"go.uber.org/fx/core/config"
+	"go.uber.org/fx/core/metrics"
+	"go.uber.org/fx/modules"
 
 	"github.com/uber/tchannel-go"
 	"go.uber.org/yarpc"

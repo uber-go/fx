@@ -20,7 +20,7 @@
 
 package testutils
 
-import "github.com/uber-go/uberfx/core"
+import "go.uber.org/fx/core"
 
 // WithService is a test helper to instantiate a service
 func WithService(module core.ModuleCreateFunc, instance core.ServiceInstance, fn func(core.ServiceOwner)) {

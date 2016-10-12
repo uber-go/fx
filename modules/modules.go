@@ -21,8 +21,8 @@
 package modules
 
 import (
-	"github.com/uber-go/uberfx/core"
-	"github.com/uber-go/uberfx/core/metrics"
+	"go.uber.org/fx/core"
+	"go.uber.org/fx/core/metrics"
 )
 
 // A ModuleConfig holds configuration for a mobule

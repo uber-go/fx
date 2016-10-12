@@ -20,7 +20,7 @@
 
 package testutils
 
-import "github.com/uber-go/uberfx/core"
+import "go.uber.org/fx/core"
 
 type _stubService struct {
 	core.ServiceHost

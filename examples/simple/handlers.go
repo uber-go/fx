@@ -26,8 +26,8 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
-	"github.com/uber-go/uberfx/core"
-	uhttp "github.com/uber-go/uberfx/modules/http"
+	"go.uber.org/fx/core"
+	uhttp "go.uber.org/fx/modules/http"
 )
 
 type exampleHandler struct{}

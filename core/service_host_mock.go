@@ -20,7 +20,7 @@
 
 package core
 
-import "github.com/uber-go/uberfx/core/config"
+import "go.uber.org/fx/core/config"
 
 // NullServiceHost is to be used in tests
 func NullServiceHost() ServiceHost {

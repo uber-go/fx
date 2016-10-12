@@ -31,9 +31,9 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/uber-go/uberfx/core"
-	. "github.com/uber-go/uberfx/core/testutils"
-	"github.com/uber-go/uberfx/modules"
+	"go.uber.org/fx/core"
+	. "go.uber.org/fx/core/testutils"
+	"go.uber.org/fx/modules"
 )
 
 func TestNewHTTPModule_OK(t *testing.T) {

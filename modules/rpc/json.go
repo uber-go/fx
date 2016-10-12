@@ -21,8 +21,8 @@
 package rpc
 
 import (
-	"github.com/uber-go/uberfx/core"
-	"github.com/uber-go/uberfx/modules"
+	"go.uber.org/fx/core"
+	"go.uber.org/fx/modules"
 
 	"go.uber.org/yarpc/encoding/json"
 )

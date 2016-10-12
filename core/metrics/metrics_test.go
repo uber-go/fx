@@ -24,7 +24,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/uber-go/uberfx/core/config"
+	"go.uber.org/fx/core/config"
 )
 
 var yamlMetricsTags = []byte(`

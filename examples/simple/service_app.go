@@ -23,7 +23,7 @@ package main
 import (
 	"fmt"
 
-	"github.com/uber-go/uberfx/core"
+	"go.uber.org/fx/core"
 )
 
 type myService struct {

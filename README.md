@@ -27,9 +27,9 @@ in the case of a simple TChannel Service, `main.go` might look like this:
 package main
 
 import (
-  "github.com/uber-go/uberfx/core"
-  "github.com/uber-go/uberfx/core/config"
-  "github.com/uber-go/uberfx/modules/rpc"
+  "go.uber.org/fx/core"
+  "go.uber.org/fx/core/config"
+  "go.uber.org/fx/modules/rpc"
 )
 
 func main() {
@@ -133,8 +133,8 @@ discovery of HTTP endpoints.
 package main
 
 import (
-  "github.com/uber-go/uberfx/core"
-  "github.com/uber-go/uberfx/modules/http"
+  "go.uber.org/fx/core"
+  "go.uber.org/fx/modules/http"
 )
 
 func main() {

@@ -23,9 +23,9 @@ package core
 import (
 	"reflect"
 
-	"github.com/uber-go/uberfx/core/config"
-	cm "github.com/uber-go/uberfx/core/metrics"
-	"github.com/uber-go/uberfx/internal/util"
+	"go.uber.org/fx/core/config"
+	cm "go.uber.org/fx/core/metrics"
+	"go.uber.org/fx/internal/util"
 )
 
 // A ServiceState represents the state of a service

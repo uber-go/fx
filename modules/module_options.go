@@ -20,7 +20,7 @@
 
 package modules
 
-import "github.com/uber-go/uberfx/core"
+import "go.uber.org/fx/core"
 
 // Option is a function that configures module creation
 type Option func(*core.ModuleCreateInfo) error

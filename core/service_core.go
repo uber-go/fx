@@ -21,7 +21,7 @@
 package core
 
 import (
-	"github.com/uber-go/uberfx/core/config"
+	"go.uber.org/fx/core/config"
 )
 
 // A ServiceHost represents the hosting environment for a service instance
