@@ -18,9 +18,8 @@ This doc is intended for contributors to UberFx (hopefully that's you!)
 Make sure the repository is cloned to the correct location:
 
 ```bash
-mkdir -p $GOPATH/src/github.com/uber-go/
-cd $!
-git clone git@github.com:uber-go/uberfx.git
+go get go.uber.org/fx/...
+cd $GOPATH/src/go.uber.org/fx
 ```
 
 ## Dependency management
