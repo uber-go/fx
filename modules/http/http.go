@@ -23,7 +23,6 @@ package http
 import (
 	"fmt"
 	"io"
-	"log"
 	"net"
 	"net/http"
 	"sync"
@@ -32,6 +31,7 @@ import (
 	"go.uber.org/fx/core"
 	"go.uber.org/fx/core/config"
 	"go.uber.org/fx/core/metrics"
+	"go.uber.org/fx/core/ulog"
 	"go.uber.org/fx/modules"
 
 	"github.com/gorilla/context"
@@ -75,6 +75,7 @@ type Module struct {
 	modules.ModuleBase
 	title    string
 	config   Config
+	log      ulog.Log
 	mux      *http.ServeMux
 	router   *mux.Router
 	listener net.Listener
@@ -127,6 +128,9 @@ func newModule(mi core.ModuleCreateInfo, createService CreateHTTPRegistrantsFunc
 
 	config.Global().GetValue(getConfigKey(mi.Name)).PopulateStruct(cfg)
 	module.config = *cfg
+
+	module.log = ulog.Logger().With("moduleName", mi.Name)
+
 	return module, nil
 }
 
@@ -165,8 +169,8 @@ func (m *Module) Start(ready chan<- struct{}) <-chan error {
 	}
 
 	// finally, start the http server.
-	// TODO use With/WithFields
-	log.Printf("Server listening on port %d\n", m.config.Port)
+	// TODO update log object to be accessed via http context #74
+	m.log.With("port", m.config.Port).Info("Server listening on port")
 
 	if err != nil {
 		ret <- err

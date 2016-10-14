@@ -25,6 +25,7 @@ import (
 
 	"go.uber.org/fx/core/config"
 	cm "go.uber.org/fx/core/metrics"
+	"go.uber.org/fx/core/ulog"
 	"go.uber.org/fx/internal/util"
 )
 
@@ -109,6 +110,11 @@ func NewService(instance ServiceInstance, options ...ServiceOption) ServiceOwner
 
 	// load standard config
 	svc.configProvider.GetValue("").PopulateStruct(&svc.standardConfig)
+
+	// load and configure logging
+	svc.configProvider.GetValue("logging").PopulateStruct(&svc.logConfig)
+	ulog.Configure(svc.logConfig)
+	WithLogger(ulog.Logger())(svc)
 
 	// hash up the roles
 	svc.roles = map[string]bool{}

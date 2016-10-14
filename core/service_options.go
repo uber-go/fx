@@ -23,6 +23,7 @@ package core
 import (
 	"go.uber.org/fx/core/config"
 	"go.uber.org/fx/core/metrics"
+	"go.uber.org/fx/core/ulog"
 )
 
 // A ServiceOption configures a service host
@@ -83,6 +84,16 @@ func WithConfiguration(config config.ConfigurationProvider) ServiceOption {
 		// TODO(ai) verify type assertion is correct
 		svc2 := svc.(*serviceHost)
 		svc2.configProvider = config
+		return nil
+	}
+}
+
+// WithLogger adds ulog to a service host
+func WithLogger(log ulog.Log) ServiceOption {
+	return func(svc ServiceHost) error {
+		// TODO(ai) verify type assertion is correct
+		svc2 := svc.(*serviceHost)
+		svc2.log = log
 		return nil
 	}
 }

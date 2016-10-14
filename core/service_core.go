@@ -22,6 +22,7 @@ package core
 
 import (
 	"go.uber.org/fx/core/config"
+	"go.uber.org/fx/core/ulog"
 )
 
 // A ServiceHost represents the hosting environment for a service instance
@@ -34,6 +35,7 @@ type ServiceHost interface {
 	Instance() ServiceInstance
 	Config() config.ConfigurationProvider
 	Items() map[string]interface{}
+	Logger() ulog.Log
 }
 
 type serviceCore struct {
@@ -44,6 +46,8 @@ type serviceCore struct {
 	scope          metrics.Scope
 	instance       ServiceInstance
 	items          map[string]interface{}
+	logConfig      ulog.Configuration
+	log            ulog.Log
 }
 
 var _ ServiceHost = &serviceCore{}
@@ -82,4 +86,8 @@ func (s *serviceCore) Instance() ServiceInstance {
 
 func (s *serviceCore) Config() config.ConfigurationProvider {
 	return s.configProvider
+}
+
+func (s *serviceCore) Logger() ulog.Log {
+	return s.log
 }

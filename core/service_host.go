@@ -207,8 +207,7 @@ func (s *serviceHost) startModules() map[Module]error {
 				}
 				select {
 				case <-readyCh:
-					// TODO structured logging
-					log.Printf("Started up cleanly")
+					s.Logger().With("module", m.Name()).Debug("Module started up cleanly")
 				case <-time.After(defaultStartupWait):
 					results[m] = fmt.Errorf("module didn't start after %v", defaultStartupWait)
 				}
@@ -261,7 +260,7 @@ func (s *serviceHost) WaitForShutdown(exitCallback ServiceExitCallback) {
 
 func (s *serviceHost) transitionState(to ServiceState) {
 	if to < s.state {
-		panic(fmt.Sprintf("Can't down from state %v -> %v", s.state, to))
+		s.Logger().With("service", s.Name()).Fatal("Can't down from state", "from", s.state, "to", to)
 	}
 
 	for s.state < to {

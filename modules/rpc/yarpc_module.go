@@ -22,11 +22,11 @@ package rpc
 
 import (
 	"fmt"
-	"log"
 
 	"go.uber.org/fx/core"
 	"go.uber.org/fx/core/config"
 	"go.uber.org/fx/core/metrics"
+	"go.uber.org/fx/core/ulog"
 	"go.uber.org/fx/modules"
 
 	"github.com/uber/tchannel-go"
@@ -41,6 +41,7 @@ type YarpcModule struct {
 	rpc      yarpc.Dispatcher
 	register registerServiceFunc
 	config   yarpcConfig
+	log      ulog.Log
 }
 
 var _ core.Module = &YarpcModule{}
@@ -83,6 +84,7 @@ func newYarpcModule(mi core.ModuleCreateInfo, reg registerServiceFunc, options .
 		// found values, update module
 		module.config = *cfg
 	}
+	module.log = ulog.Logger().With("moduleName", mi.Name)
 
 	return module, nil
 }
@@ -96,7 +98,7 @@ func (m *YarpcModule) Initialize(service core.ServiceHost) error {
 func (m *YarpcModule) Start(readyCh chan<- struct{}) <-chan error {
 	channel, err := tchannel.NewChannel(m.config.AdvertiseName, nil)
 	if err != nil {
-		log.Fatalln(err)
+		m.log.Fatal("error", err)
 	}
 
 	m.rpc = yarpc.NewDispatcher(yarpc.Config{
@@ -108,7 +110,8 @@ func (m *YarpcModule) Start(readyCh chan<- struct{}) <-chan error {
 
 	m.register(m)
 	ret := make(chan error, 1)
-	log.Printf("Service %q listening on port %v\n", m.config.AdvertiseName, m.config.Bind)
+	// TODO update log object to be accessed via context.Context #74
+	m.log.With("service", m.config.AdvertiseName, "port", m.config.Bind).Info("Server listening on port")
 
 	ret <- m.rpc.Start()
 	readyCh <- struct{}{}

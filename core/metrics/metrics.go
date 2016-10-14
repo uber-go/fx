@@ -26,6 +26,7 @@ import (
 	"sync"
 
 	"go.uber.org/fx/core/config"
+	"go.uber.org/fx/core/ulog"
 )
 
 var globalRootScope metrics.Scope
@@ -73,8 +74,7 @@ func Global(serviceScope bool) metrics.Scope {
 			//
 			tags := &metricsTags{}
 			if v := config.Global().GetValue("metrics"); v.HasValue() {
-				log.Info(v.AsString())
-				log.Infof("Loading tags: %v", v.PopulateStruct(tags))
+				ulog.Logger().Info("Loading tags", "asString", v.AsString(), "struct", v.PopulateStruct(tags))
 			}
 
 			scopeName := ""
@@ -97,7 +97,7 @@ func Global(serviceScope bool) metrics.Scope {
 			if scope, err := cfg.New(); err != nil {
 				// not being able load metrics config is bad...log as error or panic?
 				//
-				log.Errorf("Error loading metrics configuration: %v", err)
+				ulog.Logger().Error("Error loading metrics configuration", "error", err)
 			} else {
 
 				// fault in the tags if we have any

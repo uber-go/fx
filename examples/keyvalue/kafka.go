@@ -22,6 +22,7 @@ package main
 
 // import (
 // 	"go.uber.org/fx/core"
+// 	"go.uber.org/fx/core/ulog"
 // 	"go.uber.org/fx/modules/kafka"
 // 	"golang.org/x/net/context"
 // )
@@ -39,6 +40,6 @@ package main
 
 // // MyTopic handles messages from topic 'my_topic'
 // func (h *MyTopicHandler) MyTopic(ctx context.Context, message consumer.Message) error {
-// 	log.Infof("I got a message on topic %q", message.Topic())
+// 	ulog.Logger().Info("I got a message", "topic", message.Topic())
 // 	return nil
 // }

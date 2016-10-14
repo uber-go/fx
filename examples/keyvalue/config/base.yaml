@@ -8,3 +8,6 @@ modules:
 service:
   some_number: 42
 
+logging:
+  stdout: true
+  level: info
