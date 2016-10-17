@@ -23,6 +23,8 @@ package modules
 import (
 	"go.uber.org/fx/core"
 	"go.uber.org/fx/core/metrics"
+
+	"github.com/uber-go/tally"
 )
 
 // A ModuleConfig holds configuration for a mobule
@@ -36,8 +38,11 @@ type ModuleBase struct {
 	name       string
 	host       core.ServiceHost
 	isRunning  bool
-	reporter   metrics.TrafficReporter
 	roles      []string
+	scope      tally.Scope
+
+	// TODO(glib): do we really need the traffic reporter?
+	reporter metrics.TrafficReporter
 }
 
 // NewModuleBase configures a new ModuleBase
@@ -48,6 +53,7 @@ func NewModuleBase(moduleType string, name string, service core.ServiceHost, rep
 		host:       service,
 		reporter:   reporter,
 		roles:      roles,
+		scope:      service.Metrics().SubScope(name),
 	}
 }
 

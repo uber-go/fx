@@ -21,8 +21,13 @@
 package core
 
 import (
+	"sync"
+	"time"
+
 	"go.uber.org/fx/core/config"
 	"go.uber.org/fx/core/ulog"
+
+	"github.com/uber-go/tally"
 )
 
 // A ServiceHost represents the hosting environment for a service instance
@@ -31,7 +36,7 @@ type ServiceHost interface {
 	Description() string
 	Roles() []string
 	State() ServiceState
-	Metrics() metrics.Scope
+	Metrics() tally.Scope
 	Instance() ServiceInstance
 	Config() config.ConfigurationProvider
 	Items() map[string]interface{}
@@ -43,7 +48,8 @@ type serviceCore struct {
 	roles          []string
 	state          ServiceState
 	configProvider config.ConfigurationProvider
-	scope          metrics.Scope
+	scopeMux       sync.Mutex
+	scope          tally.Scope
 	instance       ServiceInstance
 	items          map[string]interface{}
 	logConfig      ulog.Configuration
@@ -60,6 +66,9 @@ func (s *serviceCore) Description() string {
 	return s.standardConfig.ServiceDescription
 }
 
+// ServiceOwner is a string in config.
+// ServiceOwner is also a struct that embeds ServiceHost
+// confus?
 func (s *serviceCore) Owner() string {
 	return s.standardConfig.ServiceOwner
 }
@@ -72,11 +81,20 @@ func (s *serviceCore) Roles() []string {
 	return s.standardConfig.ServiceRoles
 }
 
+// What items?
 func (s *serviceCore) Items() map[string]interface{} {
 	return s.items
 }
 
-func (s *serviceCore) Metrics() metrics.Scope {
+func (s *serviceCore) Metrics() tally.Scope {
+	s.scopeMux.Lock()
+	defer s.scopeMux.Unlock()
+
+	// If metrics have not been initialize through the setup, provide a null reporter
+	if s.scope == nil {
+		s.scope = tally.NewRootScope("", nil, tally.NullStatsReporter, time.Second)
+	}
+
 	return s.scope
 }
 

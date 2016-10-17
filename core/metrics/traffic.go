@@ -18,6 +18,10 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
+// TODO(glib): Do we need this file?
+// With a tally StatsReporter we shouldn't have to custom roll anything else
+// It will be able to answer questions about traffic
+
 package metrics
 
 import (

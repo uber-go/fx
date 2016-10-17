@@ -21,33 +21,16 @@
 package core
 
 import (
+	"time"
+
 	"go.uber.org/fx/core/config"
-	"go.uber.org/fx/core/metrics"
 	"go.uber.org/fx/core/ulog"
+
+	"github.com/uber-go/tally"
 )
 
 // A ServiceOption configures a service host
 type ServiceOption func(ServiceHost) error
-
-// func WithModules(modules ...ModuleInit) ServiceOption {
-// 	return func(svc *ServiceHost) error {
-// 		for _, mcf := range modules {
-// 			var err error
-// 			if !svc.supportsRole(mcf.Roles...) {
-// 				continue
-// 			}
-// 			if mods, err := mcf.Factory(svc); err == nil {
-// 				for _, mod := range mods {
-// 					err = svc.addModule(mod)
-// 				}
-// 			}
-// 			if err != nil {
-// 				return err
-// 			}
-// 		}
-// 		return nil
-// 	}
-// }
 
 // WithModules adds the given modules to a service host
 func WithModules(modules ...ModuleCreateFunc) ServiceOption {
@@ -98,12 +81,14 @@ func WithLogger(log ulog.Log) ServiceOption {
 	}
 }
 
-// WithMetricsScope configures a service host with metrics
-func WithMetricsScope(scope xm.Scope) ServiceOption {
+// WithStatsReporter configures a service host with metrics
+func WithStatsReporter(reporter tally.StatsReporter, d time.Duration) ServiceOption {
 	return func(svc ServiceHost) error {
-		// TODO(ai) verify type assertion is correct
-		svc2 := svc.(*serviceHost)
-		svc2.scope = metrics.Global(true)
+		service := svc.(*serviceHost)
+
+		// TODO(glib): read interval, prefix and tags from config
+		service.scope = tally.NewRootScope("", nil, reporter, d)
+
 		return nil
 	}
 }

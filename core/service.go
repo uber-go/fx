@@ -24,7 +24,6 @@ import (
 	"reflect"
 
 	"go.uber.org/fx/core/config"
-	cm "go.uber.org/fx/core/metrics"
 	"go.uber.org/fx/core/ulog"
 	"go.uber.org/fx/internal/util"
 )
@@ -57,7 +56,6 @@ type ServiceOwner interface {
 // ServiceInstance is the interface that is implemented by user service/
 // code.
 type ServiceInstance interface {
-
 	// OnInit will be called after the service has been initialized
 	OnInit(service ServiceHost) error
 
@@ -122,8 +120,6 @@ func NewService(instance ServiceInstance, options ...ServiceOption) ServiceOwner
 		svc.roles[r] = true
 	}
 
-	ensureThat(WithMetricsScope(cm.Global(true))(svc), "metrics configured")
-
 	// Run the rest of the options
 	for _, opt := range options {
 		if optionErr := opt(svc); optionErr != nil {
@@ -134,9 +130,9 @@ func NewService(instance ServiceInstance, options ...ServiceOption) ServiceOwner
 	// if we have an instance, look for a property called "config" and load the service
 	// node into that config.
 	if instance != nil {
-
 		loadInstanceConfig(svc.configProvider, "service", instance)
 
+		// TODO(glib): this line is very confusing. How can we improve the pattern?
 		if field, found := util.FindField(instance, nil, reflect.TypeOf((ServiceHost)(nil))); found {
 			var sc ServiceHost = &svc.serviceCore
 			field.Set(reflect.ValueOf(sc))

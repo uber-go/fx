@@ -20,7 +20,11 @@
 
 package core
 
-import "go.uber.org/fx/core/config"
+import (
+	"go.uber.org/fx/core/config"
+
+	"github.com/uber-go/tally"
+)
 
 // NullServiceHost is to be used in tests
 func NullServiceHost() ServiceHost {
@@ -30,6 +34,7 @@ func NullServiceHost() ServiceHost {
 			ServiceOwner:       "root@example.com",
 			ServiceDescription: "does cool stuff",
 		},
+		scope:          tally.NoopScope,
 		configProvider: config.StaticProvider(nil),
 	}
 }
