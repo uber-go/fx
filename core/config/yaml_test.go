@@ -21,9 +21,12 @@
 package config
 
 import (
+	"bytes"
+	"io/ioutil"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 var yamlConfig1 = []byte(`
@@ -84,4 +87,30 @@ func TestExtends(t *testing.T) {
 
 	devValue := provider.GetValue("value_override").AsString()
 	assert.Equal(t, "dev_setting", devValue)
+}
+
+func TestNewYamlProviderFromReader(t *testing.T) {
+	buff := bytes.NewBuffer([]byte(yamlConfig1))
+	provider := NewYamlProviderFromReader(ioutil.NopCloser(buff))
+	cs := &configStruct{}
+	assert.True(t, provider.GetValue("").PopulateStruct(cs))
+	assert.Equal(t, "yaml", provider.Scope("").Name())
+	assert.Equal(t, "keyvalue", cs.AppID)
+	assert.Equal(t, "uberfx@uber.com", cs.Owner)
+}
+
+func TestYamlNode(t *testing.T) {
+	buff := bytes.NewBuffer([]byte("a: b"))
+	node, err := newyamlNode(ioutil.NopCloser(buff))
+	require.NoError(t, err)
+	assert.Equal(t, "map[a:b]", node.String())
+	assert.Equal(t, "map[interface {}]interface {}", node.Type().String())
+}
+
+func TestYamlNodeWithNil(t *testing.T) {
+	provider := NewYAMLProviderFromFiles(false, nil)
+	assert.NotNil(t, provider)
+	assert.Panics(t, func() {
+		_, _ = newyamlNode(nil)
+	}, "Expected panic with nil inpout.")
 }

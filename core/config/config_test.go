@@ -214,5 +214,15 @@ func TestDefaultValue(t *testing.T) {
 
 	v2 := provider.GetValue("other_stuff")
 	assert.False(t, v2.HasValue())
+}
 
+func TestInvalidConfigFailures(t *testing.T) {
+	valueType := []byte(`
+id: xyz
+boolean:
+`)
+	provider := NewYAMLProviderFromBytes(valueType)
+	assert.Panics(t, func() { NewYAMLProviderFromBytes([]byte("bytes: \n\x010")) }, "Can't parse empty boolean")
+	assert.Panics(t, func() { provider.GetValue("id").AsInt() }, "Can't parse as int")
+	assert.Panics(t, func() { provider.GetValue("boolean").AsBool() }, "Can't parse empty boolean")
 }
