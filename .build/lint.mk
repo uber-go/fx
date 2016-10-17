@@ -8,7 +8,7 @@ LINT_LOG := lint.log
 _THIS_MAKEFILE := $(lastword $(MAKEFILE_LIST))
 _THIS_DIR := $(dir $(_THIS_MAKEFILE))
 
-ERRCHECK_FLAGS := -ignorepkg example -ignore "fmt.*"
+ERRCHECK_FLAGS := -ignorepkg example -ignore "fmt.*,io:WriteString"
 
 .PHONY: lint
 lint:

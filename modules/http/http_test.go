@@ -23,6 +23,7 @@ package http
 import (
 	"fmt"
 	"io"
+	"io/ioutil"
 	"net/http"
 	"testing"
 	"time"
@@ -67,6 +68,36 @@ func TestHTTPModule_Panic_OK(t *testing.T) {
 func TestHTTPModule_StartsAndStops(t *testing.T) {
 	withModule(t, registerPanic, nil, func(m *Module) {
 		assert.True(t, m.IsRunning(), "Start should be successful")
+	})
+}
+
+func TestBuiltinHealth_OK(t *testing.T) {
+	withModule(t, registerNothing, nil, func(m *Module) {
+		assert.NotNil(t, m)
+		makeRequest(m, "GET", "/health", nil, func(r *http.Response) {
+			assert.Equal(t, http.StatusOK, r.StatusCode, "Expected 200 with default health handler")
+		})
+	})
+}
+
+func TestOverrideHealth_OK(t *testing.T) {
+	withModule(t, registerCustomHealth, nil, func(m *Module) {
+		assert.NotNil(t, m)
+		makeRequest(m, "GET", "/health", nil, func(r *http.Response) {
+			assert.Equal(t, http.StatusOK, r.StatusCode, "Expected 200 with default health handler")
+			body, err := ioutil.ReadAll(r.Body)
+			require.NoError(t, err, "Should be able to read health body")
+			assert.Equal(t, "not ok", string(body))
+		})
+	})
+}
+
+func TestPProf_Registered(t *testing.T) {
+	withModule(t, registerNothing, nil, func(m *Module) {
+		assert.NotNil(t, m)
+		makeRequest(m, "GET", "/debug/pprof", nil, func(r *http.Response) {
+			assert.Equal(t, http.StatusOK, r.StatusCode, "Expected 200 from pprof handler")
+		})
 	})
 }
 
@@ -138,13 +169,23 @@ func registerNothing(_ core.ServiceHost) []RouteHandler {
 	return nil
 }
 
-func registerPanic(_ core.ServiceHost) []RouteHandler {
+func makeSingleHandler(path string, fn func(http.ResponseWriter, *http.Request)) []RouteHandler {
 	return []RouteHandler{
 		{
-			Path: "/",
-			Handler: http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
-				panic("Intentional panic for:" + r.URL.Path)
-			}),
+			Path:    path,
+			Handler: http.HandlerFunc(fn),
 		},
 	}
+}
+
+func registerCustomHealth(_ core.ServiceHost) []RouteHandler {
+	return makeSingleHandler("/health", func(w http.ResponseWriter, r *http.Request) {
+		io.WriteString(w, "not ok")
+	})
+}
+
+func registerPanic(_ core.ServiceHost) []RouteHandler {
+	return makeSingleHandler("/", func(_ http.ResponseWriter, r *http.Request) {
+		panic("Intentional panic for:" + r.URL.Path)
+	})
 }

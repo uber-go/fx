@@ -24,6 +24,7 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	_ "net/http/pprof" // for automatic pprof
 	"sync"
 	"time"
 
@@ -56,6 +57,9 @@ const (
 
 	// Reporter timeout for tracking HTTP requests
 	defaultReportTimeout = 90 * time.Second
+
+	// default healthcheck endpoint
+	healthPath = "/health"
 )
 
 var _ core.Module = &Module{}
@@ -89,6 +93,7 @@ type Config struct {
 	modules.ModuleConfig
 	Port    int           `yaml:"port"`
 	Timeout time.Duration `yaml:"timeout"`
+	Debug   *bool         `yaml:"debug"`
 }
 
 // CreateHTTPRegistrantsFunc returns a slice of registrants from a service host
@@ -150,7 +155,11 @@ func (m *Module) Start(ready chan<- struct{}) <-chan error {
 
 	m.mux.Handle("/", m.router)
 
+	healthFound := false
 	for _, h := range m.handlers {
+		if h.Path == healthPath {
+			healthFound = true
+		}
 		handle := h.Handler
 		handle = trackWrap(m.Reporter(), handle)
 		handle = panicWrap(handle)
@@ -160,6 +169,15 @@ func (m *Module) Start(ready chan<- struct{}) <-chan error {
 		for _, opt := range h.Options {
 			opt(route)
 		}
+	}
+
+	if !healthFound {
+		m.router.HandleFunc(healthPath, handleHealth)
+	}
+
+	// Debug is opt-out
+	if m.config.Debug == nil || *m.config.Debug {
+		m.router.PathPrefix("/debug/pprof").Handler(http.DefaultServeMux)
 	}
 
 	ret := make(chan error, 1)
