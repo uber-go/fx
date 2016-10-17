@@ -9,6 +9,8 @@ dependencies:
 	$(ECHO_V)go install ./vendor/github.com/go-playground/overalls
 	@echo "Installing golint..."
 	$(ECHO_V)go install ./vendor/github.com/golang/lint/golint
+	@echo "Installing errcheck..."
+	$(ECHO_V)go install ./vendor/github.com/kisielk/errcheck
 
 GOCOV := gocov
 OVERALLS := overalls

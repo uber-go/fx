@@ -22,7 +22,6 @@ package http
 
 import (
 	"fmt"
-	"io"
 	"net"
 	"net/http"
 	"sync"
@@ -105,15 +104,12 @@ func NewHTTPModule(hookup CreateHTTPRegistrantsFunc, options ...modules.Option) 
 		return []core.Module{mod}, nil
 	}
 }
+
 func newModule(mi core.ModuleCreateInfo, createService CreateHTTPRegistrantsFunc, options ...modules.Option) (*Module, error) {
 	// setup config defaults
 	cfg := &Config{
 		Port:    defaultPort,
 		Timeout: defaultTimeout,
-	}
-
-	for _, option := range options {
-		option(&mi)
 	}
 
 	if mi.Name == "" {
@@ -130,6 +126,13 @@ func newModule(mi core.ModuleCreateInfo, createService CreateHTTPRegistrantsFunc
 	module.config = *cfg
 
 	module.log = ulog.Logger().With("moduleName", mi.Name)
+
+	for _, option := range options {
+		if err := option(&mi); err != nil {
+			module.log.With("error", err, "option", option).Error("Unable to apply option")
+			return module, err
+		}
+	}
 
 	return module, nil
 }
@@ -193,11 +196,12 @@ func (m *Module) Stop() error {
 	m.listenMu.Lock()
 	defer m.listenMu.Unlock()
 
+	var err error
 	if m.listener != nil {
-		m.listener.Close()
+		err = m.listener.Close()
 		m.listener = nil
 	}
-	return nil
+	return err
 }
 
 // Thread-safe access to the listener object
@@ -227,7 +231,7 @@ func panicWrap(h http.Handler) http.HandlerFunc {
 				// TODO log this
 				w.Header().Add(ContentType, ContentTypeText)
 				w.WriteHeader(http.StatusInternalServerError)
-				io.WriteString(w, fmt.Sprintf("Server error: %+v", err))
+				fmt.Fprintf(w, "Server error: %+v", err)
 			}
 		}()
 

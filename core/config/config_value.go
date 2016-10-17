@@ -390,7 +390,7 @@ func (cv ConfigurationValue) getValueStruct(key string, target interface{}) (int
 				val = v2.Value()
 				found = true
 			} else if fieldInfo.Required {
-				return nil, false, fmt.Errorf("Field %q must have value for key %q", fieldName, childKey)
+				return nil, false, fmt.Errorf("field %q must have value for key %q", fieldName, childKey)
 			} else if fieldInfo.DefaultValue != "" {
 				val = fieldInfo.DefaultValue
 			}

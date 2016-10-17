@@ -25,6 +25,8 @@ import (
 	"log"
 	"sync"
 	"time"
+
+	"go.uber.org/fx/core/ulog"
 )
 
 const (
@@ -127,7 +129,9 @@ func (ltr LoggingTrafficReporter) Start(name string, data map[string]string, tim
 			if err != nil {
 				r = err.Error()
 			}
-			log.Output(0, fmt.Sprintf("%s\t%dμs\t%s", name, elapsed.Nanoseconds()/1000, r))
+			if err := log.Output(0, fmt.Sprintf("%s\t%dμs\t%s", name, elapsed.Nanoseconds()/1000, r)); err != nil {
+				ulog.Logger().With("error", err).Error("Unable to log traffic stats")
+			}
 		},
 	)
 }

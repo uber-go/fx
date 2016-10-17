@@ -40,6 +40,8 @@ type metricsTags struct {
 const (
 	hostNameToken    = "__hostname__"
 	serviceNameToken = "__servicename__"
+
+	unknownHostname = "unknown"
 )
 
 // Global returns the global metric scope
@@ -85,7 +87,10 @@ func Global(serviceScope bool) metrics.Scope {
 
 					// replace tokens with values
 					//
-					hostname, _ := os.Hostname()
+					hostname, err := os.Hostname()
+					if err != nil {
+						hostname = unknownHostname
+					}
 					scopeName = strings.Replace(scopeName, hostNameToken, hostname, -1)
 					scopeName = strings.Replace(scopeName, serviceNameToken, config.ServiceName(), -1)
 

@@ -58,10 +58,6 @@ type yarpcConfig struct {
 }
 
 func newYarpcModule(mi core.ModuleCreateInfo, reg registerServiceFunc, options ...modules.Option) (*YarpcModule, error) {
-	for _, opt := range options {
-		opt(&mi)
-	}
-
 	cfg := &yarpcConfig{
 		AdvertiseName: mi.Host.Name(),
 		Bind:          ":0",
@@ -80,11 +76,18 @@ func newYarpcModule(mi core.ModuleCreateInfo, reg registerServiceFunc, options .
 		config:     *cfg,
 	}
 
+	module.log = ulog.Logger().With("moduleName", mi.Name)
+	for _, opt := range options {
+		if err := opt(&mi); err != nil {
+			module.log.With("error", err, "option", opt).Error("Unable to apply option")
+			return module, err
+		}
+	}
+
 	if config.Global().GetValue(fmt.Sprintf("modules.%s", module.Name())).PopulateStruct(cfg) {
 		// found values, update module
 		module.config = *cfg
 	}
-	module.log = ulog.Logger().With("moduleName", mi.Name)
 
 	return module, nil
 }

@@ -106,7 +106,7 @@ func NewService(instance ServiceInstance, options ...ServiceOption) ServiceOwner
 	// TODO: This isn't right.  Do we order the options so we make sure to use
 	// the passed in options?
 	//
-	WithConfiguration(cfg)(svc)
+	ensureThat(WithConfiguration(cfg)(svc), "configuration")
 
 	// load standard config
 	svc.configProvider.GetValue("").PopulateStruct(&svc.standardConfig)
@@ -114,7 +114,7 @@ func NewService(instance ServiceInstance, options ...ServiceOption) ServiceOwner
 	// load and configure logging
 	svc.configProvider.GetValue("logging").PopulateStruct(&svc.logConfig)
 	ulog.Configure(svc.logConfig)
-	WithLogger(ulog.Logger())(svc)
+	ensureThat(WithLogger(ulog.Logger())(svc), "log configuration")
 
 	// hash up the roles
 	svc.roles = map[string]bool{}
@@ -122,7 +122,7 @@ func NewService(instance ServiceInstance, options ...ServiceOption) ServiceOwner
 		svc.roles[r] = true
 	}
 
-	WithMetricsScope(cm.Global(true))(svc)
+	ensureThat(WithMetricsScope(cm.Global(true))(svc), "metrics configured")
 
 	// Run the rest of the options
 	for _, opt := range options {
@@ -146,4 +146,10 @@ func NewService(instance ServiceInstance, options ...ServiceOption) ServiceOwner
 
 	svc.Metrics().Counter("boot").Inc(1)
 	return svc
+}
+
+func ensureThat(err error, description string) {
+	if err != nil {
+		ulog.Logger().With("error", err).Fatal("Fatal error initializing app: ", description)
+	}
 }

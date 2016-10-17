@@ -167,12 +167,14 @@ func (n yamlNode) Type() reflect.Type {
 }
 
 func newyamlNode(reader io.ReadCloser) (*yamlNode, error) {
-	defer reader.Close()
 	m := make(map[interface{}]interface{})
 
 	if data, err := ioutil.ReadAll(reader); err != nil {
 		return nil, err
 	} else if err = yaml.Unmarshal(data, &m); err != nil {
+		return nil, err
+	}
+	if err := reader.Close(); err != nil {
 		return nil, err
 	}
 

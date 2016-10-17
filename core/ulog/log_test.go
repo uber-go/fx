@@ -183,7 +183,9 @@ func TestConfiguredLoggerWithStdout(t *testing.T) {
 
 func withLogger(t *testing.T, f func(string, string)) {
 	tmpDir, err := ioutil.TempDir("", "default_log")
-	defer os.RemoveAll(tmpDir)
+	defer func() {
+		assert.NoError(t, os.RemoveAll(tmpDir), "should be able to delete tempdir")
+	}()
 	require.NoError(t, err)
 
 	tmpFile, err := ioutil.TempFile(tmpDir, "temp_log.txt")

@@ -29,6 +29,7 @@ import (
 	"time"
 
 	"go.uber.org/fx/core/config"
+	"go.uber.org/fx/core/ulog"
 	"go.uber.org/fx/internal/util"
 )
 
@@ -87,7 +88,10 @@ func (s *serviceHost) IsRunning() bool {
 
 func (s *serviceHost) OnCriticalError(err error) {
 	if !s.instance.OnCriticalError(err) {
-		s.shutdown(err, "", nil)
+		if ok, err := s.shutdown(err, "", nil); !ok || err != nil {
+			// TODO(ai) verify we flush logs
+			ulog.Logger().With("success", ok, "error", err).Info("Problem shutting down module")
+		}
 	}
 }
 
@@ -170,7 +174,10 @@ func (s *serviceHost) Start(waitForShutdown bool) (<-chan ServiceExit, error) {
 
 				errChan := make(chan ServiceExit)
 				errChan <- *s.shutdownReason
-				s.shutdown(e, "", nil)
+				if _, err := s.shutdown(e, "", nil); err != nil {
+					ulog.Logger().With("initialError", e, "shutdownError", err).Error("Unable to shut down modules")
+				}
+
 				return errChan, e
 			}
 		}
