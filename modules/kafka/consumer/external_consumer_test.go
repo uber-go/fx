@@ -32,21 +32,21 @@ func TestNewExternalConfig(t *testing.T) {
 	cfg := Config{
 		Name:    "some-group",
 		Topics:  []string{"some-topic"},
-		Cluster: "kloak-datacenter-1a",
+		Cluster: "kluster-datacenter-1a",
 		Offsets: OffsetConfig{
 			CommitInterval: time.Minute,
 			ResetOffsets:   true,
 		},
 	}
 	zk := zkConfig{
-		Chroot:     "kloak",
-		ZooKeepers: []string{"kloakzk01-datacenter-1", "kloakzk02-datacenter-1"},
+		Chroot:     "kluster",
+		ZooKeepers: []string{"klusterzk01-datacenter-1", "klusterzk02-datacenter-1"},
 	}
 
 	ec := newExternalConfig(cfg, zk)
 
 	// Check the consumergroup config.
-	assert.Equal(t, "/kloak", ec.group.Zookeeper.Chroot, "Unexpected ZK chroot.")
+	assert.Equal(t, "/kluster", ec.group.Zookeeper.Chroot, "Unexpected ZK chroot.")
 	assert.Equal(t, time.Minute, ec.group.Offsets.CommitInterval, "Unexpected offset commit interval.")
 	assert.Equal(t, sarama.OffsetOldest, ec.group.Offsets.Initial, "Unexpected initial offset.")
 	assert.True(t, ec.group.Offsets.ResetOffsets, "Unexpected offset reset configuration.")
@@ -55,7 +55,7 @@ func TestNewExternalConfig(t *testing.T) {
 	cfg = Config{
 		Name:    "some-group",
 		Topics:  []string{"some-topic"},
-		Cluster: "kloak-datacenter-1a",
+		Cluster: "kluster-datacenter-1a",
 		Offsets: OffsetConfig{
 			SkipOldMessages: true,
 			CommitInterval:  time.Minute,
@@ -69,7 +69,7 @@ func TestNewExternalConfig(t *testing.T) {
 	// Check the other fields.
 	assert.Equal(t, "some-group", ec.name, "Unexpected name.")
 	assert.Equal(t, []string{"some-topic"}, ec.topics, "Unexpected topic list.")
-	assert.Equal(t, []string{"kloakzk01-datacenter-1", "kloakzk02-datacenter-1"}, ec.zkNodes, "Unexpected ZK node list.")
+	assert.Equal(t, []string{"klusterzk01-datacenter-1", "klusterzk02-datacenter-1"}, ec.zkNodes, "Unexpected ZK node list.")
 }
 
 func TestNewExternalConfigCommitInterval(t *testing.T) {
@@ -77,11 +77,11 @@ func TestNewExternalConfigCommitInterval(t *testing.T) {
 	cfg := Config{
 		Name:    "some-group",
 		Topics:  []string{"some-topic"},
-		Cluster: "kloak-datacenter-1a",
+		Cluster: "kluster-datacenter-1a",
 	}
 	zk := zkConfig{
-		Chroot:     "kloak",
-		ZooKeepers: []string{"kloak01-datacenter-1", "kloak02-datacenter-1"},
+		Chroot:     "kluster",
+		ZooKeepers: []string{"kluster01-datacenter-1", "kluster02-datacenter-1"},
 	}
 
 	ec := newExternalConfig(cfg, zk)

@@ -45,8 +45,8 @@ func withTempFile(t testing.TB, prefix string, f func(*os.File)) {
 // Construct a valid zkConfig.
 func fakeZKConfig() zkConfig {
 	return zkConfig{
-		Chroot:     "kloak",
-		ZooKeepers: []string{"kloak01", "kloak02"},
+		Chroot:     "kluster",
+		ZooKeepers: []string{"kluster01", "kluster02"},
 	}
 }
 
@@ -65,7 +65,7 @@ func fakeConfig() *Config {
 	return &Config{
 		Name:    "fake-group",
 		Topics:  []string{"foo", "bar"},
-		Cluster: "kloak-datacenter-1a",
+		Cluster: "kluster-datacenter-1a",
 	}
 }
 

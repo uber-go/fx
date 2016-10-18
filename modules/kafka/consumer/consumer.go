@@ -27,11 +27,11 @@ import (
 
 	"go.uber.org/fx/core/ulog"
 
+	"fmt"
+
 	"github.com/Shopify/sarama"
 	"github.com/uber-go/tally"
 )
-
-const defaultClusterFile = "/etc/uber/kafka8/clusters.yaml"
 
 // A Consumer allows users to read and process messages from a Kafka topic.
 // Consumer processes within the same group use ZooKeeper to negotiate partition
@@ -92,9 +92,9 @@ func newConsumer(join joinFunc, cfg Config, m tally.Scope, l ulog.Log) (Consumer
 		return nil, err
 	}
 
-	hostFile := defaultClusterFile
-	if cfg.HostFile != "" {
-		hostFile = cfg.HostFile
+	hostFile := cfg.HostFile
+	if cfg.HostFile == "" {
+		return nil, fmt.Errorf("host file must be provided")
 	}
 	zk, err := loadZooKeeperConfig(cfg.Cluster, hostFile)
 	if err != nil {

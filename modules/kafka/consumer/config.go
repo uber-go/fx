@@ -60,10 +60,7 @@ type Config struct {
 	Topics []string
 	// Cluster is the logical name of a Kafka cluster
 	Cluster string
-	// FIXME(glib): maybe yaml file is not the best OSS interface. Look into it
-	// HostFile is the path to the YAML file holding Kafka cluster info. The
-	// default value is /etc/uber/kafka8/clusters.yaml, which works in
-	// production.
+	// HostFile is the path to the YAML file holding Kafka cluster info
 	HostFile string `yaml:"hostFile"`
 	// Offsets is the offset-handling policy for this consumer group.
 	Offsets OffsetConfig
