@@ -178,7 +178,6 @@ func TestConfiguredLoggerWithStdout(t *testing.T) {
 		zaplogger := log.(*baselogger).RawLogger()
 		assert.Equal(t, zap.DebugLevel, zaplogger.Level())
 	})
-
 }
 
 func withLogger(t *testing.T, f func(string, string)) {

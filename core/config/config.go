@@ -75,18 +75,23 @@ func ResetGlobal() {
 
 // TODO(ai) pull this out
 // UBERSPECIFIC
-func getUberConfigFiles() []string {
 
+// GetEnvironment returns current environment setup for the service
+func GetEnvironment() string {
 	env := os.Getenv("UBER_ENVIRONMENT")
+	if env == "" {
+		env = "development"
+	}
+	return env
+}
+
+func getUberConfigFiles() []string {
+	env := GetEnvironment()
 	dc := os.Getenv("UBER_DATACENTER")
 
 	var files []string
 	if dc != "" && env != "" {
 		files = append(files, fmt.Sprintf("./config/%s-%s.yaml", env, dc))
-	}
-
-	if env == "" {
-		env = "development"
 	}
 
 	files = append(files, fmt.Sprintf("./config/%s.yaml", env), "./config/base.yaml")

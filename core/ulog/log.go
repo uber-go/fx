@@ -23,10 +23,12 @@ package ulog
 import (
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"path"
+	"strings"
 	"time"
+
+	"go.uber.org/fx/core/config"
 
 	"github.com/uber-go/zap"
 )
@@ -73,6 +75,8 @@ type Log interface {
 	DFatal(string, ...interface{})
 }
 
+var development = strings.Contains(config.GetEnvironment(), "development")
+
 var std = defaultLogger()
 
 func defaultLogger() Log {
@@ -112,12 +116,12 @@ func (l *baselogger) Configure(cfg Configuration) {
 		}
 	}
 	if cfg.File == nil || !cfg.File.Enabled {
-		options = append(options, zap.Output(zap.AddSync(ioutil.Discard)))
+		options = append(options, zap.Output(zap.AddSync(os.Stdout)))
 	} else {
 		options = append(options, zap.Output(l.fileOutput(cfg.File, cfg.Stdout, cfg.Verbose)))
 	}
 
-	if cfg.TextFormatter != nil && *cfg.TextFormatter {
+	if cfg.TextFormatter != nil && *cfg.TextFormatter || cfg.TextFormatter == nil && development {
 		l.SetLogger(zap.New(zap.NewTextEncoder(), options...))
 		return
 	}
