@@ -43,8 +43,8 @@ import (
 func main() {
   // Create the service object
   service := core.NewService(
-
-    // Initialize with global (default) configuration provider
+    // Initialize without a ServiceInstance, since we don't need to observe
+    // lifecycle events.
     nil,
 
     // The list of module creators for this service, in this case
@@ -67,7 +67,7 @@ world, this means different deployments that run with different entry points.
 Due to Python's threading model, this was required.
 
 In the Go service, we can have a simpler model where we create a single binary,
-but turn it's modules on and off based on roles which are specified via the
+but turn its modules on and off based on roles which are specified via the
 commmand line.
 
 For example, imagine we wanted a "worker" and a "service" role that handled
