@@ -32,7 +32,7 @@ func TestNewExternalConfig(t *testing.T) {
 	cfg := Config{
 		Name:    "some-group",
 		Topics:  []string{"some-topic"},
-		Cluster: "kloak-sjc1a",
+		Cluster: "kloak-datacenter-1a",
 		Offsets: OffsetConfig{
 			CommitInterval: time.Minute,
 			ResetOffsets:   true,
@@ -40,7 +40,7 @@ func TestNewExternalConfig(t *testing.T) {
 	}
 	zk := zkConfig{
 		Chroot:     "kloak",
-		ZooKeepers: []string{"kloakzk01-sjc1", "kloakzk02-sjc1"},
+		ZooKeepers: []string{"kloakzk01-datacenter-1", "kloakzk02-datacenter-1"},
 	}
 
 	ec := newExternalConfig(cfg, zk)
@@ -55,7 +55,7 @@ func TestNewExternalConfig(t *testing.T) {
 	cfg = Config{
 		Name:    "some-group",
 		Topics:  []string{"some-topic"},
-		Cluster: "kloak-sjc1a",
+		Cluster: "kloak-datacenter-1a",
 		Offsets: OffsetConfig{
 			SkipOldMessages: true,
 			CommitInterval:  time.Minute,
@@ -69,7 +69,7 @@ func TestNewExternalConfig(t *testing.T) {
 	// Check the other fields.
 	assert.Equal(t, "some-group", ec.name, "Unexpected name.")
 	assert.Equal(t, []string{"some-topic"}, ec.topics, "Unexpected topic list.")
-	assert.Equal(t, []string{"kloakzk01-sjc1", "kloakzk02-sjc1"}, ec.zkNodes, "Unexpected ZK node list.")
+	assert.Equal(t, []string{"kloakzk01-datacenter-1", "kloakzk02-datacenter-1"}, ec.zkNodes, "Unexpected ZK node list.")
 }
 
 func TestNewExternalConfigCommitInterval(t *testing.T) {
@@ -77,11 +77,11 @@ func TestNewExternalConfigCommitInterval(t *testing.T) {
 	cfg := Config{
 		Name:    "some-group",
 		Topics:  []string{"some-topic"},
-		Cluster: "kloak-sjc1a",
+		Cluster: "kloak-datacenter-1a",
 	}
 	zk := zkConfig{
 		Chroot:     "kloak",
-		ZooKeepers: []string{"kloak01-sjc1", "kloak02-sjc1"},
+		ZooKeepers: []string{"kloak01-datacenter-1", "kloak02-datacenter-1"},
 	}
 
 	ec := newExternalConfig(cfg, zk)

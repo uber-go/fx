@@ -45,7 +45,7 @@ func TestNewConsumerHostFileUnavailable(t *testing.T) {
 	cfg := fakeConfig()
 	_, err := newConsumer(joinFunc(joinZK), *cfg, nil, nil)
 	if assert.Error(t, err, "Expected an error when the Kafka host file is absent.") {
-		assert.Contains(t, err.Error(), "failed to load info for cluster kloak-sjc1a", "Unexpected error message.")
+		assert.Contains(t, err.Error(), "failed to load info for cluster kloak-datacenter-1a", "Unexpected error message.")
 	}
 }
 
@@ -56,7 +56,7 @@ func TestNewConsumerHostFileMissingCluster(t *testing.T) {
 
 		_, err := newConsumer(joinFunc(joinZK), *cfg, nil, nil)
 		if assert.Error(t, err, "Expected an error when the Kafka host file is empty.") {
-			assert.Contains(t, err.Error(), "can't find cluster kloak-sjc1a in hostfile", "Unexpected error message.")
+			assert.Contains(t, err.Error(), "can't find cluster kloak-datacenter-1a in hostfile", "Unexpected error message.")
 			assert.Contains(t, err.Error(), cfg.HostFile, "Expected to use hostfile specified in config.")
 		}
 	})

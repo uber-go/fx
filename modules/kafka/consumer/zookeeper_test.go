@@ -32,9 +32,9 @@ import (
 func TestZooKeeperString(t *testing.T) {
 	zk := zkConfig{
 		Chroot:     "kloak",
-		ZooKeepers: []string{"kloak01-sjc1", "kloak02-sjc1"},
+		ZooKeepers: []string{"kloak01-datacenter-1", "kloak02-datacenter-1"},
 	}
-	assert.Equal(t, "kloak01-sjc1,kloak02-sjc1/kloak", zk.String(), "Unexpected string representation of ZK config.")
+	assert.Equal(t, "kloak01-datacenter-1,kloak02-datacenter-1/kloak", zk.String(), "Unexpected string representation of ZK config.")
 }
 
 func TestZooKeeperValidate(t *testing.T) {
@@ -60,7 +60,7 @@ func TestZooKeeperValidate(t *testing.T) {
 }
 
 func TestLoadClusterNoFile(t *testing.T) {
-	_, err := loadZooKeeperConfig("kloak-sjc1a", "/etc/uber/kafka8/foobar.yaml")
+	_, err := loadZooKeeperConfig("kloak-datacenter-1a", "/etc/uber/kafka8/foobar.yaml")
 	if assert.Error(t, err, "Expected loading config from non-existent file to fail.") {
 		assert.Contains(t, err.Error(), "failed to load info for cluster", "Unexpected error message.")
 	}
@@ -71,7 +71,7 @@ func TestLoadClusterBadFile(t *testing.T) {
 		_, err := f.Write([]byte("foobar")) // invalid YAML
 		require.NoError(t, err, "Failed to write to temporary file.")
 
-		_, err = loadZooKeeperConfig("kloak-sjc1a", f.Name())
+		_, err = loadZooKeeperConfig("kloak-datacenter-1a", f.Name())
 		assert.Error(t, err, "Expected loading config from non-existent file to fail.")
 	})
 }
@@ -80,7 +80,7 @@ func TestLoadClusterNoInfo(t *testing.T) {
 	withTempFile(t, "kakfa-missing-clusters", func(f *os.File) {
 		writeValidClusters(t, f, "foo" /* cluster name */)
 
-		_, err := loadZooKeeperConfig("kloak-sjc1a", f.Name())
+		_, err := loadZooKeeperConfig("kloak-datacenter-1a", f.Name())
 		if assert.Error(t, err, "Expected error loading config for an unknown cluster.") {
 			assert.Contains(t, err.Error(), "can't find cluster", "Unexpected error message.")
 		}
@@ -89,9 +89,9 @@ func TestLoadClusterNoInfo(t *testing.T) {
 
 func TestLoadClusterSuccess(t *testing.T) {
 	withTempFile(t, "kafka-clusters", func(f *os.File) {
-		writeValidClusters(t, f, "kloak-sjc1a")
+		writeValidClusters(t, f, "kloak-datacenter-1a")
 
-		cfg, err := loadZooKeeperConfig("kloak-sjc1a", f.Name())
+		cfg, err := loadZooKeeperConfig("kloak-datacenter-1a", f.Name())
 		require.NoError(t, err, "Expected error loading config for an unknown cluster.")
 		assert.Equal(t, fakeZKConfig(), cfg, "Unmarshaled config doesn't match.")
 	})

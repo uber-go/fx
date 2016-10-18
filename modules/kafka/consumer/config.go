@@ -50,6 +50,7 @@ type OffsetConfig struct {
 }
 
 // Config describes a consumer group.
+// TODO(glib): consider reading these in from service config files?
 type Config struct {
 	// Name identifies your consumer group. Unless your application creates
 	// multiple consumer groups, this should match your application name.

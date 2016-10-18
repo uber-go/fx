@@ -65,7 +65,7 @@ func fakeConfig() *Config {
 	return &Config{
 		Name:    "fake-group",
 		Topics:  []string{"foo", "bar"},
-		Cluster: "kloak-sjc1a",
+		Cluster: "kloak-datacenter-1a",
 	}
 }
 
