@@ -38,8 +38,12 @@ func withTempFile(t testing.TB, prefix string, f func(*os.File)) {
 	file, err := ioutil.TempFile("", prefix)
 	require.NoError(t, err, "Failed to create temporary file for test.")
 	f(file)
-	file.Close()
-	os.Remove(file.Name())
+	if err = file.Close(); err != nil {
+		t.Fatal("Failed to close the file")
+	}
+	if err = os.Remove(file.Name()); err != nil {
+		t.Fatal("Failed to remove the file")
+	}
 }
 
 // Construct a valid zkConfig.

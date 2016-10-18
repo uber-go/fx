@@ -99,7 +99,7 @@ func TestConsumerTopics(t *testing.T) {
 func TestConsumerWithClosedGroup(t *testing.T) {
 	withFakeHostFile(t, func(cfg Config) {
 		mock, joiner := makeJoinSpy()
-		mock.Close()
+		err := mock.Close()
 		consumer, err := newConsumer(joiner, cfg, nil, nil)
 		require.NoError(t, err, "Failed to create a Consumer with a mock consumergroup.")
 		// Consumer should have terminated consumption loop and closed.
@@ -121,7 +121,10 @@ func TestConsumerMessages(t *testing.T) {
 			select {
 			case msg := <-c.Messages():
 				n++
-				c.CommitUpTo(msg)
+				err := c.CommitUpTo(msg)
+				if err != nil {
+					t.Fatal("Failed to CommitUpTo")
+				}
 				if n == 10 {
 					close(shutdown)
 				}

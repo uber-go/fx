@@ -214,7 +214,10 @@ func (c *consumer) startConsuming() {
 	c.logger.Debug("Starting consumption goroutine.")
 	if c.group.Closed() {
 		c.logger.Debug("Consumer already closed.")
-		c.close(false)
+		err := c.close(false)
+		if err != nil {
+			c.logger.Error("Failed to close underlying consumer")
+		}
 		return
 	}
 	msgCounter := c.metrics.Counter("messages")
