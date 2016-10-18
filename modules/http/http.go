@@ -167,7 +167,7 @@ func (m *Module) Start(ready chan<- struct{}) <-chan error {
 		route := m.router.Handle(h.Path, handle)
 		// apply all route options
 		for _, opt := range h.Options {
-			opt(route)
+			opt(Route{route})
 		}
 	}
 

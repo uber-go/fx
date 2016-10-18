@@ -21,20 +21,21 @@
 package http
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
+	"runtime"
 	"testing"
 	"time"
 
-	"runtime"
-
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"go.uber.org/fx/core"
 	. "go.uber.org/fx/core/testutils"
 	"go.uber.org/fx/modules"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestNewHTTPModule_OK(t *testing.T) {
@@ -51,13 +52,13 @@ func TestNewHTTPModule_WithOptions(t *testing.T) {
 		modules.WithRoles("testing"),
 	}
 
-	withModule(t, registerPanic, options, func(m *Module) {
+	withModule(t, registerPanic, options, false, func(m *Module) {
 		assert.NotNil(t, m, "Expected OK with options")
 	})
 }
 
 func TestHTTPModule_Panic_OK(t *testing.T) {
-	withModule(t, registerPanic, nil, func(m *Module) {
+	withModule(t, registerPanic, nil, false, func(m *Module) {
 		assert.NotNil(t, m)
 		makeRequest(m, "GET", "/", nil, func(r *http.Response) {
 			assert.Equal(t, http.StatusInternalServerError, r.StatusCode, "Expected 500 with panic  wrapper")
@@ -66,13 +67,13 @@ func TestHTTPModule_Panic_OK(t *testing.T) {
 }
 
 func TestHTTPModule_StartsAndStops(t *testing.T) {
-	withModule(t, registerPanic, nil, func(m *Module) {
+	withModule(t, registerPanic, nil, false, func(m *Module) {
 		assert.True(t, m.IsRunning(), "Start should be successful")
 	})
 }
 
 func TestBuiltinHealth_OK(t *testing.T) {
-	withModule(t, registerNothing, nil, func(m *Module) {
+	withModule(t, registerNothing, nil, false, func(m *Module) {
 		assert.NotNil(t, m)
 		makeRequest(m, "GET", "/health", nil, func(r *http.Response) {
 			assert.Equal(t, http.StatusOK, r.StatusCode, "Expected 200 with default health handler")
@@ -81,7 +82,7 @@ func TestBuiltinHealth_OK(t *testing.T) {
 }
 
 func TestOverrideHealth_OK(t *testing.T) {
-	withModule(t, registerCustomHealth, nil, func(m *Module) {
+	withModule(t, registerCustomHealth, nil, false, func(m *Module) {
 		assert.NotNil(t, m)
 		makeRequest(m, "GET", "/health", nil, func(r *http.Response) {
 			assert.Equal(t, http.StatusOK, r.StatusCode, "Expected 200 with default health handler")
@@ -93,7 +94,7 @@ func TestOverrideHealth_OK(t *testing.T) {
 }
 
 func TestPProf_Registered(t *testing.T) {
-	withModule(t, registerNothing, nil, func(m *Module) {
+	withModule(t, registerNothing, nil, false, func(m *Module) {
 		assert.NotNil(t, m)
 		makeRequest(m, "GET", "/debug/pprof", nil, func(r *http.Response) {
 			assert.Equal(t, http.StatusOK, r.StatusCode, "Expected 200 from pprof handler")
@@ -101,14 +102,42 @@ func TestPProf_Registered(t *testing.T) {
 	})
 }
 
+func TestHookupOptions(t *testing.T) {
+	options := []modules.Option{
+		modules.WithName("an optional name"),
+	}
+
+	withModule(t, registerNothing, options, false, func(m *Module) {
+		assert.NotNil(t, m)
+	})
+}
+
+func TestHookupOptions_Error(t *testing.T) {
+	options := []modules.Option{
+		func(_ *core.ModuleCreateInfo) error {
+			return errors.New("i just can't")
+		},
+	}
+
+	withModule(t, registerNothing, options, true, func(m *Module) {
+		assert.Nil(t, m)
+	})
+}
+
 // TODO(ai) add a test for binding a bad port and get an error out of Start()
 
-func withModule(t testing.TB, hookup CreateHTTPRegistrantsFunc, options []modules.Option, fn func(*Module)) {
+func withModule(t testing.TB, hookup CreateHTTPRegistrantsFunc, options []modules.Option, expectError bool, fn func(*Module)) {
 	defer WithConfig(nil)()
 	mi := core.ModuleCreateInfo{
 		Host: core.NullServiceHost(),
 	}
 	mod, err := newModule(mi, hookup, options...)
+	if expectError {
+		require.Error(t, err, "Expected error instantiating module")
+		fn(nil)
+		return
+	}
+
 	require.NoError(t, err, "Unable to instantiate module")
 
 	// us an ephemeral port on tests

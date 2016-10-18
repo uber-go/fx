@@ -27,7 +27,14 @@ import (
 )
 
 // A RouteOption gives you the ability to mangle routes
-type RouteOption func(r *mux.Route) *mux.Route
+type RouteOption func(r Route) Route
+
+// FromGorilla turns a gorilla mux route into an UberFx route
+func FromGorilla(r *mux.Route) Route {
+	return Route{
+		r: r,
+	}
+}
 
 // A RouteHandler is an HTTP handler for a single route
 type RouteHandler struct {
@@ -42,5 +49,29 @@ func NewRouteHandler(path string, handler http.Handler, options ...RouteOption) 
 		Path:    path,
 		Handler: handler,
 		Options: options,
+	}
+}
+
+// A Route represents a handler for HTTP requests, with restrictions
+type Route struct {
+	r *mux.Route
+}
+
+// GorillaMux returns the underlying mux if you need to use it directly
+func (r Route) GorillaMux() *mux.Route {
+	return r.r
+}
+
+// Headers allows easy enforcement of headers
+func (r Route) Headers(headerPairs ...string) Route {
+	return Route{
+		r.r.Headers(headerPairs...),
+	}
+}
+
+// Methods allows easy enforcement of metthods (HTTP Verbs)
+func (r Route) Methods(methods ...string) Route {
+	return Route{
+		r.r.Methods(methods...),
 	}
 }
