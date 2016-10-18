@@ -1,6 +1,18 @@
-hash: 07a85faa8ece4bd16fa206a870d04a98b74f1bb7c9b15d64c6866a1ce017dfb7
-updated: 2016-10-27T12:07:34.245239247-07:00
+hash: 15112457fafc8c7a78884db1632ad31bcc6e81b7071ec4267bfd519631470309
+updated: 2016-10-27T21:03:56.553295486-07:00
 imports:
+- name: github.com/davecgh/go-spew
+  version: 6d212800a42e8ab5c146b8ace3490ee17e5225f9
+  subpackages:
+  - spew
+- name: github.com/eapache/go-resiliency
+  version: b86b1ec0dd4209a588dc1285cdd471e73525c0b3
+  subpackages:
+  - breaker
+- name: github.com/eapache/go-xerial-snappy
+  version: bb955e01b9346ac19dc29eb16586c90ded99a98c
+- name: github.com/eapache/queue
+  version: 44cc805cf13205b55f69e14bcb69867d1ae92f98
 - name: github.com/facebookgo/clock
   version: 600d898af40aa09a7a93ecb9265d87b0504b6f03
 - name: github.com/go-validator/validator
@@ -9,15 +21,25 @@ imports:
   version: bd3c8e81be01eef76d4b503f5e687d2d1354d2d9
   subpackages:
   - gomock
+- name: github.com/golang/snappy
+  version: d9eb7a3d35ec988b8585d4a0068e462c27d28380
 - name: github.com/gorilla/context
   version: 1ea25387ff6f684839d82767c1733ff4d4d15d0a
 - name: github.com/gorilla/mux
   version: 0eeaf8392f5b04950925b8a69fe70f110fa7cbfc
+- name: github.com/klauspost/crc32
+  version: cb6bfca970f6908083f26f39a79009d608efd5cd
 - name: github.com/opentracing/opentracing-go
   version: 0c3154a3c2ce79d3271985848659870599dfb77c
   subpackages:
   - ext
   - log
+- name: github.com/samuel/go-zookeeper
+  version: 87e1bca4477a3cc767ca71be023ced183d74e538
+  subpackages:
+  - zk
+- name: github.com/Shopify/sarama
+  version: bd61cae2be85fa6ff40eb23dcdd24567967ac2ae
 - name: github.com/uber-go/atomic
   version: 0c9e689d64f004564b79d9a663634756df322902
 - name: github.com/uber-go/tally
@@ -31,6 +53,12 @@ imports:
   - tnet
   - trand
   - typed
+- name: github.com/wvanbergen/kafka
+  version: bc265fedb9ff5b5c5d3c0fdcef4a819b3523d3ee
+  subpackages:
+  - consumergroup
+- name: github.com/wvanbergen/kazoo-go
+  version: 968957352185472eacb69215fa3dbfcfdbac1096
 - name: go.uber.org/thriftrw
   version: 6aa07c0009457cc6c7ff5497695f1581ad184350
   subpackages:
@@ -60,7 +88,7 @@ imports:
   - transport/tchannel/internal
   - transport/transporttest
 - name: golang.org/x/net
-  version: b626cca987fa6333e5dd25baa0fd61708c145011
+  version: c46f265c325130a7a6c7b27db8c6fe14b64f1a68
   subpackages:
   - context
   - context/ctxhttp
@@ -71,10 +99,6 @@ testImports:
   version: 54b98cfcac0c63fb3f9bd8e7ad241b724d4e985b
   subpackages:
   - gocov
-- name: github.com/davecgh/go-spew
-  version: 6d212800a42e8ab5c146b8ace3490ee17e5225f9
-  subpackages:
-  - spew
 - name: github.com/go-playground/overalls
   version: 6de3f6a9f4b3449d179d98d63b521716cda834fb
 - name: github.com/golang/lint

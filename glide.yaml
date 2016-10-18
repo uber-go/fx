@@ -15,6 +15,12 @@ import:
   version: dev
 - package: github.com/go-validator/validator
   version: v2
+- package: github.com/Shopify/sarama
+  version: ^1.10.1
+- package: github.com/wvanbergen/kafka
+  version: master
+  subpackages:
+  - consumergroup
 
 testImport:
 - package: golang.org/x/tools
