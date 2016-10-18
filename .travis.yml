@@ -6,6 +6,9 @@ go:
 
 go_import_path: go.uber.org/fx
 
+env:
+  - V=1
+
 matrix:
   # Fail the build as soon as the first job fails
   fast_finish: true
@@ -15,14 +18,12 @@ cache:
     - vendor
 
 install:
-  # Blocked on https://github.com/uber-go/uberfx/issues/22 -- remove all
-  # internal imports
-  # - make dependencies
+  - make dependencies
 
 script:
   - make lint
-  # Also blocked on internal imports
-  # - make test
+  - make test
 
 after_success:
-  - make coveralls
+  # TODO: re-enable once we go public
+  # - make coveralls
