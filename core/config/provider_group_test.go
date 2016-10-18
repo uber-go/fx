@@ -28,15 +28,15 @@ import (
 
 func TestProviderGroup(t *testing.T) {
 	pg := NewProviderGroup("test-group", NewYAMLProviderFromBytes([]byte(`id: test`)))
-	assert.Equal(t, "test-group", pg.(providerGroup).Name())
-	assert.Equal(t, "test", pg.(providerGroup).GetValue("id").AsString())
+	assert.Equal(t, "test-group", pg.Name())
+	assert.Equal(t, "test", pg.GetValue("id").AsString())
+	// TODO this should not require a cast GFM-74
 	assert.Empty(t, pg.(providerGroup).RegisterChangeCallback("", nil))
 	assert.False(t, pg.(providerGroup).UnregisterChangeCallback(""))
-
 }
 
 func TestProviderGroupScope(t *testing.T) {
 	data := map[string]interface{}{"hello.world": 42}
 	pg := NewProviderGroup("test-group", StaticProvider(data))
-	assert.Equal(t, 42, pg.(providerGroup).Scope("hello").GetValue("world").AsInt())
+	assert.Equal(t, 42, pg.Scope("hello").GetValue("world").AsInt())
 }

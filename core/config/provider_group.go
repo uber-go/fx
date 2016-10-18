@@ -64,9 +64,11 @@ func (p providerGroup) Name() string {
 }
 
 func (p providerGroup) RegisterChangeCallback(key string, callback ConfigurationChangeCallback) string {
+	// TODO wire this up GFM-73
 	return ""
 }
 func (p providerGroup) UnregisterChangeCallback(token string) bool {
+	// TODO wire this up GFM-73
 	return false
 }
 
