@@ -88,8 +88,28 @@ modules:
     bind: :28941
 `)
 
+var yamlConfig3 = []byte(`
+float: 1.123
+bool: true
+int: 123
+string: test string
+`)
+
 type arrayOfStructs struct {
 	Things []nested `yaml:"things"`
+}
+
+func TestGlobalConfig(t *testing.T) {
+	cfg := Global()
+	assert.Equal(t, "global", cfg.Name())
+
+	ResetGlobal()
+	assert.Nil(t, Global())
+
+	SetGlobal(NewProviderGroup("test", NewYAMLProviderFromBytes([]byte(`applicationID: sample`))), true)
+	assert.Equal(t, "test", Global().Name())
+	assert.Equal(t, "sample", ServiceName())
+	assert.Panics(t, func() { SetGlobal(nil, false) }, "SetGlobal must be forced")
 }
 
 func TestDirectAccess(t *testing.T) {
@@ -142,7 +162,23 @@ func TestOverrideSimple(t *testing.T) {
 	assert.True(t, v.HasValue())
 	v.PopulateStruct(rpc)
 	assert.Equal(t, ":8888", rpc.Bind)
+}
 
+func TestSimpleConfigValues(t *testing.T) {
+
+	provider := NewProviderGroup(
+		"test",
+		NewYAMLProviderFromBytes(yamlConfig3),
+	)
+	assert.Equal(t, 123, provider.GetValue("int").AsInt())
+	assert.Equal(t, "test string", provider.GetValue("string").AsString())
+	_, ok := provider.GetValue("nonexisting").TryAsString()
+	assert.False(t, ok)
+	assert.Equal(t, true, provider.GetValue("bool").AsBool())
+	assert.Equal(t, 1.123, provider.GetValue("float").AsFloat())
+	nested := &nested{}
+	v := provider.GetValue("nonexisting")
+	assert.False(t, v.PopulateStruct(nested))
 }
 
 func TestNestedStructs(t *testing.T) {
@@ -225,4 +261,5 @@ boolean:
 	assert.Panics(t, func() { NewYAMLProviderFromBytes([]byte("bytes: \n\x010")) }, "Can't parse empty boolean")
 	assert.Panics(t, func() { provider.GetValue("id").AsInt() }, "Can't parse as int")
 	assert.Panics(t, func() { provider.GetValue("boolean").AsBool() }, "Can't parse empty boolean")
+	assert.Panics(t, func() { provider.GetValue("id").AsFloat() }, "Can't parse as float")
 }
