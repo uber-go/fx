@@ -43,10 +43,6 @@ import (
 func main() {
   // Create the service object
   service := core.NewService(
-    // Initialize without a ServiceInstance, since we don't need to observe
-    // lifecycle events.
-    nil,
-
     // The list of module creators for this service, in this case
     // creates a Thrift RPC module called "keyvalue"
     rpc.ThriftModule("keyvalue", rpc.CreateThriftServiceFunc(NewYarpcThriftHandler)),
@@ -73,7 +69,7 @@ commmand line.
 For example, imagine we wanted a "worker" and a "service" role that handled
 Kafka and TChannel, respectively:
 
-```
+```go
 func main() {
   service := core.NewService(
     nil,

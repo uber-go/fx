@@ -75,11 +75,17 @@ func TestServiceCreation(t *testing.T) {
 	r := newTestStatsReporter()
 	r.cw.Add(1)
 	svc := NewService(
-		nil,
 		WithStatsReporter(r, 50*time.Millisecond),
 	)
 	assert.NotNil(t, svc, "Service should be created")
 	r.cw.Wait()
 
 	assert.Equal(t, r.counters["boot"], int64(1))
+}
+
+func TestWithInstance_Nil(t *testing.T) {
+	svc := NewService(
+		WithInstance(nil),
+	)
+	assert.Nil(t, svc.Instance(), "Instance should be nil")
 }

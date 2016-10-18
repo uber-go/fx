@@ -33,7 +33,7 @@ func WithServices(modules []core.ModuleCreateFunc, instance core.ServiceInstance
 		instance = svcInstance()
 	}
 	svc := core.NewService(
-		instance,
+		core.WithInstance(instance),
 		core.WithModules(modules...),
 	)
 

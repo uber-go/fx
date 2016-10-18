@@ -33,7 +33,6 @@ func registerJSONers(service core.ServiceHost) []json.Registrant {
 
 func main() {
 	service := core.NewService(
-		&myService{},
 		core.WithModules(
 			rpc.JSONModule(registerJSONers),
 			uhttp.NewHTTPModule(registerHTTPers),

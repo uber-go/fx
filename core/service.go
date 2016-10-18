@@ -87,7 +87,7 @@ type serviceConfig struct {
 
 // NewService creates a service owner from a set of service instances and
 // options
-func NewService(instance ServiceInstance, options ...ServiceOption) ServiceOwner {
+func NewService(options ...ServiceOption) ServiceOwner {
 	cfg := config.Global()
 
 	svc := &serviceHost{
@@ -95,7 +95,6 @@ func NewService(instance ServiceInstance, options ...ServiceOption) ServiceOwner
 		modules: []Module{},
 		serviceCore: serviceCore{
 			configProvider: cfg,
-			instance:       instance,
 			items:          map[string]interface{}{},
 		},
 	}
@@ -129,15 +128,14 @@ func NewService(instance ServiceInstance, options ...ServiceOption) ServiceOwner
 
 	// if we have an instance, look for a property called "config" and load the service
 	// node into that config.
-	if instance != nil {
-		loadInstanceConfig(svc.configProvider, "service", instance)
+	if svc.instance != nil {
+		loadInstanceConfig(svc.configProvider, "service", svc.instance)
 
 		// TODO(glib): this line is very confusing. How can we improve the pattern?
-		if field, found := util.FindField(instance, nil, reflect.TypeOf((ServiceHost)(nil))); found {
+		if field, found := util.FindField(svc.instance, nil, reflect.TypeOf((ServiceHost)(nil))); found {
 			var sc ServiceHost = &svc.serviceCore
 			field.Set(reflect.ValueOf(sc))
 		}
-		svc.instance = instance
 	}
 
 	svc.Metrics().Counter("boot").Inc(1)

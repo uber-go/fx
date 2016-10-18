@@ -92,3 +92,13 @@ func WithStatsReporter(reporter tally.StatsReporter, d time.Duration) ServiceOpt
 		return nil
 	}
 }
+
+// WithInstance configures a service with an instance lifecycle observer
+func WithInstance(instance ServiceInstance) ServiceOption {
+	return func(svc ServiceHost) error {
+		service := svc.(*serviceHost)
+		service.instance = instance
+		service.serviceCore.instance = instance
+		return nil
+	}
+}
