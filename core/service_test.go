@@ -83,9 +83,9 @@ func TestServiceCreation(t *testing.T) {
 	assert.Equal(t, r.counters["boot"], int64(1))
 }
 
-func TestWithInstance_Nil(t *testing.T) {
+func TestWithObserver_Nil(t *testing.T) {
 	svc := NewService(
-		WithInstance(nil),
+		WithObserver(nil),
 	)
-	assert.Nil(t, svc.Instance(), "Instance should be nil")
+	assert.Nil(t, svc.Observer(), "Observer should be nil")
 }

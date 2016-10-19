@@ -93,12 +93,12 @@ func WithStatsReporter(reporter tally.StatsReporter, d time.Duration) ServiceOpt
 	}
 }
 
-// WithInstance configures a service with an instance lifecycle observer
-func WithInstance(instance ServiceInstance) ServiceOption {
+// WithObserver configures a service with an instance lifecycle observer
+func WithObserver(observer Observer) ServiceOption {
 	return func(svc ServiceHost) error {
 		service := svc.(*serviceHost)
-		service.instance = instance
-		service.serviceCore.instance = instance
+		service.observer = observer
+		service.serviceCore.observer = observer
 		return nil
 	}
 }

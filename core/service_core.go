@@ -37,7 +37,7 @@ type ServiceHost interface {
 	Roles() []string
 	State() ServiceState
 	Metrics() tally.Scope
-	Instance() ServiceInstance
+	Observer() Observer
 	Config() config.ConfigurationProvider
 	Items() map[string]interface{}
 	Logger() ulog.Log
@@ -50,7 +50,7 @@ type serviceCore struct {
 	configProvider config.ConfigurationProvider
 	scopeMux       sync.Mutex
 	scope          tally.Scope
-	instance       ServiceInstance
+	observer       Observer
 	items          map[string]interface{}
 	logConfig      ulog.Configuration
 	log            ulog.Log
@@ -98,8 +98,8 @@ func (s *serviceCore) Metrics() tally.Scope {
 	return s.scope
 }
 
-func (s *serviceCore) Instance() ServiceInstance {
-	return s.instance
+func (s *serviceCore) Observer() Observer {
+	return s.observer
 }
 
 func (s *serviceCore) Config() config.ConfigurationProvider {

@@ -18,40 +18,37 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package testutils
+package core
 
-import "go.uber.org/fx/core"
+import (
+	"errors"
+	"testing"
+	"time"
 
-type _stubService struct {
-	core.ServiceHost
+	"go.uber.org/fx/core/ulog"
 
-	state         core.ServiceState
-	shutdown      bool
-	init          bool
-	criticalError bool
-	initError     error
-}
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
 
-var _ core.Observer = &_stubService{}
-
-func (s *_stubService) OnInit(svc core.ServiceHost) error {
-	s.init = true
-	return s.initError
-}
-
-func (s *_stubService) OnStateChange(old core.ServiceState, newState core.ServiceState) {
-	s.state = newState
-}
-
-func (s *_stubService) OnShutdown(reason core.ServiceExit) {
-	s.shutdown = true
-}
-
-func (s *_stubService) OnCriticalError(err error) bool {
-	s.criticalError = true
-	return false
-}
-
-func svcInstance() core.Observer {
-	return &_stubService{}
+func TestOnCriticalError_NoObserver(t *testing.T) {
+	err := errors.New("Blargh")
+	sh := &serviceHost{
+		serviceCore: serviceCore{
+			log: ulog.Logger(),
+		},
+	}
+	closeCh, ready, err := sh.Start(false)
+	require.NoError(t, err, "Expected no error starting up")
+	select {
+	case <-time.After(time.Second):
+		assert.Fail(t, "Server failed to start up after 1 second")
+	case <-ready:
+		// do nothing
+	}
+	go func() {
+		<-closeCh
+	}()
+	sh.OnCriticalError(err)
+	assert.Equal(t, err, sh.shutdownReason.Error)
 }

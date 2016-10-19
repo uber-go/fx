@@ -29,7 +29,7 @@ import (
 func main() {
 
 	service := core.NewService(
-		core.WithInstance(&MyService{}),
+		core.WithObserver(&MyService{}),
 		core.WithModules(
 			// Create a YARPC module that exposes endpoints
 			rpc.ThriftModule(

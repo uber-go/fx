@@ -49,26 +49,8 @@ const (
 // A ServiceOwner encapsulates service ownership
 type ServiceOwner interface {
 	ServiceHost
-	Start(waitForExit bool) (<-chan ServiceExit, error)
+	Start(waitForExit bool) (exit <-chan ServiceExit, ready <-chan struct{}, err error)
 	Stop(reason string, exitCode int) error
-}
-
-// ServiceInstance is the interface that is implemented by user service/
-// code.
-type ServiceInstance interface {
-	// OnInit will be called after the service has been initialized
-	OnInit(service ServiceHost) error
-
-	// OnStateChange is called whenever the service changes
-	// states
-	OnStateChange(old ServiceState, new ServiceState)
-
-	// OnShutdown is called before the service shuts down
-	OnShutdown(reason ServiceExit)
-
-	// OnCriticalError is called in response to a critical error.  If false
-	// is returned the service will shut down, otherwise the error will be ignored.
-	OnCriticalError(err error) bool
 }
 
 // ServiceExit is a signal for a service that needs to exit
@@ -126,13 +108,13 @@ func NewService(options ...ServiceOption) ServiceOwner {
 		}
 	}
 
-	// if we have an instance, look for a property called "config" and load the service
+	// if we have an observer, look for a property called "config" and load the service
 	// node into that config.
-	if svc.instance != nil {
-		loadInstanceConfig(svc.configProvider, "service", svc.instance)
+	if svc.observer != nil {
+		loadInstanceConfig(svc.configProvider, "service", svc.observer)
 
 		// TODO(glib): this line is very confusing. How can we improve the pattern?
-		if field, found := util.FindField(svc.instance, nil, reflect.TypeOf((ServiceHost)(nil))); found {
+		if field, found := util.FindField(svc.observer, nil, reflect.TypeOf((ServiceHost)(nil))); found {
 			var sc ServiceHost = &svc.serviceCore
 			field.Set(reflect.ValueOf(sc))
 		}

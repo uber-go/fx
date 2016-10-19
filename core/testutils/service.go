@@ -23,17 +23,17 @@ package testutils
 import "go.uber.org/fx/core"
 
 // WithService is a test helper to instantiate a service
-func WithService(module core.ModuleCreateFunc, instance core.ServiceInstance, fn func(core.ServiceOwner)) {
+func WithService(module core.ModuleCreateFunc, instance core.Observer, fn func(core.ServiceOwner)) {
 	WithServices([]core.ModuleCreateFunc{module}, instance, fn)
 }
 
 // WithServices is a test helper to instantiate a service with multiple modules
-func WithServices(modules []core.ModuleCreateFunc, instance core.ServiceInstance, fn func(core.ServiceOwner)) {
+func WithServices(modules []core.ModuleCreateFunc, instance core.Observer, fn func(core.ServiceOwner)) {
 	if instance == nil {
 		instance = svcInstance()
 	}
 	svc := core.NewService(
-		core.WithInstance(instance),
+		core.WithObserver(instance),
 		core.WithModules(modules...),
 	)
 

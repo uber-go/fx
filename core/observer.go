@@ -18,40 +18,22 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package testutils
+package core
 
-import "go.uber.org/fx/core"
+// Observer is the interface that is implemented by user service/
+// code.
+type Observer interface {
+	// OnInit will be called after the service has been initialized
+	OnInit(service ServiceHost) error
 
-type _stubService struct {
-	core.ServiceHost
+	// OnStateChange is called whenever the service changes
+	// states
+	OnStateChange(old ServiceState, new ServiceState)
 
-	state         core.ServiceState
-	shutdown      bool
-	init          bool
-	criticalError bool
-	initError     error
-}
+	// OnShutdown is called before the service shuts down
+	OnShutdown(reason ServiceExit)
 
-var _ core.Observer = &_stubService{}
-
-func (s *_stubService) OnInit(svc core.ServiceHost) error {
-	s.init = true
-	return s.initError
-}
-
-func (s *_stubService) OnStateChange(old core.ServiceState, newState core.ServiceState) {
-	s.state = newState
-}
-
-func (s *_stubService) OnShutdown(reason core.ServiceExit) {
-	s.shutdown = true
-}
-
-func (s *_stubService) OnCriticalError(err error) bool {
-	s.criticalError = true
-	return false
-}
-
-func svcInstance() core.Observer {
-	return &_stubService{}
+	// OnCriticalError is called in response to a critical error.  If false
+	// is returned the service will shut down, otherwise the error will be ignored.
+	OnCriticalError(err error) bool
 }

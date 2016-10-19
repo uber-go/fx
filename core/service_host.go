@@ -40,7 +40,7 @@ const (
 type serviceHost struct {
 	serviceCore
 	locked   bool
-	instance ServiceInstance
+	observer Observer
 	modules  []Module
 	roles    map[string]bool
 
@@ -87,10 +87,17 @@ func (s *serviceHost) IsRunning() bool {
 }
 
 func (s *serviceHost) OnCriticalError(err error) {
-	if !s.instance.OnCriticalError(err) {
+	shutdown := true
+	if s.observer == nil {
+		s.Logger().With("event", "OnCriticalError").Warn("No observer set to handle lifecycle events. Shutting down.")
+	} else {
+		shutdown = !s.observer.OnCriticalError(err)
+	}
+
+	if shutdown {
 		if ok, err := s.shutdown(err, "", nil); !ok || err != nil {
 			// TODO(ai) verify we flush logs
-			ulog.Logger().With("success", ok, "error", err).Info("Problem shutting down module")
+			s.Logger().With("success", ok, "error", err).Info("Problem shutting down module")
 		}
 	}
 }
@@ -140,28 +147,32 @@ func (s *serviceHost) shutdown(err error, reason string, exitCode *int) (bool, e
 	s.closeChan <- *s.shutdownReason
 	close(s.closeChan)
 
-	if s.instance != nil {
-		s.instance.OnShutdown(*s.shutdownReason)
+	if s.observer != nil {
+		s.observer.OnShutdown(*s.shutdownReason)
 	}
 	return true, err
 }
 
 // Start runs the serve loop. If Shutdown() was called then the shutdown reason
 // will be returned.
-func (s *serviceHost) Start(waitForShutdown bool) (<-chan ServiceExit, error) {
+func (s *serviceHost) Start(waitForShutdown bool) (<-chan ServiceExit, <-chan struct{}, error) {
 	var err error
 	s.locked = true
 	s.shutdownMu.Lock()
 	defer s.shutdownMu.Unlock()
 
+	readyCh := make(chan struct{}, 1)
+	defer func() {
+		readyCh <- struct{}{}
+	}()
 	if s.inShutdown {
-		return nil, fmt.Errorf("errShuttingDown")
+		return nil, readyCh, fmt.Errorf("errShuttingDown")
 	} else if s.IsRunning() {
-		return s.closeChan, nil
+		return s.closeChan, readyCh, nil
 	} else {
-		if s.instance != nil {
-			if err := s.instance.OnInit(s); err != nil {
-				return nil, err
+		if s.observer != nil {
+			if err := s.observer.OnInit(s); err != nil {
+				return nil, readyCh, err
 			}
 		}
 		s.shutdownReason = nil
@@ -178,7 +189,7 @@ func (s *serviceHost) Start(waitForShutdown bool) (<-chan ServiceExit, error) {
 					ulog.Logger().With("initialError", e, "shutdownError", err).Error("Unable to shut down modules")
 				}
 
-				return errChan, e
+				return errChan, readyCh, e
 			}
 		}
 	}
@@ -187,7 +198,7 @@ func (s *serviceHost) Start(waitForShutdown bool) (<-chan ServiceExit, error) {
 		s.WaitForShutdown(nil)
 	}
 
-	return s.closeChan, err
+	return s.closeChan, readyCh, err
 }
 
 // Stop shuts down the service.
@@ -286,8 +297,8 @@ func (s *serviceHost) transitionState(to ServiceState) {
 			new = Stopped
 		case Stopped:
 		}
-		if s.instance != nil {
-			s.instance.OnStateChange(old, new)
+		if s.observer != nil {
+			s.observer.OnStateChange(old, new)
 		}
 	}
 }

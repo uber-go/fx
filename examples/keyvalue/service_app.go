@@ -52,4 +52,4 @@ func (service *MyService) OnCriticalError(err error) bool {
 	return false
 }
 
-var _ core.ServiceInstance = &MyService{}
+var _ core.Observer = &MyService{}
