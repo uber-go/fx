@@ -40,3 +40,53 @@ func TestProviderGroupScope(t *testing.T) {
 	pg := NewProviderGroup("test-group", StaticProvider(data))
 	assert.Equal(t, 42, pg.Scope("hello").GetValue("world").AsInt())
 }
+
+func TestCallbacks_WithDynamicProvider(t *testing.T) {
+	data := map[string]interface{}{"hello.world": 42}
+	mock := NewProviderGroup("with-dynamic", StaticProvider(data))
+	mock = mock.(providerGroup).WithProvider(newMockDynamicProvider(data))
+	assert.Equal(t, "with-dynamic", mock.Name())
+	assert.Equal(t, "registered", mock.RegisterChangeCallback("mockcall", nil))
+	assert.True(t, mock.UnregisterChangeCallback("mock"))
+}
+
+func TestCallbacks_WithoutDynamicProvider(t *testing.T) {
+	data := map[string]interface{}{"hello.world": 42}
+	mock := NewProviderGroup("with-dynamic", StaticProvider(data))
+	mock = mock.(providerGroup).WithProvider(StaticProvider(data))
+	assert.Equal(t, "with-dynamic", mock.Name())
+	assert.Equal(t, "", mock.RegisterChangeCallback("mockcall", nil))
+	assert.False(t, mock.UnregisterChangeCallback("mock"))
+}
+
+type mockDynamicProvider struct {
+	data map[string]interface{}
+}
+
+// StaticProvider should only be used in tests to isolate config from your environment
+func newMockDynamicProvider(data map[string]interface{}) ConfigurationProvider {
+	return &mockDynamicProvider{
+		data: data,
+	}
+}
+
+func (*mockDynamicProvider) Name() string {
+	return "mock"
+}
+
+func (s *mockDynamicProvider) GetValue(key string) ConfigurationValue {
+	val, found := s.data[key]
+	return NewConfigurationValue(s, key, val, found, GetValueType(val), nil)
+}
+
+func (s *mockDynamicProvider) Scope(prefix string) ConfigurationProvider {
+	return NewScopedProvider(prefix, s)
+}
+
+func (s *mockDynamicProvider) RegisterChangeCallback(key string, callback ConfigurationChangeCallback) string {
+	return "registered"
+}
+
+func (s *mockDynamicProvider) UnregisterChangeCallback(token string) bool {
+	return true
+}

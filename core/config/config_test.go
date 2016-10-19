@@ -263,3 +263,9 @@ boolean:
 	assert.Panics(t, func() { provider.GetValue("boolean").AsBool() }, "Can't parse empty boolean")
 	assert.Panics(t, func() { provider.GetValue("id").AsFloat() }, "Can't parse as float")
 }
+
+func TestEnvProvider_Callbacks(t *testing.T) {
+	p := NewEnvProvider("", nil)
+	assert.Equal(t, "", p.RegisterChangeCallback("test", nil))
+	assert.False(t, p.UnregisterChangeCallback("token"))
+}

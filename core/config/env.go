@@ -69,11 +69,20 @@ func (p envConfigProvider) GetValue(key string) ConfigurationValue {
 	value, found := p.provider.GetValue(env)
 	cv = NewConfigurationValue(p, key, value, found, String, nil)
 	return cv
-
 }
 
 func (p envConfigProvider) Scope(prefix string) ConfigurationProvider {
 	return NewScopedProvider(prefix, p)
+}
+
+func (p envConfigProvider) RegisterChangeCallback(key string, callback ConfigurationChangeCallback) string {
+	// Environments don't receive callback events
+	return ""
+}
+
+func (p envConfigProvider) UnregisterChangeCallback(token string) bool {
+	// Nothing to Unregister
+	return false
 }
 
 type osEnvironmentProvider struct{}

@@ -22,6 +22,9 @@ package config
 
 import "fmt"
 
+// ConfigurationChangeCallback is called for updates of configuration data
+type ConfigurationChangeCallback func(key string, provider string, configdata interface{})
+
 // A ConfigurationProvider provides a unified interface to accessing
 // configuration systems.
 type ConfigurationProvider interface {
@@ -30,19 +33,11 @@ type ConfigurationProvider interface {
 	// GetValue pulls a config value
 	GetValue(key string) ConfigurationValue
 	Scope(prefix string) ConfigurationProvider
-}
 
-// ConfigurationChangeCallback is called for updates of configuration data
-type ConfigurationChangeCallback func(key string, provider string, configdata interface{})
-
-// A DynamicConfigurationProvider provides configuration access as well as
-// callback registration and shutdown hooks for dynamic config providers
-type DynamicConfigurationProvider interface {
-	ConfigurationProvider
-
+	// A RegisterChangeCallback provides callback registration for config providers.
+	// These callbacks are noop if a dynamic provider is not configured for the service.
 	RegisterChangeCallback(key string, callback ConfigurationChangeCallback) string
 	UnregisterChangeCallback(token string) bool
-	Shutdown()
 }
 
 func keyNotFound(key string) error {

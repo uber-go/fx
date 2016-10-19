@@ -27,26 +27,28 @@ type providerGroup struct {
 
 // NewProviderGroup creates a configuration provider from a group of backends
 func NewProviderGroup(name string, providers ...ConfigurationProvider) ConfigurationProvider {
-	return providerGroup{
-		name:      name,
-		providers: providers,
+	group := providerGroup{
+		name: name,
 	}
+	for _, provider := range providers {
+		group.providers = append([]ConfigurationProvider{provider}, group.providers...)
+	}
+	return group
 }
 
 // WithProvider updates the current ConfigurationProvider
 func (p providerGroup) WithProvider(provider ConfigurationProvider) ConfigurationProvider {
 	return providerGroup{
 		name:      p.name,
-		providers: append(p.providers, provider),
+		providers: append([]ConfigurationProvider{provider}, p.providers...),
 	}
 }
 
 func (p providerGroup) GetValue(key string) ConfigurationValue {
 	cv := NewConfigurationValue(p, key, nil, false, GetValueType(nil), nil)
 
-	// loop through the providers and return the value defined by the highest priority (e.g. last) provider
-	for i := len(p.providers) - 1; i >= 0; i-- {
-		provider := p.providers[i]
+	// loop through the providers and return the value defined by the highest priority provider
+	for _, provider := range p.providers {
 		if val := provider.GetValue(key); val.HasValue() && !val.IsDefault() {
 			cv = val
 			break
@@ -64,11 +66,20 @@ func (p providerGroup) Name() string {
 }
 
 func (p providerGroup) RegisterChangeCallback(key string, callback ConfigurationChangeCallback) string {
-	// TODO wire this up GFM-73
+	for _, provider := range p.providers {
+		if out := provider.RegisterChangeCallback(key, callback); out != "" {
+			return out
+		}
+	}
 	return ""
 }
+
 func (p providerGroup) UnregisterChangeCallback(token string) bool {
-	// TODO wire this up GFM-73
+	for _, provider := range p.providers {
+		if ok := provider.UnregisterChangeCallback(token); ok {
+			return ok
+		}
+	}
 	return false
 }
 

@@ -114,3 +114,9 @@ func TestYamlNodeWithNil(t *testing.T) {
 		_, _ = newyamlNode(nil)
 	}, "Expected panic with nil inpout.")
 }
+
+func TestYamlNode_Callbacks(t *testing.T) {
+	p := NewYAMLProviderFromFiles(false, nil)
+	assert.Equal(t, "", p.RegisterChangeCallback("test", nil))
+	assert.False(t, p.UnregisterChangeCallback("token"))
+}

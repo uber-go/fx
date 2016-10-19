@@ -64,3 +64,9 @@ func TestStaticProvider_WithScope(t *testing.T) {
 	assert.True(t, val.HasValue())
 	assert.Equal(t, 42, val.AsInt())
 }
+
+func TestStaticProvider_Callbacks(t *testing.T) {
+	p := StaticProvider(nil)
+	assert.Equal(t, "", p.RegisterChangeCallback("test", nil))
+	assert.False(t, p.UnregisterChangeCallback("token"))
+}

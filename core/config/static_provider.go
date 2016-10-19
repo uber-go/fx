@@ -59,6 +59,16 @@ func (s *staticProvider) Scope(prefix string) ConfigurationProvider {
 	return newScopedStaticProvider(s, prefix)
 }
 
+func (s *staticProvider) RegisterChangeCallback(key string, callback ConfigurationChangeCallback) string {
+	// Staic provider don't receive callback events
+	return ""
+}
+
+func (s *staticProvider) UnregisterChangeCallback(token string) bool {
+	// Nothing to Unregister
+	return false
+}
+
 func newScopedStaticProvider(s *staticProvider, prefix string) ConfigurationProvider {
 	return &scopedStaticProvider{
 		ConfigurationProvider: s,
