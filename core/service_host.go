@@ -321,5 +321,4 @@ func loadInstanceConfig(cfg config.ConfigurationProvider, key string, instance i
 		}
 	}
 	return false
-
 }

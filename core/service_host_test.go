@@ -25,6 +25,7 @@ import (
 	"testing"
 	"time"
 
+	"go.uber.org/fx/core/config"
 	"go.uber.org/fx/core/ulog"
 
 	"github.com/stretchr/testify/assert"
@@ -118,4 +119,27 @@ func TestTransitionState(t *testing.T) {
 			assert.Equal(t, observer.state, c.to)
 		})
 	}
+}
+
+func TestLoadInstanceConfig_NoField(t *testing.T) {
+	cfg := config.StaticProvider(nil)
+	instance := struct{}{}
+
+	assert.False(t, loadInstanceConfig(cfg, "anything", &instance), "No field defined on struct")
+}
+
+func TestLoadInstanceConfig_WithServiceConfig(t *testing.T) {
+	cfg := config.NewYAMLProviderFromBytes([]byte(`
+foo:
+  bar: 1
+`))
+
+	instance := struct {
+		ServiceConfig struct {
+			Bar int `yaml:"bar"`
+		}
+	}{}
+
+	assert.True(t, loadInstanceConfig(cfg, "foo", &instance))
+	assert.Equal(t, 1, instance.ServiceConfig.Bar)
 }
