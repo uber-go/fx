@@ -18,24 +18,43 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package testutils
+package core
 
-import "go.uber.org/fx/core"
+// StubObserver may be used for tests or demonstration apps where you wish to
+// observe state transitions without implementing your own observer
+type StubObserver struct {
+	ServiceHostContainer
 
-// WithService is a test helper to instantiate a service
-func WithService(module core.ModuleCreateFunc, instance core.Observer, fn func(core.ServiceOwner)) {
-	WithServices([]core.ModuleCreateFunc{module}, instance, fn)
+	state         ServiceState
+	shutdown      bool
+	init          bool
+	criticalError bool
+	initError     error
 }
 
-// WithServices is a test helper to instantiate a service with multiple modules
-func WithServices(modules []core.ModuleCreateFunc, instance core.Observer, fn func(core.ServiceOwner)) {
-	if instance == nil {
-		instance = core.ObserverStub()
-	}
-	svc := core.NewService(
-		core.WithObserver(instance),
-		core.WithModules(modules...),
-	)
+// OnInit is called when a service is initialized
+func (s *StubObserver) OnInit(svc ServiceHost) error {
+	s.init = true
+	return s.initError
+}
 
-	fn(svc)
+// OnStateChange is called during state transitions
+func (s *StubObserver) OnStateChange(old ServiceState, newState ServiceState) {
+	s.state = newState
+}
+
+// OnShutdown is called for a shutdown
+func (s *StubObserver) OnShutdown(reason ServiceExit) {
+	s.shutdown = true
+}
+
+// OnCriticalError is called whin the app is about to shut down
+func (s *StubObserver) OnCriticalError(err error) bool {
+	s.criticalError = true
+	return false
+}
+
+// ObserverStub returns a stub instance of an Observer
+func ObserverStub() Observer {
+	return &StubObserver{}
 }

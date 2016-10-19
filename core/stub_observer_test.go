@@ -18,24 +18,42 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package testutils
+package core
 
-import "go.uber.org/fx/core"
+import (
+	"errors"
+	"testing"
 
-// WithService is a test helper to instantiate a service
-func WithService(module core.ModuleCreateFunc, instance core.Observer, fn func(core.ServiceOwner)) {
-	WithServices([]core.ModuleCreateFunc{module}, instance, fn)
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
+
+func TestStubObserver_OnInit(t *testing.T) {
+	o := observerStub()
+	require.NoError(t, o.OnInit(&serviceHost{}))
+
+	assert.True(t, o.init)
 }
 
-// WithServices is a test helper to instantiate a service with multiple modules
-func WithServices(modules []core.ModuleCreateFunc, instance core.Observer, fn func(core.ServiceOwner)) {
-	if instance == nil {
-		instance = core.ObserverStub()
-	}
-	svc := core.NewService(
-		core.WithObserver(instance),
-		core.WithModules(modules...),
-	)
+func TestStubObserver_OnStateChange(t *testing.T) {
+	o := observerStub()
+	o.OnStateChange(Uninitialized, Initialized)
 
-	fn(svc)
+	assert.Equal(t, Initialized, o.state)
+}
+
+func TestStubObserver_OnShutdown(t *testing.T) {
+	o := observerStub()
+	o.OnShutdown(ServiceExit{})
+
+	assert.True(t, o.shutdown)
+}
+
+func TestStubObserver_OnCriticalError(t *testing.T) {
+	o := observerStub()
+	assert.False(t, o.OnCriticalError(errors.New("dying")))
+}
+
+func observerStub() *StubObserver {
+	return &StubObserver{}
 }

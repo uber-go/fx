@@ -21,9 +21,12 @@
 package core
 
 import (
+	"errors"
 	"sync"
 	"testing"
 	"time"
+
+	"go.uber.org/fx/core/config"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -88,4 +91,43 @@ func TestWithObserver_Nil(t *testing.T) {
 		WithObserver(nil),
 	)
 	assert.Nil(t, svc.Observer(), "Observer should be nil")
+}
+
+func TestServiceWithRoles(t *testing.T) {
+	defer withConfigData(map[string]interface{}{
+		"applicationID":    "name",
+		"applicationOwner": "owner",
+		"roles.0":          "foo",
+	})()
+
+	svc := NewService()
+	assert.Contains(t, svc.Roles(), "foo")
+}
+
+func TestBadOption_Panics(t *testing.T) {
+	defer withConfigData(nil)()
+	opt := func(_ ServiceHost) error {
+		return errors.New("nope")
+	}
+
+	assert.Panics(t, func() {
+		NewService(opt)
+	})
+}
+
+func TestNewService_WithObserver(t *testing.T) {
+	defer withConfigData(nil)()
+	o := observerStub()
+	svc := NewService(WithObserver(o))
+	assert.Equal(t, o, svc.Observer())
+}
+
+// withConfigData sets a global config and returns a function to defer reset
+func withConfigData(data map[string]interface{}) func() {
+	config.SetGlobal(config.NewProviderGroup(
+		"test",
+		config.StaticProvider(data),
+	), true)
+
+	return config.ResetGlobal
 }

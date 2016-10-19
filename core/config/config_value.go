@@ -260,20 +260,23 @@ func getBucket(t reflect.Type) int {
 	}
 	switch kind {
 	case reflect.Chan:
+		fallthrough
 	case reflect.Interface:
+		fallthrough
 	case reflect.Func:
+		fallthrough
 	case reflect.Map:
 		// TODO: Support bucketMap.  Needs a way to enumerate
 		// the child keys of a value.
 		return bucketInvalid
 	case reflect.Array:
+		fallthrough
 	case reflect.Slice:
 		return bucketArray
 	case reflect.Struct:
 		return bucketObject
 	}
 	return bucketPrimative
-
 }
 
 type fieldInfo struct {

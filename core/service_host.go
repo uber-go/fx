@@ -277,28 +277,30 @@ func (s *serviceHost) WaitForShutdown(exitCallback ServiceExitCallback) {
 }
 
 func (s *serviceHost) transitionState(to ServiceState) {
+	// TODO(ai) this isn't used yet
 	if to < s.state {
 		s.Logger().With("service", s.Name()).Fatal("Can't down from state", "from", s.state, "to", to)
 	}
 
 	for s.state < to {
 		old := s.state
-		new := s.state
+		newState := s.state
 		switch s.state {
 		case Uninitialized:
-			new = Initialized
+			newState = Initialized
 		case Initialized:
-			new = Starting
+			newState = Starting
 		case Starting:
-			new = Running
+			newState = Running
 		case Running:
-			new = Stopping
+			newState = Stopping
 		case Stopping:
-			new = Stopped
+			newState = Stopped
 		case Stopped:
 		}
+		s.state = newState
 		if s.observer != nil {
-			s.observer.OnStateChange(old, new)
+			s.observer.OnStateChange(old, newState)
 		}
 	}
 }

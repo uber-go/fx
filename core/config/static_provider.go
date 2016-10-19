@@ -51,6 +51,11 @@ func (s *staticProvider) GetValue(key string) ConfigurationValue {
 	s.RLock()
 	defer s.RUnlock()
 
+	if key == "" {
+		// NOTE: This returns access to the underlying map, which does not guarantee
+		// thread-safety. This is only used in the test suite.
+		return NewConfigurationValue(s, key, s.data, true, GetValueType(s.data), nil)
+	}
 	val, found := s.data[key]
 	return NewConfigurationValue(s, key, val, found, GetValueType(val), nil)
 }

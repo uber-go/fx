@@ -18,40 +18,31 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package testutils
+package core
 
-import "go.uber.org/fx/core"
+import (
+	"errors"
+	"testing"
 
-type _stubService struct {
-	core.ServiceHost
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
 
-	state         core.ServiceState
-	shutdown      bool
-	init          bool
-	criticalError bool
-	initError     error
+func TestWithModules_OK(t *testing.T) {
+	sh := &serviceHost{}
+	require.NoError(t, WithModules(successModuleCreate)(sh))
+	assert.Empty(t, sh.Modules())
 }
 
-var _ core.Observer = &_stubService{}
-
-func (s *_stubService) OnInit(svc core.ServiceHost) error {
-	s.init = true
-	return s.initError
+func TestWithModules_Errors(t *testing.T) {
+	sh := &serviceHost{}
+	assert.Error(t, WithModules(errorModuleCreate)(sh))
 }
 
-func (s *_stubService) OnStateChange(old core.ServiceState, newState core.ServiceState) {
-	s.state = newState
+func successModuleCreate(_ ModuleCreateInfo) ([]Module, error) {
+	return nil, nil
 }
 
-func (s *_stubService) OnShutdown(reason core.ServiceExit) {
-	s.shutdown = true
-}
-
-func (s *_stubService) OnCriticalError(err error) bool {
-	s.criticalError = true
-	return false
-}
-
-func svcInstance() core.Observer {
-	return &_stubService{}
+func errorModuleCreate(_ ModuleCreateInfo) ([]Module, error) {
+	return nil, errors.New("can't create module")
 }

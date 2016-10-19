@@ -79,3 +79,43 @@ func TestServiceHost_Modules(t *testing.T) {
 	copied := sh.Modules()
 	assert.Equal(t, len(mods), len(copied), "Should have same amount of modules")
 }
+
+func TestTransitionState(t *testing.T) {
+	sh := &serviceHost{}
+	observer := ObserverStub().(*StubObserver)
+	require.NoError(t, WithObserver(observer)(sh))
+
+	cases := []struct {
+		name     string
+		from, to ServiceState
+	}{
+		{
+			name: "Uninitialized to Initialized",
+			from: Uninitialized,
+			to:   Initialized,
+		},
+		{
+			name: "Uninitialized to Starting",
+			from: Uninitialized,
+			to:   Starting,
+		},
+		{
+			name: "Initialized to Stopping",
+			from: Initialized,
+			to:   Stopping,
+		},
+		{
+			name: "Running to stopped",
+			from: Running,
+			to:   Stopped,
+		},
+	}
+
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			sh.state = c.from
+			sh.transitionState(c.to)
+			assert.Equal(t, observer.state, c.to)
+		})
+	}
+}
