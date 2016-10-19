@@ -43,6 +43,23 @@ type ServiceHost interface {
 	Logger() ulog.Log
 }
 
+// A ServiceHostContainer is meant to be embedded in a LifecycleObserver
+// if you want access to the underlying ServiceHost
+type ServiceHostContainer struct {
+	ServiceHost
+}
+
+// SetContainer sets the ServiceHost instance on the container.
+// NOTE: This is not thread-safe, and should only be called once during startup.
+func (s *ServiceHostContainer) SetContainer(sh ServiceHost) {
+	s.ServiceHost = sh
+}
+
+// SetContainerer is the interface for anything that you can call SetContainer on
+type SetContainerer interface {
+	SetContainer(ServiceHost)
+}
+
 type serviceCore struct {
 	standardConfig serviceConfig
 	roles          []string

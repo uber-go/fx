@@ -21,11 +21,8 @@
 package core
 
 import (
-	"reflect"
-
 	"go.uber.org/fx/core/config"
 	"go.uber.org/fx/core/ulog"
-	"go.uber.org/fx/internal/util"
 )
 
 // A ServiceState represents the state of a service
@@ -113,10 +110,8 @@ func NewService(options ...ServiceOption) ServiceOwner {
 	if svc.observer != nil {
 		loadInstanceConfig(svc.configProvider, "service", svc.observer)
 
-		// TODO(glib): this line is very confusing. How can we improve the pattern?
-		if field, found := util.FindField(svc.observer, nil, reflect.TypeOf((ServiceHost)(nil))); found {
-			var sc ServiceHost = &svc.serviceCore
-			field.Set(reflect.ValueOf(sc))
+		if shc, ok := svc.observer.(SetContainerer); ok {
+			shc.SetContainer(svc)
 		}
 	}
 

@@ -18,39 +18,21 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package main
+package core
 
 import (
-	"fmt"
+	"testing"
 
-	"go.uber.org/fx/core"
+	"github.com/stretchr/testify/assert"
 )
 
-// Define your service instance
-type MyService struct {
-	core.ServiceHostContainer
+func TestServiceHostContainer_SetContainer(t *testing.T) {
+	myObserver := struct {
+		ServiceHostContainer
+	}{}
+	sh := &serviceCore{}
+	myObserver.SetContainer(sh)
 
-	ServiceConfig serviceConfig
-	someFlag      bool
+	// Simple assertion that the obserer had its ServiceHost set properly
+	assert.NotNil(t, myObserver.Name())
 }
-
-// These will be called for doing tasks at init and shutdown
-
-func (service *MyService) OnInit(svc core.ServiceHost) error {
-	fmt.Printf("The config value for %q is %v\n", service.Name(), service.ServiceConfig.SomeNumber)
-
-	return nil
-}
-
-func (service *MyService) OnStateChange(old core.ServiceState, new core.ServiceState) {
-
-}
-
-func (service *MyService) OnShutdown(reason core.ServiceExit) {
-}
-
-func (service *MyService) OnCriticalError(err error) bool {
-	return false
-}
-
-var _ core.Observer = &MyService{}
