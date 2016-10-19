@@ -26,58 +26,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestServiceHostContainer_SetContainer(t *testing.T) {
-	myObserver := struct {
-		ServiceHostContainer
-	}{}
-	sh := &serviceCore{}
-	myObserver.SetContainer(sh)
-
-	// Simple assertion that the obserer had its ServiceHost set properly
-	assert.NotNil(t, myObserver.Name())
-}
-
-func TestServiceCoreDescription(t *testing.T) {
-	sh := NullServiceHost().(*serviceCore)
-
-	assert.Equal(t, sh.standardConfig.ServiceDescription, sh.Description())
-}
-
-func TestServiceCoreOwner(t *testing.T) {
-	sh := NullServiceHost().(*serviceCore)
-
-	assert.Equal(t, sh.standardConfig.ServiceOwner, sh.Owner())
-}
-
-func TestServiceCoreState(t *testing.T) {
-	sh := &serviceCore{
-		state: Initialized,
-	}
-
-	assert.Equal(t, Initialized, sh.State())
-}
-
-func TestServiceCoreRoles(t *testing.T) {
-	sh := &serviceCore{
-		standardConfig: serviceConfig{
-			ServiceRoles: []string{"test-suite"},
-		},
-	}
-
-	assert.Equal(t, []string{"test-suite"}, sh.Roles())
-}
-
-func TestServiceCoreConfig(t *testing.T) {
+func TestNullServiceHost_OK(t *testing.T) {
 	sh := NullServiceHost()
-	cfg := sh.Config()
-
-	assert.Equal(t, "static", cfg.Name())
-}
-
-func TestServiceCoreItems(t *testing.T) {
-	sh := &serviceCore{
-		items: map[string]interface{}{"test": true},
-	}
-
-	assert.True(t, sh.Items()["test"].(bool))
+	assert.Equal(t, "dummy", sh.Name())
 }

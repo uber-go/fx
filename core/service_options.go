@@ -37,24 +37,23 @@ func WithModules(modules ...ModuleCreateFunc) ServiceOption {
 	return func(svc ServiceHost) error {
 		svc2 := svc.(*serviceHost)
 		for _, mcf := range modules {
-			var err error
 			mi := ModuleCreateInfo{
 				Host:  svc,
 				Roles: nil,
 				Items: map[string]interface{}{},
 			}
 
-			if mods, err := mcf(mi); err == nil {
-
-				if !svc2.supportsRole(mi.Roles...) {
-					continue
-				}
-				for _, mod := range mods {
-					err = svc2.addModule(mod)
-				}
-			}
+			mods, err := mcf(mi)
 			if err != nil {
 				return err
+			}
+
+			if !svc2.supportsRole(mi.Roles...) {
+				continue
+			}
+
+			for _, mod := range mods {
+				err = svc2.addModule(mod)
 			}
 		}
 		return nil

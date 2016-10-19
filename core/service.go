@@ -30,7 +30,7 @@ type ServiceState int
 
 const (
 	// Uninitialized means a service has not yet been initialized
-	Uninitialized = iota + 1
+	Uninitialized = ServiceState(iota + 1)
 	// Initialized means a service has been initialized
 	Initialized
 	// Starting represents a service in the process of starting

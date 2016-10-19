@@ -52,3 +52,30 @@ func TestOnCriticalError_NoObserver(t *testing.T) {
 	sh.OnCriticalError(err)
 	assert.Equal(t, err, sh.shutdownReason.Error)
 }
+
+func TestSupportsRole_NoRoles(t *testing.T) {
+	sh := &serviceHost{}
+	assert.True(t, sh.supportsRole("anything"), "Empty host roles should pass any value")
+}
+
+func TestSuupportsRole_Matches(t *testing.T) {
+	sh := &serviceHost{
+		roles: map[string]bool{"chilling": true},
+	}
+	assert.True(t, sh.supportsRole("chilling"), "Should support matching role")
+}
+
+func TestSupportsRole_NoMatch(t *testing.T) {
+	sh := &serviceHost{
+		roles: map[string]bool{"business": true},
+	}
+	assert.False(t, sh.supportsRole("pleasure"), "Should not support non-matching role")
+}
+
+func TestServiceHost_Modules(t *testing.T) {
+	mods := []Module{}
+	sh := &serviceHost{modules: mods}
+
+	copied := sh.Modules()
+	assert.Equal(t, len(mods), len(copied), "Should have same amount of modules")
+}
