@@ -168,8 +168,8 @@ func withModule(t testing.TB, hookup CreateHTTPRegistrantsFunc, options []module
 	assert.NoError(t, exitError, "No exit error should occur")
 	// check errs channel
 	select {
-	case <-errs:
-		assert.Fail(t, "Got error from listening")
+	case err := <-errs:
+		assert.NoError(t, err, "Got error from listening")
 	default:
 		// no errors, we're good
 	}

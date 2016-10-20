@@ -204,7 +204,10 @@ func (m *Module) Start(ready chan<- struct{}) <-chan error {
 	go func() {
 		listener := m.accessListener()
 		ready <- struct{}{}
-		ret <- http.Serve(listener, m.mux)
+		ret <- nil
+		if err := http.Serve(listener, m.mux); err != nil {
+			m.log.With("error", err).Error("HTTP Serve error")
+		}
 	}()
 	return ret
 }

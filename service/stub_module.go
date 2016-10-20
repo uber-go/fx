@@ -51,10 +51,9 @@ func (s *StubModule) Initialize(host Host) error {
 // Start mimics startup
 func (s *StubModule) Start(ready chan<- struct{}) <-chan error {
 	errs := make(chan error, 1)
-	if s.StartError != nil {
-		errs <- s.StartError
-	}
+	errs <- s.StartError
 	ready <- struct{}{}
+	s.Running = true
 	return errs
 }
 

@@ -175,18 +175,24 @@ func (s *host) Start(waitForShutdown bool) (<-chan Exit, <-chan struct{}, error)
 			}
 		}
 		s.shutdownReason = nil
-		s.closeChan = make(chan Exit)
+		s.closeChan = make(chan Exit, 1)
 		errs := s.startModules()
 		if len(errs) > 0 {
 			// grab the first error, shut down the service
 			// and return the error
 			for _, e := range errs {
+				errChan := make(chan Exit, 1)
+				errChan <- Exit{
+					Error:    e,
+					Reason:   "Module start failed",
+					ExitCode: 4,
+				}
 
-				errChan := make(chan Exit)
-				errChan <- *s.shutdownReason
+				s.shutdownMu.Unlock()
 				if _, err := s.shutdown(e, "", nil); err != nil {
 					ulog.Logger().With("initialError", e, "shutdownError", err).Error("Unable to shut down modules")
 				}
+				s.shutdownMu.Lock()
 
 				return errChan, readyCh, e
 			}
@@ -219,14 +225,17 @@ func (s *host) startModules() map[Module]error {
 			if !m.IsRunning() {
 				readyCh := make(chan struct{}, 1)
 				startResult := m.Start(readyCh)
-				if startError := <-startResult; startError != nil {
-					results[m] = startError
-				}
+
 				select {
 				case <-readyCh:
-					s.Logger().With("module", m.Name()).Debug("Module started up cleanly")
+					s.Logger().With("module", m.Name()).Info("Module started up cleanly")
 				case <-time.After(defaultStartupWait):
 					results[m] = fmt.Errorf("module didn't start after %v", defaultStartupWait)
+				}
+
+				if startError := <-startResult; startError != nil {
+					s.Logger().With("module", m.Name(), "error", startError).Error("Error received while starting module")
+					results[m] = startError
 				}
 			}
 			wg.Done()

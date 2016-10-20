@@ -34,11 +34,7 @@ import (
 
 func TestOnCriticalError_NoObserver(t *testing.T) {
 	err := errors.New("Blargh")
-	sh := &host{
-		serviceCore: serviceCore{
-			log: ulog.Logger(),
-		},
-	}
+	sh := makeHost()
 	closeCh, ready, err := sh.Start(false)
 	require.NoError(t, err, "Expected no error starting up")
 	select {
@@ -211,4 +207,42 @@ func TestAddModule_NotLocked(t *testing.T) {
 	sh := &host{}
 	assert.NoError(t, sh.addModule(mod))
 	assert.Equal(t, sh, mod.Host)
+}
+
+func TestStartModule_NoErrors(t *testing.T) {
+	s := makeHost()
+	mod := NewStubModule()
+	require.NoError(t, s.addModule(mod))
+
+	closeCh, _, err := s.Start(false)
+	go func() {
+		<-closeCh
+	}()
+	defer func() {
+		assert.NoError(t, s.Stop("test", 0))
+	}()
+
+	assert.NoError(t, err)
+	assert.True(t, mod.IsRunning())
+}
+
+func TestStartHost_WithErrors(t *testing.T) {
+	s := makeHost()
+	mod := NewStubModule()
+	mod.StartError = errors.New("can't start this")
+	require.NoError(t, s.addModule(mod))
+
+	closeCh, _, err := s.Start(false)
+	go func() {
+		<-closeCh
+	}()
+	assert.Error(t, err)
+}
+
+func makeHost() *host {
+	return &host{
+		serviceCore: serviceCore{
+			log: ulog.Logger(),
+		},
+	}
 }
