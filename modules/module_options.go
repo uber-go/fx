@@ -36,9 +36,6 @@ func WithName(name string) Option {
 // WithRoles is an option to set module roles
 func WithRoles(roles ...string) Option {
 	return func(mi *core.ModuleCreateInfo) error {
-		// if mb := findModuleInfo(module); mb != nil {
-		// 	mb.roles = roles
-		// }
 		mi.Roles = roles
 		return nil
 	}

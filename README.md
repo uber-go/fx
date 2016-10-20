@@ -72,12 +72,12 @@ Kafka and TChannel, respectively:
 ```go
 func main() {
   service := core.NewService(
-    nil,
     kafka.Module("kakfa_topic1", []string{"worker"}),
     rpc.ThriftModule("keyvalue", []string{"service"}, rpc.CreateThriftServiceFunc(NewYarpcThriftHandler)),
   )
 
   service.Start(true)
+}
 ```
 
 Which then allows us to set the roles either via a command line variable:
@@ -143,7 +143,6 @@ import (
 
 func main() {
   service := core.NewService(
-    nil,
     http.Module("http", nil),
   )
   service.Start(true)
@@ -190,7 +189,6 @@ func NewMyServiceHandler(svc *core.Service) (thrift.Service, error) {
 ```go
 func main() {
   service := core.NewService(
-    nil,
     rpc.ThriftModule("rpc", nil, rpc.CreateThriftServiceFunc(NewMyServiceHandler)),
   )
 

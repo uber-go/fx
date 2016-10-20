@@ -104,6 +104,9 @@ func (s *serviceCore) Items() map[string]interface{} {
 }
 
 func (s *serviceCore) Metrics() tally.Scope {
+	// TODO(glib): this is really inefficient, since everyone needing to aquire the scope
+	// will hit this mutex. It's much better to initialize the scope during service init, which is
+	// currently tricky due to no strict enforcement of options order.
 	s.scopeMux.Lock()
 	defer s.scopeMux.Unlock()
 
