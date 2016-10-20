@@ -21,36 +21,35 @@
 package main
 
 import (
-	"fmt"
-
 	"go.uber.org/fx/core"
+	"go.uber.org/fx/core/ulog"
 )
 
-// Define your service instance
-type MyService struct {
+// Observer receives callbacks during various service lifecycle events
+type Observer struct {
 	core.ServiceHostContainer
 
 	ServiceConfig serviceConfig
 	someFlag      bool
 }
 
-// These will be called for doing tasks at init and shutdown
-
-func (service *MyService) OnInit(svc core.ServiceHost) error {
-	fmt.Printf("The config value for %q is %v\n", service.Name(), service.ServiceConfig.SomeNumber)
+// OnInit is called during service init process. Returning an error halts the init?
+func (service *Observer) OnInit(svc core.ServiceHost) error {
+	ulog.Logger().
+		With("service_name", service.Name(), "some_number", service.ServiceConfig.SomeNumber).
+		Info("Received service init callback")
 
 	return nil
 }
 
-func (service *MyService) OnStateChange(old core.ServiceState, new core.ServiceState) {
+// OnStateChange is called when service changes state
+func (service *Observer) OnStateChange(old core.ServiceState, new core.ServiceState) {}
 
-}
+// OnShutdown is called during shutdown
+func (service *Observer) OnShutdown(reason core.ServiceExit) {}
 
-func (service *MyService) OnShutdown(reason core.ServiceExit) {
-}
+// OnCriticalError is called during critical errors
+func (service *Observer) OnCriticalError(err error) bool { return false }
 
-func (service *MyService) OnCriticalError(err error) bool {
-	return false
-}
-
-var _ core.Observer = &MyService{}
+// Validate that Observer satisfies the interface
+var _ core.Observer = &Observer{}

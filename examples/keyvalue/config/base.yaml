@@ -3,6 +3,7 @@ applicationdesc: A simple keyvalue service
 applicationowner: uberfx@uber.com
 modules:
   yarpc:
+    advertise_name: keyvalue
     bind: :28941
 
 service:
