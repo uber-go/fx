@@ -57,7 +57,7 @@ var _ ServiceOwner = &serviceHost{}
 
 func (s *serviceHost) addModule(module Module) error {
 	if s.locked {
-		return fmt.Errorf("ServiceAlreadyStarted")
+		return fmt.Errorf("can't add module: service already started")
 	}
 	s.modules = append(s.modules, module)
 	return module.Initialize(s)
@@ -103,7 +103,6 @@ func (s *serviceHost) OnCriticalError(err error) {
 }
 
 func (s *serviceHost) shutdown(err error, reason string, exitCode *int) (bool, error) {
-
 	s.shutdownMu.Lock()
 	s.inShutdown = true
 	defer func() {

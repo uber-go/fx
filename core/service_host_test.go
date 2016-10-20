@@ -143,3 +143,72 @@ foo:
 	assert.True(t, loadInstanceConfig(cfg, "foo", &instance))
 	assert.Equal(t, 1, instance.ServiceConfig.Bar)
 }
+
+func TestServiceHostStop_NoError(t *testing.T) {
+	sh := &serviceHost{}
+	assert.NoError(t, sh.Stop("testing", 1))
+}
+
+func TestOnCriticalError_ObserverShutdown(t *testing.T) {
+	o := observerStub()
+	sh := &serviceHost{
+		observer: o,
+		serviceCore: serviceCore{
+			log: ulog.Logger(),
+		},
+	}
+
+	sh.OnCriticalError(errors.New("simulated shutdown"))
+	assert.True(t, o.criticalError)
+}
+
+func TestShutdownWithError_ReturnsError(t *testing.T) {
+	sh := &serviceHost{
+		closeChan: make(chan ServiceExit, 1),
+	}
+	exitCode := 1
+	shutdown, err := sh.shutdown(errors.New("simulated"), "testing", &exitCode)
+	assert.True(t, shutdown)
+	assert.Error(t, err)
+}
+
+func TestServiceHostStart_InShutdown(t *testing.T) {
+	sh := &serviceHost{
+		inShutdown: true,
+	}
+	_, _, err := sh.Start(false)
+	assert.Error(t, err)
+}
+
+func TestServiceHostStart_AlreadyRunning(t *testing.T) {
+	sh := &serviceHost{
+		closeChan: make(chan ServiceExit, 1),
+	}
+	_, _, err := sh.Start(false)
+	assert.NoError(t, err)
+}
+
+func TestStartWithObserver_InitError(t *testing.T) {
+	obs := observerStub()
+	obs.initError = errors.New("can't touch this")
+	sh := &serviceHost{
+		observer: obs,
+	}
+	_, _, err := sh.Start(false)
+	assert.Error(t, err)
+	assert.True(t, obs.init)
+}
+
+func TestAddModule_Locked(t *testing.T) {
+	sh := &serviceHost{
+		locked: true,
+	}
+	assert.Error(t, sh.addModule(nil))
+}
+
+func TestAddModule_NotLocked(t *testing.T) {
+	mod := NewStubModule()
+	sh := &serviceHost{}
+	assert.NoError(t, sh.addModule(mod))
+	assert.Equal(t, sh, mod.Host)
+}
