@@ -266,6 +266,6 @@ boolean:
 
 func TestEnvProvider_Callbacks(t *testing.T) {
 	p := NewEnvProvider("", nil)
-	assert.Equal(t, "", p.RegisterChangeCallback("test", nil))
-	assert.False(t, p.UnregisterChangeCallback("token"))
+	assert.NoError(t, p.RegisterChangeCallback("test", nil))
+	assert.NoError(t, p.UnregisterChangeCallback("token"))
 }

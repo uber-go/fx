@@ -36,8 +36,8 @@ type ConfigurationProvider interface {
 
 	// A RegisterChangeCallback provides callback registration for config providers.
 	// These callbacks are noop if a dynamic provider is not configured for the service.
-	RegisterChangeCallback(key string, callback ConfigurationChangeCallback) string
-	UnregisterChangeCallback(token string) bool
+	RegisterChangeCallback(key string, callback ConfigurationChangeCallback) error
+	UnregisterChangeCallback(token string) error
 }
 
 func keyNotFound(key string) error {

@@ -21,6 +21,7 @@
 package config
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -32,7 +33,7 @@ func TestProviderGroup(t *testing.T) {
 	assert.Equal(t, "test", pg.GetValue("id").AsString())
 	// TODO this should not require a cast GFM-74
 	assert.Empty(t, pg.(providerGroup).RegisterChangeCallback("", nil))
-	assert.False(t, pg.(providerGroup).UnregisterChangeCallback(""))
+	assert.Nil(t, pg.(providerGroup).UnregisterChangeCallback(""))
 }
 
 func TestProviderGroupScope(t *testing.T) {
@@ -46,8 +47,8 @@ func TestCallbacks_WithDynamicProvider(t *testing.T) {
 	mock := NewProviderGroup("with-dynamic", StaticProvider(data))
 	mock = mock.(providerGroup).WithProvider(newMockDynamicProvider(data))
 	assert.Equal(t, "with-dynamic", mock.Name())
-	assert.Equal(t, "registered", mock.RegisterChangeCallback("mockcall", nil))
-	assert.True(t, mock.UnregisterChangeCallback("mock"))
+	assert.Equal(t, fmt.Errorf("registration error"), mock.RegisterChangeCallback("mockcall", nil))
+	assert.Equal(t, fmt.Errorf("unregiser error"), mock.UnregisterChangeCallback("mock"))
 }
 
 func TestCallbacks_WithoutDynamicProvider(t *testing.T) {
@@ -55,8 +56,8 @@ func TestCallbacks_WithoutDynamicProvider(t *testing.T) {
 	mock := NewProviderGroup("with-dynamic", StaticProvider(data))
 	mock = mock.(providerGroup).WithProvider(StaticProvider(data))
 	assert.Equal(t, "with-dynamic", mock.Name())
-	assert.Equal(t, "", mock.RegisterChangeCallback("mockcall", nil))
-	assert.False(t, mock.UnregisterChangeCallback("mock"))
+	assert.NoError(t, mock.RegisterChangeCallback("mockcall", nil))
+	assert.NoError(t, mock.UnregisterChangeCallback("mock"))
 }
 
 type mockDynamicProvider struct {
@@ -83,10 +84,10 @@ func (s *mockDynamicProvider) Scope(prefix string) ConfigurationProvider {
 	return NewScopedProvider(prefix, s)
 }
 
-func (s *mockDynamicProvider) RegisterChangeCallback(key string, callback ConfigurationChangeCallback) string {
-	return "registered"
+func (s *mockDynamicProvider) RegisterChangeCallback(key string, callback ConfigurationChangeCallback) error {
+	return fmt.Errorf("registration error")
 }
 
-func (s *mockDynamicProvider) UnregisterChangeCallback(token string) bool {
-	return true
+func (s *mockDynamicProvider) UnregisterChangeCallback(token string) error {
+	return fmt.Errorf("unregiser error")
 }

@@ -117,6 +117,6 @@ func TestYamlNodeWithNil(t *testing.T) {
 
 func TestYamlNode_Callbacks(t *testing.T) {
 	p := NewYAMLProviderFromFiles(false, nil)
-	assert.Equal(t, "", p.RegisterChangeCallback("test", nil))
-	assert.False(t, p.UnregisterChangeCallback("token"))
+	assert.NoError(t, p.RegisterChangeCallback("test", nil))
+	assert.NoError(t, p.UnregisterChangeCallback("token"))
 }

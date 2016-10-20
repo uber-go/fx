@@ -75,14 +75,14 @@ func (p envConfigProvider) Scope(prefix string) ConfigurationProvider {
 	return NewScopedProvider(prefix, p)
 }
 
-func (p envConfigProvider) RegisterChangeCallback(key string, callback ConfigurationChangeCallback) string {
+func (p envConfigProvider) RegisterChangeCallback(key string, callback ConfigurationChangeCallback) error {
 	// Environments don't receive callback events
-	return ""
+	return nil
 }
 
-func (p envConfigProvider) UnregisterChangeCallback(token string) bool {
+func (p envConfigProvider) UnregisterChangeCallback(token string) error {
 	// Nothing to Unregister
-	return false
+	return nil
 }
 
 type osEnvironmentProvider struct{}

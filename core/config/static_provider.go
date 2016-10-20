@@ -64,14 +64,14 @@ func (s *staticProvider) Scope(prefix string) ConfigurationProvider {
 	return newScopedStaticProvider(s, prefix)
 }
 
-func (s *staticProvider) RegisterChangeCallback(key string, callback ConfigurationChangeCallback) string {
+func (s *staticProvider) RegisterChangeCallback(key string, callback ConfigurationChangeCallback) error {
 	// Staic provider don't receive callback events
-	return ""
+	return nil
 }
 
-func (s *staticProvider) UnregisterChangeCallback(token string) bool {
+func (s *staticProvider) UnregisterChangeCallback(token string) error {
 	// Nothing to Unregister
-	return false
+	return nil
 }
 
 func newScopedStaticProvider(s *staticProvider, prefix string) ConfigurationProvider {

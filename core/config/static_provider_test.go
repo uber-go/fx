@@ -67,6 +67,6 @@ func TestStaticProvider_WithScope(t *testing.T) {
 
 func TestStaticProvider_Callbacks(t *testing.T) {
 	p := StaticProvider(nil)
-	assert.Equal(t, "", p.RegisterChangeCallback("test", nil))
-	assert.False(t, p.UnregisterChangeCallback("token"))
+	assert.NoError(t, p.RegisterChangeCallback("test", nil))
+	assert.NoError(t, p.UnregisterChangeCallback("token"))
 }

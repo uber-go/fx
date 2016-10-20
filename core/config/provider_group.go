@@ -65,22 +65,22 @@ func (p providerGroup) Name() string {
 	return p.name
 }
 
-func (p providerGroup) RegisterChangeCallback(key string, callback ConfigurationChangeCallback) string {
+func (p providerGroup) RegisterChangeCallback(key string, callback ConfigurationChangeCallback) error {
 	for _, provider := range p.providers {
-		if out := provider.RegisterChangeCallback(key, callback); out != "" {
-			return out
+		if err := provider.RegisterChangeCallback(key, callback); err != nil {
+			return err
 		}
 	}
-	return ""
+	return nil
 }
 
-func (p providerGroup) UnregisterChangeCallback(token string) bool {
+func (p providerGroup) UnregisterChangeCallback(token string) error {
 	for _, provider := range p.providers {
-		if ok := provider.UnregisterChangeCallback(token); ok {
-			return ok
+		if err := provider.UnregisterChangeCallback(token); err != nil {
+			return err
 		}
 	}
-	return false
+	return nil
 }
 
 func (p providerGroup) Scope(prefix string) ConfigurationProvider {

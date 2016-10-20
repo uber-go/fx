@@ -132,14 +132,14 @@ func (y yamlConfigProvider) Scope(prefix string) ConfigurationProvider {
 	return NewScopedProvider(prefix, y)
 }
 
-func (y yamlConfigProvider) RegisterChangeCallback(key string, callback ConfigurationChangeCallback) string {
+func (y yamlConfigProvider) RegisterChangeCallback(key string, callback ConfigurationChangeCallback) error {
 	// Yaml configuration don't receive callback events
-	return ""
+	return nil
 }
 
-func (y yamlConfigProvider) UnregisterChangeCallback(token string) bool {
+func (y yamlConfigProvider) UnregisterChangeCallback(token string) error {
 	// Nothing to Unregister
-	return false
+	return nil
 }
 
 func deref(value reflect.Value) reflect.Value {
