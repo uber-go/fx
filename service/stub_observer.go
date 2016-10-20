@@ -18,22 +18,43 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package core
+package service
 
-// Observer is the interface that is implemented by user service/
-// code.
-type Observer interface {
-	// OnInit will be called after the service has been initialized
-	OnInit(service ServiceHost) error
+// StubObserver may be used for tests or demonstration apps where you wish to
+// observe state transitions without implementing your own observer
+type StubObserver struct {
+	HostContainer
 
-	// OnStateChange is called whenever the service changes
-	// states
-	OnStateChange(old ServiceState, new ServiceState)
+	state         State
+	shutdown      bool
+	init          bool
+	criticalError bool
+	initError     error
+}
 
-	// OnShutdown is called before the service shuts down
-	OnShutdown(reason ServiceExit)
+// OnInit is called when a service is initialized
+func (s *StubObserver) OnInit(svc Host) error {
+	s.init = true
+	return s.initError
+}
 
-	// OnCriticalError is called in response to a critical error.  If false
-	// is returned the service will shut down, otherwise the error will be ignored.
-	OnCriticalError(err error) bool
+// OnStateChange is called during state transitions
+func (s *StubObserver) OnStateChange(old State, newState State) {
+	s.state = newState
+}
+
+// OnShutdown is called for a shutdown
+func (s *StubObserver) OnShutdown(reason Exit) {
+	s.shutdown = true
+}
+
+// OnCriticalError is called whin the app is about to shut down
+func (s *StubObserver) OnCriticalError(err error) bool {
+	s.criticalError = true
+	return false
+}
+
+// ObserverStub returns a stub instance of an Observer
+func ObserverStub() Observer {
+	return &StubObserver{}
 }

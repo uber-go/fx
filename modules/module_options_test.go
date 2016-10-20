@@ -23,9 +23,10 @@ package modules
 import (
 	"testing"
 
+	"go.uber.org/fx/service"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.uber.org/fx/core"
 )
 
 func TestWithName_OK(t *testing.T) {
@@ -46,8 +47,8 @@ func TestWithRoles_OK(t *testing.T) {
 	assert.Equal(t, []string{"foo", "bar"}, h.Roles)
 }
 
-func mci() *core.ModuleCreateInfo {
-	return &core.ModuleCreateInfo{
-		Host: core.NullServiceHost(),
+func mci() *service.ModuleCreateInfo {
+	return &service.ModuleCreateInfo{
+		Host: service.NullHost(),
 	}
 }

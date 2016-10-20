@@ -25,8 +25,8 @@ import (
 	"io"
 	"net/http"
 
-	"go.uber.org/fx/core"
 	uhttp "go.uber.org/fx/modules/http"
+	"go.uber.org/fx/service"
 )
 
 type exampleHandler struct{}
@@ -40,7 +40,7 @@ func enforceHeader(r uhttp.Route) uhttp.Route {
 	return r.Headers("X-Uber-FX", "yass")
 }
 
-func registerHTTPers(service core.ServiceHost) []uhttp.RouteHandler {
+func registerHTTPers(service service.Host) []uhttp.RouteHandler {
 	handler := &exampleHandler{}
 	return []uhttp.RouteHandler{
 		uhttp.NewRouteHandler("/", handler, enforceHeader),

@@ -28,11 +28,11 @@ import (
 	"sync"
 	"time"
 
-	"go.uber.org/fx/core"
 	"go.uber.org/fx/core/config"
 	"go.uber.org/fx/core/metrics"
 	"go.uber.org/fx/core/ulog"
 	"go.uber.org/fx/modules"
+	"go.uber.org/fx/service"
 
 	"github.com/gorilla/context"
 	"github.com/gorilla/mux"
@@ -62,7 +62,7 @@ const (
 	healthPath = "/health"
 )
 
-var _ core.Module = &Module{}
+var _ service.Module = &Module{}
 
 // Response is an envelope for returning the results of an HTTP call
 type Response struct {
@@ -86,7 +86,7 @@ type Module struct {
 	listenMu sync.RWMutex
 }
 
-var _ core.Module = &Module{}
+var _ service.Module = &Module{}
 
 // Config handles config for HTTP modules
 type Config struct {
@@ -97,20 +97,20 @@ type Config struct {
 }
 
 // CreateHTTPRegistrantsFunc returns a slice of registrants from a service host
-type CreateHTTPRegistrantsFunc func(service core.ServiceHost) []RouteHandler
+type CreateHTTPRegistrantsFunc func(service service.Host) []RouteHandler
 
 // NewHTTPModule returns a new HTTP module
-func NewHTTPModule(hookup CreateHTTPRegistrantsFunc, options ...modules.Option) core.ModuleCreateFunc {
-	return func(mi core.ModuleCreateInfo) ([]core.Module, error) {
+func NewHTTPModule(hookup CreateHTTPRegistrantsFunc, options ...modules.Option) service.ModuleCreateFunc {
+	return func(mi service.ModuleCreateInfo) ([]service.Module, error) {
 		mod, err := newModule(mi, hookup, options...)
 		if err != nil {
 			return nil, err
 		}
-		return []core.Module{mod}, nil
+		return []service.Module{mod}, nil
 	}
 }
 
-func newModule(mi core.ModuleCreateInfo, createService CreateHTTPRegistrantsFunc, options ...modules.Option) (*Module, error) {
+func newModule(mi service.ModuleCreateInfo, createService CreateHTTPRegistrantsFunc, options ...modules.Option) (*Module, error) {
 	// setup config defaults
 	cfg := &Config{
 		Port:    defaultPort,
@@ -143,7 +143,7 @@ func newModule(mi core.ModuleCreateInfo, createService CreateHTTPRegistrantsFunc
 }
 
 // Initialize sets up an HTTP-backed module
-func (m *Module) Initialize(host core.ServiceHost) error {
+func (m *Module) Initialize(host service.Host) error {
 	return nil
 }
 

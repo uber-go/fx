@@ -24,9 +24,9 @@ import (
 	"fmt"
 	"time"
 
-	"go.uber.org/fx/core"
 	"go.uber.org/fx/core/metrics"
 	"go.uber.org/fx/modules"
+	"go.uber.org/fx/service"
 
 	"go.uber.org/thriftrw/protocol"
 	"go.uber.org/thriftrw/wire"
@@ -36,21 +36,21 @@ import (
 )
 
 // CreateThriftServiceFunc creates a Thrift service from a service host
-type CreateThriftServiceFunc func(service core.ServiceHost) (thrift.Service, error)
+type CreateThriftServiceFunc func(service service.Host) (thrift.Service, error)
 
 // ThriftModule creates a Thrift Module from a service func
-func ThriftModule(hookup CreateThriftServiceFunc, options ...modules.Option) core.ModuleCreateFunc {
-	return func(mi core.ModuleCreateInfo) ([]core.Module, error) {
+func ThriftModule(hookup CreateThriftServiceFunc, options ...modules.Option) service.ModuleCreateFunc {
+	return func(mi service.ModuleCreateInfo) ([]service.Module, error) {
 		mod, err := newYarpcThriftModule(mi, hookup, options...)
 		if err != nil {
 			return nil, err
 		}
 
-		return []core.Module{mod}, nil
+		return []service.Module{mod}, nil
 	}
 }
 
-func newYarpcThriftModule(mi core.ModuleCreateInfo, createService CreateThriftServiceFunc, options ...modules.Option) (*YarpcModule, error) {
+func newYarpcThriftModule(mi service.ModuleCreateInfo, createService CreateThriftServiceFunc, options ...modules.Option) (*YarpcModule, error) {
 
 	svc, err := createService(mi.Host)
 	if err != nil {

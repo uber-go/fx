@@ -18,7 +18,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package core
+package service
 
 import (
 	"fmt"
@@ -37,7 +37,7 @@ const (
 	defaultStartupWait = time.Second
 )
 
-type serviceHost struct {
+type host struct {
 	serviceCore
 	locked   bool
 	observer Observer
@@ -46,16 +46,16 @@ type serviceHost struct {
 
 	// Shutdown fields.
 	shutdownMu     sync.Mutex
-	inShutdown     bool         // Protected by shutdownMu
-	shutdownReason *ServiceExit // Protected by shutdownMu
-	closeChan      chan ServiceExit
+	inShutdown     bool  // Protected by shutdownMu
+	shutdownReason *Exit // Protected by shutdownMu
+	closeChan      chan Exit
 	started        bool
 }
 
-var _ ServiceHost = &serviceHost{}
-var _ ServiceOwner = &serviceHost{}
+var _ Host = &host{}
+var _ Owner = &host{}
 
-func (s *serviceHost) addModule(module Module) error {
+func (s *host) addModule(module Module) error {
 	if s.locked {
 		return fmt.Errorf("can't add module: service already started")
 	}
@@ -63,7 +63,7 @@ func (s *serviceHost) addModule(module Module) error {
 	return module.Initialize(s)
 }
 
-func (s *serviceHost) supportsRole(roles ...string) bool {
+func (s *host) supportsRole(roles ...string) bool {
 	if len(s.roles) == 0 || len(roles) == 0 {
 		return true
 	}
@@ -76,17 +76,17 @@ func (s *serviceHost) supportsRole(roles ...string) bool {
 	return false
 }
 
-func (s *serviceHost) Modules() []Module {
+func (s *host) Modules() []Module {
 	mods := make([]Module, len(s.modules))
 	copy(mods, s.modules)
 	return mods
 }
 
-func (s *serviceHost) IsRunning() bool {
+func (s *host) IsRunning() bool {
 	return s.closeChan != nil
 }
 
-func (s *serviceHost) OnCriticalError(err error) {
+func (s *host) OnCriticalError(err error) {
 	shutdown := true
 	if s.observer == nil {
 		s.Logger().With("event", "OnCriticalError").Warn("No observer set to handle lifecycle events. Shutting down.")
@@ -102,7 +102,7 @@ func (s *serviceHost) OnCriticalError(err error) {
 	}
 }
 
-func (s *serviceHost) shutdown(err error, reason string, exitCode *int) (bool, error) {
+func (s *host) shutdown(err error, reason string, exitCode *int) (bool, error) {
 	s.shutdownMu.Lock()
 	s.inShutdown = true
 	defer func() {
@@ -114,7 +114,7 @@ func (s *serviceHost) shutdown(err error, reason string, exitCode *int) (bool, e
 		return false, nil
 	}
 
-	s.shutdownReason = &ServiceExit{
+	s.shutdownReason = &Exit{
 		Reason:   reason,
 		Error:    err,
 		ExitCode: 0,
@@ -154,7 +154,7 @@ func (s *serviceHost) shutdown(err error, reason string, exitCode *int) (bool, e
 
 // Start runs the serve loop. If Shutdown() was called then the shutdown reason
 // will be returned.
-func (s *serviceHost) Start(waitForShutdown bool) (<-chan ServiceExit, <-chan struct{}, error) {
+func (s *host) Start(waitForShutdown bool) (<-chan Exit, <-chan struct{}, error) {
 	var err error
 	s.locked = true
 	s.shutdownMu.Lock()
@@ -175,14 +175,14 @@ func (s *serviceHost) Start(waitForShutdown bool) (<-chan ServiceExit, <-chan st
 			}
 		}
 		s.shutdownReason = nil
-		s.closeChan = make(chan ServiceExit)
+		s.closeChan = make(chan Exit)
 		errs := s.startModules()
 		if len(errs) > 0 {
 			// grab the first error, shut down the service
 			// and return the error
 			for _, e := range errs {
 
-				errChan := make(chan ServiceExit)
+				errChan := make(chan Exit)
 				errChan <- *s.shutdownReason
 				if _, err := s.shutdown(e, "", nil); err != nil {
 					ulog.Logger().With("initialError", e, "shutdownError", err).Error("Unable to shut down modules")
@@ -201,13 +201,13 @@ func (s *serviceHost) Start(waitForShutdown bool) (<-chan ServiceExit, <-chan st
 }
 
 // Stop shuts down the service.
-func (s *serviceHost) Stop(reason string, exitCode int) error {
+func (s *host) Stop(reason string, exitCode int) error {
 	ec := &exitCode
 	_, err := s.shutdown(nil, reason, ec)
 	return err
 }
 
-func (s *serviceHost) startModules() map[Module]error {
+func (s *host) startModules() map[Module]error {
 	results := map[Module]error{}
 	wg := sync.WaitGroup{}
 
@@ -238,7 +238,7 @@ func (s *serviceHost) startModules() map[Module]error {
 	return results
 }
 
-func (s *serviceHost) stopModules() map[Module]error {
+func (s *host) stopModules() map[Module]error {
 	results := map[Module]error{}
 	wg := sync.WaitGroup{}
 	wg.Add(len(s.modules))
@@ -258,11 +258,11 @@ func (s *serviceHost) stopModules() map[Module]error {
 	return results
 }
 
-// A ServiceExitCallback is a function to handle a service shutdown and provide
+// A ExitCallback is a function to handle a service shutdown and provide
 // an exit code
-type ServiceExitCallback func(shutdown ServiceExit) int
+type ExitCallback func(shutdown Exit) int
 
-func (s *serviceHost) WaitForShutdown(exitCallback ServiceExitCallback) {
+func (s *host) WaitForShutdown(exitCallback ExitCallback) {
 	shutdown := <-s.closeChan
 	log.Printf("\nShutting down because %q\n", shutdown.Reason)
 
@@ -275,7 +275,7 @@ func (s *serviceHost) WaitForShutdown(exitCallback ServiceExitCallback) {
 	os.Exit(exit)
 }
 
-func (s *serviceHost) transitionState(to ServiceState) {
+func (s *host) transitionState(to State) {
 	// TODO(ai) this isn't used yet
 	if to < s.state {
 		s.Logger().With("service", s.Name()).Fatal("Can't down from state", "from", s.state, "to", to)

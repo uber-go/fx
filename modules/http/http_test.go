@@ -30,9 +30,10 @@ import (
 	"testing"
 	"time"
 
-	"go.uber.org/fx/core"
 	. "go.uber.org/fx/core/testutils"
 	"go.uber.org/fx/modules"
+	"go.uber.org/fx/service"
+	. "go.uber.org/fx/service/testutils"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -40,7 +41,7 @@ import (
 
 func TestNewHTTPModule_OK(t *testing.T) {
 	defer WithConfig(nil)()
-	WithService(NewHTTPModule(registerNothing), nil, func(s core.ServiceOwner) {
+	WithService(NewHTTPModule(registerNothing), nil, func(s service.Owner) {
 		assert.NotNil(t, s, "Should create a module")
 	})
 }
@@ -114,7 +115,7 @@ func TestHookupOptions(t *testing.T) {
 
 func TestHookupOptions_Error(t *testing.T) {
 	options := []modules.Option{
-		func(_ *core.ModuleCreateInfo) error {
+		func(_ *service.ModuleCreateInfo) error {
 			return errors.New("i just can't")
 		},
 	}
@@ -128,8 +129,8 @@ func TestHookupOptions_Error(t *testing.T) {
 
 func withModule(t testing.TB, hookup CreateHTTPRegistrantsFunc, options []modules.Option, expectError bool, fn func(*Module)) {
 	defer WithConfig(nil)()
-	mi := core.ModuleCreateInfo{
-		Host: core.NullServiceHost(),
+	mi := service.ModuleCreateInfo{
+		Host: service.NullHost(),
 	}
 	mod, err := newModule(mi, hookup, options...)
 	if expectError {
@@ -194,7 +195,7 @@ func makeRequest(m *Module, method, url string, body io.Reader, fn func(r *http.
 	fn(response)
 }
 
-func registerNothing(_ core.ServiceHost) []RouteHandler {
+func registerNothing(_ service.Host) []RouteHandler {
 	return nil
 }
 
@@ -207,13 +208,13 @@ func makeSingleHandler(path string, fn func(http.ResponseWriter, *http.Request))
 	}
 }
 
-func registerCustomHealth(_ core.ServiceHost) []RouteHandler {
+func registerCustomHealth(_ service.Host) []RouteHandler {
 	return makeSingleHandler("/health", func(w http.ResponseWriter, r *http.Request) {
 		io.WriteString(w, "not ok")
 	})
 }
 
-func registerPanic(_ core.ServiceHost) []RouteHandler {
+func registerPanic(_ service.Host) []RouteHandler {
 	return makeSingleHandler("/", func(_ http.ResponseWriter, r *http.Request) {
 		panic("Intentional panic for:" + r.URL.Path)
 	})

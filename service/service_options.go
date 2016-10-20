@@ -18,7 +18,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package core
+package service
 
 import (
 	"time"
@@ -29,13 +29,13 @@ import (
 	"github.com/uber-go/tally"
 )
 
-// A ServiceOption configures a service host
-type ServiceOption func(ServiceHost) error
+// A Option configures a service host
+type Option func(Host) error
 
 // WithModules adds the given modules to a service host
-func WithModules(modules ...ModuleCreateFunc) ServiceOption {
-	return func(svc ServiceHost) error {
-		svc2 := svc.(*serviceHost)
+func WithModules(modules ...ModuleCreateFunc) Option {
+	return func(svc Host) error {
+		svc2 := svc.(*host)
 		for _, mcf := range modules {
 			mi := ModuleCreateInfo{
 				Host:  svc,
@@ -61,29 +61,29 @@ func WithModules(modules ...ModuleCreateFunc) ServiceOption {
 }
 
 // WithConfiguration adds configuration to a service host
-func WithConfiguration(config config.ConfigurationProvider) ServiceOption {
-	return func(svc ServiceHost) error {
+func WithConfiguration(config config.ConfigurationProvider) Option {
+	return func(svc Host) error {
 		// TODO(ai) verify type assertion is correct
-		svc2 := svc.(*serviceHost)
+		svc2 := svc.(*host)
 		svc2.configProvider = config
 		return nil
 	}
 }
 
 // WithLogger adds ulog to a service host
-func WithLogger(log ulog.Log) ServiceOption {
-	return func(svc ServiceHost) error {
+func WithLogger(log ulog.Log) Option {
+	return func(svc Host) error {
 		// TODO(ai) verify type assertion is correct
-		svc2 := svc.(*serviceHost)
+		svc2 := svc.(*host)
 		svc2.log = log
 		return nil
 	}
 }
 
 // WithStatsReporter configures a service host with metrics
-func WithStatsReporter(reporter tally.StatsReporter, d time.Duration) ServiceOption {
-	return func(svc ServiceHost) error {
-		service := svc.(*serviceHost)
+func WithStatsReporter(reporter tally.StatsReporter, d time.Duration) Option {
+	return func(svc Host) error {
+		service := svc.(*host)
 
 		// TODO(glib): read interval, prefix and tags from config
 		service.scope = tally.NewRootScope("", nil, reporter, d)
@@ -93,9 +93,9 @@ func WithStatsReporter(reporter tally.StatsReporter, d time.Duration) ServiceOpt
 }
 
 // WithObserver configures a service with an instance lifecycle observer
-func WithObserver(observer Observer) ServiceOption {
-	return func(svc ServiceHost) error {
-		service := svc.(*serviceHost)
+func WithObserver(observer Observer) Option {
+	return func(svc Host) error {
+		service := svc.(*host)
 		service.observer = observer
 		service.serviceCore.observer = observer
 		return nil

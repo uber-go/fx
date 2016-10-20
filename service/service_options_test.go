@@ -18,7 +18,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package core
+package service
 
 import (
 	"errors"
@@ -29,13 +29,13 @@ import (
 )
 
 func TestWithModules_OK(t *testing.T) {
-	sh := &serviceHost{}
+	sh := &host{}
 	require.NoError(t, WithModules(successModuleCreate)(sh))
 	assert.Empty(t, sh.Modules())
 }
 
 func TestWithModules_Errors(t *testing.T) {
-	sh := &serviceHost{}
+	sh := &host{}
 	assert.Error(t, WithModules(errorModuleCreate)(sh))
 }
 

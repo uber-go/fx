@@ -18,7 +18,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package core
+package service
 
 import (
 	"sync"
@@ -30,12 +30,12 @@ import (
 	"github.com/uber-go/tally"
 )
 
-// A ServiceHost represents the hosting environment for a service instance
-type ServiceHost interface {
+// A Host represents the hosting environment for a service instance
+type Host interface {
 	Name() string
 	Description() string
 	Roles() []string
-	State() ServiceState
+	State() State
 	Metrics() tally.Scope
 	Observer() Observer
 	Config() config.ConfigurationProvider
@@ -43,27 +43,27 @@ type ServiceHost interface {
 	Logger() ulog.Log
 }
 
-// A ServiceHostContainer is meant to be embedded in a LifecycleObserver
-// if you want access to the underlying ServiceHost
-type ServiceHostContainer struct {
-	ServiceHost
+// A HostContainer is meant to be embedded in a LifecycleObserver
+// if you want access to the underlying Host
+type HostContainer struct {
+	Host
 }
 
-// SetContainer sets the ServiceHost instance on the container.
+// SetContainer sets the Host instance on the container.
 // NOTE: This is not thread-safe, and should only be called once during startup.
-func (s *ServiceHostContainer) SetContainer(sh ServiceHost) {
-	s.ServiceHost = sh
+func (s *HostContainer) SetContainer(sh Host) {
+	s.Host = sh
 }
 
 // SetContainerer is the interface for anything that you can call SetContainer on
 type SetContainerer interface {
-	SetContainer(ServiceHost)
+	SetContainer(Host)
 }
 
 type serviceCore struct {
 	standardConfig serviceConfig
 	roles          []string
-	state          ServiceState
+	state          State
 	configProvider config.ConfigurationProvider
 	scopeMux       sync.Mutex
 	scope          tally.Scope
@@ -73,7 +73,7 @@ type serviceCore struct {
 	log            ulog.Log
 }
 
-var _ ServiceHost = &serviceCore{}
+var _ Host = &serviceCore{}
 
 func (s *serviceCore) Name() string {
 	return s.standardConfig.ServiceName
@@ -84,13 +84,12 @@ func (s *serviceCore) Description() string {
 }
 
 // ServiceOwner is a string in config.
-// ServiceOwner is also a struct that embeds ServiceHost
-// confus?
+// Owner is also a struct that embeds Host
 func (s *serviceCore) Owner() string {
 	return s.standardConfig.ServiceOwner
 }
 
-func (s *serviceCore) State() ServiceState {
+func (s *serviceCore) State() State {
 	return s.state
 }
 

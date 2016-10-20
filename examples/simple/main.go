@@ -21,19 +21,19 @@
 package main
 
 import (
-	"go.uber.org/fx/core"
 	uhttp "go.uber.org/fx/modules/http"
 	"go.uber.org/fx/modules/rpc"
+	"go.uber.org/fx/service"
 	"go.uber.org/yarpc/encoding/json"
 )
 
-func registerJSONers(service core.ServiceHost) []json.Registrant {
+func registerJSONers(service service.Host) []json.Registrant {
 	return nil
 }
 
 func main() {
-	service := core.NewService(
-		core.WithModules(
+	service := service.New(
+		service.WithModules(
 			rpc.JSONModule(registerJSONers),
 			uhttp.NewHTTPModule(registerHTTPers),
 		),

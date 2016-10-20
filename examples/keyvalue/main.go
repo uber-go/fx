@@ -21,15 +21,15 @@
 package main
 
 import (
-	"go.uber.org/fx/core"
 	"go.uber.org/fx/modules"
 	"go.uber.org/fx/modules/rpc"
+	"go.uber.org/fx/service"
 )
 
 func main() {
-	service := core.NewService(
-		core.WithObserver(&Observer{}),
-		core.WithModules(
+	service := service.New(
+		service.WithObserver(&Observer{}),
+		service.WithModules(
 			// Create a YARPC module that exposes endpoints
 			rpc.ThriftModule(
 				rpc.CreateThriftServiceFunc(NewYarpcThriftHandler),

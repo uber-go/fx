@@ -23,11 +23,11 @@ package rpc
 import (
 	"fmt"
 
-	"go.uber.org/fx/core"
 	"go.uber.org/fx/core/config"
 	"go.uber.org/fx/core/metrics"
 	"go.uber.org/fx/core/ulog"
 	"go.uber.org/fx/modules"
+	"go.uber.org/fx/service"
 
 	"github.com/uber/tchannel-go"
 	"go.uber.org/yarpc"
@@ -44,7 +44,7 @@ type YarpcModule struct {
 	log      ulog.Log
 }
 
-var _ core.Module = &YarpcModule{}
+var _ service.Module = &YarpcModule{}
 
 type registerServiceFunc func(module *YarpcModule)
 
@@ -57,7 +57,7 @@ type yarpcConfig struct {
 	AdvertiseName string `yaml:"advertise_name"`
 }
 
-func newYarpcModule(mi core.ModuleCreateInfo, reg registerServiceFunc, options ...modules.Option) (*YarpcModule, error) {
+func newYarpcModule(mi service.ModuleCreateInfo, reg registerServiceFunc, options ...modules.Option) (*YarpcModule, error) {
 	cfg := &yarpcConfig{
 		AdvertiseName: mi.Host.Name(),
 		Bind:          ":0",
@@ -93,7 +93,7 @@ func newYarpcModule(mi core.ModuleCreateInfo, reg registerServiceFunc, options .
 }
 
 // Initialize sets up a YAPR-backed module
-func (m *YarpcModule) Initialize(service core.ServiceHost) error {
+func (m *YarpcModule) Initialize(service service.Host) error {
 	return nil
 }
 

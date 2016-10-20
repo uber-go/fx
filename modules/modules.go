@@ -21,8 +21,8 @@
 package modules
 
 import (
-	"go.uber.org/fx/core"
 	"go.uber.org/fx/core/metrics"
+	"go.uber.org/fx/service"
 
 	"github.com/uber-go/tally"
 )
@@ -36,7 +36,7 @@ type ModuleConfig struct {
 type ModuleBase struct {
 	moduleType string
 	name       string
-	host       core.ServiceHost
+	host       service.Host
 	isRunning  bool
 	roles      []string
 	scope      tally.Scope
@@ -46,7 +46,7 @@ type ModuleBase struct {
 }
 
 // NewModuleBase configures a new ModuleBase
-func NewModuleBase(moduleType string, name string, service core.ServiceHost, reporter metrics.TrafficReporter, roles []string) *ModuleBase {
+func NewModuleBase(moduleType string, name string, service service.Host, reporter metrics.TrafficReporter, roles []string) *ModuleBase {
 	return &ModuleBase{
 		moduleType: moduleType,
 		name:       name,

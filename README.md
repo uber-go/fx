@@ -35,14 +35,14 @@ in the case of a simple TChannel Service, `main.go` might look like this:
 package main
 
 import (
-  "go.uber.org/fx/core"
   "go.uber.org/fx/core/config"
   "go.uber.org/fx/modules/rpc"
+  "go.uber.org/fx/service"
 )
 
 func main() {
   // Create the service object
-  service := core.NewService(
+  service := service.New(
     // The list of module creators for this service, in this case
     // creates a Thrift RPC module called "keyvalue"
     rpc.ThriftModule("keyvalue", rpc.CreateThriftServiceFunc(NewYarpcThriftHandler)),
@@ -71,7 +71,7 @@ Kafka and TChannel, respectively:
 
 ```go
 func main() {
-  service := core.NewService(
+  service := service.New(
     kafka.Module("kakfa_topic1", []string{"worker"}),
     rpc.ThriftModule("keyvalue", []string{"service"}, rpc.CreateThriftServiceFunc(NewYarpcThriftHandler)),
   )
@@ -137,12 +137,12 @@ discovery of HTTP endpoints.
 package main
 
 import (
-  "go.uber.org/fx/core"
   "go.uber.org/fx/modules/http"
+  "go.uber.org/fx/service"
 )
 
 func main() {
-  service := core.NewService(
+  service := service.New(
     http.Module("http", nil),
   )
   service.Start(true)
@@ -188,7 +188,7 @@ func NewMyServiceHandler(svc *core.Service) (thrift.Service, error) {
 
 ```go
 func main() {
-  service := core.NewService(
+  service := service.New(
     rpc.ThriftModule("rpc", nil, rpc.CreateThriftServiceFunc(NewMyServiceHandler)),
   )
 

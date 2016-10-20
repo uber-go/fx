@@ -18,25 +18,42 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package modules
+package service
 
-import "go.uber.org/fx/service"
+import (
+	"errors"
+	"testing"
 
-// Option is a function that configures module creation
-type Option func(*service.ModuleCreateInfo) error
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
 
-// WithName is an option to set a module name
-func WithName(name string) Option {
-	return func(mi *service.ModuleCreateInfo) error {
-		mi.Name = name
-		return nil
-	}
+func TestStubObserver_OnInit(t *testing.T) {
+	o := observerStub()
+	require.NoError(t, o.OnInit(&host{}))
+
+	assert.True(t, o.init)
 }
 
-// WithRoles is an option to set module roles
-func WithRoles(roles ...string) Option {
-	return func(mi *service.ModuleCreateInfo) error {
-		mi.Roles = roles
-		return nil
-	}
+func TestStubObserver_OnStateChange(t *testing.T) {
+	o := observerStub()
+	o.OnStateChange(Uninitialized, Initialized)
+
+	assert.Equal(t, Initialized, o.state)
+}
+
+func TestStubObserver_OnShutdown(t *testing.T) {
+	o := observerStub()
+	o.OnShutdown(Exit{})
+
+	assert.True(t, o.shutdown)
+}
+
+func TestStubObserver_OnCriticalError(t *testing.T) {
+	o := observerStub()
+	assert.False(t, o.OnCriticalError(errors.New("dying")))
+}
+
+func observerStub() *StubObserver {
+	return &StubObserver{}
 }

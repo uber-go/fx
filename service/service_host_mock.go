@@ -18,30 +18,23 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package core
+package service
 
 import (
-	"errors"
-	"testing"
+	"go.uber.org/fx/core/config"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/uber-go/tally"
 )
 
-func TestStubodule_StartError(t *testing.T) {
-	s := NewStubModule()
-	s.StartError = errors.New("blargh")
-	readyCh := make(chan struct{}, 1)
-
-	assert.Error(t, <-s.Start(readyCh))
-}
-
-func TestStubModule_Accessors(t *testing.T) {
-	s := NewStubModule()
-	assert := assert.New(t)
-
-	assert.Empty(s.Type())
-	assert.Empty(s.Name())
-	assert.False(s.IsRunning())
-	assert.NoError(s.Stop())
-	assert.NotNil(s.Reporter())
+// NullHost is to be used in tests
+func NullHost() Host {
+	return &serviceCore{
+		standardConfig: serviceConfig{
+			ServiceName:        "dummy",
+			ServiceOwner:       "root@example.com",
+			ServiceDescription: "does cool stuff",
+		},
+		scope:          tally.NoopScope,
+		configProvider: config.StaticProvider(nil),
+	}
 }

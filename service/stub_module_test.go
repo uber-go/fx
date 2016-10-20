@@ -18,31 +18,30 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package core
+package service
 
-import "go.uber.org/fx/core/metrics"
+import (
+	"errors"
+	"testing"
 
-// A ModuleType is a human-friendly module type name
-type ModuleType string
+	"github.com/stretchr/testify/assert"
+)
 
-// A Module is the basic building block of an UberFx service
-type Module interface {
-	Initialize(host ServiceHost) error
-	Type() string
-	Name() string
-	Start(ready chan<- struct{}) <-chan error
-	Stop() error
-	IsRunning() bool
-	Reporter() metrics.TrafficReporter
+func TestStubodule_StartError(t *testing.T) {
+	s := NewStubModule()
+	s.StartError = errors.New("blargh")
+	readyCh := make(chan struct{}, 1)
+
+	assert.Error(t, <-s.Start(readyCh))
 }
 
-// ModuleCreateInfo is used to configure module instantiation
-type ModuleCreateInfo struct {
-	Name  string
-	Roles []string
-	Items map[string]interface{}
-	Host  ServiceHost
-}
+func TestStubModule_Accessors(t *testing.T) {
+	s := NewStubModule()
+	assert := assert.New(t)
 
-// A ModuleCreateFunc handles instantiating modules from creation configuration
-type ModuleCreateFunc func(ModuleCreateInfo) ([]Module, error)
+	assert.Empty(s.Type())
+	assert.Empty(s.Name())
+	assert.False(s.IsRunning())
+	assert.NoError(s.Stop())
+	assert.NotNil(s.Reporter())
+}

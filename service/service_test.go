@@ -18,7 +18,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package core
+package service
 
 import (
 	"errors"
@@ -77,7 +77,7 @@ func newTestStatsReporter() *testStatsReporter {
 func TestServiceCreation(t *testing.T) {
 	r := newTestStatsReporter()
 	r.cw.Add(1)
-	svc := NewService(
+	svc := New(
 		WithStatsReporter(r, 50*time.Millisecond),
 	)
 	assert.NotNil(t, svc, "Service should be created")
@@ -87,7 +87,7 @@ func TestServiceCreation(t *testing.T) {
 }
 
 func TestWithObserver_Nil(t *testing.T) {
-	svc := NewService(
+	svc := New(
 		WithObserver(nil),
 	)
 	assert.Nil(t, svc.Observer(), "Observer should be nil")
@@ -100,25 +100,25 @@ func TestServiceWithRoles(t *testing.T) {
 		"roles.0":          "foo",
 	})()
 
-	svc := NewService()
+	svc := New()
 	assert.Contains(t, svc.Roles(), "foo")
 }
 
 func TestBadOption_Panics(t *testing.T) {
 	defer withConfigData(nil)()
-	opt := func(_ ServiceHost) error {
+	opt := func(_ Host) error {
 		return errors.New("nope")
 	}
 
 	assert.Panics(t, func() {
-		NewService(opt)
+		New(opt)
 	})
 }
 
-func TestNewService_WithObserver(t *testing.T) {
+func TestNew_WithObserver(t *testing.T) {
 	defer withConfigData(nil)()
 	o := observerStub()
-	svc := NewService(WithObserver(o))
+	svc := New(WithObserver(o))
 	assert.Equal(t, o, svc.Observer())
 }
 

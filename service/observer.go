@@ -18,24 +18,22 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package testutils
+package service
 
-import "go.uber.org/fx/core"
+// Observer is the interface that is implemented by user service/
+// code.
+type Observer interface {
+	// OnInit will be called after the service has been initialized
+	OnInit(service Host) error
 
-// WithService is a test helper to instantiate a service
-func WithService(module core.ModuleCreateFunc, instance core.Observer, fn func(core.ServiceOwner)) {
-	WithServices([]core.ModuleCreateFunc{module}, instance, fn)
-}
+	// OnStateChange is called whenever the service changes
+	// states
+	OnStateChange(old State, new State)
 
-// WithServices is a test helper to instantiate a service with multiple modules
-func WithServices(modules []core.ModuleCreateFunc, instance core.Observer, fn func(core.ServiceOwner)) {
-	if instance == nil {
-		instance = core.ObserverStub()
-	}
-	svc := core.NewService(
-		core.WithObserver(instance),
-		core.WithModules(modules...),
-	)
+	// OnShutdown is called before the service shuts down
+	OnShutdown(reason Exit)
 
-	fn(svc)
+	// OnCriticalError is called in response to a critical error.  If false
+	// is returned the service will shut down, otherwise the error will be ignored.
+	OnCriticalError(err error) bool
 }

@@ -18,19 +18,19 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package core
+package service
 
 import (
 	"go.uber.org/fx/core/config"
 	"go.uber.org/fx/core/ulog"
 )
 
-// A ServiceState represents the state of a service
-type ServiceState int
+// A State represents the state of a service
+type State int
 
 const (
 	// Uninitialized means a service has not yet been initialized
-	Uninitialized = ServiceState(iota + 1)
+	Uninitialized = State(iota + 1)
 	// Initialized means a service has been initialized
 	Initialized
 	// Starting represents a service in the process of starting
@@ -43,15 +43,15 @@ const (
 	Stopped
 )
 
-// A ServiceOwner encapsulates service ownership
-type ServiceOwner interface {
-	ServiceHost
-	Start(waitForExit bool) (exit <-chan ServiceExit, ready <-chan struct{}, err error)
+// A Owner encapsulates service ownership
+type Owner interface {
+	Host
+	Start(waitForExit bool) (exit <-chan Exit, ready <-chan struct{}, err error)
 	Stop(reason string, exitCode int) error
 }
 
-// ServiceExit is a signal for a service that needs to exit
-type ServiceExit struct {
+// Exit is a signal for a service that needs to exit
+type Exit struct {
 	Reason   string
 	Error    error
 	ExitCode int
@@ -64,12 +64,12 @@ type serviceConfig struct {
 	ServiceRoles       []string `yaml:"roles"`
 }
 
-// NewService creates a service owner from a set of service instances and
+// New creates a service owner from a set of service instances and
 // options
-func NewService(options ...ServiceOption) ServiceOwner {
+func New(options ...Option) Owner {
 	cfg := config.Global()
 
-	svc := &serviceHost{
+	svc := &host{
 		// TODO: get these out of config struct instead
 		modules: []Module{},
 		serviceCore: serviceCore{

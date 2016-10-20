@@ -18,13 +18,13 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package core
+package service
 
 import "go.uber.org/fx/core/metrics"
 
 // A StubModule implements the Module interface for testing
 type StubModule struct {
-	Host             ServiceHost
+	Host             Host
 	InitError        error
 	TypeVal, NameVal string
 	StartError       error
@@ -43,7 +43,7 @@ func NewStubModule() *StubModule {
 }
 
 // Initialize fakes an init call on the module
-func (s *StubModule) Initialize(host ServiceHost) error {
+func (s *StubModule) Initialize(host Host) error {
 	s.Host = host
 	return s.InitError
 }

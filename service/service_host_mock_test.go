@@ -18,43 +18,15 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package core
+package service
 
-// StubObserver may be used for tests or demonstration apps where you wish to
-// observe state transitions without implementing your own observer
-type StubObserver struct {
-	ServiceHostContainer
+import (
+	"testing"
 
-	state         ServiceState
-	shutdown      bool
-	init          bool
-	criticalError bool
-	initError     error
-}
+	"github.com/stretchr/testify/assert"
+)
 
-// OnInit is called when a service is initialized
-func (s *StubObserver) OnInit(svc ServiceHost) error {
-	s.init = true
-	return s.initError
-}
-
-// OnStateChange is called during state transitions
-func (s *StubObserver) OnStateChange(old ServiceState, newState ServiceState) {
-	s.state = newState
-}
-
-// OnShutdown is called for a shutdown
-func (s *StubObserver) OnShutdown(reason ServiceExit) {
-	s.shutdown = true
-}
-
-// OnCriticalError is called whin the app is about to shut down
-func (s *StubObserver) OnCriticalError(err error) bool {
-	s.criticalError = true
-	return false
-}
-
-// ObserverStub returns a stub instance of an Observer
-func ObserverStub() Observer {
-	return &StubObserver{}
+func TestNullHost_OK(t *testing.T) {
+	sh := NullHost()
+	assert.Equal(t, "dummy", sh.Name())
 }

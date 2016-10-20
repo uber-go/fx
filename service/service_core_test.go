@@ -18,7 +18,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package core
+package service
 
 import (
 	"testing"
@@ -26,7 +26,58 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestNullServiceHost_OK(t *testing.T) {
-	sh := NullServiceHost()
-	assert.Equal(t, "dummy", sh.Name())
+func TestHostContainer_SetContainer(t *testing.T) {
+	myObserver := struct {
+		HostContainer
+	}{}
+	sh := &serviceCore{}
+	myObserver.SetContainer(sh)
+
+	// Simple assertion that the obserer had its Host set properly
+	assert.NotNil(t, myObserver.Name())
+}
+
+func TestCoreDescription(t *testing.T) {
+	sh := NullHost().(*serviceCore)
+
+	assert.Equal(t, sh.standardConfig.ServiceDescription, sh.Description())
+}
+
+func TestCoreOwner(t *testing.T) {
+	sh := NullHost().(*serviceCore)
+
+	assert.Equal(t, sh.standardConfig.ServiceOwner, sh.Owner())
+}
+
+func TestCoreState(t *testing.T) {
+	sh := &serviceCore{
+		state: Initialized,
+	}
+
+	assert.Equal(t, Initialized, sh.State())
+}
+
+func TestCoreRoles(t *testing.T) {
+	sh := &serviceCore{
+		standardConfig: serviceConfig{
+			ServiceRoles: []string{"test-suite"},
+		},
+	}
+
+	assert.Equal(t, []string{"test-suite"}, sh.Roles())
+}
+
+func TestCoreConfig(t *testing.T) {
+	sh := NullHost()
+	cfg := sh.Config()
+
+	assert.Equal(t, "static", cfg.Name())
+}
+
+func TestCoreItems(t *testing.T) {
+	sh := &serviceCore{
+		items: map[string]interface{}{"test": true},
+	}
+
+	assert.True(t, sh.Items()["test"].(bool))
 }

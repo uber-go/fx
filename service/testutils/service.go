@@ -18,23 +18,24 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package core
+package testutils
 
-import (
-	"go.uber.org/fx/core/config"
+import "go.uber.org/fx/service"
 
-	"github.com/uber-go/tally"
-)
+// WithService is a test helper to instantiate a service
+func WithService(module service.ModuleCreateFunc, instance service.Observer, fn func(service.Owner)) {
+	WithServices([]service.ModuleCreateFunc{module}, instance, fn)
+}
 
-// NullServiceHost is to be used in tests
-func NullServiceHost() ServiceHost {
-	return &serviceCore{
-		standardConfig: serviceConfig{
-			ServiceName:        "dummy",
-			ServiceOwner:       "root@example.com",
-			ServiceDescription: "does cool stuff",
-		},
-		scope:          tally.NoopScope,
-		configProvider: config.StaticProvider(nil),
+// WithServices is a test helper to instantiate a service with multiple modules
+func WithServices(modules []service.ModuleCreateFunc, instance service.Observer, fn func(service.Owner)) {
+	if instance == nil {
+		instance = service.ObserverStub()
 	}
+	svc := service.New(
+		service.WithObserver(instance),
+		service.WithModules(modules...),
+	)
+
+	fn(svc)
 }

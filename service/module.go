@@ -18,42 +18,31 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package core
+package service
 
-import (
-	"errors"
-	"testing"
+import "go.uber.org/fx/core/metrics"
 
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-)
+// A ModuleType is a human-friendly module type name
+type ModuleType string
 
-func TestStubObserver_OnInit(t *testing.T) {
-	o := observerStub()
-	require.NoError(t, o.OnInit(&serviceHost{}))
-
-	assert.True(t, o.init)
+// A Module is the basic building block of an UberFx service
+type Module interface {
+	Initialize(host Host) error
+	Type() string
+	Name() string
+	Start(ready chan<- struct{}) <-chan error
+	Stop() error
+	IsRunning() bool
+	Reporter() metrics.TrafficReporter
 }
 
-func TestStubObserver_OnStateChange(t *testing.T) {
-	o := observerStub()
-	o.OnStateChange(Uninitialized, Initialized)
-
-	assert.Equal(t, Initialized, o.state)
+// ModuleCreateInfo is used to configure module instantiation
+type ModuleCreateInfo struct {
+	Name  string
+	Roles []string
+	Items map[string]interface{}
+	Host  Host
 }
 
-func TestStubObserver_OnShutdown(t *testing.T) {
-	o := observerStub()
-	o.OnShutdown(ServiceExit{})
-
-	assert.True(t, o.shutdown)
-}
-
-func TestStubObserver_OnCriticalError(t *testing.T) {
-	o := observerStub()
-	assert.False(t, o.OnCriticalError(errors.New("dying")))
-}
-
-func observerStub() *StubObserver {
-	return &StubObserver{}
-}
+// A ModuleCreateFunc handles instantiating modules from creation configuration
+type ModuleCreateFunc func(ModuleCreateInfo) ([]Module, error)

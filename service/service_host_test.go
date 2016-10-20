@@ -18,7 +18,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package core
+package service
 
 import (
 	"errors"
@@ -34,7 +34,7 @@ import (
 
 func TestOnCriticalError_NoObserver(t *testing.T) {
 	err := errors.New("Blargh")
-	sh := &serviceHost{
+	sh := &host{
 		serviceCore: serviceCore{
 			log: ulog.Logger(),
 		},
@@ -55,40 +55,40 @@ func TestOnCriticalError_NoObserver(t *testing.T) {
 }
 
 func TestSupportsRole_NoRoles(t *testing.T) {
-	sh := &serviceHost{}
+	sh := &host{}
 	assert.True(t, sh.supportsRole("anything"), "Empty host roles should pass any value")
 }
 
 func TestSuupportsRole_Matches(t *testing.T) {
-	sh := &serviceHost{
+	sh := &host{
 		roles: map[string]bool{"chilling": true},
 	}
 	assert.True(t, sh.supportsRole("chilling"), "Should support matching role")
 }
 
 func TestSupportsRole_NoMatch(t *testing.T) {
-	sh := &serviceHost{
+	sh := &host{
 		roles: map[string]bool{"business": true},
 	}
 	assert.False(t, sh.supportsRole("pleasure"), "Should not support non-matching role")
 }
 
-func TestServiceHost_Modules(t *testing.T) {
+func TestHost_Modules(t *testing.T) {
 	mods := []Module{}
-	sh := &serviceHost{modules: mods}
+	sh := &host{modules: mods}
 
 	copied := sh.Modules()
 	assert.Equal(t, len(mods), len(copied), "Should have same amount of modules")
 }
 
 func TestTransitionState(t *testing.T) {
-	sh := &serviceHost{}
+	sh := &host{}
 	observer := ObserverStub().(*StubObserver)
 	require.NoError(t, WithObserver(observer)(sh))
 
 	cases := []struct {
 		name     string
-		from, to ServiceState
+		from, to State
 	}{
 		{
 			name: "Uninitialized to Initialized",
@@ -128,7 +128,7 @@ func TestLoadInstanceConfig_NoField(t *testing.T) {
 	assert.False(t, loadInstanceConfig(cfg, "anything", &instance), "No field defined on struct")
 }
 
-func TestLoadInstanceConfig_WithServiceConfig(t *testing.T) {
+func TestLoadInstanceConfig_WithConfig(t *testing.T) {
 	cfg := config.NewYAMLProviderFromBytes([]byte(`
 foo:
   bar: 1
@@ -144,14 +144,14 @@ foo:
 	assert.Equal(t, 1, instance.ServiceConfig.Bar)
 }
 
-func TestServiceHostStop_NoError(t *testing.T) {
-	sh := &serviceHost{}
+func TestHostStop_NoError(t *testing.T) {
+	sh := &host{}
 	assert.NoError(t, sh.Stop("testing", 1))
 }
 
 func TestOnCriticalError_ObserverShutdown(t *testing.T) {
 	o := observerStub()
-	sh := &serviceHost{
+	sh := &host{
 		observer: o,
 		serviceCore: serviceCore{
 			log: ulog.Logger(),
@@ -163,8 +163,8 @@ func TestOnCriticalError_ObserverShutdown(t *testing.T) {
 }
 
 func TestShutdownWithError_ReturnsError(t *testing.T) {
-	sh := &serviceHost{
-		closeChan: make(chan ServiceExit, 1),
+	sh := &host{
+		closeChan: make(chan Exit, 1),
 	}
 	exitCode := 1
 	shutdown, err := sh.shutdown(errors.New("simulated"), "testing", &exitCode)
@@ -172,17 +172,17 @@ func TestShutdownWithError_ReturnsError(t *testing.T) {
 	assert.Error(t, err)
 }
 
-func TestServiceHostStart_InShutdown(t *testing.T) {
-	sh := &serviceHost{
+func TestHostStart_InShutdown(t *testing.T) {
+	sh := &host{
 		inShutdown: true,
 	}
 	_, _, err := sh.Start(false)
 	assert.Error(t, err)
 }
 
-func TestServiceHostStart_AlreadyRunning(t *testing.T) {
-	sh := &serviceHost{
-		closeChan: make(chan ServiceExit, 1),
+func TestHostStart_AlreadyRunning(t *testing.T) {
+	sh := &host{
+		closeChan: make(chan Exit, 1),
 	}
 	_, _, err := sh.Start(false)
 	assert.NoError(t, err)
@@ -191,7 +191,7 @@ func TestServiceHostStart_AlreadyRunning(t *testing.T) {
 func TestStartWithObserver_InitError(t *testing.T) {
 	obs := observerStub()
 	obs.initError = errors.New("can't touch this")
-	sh := &serviceHost{
+	sh := &host{
 		observer: obs,
 	}
 	_, _, err := sh.Start(false)
@@ -200,7 +200,7 @@ func TestStartWithObserver_InitError(t *testing.T) {
 }
 
 func TestAddModule_Locked(t *testing.T) {
-	sh := &serviceHost{
+	sh := &host{
 		locked: true,
 	}
 	assert.Error(t, sh.addModule(nil))
@@ -208,7 +208,7 @@ func TestAddModule_Locked(t *testing.T) {
 
 func TestAddModule_NotLocked(t *testing.T) {
 	mod := NewStubModule()
-	sh := &serviceHost{}
+	sh := &host{}
 	assert.NoError(t, sh.addModule(mod))
 	assert.Equal(t, sh, mod.Host)
 }
