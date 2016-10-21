@@ -134,7 +134,7 @@ func newModule(mi service.ModuleCreateInfo, createService CreateHTTPRegistrantsF
 
 	for _, option := range options {
 		if err := option(&mi); err != nil {
-			module.log.With("error", err, "option", option).Error("Unable to apply option")
+			module.log.Error("Unable to apply option", "error", err, "option", option)
 			return module, err
 		}
 	}
@@ -191,7 +191,7 @@ func (m *Module) Start(ready chan<- struct{}) <-chan error {
 
 	// finally, start the http server.
 	// TODO update log object to be accessed via http context #74
-	m.log.With("port", m.config.Port).Info("Server listening on port")
+	m.log.Info("Server listening on port", "port", m.config.Port)
 
 	if err != nil {
 		ret <- err
@@ -206,7 +206,7 @@ func (m *Module) Start(ready chan<- struct{}) <-chan error {
 		ready <- struct{}{}
 		ret <- nil
 		if err := http.Serve(listener, m.mux); err != nil {
-			m.log.With("error", err).Error("HTTP Serve error")
+			m.log.Error("HTTP Serve error", "error", err)
 		}
 	}()
 	return ret

@@ -134,7 +134,7 @@ func (ltr LoggingTrafficReporter) Start(name string, data map[string]string, tim
 				r = err.Error()
 			}
 			if err := log.Output(0, fmt.Sprintf("%s\t%dμs\t%s", name, elapsed.Nanoseconds()/1000, r)); err != nil {
-				ulog.Logger().With("error", err).Error("Unable to log traffic stats")
+				ulog.Logger().Error("Unable to log traffic stats", "error", err)
 			}
 		},
 	)

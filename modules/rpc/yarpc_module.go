@@ -79,7 +79,7 @@ func newYarpcModule(mi service.ModuleCreateInfo, reg registerServiceFunc, option
 	module.log = ulog.Logger().With("moduleName", name)
 	for _, opt := range options {
 		if err := opt(&mi); err != nil {
-			module.log.With("error", err, "option", opt).Error("Unable to apply option")
+			module.log.Error("Unable to apply option", "error", err, "option", opt)
 			return module, err
 		}
 	}
@@ -114,7 +114,7 @@ func (m *YarpcModule) Start(readyCh chan<- struct{}) <-chan error {
 	m.register(m)
 	ret := make(chan error, 1)
 	// TODO update log object to be accessed via context.Context #74
-	m.log.With("service", m.config.AdvertiseName, "port", m.config.Bind).Info("Service started")
+	m.log.Info("Service started", "service", m.config.AdvertiseName, "port", m.config.Bind)
 
 	ret <- m.rpc.Start()
 	readyCh <- struct{}{}

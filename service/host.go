@@ -88,7 +88,10 @@ func (s *host) IsRunning() bool {
 func (s *host) OnCriticalError(err error) {
 	shutdown := true
 	if s.observer == nil {
-		s.Logger().With("event", "OnCriticalError").Warn("No observer set to handle lifecycle events. Shutting down.")
+		s.Logger().Warn(
+			"No observer set to handle lifecycle events. Shutting down.",
+			"event", "OnCriticalError",
+		)
 	} else {
 		shutdown = !s.observer.OnCriticalError(err)
 	}
@@ -96,7 +99,7 @@ func (s *host) OnCriticalError(err error) {
 	if shutdown {
 		if ok, err := s.shutdown(err, "", nil); !ok || err != nil {
 			// TODO(ai) verify we flush logs
-			s.Logger().With("success", ok, "error", err).Info("Problem shutting down module")
+			s.Logger().Info("Problem shutting down module", "success", ok, "error", err)
 		}
 	}
 }
@@ -189,7 +192,7 @@ func (s *host) Start(waitForShutdown bool) (<-chan Exit, <-chan struct{}, error)
 
 				s.shutdownMu.Unlock()
 				if _, err := s.shutdown(e, "", nil); err != nil {
-					ulog.Logger().With("initialError", e, "shutdownError", err).Error("Unable to shut down modules")
+					ulog.Logger().Error("Unable to shut down modules", "initialError", e, "shutdownError", err)
 				}
 				s.shutdownMu.Lock()
 
@@ -227,13 +230,13 @@ func (s *host) startModules() map[Module]error {
 
 				select {
 				case <-readyCh:
-					s.Logger().With("module", m.Name()).Info("Module started up cleanly")
+					s.Logger().Info("Module started up cleanly", "module", m.Name())
 				case <-time.After(defaultStartupWait):
 					results[m] = fmt.Errorf("module didn't start after %v", defaultStartupWait)
 				}
 
 				if startError := <-startResult; startError != nil {
-					s.Logger().With("module", m.Name(), "error", startError).Error("Error received while starting module")
+					s.Logger().Error("Error received while starting module", "module", m.Name(), "error", startError)
 					results[m] = startError
 				}
 			}
@@ -286,7 +289,7 @@ func (s *host) WaitForShutdown(exitCallback ExitCallback) {
 func (s *host) transitionState(to State) {
 	// TODO(ai) this isn't used yet
 	if to < s.state {
-		s.Logger().With("service", s.Name()).Fatal("Can't down from state", "from", s.state, "to", to)
+		s.Logger().Fatal("Can't down from state", "from", s.state, "to", to, "service", s.Name())
 	}
 
 	for s.state < to {

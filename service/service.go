@@ -121,6 +121,6 @@ func New(options ...Option) Owner {
 
 func ensureThat(err error, description string) {
 	if err != nil {
-		ulog.Logger().With("error", err).Fatal("Fatal error initializing app: ", description)
+		ulog.Logger().Fatal("Fatal error initializing app: ", description, "error", err)
 	}
 }
