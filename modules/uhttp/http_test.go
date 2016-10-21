@@ -18,7 +18,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package http
+package uhttp
 
 import (
 	"errors"
@@ -39,14 +39,14 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestNewHTTPModule_OK(t *testing.T) {
+func TestNew_OK(t *testing.T) {
 	defer WithConfig(nil)()
-	WithService(NewHTTPModule(registerNothing), nil, func(s service.Owner) {
+	WithService(New(registerNothing), nil, func(s service.Owner) {
 		assert.NotNil(t, s, "Should create a module")
 	})
 }
 
-func TestNewHTTPModule_WithOptions(t *testing.T) {
+func TestNew_WithOptions(t *testing.T) {
 	defer WithConfig(nil)()
 
 	options := []modules.Option{

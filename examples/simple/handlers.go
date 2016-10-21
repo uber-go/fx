@@ -25,7 +25,7 @@ import (
 	"io"
 	"net/http"
 
-	uhttp "go.uber.org/fx/modules/http"
+	"go.uber.org/fx/modules/uhttp"
 	"go.uber.org/fx/service"
 )
 

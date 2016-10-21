@@ -21,8 +21,8 @@
 package main
 
 import (
-	uhttp "go.uber.org/fx/modules/http"
 	"go.uber.org/fx/modules/rpc"
+	"go.uber.org/fx/modules/uhttp"
 	"go.uber.org/fx/service"
 	"go.uber.org/yarpc/encoding/json"
 )
@@ -35,7 +35,7 @@ func main() {
 	service := service.New(
 		service.WithModules(
 			rpc.JSONModule(registerJSONers),
-			uhttp.NewHTTPModule(registerHTTPers),
+			uhttp.New(registerHTTPers),
 		),
 	)
 	service.Start(true)

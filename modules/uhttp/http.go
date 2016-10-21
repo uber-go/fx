@@ -18,7 +18,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package http
+package uhttp
 
 import (
 	"fmt"
@@ -99,8 +99,8 @@ type Config struct {
 // CreateHTTPRegistrantsFunc returns a slice of registrants from a service host
 type CreateHTTPRegistrantsFunc func(service service.Host) []RouteHandler
 
-// NewHTTPModule returns a new HTTP module
-func NewHTTPModule(hookup CreateHTTPRegistrantsFunc, options ...modules.Option) service.ModuleCreateFunc {
+// New returns a new HTTP module
+func New(hookup CreateHTTPRegistrantsFunc, options ...modules.Option) service.ModuleCreateFunc {
 	return func(mi service.ModuleCreateInfo) ([]service.Module, error) {
 		mod, err := newModule(mi, hookup, options...)
 		if err != nil {

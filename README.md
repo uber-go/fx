@@ -130,36 +130,38 @@ module-specific.
 
 #### HTTP Module
 
-The HTTP module leverages an annotation-based module for easy hookup and
-discovery of HTTP endpoints.
+The HTTP module is built on top of [Gorilla Mux](https://github.com/gorilla/mux),
+ meaning you can use the same path syntax, and handlers are of the standard
+ `http.Handler` signature.
 
 ```go
 package main
 
 import (
-  "go.uber.org/fx/modules/http"
+  "io"
+  "net/http"
+
+  "go.uber.org/fx/modules/uhttp"
   "go.uber.org/fx/service"
 )
 
 func main() {
   service := service.New(
-    http.Module("http", nil),
+    uhttp.New(registerHTTP),
   )
   service.Start(true)
 }
+
+func registerHTTP(service service.Host) []uhttp.RouteHandler {
+  handleHome := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+    io.WriteString(w, "Hello, world")
+  })
+
+  return []uhttp.RouteHandler{
+    uhttp.NewRouteHandler("/", handleHome)
+  }
+}
 ```
-
-The developer process is to:
-
-* Create a service with an HTTP Module
-* Add a struct with functions decorated with annotations as below
-
-TODO(ai) come up with non-annotation-based solution
-
-Which says to route calls to `GET /health` to this handler and allow non-auth'd
-calls.  This is all that's necessary and the HTTP module will then discover
-these endpoints, hook them up, and invoke them when the appropriate path is
-called.
 
 #### RPC Module
 

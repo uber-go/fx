@@ -18,50 +18,60 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package http
+package uhttp
 
 import (
-	"fmt"
 	"net/http"
-	"testing"
 
 	"github.com/gorilla/mux"
-	"github.com/stretchr/testify/assert"
 )
 
-func TestFromGorilla_OK(t *testing.T) {
-	r := mux.NewRouter()
-	route := r.Headers("foo", "bar")
-	f := FromGorilla(route)
-	assert.Equal(t, f.r, route)
+// A RouteOption gives you the ability to mangle routes
+type RouteOption func(r Route) Route
+
+// FromGorilla turns a gorilla mux route into an UberFx route
+func FromGorilla(r *mux.Route) Route {
+	return Route{
+		r: r,
+	}
 }
 
-func TestNewRouteHandler(t *testing.T) {
-	rh := NewRouteHandler("/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprintf(w, "Hi\n")
-	}))
-
-	assert.Equal(t, rh.Path, "/")
+// A RouteHandler is an HTTP handler for a single route
+type RouteHandler struct {
+	Path    string
+	Handler http.Handler
+	Options []RouteOption
 }
 
-func TestGorillaMux_OK(t *testing.T) {
-	r := mux.NewRouter()
-	route := r.Path("/foo")
-	ours := FromGorilla(route)
-	rounded := ours.GorillaMux()
-	assert.Equal(t, route, rounded)
+// NewRouteHandler creates a route handler given the options
+func NewRouteHandler(path string, handler http.Handler, options ...RouteOption) RouteHandler {
+	return RouteHandler{
+		Path:    path,
+		Handler: handler,
+		Options: options,
+	}
 }
 
-func TestHeaders_OK(t *testing.T) {
-	r := mux.NewRouter()
-	route := Route{r.Path("/foo")}
-	withHeaders := route.Headers("foo", "bar")
-	assert.NotNil(t, withHeaders.r)
+// A Route represents a handler for HTTP requests, with restrictions
+type Route struct {
+	r *mux.Route
 }
 
-func TestMethods_OK(t *testing.T) {
-	r := mux.NewRouter()
-	route := Route{r.Path("/foo")}
-	withMethods := route.Methods("GET")
-	assert.NotNil(t, withMethods.r)
+// GorillaMux returns the underlying mux if you need to use it directly
+func (r Route) GorillaMux() *mux.Route {
+	return r.r
+}
+
+// Headers allows easy enforcement of headers
+func (r Route) Headers(headerPairs ...string) Route {
+	return Route{
+		r.r.Headers(headerPairs...),
+	}
+}
+
+// Methods allows easy enforcement of metthods (HTTP Verbs)
+func (r Route) Methods(methods ...string) Route {
+	return Route{
+		r.r.Methods(methods...),
+	}
 }
