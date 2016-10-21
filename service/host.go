@@ -22,7 +22,6 @@ package service
 
 import (
 	"fmt"
-	"log"
 	"os"
 	"reflect"
 	"sync"
@@ -273,7 +272,7 @@ type ExitCallback func(shutdown Exit) int
 
 func (s *host) WaitForShutdown(exitCallback ExitCallback) {
 	shutdown := <-s.closeChan
-	log.Printf("\nShutting down because %q\n", shutdown.Reason)
+	s.Logger().Info("Shutting down", "reason", shutdown.Reason)
 
 	exit := 0
 	if exitCallback != nil {
