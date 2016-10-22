@@ -26,7 +26,6 @@ package metrics
 
 import (
 	"fmt"
-	"log"
 	"sync"
 	"time"
 
@@ -125,7 +124,8 @@ type LoggingTrafficReporter struct {
 
 // Start begins logging traffic data
 func (ltr LoggingTrafficReporter) Start(name string, data map[string]string, timeout time.Duration) TrafficTracker {
-
+	// TODO(ai) this probably doesn't belong in the global logger
+	logger := ulog.Logger()
 	key := fmt.Sprintf("%s.%s", ltr.Prefix, name)
 	return NewDefaultTrafficTracker(key, data, timeout,
 		func(name string, desc string, elapsed time.Duration, data map[string]string, result interface{}, err error) {
@@ -133,9 +133,7 @@ func (ltr LoggingTrafficReporter) Start(name string, data map[string]string, tim
 			if err != nil {
 				r = err.Error()
 			}
-			if err := log.Output(0, fmt.Sprintf("%s\t%dμs\t%s", name, elapsed.Nanoseconds()/1000, r)); err != nil {
-				ulog.Logger().Error("Unable to log traffic stats", "error", err)
-			}
+			logger.Info(fmt.Sprintf("%s\t%dμs\t%s", name, elapsed.Nanoseconds()/1000, r))
 		},
 	)
 }
