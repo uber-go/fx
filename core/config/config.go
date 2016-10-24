@@ -112,5 +112,9 @@ func init() {
 	resolver := NewRelativeResolver(paths...)
 
 	// do the default thing
-	global = NewProviderGroup("global", NewYAMLProviderFromFiles(false, resolver, getUberConfigFiles()...), NewEnvProvider(defaultEnvPrefix, nil))
+	global = NewProviderGroup(
+		"global",
+		NewYAMLProviderFromFiles(false, resolver, getUberConfigFiles()...),
+		NewEnvProvider(defaultEnvPrefix, nil),
+	)
 }

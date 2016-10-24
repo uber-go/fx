@@ -61,7 +61,7 @@ func nmb(moduleType, name string, roles []string) *ModuleBase {
 		moduleType,
 		name,
 		host,
-		metrics.NoopTrafficReporter{},
+		metrics.NoopReporter{},
 		roles,
 	)
 }

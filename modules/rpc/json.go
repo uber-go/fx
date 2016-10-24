@@ -42,7 +42,11 @@ func JSONModule(hookup CreateJSONRegistrantsFunc, options ...modules.Option) ser
 	}
 }
 
-func newYarpcJSONModule(mi service.ModuleCreateInfo, createService CreateJSONRegistrantsFunc, options ...modules.Option) (*YarpcModule, error) {
+func newYarpcJSONModule(
+	mi service.ModuleCreateInfo,
+	createService CreateJSONRegistrantsFunc,
+	options ...modules.Option,
+) (*YarpcModule, error) {
 	procs, err := createService(mi.Host)
 	if err != nil {
 		return nil, err

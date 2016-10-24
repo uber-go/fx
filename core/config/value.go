@@ -89,7 +89,14 @@ type ConfigurationValue struct {
 
 // NewConfigurationValue creates a configuration value from a provider and a set
 // of parameters describing the key
-func NewConfigurationValue(provider ConfigurationProvider, key string, value interface{}, found bool, t ValueType, timestamp *time.Time) ConfigurationValue {
+func NewConfigurationValue(
+	provider ConfigurationProvider,
+	key string,
+	value interface{},
+	found bool,
+	t ValueType,
+	timestamp *time.Time,
+) ConfigurationValue {
 	cv := ConfigurationValue{
 		provider:     provider,
 		key:          key,

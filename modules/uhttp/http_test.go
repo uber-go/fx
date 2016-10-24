@@ -62,7 +62,7 @@ func TestHTTPModule_Panic_OK(t *testing.T) {
 	withModule(t, registerPanic, nil, false, func(m *Module) {
 		assert.NotNil(t, m)
 		makeRequest(m, "GET", "/", nil, func(r *http.Response) {
-			assert.Equal(t, http.StatusInternalServerError, r.StatusCode, "Expected 500 with panic  wrapper")
+			assert.Equal(t, http.StatusInternalServerError, r.StatusCode, "Expected 500 with panic wrapper")
 		})
 	})
 }
@@ -127,7 +127,13 @@ func TestHookupOptions_Error(t *testing.T) {
 
 // TODO(ai) add a test for binding a bad port and get an error out of Start()
 
-func withModule(t testing.TB, hookup CreateHTTPRegistrantsFunc, options []modules.Option, expectError bool, fn func(*Module)) {
+func withModule(
+	t testing.TB,
+	hookup CreateHTTPRegistrantsFunc,
+	options []modules.Option,
+	expectError bool,
+	fn func(*Module),
+) {
 	defer WithConfig(nil)()
 	mi := service.ModuleCreateInfo{
 		Host: service.NullHost(),

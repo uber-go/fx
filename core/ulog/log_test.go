@@ -117,8 +117,8 @@ func TestFatalsAndPanics(t *testing.T) {
 	withInMemoryLogger(t, nil, func(zaplogger zap.Logger, buf *testBuffer) {
 		log := Logger()
 		log.(*baselogger).SetLogger(zaplogger)
-		assert.Panics(t, func() { log.Panic("panic level") }, "Expected logging at Panic level to panic.")
-		assert.Equal(t, `{"level":"panic","msg":"panic level"}`, buf.Stripped(), "Unexpected output from panic-level Log.")
+		assert.Panics(t, func() { log.Panic("panic level") }, "Expected to panic")
+		assert.Equal(t, `{"level":"panic","msg":"panic level"}`, buf.Stripped(), "Unexpected output")
 	})
 
 }
@@ -239,23 +239,25 @@ func (m *marshalObject) MarshalLog(kv zap.KeyValue) error {
 
 func TestFieldConversion(t *testing.T) {
 	log := Logger()
-	assert.Equal(t, zap.Bool("a", true), log.(*baselogger).fieldsConversion("a", true)[0])
-	assert.Equal(t, zap.Float64("a", 5.5), log.(*baselogger).fieldsConversion("a", 5.5)[0])
-	assert.Equal(t, zap.Int("a", 10), log.(*baselogger).fieldsConversion("a", 10)[0])
-	assert.Equal(t, zap.Int64("a", int64(10)), log.(*baselogger).fieldsConversion("a", int64(10))[0])
-	assert.Equal(t, zap.Uint("a", uint(10)), log.(*baselogger).fieldsConversion("a", uint(10))[0])
-	assert.Equal(t, zap.Uintptr("a", uintptr(0xa)), log.(*baselogger).fieldsConversion("a", uintptr(0xa))[0])
-	assert.Equal(t, zap.Uint64("a", uint64(10)), log.(*baselogger).fieldsConversion("a", uint64(10))[0])
-	assert.Equal(t, zap.String("a", "xyz"), log.(*baselogger).fieldsConversion("a", "xyz")[0])
-	assert.Equal(t, zap.Time("a", time.Unix(0, 0)), log.(*baselogger).fieldsConversion("a", time.Unix(0, 0))[0])
-	assert.Equal(t, zap.Duration("a", time.Microsecond), log.(*baselogger).fieldsConversion("a", time.Microsecond)[0])
+	base := log.(*baselogger)
+
+	assert.Equal(t, zap.Bool("a", true), base.fieldsConversion("a", true)[0])
+	assert.Equal(t, zap.Float64("a", 5.5), base.fieldsConversion("a", 5.5)[0])
+	assert.Equal(t, zap.Int("a", 10), base.fieldsConversion("a", 10)[0])
+	assert.Equal(t, zap.Int64("a", int64(10)), base.fieldsConversion("a", int64(10))[0])
+	assert.Equal(t, zap.Uint("a", uint(10)), base.fieldsConversion("a", uint(10))[0])
+	assert.Equal(t, zap.Uintptr("a", uintptr(0xa)), base.fieldsConversion("a", uintptr(0xa))[0])
+	assert.Equal(t, zap.Uint64("a", uint64(10)), base.fieldsConversion("a", uint64(10))[0])
+	assert.Equal(t, zap.String("a", "xyz"), base.fieldsConversion("a", "xyz")[0])
+	assert.Equal(t, zap.Time("a", time.Unix(0, 0)), base.fieldsConversion("a", time.Unix(0, 0))[0])
+	assert.Equal(t, zap.Duration("a", time.Microsecond), base.fieldsConversion("a", time.Microsecond)[0])
 	dt := &marshalObject{Data: "value"}
-	assert.Equal(t, zap.Marshaler("a", &marshalObject{"value"}), log.(*baselogger).fieldsConversion("a", dt)[0])
+	assert.Equal(t, zap.Marshaler("a", &marshalObject{"value"}), base.fieldsConversion("a", dt)[0])
 	ip := net.ParseIP("1.2.3.4")
-	assert.Equal(t, zap.Stringer("ip", ip), log.(*baselogger).fieldsConversion("ip", ip)[0])
-	assert.Equal(t, zap.Object("a", []int{1, 2}), log.(*baselogger).fieldsConversion("a", []int{1, 2})[0])
+	assert.Equal(t, zap.Stringer("ip", ip), base.fieldsConversion("ip", ip)[0])
+	assert.Equal(t, zap.Object("a", []int{1, 2}), base.fieldsConversion("a", []int{1, 2})[0])
 	err := fmt.Errorf("test error")
-	assert.Equal(t, zap.Error(err), log.(*baselogger).fieldsConversion("error", err)[0])
+	assert.Equal(t, zap.Error(err), base.fieldsConversion("error", err)[0])
 
 }
 

@@ -68,6 +68,11 @@ type dummyHandler struct {
 	err error
 }
 
-func (d dummyHandler) Handle(ctx context.Context, opts transport.Options, r *transport.Request, w transport.ResponseWriter) error {
+func (d dummyHandler) Handle(
+	ctx context.Context,
+	opts transport.Options,
+	r *transport.Request,
+	w transport.ResponseWriter,
+) error {
 	return d.err
 }

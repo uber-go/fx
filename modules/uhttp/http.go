@@ -110,7 +110,11 @@ func New(hookup CreateHTTPRegistrantsFunc, options ...modules.Option) service.Mo
 	}
 }
 
-func newModule(mi service.ModuleCreateInfo, createService CreateHTTPRegistrantsFunc, options ...modules.Option) (*Module, error) {
+func newModule(
+	mi service.ModuleCreateInfo,
+	createService CreateHTTPRegistrantsFunc,
+	options ...modules.Option,
+) (*Module, error) {
 	// setup config defaults
 	cfg := &Config{
 		Port:    defaultPort,
@@ -120,7 +124,7 @@ func newModule(mi service.ModuleCreateInfo, createService CreateHTTPRegistrantsF
 	if mi.Name == "" {
 		mi.Name = "http"
 	}
-	reporter := &metrics.LoggingTrafficReporter{Prefix: mi.Host.Name()}
+	reporter := &metrics.LoggingReporter{Prefix: mi.Host.Name()}
 
 	module := &Module{
 		ModuleBase: *modules.NewModuleBase(ModuleType, mi.Name, mi.Host, reporter, []string{}),

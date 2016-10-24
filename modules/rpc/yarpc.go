@@ -62,7 +62,11 @@ type yarpcConfig struct {
 	AdvertiseName string `yaml:"advertise_name"`
 }
 
-func newYarpcModule(mi service.ModuleCreateInfo, reg registerServiceFunc, options ...modules.Option) (*YarpcModule, error) {
+func newYarpcModule(
+	mi service.ModuleCreateInfo,
+	reg registerServiceFunc,
+	options ...modules.Option,
+) (*YarpcModule, error) {
 	cfg := &yarpcConfig{
 		AdvertiseName: mi.Host.Name(),
 		Bind:          ":0",
@@ -73,7 +77,7 @@ func newYarpcModule(mi service.ModuleCreateInfo, reg registerServiceFunc, option
 		name = mi.Name
 	}
 
-	reporter := &metrics.LoggingTrafficReporter{Prefix: mi.Host.Name()}
+	reporter := &metrics.LoggingReporter{Prefix: mi.Host.Name()}
 
 	module := &YarpcModule{
 		ModuleBase: *modules.NewModuleBase(RPCModuleType, name, mi.Host, reporter, []string{}),

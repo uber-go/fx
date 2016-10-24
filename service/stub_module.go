@@ -38,7 +38,7 @@ var _ Module = &StubModule{}
 // NewStubModule generates a Module for use in testing
 func NewStubModule() *StubModule {
 	return &StubModule{
-		TrafficReporter: &metrics.LoggingTrafficReporter{},
+		TrafficReporter: &metrics.LoggingReporter{},
 	}
 }
 

@@ -46,7 +46,13 @@ type ModuleBase struct {
 }
 
 // NewModuleBase configures a new ModuleBase
-func NewModuleBase(moduleType string, name string, service service.Host, reporter metrics.TrafficReporter, roles []string) *ModuleBase {
+func NewModuleBase(
+	moduleType string,
+	name string,
+	service service.Host,
+	reporter metrics.TrafficReporter,
+	roles []string,
+) *ModuleBase {
 	return &ModuleBase{
 		moduleType: moduleType,
 		name:       name,

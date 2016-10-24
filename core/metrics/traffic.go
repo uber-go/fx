@@ -42,15 +42,22 @@ type TrafficReporter interface {
 	Start(name string, data map[string]string, timeout time.Duration) TrafficTracker
 }
 
-// A NoopTrafficReporter is used for tests and places where you don't care about reporting traffic
-type NoopTrafficReporter struct{}
+// A NoopReporter is used for tests and places where you don't care about reporting traffic
+type NoopReporter struct{}
 
-// Start is used for a NoopTrafficReporter to discard traffic results
-func (NoopTrafficReporter) Start(name string, data map[string]string, timeout time.Duration) TrafficTracker {
-	callback := func(name, desc string, elapsed time.Duration, data map[string]string, result interface{}, err error) {
+// Start is used for a NoopReporter to discard traffic results
+func (NoopReporter) Start(name string, data map[string]string, timout time.Duration) TrafficTracker {
+	callback := func(
+		name,
+		desc string,
+		elapsed time.Duration,
+		data map[string]string,
+		result interface{},
+		err error,
+	) {
 		// Do Nothing
 	}
-	return NewDefaultTrafficTracker(name, nil, timeout, callback)
+	return NewDefaultTrafficTracker(name, nil, timout, callback)
 }
 
 // A TrafficTracker is used for a single request to track traffic
@@ -61,7 +68,14 @@ type TrafficTracker interface {
 }
 
 // A TrafficReportCallback is used to send a finished traffic report
-type TrafficReportCallback func(name string, desc string, elapsed time.Duration, data map[string]string, result interface{}, err error)
+type TrafficReportCallback func(
+	name string,
+	desc string,
+	elapsed time.Duration,
+	data map[string]string,
+	result interface{},
+	err error,
+)
 
 // The DefaultTrafficTracker is used to track generic requests
 type DefaultTrafficTracker struct {
@@ -76,7 +90,12 @@ type DefaultTrafficTracker struct {
 }
 
 // NewDefaultTrafficTracker creates a new traffic tracker based on configuration
-func NewDefaultTrafficTracker(name string, data map[string]string, timeout time.Duration, callback TrafficReportCallback) *DefaultTrafficTracker {
+func NewDefaultTrafficTracker(
+	name string,
+	data map[string]string,
+	timeout time.Duration,
+	callback TrafficReportCallback,
+) *DefaultTrafficTracker {
 	dtt := &DefaultTrafficTracker{
 		name:     name,
 		data:     data,
@@ -128,13 +147,13 @@ func (dtt *DefaultTrafficTracker) Elapsed() (time.Duration, bool) {
 	return dtt.end.Sub(dtt.start), true
 }
 
-// LoggingTrafficReporter logs traffic requests
-type LoggingTrafficReporter struct {
+// LoggingReporter logs traffic requests
+type LoggingReporter struct {
 	Prefix string
 }
 
 // Start begins logging traffic data
-func (ltr LoggingTrafficReporter) Start(name string, data map[string]string, timeout time.Duration) TrafficTracker {
+func (ltr LoggingReporter) Start(name string, data map[string]string, timeout time.Duration) TrafficTracker {
 	// TODO(ai) this probably doesn't belong in the global logger
 	logger := ulog.Logger()
 	key := fmt.Sprintf("%s.%s", ltr.Prefix, name)
