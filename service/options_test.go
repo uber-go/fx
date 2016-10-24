@@ -28,15 +28,15 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestWithModules_OK(t *testing.T) {
+func TestAddModules_OK(t *testing.T) {
 	sh := &host{}
-	require.NoError(t, WithModules(successModuleCreate)(sh))
+	require.NoError(t, sh.AddModules(successModuleCreate))
 	assert.Empty(t, sh.Modules())
 }
 
-func TestWithModules_Errors(t *testing.T) {
+func TestAddModules_Errors(t *testing.T) {
 	sh := &host{}
-	assert.Error(t, WithModules(errorModuleCreate)(sh))
+	assert.Error(t, sh.AddModules(errorModuleCreate))
 }
 
 func successModuleCreate(_ ModuleCreateInfo) ([]Module, error) {

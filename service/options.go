@@ -32,34 +32,6 @@ import (
 // A Option configures a service host
 type Option func(Host) error
 
-// WithModules adds the given modules to a service host
-func WithModules(modules ...ModuleCreateFunc) Option {
-	return func(svc Host) error {
-		svc2 := svc.(*host)
-		for _, mcf := range modules {
-			mi := ModuleCreateInfo{
-				Host:  svc,
-				Roles: nil,
-				Items: map[string]interface{}{},
-			}
-
-			mods, err := mcf(mi)
-			if err != nil {
-				return err
-			}
-
-			if !svc2.supportsRole(mi.Roles...) {
-				continue
-			}
-
-			for _, mod := range mods {
-				err = svc2.addModule(mod)
-			}
-		}
-		return nil
-	}
-}
-
 // WithConfiguration adds configuration to a service host
 func WithConfiguration(config config.ConfigurationProvider) Option {
 	return func(svc Host) error {

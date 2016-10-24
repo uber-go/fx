@@ -37,6 +37,9 @@ type Module interface {
 }
 
 // ModuleCreateInfo is used to configure module instantiation
+// TODO(glib): this doesn't seem very heavily used. Should we keep it around?
+// All modules have their own constructors, perhaps this is just the artifact
+// of when all modules were initialized with []ModuleCreateInfo?
 type ModuleCreateInfo struct {
 	Name  string
 	Roles []string

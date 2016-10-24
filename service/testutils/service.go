@@ -28,14 +28,15 @@ func WithService(module service.ModuleCreateFunc, instance service.Observer, fn 
 }
 
 // WithServices is a test helper to instantiate a service with multiple modules
-func WithServices(modules []service.ModuleCreateFunc, instance service.Observer, fn func(service.Owner)) {
-	if instance == nil {
-		instance = service.ObserverStub()
+func WithServices(modules []service.ModuleCreateFunc, observer service.Observer, fn func(service.Owner)) {
+	if observer == nil {
+		observer = service.ObserverStub()
 	}
-	svc := service.New(
-		service.WithObserver(instance),
-		service.WithModules(modules...),
-	)
 
-	fn(svc)
+	svc := service.New(service.WithObserver(observer))
+	err := svc.AddModules(modules...)
+
+	if err == nil {
+		fn(svc)
+	}
 }

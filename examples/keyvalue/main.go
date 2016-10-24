@@ -27,15 +27,19 @@ import (
 )
 
 func main() {
-	service := service.New(
-		service.WithObserver(&Observer{}),
-		service.WithModules(
-			// Create a YARPC module that exposes endpoints
-			rpc.ThriftModule(
-				rpc.CreateThriftServiceFunc(NewYarpcThriftHandler),
-				modules.WithRoles("service")),
+	service := service.New(service.WithObserver(&Observer{}))
+
+	err := service.AddModules(
+		// Create a YARPC module that exposes endpoints
+		rpc.ThriftModule(
+			rpc.CreateThriftServiceFunc(NewYarpcThriftHandler),
+			modules.WithRoles("service"),
 		),
 	)
+
+	if err != nil {
+		service.Logger().Fatal("Failed to initialize modules")
+	}
 
 	service.Start(true)
 }

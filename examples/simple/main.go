@@ -32,11 +32,16 @@ func registerJSONers(service service.Host) []json.Registrant {
 }
 
 func main() {
-	service := service.New(
-		service.WithModules(
-			rpc.JSONModule(registerJSONers),
-			uhttp.New(registerHTTPers),
-		),
+	service := service.New()
+
+	err := service.AddModules(
+		rpc.JSONModule(registerJSONers),
+		uhttp.New(registerHTTPers),
 	)
+
+	if err != nil {
+		service.Logger().Fatal("Failed to initialize modules")
+	}
+
 	service.Start(true)
 }

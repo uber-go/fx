@@ -30,7 +30,7 @@ type State int
 
 const (
 	// Uninitialized means a service has not yet been initialized
-	Uninitialized = State(iota + 1)
+	Uninitialized = State(iota)
 	// Initialized means a service has been initialized
 	Initialized
 	// Starting represents a service in the process of starting
@@ -46,6 +46,9 @@ const (
 // A Owner encapsulates service ownership
 type Owner interface {
 	Host
+
+	AddModules(modules ...ModuleCreateFunc) error
+
 	Start(waitForExit bool) (exit <-chan Exit, ready <-chan struct{}, err error)
 	Stop(reason string, exitCode int) error
 }
@@ -64,8 +67,8 @@ type serviceConfig struct {
 	ServiceRoles       []string `yaml:"roles"`
 }
 
-// New creates a service owner from a set of service instances and
-// options
+// New creates a service owner from a set of service instances and options
+// TODO(glib): Something is fishy here... `service.New` returns a service.Owner -_-
 func New(options ...Option) Owner {
 	cfg := config.Global()
 
@@ -85,6 +88,7 @@ func New(options ...Option) Owner {
 	ensureThat(WithConfiguration(cfg)(svc), "configuration")
 
 	// load standard config
+	// TODO(glib): `.GetValue("")` is a confusing interface for getting the root config node
 	svc.configProvider.GetValue("").PopulateStruct(&svc.standardConfig)
 
 	// load and configure logging
@@ -115,7 +119,11 @@ func New(options ...Option) Owner {
 		}
 	}
 
+	// Put service into Initialized state
+	svc.transitionState(Initialized)
+
 	svc.Metrics().Counter("boot").Inc(1)
+
 	return svc
 }
 

@@ -51,6 +51,7 @@ type host struct {
 	started        bool
 }
 
+// TODO(glib): host is both an Owner and a Host?
 var _ Host = &host{}
 var _ Owner = &host{}
 
@@ -152,6 +153,35 @@ func (s *host) shutdown(err error, reason string, exitCode *int) (bool, error) {
 		s.observer.OnShutdown(*s.shutdownReason)
 	}
 	return true, err
+}
+
+// AddModules adds the given modules to a service host
+func (s *host) AddModules(modules ...ModuleCreateFunc) error {
+	for _, mcf := range modules {
+		mi := ModuleCreateInfo{
+			Host:  s,
+			Roles: nil,
+			Items: map[string]interface{}{},
+		}
+
+		mods, err := mcf(mi)
+		if err != nil {
+			return err
+		}
+
+		if !s.supportsRole(mi.Roles...) {
+			s.Logger().Info(
+				"module will not be added due to selected roles",
+				"roles", mi.Roles,
+			)
+		}
+
+		for _, mod := range mods {
+			err = s.addModule(mod)
+		}
+	}
+
+	return nil
 }
 
 // Start runs the serve loop. If Shutdown() was called then the shutdown reason
