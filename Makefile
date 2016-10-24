@@ -13,8 +13,9 @@ COV_REPORT := overalls.coverprofile
 
 # all .go files that don't exist in hidden directories
 ALL_SRC := $(shell find . -name "*.go" | grep -v -e vendor \
-  -e ".*/\..*" \
-  -e ".*/_.*")
+	-e ".*/\..*" \
+	-e "examples/keyvalue/.*" \
+	-e ".*/_.*")
 
 .PHONY: test
 test: $(COV_REPORT)
@@ -37,6 +38,7 @@ endif
 COVER_OUT := profile.coverprofile
 
 $(COV_REPORT): $(PKG_FILES) $(ALL_SRC)
+		$(ECHO_V)$(MAKE) -C examples/keyvalue/ kv/types.go
 		$(ECHO_V)$(OVERALLS) -project=$(PROJECT_ROOT) \
 		-ignore "$(OVERALLS_IGNORE)" \
 		-covermode=atomic \
@@ -69,4 +71,5 @@ include $(SUPPORT_FILES)/licence.mk
 clean::
 	$(ECHO_V)rm -f $(COV_REPORT) $(COV_HTML) $(LINT_LOG)
 	$(ECHO_V)find $(subst /...,,$(PKGS)) -name $(COVER_OUT) -delete
+	$(ECHO_V)rm -rf examples/keyvalue/kv/
 

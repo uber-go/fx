@@ -21,22 +21,14 @@
 package rpc
 
 import (
-	"fmt"
-	"time"
-
-	"go.uber.org/fx/core/metrics"
 	"go.uber.org/fx/modules"
 	"go.uber.org/fx/service"
 
-	"go.uber.org/thriftrw/protocol"
-	"go.uber.org/thriftrw/wire"
-	"go.uber.org/yarpc"
-	"go.uber.org/yarpc/encoding/thrift"
-	"golang.org/x/net/context"
+	"go.uber.org/yarpc/transport"
 )
 
 // CreateThriftServiceFunc creates a Thrift service from a service host
-type CreateThriftServiceFunc func(service service.Host) (thrift.Service, error)
+type CreateThriftServiceFunc func(service service.Host) ([]transport.Registrant, error)
 
 // ThriftModule creates a Thrift Module from a service func
 func ThriftModule(hookup CreateThriftServiceFunc, options ...modules.Option) service.ModuleCreateFunc {
@@ -51,71 +43,13 @@ func ThriftModule(hookup CreateThriftServiceFunc, options ...modules.Option) ser
 }
 
 func newYarpcThriftModule(mi service.ModuleCreateInfo, createService CreateThriftServiceFunc, options ...modules.Option) (*YarpcModule, error) {
-
-	svc, err := createService(mi.Host)
+	registrants, err := createService(mi.Host)
 	if err != nil {
 		return nil, err
 	}
 
 	reg := func(mod *YarpcModule) {
-		wrappedService := serviceWrapper{mod: mod, service: svc}
-		thrift.Register(mod.rpc, wrappedService)
+		mod.rpc.Register(registrants)
 	}
 	return newYarpcModule(mi, reg, options...)
-}
-
-type serviceWrapper struct {
-	mod      *YarpcModule
-	service  thrift.Service
-	handlers map[string]thrift.Handler
-	callback thrift.HandlerFunc
-}
-
-// Name returns a service's name
-func (sw serviceWrapper) Name() string {
-	return sw.service.Name()
-}
-
-// Protocol returns a service's protocol
-func (sw serviceWrapper) Protocol() protocol.Protocol {
-	return sw.service.Protocol()
-}
-
-func (sw serviceWrapper) wrapHandler(name string, handler thrift.Handler) thrift.HandlerFunc {
-
-	// I want to use YARPC middleware for this but it's not that helpful if I have to wrap each of the handlers
-	// individually - basically the same as below.
-	//
-	// I want something like rpc.RegisterInterceptor(myInterceptor)
-	reporter := sw.mod.Reporter()
-
-	return thrift.HandlerFunc(
-		func(ctx context.Context, req yarpc.ReqMeta, body wire.Value) (thrift.Response, error) {
-
-			data := map[string]string{}
-
-			if cid, ok := req.Headers().Get("cid"); ok {
-				// todo, what's the right tchannel header name?
-				data[metrics.TrafficCorrelationID] = cid
-			}
-
-			key := fmt.Sprintf("rpc.%s.%s", sw.service.Name(), name)
-			tracker := reporter.Start(key, data, 90*time.Second)
-			res, err := handler.Handle(ctx, req, body)
-			tracker.Finish("", res, err)
-			return res, err
-		},
-	)
-}
-
-func (sw serviceWrapper) Handlers() map[string]thrift.Handler {
-	if sw.handlers == nil {
-		h := sw.service.Handlers()
-		sw.handlers = make(map[string]thrift.Handler, len(h))
-
-		for k, v := range h {
-			sw.handlers[k] = sw.wrapHandler(k, v)
-		}
-	}
-	return sw.handlers
 }

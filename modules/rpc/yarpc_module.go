@@ -22,6 +22,10 @@ package rpc
 
 import (
 	"fmt"
+	"sync"
+	"time"
+
+	"golang.org/x/net/context"
 
 	"go.uber.org/fx/core/config"
 	"go.uber.org/fx/core/metrics"
@@ -42,6 +46,7 @@ type YarpcModule struct {
 	register registerServiceFunc
 	config   yarpcConfig
 	log      ulog.Log
+	stateMu  sync.RWMutex
 }
 
 var _ service.Module = &YarpcModule{}
@@ -99,6 +104,9 @@ func (m *YarpcModule) Initialize(service service.Host) error {
 
 // Start begins serving requests over YARPC
 func (m *YarpcModule) Start(readyCh chan<- struct{}) <-chan error {
+	m.stateMu.Lock()
+	defer m.stateMu.Unlock()
+
 	channel, err := tchannel.NewChannel(m.config.AdvertiseName, nil)
 	if err != nil {
 		m.log.Fatal("error", err)
@@ -109,6 +117,7 @@ func (m *YarpcModule) Start(readyCh chan<- struct{}) <-chan error {
 		Inbounds: []transport.Inbound{
 			tch.NewInbound(channel, tch.ListenAddr(m.config.Bind)),
 		},
+		Interceptor: m.makeInterceptor(),
 	})
 
 	m.register(m)
@@ -121,10 +130,29 @@ func (m *YarpcModule) Start(readyCh chan<- struct{}) <-chan error {
 	return ret
 }
 
+func (m *YarpcModule) makeInterceptor() transport.Interceptor {
+	reporter := m.Reporter()
+	return transport.InterceptorFunc(func(ctx context.Context, options transport.Options, request *transport.Request, response transport.ResponseWriter, h transport.Handler) error {
+		data := map[string]string{}
+
+		if cid, ok := request.Headers.Get("cid"); ok {
+			// todo, what's the right tchannel header name?
+			data[metrics.TrafficCorrelationID] = cid
+		}
+
+		key := "rpc." + request.Procedure
+		tracker := reporter.Start(key, data, 90*time.Second)
+		err := h.Handle(ctx, options, request, response)
+		tracker.Finish("", nil, err)
+		return err
+	})
+}
+
 // Stop shuts down a YARPC module
 func (m *YarpcModule) Stop() error {
+	m.stateMu.Lock()
+	defer m.stateMu.Unlock()
 
-	// TODO: thread safety
 	if m.rpc != nil {
 		err := m.rpc.Stop()
 		m.rpc = nil
@@ -135,6 +163,7 @@ func (m *YarpcModule) Stop() error {
 
 // IsRunning returns whether a module is running
 func (m *YarpcModule) IsRunning() bool {
-	// TODO: thread safety
+	m.stateMu.RLock()
+	defer m.stateMu.RUnlock()
 	return m.rpc != nil
 }

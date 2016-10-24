@@ -13,10 +13,14 @@ ERRCHECK_FLAGS := -ignorepkg example -ignore "fmt.*,io:WriteString"
 .PHONY: lint
 lint:
 	$(ECHO_V)rm -rf $(LINT_LOG)
-	@echo "Checking formatting..."
-	$(ECHO_V)gofmt -d -s $(PKG_FILES) 2>&1 | tee $(LINT_LOG)
+	@echo "Generating code"
+	$(ECHO_V)make -C examples/keyvalue kv/types.go
 	@echo "Installing test dependencies for vet..."
 	$(ECHO_V)go test -i $(PKGS)
+	@echo "Removing YARPC generated code"
+	$(ECHO_V)rm -rf examples/keyvalue/kv
+	@echo "Checking formatting..."
+	$(ECHO_V)gofmt -d -s $(PKG_FILES) 2>&1 | tee $(LINT_LOG)
 	@echo "Checking vet..."
 	$(ECHO_V)$(foreach dir,$(PKG_FILES),go tool vet $(VET_RULES) $(dir) 2>&1 | $(FILTER_LINT) | tee -a $(LINT_LOG);)
 	@echo "Checking lint..."
