@@ -21,69 +21,53 @@
 package rpc
 
 import (
-	"errors"
+	"bytes"
 	"testing"
+
+	"go.uber.org/fx/modules"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-
-	"go.uber.org/fx/modules"
-	"go.uber.org/fx/service"
+	"go.uber.org/yarpc/encoding/raw"
 	"go.uber.org/yarpc/transport"
+	"go.uber.org/yarpc/transport/transporttest"
+	"golang.org/x/net/context"
 )
 
-func TestThriftModule_OK(t *testing.T) {
+func TestInterceptor_OK(t *testing.T) {
 	modCreate := ThriftModule(okCreate, modules.WithRoles("test"))
-	mci := mch()
 	mods, err := modCreate(mch())
 	require.NoError(t, err)
 	assert.NotEmpty(t, mods)
 
-	mod := mods[0]
-	testInitRunModule(t, mod, mci)
+	mod := mods[0].(*YarpcModule)
+	request := makeRequest()
+	interceptor := mod.makeInterceptor()
+	resw := new(transporttest.FakeResponseWriter)
+	err = interceptor.Handle(context.Background(), transport.Options{}, request, resw, makeHandler(nil))
+	assert.NoError(t, err)
 }
 
-func TestThriftModule_BadOptions(t *testing.T) {
-	modCreate := ThriftModule(okCreate, errorOption)
-	_, err := modCreate(mch())
-	assert.Error(t, err)
-}
-
-func TestThrfitModule_Error(t *testing.T) {
-	modCreate := ThriftModule(badCreateService)
-	mods, err := modCreate(service.ModuleCreateInfo{})
-	assert.Error(t, err)
-	assert.Nil(t, mods)
-}
-
-func testInitRunModule(t *testing.T, mod service.Module, mci service.ModuleCreateInfo) {
-	readyCh := make(chan struct{}, 1)
-	assert.NoError(t, mod.Initialize(mci.Host))
-	assert.NoError(t, mod.Stop())
-	errs := mod.Start(readyCh)
-	defer func() {
-		assert.NoError(t, mod.Stop())
-	}()
-	assert.True(t, mod.IsRunning())
-	assert.NoError(t, <-errs)
-}
-
-func mch() service.ModuleCreateInfo {
-	return service.ModuleCreateInfo{
-		Host: service.NullHost(),
+func makeRequest() *transport.Request {
+	return &transport.Request{
+		Caller:    "the test suite",
+		Service:   "any service",
+		Encoding:  raw.Encoding,
+		Procedure: "hello",
+		Body:      bytes.NewReader([]byte{1, 2, 3}),
 	}
 }
 
-func errorOption(_ *service.ModuleCreateInfo) error {
-	return errors.New("bad option")
+func makeHandler(err error) transport.Handler {
+	return dummyHandler{
+		err: err,
+	}
 }
 
-func okCreate(_ service.Host) ([]transport.Registrant, error) {
-	return []transport.Registrant{{
-		Service: "foo",
-	}}, nil
+type dummyHandler struct {
+	err error
 }
 
-func badCreateService(_ service.Host) ([]transport.Registrant, error) {
-	return nil, errors.New("can't create service")
+func (d dummyHandler) Handle(ctx context.Context, opts transport.Options, r *transport.Request, w transport.ResponseWriter) error {
+	return d.err
 }

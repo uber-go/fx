@@ -28,7 +28,7 @@ import (
 )
 
 // CreateJSONRegistrantsFunc returns a slice of registrants from a service host
-type CreateJSONRegistrantsFunc func(service service.Host) []transport.Registrant
+type CreateJSONRegistrantsFunc func(service service.Host) ([]transport.Registrant, error)
 
 // JSONModule instantiates a core module from a registrant func
 func JSONModule(hookup CreateJSONRegistrantsFunc, options ...modules.Option) service.ModuleCreateFunc {
@@ -43,8 +43,12 @@ func JSONModule(hookup CreateJSONRegistrantsFunc, options ...modules.Option) ser
 }
 
 func newYarpcJSONModule(mi service.ModuleCreateInfo, createService CreateJSONRegistrantsFunc, options ...modules.Option) (*YarpcModule, error) {
+	procs, err := createService(mi.Host)
+	if err != nil {
+		return nil, err
+	}
+
 	reg := func(mod *YarpcModule) {
-		procs := createService(mi.Host)
 		mod.rpc.Register(procs)
 	}
 
