@@ -45,7 +45,10 @@ func main() {
   service := service.New(
     // The list of module creators for this service, in this case
     // creates a Thrift RPC module called "keyvalue"
-    rpc.ThriftModule("keyvalue", rpc.CreateThriftServiceFunc(NewYarpcThriftHandler)),
+    rpc.ThriftModule(
+      rpc.CreateThriftServiceFunc(NewYarpcThriftHandler),
+      modules.WithName("keyvalue"),
+    ),
   )
 
   // Start the service, with "true" meaning:
@@ -73,7 +76,11 @@ Kafka and TChannel, respectively:
 func main() {
   service := service.New(
     kafka.Module("kakfa_topic1", []string{"worker"}),
-    rpc.ThriftModule("keyvalue", []string{"service"}, rpc.CreateThriftServiceFunc(NewYarpcThriftHandler)),
+    rpc.ThriftModule(
+      rpc.CreateThriftServiceFunc(NewYarpcThriftHandler),
+      modules.WithName("keyvalue"),
+      modules.WithRoles("service"),
+    ),
   )
 
   service.Start(true)
@@ -193,7 +200,7 @@ func main() {
   service := service.New(
     rpc.ThriftModule(
       rpc.CreateThriftServiceFunc(NewMyServiceHandler),
-      modules.WithRoles("rpc"),
+      modules.WithName("rpc"),
     ),
   )
 
