@@ -42,6 +42,17 @@ type TrafficReporter interface {
 	Start(name string, data map[string]string, timeout time.Duration) TrafficTracker
 }
 
+// A NoopTrafficReporter is used for tests and places where you don't care about reporting traffic
+type NoopTrafficReporter struct{}
+
+// Start is used for a NoopTrafficReporter to discard traffic results
+func (NoopTrafficReporter) Start(name string, data map[string]string, timeout time.Duration) TrafficTracker {
+	callback := func(name, desc string, elapsed time.Duration, data map[string]string, result interface{}, err error) {
+		// Do Nothing
+	}
+	return NewDefaultTrafficTracker(name, nil, timeout, callback)
+}
+
 // A TrafficTracker is used for a single request to track traffic
 type TrafficTracker interface {
 	Finish(desc string, result interface{}, err error) bool

@@ -19,3 +19,49 @@
 // THE SOFTWARE.
 
 package modules
+
+import (
+	"testing"
+
+	"go.uber.org/fx/core/metrics"
+	"go.uber.org/fx/service"
+
+	"github.com/stretchr/testify/assert"
+)
+
+func TestNewModuleBase(t *testing.T) {
+	mb := nmb("test", "foo", nil)
+	assert.NotNil(t, mb)
+}
+
+func TestModuleBase_Roles(t *testing.T) {
+	mb := nmb("test", "foo", nil)
+	assert.Nil(t, mb.Roles())
+}
+
+func TestNewModuleBase_Type(t *testing.T) {
+	mb := nmb("test", "foo", nil)
+	assert.Equal(t, "test", mb.Type())
+}
+
+func TestNewModuleBase_Name(t *testing.T) {
+	mb := nmb("test", "foo", nil)
+	assert.Equal(t, "foo", mb.Name())
+}
+
+func TestNewModuleBase_Reporter(t *testing.T) {
+	mb := nmb("test", "foo", nil)
+	assert.NotNil(t, mb.Reporter())
+}
+
+func nmb(moduleType, name string, roles []string) *ModuleBase {
+	host := service.NullHost()
+
+	return NewModuleBase(
+		moduleType,
+		name,
+		host,
+		metrics.NoopTrafficReporter{},
+		roles,
+	)
+}
