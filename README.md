@@ -191,7 +191,10 @@ func NewMyServiceHandler(svc *core.Service) (thrift.Service, error) {
 ```go
 func main() {
   service := service.New(
-    rpc.ThriftModule("rpc", nil, rpc.CreateThriftServiceFunc(NewMyServiceHandler)),
+    rpc.ThriftModule(
+      rpc.CreateThriftServiceFunc(NewMyServiceHandler),
+      modules.WithRoles("rpc"),
+    ),
   )
 
   service.Start(true)
