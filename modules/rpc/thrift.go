@@ -42,7 +42,11 @@ func ThriftModule(hookup CreateThriftServiceFunc, options ...modules.Option) ser
 	}
 }
 
-func newYarpcThriftModule(mi service.ModuleCreateInfo, createService CreateThriftServiceFunc, options ...modules.Option) (*YarpcModule, error) {
+func newYarpcThriftModule(
+	mi service.ModuleCreateInfo,
+	createService CreateThriftServiceFunc,
+	options ...modules.Option,
+) (*YarpcModule, error) {
 	registrants, err := createService(mi.Host)
 	if err != nil {
 		return nil, err
