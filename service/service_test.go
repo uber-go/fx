@@ -124,10 +124,7 @@ func TestNew_WithObserver(t *testing.T) {
 
 // withConfigData sets a global config and returns a function to defer reset
 func withConfigData(data map[string]interface{}) func() {
-	config.SetGlobal(config.NewProviderGroup(
-		"test",
-		config.StaticProvider(data),
-	), true)
-
+	config.RegisterProviders(config.StaticProvider(data))
+	config.InitializeGlobalConfig()
 	return config.ResetGlobal
 }

@@ -21,6 +21,7 @@
 package config
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -100,9 +101,12 @@ type arrayOfStructs struct {
 }
 
 func TestGlobalConfig(t *testing.T) {
+	SetEnvironmentPrefix("TEST")
+	InitializeGlobalConfig()
+
 	cfg := Global()
 	assert.Equal(t, "global", cfg.Name())
-
+	assert.Equal(t, "development", GetEnvironment())
 	ResetGlobal()
 	assert.Nil(t, Global())
 
@@ -262,6 +266,28 @@ boolean:
 	assert.Panics(t, func() { provider.GetValue("id").AsInt() }, "Can't parse as int")
 	assert.Panics(t, func() { provider.GetValue("boolean").AsBool() }, "Can't parse empty boolean")
 	assert.Panics(t, func() { provider.GetValue("id").AsFloat() }, "Can't parse as float")
+}
+
+func TestRegisteredProvidersInitialization(t *testing.T) {
+	RegisterProviders(StaticProvider(map[string]interface{}{
+		"hello": "world",
+	}))
+	InitializeGlobalConfig()
+	cfg := Global()
+	assert.Equal(t, "global", cfg.Name())
+	assert.Equal(t, "world", cfg.GetValue("hello").AsString())
+}
+
+func newConfigWithErrorProider() ProviderFunc {
+	return func() (ConfigurationProvider, error) {
+		return nil, fmt.Errorf("error creating Provider")
+	}
+}
+func TestNilProvider(t *testing.T) {
+	RegisterProviders(newConfigWithErrorProider())
+	assert.Panics(t, func() { InitializeGlobalConfig() }, "Can't initialize with nil provider")
+	UnregisterProviders()
+	assert.Nil(t, configProviderFuncs)
 }
 
 func TestEnvProvider_Callbacks(t *testing.T) {

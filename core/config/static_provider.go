@@ -36,10 +36,17 @@ type scopedStaticProvider struct {
 	prefix string
 }
 
-// StaticProvider should only be used in tests to isolate config from your environment
-func StaticProvider(data map[string]interface{}) ConfigurationProvider {
+// NewStaticProvider should only be used in tests to isolate config from your environment
+func NewStaticProvider(data map[string]interface{}) ConfigurationProvider {
 	return &staticProvider{
 		data: data,
+	}
+}
+
+// StaticProvider returns function to create StaticProvider during configuration initialization
+func StaticProvider(data map[string]interface{}) ProviderFunc {
+	return func() (ConfigurationProvider, error) {
+		return NewStaticProvider(data), nil
 	}
 }
 

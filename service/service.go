@@ -70,16 +70,17 @@ type serviceConfig struct {
 // New creates a service owner from a set of service instances and options
 // TODO(glib): Something is fishy here... `service.New` returns a service.Owner -_-
 func New(options ...Option) Owner {
-	cfg := config.Global()
 
 	svc := &host{
 		// TODO: get these out of config struct instead
 		modules: []Module{},
 		serviceCore: serviceCore{
-			configProvider: cfg,
-			items:          map[string]interface{}{},
+			items: map[string]interface{}{},
 		},
 	}
+
+	config.InitializeGlobalConfig()
+	cfg := config.Global()
 
 	// prepend the default options.
 	// TODO: This isn't right.  Do we order the options so we make sure to use

@@ -118,7 +118,7 @@ func TestTransitionState(t *testing.T) {
 }
 
 func TestLoadInstanceConfig_NoField(t *testing.T) {
-	cfg := config.StaticProvider(nil)
+	cfg := config.NewStaticProvider(nil)
 	instance := struct{}{}
 
 	assert.False(t, loadInstanceConfig(cfg, "anything", &instance), "No field defined on struct")

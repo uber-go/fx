@@ -27,12 +27,12 @@ import (
 )
 
 func TestStaticProvider_Name(t *testing.T) {
-	p := StaticProvider(nil)
+	p := NewStaticProvider(nil)
 	assert.Equal(t, "static", p.Name())
 }
 
 func TestNewStaticProvider_NilData(t *testing.T) {
-	p := StaticProvider(nil)
+	p := NewStaticProvider(nil)
 
 	val := p.GetValue("something")
 	assert.False(t, val.HasValue())
@@ -42,7 +42,7 @@ func TestStaticProvider_WithData(t *testing.T) {
 	data := map[string]interface{}{
 		"hello": "world",
 	}
-	p := StaticProvider(data)
+	p := NewStaticProvider(data)
 
 	val := p.GetValue("hello")
 	assert.True(t, val.HasValue())
@@ -54,7 +54,7 @@ func TestStaticProvider_WithScope(t *testing.T) {
 	data := map[string]interface{}{
 		"hello.world": 42,
 	}
-	p := StaticProvider(data)
+	p := NewStaticProvider(data)
 
 	val := p.GetValue("hello")
 	assert.False(t, val.HasValue())
@@ -66,7 +66,7 @@ func TestStaticProvider_WithScope(t *testing.T) {
 }
 
 func TestStaticProvider_Callbacks(t *testing.T) {
-	p := StaticProvider(nil)
+	p := NewStaticProvider(nil)
 	assert.NoError(t, p.RegisterChangeCallback("test", nil))
 	assert.NoError(t, p.UnregisterChangeCallback("token"))
 }

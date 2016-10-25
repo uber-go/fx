@@ -38,13 +38,13 @@ func TestProviderGroup(t *testing.T) {
 
 func TestProviderGroupScope(t *testing.T) {
 	data := map[string]interface{}{"hello.world": 42}
-	pg := NewProviderGroup("test-group", StaticProvider(data))
+	pg := NewProviderGroup("test-group", NewStaticProvider(data))
 	assert.Equal(t, 42, pg.Scope("hello").GetValue("world").AsInt())
 }
 
 func TestCallbacks_WithDynamicProvider(t *testing.T) {
 	data := map[string]interface{}{"hello.world": 42}
-	mock := NewProviderGroup("with-dynamic", StaticProvider(data))
+	mock := NewProviderGroup("with-dynamic", NewStaticProvider(data))
 	mock = mock.(providerGroup).WithProvider(newMockDynamicProvider(data))
 	assert.Equal(t, "with-dynamic", mock.Name())
 	assert.Equal(t, fmt.Errorf("registration error"), mock.RegisterChangeCallback("mockcall", nil))
@@ -53,8 +53,8 @@ func TestCallbacks_WithDynamicProvider(t *testing.T) {
 
 func TestCallbacks_WithoutDynamicProvider(t *testing.T) {
 	data := map[string]interface{}{"hello.world": 42}
-	mock := NewProviderGroup("with-dynamic", StaticProvider(data))
-	mock = mock.(providerGroup).WithProvider(StaticProvider(data))
+	mock := NewProviderGroup("with-dynamic", NewStaticProvider(data))
+	mock = mock.(providerGroup).WithProvider(NewStaticProvider(data))
 	assert.Equal(t, "with-dynamic", mock.Name())
 	assert.NoError(t, mock.RegisterChangeCallback("mockcall", nil))
 	assert.NoError(t, mock.UnregisterChangeCallback("mock"))

@@ -34,6 +34,11 @@ const (
 	ApplicationDescriptionKey = "applicationDesc"
 	// ApplicationOwnerKey is the configuration key for an application's owner
 	ApplicationOwnerKey = "applicationOwner"
+
+	environment = "_ENVIRONMENT"
+	datacenter  = "_DATACENTER"
+	configdir   = "_CONFIG_DIR"
+	config      = "config"
 )
 
 // TODO(ai) underscore-prefix these per Uber style
@@ -41,6 +46,10 @@ var (
 	global   ConfigurationProvider
 	locked   bool
 	setupMux sync.Mutex
+
+	_envPrefix          = "APP"
+	configProviderFuncs = []ProviderFunc{YamlProvider(), EnvProvider()}
+	cpMux               sync.Mutex
 )
 
 // Global returns the singleton configuration provider
@@ -73,48 +82,89 @@ func ResetGlobal() {
 	global = nil
 }
 
-// TODO(ai) pull this out
-// UBERSPECIFIC
+func getConfigFiles() []string {
+	env := GetEnvironment()
+	dc := os.Getenv(GetEnvironmentPrefix() + datacenter)
+
+	var files []string
+	if dc != "" && env != "" {
+		files = append(files, fmt.Sprintf("./%s/%s-%s.yaml", config, env, dc))
+	}
+	files = append(files,
+		fmt.Sprintf("./%s/%s.yaml", config, env),
+		fmt.Sprintf("./%s/base.yaml", config))
+
+	return files
+}
+
+func getResolver() FileResolver {
+	paths := []string{}
+	configDir := os.Getenv(GetEnvironmentPrefix() + configdir)
+	if configDir != "" {
+		paths = []string{configDir}
+	}
+	return NewRelativeResolver(paths...)
+}
+
+// YamlProvider returns function to create Yaml based configuration provider
+func YamlProvider() ProviderFunc {
+	return func() (ConfigurationProvider, error) {
+		return NewYAMLProviderFromFiles(false, getResolver(), getConfigFiles()...), nil
+	}
+}
+
+// EnvProvider returns function to create environment based config provider
+func EnvProvider() ProviderFunc {
+	return func() (ConfigurationProvider, error) {
+		return NewEnvProvider(defaultEnvPrefix, nil), nil
+	}
+}
 
 // GetEnvironment returns current environment setup for the service
 func GetEnvironment() string {
-	env := os.Getenv("UBER_ENVIRONMENT")
+	env := os.Getenv(GetEnvironmentPrefix() + environment)
 	if env == "" {
 		env = "development"
 	}
 	return env
 }
 
-func getUberConfigFiles() []string {
-	env := GetEnvironment()
-	dc := os.Getenv("UBER_DATACENTER")
-
-	var files []string
-	if dc != "" && env != "" {
-		files = append(files, fmt.Sprintf("./config/%s-%s.yaml", env, dc))
-	}
-
-	files = append(files, fmt.Sprintf("./config/%s.yaml", env), "./config/base.yaml")
-
-	return files
+// SetEnvironmentPrefix sets environment prefix for the application
+func SetEnvironmentPrefix(envPrefix string) {
+	_envPrefix = envPrefix
 }
 
-func init() {
-	// TODO(ai) see if we can do this without all the type assertions and long
-	// lines
-	paths := []string{}
+// GetEnvironmentPrefix returns environment prefix for the application
+func GetEnvironmentPrefix() string {
+	return _envPrefix
+}
 
-	configDir := os.Getenv("UBER_CONFIG_DIR")
-	if configDir != "" {
-		paths = []string{configDir}
+// ProviderFunc is used to create config providers on configuration initialization
+type ProviderFunc func() (ConfigurationProvider, error)
+
+// RegisterProviders registers configuration providers for the global config
+func RegisterProviders(providerFuncs ...ProviderFunc) {
+	cpMux.Lock()
+	defer cpMux.Unlock()
+	configProviderFuncs = append(configProviderFuncs, providerFuncs...)
+}
+
+// UnregisterProviders clears all the default providers
+func UnregisterProviders() {
+	cpMux.Lock()
+	defer cpMux.Unlock()
+	configProviderFuncs = nil
+}
+
+// InitializeGlobalConfig initializes the ConfigurationProvider for use in a service
+func InitializeGlobalConfig() {
+	var providers []ConfigurationProvider
+	for _, providerFunc := range configProviderFuncs {
+		cp, err := providerFunc()
+		if err != nil {
+			panic(err)
+		}
+		providers = append(providers, cp)
 	}
-
-	resolver := NewRelativeResolver(paths...)
-
-	// do the default thing
-	global = NewProviderGroup(
-		"global",
-		NewYAMLProviderFromFiles(false, resolver, getUberConfigFiles()...),
-		NewEnvProvider(defaultEnvPrefix, nil),
-	)
+	global = NewProviderGroup("global", providers...)
 }

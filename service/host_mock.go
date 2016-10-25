@@ -35,6 +35,6 @@ func NullHost() Host {
 			ServiceDescription: "does cool stuff",
 		},
 		scope:          tally.NoopScope,
-		configProvider: config.StaticProvider(nil),
+		configProvider: config.NewStaticProvider(nil),
 	}
 }
