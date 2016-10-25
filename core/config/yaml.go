@@ -64,8 +64,6 @@ func NewYAMLProviderFromFiles(mustExist bool, resolver FileResolver, files ...st
 	// load the files, read their bytes
 	readers := []io.ReadCloser{}
 
-	// TODO: Work out how to recurse with "extends"
-	//
 	for _, v := range files {
 		if reader := resolver.Resolve(v); reader == nil && mustExist {
 			panic("Couldn't open " + v)
