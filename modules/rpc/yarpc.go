@@ -113,7 +113,7 @@ func (m *YarpcModule) Start(readyCh chan<- struct{}) <-chan error {
 
 	channel, err := tchannel.NewChannel(m.config.AdvertiseName, nil)
 	if err != nil {
-		m.log.Fatal("error", err)
+		m.log.Fatal("Unable to create TChannel", "error", err)
 	}
 
 	m.rpc = yarpc.NewDispatcher(yarpc.Config{
