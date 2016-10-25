@@ -283,12 +283,12 @@ func TestNilProvider(t *testing.T) {
 	RegisterProviders(newConfigWithErrorProvider())
 	defer ResetGlobal()
 	assert.Panics(t, func() { InitializeGlobalConfig() }, "Can't initialize with nil provider")
-	oldProviders := configProviderFuncs
+	oldProviders := _configProviderFuncs
 	defer func() {
-		configProviderFuncs = oldProviders
+		_configProviderFuncs = oldProviders
 	}()
 	UnregisterProviders()
-	assert.Nil(t, configProviderFuncs)
+	assert.Nil(t, _configProviderFuncs)
 }
 
 func TestEnvProvider_Callbacks(t *testing.T) {

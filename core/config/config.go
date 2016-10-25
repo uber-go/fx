@@ -43,22 +43,22 @@ const (
 
 // TODO(ai) underscore-prefix these per Uber style
 var (
-	global       ConfigurationProvider
-	locked       bool
-	setupMux     sync.Mutex
+	_global      ConfigurationProvider
+	_locked      bool
+	_setupMux    sync.Mutex
 	_initialized bool
 
-	_envPrefix          = "APP"
-	configProviderFuncs = []ProviderFunc{YamlProvider(), EnvProvider()}
-	cpMux               sync.Mutex
+	_envPrefix           = "APP"
+	_configProviderFuncs = []ProviderFunc{YamlProvider(), EnvProvider()}
+	_cpMux               sync.Mutex
 )
 
 // Global returns the singleton configuration provider
 func Global() ConfigurationProvider {
-	setupMux.Lock()
-	defer setupMux.Unlock()
-	locked = true
-	return global
+	_setupMux.Lock()
+	defer _setupMux.Unlock()
+	_locked = true
+	return _global
 }
 
 // ServiceName returns the service's names
@@ -68,20 +68,20 @@ func ServiceName() string {
 
 // SetGlobal sets the singleton configuration provider
 func SetGlobal(provider ConfigurationProvider, force bool) {
-	setupMux.Lock()
-	defer setupMux.Unlock()
-	if locked && !force {
+	_setupMux.Lock()
+	defer _setupMux.Unlock()
+	if _locked && !force {
 		panic("Global provider must be set before any configuration access")
 	}
-	global = provider
+	_global = provider
 }
 
 // ResetGlobal is used for tests
 func ResetGlobal() {
-	setupMux.Lock()
-	defer setupMux.Unlock()
+	_setupMux.Lock()
+	defer _setupMux.Unlock()
 	_initialized = false
-	global = nil
+	_global = nil
 }
 
 func getConfigFiles() []string {
@@ -146,39 +146,39 @@ type ProviderFunc func() (ConfigurationProvider, error)
 
 // RegisterProviders registers configuration providers for the global config
 func RegisterProviders(providerFuncs ...ProviderFunc) {
-	cpMux.Lock()
-	defer cpMux.Unlock()
-	configProviderFuncs = append(configProviderFuncs, providerFuncs...)
+	_cpMux.Lock()
+	defer _cpMux.Unlock()
+	_configProviderFuncs = append(_configProviderFuncs, providerFuncs...)
 }
 
 // Providers should only be used during tests
 func Providers() []ProviderFunc {
-	return configProviderFuncs
+	return _configProviderFuncs
 }
 
 // UnregisterProviders clears all the default providers
 func UnregisterProviders() {
-	cpMux.Lock()
-	defer cpMux.Unlock()
-	configProviderFuncs = nil
+	_cpMux.Lock()
+	defer _cpMux.Unlock()
+	_configProviderFuncs = nil
 }
 
 // InitializeGlobalConfig initializes the ConfigurationProvider for use in a service
 func InitializeGlobalConfig() {
-	setupMux.Lock()
-	defer setupMux.Unlock()
+	_setupMux.Lock()
+	defer _setupMux.Unlock()
 
 	if _initialized {
 		return
 	}
 	_initialized = true
 	var providers []ConfigurationProvider
-	for _, providerFunc := range configProviderFuncs {
+	for _, providerFunc := range _configProviderFuncs {
 		cp, err := providerFunc()
 		if err != nil {
 			panic(err)
 		}
 		providers = append(providers, cp)
 	}
-	global = NewProviderGroup("global", providers...)
+	_global = NewProviderGroup("global", providers...)
 }
