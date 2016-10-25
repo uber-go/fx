@@ -1,9 +1,9 @@
 applicationID: keyvalue
-applicationdesc: A simple keyvalue service
-applicationowner: uberfx@uber.com
+applicationDesc: A simple keyvalue service
+applicationOwner: uberfx@uber.com
 modules:
   yarpc:
-    advertise_name: keyvalue
+    advertiseName: keyvalue
     bind: :28941
 
 service:

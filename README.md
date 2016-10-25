@@ -123,12 +123,12 @@ In any case, module configuration is done in a standarized layout as follows:
 
 ```yaml
 modules:
-  rpc:
+  yarpc:
     bind: :28941
-    advertise_name: kvserver
+    advertiseName: kvserver
   http:
     port: 8080
-    timeout_seconds: 60
+    timeout: 60s
 ```
 
 In this example, a module named: "rpc" would lookup it's advertise name as

@@ -59,7 +59,7 @@ const RPCModuleType = "rpc"
 type yarpcConfig struct {
 	modules.ModuleConfig
 	Bind          string `yaml:"bind"`
-	AdvertiseName string `yaml:"advertise_name"`
+	AdvertiseName string `yaml:"advertiseName"`
 }
 
 func newYarpcModule(
