@@ -3,6 +3,8 @@ LINT_EXCLUDES = examples
 # converted to a grep -v pipeline. If there are no filters, cat is used.
 FILTER_LINT := $(if $(LINT_EXCLUDES), grep -v $(foreach file, $(LINT_EXCLUDES),-e $(file)),cat)
 
+FILTER_LOG := grep -v "fx/examples"
+
 LINT_LOG := lint.log
 
 _THIS_MAKEFILE := $(lastword $(MAKEFILE_LIST))
@@ -32,5 +34,5 @@ lint:
 	@echo "Checking for license headers..."
 	$(ECHO_V)$(_THIS_DIR)/check_license.sh | tee -a $(LINT_LOG)
 	@echo "Checking for imports of log package"
-	$(ECHO_V)go list -f '{{ .ImportPath }}: {{ .Imports }}' $(shell glide nv) | grep -e "\blog\b" | tee -a $(LINT_LOG)
+	$(ECHO_V)go list -f '{{ .ImportPath }}: {{ .Imports }}' $(shell glide nv) | grep -e "\blog\b" | $(FILTER_LOG) | tee -a $(LINT_LOG)
 	$(ECHO_V)[ ! -s $(LINT_LOG) ]

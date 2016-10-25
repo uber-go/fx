@@ -21,16 +21,9 @@
 package testutils
 
 import (
-	"fmt"
 	"math/rand"
 
 	"go.uber.org/fx/core/config"
-)
-
-const (
-	confTemplate = `
-applicationID: %s
-`
 )
 
 // WithConfig sets a global config and returns a function to defer reset
@@ -39,14 +32,21 @@ func WithConfig(applicationID *string) func() {
 		_appID := "test" + randStringBytes(10)
 		applicationID = &_appID
 	}
-	yamlConfig := []byte(fmt.Sprintf(confTemplate, *applicationID))
+	applicationOwner := "test" + randStringBytes(10)
 
-	config.SetGlobal(config.NewProviderGroup(
-		"test",
-		config.NewYAMLProviderFromBytes(yamlConfig),
-	), true)
+	data := map[string]interface{}{
+		"applicationID":    *applicationID,
+		"applicationOwner": applicationOwner,
+	}
 
-	return config.ResetGlobal
+	oldProviders := config.Providers()
+	config.UnregisterProviders()
+	config.RegisterProviders(config.StaticProvider(data))
+	config.InitializeGlobalConfig()
+	return func() {
+		config.RegisterProviders(oldProviders...)
+		config.ResetGlobal()
+	}
 }
 
 const letterBytes = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"

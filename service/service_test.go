@@ -29,6 +29,7 @@ import (
 	"go.uber.org/fx/core/config"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 type testStatsReporter struct {
@@ -75,11 +76,13 @@ func newTestStatsReporter() *testStatsReporter {
 }
 
 func TestServiceCreation(t *testing.T) {
+	defer withConfigData(validServiceConfig)()
 	r := newTestStatsReporter()
 	r.cw.Add(1)
-	svc := New(
+	svc, err := New(
 		WithStatsReporter(r, 50*time.Millisecond),
 	)
+	require.NoError(t, err)
 	assert.NotNil(t, svc, "Service should be created")
 	r.cw.Wait()
 
@@ -87,10 +90,20 @@ func TestServiceCreation(t *testing.T) {
 }
 
 func TestWithObserver_Nil(t *testing.T) {
-	svc := New(
+	defer withConfigData(validServiceConfig)()
+	svc, err := New(
 		WithObserver(nil),
 	)
+	require.NoError(t, err)
+
 	assert.Nil(t, svc.Observer(), "Observer should be nil")
+}
+
+func TestServiceCreation_MissingRequiredParams(t *testing.T) {
+	defer withConfigData(nil)()
+	_, err := New()
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "zero value")
 }
 
 func TestServiceWithRoles(t *testing.T) {
@@ -100,31 +113,47 @@ func TestServiceWithRoles(t *testing.T) {
 		"roles.0":          "foo",
 	})()
 
-	svc := New()
+	svc, err := New()
+	require.NoError(t, err)
+
 	assert.Contains(t, svc.Roles(), "foo")
 }
 
 func TestBadOption_Panics(t *testing.T) {
-	defer withConfigData(nil)()
+	defer withConfigData(validServiceConfig)()
 	opt := func(_ Host) error {
 		return errors.New("nope")
 	}
 
 	assert.Panics(t, func() {
-		New(opt)
+		_, err := New(opt)
+		if err != nil {
+			assert.Fail(t, "should not reach this path")
+		}
 	})
 }
 
 func TestNew_WithObserver(t *testing.T) {
-	defer withConfigData(nil)()
+	defer withConfigData(validServiceConfig)()
 	o := observerStub()
-	svc := New(WithObserver(o))
+	svc, err := New(WithObserver(o))
+	require.NoError(t, err)
 	assert.Equal(t, o, svc.Observer())
+}
+
+var validServiceConfig = map[string]interface{}{
+	"applicationID":    "test-suite",
+	"applicationOwner": "go.uber.org/fx",
 }
 
 // withConfigData sets a global config and returns a function to defer reset
 func withConfigData(data map[string]interface{}) func() {
+	oldProviders := config.Providers()
+	config.UnregisterProviders()
 	config.RegisterProviders(config.StaticProvider(data))
 	config.InitializeGlobalConfig()
-	return config.ResetGlobal
+	return func() {
+		config.RegisterProviders(oldProviders...)
+		config.ResetGlobal()
+	}
 }

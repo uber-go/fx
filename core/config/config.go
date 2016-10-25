@@ -43,9 +43,10 @@ const (
 
 // TODO(ai) underscore-prefix these per Uber style
 var (
-	global   ConfigurationProvider
-	locked   bool
-	setupMux sync.Mutex
+	global       ConfigurationProvider
+	locked       bool
+	setupMux     sync.Mutex
+	_initialized bool
 
 	_envPrefix          = "APP"
 	configProviderFuncs = []ProviderFunc{YamlProvider(), EnvProvider()}
@@ -79,6 +80,7 @@ func SetGlobal(provider ConfigurationProvider, force bool) {
 func ResetGlobal() {
 	setupMux.Lock()
 	defer setupMux.Unlock()
+	_initialized = false
 	global = nil
 }
 
@@ -149,6 +151,11 @@ func RegisterProviders(providerFuncs ...ProviderFunc) {
 	configProviderFuncs = append(configProviderFuncs, providerFuncs...)
 }
 
+// Providers should only be used during tests
+func Providers() []ProviderFunc {
+	return configProviderFuncs
+}
+
 // UnregisterProviders clears all the default providers
 func UnregisterProviders() {
 	cpMux.Lock()
@@ -158,6 +165,13 @@ func UnregisterProviders() {
 
 // InitializeGlobalConfig initializes the ConfigurationProvider for use in a service
 func InitializeGlobalConfig() {
+	setupMux.Lock()
+	defer setupMux.Unlock()
+
+	if _initialized {
+		return
+	}
+	_initialized = true
 	var providers []ConfigurationProvider
 	for _, providerFunc := range configProviderFuncs {
 		cp, err := providerFunc()

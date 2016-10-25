@@ -21,20 +21,25 @@
 package main
 
 import (
+	"log"
+
 	"go.uber.org/fx/modules/rpc"
 	"go.uber.org/fx/modules/uhttp"
 	"go.uber.org/fx/service"
-	"go.uber.org/yarpc/encoding/json"
+	"go.uber.org/yarpc/transport"
 )
 
-func registerJSONers(service service.Host) []json.Registrant {
-	return nil
+func registerJSONers(service service.Host) ([]transport.Registrant, error) {
+	return nil, nil
 }
 
 func main() {
-	service := service.New()
+	service, err := service.New()
+	if err != nil {
+		log.Fatal("Unable to initialize service: ", err)
+	}
 
-	err := service.AddModules(
+	err = service.AddModules(
 		rpc.JSONModule(registerJSONers),
 		uhttp.New(registerHTTPers),
 	)

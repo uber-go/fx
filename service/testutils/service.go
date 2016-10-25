@@ -33,10 +33,14 @@ func WithServices(modules []service.ModuleCreateFunc, observer service.Observer,
 		observer = service.ObserverStub()
 	}
 
-	svc := service.New(service.WithObserver(observer))
-	err := svc.AddModules(modules...)
-
-	if err == nil {
-		fn(svc)
+	svc, err := service.New(service.WithObserver(observer))
+	if err != nil {
+		panic(err)
 	}
+	err = svc.AddModules(modules...)
+
+	if err != nil {
+		panic(err)
+	}
+	fn(svc)
 }

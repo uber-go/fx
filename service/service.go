@@ -23,6 +23,8 @@ package service
 import (
 	"go.uber.org/fx/core/config"
 	"go.uber.org/fx/core/ulog"
+
+	"github.com/go-validator/validator"
 )
 
 // A State represents the state of a service
@@ -61,16 +63,15 @@ type Exit struct {
 }
 
 type serviceConfig struct {
-	ServiceName        string   `yaml:"applicationID" required:"true"`
-	ServiceOwner       string   `yaml:"applicationOwner"  required:"true"`
+	ServiceName        string   `yaml:"applicationID" validate:"nonzero"`
+	ServiceOwner       string   `yaml:"applicationOwner"  validate:"nonzero"`
 	ServiceDescription string   `yaml:"applicationDesc"`
 	ServiceRoles       []string `yaml:"roles"`
 }
 
 // New creates a service owner from a set of service instances and options
 // TODO(glib): Something is fishy here... `service.New` returns a service.Owner -_-
-func New(options ...Option) Owner {
-
+func New(options ...Option) (Owner, error) {
 	svc := &host{
 		// TODO: get these out of config struct instead
 		modules: []Module{},
@@ -81,6 +82,7 @@ func New(options ...Option) Owner {
 
 	config.InitializeGlobalConfig()
 	cfg := config.Global()
+	svc.serviceCore.configProvider = cfg
 
 	// prepend the default options.
 	// TODO: This isn't right.  Do we order the options so we make sure to use
@@ -96,6 +98,11 @@ func New(options ...Option) Owner {
 	svc.configProvider.GetValue("logging").PopulateStruct(&svc.logConfig)
 	ulog.Configure(svc.logConfig)
 	ensureThat(WithLogger(ulog.Logger())(svc), "log configuration")
+
+	if errs := validator.Validate(svc.standardConfig); errs != nil {
+		svc.Logger().Error("Invalid service configuration", "error", errs)
+		return svc, errs
+	}
 
 	// hash up the roles
 	svc.roles = map[string]bool{}
@@ -125,7 +132,7 @@ func New(options ...Option) Owner {
 
 	svc.Metrics().Counter("boot").Inc(1)
 
-	return svc
+	return svc, nil
 }
 
 func ensureThat(err error, description string) {

@@ -273,19 +273,20 @@ func TestRegisteredProvidersInitialization(t *testing.T) {
 		"hello": "world",
 	}))
 	InitializeGlobalConfig()
+	defer ResetGlobal()
 	cfg := Global()
 	assert.Equal(t, "global", cfg.Name())
 	assert.Equal(t, "world", cfg.GetValue("hello").AsString())
 }
 
-func newConfigWithErrorProider() ProviderFunc {
-	return func() (ConfigurationProvider, error) {
-		return nil, fmt.Errorf("error creating Provider")
-	}
-}
 func TestNilProvider(t *testing.T) {
-	RegisterProviders(newConfigWithErrorProider())
+	RegisterProviders(newConfigWithErrorProvider())
+	defer ResetGlobal()
 	assert.Panics(t, func() { InitializeGlobalConfig() }, "Can't initialize with nil provider")
+	oldProviders := configProviderFuncs
+	defer func() {
+		configProviderFuncs = oldProviders
+	}()
 	UnregisterProviders()
 	assert.Nil(t, configProviderFuncs)
 }
@@ -294,4 +295,10 @@ func TestEnvProvider_Callbacks(t *testing.T) {
 	p := NewEnvProvider("", nil)
 	assert.NoError(t, p.RegisterChangeCallback("test", nil))
 	assert.NoError(t, p.UnregisterChangeCallback("token"))
+}
+
+func newConfigWithErrorProvider() ProviderFunc {
+	return func() (ConfigurationProvider, error) {
+		return nil, fmt.Errorf("error creating Provider")
+	}
 }

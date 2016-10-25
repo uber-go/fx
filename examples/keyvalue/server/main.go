@@ -21,15 +21,20 @@
 package main
 
 import (
+	"log"
+
 	"go.uber.org/fx/modules"
 	"go.uber.org/fx/modules/rpc"
 	"go.uber.org/fx/service"
 )
 
 func main() {
-	service := service.New(service.WithObserver(&Observer{}))
+	service, err := service.New(service.WithObserver(&Observer{}))
+	if err != nil {
+		log.Fatal("Unable to initialize service: ", err)
+	}
 
-	err := service.AddModules(
+	err = service.AddModules(
 		// Create a YARPC module that exposes endpoints
 		rpc.ThriftModule(
 			rpc.CreateThriftServiceFunc(NewYarpcThriftHandler),

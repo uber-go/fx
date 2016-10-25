@@ -25,6 +25,8 @@ import (
 	"reflect"
 	"strconv"
 	"time"
+
+	"github.com/go-validator/validator"
 )
 
 // A ValueType is a type-description of a configuration value
@@ -296,7 +298,6 @@ func getFieldInfo(field reflect.StructField) fieldInfo {
 	return fieldInfo{
 		FieldName:    field.Tag.Get("yaml"),
 		DefaultValue: field.Tag.Get("default"),
-		Required:     field.Tag.Get("required") == "true",
 	}
 }
 
@@ -399,8 +400,6 @@ func (cv ConfigurationValue) getValueStruct(key string, target interface{}) (int
 			if v2 := global.GetValue(childKey); v2.HasValue() {
 				val = v2.Value()
 				found = true
-			} else if fieldInfo.Required {
-				return nil, false, fmt.Errorf("field %q must have value for key %q", fieldName, childKey)
 			} else if fieldInfo.DefaultValue != "" {
 				val = fieldInfo.DefaultValue
 			}
@@ -473,6 +472,9 @@ func (cv ConfigurationValue) getValueStruct(key string, target interface{}) (int
 	}
 
 	if found {
+		if errs := validator.Validate(target); errs != nil {
+			return nil, true, errs
+		}
 		return target, true, nil
 	}
 	return nil, false, nil
