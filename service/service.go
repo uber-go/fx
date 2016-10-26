@@ -21,7 +21,10 @@
 package service
 
 import (
+	"github.com/uber-go/tally"
+
 	"go.uber.org/fx/core/config"
+	"go.uber.org/fx/core/metrics"
 	"go.uber.org/fx/core/ulog"
 
 	"github.com/go-validator/validator"
@@ -115,6 +118,17 @@ func New(options ...Option) (Owner, error) {
 		if optionErr := opt(svc); optionErr != nil {
 			panic(optionErr)
 		}
+	}
+
+	// Initialize metrics. If no metrics reporters were Registered, do noop
+	// TODO(glib): add a logging reporter and use it by default, rather than noop
+	if svc.Metrics() == nil {
+		if reporter := metrics.Reporter(); reporter != nil {
+			ensureThat(WithStatsReporter(reporter, metrics.DefaultReporterInterval)(svc), "metrics")
+		} else {
+			ensureThat(WithStatsReporter(tally.NullStatsReporter, 0)(svc), "metrics")
+		}
+		metrics.Freeze()
 	}
 
 	// if we have an observer, look for a property called "config" and load the service

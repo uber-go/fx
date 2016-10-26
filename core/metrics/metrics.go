@@ -19,3 +19,64 @@
 // THE SOFTWARE.
 
 package metrics
+
+import (
+	"sync"
+	"time"
+
+	"github.com/uber-go/tally"
+)
+
+var (
+	_reporter tally.StatsReporter
+	_mu       sync.Mutex
+	_frozen   bool
+
+	// DefaultReporterInterval controls how oftern the buffered metrics are flushed
+	DefaultReporterInterval = time.Second
+)
+
+// Freeze ensures that after servce is started, no other metrics manipulations can be done
+//
+// This has to do with the fact that modules inherit sub-scopes of the main metrics, and the fact
+// that swapping a reporter might have unpredicted implications on already emitted metrics.
+//
+// No, really, metrics must be set up before starting the service.
+func Freeze() {
+	_mu.Lock()
+	defer _mu.Unlock()
+
+	_frozen = true
+}
+
+func ensureNotFrozen() {
+	_mu.Lock()
+	defer _mu.Unlock()
+
+	if _frozen {
+		panic("Attempt to modify stats reporter after it's been frozen")
+	}
+}
+
+// RegisterReporter initializes the stats reporter for the service use
+func RegisterReporter(rep tally.StatsReporter) {
+	ensureNotFrozen()
+
+	_mu.Lock()
+	defer _mu.Unlock()
+
+	if _reporter != nil {
+		// TODO(glib): consider a "force" flag, or some way to clear out and replace the reporter
+		panic("There can be only one metrics reporter")
+	}
+
+	_reporter = rep
+}
+
+// Reporter returns the provided stats reporter, or nil
+func Reporter() tally.StatsReporter {
+	_mu.Lock()
+	defer _mu.Unlock()
+
+	return _reporter
+}
