@@ -1,0 +1,104 @@
+hash: 07a85faa8ece4bd16fa206a870d04a98b74f1bb7c9b15d64c6866a1ce017dfb7
+updated: 2016-10-25T15:02:31.097436247-07:00
+imports:
+- name: github.com/facebookgo/clock
+  version: 600d898af40aa09a7a93ecb9265d87b0504b6f03
+- name: github.com/go-validator/validator
+  version: 0a9835d809fb647a62611d30cb792e0b5dd65b11
+- name: github.com/golang/mock
+  version: bd3c8e81be01eef76d4b503f5e687d2d1354d2d9
+  subpackages:
+  - gomock
+- name: github.com/gorilla/context
+  version: 1ea25387ff6f684839d82767c1733ff4d4d15d0a
+- name: github.com/gorilla/mux
+  version: 0eeaf8392f5b04950925b8a69fe70f110fa7cbfc
+- name: github.com/opentracing/opentracing-go
+  version: 0c3154a3c2ce79d3271985848659870599dfb77c
+  subpackages:
+  - ext
+  - log
+- name: github.com/uber-go/atomic
+  version: 0c9e689d64f004564b79d9a663634756df322902
+- name: github.com/uber-go/tally
+  version: 26f1fcfe8b5828fa41bbc7e01468c5f9a857abc8
+- name: github.com/uber-go/zap
+  version: c4939d1166b2220bb45338e21506623b4bbdec50
+- name: github.com/uber/tchannel-go
+  version: 4a23f3aae76694b21107f118ece763a61b98ea07
+  subpackages:
+  - relay
+  - tnet
+  - trand
+  - typed
+- name: go.uber.org/thriftrw
+  version: 6aa07c0009457cc6c7ff5497695f1581ad184350
+  subpackages:
+  - envelope
+  - internal/envelope/exception
+  - protocol
+  - protocol/binary
+  - version
+  - wire
+- name: go.uber.org/yarpc
+  version: 1a2689e2cce0d9783fc16bcfd45d3ee077e4bbff
+  subpackages:
+  - encoding/raw
+  - encoding/thrift
+  - encoding/thrift/internal
+  - internal
+  - internal/encoding
+  - internal/errors
+  - internal/filter
+  - internal/interceptor
+  - internal/meta
+  - internal/request
+  - internal/sync
+  - transport
+  - transport/internal
+  - transport/tchannel
+  - transport/tchannel/internal
+  - transport/transporttest
+- name: golang.org/x/net
+  version: 65dfc08770ce66f74becfdff5f8ab01caef4e946
+  subpackages:
+  - context
+  - context/ctxhttp
+- name: gopkg.in/yaml.v2
+  version: a5b47d31c556af34a302ce5d659e6fea44d90de0
+testImports:
+- name: github.com/axw/gocov
+  version: 54b98cfcac0c63fb3f9bd8e7ad241b724d4e985b
+  subpackages:
+  - gocov
+- name: github.com/davecgh/go-spew
+  version: 5215b55f46b2b919f50a1df0eaa5886afe4e3b3d
+  subpackages:
+  - spew
+- name: github.com/go-playground/overalls
+  version: 6de3f6a9f4b3449d179d98d63b521716cda834fb
+- name: github.com/golang/lint
+  version: 3390df4df2787994aea98de825b964ac7944b817
+  subpackages:
+  - golint
+- name: github.com/kisielk/errcheck
+  version: 9c1292e1c962175f76516859f4a88aabd86dc495
+- name: github.com/kisielk/gotool
+  version: 5e136deb9b893bbe6c8f23236ff4378b7a8a0dbb
+- name: github.com/mattn/goveralls
+  version: edf7508a2bcb40ec1160e94518c983c2fc169f02
+- name: github.com/pborman/uuid
+  version: 3d4f2ba23642d3cfd06bd4b54cf03d99d95c0f1b
+- name: github.com/pmezard/go-difflib
+  version: 792786c7400a136282c1664665ae0a8db921c6c2
+  subpackages:
+  - difflib
+- name: github.com/stretchr/testify
+  version: 69483b4bd14f5845b5a1e55bca19e954e827f1d0
+  subpackages:
+  - assert
+  - require
+- name: golang.org/x/tools
+  version: 3fe2afc9e626f32e91aff6eddb78b14743446865
+  subpackages:
+  - cover
