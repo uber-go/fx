@@ -18,30 +18,46 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package main
+package service
 
-import (
-	"log"
+// A Builder is a helper to create a service
+type Builder struct {
+	options []Option
+	modules []ModuleCreateFunc
+}
 
-	"go.uber.org/fx/modules"
-	"go.uber.org/fx/modules/rpc"
-	"go.uber.org/fx/service"
-)
-
-func main() {
-	service, err := service.NewBuilder(
-		service.WithObserver(&Observer{}),
-	).WithModules(
-		// Create a YARPC module that exposes endpoints
-		rpc.ThriftModule(
-			rpc.CreateThriftServiceFunc(NewYarpcThriftHandler),
-			modules.WithRoles("service"),
-		),
-	).Build()
-
-	if err != nil {
-		log.Fatal("Unable to initialize service: ", err)
+// NewBuilder returns a new Builder for instantiating services
+func NewBuilder(options ...Option) *Builder {
+	b := &Builder{
+		options: options,
 	}
 
-	service.Start(true)
+	return b
+}
+
+// WithModules adds the given modules to the service
+func (b *Builder) WithModules(modules ...ModuleCreateFunc) *Builder {
+	b.modules = append(b.modules, modules...)
+
+	return b
+}
+
+// WithModules is a helper to create a service without any options
+func WithModules(modules ...ModuleCreateFunc) *Builder {
+	b := NewBuilder()
+	return b.WithModules(modules...)
+}
+
+// Build returns the service, or any errors encountered during build phase.
+func (b *Builder) Build() (Owner, error) {
+	svc, err := New(b.options...)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := svc.AddModules(b.modules...); err != nil {
+		return nil, err
+	}
+
+	return svc, nil
 }

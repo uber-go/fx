@@ -42,14 +42,18 @@ import (
 
 func main() {
   // Create the service object
-  service := service.New(
+  service, err := service.WithModules(
     // The list of module creators for this service, in this case
     // creates a Thrift RPC module called "keyvalue"
     rpc.ThriftModule(
       rpc.CreateThriftServiceFunc(NewYarpcThriftHandler),
       modules.WithName("keyvalue"),
     ),
-  )
+  ).Build()
+
+  if err != nil {
+    log.Fatal("Could not initialize service: ", err)
+  }
 
   // Start the service, with "true" meaning:
   // * Wait for service exit
@@ -74,14 +78,18 @@ Kafka and TChannel, respectively:
 
 ```go
 func main() {
-  service := service.New(
+  service, err := service.WithModules(
     kafka.Module("kakfa_topic1", []string{"worker"}),
     rpc.ThriftModule(
       rpc.CreateThriftServiceFunc(NewYarpcThriftHandler),
       modules.WithName("keyvalue"),
       modules.WithRoles("service"),
     ),
-  )
+  ).Build()
+
+  if err != nil {
+    log.Fatal("Could not initialize service: ", err)
+  }
 
   service.Start(true)
 }
@@ -153,9 +161,14 @@ import (
 )
 
 func main() {
-  service := service.New(
+  service, err := service.WithModules(
     uhttp.New(registerHTTP),
-  )
+  ).Build()
+
+  if err != nil {
+    log.Fatal("Could not initialize service: ", err)
+  }
+
   service.Start(true)
 }
 
