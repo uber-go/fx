@@ -30,6 +30,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/uber-go/tally"
 )
 
 type testStatsReporter struct {
@@ -79,8 +80,9 @@ func TestServiceCreation(t *testing.T) {
 	defer withConfigData(validServiceConfig)()
 	r := newTestStatsReporter()
 	r.cw.Add(1)
+	scope := tally.NewRootScope("", nil, r, 50*time.Millisecond)
 	svc, err := New(
-		WithStatsReporter(r, 50*time.Millisecond),
+		WithMetricsRootScope(scope),
 	)
 	require.NoError(t, err)
 	assert.NotNil(t, svc, "Service should be created")

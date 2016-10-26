@@ -21,20 +21,30 @@
 package metrics
 
 import (
+	"fmt"
 	"sync"
 	"time"
+
+	"go.uber.org/fx/core/config"
 
 	"github.com/uber-go/tally"
 )
 
 var (
-	_reporter tally.StatsReporter
-	_mu       sync.Mutex
-	_frozen   bool
+	_repFunc ReporterFunc
+	_mu      sync.Mutex
+	_frozen  bool
+
+	// DefaultReporter does not do anything
+	// TODO(glib): add a logging reporter and use it by default, rather than noop
+	DefaultReporter = tally.NullStatsReporter
 
 	// DefaultReporterInterval controls how oftern the buffered metrics are flushed
 	DefaultReporterInterval = time.Second
 )
+
+// ReporterFunc is used during service init time to register the reporter
+type ReporterFunc func(config.ConfigurationProvider) (tally.StatsReporter, error)
 
 // Freeze ensures that after servce is started, no other metrics manipulations can be done
 //
@@ -59,24 +69,32 @@ func ensureNotFrozen() {
 }
 
 // RegisterReporter initializes the stats reporter for the service use
-func RegisterReporter(rep tally.StatsReporter) {
+func RegisterReporter(rep ReporterFunc) {
 	ensureNotFrozen()
 
 	_mu.Lock()
 	defer _mu.Unlock()
 
-	if _reporter != nil {
+	if _repFunc != nil {
 		// TODO(glib): consider a "force" flag, or some way to clear out and replace the reporter
 		panic("There can be only one metrics reporter")
 	}
 
-	_reporter = rep
+	_repFunc = rep
 }
 
 // Reporter returns the provided stats reporter, or nil
-func Reporter() tally.StatsReporter {
+func Reporter(c config.ConfigurationProvider) tally.StatsReporter {
 	_mu.Lock()
 	defer _mu.Unlock()
 
-	return _reporter
+	if _repFunc != nil {
+		rep, err := _repFunc(c)
+		if err != nil {
+			panic(fmt.Sprintf("Failed to initialize metrics reporter %v", err))
+		}
+		return rep
+	}
+
+	return nil
 }

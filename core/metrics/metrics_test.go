@@ -21,7 +21,10 @@
 package metrics
 
 import (
+	"errors"
 	"testing"
+
+	"go.uber.org/fx/core/config"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/uber-go/tally"
@@ -30,18 +33,18 @@ import (
 func TestRegisterReporter_OK(t *testing.T) {
 	defer cleanup()
 
-	assert.Nil(t, Reporter())
+	assert.Nil(t, getRep())
 
-	RegisterReporter(makeRep())
-	assert.NotNil(t, Reporter())
+	RegisterReporter(goodRep)
+	assert.NotNil(t, getRep())
 }
 
 func TestRegisterReporterPanics(t *testing.T) {
 	defer cleanup()
 
-	RegisterReporter(makeRep())
+	RegisterReporter(goodRep)
 	assert.Panics(t, func() {
-		RegisterReporter(makeRep())
+		RegisterReporter(goodRep)
 	})
 }
 
@@ -50,15 +53,37 @@ func TestRegisterReporterFrozen(t *testing.T) {
 
 	Freeze()
 	assert.Panics(t, func() {
-		RegisterReporter(makeRep())
+		RegisterReporter(goodRep)
 	})
 }
 
-func makeRep() tally.StatsReporter {
-	return tally.NullStatsReporter
+func TestRegisterBadReporterPanics(t *testing.T) {
+	defer cleanup()
+
+	RegisterReporter(badRep)
+	assert.Panics(t, func() {
+		getRep()
+	})
+}
+
+func goodRep(c config.ConfigurationProvider) (tally.StatsReporter, error) {
+	return tally.NullStatsReporter, nil
+}
+
+func badRep(c config.ConfigurationProvider) (tally.StatsReporter, error) {
+	return nil, errors.New("fake error")
+}
+
+func getRep() tally.StatsReporter {
+	c := configData(map[string]interface{}{})
+	return Reporter(c)
 }
 
 func cleanup() {
-	_reporter = nil
+	_repFunc = nil
 	_frozen = false
+}
+
+func configData(data map[string]interface{}) config.ConfigurationProvider {
+	return config.NewStaticProvider(data)
 }

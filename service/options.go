@@ -21,8 +21,6 @@
 package service
 
 import (
-	"time"
-
 	"go.uber.org/fx/core/config"
 	"go.uber.org/fx/core/ulog"
 
@@ -52,14 +50,11 @@ func WithLogger(log ulog.Log) Option {
 	}
 }
 
-// WithStatsReporter configures a service host with metrics
-func WithStatsReporter(reporter tally.StatsReporter, d time.Duration) Option {
+// WithMetricsRootScope configures a service host with metrics
+func WithMetricsRootScope(scope tally.RootScope) Option {
 	return func(svc Host) error {
-		service := svc.(*host)
-
-		// TODO(glib): read interval, prefix and tags from config
-		service.scope = tally.NewRootScope("", nil, reporter, d)
-
+		svc2 := svc.(*host)
+		svc2.scope = scope
 		return nil
 	}
 }
