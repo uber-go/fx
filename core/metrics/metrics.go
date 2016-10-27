@@ -44,6 +44,7 @@ var (
 )
 
 // ScopeInit interface provides necessary data to properly initialize root metrics scope
+// service.Host conforms to this, but can't be used directly since it causes an import cycle
 type ScopeInit interface {
 	Name() string
 	Config() config.ConfigurationProvider
