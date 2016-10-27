@@ -51,7 +51,6 @@ var (
 	_envPrefix            = "APP"
 	_staticProviderFuncs  = []ProviderFunc{YamlProvider(), EnvProvider()}
 	_dynamicProviderFuncs []DynamicProviderFunc
-	_cpMux                sync.Mutex
 )
 
 // Global returns the singleton configuration provider
@@ -150,15 +149,17 @@ type DynamicProviderFunc func(config ConfigurationProvider) (ConfigurationProvid
 
 // RegisterProviders registers configuration providers for the global config
 func RegisterProviders(providerFuncs ...ProviderFunc) {
-	_cpMux.Lock()
-	defer _cpMux.Unlock()
+	_setupMux.Lock()
+	defer _setupMux.Unlock()
 	_staticProviderFuncs = append(_staticProviderFuncs, providerFuncs...)
 }
 
 // RegisterDynamicProviders registers dynamic config providers for the global config
+// Dynamic provider initialization needs access to ConfigurationProvider for accessing necessary
+// information for bootstrap, such as port number,keys, endpoints etc.
 func RegisterDynamicProviders(dynamicProviderFuncs ...DynamicProviderFunc) {
-	_cpMux.Lock()
-	defer _cpMux.Unlock()
+	_setupMux.Lock()
+	defer _setupMux.Unlock()
 	_dynamicProviderFuncs = append(_dynamicProviderFuncs, dynamicProviderFuncs...)
 }
 
@@ -169,8 +170,8 @@ func Providers() []ProviderFunc {
 
 // UnregisterProviders clears all the default providers
 func UnregisterProviders() {
-	_cpMux.Lock()
-	defer _cpMux.Unlock()
+	_setupMux.Lock()
+	defer _setupMux.Unlock()
 	_staticProviderFuncs = nil
 }
 
