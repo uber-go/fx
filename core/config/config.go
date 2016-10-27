@@ -41,9 +41,7 @@ const (
 	config      = "config"
 )
 
-// TODO(ai) underscore-prefix these per Uber style
 var (
-	_locked   bool
 	_setupMux sync.Mutex
 
 	_envPrefix            = "APP"
