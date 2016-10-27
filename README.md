@@ -201,7 +201,7 @@ This module works in a way that's pretty similar to existing RPC projects:
   the Thrift encoding):
 
 ```go
-func NewMyServiceHandler(svc *core.Service) (thrift.Service, error) {
+func NewMyServiceHandler(svc service.Host) ([]transport.Registrant, error) {
   return myservice.New(&MyServiceHandler{}), nil
 }
 ```
@@ -213,7 +213,7 @@ func main() {
   service := service.New(
     rpc.ThriftModule(
       rpc.CreateThriftServiceFunc(NewMyServiceHandler),
-      modules.WithName("rpc"),
+      modules.WithRoles("service"),
     ),
   )
 
