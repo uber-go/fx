@@ -197,8 +197,7 @@ This module works in a way that's pretty similar to existing RPC projects:
 
 * Implement a top-level function, conforming to the
   `rpc.CreateThriftServiceFunc` signature (`uberfx/modules/rpc/thrift.go` that
-  returns a `thrift.Service` YARPC implementation from the handler (if using
-  the Thrift encoding):
+  returns a `[]transport.Registrant` YARPC implementation from the handler:
 
 ```go
 func NewMyServiceHandler(svc service.Host) ([]transport.Registrant, error) {
