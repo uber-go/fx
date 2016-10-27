@@ -287,7 +287,7 @@ stuff:
 UberFx Config allows direct key access, such as `foo.bar.baz`:
 
 ```go
-cfg := config.Global()
+cfg := svc.Config()
 if value := cfg.GetValue("foo.bar.baz"); value.HasValue() {
   fmt.Printf("Say %s", value.AsString()) // "Say hello"
 }
@@ -304,7 +304,7 @@ type myStuff struct {
 // ....
 
 target := &myStuff{}
-cfg := config.Global()
+cfg := svc.Config()
 if !cfg.GetValue("stuff.server").PopulateStruct(target) {
   // fail, we didn't find it.
 }

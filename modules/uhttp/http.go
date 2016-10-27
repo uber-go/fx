@@ -28,7 +28,6 @@ import (
 	"sync"
 	"time"
 
-	"go.uber.org/fx/core/config"
 	"go.uber.org/fx/core/metrics"
 	"go.uber.org/fx/core/ulog"
 	"go.uber.org/fx/modules"
@@ -131,7 +130,7 @@ func newModule(
 		handlers:   createService(mi.Host),
 	}
 
-	config.Global().GetValue(getConfigKey(mi.Name)).PopulateStruct(cfg)
+	module.Host().Config().GetValue(getConfigKey(mi.Name)).PopulateStruct(cfg)
 	module.config = *cfg
 
 	module.log = ulog.Logger().With("moduleName", mi.Name)

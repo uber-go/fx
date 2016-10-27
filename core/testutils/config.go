@@ -42,10 +42,8 @@ func WithConfig(applicationID *string) func() {
 	oldProviders := config.Providers()
 	config.UnregisterProviders()
 	config.RegisterProviders(config.StaticProvider(data))
-	config.InitializeGlobalConfig()
 	return func() {
 		config.RegisterProviders(oldProviders...)
-		config.ResetGlobal()
 	}
 }
 

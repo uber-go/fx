@@ -63,6 +63,11 @@ func NewModuleBase(
 	}
 }
 
+// Host returns the module's service host
+func (mb ModuleBase) Host() service.Host {
+	return mb.host
+}
+
 // Roles returns the module's roles
 func (mb ModuleBase) Roles() []string {
 	return mb.roles

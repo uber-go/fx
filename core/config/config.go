@@ -41,48 +41,13 @@ const (
 	config      = "config"
 )
 
-// TODO(ai) underscore-prefix these per Uber style
 var (
-	_global      ConfigurationProvider
-	_locked      bool
-	_setupMux    sync.Mutex
-	_initialized bool
+	_setupMux sync.Mutex
 
 	_envPrefix            = "APP"
 	_staticProviderFuncs  = []ProviderFunc{YamlProvider(), EnvProvider()}
 	_dynamicProviderFuncs []DynamicProviderFunc
 )
-
-// Global returns the singleton configuration provider
-func Global() ConfigurationProvider {
-	_setupMux.Lock()
-	defer _setupMux.Unlock()
-	_locked = true
-	return _global
-}
-
-// ServiceName returns the service's names
-func ServiceName() string {
-	return Global().GetValue(ApplicationIDKey).AsString()
-}
-
-// SetGlobal sets the singleton configuration provider
-func SetGlobal(provider ConfigurationProvider, force bool) {
-	_setupMux.Lock()
-	defer _setupMux.Unlock()
-	if _locked && !force {
-		panic("Global provider must be set before any configuration access")
-	}
-	_global = provider
-}
-
-// ResetGlobal is used for tests
-func ResetGlobal() {
-	_setupMux.Lock()
-	defer _setupMux.Unlock()
-	_initialized = false
-	_global = nil
-}
 
 func getConfigFiles() []string {
 	env := GetEnvironment()
@@ -175,15 +140,8 @@ func UnregisterProviders() {
 	_staticProviderFuncs = nil
 }
 
-// InitializeGlobalConfig initializes the ConfigurationProvider for use in a service
-func InitializeGlobalConfig() {
-	_setupMux.Lock()
-	defer _setupMux.Unlock()
-	if _initialized {
-		return
-	}
-	_initialized = true
-
+// Initialize creates a ConfigurationProvider for use in a service
+func Initialize() ConfigurationProvider {
 	var static []ConfigurationProvider
 	for _, providerFunc := range _staticProviderFuncs {
 		cp, err := providerFunc()
@@ -192,15 +150,15 @@ func InitializeGlobalConfig() {
 		}
 		static = append(static, cp)
 	}
-	_global = NewProviderGroup("global", static...)
+	baseCfg := NewProviderGroup("global", static...)
 
 	var dynamic []ConfigurationProvider
 	for _, providerFunc := range _dynamicProviderFuncs {
-		cp, err := providerFunc(_global)
+		cp, err := providerFunc(baseCfg)
 		if err != nil {
 			panic(err)
 		}
 		dynamic = append(dynamic, cp)
 	}
-	_global = NewProviderGroup("global", append(static, dynamic...)...)
+	return NewProviderGroup("global", append(static, dynamic...)...)
 }

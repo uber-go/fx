@@ -54,6 +54,11 @@ func TestNewModuleBase_Reporter(t *testing.T) {
 	assert.NotNil(t, mb.Reporter())
 }
 
+func TestNewModuleBase_Host(t *testing.T) {
+	mb := nmb("test", "foo", nil)
+	assert.NotNil(t, mb.Host())
+}
+
 func nmb(moduleType, name string, roles []string) *ModuleBase {
 	host := service.NullHost()
 

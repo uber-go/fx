@@ -102,18 +102,13 @@ type arrayOfStructs struct {
 
 func TestGlobalConfig(t *testing.T) {
 	SetEnvironmentPrefix("TEST")
-	InitializeGlobalConfig()
+	cfg := Initialize()
 
-	cfg := Global()
 	assert.Equal(t, "global", cfg.Name())
 	assert.Equal(t, "development", GetEnvironment())
-	ResetGlobal()
-	assert.Nil(t, Global())
 
-	SetGlobal(NewProviderGroup("test", NewYAMLProviderFromBytes([]byte(`applicationID: sample`))), true)
-	assert.Equal(t, "test", Global().Name())
-	assert.Equal(t, "sample", ServiceName())
-	assert.Panics(t, func() { SetGlobal(nil, false) }, "SetGlobal must be forced")
+	cfg = NewProviderGroup("test", NewYAMLProviderFromBytes([]byte(`applicationID: sample`)))
+	assert.Equal(t, "test", cfg.Name())
 }
 
 func TestDirectAccess(t *testing.T) {
@@ -277,9 +272,7 @@ func TestRegisteredProvidersInitialization(t *testing.T) {
 			"dynamic": "provider",
 		}), nil
 	})
-	InitializeGlobalConfig()
-	defer ResetGlobal()
-	cfg := Global()
+	cfg := Initialize()
 	assert.Equal(t, "global", cfg.Name())
 	assert.Equal(t, "world", cfg.GetValue("hello").AsString())
 	assert.Equal(t, "provider", cfg.GetValue("dynamic").AsString())
@@ -289,8 +282,7 @@ func TestNilProvider(t *testing.T) {
 	RegisterProviders(func() (ConfigurationProvider, error) {
 		return nil, fmt.Errorf("error creating Provider")
 	})
-	defer ResetGlobal()
-	assert.Panics(t, func() { InitializeGlobalConfig() }, "Can't initialize with nil provider")
+	assert.Panics(t, func() { Initialize() }, "Can't initialize with nil provider")
 	oldProviders := _staticProviderFuncs
 	defer func() {
 		_staticProviderFuncs = oldProviders
