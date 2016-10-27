@@ -82,8 +82,7 @@ func New(options ...Option) (Owner, error) {
 		},
 	}
 
-	config.InitializeGlobalConfig()
-	cfg := config.Global()
+	cfg := config.InitializeConfig()
 	svc.serviceCore.configProvider = cfg
 
 	// prepend the default options.

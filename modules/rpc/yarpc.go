@@ -27,7 +27,6 @@ import (
 
 	"golang.org/x/net/context"
 
-	"go.uber.org/fx/core/config"
 	"go.uber.org/fx/core/metrics"
 	"go.uber.org/fx/core/ulog"
 	"go.uber.org/fx/modules"
@@ -93,7 +92,7 @@ func newYarpcModule(
 		}
 	}
 
-	if config.Global().GetValue(fmt.Sprintf("modules.%s", module.Name())).PopulateStruct(cfg) {
+	if module.Host().Config().GetValue(fmt.Sprintf("modules.%s", module.Name())).PopulateStruct(cfg) {
 		// found values, update module
 		module.config = *cfg
 	}

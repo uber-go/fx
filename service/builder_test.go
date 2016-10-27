@@ -24,7 +24,6 @@ import (
 	"errors"
 	"testing"
 
-	"go.uber.org/fx/core/config"
 	. "go.uber.org/fx/core/testutils"
 
 	"github.com/stretchr/testify/assert"
@@ -32,8 +31,6 @@ import (
 )
 
 func TestNewBuilder_NoConfig(t *testing.T) {
-	defer config.ResetGlobal()
-
 	_, err := NewBuilder().Build()
 	assert.Error(t, err)
 }

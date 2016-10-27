@@ -32,7 +32,7 @@ import (
 )
 
 func TestJSONModule_OK(t *testing.T) {
-	config.InitializeGlobalConfig()
+	config.InitializeConfig()
 
 	modCreate := JSONModule(okCreate, modules.WithRoles("test"))
 	mci := mch()
