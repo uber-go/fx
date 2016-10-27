@@ -31,9 +31,9 @@ import (
 )
 
 var (
-	_repFunc ReporterFunc
-	_mu      sync.Mutex
-	_frozen  bool
+	_scopeFunc ScopeFunc
+	_mu        sync.Mutex
+	_frozen    bool
 
 	// DefaultReporter does not do anything
 	// TODO(glib): add a logging reporter and use it by default, rather than noop
@@ -43,8 +43,14 @@ var (
 	DefaultReporterInterval = time.Second
 )
 
-// ReporterFunc is used during service init time to register the reporter
-type ReporterFunc func(config.ConfigurationProvider) (tally.StatsReporter, error)
+// ScopeInit interface provides necessary data to properly initialize root metrics scope
+type ScopeInit interface {
+	Name() string
+	Config() config.ConfigurationProvider
+}
+
+// ScopeFunc is used during service init time to register the reporter
+type ScopeFunc func(i ScopeInit) (tally.Scope, error)
 
 // Freeze ensures that after servce is started, no other metrics manipulations can be done
 //
@@ -68,28 +74,28 @@ func ensureNotFrozen() {
 	}
 }
 
-// RegisterReporter initializes the stats reporter for the service use
-func RegisterReporter(rep ReporterFunc) {
+// RegisterRootScope initializes the root scope for all the service metrics
+func RegisterRootScope(rep ScopeFunc) {
 	ensureNotFrozen()
 
 	_mu.Lock()
 	defer _mu.Unlock()
 
-	if _repFunc != nil {
+	if _scopeFunc != nil {
 		// TODO(glib): consider a "force" flag, or some way to clear out and replace the reporter
 		panic("There can be only one metrics reporter")
 	}
 
-	_repFunc = rep
+	_scopeFunc = rep
 }
 
-// Reporter returns the provided stats reporter, or nil
-func Reporter(c config.ConfigurationProvider) tally.StatsReporter {
+// RootScope returns the provided stats reporter, or nil
+func RootScope(i ScopeInit) tally.Scope {
 	_mu.Lock()
 	defer _mu.Unlock()
 
-	if _repFunc != nil {
-		rep, err := _repFunc(c)
+	if _scopeFunc != nil {
+		rep, err := _scopeFunc(i)
 		if err != nil {
 			panic(fmt.Sprintf("Failed to initialize metrics reporter %v", err))
 		}
