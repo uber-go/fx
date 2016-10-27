@@ -82,7 +82,7 @@ func New(options ...Option) (Owner, error) {
 		},
 	}
 
-	cfg := config.Initialize()
+	cfg := config.Load()
 	svc.serviceCore.configProvider = cfg
 
 	// prepend the default options.
