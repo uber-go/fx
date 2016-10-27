@@ -23,7 +23,6 @@ package rpc
 import (
 	"testing"
 
-	"go.uber.org/fx/core/config"
 	"go.uber.org/fx/modules"
 	"go.uber.org/fx/service"
 
@@ -32,8 +31,6 @@ import (
 )
 
 func TestJSONModule_OK(t *testing.T) {
-	config.InitializeConfig()
-
 	modCreate := JSONModule(okCreate, modules.WithRoles("test"))
 	mci := mch()
 	mods, err := modCreate(mch())
