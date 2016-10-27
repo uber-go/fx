@@ -120,14 +120,11 @@ func New(options ...Option) (Owner, error) {
 
 	// Initialize metrics. If no metrics reporters were Registered, do noop
 	// TODO(glib): add a logging reporter and use it by default, rather than noop
-	// TODO: read metrics tags from config
 	if svc.Metrics() == nil {
-		reporter := metrics.Reporter(cfg)
+		svc.scope = metrics.RootScope(svc)
 
-		if reporter != nil {
-			svc.scope = tally.NewRootScope("", nil, reporter, metrics.DefaultReporterInterval)
-		} else {
-			svc.scope = tally.NewRootScope("", nil, tally.NullStatsReporter, 0)
+		if svc.scope == nil {
+			svc.scope = tally.NoopScope
 		}
 
 		metrics.Freeze()

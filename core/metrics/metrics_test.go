@@ -33,18 +33,18 @@ import (
 func TestRegisterReporter_OK(t *testing.T) {
 	defer cleanup()
 
-	assert.Nil(t, getRep())
+	assert.Nil(t, getScope())
 
-	RegisterReporter(goodRep)
-	assert.NotNil(t, getRep())
+	RegisterRootScope(goodScope)
+	assert.NotNil(t, getScope())
 }
 
 func TestRegisterReporterPanics(t *testing.T) {
 	defer cleanup()
 
-	RegisterReporter(goodRep)
+	RegisterRootScope(goodScope)
 	assert.Panics(t, func() {
-		RegisterReporter(goodRep)
+		RegisterRootScope(goodScope)
 	})
 }
 
@@ -53,34 +53,55 @@ func TestRegisterReporterFrozen(t *testing.T) {
 
 	Freeze()
 	assert.Panics(t, func() {
-		RegisterReporter(goodRep)
+		RegisterRootScope(goodScope)
 	})
 }
 
 func TestRegisterBadReporterPanics(t *testing.T) {
 	defer cleanup()
 
-	RegisterReporter(badRep)
+	RegisterRootScope(badScope)
 	assert.Panics(t, func() {
-		getRep()
+		getScope()
 	})
 }
 
-func goodRep(c config.ConfigurationProvider) (tally.StatsReporter, error) {
-	return tally.NullStatsReporter, nil
+func goodScope(i ScopeInit) (tally.Scope, error) {
+	return tally.NoopScope, nil
 }
 
-func badRep(c config.ConfigurationProvider) (tally.StatsReporter, error) {
+func badScope(i ScopeInit) (tally.Scope, error) {
 	return nil, errors.New("fake error")
 }
 
-func getRep() tally.StatsReporter {
-	c := configData(map[string]interface{}{})
-	return Reporter(c)
+func getScope() tally.Scope {
+	return RootScope(scopeInit())
+}
+
+type scopeIniter struct {
+	name   string
+	config config.ConfigurationProvider
+}
+
+func (i scopeIniter) Name() string {
+	return i.name
+}
+
+func (i scopeIniter) Config() config.ConfigurationProvider {
+	return i.config
+}
+
+func scopeInit() ScopeInit {
+	return &scopeIniter{
+		name: "SomeName",
+		config: config.NewStaticProvider(map[string]interface{}{
+			"foo": "bar",
+		}),
+	}
 }
 
 func cleanup() {
-	_repFunc = nil
+	_scopeFunc = nil
 	_frozen = false
 }
 
