@@ -1,5 +1,5 @@
 hash: 07a85faa8ece4bd16fa206a870d04a98b74f1bb7c9b15d64c6866a1ce017dfb7
-updated: 2016-10-25T15:02:31.097436247-07:00
+updated: 2016-10-27T12:07:34.245239247-07:00
 imports:
 - name: github.com/facebookgo/clock
   version: 600d898af40aa09a7a93ecb9265d87b0504b6f03
@@ -21,9 +21,9 @@ imports:
 - name: github.com/uber-go/atomic
   version: 0c9e689d64f004564b79d9a663634756df322902
 - name: github.com/uber-go/tally
-  version: 26f1fcfe8b5828fa41bbc7e01468c5f9a857abc8
+  version: f721642701d11ba88d5d600a31669fc68d730789
 - name: github.com/uber-go/zap
-  version: c4939d1166b2220bb45338e21506623b4bbdec50
+  version: f2929c57adb5be8fb03cad9a6912c509a5cb60af
 - name: github.com/uber/tchannel-go
   version: 4a23f3aae76694b21107f118ece763a61b98ea07
   subpackages:
@@ -41,7 +41,7 @@ imports:
   - version
   - wire
 - name: go.uber.org/yarpc
-  version: 1a2689e2cce0d9783fc16bcfd45d3ee077e4bbff
+  version: 5cb0df4c43be85f526cfe84352983966a83db29d
   subpackages:
   - encoding/raw
   - encoding/thrift
@@ -60,7 +60,7 @@ imports:
   - transport/tchannel/internal
   - transport/transporttest
 - name: golang.org/x/net
-  version: 65dfc08770ce66f74becfdff5f8ab01caef4e946
+  version: b626cca987fa6333e5dd25baa0fd61708c145011
   subpackages:
   - context
   - context/ctxhttp
@@ -72,7 +72,7 @@ testImports:
   subpackages:
   - gocov
 - name: github.com/davecgh/go-spew
-  version: 5215b55f46b2b919f50a1df0eaa5886afe4e3b3d
+  version: 6d212800a42e8ab5c146b8ace3490ee17e5225f9
   subpackages:
   - spew
 - name: github.com/go-playground/overalls

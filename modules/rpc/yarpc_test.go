@@ -44,7 +44,7 @@ func TestInterceptor_OK(t *testing.T) {
 	request := makeRequest()
 	interceptor := mod.makeInterceptor()
 	resw := new(transporttest.FakeResponseWriter)
-	err = interceptor.Handle(context.Background(), transport.Options{}, request, resw, makeHandler(nil))
+	err = interceptor.Handle(context.Background(), request, resw, makeHandler(nil))
 	assert.NoError(t, err)
 }
 
@@ -70,7 +70,6 @@ type dummyHandler struct {
 
 func (d dummyHandler) Handle(
 	ctx context.Context,
-	opts transport.Options,
 	r *transport.Request,
 	w transport.ResponseWriter,
 ) error {
