@@ -1,4 +1,4 @@
-# UberFx Service Framework
+# UberFx Service Framework [![Coverage Status][cov-img]][cov] [![Build Status][ci-img]][ci]
 
 ## Status
 
@@ -329,3 +329,8 @@ Then running the above example will result in **Port is 3000**
 
 Services can get involved in this by modifying the list of configuration
 providers to supply override values to the component.
+
+[cov]: https://coveralls.io/github/uber-go/uberfx?branch=master
+[cov-img]: https://coveralls.io/repos/github/uber-go/uberfx/badge.svg?branch=master
+[ci]: https://travis-ci.org/uber-go/uberfx
+[ci-img]: https://travis-ci.org/uber-go/uberfx.svg?branch=master
