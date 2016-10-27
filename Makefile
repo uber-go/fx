@@ -57,7 +57,7 @@ $(COV_HTML): $(COV_REPORT)
 
 .PHONY: coveralls
 coveralls: $(COV_REPORT)
-	$(ECHO_V)goveralls -service=travis-ci -ignore="examples/*"
+	$(ECHO_V)goveralls -service=travis-ci -ignore="examples/**/*"
 
 .PHONY: bench
 BENCH ?= .
