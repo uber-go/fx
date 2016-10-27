@@ -139,7 +139,6 @@ func (m *YarpcModule) makeInterceptor() transport.Interceptor {
 	return transport.InterceptorFunc(
 		func(
 			ctx context.Context,
-			options transport.Options,
 			request *transport.Request,
 			response transport.ResponseWriter,
 			h transport.Handler,
@@ -153,7 +152,7 @@ func (m *YarpcModule) makeInterceptor() transport.Interceptor {
 
 			key := "rpc." + request.Procedure
 			tracker := reporter.Start(key, data, 90*time.Second)
-			err := h.Handle(ctx, options, request, response)
+			err := h.Handle(ctx, request, response)
 			tracker.Finish("", nil, err)
 			return err
 		},
