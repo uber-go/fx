@@ -272,33 +272,35 @@ func TestRegisteredProvidersInitialization(t *testing.T) {
 	RegisterProviders(StaticProvider(map[string]interface{}{
 		"hello": "world",
 	}))
+	RegisterDynamicProviders(func(dynamic ConfigurationProvider) (ConfigurationProvider, error) {
+		return NewStaticProvider(map[string]interface{}{
+			"dynamic": "provider",
+		}), nil
+	})
 	InitializeGlobalConfig()
 	defer ResetGlobal()
 	cfg := Global()
 	assert.Equal(t, "global", cfg.Name())
 	assert.Equal(t, "world", cfg.GetValue("hello").AsString())
+	assert.Equal(t, "provider", cfg.GetValue("dynamic").AsString())
 }
 
 func TestNilProvider(t *testing.T) {
-	RegisterProviders(newConfigWithErrorProvider())
+	RegisterProviders(func() (ConfigurationProvider, error) {
+		return nil, fmt.Errorf("error creating Provider")
+	})
 	defer ResetGlobal()
 	assert.Panics(t, func() { InitializeGlobalConfig() }, "Can't initialize with nil provider")
-	oldProviders := _configProviderFuncs
+	oldProviders := _staticProviderFuncs
 	defer func() {
-		_configProviderFuncs = oldProviders
+		_staticProviderFuncs = oldProviders
 	}()
 	UnregisterProviders()
-	assert.Nil(t, _configProviderFuncs)
+	assert.Nil(t, _staticProviderFuncs)
 }
 
 func TestEnvProvider_Callbacks(t *testing.T) {
 	p := NewEnvProvider("", nil)
 	assert.NoError(t, p.RegisterChangeCallback("test", nil))
 	assert.NoError(t, p.UnregisterChangeCallback("token"))
-}
-
-func newConfigWithErrorProvider() ProviderFunc {
-	return func() (ConfigurationProvider, error) {
-		return nil, fmt.Errorf("error creating Provider")
-	}
 }

@@ -48,9 +48,9 @@ var (
 	_setupMux    sync.Mutex
 	_initialized bool
 
-	_envPrefix           = "APP"
-	_configProviderFuncs = []ProviderFunc{YamlProvider(), EnvProvider()}
-	_cpMux               sync.Mutex
+	_envPrefix            = "APP"
+	_staticProviderFuncs  = []ProviderFunc{YamlProvider(), EnvProvider()}
+	_dynamicProviderFuncs []DynamicProviderFunc
 )
 
 // Global returns the singleton configuration provider
@@ -144,41 +144,63 @@ func GetEnvironmentPrefix() string {
 // ProviderFunc is used to create config providers on configuration initialization
 type ProviderFunc func() (ConfigurationProvider, error)
 
+// DynamicProviderFunc is used to create config providers on configuration initialization
+type DynamicProviderFunc func(config ConfigurationProvider) (ConfigurationProvider, error)
+
 // RegisterProviders registers configuration providers for the global config
 func RegisterProviders(providerFuncs ...ProviderFunc) {
-	_cpMux.Lock()
-	defer _cpMux.Unlock()
-	_configProviderFuncs = append(_configProviderFuncs, providerFuncs...)
+	_setupMux.Lock()
+	defer _setupMux.Unlock()
+	_staticProviderFuncs = append(_staticProviderFuncs, providerFuncs...)
+}
+
+// RegisterDynamicProviders registers dynamic config providers for the global config
+// Dynamic provider initialization needs access to ConfigurationProvider for accessing necessary
+// information for bootstrap, such as port number,keys, endpoints etc.
+func RegisterDynamicProviders(dynamicProviderFuncs ...DynamicProviderFunc) {
+	_setupMux.Lock()
+	defer _setupMux.Unlock()
+	_dynamicProviderFuncs = append(_dynamicProviderFuncs, dynamicProviderFuncs...)
 }
 
 // Providers should only be used during tests
 func Providers() []ProviderFunc {
-	return _configProviderFuncs
+	return _staticProviderFuncs
 }
 
 // UnregisterProviders clears all the default providers
 func UnregisterProviders() {
-	_cpMux.Lock()
-	defer _cpMux.Unlock()
-	_configProviderFuncs = nil
+	_setupMux.Lock()
+	defer _setupMux.Unlock()
+	_staticProviderFuncs = nil
 }
 
 // InitializeGlobalConfig initializes the ConfigurationProvider for use in a service
 func InitializeGlobalConfig() {
 	_setupMux.Lock()
 	defer _setupMux.Unlock()
-
 	if _initialized {
 		return
 	}
 	_initialized = true
-	var providers []ConfigurationProvider
-	for _, providerFunc := range _configProviderFuncs {
+
+	var static []ConfigurationProvider
+	for _, providerFunc := range _staticProviderFuncs {
 		cp, err := providerFunc()
 		if err != nil {
 			panic(err)
 		}
-		providers = append(providers, cp)
+		static = append(static, cp)
 	}
-	_global = NewProviderGroup("global", providers...)
+	_global = NewProviderGroup("global", static...)
+
+	var dynamic []ConfigurationProvider
+	for _, providerFunc := range _dynamicProviderFuncs {
+		cp, err := providerFunc(_global)
+		if err != nil {
+			panic(err)
+		}
+		dynamic = append(dynamic, cp)
+	}
+	_global = NewProviderGroup("global", append(static, dynamic...)...)
 }
