@@ -25,5 +25,4 @@ script:
   - make test
 
 after_success:
-  # TODO: re-enable once we go public
-  # - make coveralls
+   - make coveralls
