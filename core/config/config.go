@@ -140,8 +140,8 @@ func UnregisterProviders() {
 	_staticProviderFuncs = nil
 }
 
-// InitializeConfig initializes the ConfigurationProvider for use in a service
-func InitializeConfig() ConfigurationProvider {
+// Initialize initializes the ConfigurationProvider for use in a service
+func Initialize() ConfigurationProvider {
 	var static []ConfigurationProvider
 	for _, providerFunc := range _staticProviderFuncs {
 		cp, err := providerFunc()

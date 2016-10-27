@@ -102,7 +102,7 @@ type arrayOfStructs struct {
 
 func TestGlobalConfig(t *testing.T) {
 	SetEnvironmentPrefix("TEST")
-	cfg := InitializeConfig()
+	cfg := Initialize()
 
 	assert.Equal(t, "global", cfg.Name())
 	assert.Equal(t, "development", GetEnvironment())
@@ -272,7 +272,7 @@ func TestRegisteredProvidersInitialization(t *testing.T) {
 			"dynamic": "provider",
 		}), nil
 	})
-	cfg := InitializeConfig()
+	cfg := Initialize()
 	assert.Equal(t, "global", cfg.Name())
 	assert.Equal(t, "world", cfg.GetValue("hello").AsString())
 	assert.Equal(t, "provider", cfg.GetValue("dynamic").AsString())
@@ -282,7 +282,7 @@ func TestNilProvider(t *testing.T) {
 	RegisterProviders(func() (ConfigurationProvider, error) {
 		return nil, fmt.Errorf("error creating Provider")
 	})
-	assert.Panics(t, func() { InitializeConfig() }, "Can't initialize with nil provider")
+	assert.Panics(t, func() { Initialize() }, "Can't initialize with nil provider")
 	oldProviders := _staticProviderFuncs
 	defer func() {
 		_staticProviderFuncs = oldProviders
