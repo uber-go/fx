@@ -265,9 +265,10 @@ boolean:
 
 func TestRegisteredProvidersInitialization(t *testing.T) {
 	RegisterProviders(StaticProvider(map[string]interface{}{
-		"hello": "world",
+		"hello":         "world",
+		"applicationID": "test",
 	}))
-	RegisterDynamicProviders(func(dynamic ConfigurationProvider) (ConfigurationProvider, error) {
+	RegisterDynamicProviders(func(serviceName string, dynamic ConfigurationProvider) (ConfigurationProvider, error) {
 		return NewStaticProvider(map[string]interface{}{
 			"dynamic": "provider",
 		}), nil

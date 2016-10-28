@@ -110,7 +110,7 @@ func GetEnvironmentPrefix() string {
 type ProviderFunc func() (ConfigurationProvider, error)
 
 // DynamicProviderFunc is used to create config providers on configuration initialization
-type DynamicProviderFunc func(config ConfigurationProvider) (ConfigurationProvider, error)
+type DynamicProviderFunc func(serviceName string, config ConfigurationProvider) (ConfigurationProvider, error)
 
 // RegisterProviders registers configuration providers for the global config
 func RegisterProviders(providerFuncs ...ProviderFunc) {
@@ -152,9 +152,16 @@ func Load() ConfigurationProvider {
 	}
 	baseCfg := NewProviderGroup("global", static...)
 
+	// TODO: (at) If application ID is not specified, the code lets the service initialization
+	// handle the failures and skips initializing dynamic config.
+	serviceName, ok := baseCfg.GetValue("applicationID").TryAsString()
+	if !ok {
+		return baseCfg
+	}
 	var dynamic []ConfigurationProvider
+
 	for _, providerFunc := range _dynamicProviderFuncs {
-		cp, err := providerFunc(baseCfg)
+		cp, err := providerFunc(serviceName, baseCfg)
 		if err != nil {
 			panic(err)
 		}
