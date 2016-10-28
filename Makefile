@@ -39,11 +39,11 @@ endif
 COVER_OUT := profile.coverprofile
 
 $(COV_REPORT): $(PKG_FILES) $(ALL_SRC)
-	$(ECHO_V)echo "$(LABEL_STYLE)Generating example RPC bindings$(COLOR_RESET)"
-	$(ECHO_V)echo
+	@echo "$(LABEL_STYLE)Generating example RPC bindings$(COLOR_RESET)"
+	@echo
 	$(ECHO_V)$(MAKE) -C examples/keyvalue/ kv/types.go ECHO_V=$(ECHO_V)
-	$(ECHO_V)echo "$(LABEL_STYLE)Running tests$(COLOR_RESET)"
-	$(ECHO_V)echo
+	@echo "$(LABEL_STYLE)Running tests$(COLOR_RESET)"
+	@echo
 	$(ECHO_V)$(OVERALLS) -project=$(PROJECT_ROOT) \
 		-ignore "$(OVERALLS_IGNORE)" \
 		-covermode=atomic \
