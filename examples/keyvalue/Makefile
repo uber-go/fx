@@ -1,13 +1,13 @@
 .PHONY: deps
 deps:
-	which thriftrw > /dev/null || go get -u go.uber.org/thriftrw
-	which thriftrw-plugin-yarpc > /dev/null || go get -u go.uber.org/yarpc/encoding/thrift/thriftrw-plugin-yarpc
+	$(ECHO_V)which thriftrw > /dev/null || go get -u go.uber.org/thriftrw
+	$(ECHO_V)which thriftrw-plugin-yarpc > /dev/null || go get -u go.uber.org/yarpc/encoding/thrift/thriftrw-plugin-yarpc
 
 kv/types.go: kv.thrift deps
-	go generate
+	$(ECHO_V)go generate
 
 server/server: $(wildcard server/*.go) kv/types.go
-	go build -o $@ ./$(dir $@)
+	$(ECHO_V)go build -o $@ ./$(dir $@)
 
 .PHONY: all
 all: server/server
