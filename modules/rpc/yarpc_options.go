@@ -23,37 +23,30 @@ package rpc
 import (
 	"go.uber.org/fx/modules"
 	"go.uber.org/fx/service"
-
 	"go.uber.org/yarpc/transport"
 )
 
-// CreateThriftServiceFunc creates a Thrift service from a service host
-type CreateThriftServiceFunc func(svc service.Host) ([]transport.Registrant, error)
+const (
+	_interceptorKey = "yarpcInterceptors"
+)
 
-// ThriftModule creates a Thrift Module from a service func
-func ThriftModule(hookup CreateThriftServiceFunc, options ...modules.Option) service.ModuleCreateFunc {
-	return func(mi service.ModuleCreateInfo) ([]service.Module, error) {
-		mod, err := newYarpcThriftModule(mi, hookup, options...)
-		if err != nil {
-			return nil, err
-		}
+// WithInterceptors adds custom YARPC interceptors to the module
+func WithInterceptors(i ...transport.Interceptor) modules.Option {
+	return func(mci *service.ModuleCreateInfo) error {
+		interceptors := interceptorsFromCreateInfo(*mci)
+		interceptors = append(interceptors, i...)
+		mci.Items[_interceptorKey] = interceptors
 
-		return []service.Module{mod}, nil
+		return nil
 	}
 }
 
-func newYarpcThriftModule(
-	mi service.ModuleCreateInfo,
-	createService CreateThriftServiceFunc,
-	options ...modules.Option,
-) (*YarpcModule, error) {
-	registrants, err := createService(mi.Host)
-	if err != nil {
-		return nil, err
+func interceptorsFromCreateInfo(mci service.ModuleCreateInfo) []transport.Interceptor {
+	items, ok := mci.Items[_interceptorKey]
+	if !ok {
+		return nil
 	}
 
-	reg := func(mod *YarpcModule) {
-		mod.rpc.Register(registrants)
-	}
-	return newYarpcModule(mi, reg, options...)
+	// Intentionally panic if programmer adds non-interceptor slice to the data
+	return items.([]transport.Interceptor)
 }
