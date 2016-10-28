@@ -16,7 +16,7 @@ ERRCHECK_FLAGS := -ignorepkg example -ignore "fmt.*,io:WriteString" -ignoretests
 lint:
 	$(ECHO_V)rm -rf $(LINT_LOG)
 	@echo "Generating code"
-	$(ECHO_V)make -C examples/keyvalue kv/types.go
+	$(ECHO_V)make -C examples/keyvalue kv/types.go ECHO_V=$(ECHO_V)
 	@echo "Installing test dependencies for vet..."
 	$(ECHO_V)go test -i $(PKGS)
 	@echo "Removing YARPC generated code"
