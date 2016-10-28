@@ -152,9 +152,11 @@ func Load() ConfigurationProvider {
 	}
 	baseCfg := NewProviderGroup("global", static...)
 
+	// TODO: (at) If application ID is not specified, the code lets the service initialization
+	// handle the failures and skips initializing dynamic config.
 	serviceName, ok := baseCfg.GetValue("applicationID").TryAsString()
 	if !ok {
-		panic(fmt.Errorf("Error fetching ApplicationID from configuration"))
+		return baseCfg
 	}
 	var dynamic []ConfigurationProvider
 
