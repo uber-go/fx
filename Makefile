@@ -2,6 +2,7 @@ SHELL := /bin/bash
 PROJECT_ROOT := go.uber.org/fx
 
 SUPPORT_FILES := .build
+include $(SUPPORT_FILES)/colors.mk
 include $(SUPPORT_FILES)/deps.mk
 include $(SUPPORT_FILES)/flags.mk
 include $(SUPPORT_FILES)/verbosity.mk
@@ -38,8 +39,12 @@ endif
 COVER_OUT := profile.coverprofile
 
 $(COV_REPORT): $(PKG_FILES) $(ALL_SRC)
-		$(ECHO_V)$(MAKE) -C examples/keyvalue/ kv/types.go
-		$(ECHO_V)$(OVERALLS) -project=$(PROJECT_ROOT) \
+	$(ECHO_V)echo "$(LABEL_STYLE)Generating example RPC bindings$(COLOR_RESET)"
+	$(ECHO_V)echo
+	$(ECHO_V)$(MAKE) -C examples/keyvalue/ kv/types.go ECHO_V=$(ECHO_V)
+	$(ECHO_V)echo "$(LABEL_STYLE)Running tests$(COLOR_RESET)"
+	$(ECHO_V)echo
+	$(ECHO_V)$(OVERALLS) -project=$(PROJECT_ROOT) \
 		-ignore "$(OVERALLS_IGNORE)" \
 		-covermode=atomic \
 		$(DEBUG_FLAG) -- \
