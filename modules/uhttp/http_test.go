@@ -40,15 +40,12 @@ import (
 )
 
 func TestNew_OK(t *testing.T) {
-	defer WithConfig(nil)()
-	WithService(New(registerNothing), nil, func(s service.Owner) {
+	WithService(New(registerNothing), nil, []service.Option{configOption()}, func(s service.Owner) {
 		assert.NotNil(t, s, "Should create a module")
 	})
 }
 
 func TestNew_WithOptions(t *testing.T) {
-	defer WithConfig(nil)()
-
 	options := []modules.Option{
 		modules.WithRoles("testing"),
 	}
@@ -127,6 +124,10 @@ func TestHookupOptions_Error(t *testing.T) {
 
 // TODO(ai) add a test for binding a bad port and get an error out of Start()
 
+func configOption() service.Option {
+	return service.WithConfiguration(StaticAppData(nil))
+}
+
 func withModule(
 	t testing.TB,
 	hookup CreateHTTPRegistrantsFunc,
@@ -134,7 +135,6 @@ func withModule(
 	expectError bool,
 	fn func(*Module),
 ) {
-	defer WithConfig(nil)()
 	mi := service.ModuleCreateInfo{
 		Host: service.NullHost(),
 	}
