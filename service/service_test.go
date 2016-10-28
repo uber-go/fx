@@ -81,7 +81,7 @@ func TestServiceCreation(t *testing.T) {
 	r.cw.Add(1)
 	scope := tally.NewRootScope("", nil, r, 50*time.Millisecond)
 	svc, err := New(
-		withConfigOption(validServiceConfig),
+		withConfig(validServiceConfig),
 		WithMetricsRootScope(scope),
 	)
 	require.NoError(t, err)
@@ -93,7 +93,7 @@ func TestServiceCreation(t *testing.T) {
 
 func TestWithObserver_Nil(t *testing.T) {
 	svc, err := New(
-		withConfigOption(validServiceConfig),
+		withConfig(validServiceConfig),
 		WithObserver(nil),
 	)
 	require.NoError(t, err)
@@ -102,7 +102,7 @@ func TestWithObserver_Nil(t *testing.T) {
 }
 
 func TestServiceCreation_MissingRequiredParams(t *testing.T) {
-	_, err := New(withConfigOption(nil))
+	_, err := New(withConfig(nil))
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "zero value")
 }
@@ -113,7 +113,7 @@ func TestServiceWithRoles(t *testing.T) {
 		"applicationOwner": "owner",
 		"roles.0":          "foo",
 	}
-	cfgOpt := withConfigOption(data)
+	cfgOpt := withConfig(data)
 
 	svc, err := New(cfgOpt)
 	require.NoError(t, err)
@@ -127,7 +127,7 @@ func TestBadOption_Panics(t *testing.T) {
 	}
 
 	assert.Panics(t, func() {
-		_, err := New(withConfigOption(validServiceConfig), opt)
+		_, err := New(withConfig(validServiceConfig), opt)
 		if err != nil {
 			assert.Fail(t, "should not reach this path")
 		}
@@ -136,7 +136,7 @@ func TestBadOption_Panics(t *testing.T) {
 
 func TestNew_WithObserver(t *testing.T) {
 	o := observerStub()
-	svc, err := New(withConfigOption(validServiceConfig), WithObserver(o))
+	svc, err := New(withConfig(validServiceConfig), WithObserver(o))
 	require.NoError(t, err)
 	assert.Equal(t, o, svc.Observer())
 }
@@ -146,6 +146,6 @@ var validServiceConfig = map[string]interface{}{
 	"applicationOwner": "go.uber.org/fx",
 }
 
-func withConfigOption(data map[string]interface{}) Option {
+func withConfig(data map[string]interface{}) Option {
 	return WithConfiguration(config.NewStaticProvider(data))
 }
