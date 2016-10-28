@@ -82,29 +82,6 @@ func New(options ...Option) (Owner, error) {
 		},
 	}
 
-	cfg := config.Load()
-	svc.serviceCore.configProvider = cfg
-
-	// prepend the default options.
-	// TODO: This isn't right.  Do we order the options so we make sure to use
-	// the passed in options?
-	//
-	ensureThat(WithConfiguration(cfg)(svc), "configuration")
-
-	// load standard config
-	// TODO(glib): `.GetValue("")` is a confusing interface for getting the root config node
-	svc.configProvider.GetValue("").PopulateStruct(&svc.standardConfig)
-
-	// load and configure logging
-	svc.configProvider.GetValue("logging").PopulateStruct(&svc.logConfig)
-	ulog.Configure(svc.logConfig)
-	ensureThat(WithLogger(ulog.Logger())(svc), "log configuration")
-
-	if errs := validator.Validate(svc.standardConfig); errs != nil {
-		svc.Logger().Error("Invalid service configuration", "error", errs)
-		return svc, errs
-	}
-
 	// hash up the roles
 	svc.roles = map[string]bool{}
 	for _, r := range svc.standardConfig.ServiceRoles {
@@ -116,6 +93,35 @@ func New(options ...Option) (Owner, error) {
 		if optionErr := opt(svc); optionErr != nil {
 			panic(optionErr)
 		}
+	}
+
+	if svc.configProvider == nil {
+		// If the user didn't pass in a configuration provider, load the standard.
+		// Bypassing standard config load is pretty much only used for tests, although it could be
+		// useful in certain circumstances.
+		svc.configProvider = config.Load()
+	}
+
+	// prepend the default options.
+	// TODO: This isn't right.  Do we order the options so we make sure to use
+	// the passed in options?
+
+	// load standard config
+	// TODO(glib): `.GetValue("")` is a confusing interface for getting the root config node
+	svc.configProvider.GetValue("").PopulateStruct(&svc.standardConfig)
+
+	if svc.log == nil {
+		// load and configure logging
+		svc.configProvider.GetValue("logging").PopulateStruct(&svc.logConfig)
+		ulog.Configure(svc.logConfig)
+		svc.log = ulog.Logger()
+	} else {
+		svc.log.Debug("Using custom log provider due to service.WithLogger option")
+	}
+
+	if errs := validator.Validate(svc.standardConfig); errs != nil {
+		svc.Logger().Error("Invalid service configuration", "error", errs)
+		return svc, errs
 	}
 
 	// Initialize metrics. If no metrics reporters were Registered, do noop
@@ -146,10 +152,4 @@ func New(options ...Option) (Owner, error) {
 	svc.Metrics().Counter("boot").Inc(1)
 
 	return svc, nil
-}
-
-func ensureThat(err error, description string) {
-	if err != nil {
-		ulog.Logger().Fatal("Fatal error initializing app: ", description, "error", err)
-	}
 }

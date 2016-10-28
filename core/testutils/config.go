@@ -26,8 +26,13 @@ import (
 	"go.uber.org/fx/core/config"
 )
 
-// WithConfig sets a global config and returns a function to defer reset
-func WithConfig(applicationID *string) func() {
+// StaticAppData creates a ConfigurationProvider for a valid appID/owner
+func StaticAppData(applicationID *string) config.ConfigurationProvider {
+	data := makeValidData(applicationID)
+	return config.NewStaticProvider(data)
+}
+
+func makeValidData(applicationID *string) map[string]interface{} {
 	if applicationID == nil {
 		_appID := "test" + randStringBytes(10)
 		applicationID = &_appID
@@ -38,13 +43,7 @@ func WithConfig(applicationID *string) func() {
 		"applicationID":    *applicationID,
 		"applicationOwner": applicationOwner,
 	}
-
-	oldProviders := config.Providers()
-	config.UnregisterProviders()
-	config.RegisterProviders(config.StaticProvider(data))
-	return func() {
-		config.RegisterProviders(oldProviders...)
-	}
+	return data
 }
 
 const letterBytes = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"

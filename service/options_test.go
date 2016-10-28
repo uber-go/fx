@@ -24,6 +24,8 @@ import (
 	"errors"
 	"testing"
 
+	"go.uber.org/fx/core/ulog"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -37,6 +39,13 @@ func TestAddModules_OK(t *testing.T) {
 func TestAddModules_Errors(t *testing.T) {
 	sh := &host{}
 	assert.Error(t, sh.AddModules(errorModuleCreate))
+}
+
+func TestWithLogger_OK(t *testing.T) {
+	logger := ulog.Logger()
+	assert.NotPanics(t, func() {
+		New(WithLogger(logger))
+	})
 }
 
 func successModuleCreate(_ ModuleCreateInfo) ([]Module, error) {

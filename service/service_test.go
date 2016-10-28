@@ -77,11 +77,11 @@ func newTestStatsReporter() *testStatsReporter {
 }
 
 func TestServiceCreation(t *testing.T) {
-	defer withConfigData(validServiceConfig)()
 	r := newTestStatsReporter()
 	r.cw.Add(1)
 	scope := tally.NewRootScope("", nil, r, 50*time.Millisecond)
 	svc, err := New(
+		withConfig(validServiceConfig),
 		WithMetricsRootScope(scope),
 	)
 	require.NoError(t, err)
@@ -92,8 +92,8 @@ func TestServiceCreation(t *testing.T) {
 }
 
 func TestWithObserver_Nil(t *testing.T) {
-	defer withConfigData(validServiceConfig)()
 	svc, err := New(
+		withConfig(validServiceConfig),
 		WithObserver(nil),
 	)
 	require.NoError(t, err)
@@ -102,33 +102,32 @@ func TestWithObserver_Nil(t *testing.T) {
 }
 
 func TestServiceCreation_MissingRequiredParams(t *testing.T) {
-	defer withConfigData(nil)()
-	_, err := New()
+	_, err := New(withConfig(nil))
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "zero value")
 }
 
 func TestServiceWithRoles(t *testing.T) {
-	defer withConfigData(map[string]interface{}{
+	data := map[string]interface{}{
 		"applicationID":    "name",
 		"applicationOwner": "owner",
 		"roles.0":          "foo",
-	})()
+	}
+	cfgOpt := withConfig(data)
 
-	svc, err := New()
+	svc, err := New(cfgOpt)
 	require.NoError(t, err)
 
 	assert.Contains(t, svc.Roles(), "foo")
 }
 
 func TestBadOption_Panics(t *testing.T) {
-	defer withConfigData(validServiceConfig)()
 	opt := func(_ Host) error {
 		return errors.New("nope")
 	}
 
 	assert.Panics(t, func() {
-		_, err := New(opt)
+		_, err := New(withConfig(validServiceConfig), opt)
 		if err != nil {
 			assert.Fail(t, "should not reach this path")
 		}
@@ -136,9 +135,8 @@ func TestBadOption_Panics(t *testing.T) {
 }
 
 func TestNew_WithObserver(t *testing.T) {
-	defer withConfigData(validServiceConfig)()
 	o := observerStub()
-	svc, err := New(WithObserver(o))
+	svc, err := New(withConfig(validServiceConfig), WithObserver(o))
 	require.NoError(t, err)
 	assert.Equal(t, o, svc.Observer())
 }
@@ -148,12 +146,6 @@ var validServiceConfig = map[string]interface{}{
 	"applicationOwner": "go.uber.org/fx",
 }
 
-// withConfigData sets a global config and returns a function to defer reset
-func withConfigData(data map[string]interface{}) func() {
-	oldProviders := config.Providers()
-	config.UnregisterProviders()
-	config.RegisterProviders(config.StaticProvider(data))
-	return func() {
-		config.RegisterProviders(oldProviders...)
-	}
+func withConfig(data map[string]interface{}) Option {
+	return WithConfiguration(config.NewStaticProvider(data))
 }

@@ -28,11 +28,8 @@ type Builder struct {
 
 // NewBuilder returns a new Builder for instantiating services
 func NewBuilder(options ...Option) *Builder {
-	b := &Builder{
-		options: options,
-	}
-
-	return b
+	b := &Builder{}
+	return b.WithOptions(options...)
 }
 
 // WithModules adds the given modules to the service
@@ -46,6 +43,12 @@ func (b *Builder) WithModules(modules ...ModuleCreateFunc) *Builder {
 func WithModules(modules ...ModuleCreateFunc) *Builder {
 	b := NewBuilder()
 	return b.WithModules(modules...)
+}
+
+// WithOptions adds service Options to the builder
+func (b *Builder) WithOptions(options ...Option) *Builder {
+	b.options = append(b.options, options...)
+	return b
 }
 
 // Build returns the service, or any errors encountered during build phase.

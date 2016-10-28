@@ -36,9 +36,9 @@ func TestNewBuilder_NoConfig(t *testing.T) {
 }
 
 func TestNewBuilder_WithConfig(t *testing.T) {
-	defer WithConfig(nil)()
-
-	b := NewBuilder()
+	b := NewBuilder(
+		WithConfiguration(StaticAppData(nil)),
+	)
 
 	svc, err := b.Build()
 	require.NoError(t, err)
@@ -46,31 +46,32 @@ func TestNewBuilder_WithConfig(t *testing.T) {
 }
 
 func TestBuilder_WithModules(t *testing.T) {
-	defer WithConfig(nil)()
-
-	_, err := NewBuilder().WithModules(noopModule).Build()
+	_, err := NewBuilder(
+		WithConfiguration(StaticAppData(nil)),
+	).WithModules(noopModule).Build()
 	assert.NoError(t, err)
 }
 
 func TestBuilder_WithErrModule(t *testing.T) {
-	defer WithConfig(nil)()
-
-	_, err := NewBuilder().WithModules(errModule).Build()
+	_, err := NewBuilder(
+		WithConfiguration(StaticAppData(nil)),
+	).WithModules(errModule).Build()
 	assert.Error(t, err)
 }
 
 func TestBuilder_SkipsModulesBadInit(t *testing.T) {
 	empty := ""
-	defer WithConfig(&empty)()
 
-	_, err := NewBuilder().WithModules(noopModule).Build()
+	_, err := NewBuilder(
+		WithConfiguration(StaticAppData(&empty)),
+	).WithModules(noopModule).Build()
 	assert.Error(t, err)
 }
 
 func TestWithModules_OK(t *testing.T) {
-	defer WithConfig(nil)()
-
-	_, err := WithModules(noopModule).Build()
+	_, err := WithModules(noopModule).WithOptions(
+		WithConfiguration(StaticAppData(nil)),
+	).Build()
 	assert.NoError(t, err)
 }
 
