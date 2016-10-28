@@ -157,7 +157,6 @@ const (
 type yamlNode struct {
 	nodeType nodeType
 	key      string
-	keyvalue interface{}
 	value    interface{}
 	children []*yamlNode
 }
@@ -189,7 +188,6 @@ func newyamlNode(reader io.ReadCloser) (*yamlNode, error) {
 	root := &yamlNode{
 		nodeType: objectNode,
 		key:      "",
-		keyvalue: "",
 		value:    m,
 		children: nil,
 	}
@@ -234,7 +232,6 @@ func (n *yamlNode) Find(dottedPath string) *yamlNode {
 func (n yamlNode) getNodeType(val interface{}) nodeType {
 	switch val.(type) {
 	case map[interface{}]interface{}:
-
 		return objectNode
 	case []interface{}:
 		return arrayNode
@@ -257,7 +254,6 @@ func (n *yamlNode) Children() []*yamlNode {
 				n2 := &yamlNode{
 					nodeType: n.getNodeType(v),
 					key:      fmt.Sprintf("%s", k),
-					keyvalue: k,
 					value:    v,
 				}
 
@@ -268,7 +264,6 @@ func (n *yamlNode) Children() []*yamlNode {
 				n2 := &yamlNode{
 					nodeType: n.getNodeType(v),
 					key:      fmt.Sprintf("%d", k),
-					keyvalue: k,
 					value:    v,
 				}
 
