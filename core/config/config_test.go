@@ -276,6 +276,9 @@ func TestRegisteredProvidersInitialization(t *testing.T) {
 	assert.Equal(t, "global", cfg.Name())
 	assert.Equal(t, "world", cfg.GetValue("hello").AsString())
 	assert.Equal(t, "provider", cfg.GetValue("dynamic").AsString())
+	UnregisterProviders()
+	assert.Nil(t, _staticProviderFuncs)
+	assert.Nil(t, _dynamicProviderFuncs)
 }
 
 func TestNilProvider(t *testing.T) {
