@@ -138,6 +138,7 @@ func UnregisterProviders() {
 	_setupMux.Lock()
 	defer _setupMux.Unlock()
 	_staticProviderFuncs = nil
+	_dynamicProviderFuncs = nil
 }
 
 // Load creates a ConfigurationProvider for use in a service
