@@ -21,6 +21,7 @@
 package rpc
 
 import (
+	"errors"
 	"fmt"
 	"sync"
 	"time"
@@ -118,8 +119,10 @@ func (m *YarpcModule) Start(readyCh chan<- struct{}) <-chan error {
 	defer m.stateMu.Unlock()
 
 	channel, err := tchannel.NewChannel(m.config.AdvertiseName, nil)
+	ret := make(chan error, 1)
 	if err != nil {
-		m.log.Fatal("Unable to create TChannel", "error", err)
+		ret <- errors.New("Unable to create TChannel " + err.Error())
+		return ret
 	}
 
 	reporterInterceptor := []transport.Interceptor{m.makeInterceptor()}
@@ -133,7 +136,7 @@ func (m *YarpcModule) Start(readyCh chan<- struct{}) <-chan error {
 		},
 		Interceptor: interceptor,
 	})
-	ret := make(chan error, 1)
+
 	if err != nil {
 		ret <- err
 		return ret
