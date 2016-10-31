@@ -51,7 +51,7 @@ type YarpcModule struct {
 }
 
 var (
-	_dispatcherFn yarpcDispatcherFn
+	_dispatcherFn = defaultYarpcDispatcher
 
 	_ service.Module = &YarpcModule{}
 )
@@ -205,8 +205,4 @@ func RegisterDispatcher(dispatchFn yarpcDispatcherFn) {
 
 func defaultYarpcDispatcher(cfg yarpc.Config) (yarpc.Dispatcher, error) {
 	return yarpc.NewDispatcher(cfg), nil
-}
-
-func init() {
-	RegisterDispatcher(defaultYarpcDispatcher)
 }
