@@ -65,7 +65,7 @@ type serviceCore struct {
 	state          State
 	configProvider config.ConfigurationProvider
 	scopeMux       sync.Mutex
-	scope          tally.Scope
+	scope          tally.RootScope
 	observer       Observer
 	items          map[string]interface{}
 	logConfig      ulog.Configuration

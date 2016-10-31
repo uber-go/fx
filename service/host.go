@@ -142,6 +142,11 @@ func (s *host) shutdown(err error, reason string, exitCode *int) (bool, error) {
 		}
 	}
 
+	// Stop the metrics reporting
+	if s.scope != nil {
+		s.scope.Close()
+	}
+
 	// report that we shutdown.
 	s.closeChan <- *s.shutdownReason
 	close(s.closeChan)
