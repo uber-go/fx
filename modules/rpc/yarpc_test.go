@@ -48,6 +48,10 @@ func TestInterceptor_OK(t *testing.T) {
 	assert.NoError(t, err)
 }
 
+func TestRegisterDispatcher_OK(t *testing.T) {
+	RegisterDispatcher(defaultYarpcDispatcher)
+}
+
 func makeRequest() *transport.Request {
 	return &transport.Request{
 		Caller:    "the test suite",
