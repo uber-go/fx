@@ -158,7 +158,9 @@ func Load() ConfigurationProvider {
 		if err != nil {
 			panic(err)
 		}
-		dynamic = append(dynamic, cp)
+		if cp != nil {
+			dynamic = append(dynamic, cp)
+		}
 	}
 	return NewProviderGroup("global", append(static, dynamic...)...)
 }
