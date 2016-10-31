@@ -20,8 +20,6 @@
 
 package service
 
-import "go.uber.org/fx/core/metrics"
-
 // A StubModule implements the Module interface for testing
 type StubModule struct {
 	Host             Host
@@ -30,16 +28,13 @@ type StubModule struct {
 	StartError       error
 	StopError        error
 	Running          bool
-	TrafficReporter  metrics.TrafficReporter
 }
 
 var _ Module = &StubModule{}
 
 // NewStubModule generates a Module for use in testing
 func NewStubModule() *StubModule {
-	return &StubModule{
-		TrafficReporter: &metrics.LoggingReporter{},
-	}
+	return &StubModule{}
 }
 
 // Initialize fakes an init call on the module
@@ -68,6 +63,3 @@ func (s *StubModule) IsRunning() bool { return s.Running }
 
 // Stop stops the module
 func (s *StubModule) Stop() error { return s.StopError }
-
-// Reporter returns the traffic reporter for the module
-func (s *StubModule) Reporter() metrics.TrafficReporter { return s.TrafficReporter }

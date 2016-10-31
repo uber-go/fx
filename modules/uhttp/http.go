@@ -28,12 +28,10 @@ import (
 	"sync"
 	"time"
 
-	"go.uber.org/fx/core/metrics"
 	"go.uber.org/fx/core/ulog"
 	"go.uber.org/fx/modules"
 	"go.uber.org/fx/service"
 
-	"github.com/gorilla/context"
 	"github.com/gorilla/mux"
 )
 
@@ -123,10 +121,9 @@ func newModule(
 	if mi.Name == "" {
 		mi.Name = "http"
 	}
-	reporter := &metrics.LoggingReporter{Prefix: mi.Host.Name()}
 
 	module := &Module{
-		ModuleBase: *modules.NewModuleBase(ModuleType, mi.Name, mi.Host, reporter, []string{}),
+		ModuleBase: *modules.NewModuleBase(ModuleType, mi.Name, mi.Host, []string{}),
 		handlers:   createService(mi.Host),
 	}
 
@@ -164,7 +161,6 @@ func (m *Module) Start(ready chan<- struct{}) <-chan error {
 			healthFound = true
 		}
 		handle := h.Handler
-		handle = trackWrap(m.Reporter(), handle)
 		handle = panicWrap(handle)
 		// TODO other middlewares, logging, tracing?
 		route := m.router.Handle(h.Path, handle)
@@ -261,21 +257,4 @@ func panicWrap(h http.Handler) http.HandlerFunc {
 
 		h.ServeHTTP(w, r)
 	}
-}
-
-// track metrics per-request
-func trackWrap(reporter metrics.TrafficReporter, h http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		key := fmt.Sprintf("%s_%s", r.Method, r.URL.Path)
-		// TODO(ai) use sync pool to avoid allocations on every request
-		data := map[string]string{
-			metrics.TrafficCorrelationID: r.Header.Get("RequestID"),
-		}
-		tracker := reporter.Start(key, data, defaultReportTimeout)
-		defer context.Clear(r)
-
-		defer tracker.Finish("", "TODO", nil)
-		// TODO(ai) get message and error from below
-		h.ServeHTTP(w, r)
-	})
 }
