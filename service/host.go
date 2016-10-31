@@ -23,8 +23,10 @@ package service
 import (
 	"fmt"
 	"os"
+	"os/signal"
 	"reflect"
 	"sync"
+	"syscall"
 	"time"
 
 	"go.uber.org/fx/core/config"
@@ -191,7 +193,6 @@ func (s *host) Start(waitForShutdown bool) (<-chan Exit, <-chan struct{}, error)
 	var err error
 	s.locked = true
 	s.shutdownMu.Lock()
-	defer s.shutdownMu.Unlock()
 
 	readyCh := make(chan struct{}, 1)
 	defer func() {
@@ -204,6 +205,7 @@ func (s *host) Start(waitForShutdown bool) (<-chan Exit, <-chan struct{}, error)
 	} else {
 		if s.observer != nil {
 			if err := s.observer.OnInit(s); err != nil {
+				s.shutdownMu.Unlock()
 				return nil, readyCh, err
 			}
 		}
@@ -225,18 +227,31 @@ func (s *host) Start(waitForShutdown bool) (<-chan Exit, <-chan struct{}, error)
 				if _, err := s.shutdown(e, "", nil); err != nil {
 					ulog.Logger().Error("Unable to shut down modules", "initialError", e, "shutdownError", err)
 				}
-				s.shutdownMu.Lock()
-
 				return errChan, readyCh, e
 			}
 		}
 	}
+
+	s.shutdownMu.Unlock()
+	s.registerSignalHandlers()
 
 	if waitForShutdown {
 		s.WaitForShutdown(nil)
 	}
 
 	return s.closeChan, readyCh, err
+}
+
+func (s *host) registerSignalHandlers() {
+	ch := make(chan os.Signal)
+	signal.Notify(ch, syscall.SIGINT, syscall.SIGTERM)
+	go func() {
+		sig := <-ch
+		s.Logger().Warn("Received shutdown signal", "signal", sig.String())
+		if err := s.Stop("Received syscall", 0); err != nil {
+			s.Logger().Error("Error shutting down", "error", err.Error())
+		}
+	}()
 }
 
 // Stop shuts down the service.
