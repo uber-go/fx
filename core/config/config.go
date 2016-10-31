@@ -158,7 +158,6 @@ func Load() ConfigurationProvider {
 		if err != nil {
 			panic(err)
 		}
-		// We registered dynamic provider but chose not to initialize via configuration
 		if cp != nil {
 			dynamic = append(dynamic, cp)
 		}
