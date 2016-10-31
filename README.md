@@ -213,12 +213,16 @@ func NewMyServiceHandler(svc service.Host) ([]transport.Registrant, error) {
 
 ```go
 func main() {
-  service := service.New(
+  service, err := service.WithModules(
     rpc.ThriftModule(
       rpc.CreateThriftServiceFunc(NewMyServiceHandler),
       modules.WithRoles("service"),
     ),
-  )
+  ).Build()
+
+  if err != nil {
+    log.Fatal("Could not initialize service: ", err)
+  }
 
   service.Start(true)
 }
