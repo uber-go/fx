@@ -23,7 +23,6 @@ package modules
 import (
 	"testing"
 
-	"go.uber.org/fx/core/metrics"
 	"go.uber.org/fx/service"
 
 	"github.com/stretchr/testify/assert"
@@ -49,11 +48,6 @@ func TestNewModuleBase_Name(t *testing.T) {
 	assert.Equal(t, "foo", mb.Name())
 }
 
-func TestNewModuleBase_Reporter(t *testing.T) {
-	mb := nmb("test", "foo", nil)
-	assert.NotNil(t, mb.Reporter())
-}
-
 func TestNewModuleBase_Host(t *testing.T) {
 	mb := nmb("test", "foo", nil)
 	assert.NotNil(t, mb.Host())
@@ -66,7 +60,6 @@ func nmb(moduleType, name string, roles []string) *ModuleBase {
 		moduleType,
 		name,
 		host,
-		metrics.NoopReporter{},
 		roles,
 	)
 }

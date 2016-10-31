@@ -24,11 +24,7 @@ import (
 	"errors"
 	"fmt"
 	"sync"
-	"time"
 
-	"golang.org/x/net/context"
-
-	"go.uber.org/fx/core/metrics"
 	"go.uber.org/fx/core/ulog"
 	"go.uber.org/fx/modules"
 	"go.uber.org/fx/service"
@@ -82,10 +78,8 @@ func newYarpcModule(
 		name = mi.Name
 	}
 
-	reporter := &metrics.LoggingReporter{Prefix: mi.Host.Name()}
-
 	module := &YarpcModule{
-		ModuleBase: *modules.NewModuleBase(RPCModuleType, name, mi.Host, reporter, []string{}),
+		ModuleBase: *modules.NewModuleBase(RPCModuleType, name, mi.Host, []string{}),
 		register:   reg,
 		config:     *cfg,
 	}
@@ -125,8 +119,7 @@ func (m *YarpcModule) Start(readyCh chan<- struct{}) <-chan error {
 		return ret
 	}
 
-	reporterInterceptor := []transport.Interceptor{m.makeInterceptor()}
-	interceptor := yarpc.Interceptors(append(reporterInterceptor, m.interceptors...)...)
+	interceptor := yarpc.Interceptors(m.interceptors...)
 
 	// TODO(ai/madhu) pass option for opentracing to NewDispatcher
 	m.rpc, err = _dispatcherFn(yarpc.Config{
@@ -149,31 +142,6 @@ func (m *YarpcModule) Start(readyCh chan<- struct{}) <-chan error {
 	ret <- m.rpc.Start()
 	readyCh <- struct{}{}
 	return ret
-}
-
-func (m *YarpcModule) makeInterceptor() transport.Interceptor {
-	reporter := m.Reporter()
-	return transport.InterceptorFunc(
-		func(
-			ctx context.Context,
-			request *transport.Request,
-			response transport.ResponseWriter,
-			h transport.Handler,
-		) error {
-			data := map[string]string{}
-
-			if cid, ok := request.Headers.Get("cid"); ok {
-				// todo, what's the right tchannel header name?
-				data[metrics.TrafficCorrelationID] = cid
-			}
-
-			key := "rpc." + request.Procedure
-			tracker := reporter.Start(key, data, 90*time.Second)
-			err := h.Handle(ctx, request, response)
-			tracker.Finish("", nil, err)
-			return err
-		},
-	)
 }
 
 // Stop shuts down a YARPC module

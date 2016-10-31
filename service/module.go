@@ -20,8 +20,6 @@
 
 package service
 
-import "go.uber.org/fx/core/metrics"
-
 // A ModuleType is a human-friendly module type name
 type ModuleType string
 
@@ -33,7 +31,6 @@ type Module interface {
 	Start(ready chan<- struct{}) <-chan error
 	Stop() error
 	IsRunning() bool
-	Reporter() metrics.TrafficReporter
 }
 
 // ModuleCreateInfo is used to configure module instantiation

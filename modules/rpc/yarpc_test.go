@@ -24,29 +24,10 @@ import (
 	"bytes"
 	"testing"
 
-	"go.uber.org/fx/modules"
-
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"go.uber.org/yarpc/encoding/raw"
 	"go.uber.org/yarpc/transport"
-	"go.uber.org/yarpc/transport/transporttest"
 	"golang.org/x/net/context"
 )
-
-func TestInterceptor_OK(t *testing.T) {
-	modCreate := ThriftModule(okCreate, modules.WithRoles("test"))
-	mods, err := modCreate(mch())
-	require.NoError(t, err)
-	assert.NotEmpty(t, mods)
-
-	mod := mods[0].(*YarpcModule)
-	request := makeRequest()
-	interceptor := mod.makeInterceptor()
-	resw := new(transporttest.FakeResponseWriter)
-	err = interceptor.Handle(context.Background(), request, resw, makeHandler(nil))
-	assert.NoError(t, err)
-}
 
 func TestRegisterDispatcher_OK(t *testing.T) {
 	RegisterDispatcher(defaultYarpcDispatcher)

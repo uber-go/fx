@@ -43,5 +43,4 @@ func TestStubModule_Accessors(t *testing.T) {
 	assert.Empty(s.Name())
 	assert.False(s.IsRunning())
 	assert.NoError(s.Stop())
-	assert.NotNil(s.Reporter())
 }

@@ -21,7 +21,6 @@
 package modules
 
 import (
-	"go.uber.org/fx/core/metrics"
 	"go.uber.org/fx/service"
 
 	"github.com/uber-go/tally"
@@ -40,9 +39,6 @@ type ModuleBase struct {
 	isRunning  bool
 	roles      []string
 	scope      tally.Scope
-
-	// TODO(glib): do we really need the traffic reporter?
-	reporter metrics.TrafficReporter
 }
 
 // NewModuleBase configures a new ModuleBase
@@ -50,14 +46,12 @@ func NewModuleBase(
 	moduleType string,
 	name string,
 	service service.Host,
-	reporter metrics.TrafficReporter,
 	roles []string,
 ) *ModuleBase {
 	return &ModuleBase{
 		moduleType: moduleType,
 		name:       name,
 		host:       service,
-		reporter:   reporter,
 		roles:      roles,
 		scope:      service.Metrics().SubScope(name),
 	}
@@ -81,9 +75,4 @@ func (mb ModuleBase) Type() string {
 // Name returns the module's name
 func (mb ModuleBase) Name() string {
 	return mb.name
-}
-
-// Reporter returns the module's traffic reporter
-func (mb ModuleBase) Reporter() metrics.TrafficReporter {
-	return mb.reporter
 }
