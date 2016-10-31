@@ -46,7 +46,7 @@ import (
 
 func main() {
   // Create the service object
-  service, err := service.WithModules(
+  svc, err := service.WithModules(
     // The list of module creators for this service, in this case
     // creates a Thrift RPC module called "keyvalue"
     rpc.ThriftModule(
@@ -62,7 +62,7 @@ func main() {
   // Start the service, with "true" meaning:
   // * Wait for service exit
   // * Report a non-zero exit code if shutdown is caused by an error
-  service.Start(true)
+  svc.Start(true)
 }
 ```
 
@@ -82,7 +82,7 @@ Kafka and TChannel, respectively:
 
 ```go
 func main() {
-  service, err := service.WithModules(
+  svc, err := service.WithModules(
     kafka.Module("kakfa_topic1", []string{"worker"}),
     rpc.ThriftModule(
       rpc.CreateThriftServiceFunc(NewYarpcThriftHandler),
@@ -95,7 +95,7 @@ func main() {
     log.Fatal("Could not initialize service: ", err)
   }
 
-  service.Start(true)
+  svc.Start(true)
 }
 ```
 
@@ -165,7 +165,7 @@ import (
 )
 
 func main() {
-  service, err := service.WithModules(
+  svc, err := service.WithModules(
     uhttp.New(registerHTTP),
   ).Build()
 
@@ -173,7 +173,7 @@ func main() {
     log.Fatal("Could not initialize service: ", err)
   }
 
-  service.Start(true)
+  svc.Start(true)
 }
 
 func registerHTTP(service service.Host) []uhttp.RouteHandler {
@@ -213,14 +213,18 @@ func NewMyServiceHandler(svc service.Host) ([]transport.Registrant, error) {
 
 ```go
 func main() {
-  service := service.New(
+  svc, err := service.WithModules(
     rpc.ThriftModule(
       rpc.CreateThriftServiceFunc(NewMyServiceHandler),
       modules.WithRoles("service"),
     ),
-  )
+  ).Build()
 
-  service.Start(true)
+  if err != nil {
+    log.Fatal("Could not initialize service: ", err)
+  }
+
+  svc.Start(true)
 }
 ```
 
