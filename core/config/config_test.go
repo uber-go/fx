@@ -286,16 +286,19 @@ func TestNilProvider(t *testing.T) {
 		return nil, fmt.Errorf("error creating Provider")
 	})
 	assert.Panics(t, func() { Load() }, "Can't initialize with nil provider")
-	UnregisterProviders()
 
-	RegisterProviders(func() (ConfigurationProvider, error) {
-		return nil, nil
-	})
-	Load()
 	oldProviders := _staticProviderFuncs
 	defer func() {
 		_staticProviderFuncs = oldProviders
 	}()
+
+	UnregisterProviders()
+	RegisterProviders(func() (ConfigurationProvider, error) {
+		return nil, nil
+	})
+	// don't panic on Load
+	Load()
+
 	UnregisterProviders()
 	assert.Nil(t, _staticProviderFuncs)
 }
