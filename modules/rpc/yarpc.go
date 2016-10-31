@@ -133,12 +133,13 @@ func (m *YarpcModule) Start(readyCh chan<- struct{}) <-chan error {
 		},
 		Interceptor: interceptor,
 	})
+	ret := make(chan error, 1)
 	if err != nil {
-		panic("Unable to create YARPC dispatcher: " + err.Error())
+		ret <- err
+		return ret
 	}
 
 	m.register(m)
-	ret := make(chan error, 1)
 	// TODO update log object to be accessed via context.Context #74
 	m.log.Info("Service started", "service", m.config.AdvertiseName, "port", m.config.Bind)
 
