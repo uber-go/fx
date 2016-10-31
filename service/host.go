@@ -160,8 +160,7 @@ func (s *host) AddModules(modules ...ModuleCreateFunc) error {
 	for _, mcf := range modules {
 		mi := ModuleCreateInfo{
 			Host:  s,
-			Roles: nil,
-			Items: map[string]interface{}{},
+			Items: make(map[string]interface{}),
 		}
 
 		mods, err := mcf(mi)

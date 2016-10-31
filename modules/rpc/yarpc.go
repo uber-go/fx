@@ -41,11 +41,12 @@ import (
 // YarpcModule is an implementation of a core module using YARPC
 type YarpcModule struct {
 	modules.ModuleBase
-	rpc      yarpc.Dispatcher
-	register registerServiceFunc
-	config   yarpcConfig
-	log      ulog.Log
-	stateMu  sync.RWMutex
+	rpc          yarpc.Dispatcher
+	register     registerServiceFunc
+	config       yarpcConfig
+	log          ulog.Log
+	stateMu      sync.RWMutex
+	interceptors []transport.Interceptor
 }
 
 var _ service.Module = &YarpcModule{}
@@ -97,6 +98,8 @@ func newYarpcModule(
 		module.config = *cfg
 	}
 
+	module.interceptors = interceptorsFromCreateInfo(mi)
+
 	return module, nil
 }
 
@@ -115,12 +118,15 @@ func (m *YarpcModule) Start(readyCh chan<- struct{}) <-chan error {
 		m.log.Fatal("Unable to create TChannel", "error", err)
 	}
 
+	reporterInterceptor := []transport.Interceptor{m.makeInterceptor()}
+	interceptor := yarpc.Interceptors(append(reporterInterceptor, m.interceptors...)...)
+
 	m.rpc = yarpc.NewDispatcher(yarpc.Config{
 		Name: m.config.AdvertiseName,
 		Inbounds: []transport.Inbound{
 			tch.NewInbound(channel, tch.ListenAddr(m.config.Bind)),
 		},
-		Interceptor: m.makeInterceptor(),
+		Interceptor: interceptor,
 	})
 
 	m.register(m)

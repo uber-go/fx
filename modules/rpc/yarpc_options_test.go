@@ -21,39 +21,34 @@
 package rpc
 
 import (
-	"go.uber.org/fx/modules"
+	"testing"
+
 	"go.uber.org/fx/service"
 
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.uber.org/yarpc/transport"
 )
 
-// CreateThriftServiceFunc creates a Thrift service from a service host
-type CreateThriftServiceFunc func(svc service.Host) ([]transport.Registrant, error)
-
-// ThriftModule creates a Thrift Module from a service func
-func ThriftModule(hookup CreateThriftServiceFunc, options ...modules.Option) service.ModuleCreateFunc {
-	return func(mi service.ModuleCreateInfo) ([]service.Module, error) {
-		mod, err := newYarpcThriftModule(mi, hookup, options...)
-		if err != nil {
-			return nil, err
-		}
-
-		return []service.Module{mod}, nil
+func TestWithInterceptors_OK(t *testing.T) {
+	opt := WithInterceptors(transport.NopInterceptor)
+	mc := &service.ModuleCreateInfo{
+		Items: make(map[string]interface{}),
 	}
+
+	require.NoError(t, opt(mc))
+	assert.Equal(t, 1, len(interceptorsFromCreateInfo(*mc)))
 }
 
-func newYarpcThriftModule(
-	mi service.ModuleCreateInfo,
-	createService CreateThriftServiceFunc,
-	options ...modules.Option,
-) (*YarpcModule, error) {
-	registrants, err := createService(mi.Host)
-	if err != nil {
-		return nil, err
+func TestWithInterceptors_PanicsBadData(t *testing.T) {
+	opt := WithInterceptors(transport.NopInterceptor)
+	mc := &service.ModuleCreateInfo{
+		Items: map[string]interface{}{
+			_interceptorKey: "foo",
+		},
 	}
 
-	reg := func(mod *YarpcModule) {
-		mod.rpc.Register(registrants)
-	}
-	return newYarpcModule(mi, reg, options...)
+	assert.Panics(t, func() {
+		opt(mc)
+	})
 }
