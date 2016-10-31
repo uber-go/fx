@@ -226,35 +226,6 @@ func main() {
 
 This will spin up the service.
 
-### Metrics
-
-UberFx also exposes a simple, consistent way to track metrics for module-handler
-invocations.  For modules that invoke handlers, they also support a consistent
-interface for reporting metrics.
-
-* Handler Call Counts
-* Success/Failure
-* Timings
-
-Internally, this uses a pluggable mechanism for reporting these values, so they
-can be reported to M3, logging, etc., at the service owner's discretion.  By
-default the metrics will be reported to M3 but can easily be expanded for
-logging and other needs.
-
-For the HTTP and RPC modules, this happens automatically:
-
-```
-2016/06/16 16:05:24 simple.GET_/health  73μs    OK
-2016/06/16 16:05:25 simple.GET_/health  27μs    OK
-2016/06/16 16:05:25 simple.GET_/health  37μs    OK
-2016/06/16 16:05:30 simple.GET_/random  167μs   OK
-2016/06/16 16:05:43 simple.GET_/time    32μs    OK
-2016/06/16 16:05:44 simple.GET_/time    47μs    OK
-2016/06/16 16:05:44 simple.GET_/time    64μs    OK
-2016/06/16 16:05:45 simple.GET_/time    45μs    OK
-2016/06/16 16:05:47 simple.GET_/health  28μs    OK
-```
-
 ## Simple Configuration Interface
 
 UberFx introduces a simplified configuration model that provides a consistent
