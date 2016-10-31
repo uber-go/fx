@@ -49,7 +49,11 @@ type YarpcModule struct {
 	interceptors []transport.Interceptor
 }
 
-var _ service.Module = &YarpcModule{}
+var (
+	_dispatcherFn yarpcDispatcherFn
+
+	_ service.Module = &YarpcModule{}
+)
 
 type registerServiceFunc func(module *YarpcModule)
 
@@ -121,13 +125,17 @@ func (m *YarpcModule) Start(readyCh chan<- struct{}) <-chan error {
 	reporterInterceptor := []transport.Interceptor{m.makeInterceptor()}
 	interceptor := yarpc.Interceptors(append(reporterInterceptor, m.interceptors...)...)
 
-	m.rpc = yarpc.NewDispatcher(yarpc.Config{
+	// TODO(ai/madhu) pass option for opentracing to NewDispatcher
+	m.rpc, err = _dispatcherFn(yarpc.Config{
 		Name: m.config.AdvertiseName,
 		Inbounds: []transport.Inbound{
 			tch.NewInbound(channel, tch.ListenAddr(m.config.Bind)),
 		},
 		Interceptor: interceptor,
 	})
+	if err != nil {
+		panic("Unable to create YARPC dispatcher: " + err.Error())
+	}
 
 	m.register(m)
 	ret := make(chan error, 1)
@@ -182,4 +190,19 @@ func (m *YarpcModule) IsRunning() bool {
 	m.stateMu.RLock()
 	defer m.stateMu.RUnlock()
 	return m.rpc != nil
+}
+
+type yarpcDispatcherFn func(yarpc.Config) (yarpc.Dispatcher, error)
+
+// RegisterDispatcher allows you to override the YARPC dispatcher registration
+func RegisterDispatcher(dispatchFn yarpcDispatcherFn) {
+	_dispatcherFn = dispatchFn
+}
+
+func defaultYarpcDispatcher(cfg yarpc.Config) (yarpc.Dispatcher, error) {
+	return yarpc.NewDispatcher(cfg), nil
+}
+
+func init() {
+	RegisterDispatcher(defaultYarpcDispatcher)
 }
