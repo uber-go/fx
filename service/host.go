@@ -134,16 +134,18 @@ func (s *host) shutdown(err error, reason string, exitCode *int) (bool, error) {
 		s.shutdownReason.ExitCode = *exitCode
 	}
 
-	s.stopModules()
+	// Log the module shutdown errors
+	errs := s.stopModules()
+	if len(errs) > 0 {
+		for k, v := range errs {
+			ulog.Logger().Error("Failure to shut down module", "name", k.Name(), "error", v.Error())
+		}
+	}
 
-	// TODO: What do we do with shutdown errors?
-	// if len(errs) > 0 {
-	// 	errList := "errModuleStopError\n"
-	// 	for k, v := range errs {
-	// 		errList += fmt.Sprintf("Module %q: %s\n", k.Name(), v.Error())
-	// 	}
-
-	// }
+	// Stop the metrics reporting
+	if s.scope != nil {
+		s.scope.Close()
+	}
 
 	// report that we shutdown.
 	s.closeChan <- *s.shutdownReason
