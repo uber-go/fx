@@ -11,6 +11,10 @@ dependencies:
 	$(ECHO_V)go install ./vendor/github.com/golang/lint/golint
 	@echo "Installing errcheck..."
 	$(ECHO_V)go install ./vendor/github.com/kisielk/errcheck
+	@echo "Installing thriftrw..."
+	$(ECHO_V)go install ./vendor/go.uber.org/thriftrw
+	@echo "Installing thriftrw-plugin-yarpc..."
+	$(ECHO_V)go install ./vendor/go.uber.org/yarpc/encoding/thrift/thriftrw-plugin-yarpc
 
 GOCOV := gocov
 OVERALLS := overalls
