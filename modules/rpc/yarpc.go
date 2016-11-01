@@ -122,7 +122,7 @@ func (m *YarpcModule) Start(readyCh chan<- struct{}) <-chan error {
 	interceptor := yarpc.Interceptors(m.interceptors...)
 
 	// TODO(ai/madhu) pass option for opentracing to NewDispatcher
-	m.rpc, err = _dispatcherFn(yarpc.Config{
+	m.rpc, err = _dispatcherFn(m.Host(), yarpc.Config{
 		Name: m.config.AdvertiseName,
 		Inbounds: []transport.Inbound{
 			tch.NewInbound(channel, tch.ListenAddr(m.config.Bind)),
@@ -164,13 +164,13 @@ func (m *YarpcModule) IsRunning() bool {
 	return m.rpc != nil
 }
 
-type yarpcDispatcherFn func(yarpc.Config) (yarpc.Dispatcher, error)
+type yarpcDispatcherFn func(service.Host, yarpc.Config) (yarpc.Dispatcher, error)
 
 // RegisterDispatcher allows you to override the YARPC dispatcher registration
 func RegisterDispatcher(dispatchFn yarpcDispatcherFn) {
 	_dispatcherFn = dispatchFn
 }
 
-func defaultYarpcDispatcher(cfg yarpc.Config) (yarpc.Dispatcher, error) {
+func defaultYarpcDispatcher(_ service.Host, cfg yarpc.Config) (yarpc.Dispatcher, error) {
 	return yarpc.NewDispatcher(cfg), nil
 }
