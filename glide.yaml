@@ -13,7 +13,7 @@ import:
 # TODO: Use stable branch for yarpc
   version: 5cb0df4c43be85f526cfe84352983966a83db29d
 - package: go.uber.org/thriftrw
-  version: dev
+  version: 6aa07c0009457cc6c7ff5497695f1581ad184350
 - package: github.com/go-validator/validator
   version: v2
 
