@@ -13,6 +13,8 @@ import:
   version: dev
 - package: go.uber.org/thriftrw
   version: dev
+- package: github.com/anmitsu/go-shlex
+- package: github.com/jessevdk/go-flags
 - package: github.com/go-validator/validator
   version: v2
 

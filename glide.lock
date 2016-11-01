@@ -1,18 +1,18 @@
-hash: 07a85faa8ece4bd16fa206a870d04a98b74f1bb7c9b15d64c6866a1ce017dfb7
-updated: 2016-10-27T12:07:34.245239247-07:00
+hash: 42ff2b1ac9a75d5734d4141b56ac8c19fbd3679dfd479b34b3f43f416151af9f
+updated: 2016-11-01T16:30:17.314051732-07:00
 imports:
+- name: github.com/anmitsu/go-shlex
+  version: 53a3d8a8a362cca54fd6825caf2216aa6d8139fc
 - name: github.com/facebookgo/clock
   version: 600d898af40aa09a7a93ecb9265d87b0504b6f03
 - name: github.com/go-validator/validator
   version: 0a9835d809fb647a62611d30cb792e0b5dd65b11
-- name: github.com/golang/mock
-  version: bd3c8e81be01eef76d4b503f5e687d2d1354d2d9
-  subpackages:
-  - gomock
 - name: github.com/gorilla/context
   version: 1ea25387ff6f684839d82767c1733ff4d4d15d0a
 - name: github.com/gorilla/mux
   version: 0eeaf8392f5b04950925b8a69fe70f110fa7cbfc
+- name: github.com/jessevdk/go-flags
+  version: a8cab0163d48558ffd77076c9c99388529766f63
 - name: github.com/opentracing/opentracing-go
   version: 0c3154a3c2ce79d3271985848659870599dfb77c
   subpackages:
@@ -58,9 +58,8 @@ imports:
   - transport/internal
   - transport/tchannel
   - transport/tchannel/internal
-  - transport/transporttest
 - name: golang.org/x/net
-  version: b626cca987fa6333e5dd25baa0fd61708c145011
+  version: 541150ac4f433e755f5663eba5d888c2fa347343
   subpackages:
   - context
   - context/ctxhttp
@@ -72,7 +71,7 @@ testImports:
   subpackages:
   - gocov
 - name: github.com/davecgh/go-spew
-  version: 6d212800a42e8ab5c146b8ace3490ee17e5225f9
+  version: 346938d642f2ec3594ed81d874461961cd0faa76
   subpackages:
   - spew
 - name: github.com/go-playground/overalls
