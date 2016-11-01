@@ -65,7 +65,7 @@ func main() {
 It's common for a service to handle many different workloads. For example, a
 service may expose RPC endpoints and also ingest Kafka messages.
 
-In uberfx, there is a simpler model where we create a single binary,
+In UberFX, there is a simpler model where we create a single binary,
 but turn its modules on and off based on roles which are specified via the
 commmand line.
 
