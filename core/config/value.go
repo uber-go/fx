@@ -466,7 +466,9 @@ func (cv ConfigurationValue) getValueStruct(key string, target interface{}) (int
 					break
 				}
 			}
-			fieldValue.Set(destSlice)
+			if destSlice.Len() > 0 {
+				fieldValue.Set(destSlice)
+			}
 		}
 
 	}
