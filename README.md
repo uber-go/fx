@@ -6,23 +6,17 @@
 
 ## Status
 
-Like, way pre ALPHA.
-
-API Changes are **highly likely**.
+Pre-ALPHA. API Changes are **highly likely**.
 
 ## Abstract
 
 This framework is a flexible, modularized basis for building robust and
 performant services at Uber with the minimum amount of developer code.
 
-## Concepts
-
-Here is an overview of the main components of the framework
-
 ## Service Model
 
-A service a container for a set of **modules**, controlling their lifecycle.  A
-service can have any number of modules that are responsible for a specific type
+A service is a container for a set of **modules**, controlling their lifecycle.
+Service can have any number of modules that are responsible for a specific type
 of functionality, such as a Kafka message ingestion, exposing an HTTP server, or
 a set of RPC service endpoints.
 
@@ -30,7 +24,7 @@ The core service is responsible for loading basic configuration and starting and
 stopping a set of these modules.  Each module gets a reference to the service to
 access standard values such as the Service name or basic configuration.
 
-### Core Service Code
+## Service Core
 
 This model results in a simple, consistent way to start a service.  For example,
 in the case of a simple TChannel Service, `main.go` might look like this:
@@ -66,14 +60,12 @@ func main() {
 }
 ```
 
-#### Roles
+### Roles
 
-It's common for a service to handle many different workloads.  For example, a
-service may expose RPC endpoints and also ingest Kafka messages.  In the Python
-world, this means different deployments that run with different entry points.
-Due to Python's threading model, this was required.
+It's common for a service to handle many different workloads. For example, a
+service may expose RPC endpoints and also ingest Kafka messages.
 
-In the Go service, we can have a simpler model where we create a single binary,
+In uberfx, there is a simpler model where we create a single binary,
 but turn its modules on and off based on roles which are specified via the
 commmand line.
 
@@ -109,29 +101,27 @@ Or via the service parameters, we would activate in the following ways:
 * `./myservice --roles "worker"`: Runs only the **Kakfa** module
 * Etc...
 
-### Modules
+## Modules
 
 Modules are pluggable components that provide an encapsulated set of
-functionality that is managed by the service.  One can imagine lots of kinds of
-modules:
+functionality that is managed by the service.
+
+Implemented modules:
+
+* HTTP server
+* TChannel server
+
+Planned modules:
 
 * Kafka ingester
-* TChannel server
-* HTTP server
-* Service introspection endpoints
-* Workflow integration
-* Queue task workers
+* Delayed jobs
 
-This prototype of the Service Framework implements two modules as a POC.
-
-#### Module Configuration
+### Module Configuration
 
 Modules are given named keys by the developer for the purpose of looking up
-their configuration.  This naming is arbitrary and only needs to be unique
+their configuration. This naming is arbitrary and only needs to be unique
 across modules and exists because it's possible that a service may have multiple
 modules of the same type, such as multiple Kafka ingesters.
-
-In any case, module configuration is done in a standarized layout as follows:
 
 ```yaml
 modules:
@@ -144,110 +134,34 @@ modules:
 ```
 
 In this example, a module named: "rpc" would lookup it's advertise name as
-`modules.rpc.advertise_name`.  The contents of each modules's configuration are
-module-specific.
+`modules.rpc.advertiseName`.
 
-#### HTTP Module
+## Metrics
 
-The HTTP module is built on top of [Gorilla Mux](https://github.com/gorilla/mux),
- meaning you can use the same path syntax, and handlers are of the standard
- `http.Handler` signature.
+UberFx exposes a simple, consistent way to track metrics and is built on top of
+[Tally](https://github.com/uber-go/tally).
 
-```go
-package main
+Internally, this uses a pluggable mechanism for reporting these values, so they
+can be reported to M3, logging, etc., at the service owner's discretion.
+By default the metrics are not reported (using a `tally.NoopScope`)
 
-import (
-  "io"
-  "net/http"
-
-  "go.uber.org/fx/modules/uhttp"
-  "go.uber.org/fx/service"
-)
-
-func main() {
-  svc, err := service.WithModules(
-    uhttp.New(registerHTTP),
-  ).Build()
-
-  if err != nil {
-    log.Fatal("Could not initialize service: ", err)
-  }
-
-  svc.Start(true)
-}
-
-func registerHTTP(service service.Host) []uhttp.RouteHandler {
-  handleHome := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-    io.WriteString(w, "Hello, world")
-  })
-
-  return []uhttp.RouteHandler{
-    uhttp.NewRouteHandler("/", handleHome)
-  }
-}
-```
-
-#### RPC Module
-
-The RPC module wraps [YARPC](https://github.com/yarpc/yarpc-go) and exposes
-creators for both JSON- and Thrift-encoded messages.
-
-This module works in a way that's pretty similar to existing RPC projects:
-
-* Create an IDL file and run the appropriate tools on it (e.g. **thriftrw**) to
-  generate the service and handler interfaces
-
-* Implement the service interface handlers as method receivers on a struct
-
-* Implement a top-level function, conforming to the
-  `rpc.CreateThriftServiceFunc` signature (`uberfx/modules/rpc/thrift.go` that
-  returns a `[]transport.Registrant` YARPC implementation from the handler:
-
-```go
-func NewMyServiceHandler(svc service.Host) ([]transport.Registrant, error) {
-  return myservice.New(&MyServiceHandler{}), nil
-}
-```
-
-* Pass that method into the module initialization:
-
-```go
-func main() {
-  svc, err := service.WithModules(
-    rpc.ThriftModule(
-      rpc.CreateThriftServiceFunc(NewMyServiceHandler),
-      modules.WithRoles("service"),
-    ),
-  ).Build()
-
-  if err != nil {
-    log.Fatal("Could not initialize service: ", err)
-  }
-
-  svc.Start(true)
-}
-```
-
-This will spin up the service.
-
-## Simple Configuration Interface
+## Configuration
 
 UberFx introduces a simplified configuration model that provides a consistent
-interface to configuration from pluggable configuration sources.  This interface
-defines methods for accessing values directly (as strings) or into strongly
+interface to configuration from pluggable configuration sources. This interface
+defines methods for accessing values directly or into strongly
 typed structs.
 
 The configuration system wraps a set of _providers_ that each know how to get
-values from an  underlying source:
+values from an underlying source:
 
 * Static YAML configuration
-* Overrides from environment variables, etc.
+* Environment variables
 
 So by stacking these providers, we can have a priority system for defining
-configuration that can be overridden by higher priority providers.  For example,
+configuration that can be overridden by higher priority providers. For example,
 the static YAML configuration would be the lowest priority and those values
-should be overridden by values specified as environment variables.  This system
-makes that easy to codify.
+should be overridden by values specified as environment variables.
 
 As an example, imagine a YAML config that looks like:
 
@@ -303,10 +217,9 @@ export CONFIG__stuff__server__port=3000
 
 Then running the above example will result in **Port is 3000**
 
-### Component Configuration
+## License
 
-Services can get involved in this by modifying the list of configuration
-providers to supply override values to the component.
+See [LICENSE.txt](LICENSE.txt)
 
 [doc]: https://godoc.org/go.uber.org/fx
 [doc-img]: https://godoc.org/go.uber.org/fx?status.svg
