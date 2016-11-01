@@ -152,7 +152,8 @@ func Load() ConfigurationProvider {
 		static = append(static, cp)
 	}
 	baseCfg := NewProviderGroup("global", static...)
-	var dynamic []ConfigurationProvider
+
+	var dynamic = make([]ConfigurationProvider, 0, 2)
 	for _, providerFunc := range _dynamicProviderFuncs {
 		cp, err := providerFunc(baseCfg)
 		if err != nil {
