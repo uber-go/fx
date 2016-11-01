@@ -10,7 +10,8 @@ import:
 - package: github.com/uber-go/atomic
   version: ^1.0.0
 - package: go.uber.org/yarpc
-  version: dev
+# TODO: Use stable branch for yarpc
+  version: 5cb0df4c43be85f526cfe84352983966a83db29d
 - package: go.uber.org/thriftrw
   version: dev
 - package: github.com/go-validator/validator
