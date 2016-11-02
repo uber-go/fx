@@ -21,6 +21,8 @@ testImport:
   version: 3fe2afc9e626f32e91aff6eddb78b14743446865
   subpackages:
   - cover
+- package: github.com/anmitsu/go-shlex
+- package: github.com/jessevdk/go-flags
 - package: github.com/mattn/goveralls
 # Necessary for goveralls
 - package: github.com/pborman/uuid

@@ -1,7 +1,9 @@
 .PHONY: deps
 deps:
-	$(ECHO_V)which thriftrw > /dev/null || go get -u go.uber.org/thriftrw
-	$(ECHO_V)which thriftrw-plugin-yarpc > /dev/null || go get -u go.uber.org/yarpc/encoding/thrift/thriftrw-plugin-yarpc
+	@echo "Installing thriftrw..."
+	$(ECHO_V)go install ../../vendor/go.uber.org/thriftrw
+	@echo "Installing thriftrw-plugin-yarpc..."
+	$(ECHO_V)go install ../../vendor/go.uber.org/yarpc/encoding/thrift/thriftrw-plugin-yarpc
 
 kv/types.go: kv.thrift deps
 	$(ECHO_V)go generate

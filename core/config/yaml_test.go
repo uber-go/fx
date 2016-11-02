@@ -23,6 +23,7 @@ package config
 import (
 	"bytes"
 	"io/ioutil"
+	"reflect"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -119,4 +120,29 @@ func TestYamlNode_Callbacks(t *testing.T) {
 	p := NewYAMLProviderFromFiles(false, nil)
 	assert.NoError(t, p.RegisterChangeCallback("test", nil))
 	assert.NoError(t, p.UnregisterChangeCallback("token"))
+}
+
+type emptystruct struct {
+	Slice []string
+}
+
+var emptyyaml = []byte(`
+emptystruct:
+  nonexist: true
+`)
+
+func TestMatchEmptyStruct(t *testing.T) {
+	provider := NewProviderGroup("global", NewYAMLProviderFromBytes([]byte(``)))
+	es := emptystruct{}
+	provider.GetValue("emptystruct").PopulateStruct(&es)
+	empty := reflect.New(reflect.TypeOf(es)).Elem().Interface()
+	assert.True(t, reflect.DeepEqual(empty, es))
+}
+
+func TestMatchPopulatedEmptyStruct(t *testing.T) {
+	provider := NewProviderGroup("global", NewYAMLProviderFromBytes(emptyyaml))
+	es := emptystruct{}
+	provider.GetValue("emptystruct").PopulateStruct(&es)
+	empty := reflect.New(reflect.TypeOf(es)).Elem().Interface()
+	assert.True(t, reflect.DeepEqual(empty, es))
 }
