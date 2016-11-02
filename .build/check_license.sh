@@ -12,7 +12,7 @@ run_uber_licence() {
     bin="./node_modules/uber-licence/bin/licence"
   fi
 
-  readonly local output=$("$bin" --file "*.go" | sed "s/^fix //")
+  readonly local output=$("$bin" --file "*.go" | sed "s/^fix //" | grep -v "\bdoc.go$")
   if [ -z "$output" ]; then
     exit 0
   fi
@@ -44,7 +44,7 @@ do
         echo "${file} is missing license header."
         (( ERROR_COUNT++ ))
     fi
-done < <(git ls-files "*\.go")
+done < <(git ls-files "*\.go" | grep -v "\bdoc.go$")
 set -e
 
 exit $ERROR_COUNT

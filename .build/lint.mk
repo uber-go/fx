@@ -35,4 +35,7 @@ lint:
 	$(ECHO_V)$(_THIS_DIR)/check_license.sh | tee -a $(LINT_LOG)
 	@echo "Checking for imports of log package"
 	$(ECHO_V)go list -f '{{ .ImportPath }}: {{ .Imports }}' $(shell glide nv) | grep -e "\blog\b" | $(FILTER_LOG) | tee -a $(LINT_LOG)
+	@echo "Ensuring generated doc.go are up to date"
+	$(ECHO_V)$(MAKE) gendoc
+	$(ECHO_V)[ -z "$(shell git status --porcelain | grep '\bdoc.go$$')" ] || echo "Commit updated doc.go changes" | tee -a $(LINT_LOG)
 	$(ECHO_V)[ ! -s $(LINT_LOG) ]
