@@ -62,6 +62,7 @@ foo:
           charlie:
             foxtrot: 1
 `))
+	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
 		provider.GetValue("foo.bar.baz.alpha.bravo.charlie.foxtrot")
 	}
@@ -74,6 +75,7 @@ func BenchmarkYAMLPopulateStruct(b *testing.B) {
 	}
 
 	p := providerOneFile()
+	b.ResetTimer()
 
 	for n := 0; n < b.N; n++ {
 		c := &creds{}
@@ -94,6 +96,7 @@ func BenchmarkYAMLPopulateStructNested(b *testing.B) {
 	}
 
 	p := providerOneFile()
+	b.ResetTimer()
 
 	for n := 0; n < b.N; n++ {
 		s := &api{}
@@ -114,6 +117,7 @@ func BenchmarkYAMLPopulateStructNestedMultipleFiles(b *testing.B) {
 	}
 
 	p := providerTwoFiles()
+	b.ResetTimer()
 
 	for n := 0; n < b.N; n++ {
 		s := &api{}
