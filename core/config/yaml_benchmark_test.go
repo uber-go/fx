@@ -75,8 +75,8 @@ func BenchmarkYAMLPopulateStruct(b *testing.B) {
 	}
 
 	p := providerOneFile()
-	b.ResetTimer()
 	c := &creds{}
+	b.ResetTimer()
 
 	for n := 0; n < b.N; n++ {
 		p.GetValue("api.credentials").PopulateStruct(c)
@@ -96,8 +96,8 @@ func BenchmarkYAMLPopulateStructNested(b *testing.B) {
 	}
 
 	p := providerOneFile()
-	b.ResetTimer()
 	s := &api{}
+	b.ResetTimer()
 
 	for n := 0; n < b.N; n++ {
 		p.GetValue("api").PopulateStruct(s)
@@ -117,8 +117,8 @@ func BenchmarkYAMLPopulateStructNestedMultipleFiles(b *testing.B) {
 	}
 
 	p := providerTwoFiles()
-	b.ResetTimer()
 	s := &api{}
+	b.ResetTimer()
 
 	for n := 0; n < b.N; n++ {
 		p.GetValue("api").PopulateStruct(s)
