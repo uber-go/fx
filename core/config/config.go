@@ -100,7 +100,7 @@ func GetEnvironment() string {
 func GetConfigurationPath() string {
 	configPath := os.Getenv(GetEnvironmentPrefix() + configdir)
 	if configPath == "" {
-		configPath = "config"
+		configPath = config
 	}
 	return configPath
 }
