@@ -219,7 +219,7 @@ Then running the above example will result in **Port is 3000**
 
 ## License
 
-See [LICENSE.txt](LICENSE.txt)
+[MIT](LICENSE.txt)
 
 [doc]: https://godoc.org/go.uber.org/fx
 [doc-img]: https://godoc.org/go.uber.org/fx?status.svg
