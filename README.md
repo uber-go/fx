@@ -312,5 +312,5 @@ providers to supply override values to the component.
 [doc-img]: https://godoc.org/go.uber.org/fx?status.svg
 [cov]: https://coveralls.io/github/uber-go/uberfx?branch=master
 [cov-img]: https://coveralls.io/repos/github/uber-go/uberfx/badge.svg?branch=master
-[ci]: https://travis-ci.org/uber-go/uberfx
-[ci-img]: https://travis-ci.org/uber-go/uberfx.svg?branch=master
+[ci]: https://travis-ci.org/uber-go/fx
+[ci-img]: https://travis-ci.org/uber-go/fx.svg?branch=master
