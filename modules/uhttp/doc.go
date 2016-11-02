@@ -1,5 +1,5 @@
 /*
-Package uhttp is the HTTP Module
+Package uhttp is the HTTP Module.
 
 The HTTP module is built on top of Gorilla Mux (https://github.com/gorilla/mux),
 but the details of that are abstracted away through uhttp.RouteHandler.

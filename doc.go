@@ -1,5 +1,5 @@
 /*
-Package fx is the UberFx Service Framework
+Package fx is the UberFx Service Framework.
 
 [][doc]
 [][cov]
