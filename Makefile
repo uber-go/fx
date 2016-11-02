@@ -67,7 +67,7 @@ coveralls: $(COV_REPORT)
 .PHONY: bench
 BENCH ?= .
 bench:
-	$(ECHO_V)$(foreach pkg,$(BENCH_PKGS),go test -run="^$$" $(BENCH_FLAGS) $(pkg);)
+	$(ECHO_V)$(foreach pkg,$(BENCH_PKGS),go test -bench=$(BENCH) -run="^$$" $(BENCH_FLAGS) $(pkg);)
 
 include $(SUPPORT_FILES)/lint.mk
 include $(SUPPORT_FILES)/licence.mk
