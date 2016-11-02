@@ -21,9 +21,8 @@
 package main
 
 import (
+	"context"
 	"sync"
-
-	"golang.org/x/net/context"
 
 	"go.uber.org/fx/examples/keyvalue/kv"
 	kvs "go.uber.org/fx/examples/keyvalue/kv/yarpc/keyvalueserver"

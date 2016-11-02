@@ -7,8 +7,6 @@ import:
   version: ^1.1.0
 - package: github.com/gorilla/context
   version: ^1.1.0
-- package: github.com/uber-go/atomic
-  version: ^1.0.0
 - package: go.uber.org/yarpc
   version: dev
 - package: go.uber.org/thriftrw
@@ -40,3 +38,7 @@ testImport:
   - assert
 - package: github.com/axw/gocov
 - package: github.com/go-playground/overalls
+
+# This is listed as a dependency because we need it for the thriftrw-yarpc
+# plugin which isn't imported in code.
+- package: go.uber.org/atomic
