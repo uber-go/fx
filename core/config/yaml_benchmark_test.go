@@ -116,6 +116,8 @@ func BenchmarkYAMLPopulateStructNestedMultipleFiles(b *testing.B) {
 		URL         string
 		Timeout     int
 		Credentials creds
+		Version     string
+		Contact     string
 	}
 
 	p := providerTwoFiles()
