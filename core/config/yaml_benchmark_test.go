@@ -36,6 +36,7 @@ func BenchmarkYAMLCreateMultiFile(b *testing.B) {
 
 func BenchmarkYAMLSimpleGetLevel1(b *testing.B) {
 	provider := NewYAMLProviderFromBytes([]byte(`foo: 1`))
+	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
 		provider.GetValue("foo")
 	}
@@ -47,6 +48,7 @@ foo:
   bar:
     baz: 1
 `))
+	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
 		provider.GetValue("foo.bar.baz")
 	}
