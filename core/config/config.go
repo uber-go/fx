@@ -66,7 +66,7 @@ func getConfigFiles() []string {
 
 func getResolver() FileResolver {
 	paths := []string{}
-	configDir := GetConfigurationPath()
+	configDir := Path()
 	if configDir != "" {
 		paths = []string{configDir}
 	}
@@ -96,8 +96,8 @@ func GetEnvironment() string {
 	return env
 }
 
-// GetConfigurationPath returns path to the yaml configurations
-func GetConfigurationPath() string {
+// Path returns path to the yaml configurations
+func Path() string {
 	configPath := os.Getenv(GetEnvironmentPrefix() + configdir)
 	if configPath == "" {
 		configPath = config
