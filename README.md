@@ -223,7 +223,7 @@ Then running the above example will result in **Port is 3000**
 
 [doc]: https://godoc.org/go.uber.org/fx
 [doc-img]: https://godoc.org/go.uber.org/fx?status.svg
-[cov]: https://coveralls.io/github/uber-go/uberfx?branch=master
-[cov-img]: https://coveralls.io/repos/github/uber-go/uberfx/badge.svg?branch=master
+[cov]: https://coveralls.io/github/uber-go/fx?branch=master
+[cov-img]: https://coveralls.io/repos/github/uber-go/fx/badge.svg?branch=master
 [ci]: https://travis-ci.org/uber-go/fx
 [ci-img]: https://travis-ci.org/uber-go/fx.svg?branch=master
