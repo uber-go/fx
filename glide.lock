@@ -1,5 +1,5 @@
-hash: 71f1d9b5c524519f1f095322420065386eb8959b7602dd0376382c866d37b011
-updated: 2016-11-01T17:03:32.355802091-07:00
+hash: d76793fe088698fcb22e752c2a45e4667e2dcd55103eaca4f3596c5fc4b279fd
+updated: 2016-11-02T15:24:43.678780785-07:00
 imports:
 - name: github.com/facebookgo/clock
   version: 600d898af40aa09a7a93ecb9265d87b0504b6f03
@@ -17,7 +17,7 @@ imports:
 - name: github.com/uber-go/atomic
   version: 0c9e689d64f004564b79d9a663634756df322902
 - name: github.com/uber-go/tally
-  version: f721642701d11ba88d5d600a31669fc68d730789
+  version: 13a01a2a0dd2ade06c307ccc0ca4e83196c88422
 - name: github.com/uber-go/zap
   version: f2929c57adb5be8fb03cad9a6912c509a5cb60af
 - name: github.com/uber/tchannel-go
@@ -27,8 +27,10 @@ imports:
   - tnet
   - trand
   - typed
+- name: go.uber.org/atomic
+  version: 9e99152552a6ce13fa3b2ce4a9c4fb117cca4506
 - name: go.uber.org/thriftrw
-  version: 6aa07c0009457cc6c7ff5497695f1581ad184350
+  version: a78f779abe5af7db8b856dcfd5726671dbc01613
   subpackages:
   - envelope
   - internal/envelope/exception
@@ -37,7 +39,7 @@ imports:
   - version
   - wire
 - name: go.uber.org/yarpc
-  version: 5cb0df4c43be85f526cfe84352983966a83db29d
+  version: 14570a0d02d637772f43db4687dab626ce59bb7a
   subpackages:
   - encoding/raw
   - encoding/thrift
@@ -55,21 +57,21 @@ imports:
   - transport/tchannel
   - transport/tchannel/internal
 - name: golang.org/x/net
-  version: 4bb47a1098b37d69980d96237e2ae4ff56bb5a95
+  version: 6c4ac8bdbf06a105c4baf3dcda28bd9b0fb15588
   subpackages:
   - context
   - context/ctxhttp
 - name: gopkg.in/yaml.v2
-  version: a5b47d31c556af34a302ce5d659e6fea44d90de0
+  version: a83829b6f1293c91addabc89d0571c246397bbf4
 testImports:
 - name: github.com/anmitsu/go-shlex
-  version: 53a3d8a8a362cca54fd6825caf2216aa6d8139fc
+  version: 648efa622239a2f6ff949fed78ee37b48d499ba4
 - name: github.com/axw/gocov
   version: 54b98cfcac0c63fb3f9bd8e7ad241b724d4e985b
   subpackages:
   - gocov
 - name: github.com/davecgh/go-spew
-  version: 346938d642f2ec3594ed81d874461961cd0faa76
+  version: 5215b55f46b2b919f50a1df0eaa5886afe4e3b3d
   subpackages:
   - spew
 - name: github.com/go-playground/overalls
@@ -79,7 +81,7 @@ testImports:
   subpackages:
   - golint
 - name: github.com/jessevdk/go-flags
-  version: a8cab0163d48558ffd77076c9c99388529766f63
+  version: 0648c820cd4e564706597268ae2d2c7d9e6900c6
 - name: github.com/kisielk/errcheck
   version: 9c1292e1c962175f76516859f4a88aabd86dc495
 - name: github.com/kisielk/gotool

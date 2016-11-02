@@ -16,6 +16,10 @@ import:
 - package: github.com/go-validator/validator
   version: v2
 
+# TODO(ai) thriftrw is in the middle of switching import paths here. Consolidate
+# this with github.com/uber-go/atomic once the switch is completed.
+- package: go.uber.org/atomic
+
 testImport:
 - package: golang.org/x/tools
   version: 3fe2afc9e626f32e91aff6eddb78b14743446865
