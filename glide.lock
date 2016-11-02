@@ -1,5 +1,5 @@
-hash: d76793fe088698fcb22e752c2a45e4667e2dcd55103eaca4f3596c5fc4b279fd
-updated: 2016-11-02T15:24:43.678780785-07:00
+hash: 17c11874095295474a88fbbf7cc80974f2522276834531771a08377a08117f5e
+updated: 2016-11-02T15:30:12.833451164-07:00
 imports:
 - name: github.com/facebookgo/clock
   version: 600d898af40aa09a7a93ecb9265d87b0504b6f03
@@ -27,8 +27,6 @@ imports:
   - tnet
   - trand
   - typed
-- name: go.uber.org/atomic
-  version: 9e99152552a6ce13fa3b2ce4a9c4fb117cca4506
 - name: go.uber.org/thriftrw
   version: a78f779abe5af7db8b856dcfd5726671dbc01613
   subpackages:
@@ -99,6 +97,8 @@ testImports:
   subpackages:
   - assert
   - require
+- name: go.uber.org/atomic
+  version: 9e99152552a6ce13fa3b2ce4a9c4fb117cca4506
 - name: golang.org/x/tools
   version: 3fe2afc9e626f32e91aff6eddb78b14743446865
   subpackages:
