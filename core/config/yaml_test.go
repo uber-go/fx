@@ -131,14 +131,18 @@ emptystruct:
   nonexist: true
 `)
 
-func TestPopulateMismatchedStruct(t *testing.T) {
-	provider := NewProviderGroup("global", NewYAMLProviderFromBytes(emptyyaml))
+func TestMatchEmptyStruct(t *testing.T) {
+	provider := NewProviderGroup("global", NewYAMLProviderFromBytes([]byte(``)))
 	es := emptystruct{}
+	provider.GetValue("emptystruct").PopulateStruct(&es)
 	empty := reflect.New(reflect.TypeOf(es)).Elem().Interface()
 	assert.True(t, reflect.DeepEqual(empty, es))
+}
 
-	provider = NewProviderGroup("global", NewYAMLProviderFromBytes([]byte(``)))
-	es = emptystruct{}
+func TestMatchPopulatedEmptyStruct(t *testing.T) {
+	provider := NewProviderGroup("global", NewYAMLProviderFromBytes(emptyyaml))
+	es := emptystruct{}
 	provider.GetValue("emptystruct").PopulateStruct(&es)
+	empty := reflect.New(reflect.TypeOf(es)).Elem().Interface()
 	assert.True(t, reflect.DeepEqual(empty, es))
 }
