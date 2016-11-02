@@ -1,0 +1,6 @@
+api:
+  url: http://secret-api.com
+  timout: 5000
+  credentials:
+    username: guess
+    password: who
