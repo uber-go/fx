@@ -72,6 +72,11 @@ bench:
 include $(SUPPORT_FILES)/lint.mk
 include $(SUPPORT_FILES)/licence.mk
 
+.PHONY: gendoc
+gendoc:
+	$(ECHO_V)which md-to-godoc >/dev/null || go get -u github.com/sectioneight/md-to-godoc
+	$(ECHO_V)find . -name README.md -not -path "./vendor/*" | xargs -I% md-to-godoc -input=%
+
 .PHONY: clean
 clean::
 	$(ECHO_V)rm -f $(COV_REPORT) $(COV_HTML) $(LINT_LOG)
