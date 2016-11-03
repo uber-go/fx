@@ -157,7 +157,7 @@ var pointerYaml = []byte(`
 pointerStruct:
   myTrueBool: true
   myFalseBool: false
-  myString: "hello"
+  myString: hello
 `)
 
 func TestPopulateStructWithPointers(t *testing.T) {
