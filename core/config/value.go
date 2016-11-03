@@ -395,6 +395,24 @@ func (cv ConfigurationValue) getValueStruct(key string, target interface{}) (int
 		case bucketPrimative:
 
 			var val interface{}
+
+			if fieldType.Kind() == reflect.Ptr {
+				if v1 := global.GetValue(childKey); v1.HasValue() {
+					val = v1.Value()
+					if val != nil {
+						// We cannot assign reflect.ValueOf(Val) to it as is to fieldValue.
+						// fieldValue is a pointer, which currently points to non address.
+						// We need to set a new reflect.Value with field type same as the field we are populating
+						// before assigning the value (val) parsed from yaml
+						if fieldValue.IsNil() {
+							fieldValue.Set(reflect.New(fieldType.Elem()))
+						}
+						fieldValue.Elem().Set(reflect.ValueOf(val))
+					}
+				}
+				continue
+			}
+
 			// For primative values, just get the value and set it into the field
 			//
 			if v2 := global.GetValue(childKey); v2.HasValue() {
