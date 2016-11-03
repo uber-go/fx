@@ -148,24 +148,32 @@ func TestMatchPopulatedEmptyStruct(t *testing.T) {
 }
 
 type pointerStruct struct {
-	MyBool *bool `yaml:"myBool"`
+	MyTrueBool  *bool   `yaml:"myTrueBool"`
+	MyFalseBool *bool   `yaml:"myFalseBool"`
+	MyString    *string `yaml:"myString"`
 }
 
-var myBoolyaml = []byte(`
+var pointerYaml = []byte(`
 pointerStruct:
-  myBool: true
+  myTrueBool: true
+  myFalseBool: false
+  myString: "hello"
 `)
 
-func TestBoolPointer(t *testing.T) {
-	provider := NewProviderGroup("global", NewYAMLProviderFromBytes(myBoolyaml))
+func TestPopulateStructWithPointers(t *testing.T) {
+	provider := NewProviderGroup("global", NewYAMLProviderFromBytes(pointerYaml))
 	ps := pointerStruct{}
 	provider.GetValue("pointerStruct").PopulateStruct(&ps)
-	assert.True(t, *ps.MyBool)
+	assert.True(t, *ps.MyTrueBool)
+	assert.False(t, *ps.MyFalseBool)
+	assert.Equal(t, "hello", *ps.MyString)
 }
 
-func TestNonExistingBoolPointer(t *testing.T) {
+func TestNonExistingPopulateStructWithPointers(t *testing.T) {
 	provider := NewProviderGroup("global", NewYAMLProviderFromBytes([]byte(``)))
 	ps := pointerStruct{}
 	provider.GetValue("pointerStruct").PopulateStruct(&ps)
-	assert.Nil(t, ps.MyBool)
+	assert.Nil(t, ps.MyTrueBool)
+	assert.Nil(t, ps.MyFalseBool)
+	assert.Nil(t, ps.MyString)
 }
