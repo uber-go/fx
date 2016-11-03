@@ -146,3 +146,34 @@ func TestMatchPopulatedEmptyStruct(t *testing.T) {
 	empty := reflect.New(reflect.TypeOf(es)).Elem().Interface()
 	assert.True(t, reflect.DeepEqual(empty, es))
 }
+
+type pointerStruct struct {
+	MyTrueBool  *bool   `yaml:"myTrueBool"`
+	MyFalseBool *bool   `yaml:"myFalseBool"`
+	MyString    *string `yaml:"myString"`
+}
+
+var pointerYaml = []byte(`
+pointerStruct:
+  myTrueBool: true
+  myFalseBool: false
+  myString: hello
+`)
+
+func TestPopulateStructWithPointers(t *testing.T) {
+	provider := NewProviderGroup("global", NewYAMLProviderFromBytes(pointerYaml))
+	ps := pointerStruct{}
+	provider.GetValue("pointerStruct").PopulateStruct(&ps)
+	assert.True(t, *ps.MyTrueBool)
+	assert.False(t, *ps.MyFalseBool)
+	assert.Equal(t, "hello", *ps.MyString)
+}
+
+func TestNonExistingPopulateStructWithPointers(t *testing.T) {
+	provider := NewProviderGroup("global", NewYAMLProviderFromBytes([]byte(``)))
+	ps := pointerStruct{}
+	provider.GetValue("pointerStruct").PopulateStruct(&ps)
+	assert.Nil(t, ps.MyTrueBool)
+	assert.Nil(t, ps.MyFalseBool)
+	assert.Nil(t, ps.MyString)
+}
