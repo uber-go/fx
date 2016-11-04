@@ -260,6 +260,7 @@ const (
 	bucketPrimative = 0
 	bucketArray     = 1
 	bucketObject    = 2
+	bucketMap       = 3
 )
 
 func getBucket(t reflect.Type) int {
@@ -275,9 +276,7 @@ func getBucket(t reflect.Type) int {
 	case reflect.Func:
 		fallthrough
 	case reflect.Map:
-		// TODO: Support bucketMap.  Needs a way to enumerate
-		// the child keys of a value.
-		return bucketInvalid
+		return bucketMap
 	case reflect.Array:
 		fallthrough
 	case reflect.Slice:
@@ -487,8 +486,26 @@ func (cv Value) getValueStruct(key string, target interface{}) (interface{}, boo
 			if destSlice.Len() > 0 {
 				fieldValue.Set(destSlice)
 			}
-		}
+		case bucketMap:
+			createMap := reflect.MakeMap(fieldType).Interface()
+			val := global.GetValue(childKey).Value()
 
+			if val != nil {
+				switch v := val.(type) {
+				case map[interface{}]interface{}:
+					destMap := createMap.(map[string]interface{})
+					for key, value := range v {
+						switch key := key.(type) {
+						case string:
+							destMap[key] = value
+						default:
+							panic(fmt.Sprintf("Can't parse the input yaml. Map key must be string: %v", key))
+						}
+					}
+					fieldValue.Set(reflect.ValueOf(destMap))
+				}
+			}
+		}
 	}
 
 	if found {
