@@ -9,16 +9,16 @@ In UberFx, we try very hard to make configuring UberFx convenient. Users can:
 * Get components working with minimal configuration
 * Override any field if the default doesn't make sense for their use case
 
-## ConfigurationProvider
+## Provider
 
-`ConfigurationProvider` is the interface for anything that can provide values.
+`Provider` is the interface for anything that can provide values.
 We provide a few reference implementations (environment and YAML), but you are
 free to register your own providers via `config.RegisterProviders()` and
 `config.RegisterDynamicProviders`.
 
 ### Static configuration providers
 
-Static configuration providers conform to the `ConfigurationProvider` interface
+Static configuration providers conform to the `Provider` interface
 and are bootstraped first. Use these for simple providers such as file-backed or
 environment-based configuration providers.
 
@@ -26,11 +26,11 @@ environment-based configuration providers.
 
 Dynamic configuration providers frequently need some bootstrap configuration to
 be useful, so UberFx treats them specially. Dynamic configuration providers
-conform to the `ConfigurationProvider` interface, but they're instantianted
-**after** the Static `ConfigurationProvider`s on order to read bootstarp values.
+conform to the `Provider` interface, but they're instantianted
+**after** the Static `Provider`s on order to read bootstarp values.
 
 For example, if you were to implement a ZooKeeper-backed
-`ConfigurationProvider`, you'd likely need to specify (via YAML or environment
+`Provider`, you'd likely need to specify (via YAML or environment
 variables) where your ZooKeeper nodes live.
 
 ## ConfigurationValue
