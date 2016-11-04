@@ -40,7 +40,7 @@ variables) where your ZooKeeper nodes live.
 (`interface{}`) since we don't necessarily know the structure of your
 configuration ahead of time.
 
-You can use a `ConfigurationValue for two main purposes:
+You can use a `ConfigurationValue` for two main purposes:
 
 * Get a single value out of configuration.
 
