@@ -42,8 +42,13 @@ pointerStruct:
   myString: hello
 `)
 
+type nestedStruct struct {
+	AdditionalData string `yaml:"additionalData"`
+}
+
 type mapStruct struct {
-	MyMap map[string]interface{} `yaml:"oneTrueMap"`
+	MyMap        map[string]interface{} `yaml:"oneTrueMap"`
+	NestedStruct nestedStruct           `yaml:"nestedStruct"`
 }
 
 var simpleMapYaml = []byte(`
@@ -52,6 +57,8 @@ mapStruct:
     one: 1
     two: 2
     three: 3
+  nestedStruct:
+    additionalData: nesteddata
 `)
 
 var complexMapYaml = []byte(`
@@ -65,4 +72,6 @@ mapStruct:
     - zeee
     policy:
       makeway: notanoption
+  nestedStruct:
+    additionalData: nesteddata
 `)

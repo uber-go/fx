@@ -186,6 +186,7 @@ func TestMapParsing(t *testing.T) {
 			}
 		}
 		assert.True(t, found)
+		assert.Equal(t, "nesteddata", ms.NestedStruct.AdditionalData)
 	})
 }
 
@@ -196,5 +197,6 @@ func TestMapParsingSimpleMap(t *testing.T) {
 		assert.Equal(t, 1, ms.MyMap["one"])
 		assert.Equal(t, 2, ms.MyMap["two"])
 		assert.Equal(t, 3, ms.MyMap["three"])
+		assert.Equal(t, "nesteddata", ms.NestedStruct.AdditionalData)
 	})
 }
