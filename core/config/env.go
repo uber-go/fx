@@ -62,12 +62,12 @@ func (p envConfigProvider) Name() string {
 	return "env"
 }
 
-func (p envConfigProvider) GetValue(key string) ConfigurationValue {
+func (p envConfigProvider) GetValue(key string) Value {
 	env := toEnvString(p.prefix, key)
 
-	var cv ConfigurationValue
+	var cv Value
 	value, found := p.provider.GetValue(env)
-	cv = NewConfigurationValue(p, key, value, found, String, nil)
+	cv = NewValue(p, key, value, found, String, nil)
 	return cv
 }
 

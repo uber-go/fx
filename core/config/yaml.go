@@ -116,13 +116,13 @@ func (y yamlConfigProvider) Name() string {
 }
 
 // GetValue returns a configuration value by name
-func (y yamlConfigProvider) GetValue(key string) ConfigurationValue {
+func (y yamlConfigProvider) GetValue(key string) Value {
 	node := y.getNode(key)
 
 	if node == nil {
-		return NewConfigurationValue(y, key, nil, false, Invalid, nil)
+		return NewValue(y, key, nil, false, Invalid, nil)
 	}
-	return NewConfigurationValue(y, key, node.value, true, GetValueType(node.value), nil)
+	return NewValue(y, key, node.value, true, GetValueType(node.value), nil)
 }
 
 // Scope returns a scoped configuration provider

@@ -31,7 +31,7 @@ type Provider interface {
 	// the Name of the provider (YAML, Env, etc)
 	Name() string
 	// GetValue pulls a config value
-	GetValue(key string) ConfigurationValue
+	GetValue(key string) Value
 	Scope(prefix string) Provider
 
 	// A RegisterChangeCallback provides callback registration for config providers.
@@ -57,7 +57,7 @@ func NewScopedProvider(prefix string, provider Provider) Provider {
 }
 
 // GetValue returns configuration value
-func (sp ScopedProvider) GetValue(key string) ConfigurationValue {
+func (sp ScopedProvider) GetValue(key string) Value {
 	if sp.prefix != "" {
 		key = fmt.Sprintf("%s.%s", sp.prefix, key)
 	}

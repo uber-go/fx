@@ -75,9 +75,9 @@ func (*mockDynamicProvider) Name() string {
 	return "mock"
 }
 
-func (s *mockDynamicProvider) GetValue(key string) ConfigurationValue {
+func (s *mockDynamicProvider) GetValue(key string) Value {
 	val, found := s.data[key]
-	return NewConfigurationValue(s, key, val, found, GetValueType(val), nil)
+	return NewValue(s, key, val, found, GetValueType(val), nil)
 }
 
 func (s *mockDynamicProvider) Scope(prefix string) Provider {
