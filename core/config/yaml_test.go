@@ -122,13 +122,13 @@ func TestYamlNode_Callbacks(t *testing.T) {
 	assert.NoError(t, p.UnregisterChangeCallback("token"))
 }
 
-func withYamlBytes(t *testing.T, yamlBytes []byte, f func(ConfigurationProvider)) {
+func withYamlBytes(t *testing.T, yamlBytes []byte, f func(Provider)) {
 	provider := NewProviderGroup("global", NewYAMLProviderFromBytes(yamlBytes))
 	f(provider)
 }
 
 func TestMatchEmptyStruct(t *testing.T) {
-	withYamlBytes(t, []byte(``), func(provider ConfigurationProvider) {
+	withYamlBytes(t, []byte(``), func(provider Provider) {
 		es := emptystruct{}
 		provider.GetValue("emptystruct").PopulateStruct(&es)
 		empty := reflect.New(reflect.TypeOf(es)).Elem().Interface()
@@ -137,7 +137,7 @@ func TestMatchEmptyStruct(t *testing.T) {
 }
 
 func TestMatchPopulatedEmptyStruct(t *testing.T) {
-	withYamlBytes(t, emptyyaml, func(provider ConfigurationProvider) {
+	withYamlBytes(t, emptyyaml, func(provider Provider) {
 		es := emptystruct{}
 		provider.GetValue("emptystruct").PopulateStruct(&es)
 		empty := reflect.New(reflect.TypeOf(es)).Elem().Interface()
@@ -146,7 +146,7 @@ func TestMatchPopulatedEmptyStruct(t *testing.T) {
 }
 
 func TestPopulateStructWithPointers(t *testing.T) {
-	withYamlBytes(t, pointerYaml, func(provider ConfigurationProvider) {
+	withYamlBytes(t, pointerYaml, func(provider Provider) {
 		ps := pointerStruct{}
 		provider.GetValue("pointerStruct").PopulateStruct(&ps)
 		assert.True(t, *ps.MyTrueBool)
@@ -156,7 +156,7 @@ func TestPopulateStructWithPointers(t *testing.T) {
 }
 
 func TestNonExistingPopulateStructWithPointers(t *testing.T) {
-	withYamlBytes(t, []byte(``), func(provider ConfigurationProvider) {
+	withYamlBytes(t, []byte(``), func(provider Provider) {
 		ps := pointerStruct{}
 		provider.GetValue("pointerStruct").PopulateStruct(&ps)
 		assert.Nil(t, ps.MyTrueBool)
@@ -166,7 +166,7 @@ func TestNonExistingPopulateStructWithPointers(t *testing.T) {
 }
 
 func TestMapParsing(t *testing.T) {
-	withYamlBytes(t, complexMapYaml, func(provider ConfigurationProvider) {
+	withYamlBytes(t, complexMapYaml, func(provider Provider) {
 		ms := mapStruct{}
 		provider.GetValue("mapStruct").PopulateStruct(&ms)
 
@@ -191,7 +191,7 @@ func TestMapParsing(t *testing.T) {
 }
 
 func TestMapParsingSimpleMap(t *testing.T) {
-	withYamlBytes(t, simpleMapYaml, func(provider ConfigurationProvider) {
+	withYamlBytes(t, simpleMapYaml, func(provider Provider) {
 		ms := mapStruct{}
 		provider.GetValue("mapStruct").PopulateStruct(&ms)
 		assert.Equal(t, 1, ms.MyMap["one"])
