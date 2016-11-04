@@ -75,14 +75,14 @@ func getResolver() FileResolver {
 
 // YamlProvider returns function to create Yaml based configuration provider
 func YamlProvider() ProviderFunc {
-	return func() (ConfigurationProvider, error) {
+	return func() (Provider, error) {
 		return NewYAMLProviderFromFiles(false, getResolver(), getConfigFiles()...), nil
 	}
 }
 
 // EnvProvider returns function to create environment based config provider
 func EnvProvider() ProviderFunc {
-	return func() (ConfigurationProvider, error) {
+	return func() (Provider, error) {
 		return NewEnvProvider(defaultEnvPrefix, nil), nil
 	}
 }
@@ -116,10 +116,10 @@ func GetEnvironmentPrefix() string {
 }
 
 // ProviderFunc is used to create config providers on configuration initialization
-type ProviderFunc func() (ConfigurationProvider, error)
+type ProviderFunc func() (Provider, error)
 
 // DynamicProviderFunc is used to create config providers on configuration initialization
-type DynamicProviderFunc func(config ConfigurationProvider) (ConfigurationProvider, error)
+type DynamicProviderFunc func(config Provider) (Provider, error)
 
 // RegisterProviders registers configuration providers for the global config
 func RegisterProviders(providerFuncs ...ProviderFunc) {
@@ -129,7 +129,7 @@ func RegisterProviders(providerFuncs ...ProviderFunc) {
 }
 
 // RegisterDynamicProviders registers dynamic config providers for the global config
-// Dynamic provider initialization needs access to ConfigurationProvider for accessing necessary
+// Dynamic provider initialization needs access to Provider for accessing necessary
 // information for bootstrap, such as port number,keys, endpoints etc.
 func RegisterDynamicProviders(dynamicProviderFuncs ...DynamicProviderFunc) {
 	_setupMux.Lock()
@@ -150,9 +150,9 @@ func UnregisterProviders() {
 	_dynamicProviderFuncs = nil
 }
 
-// Load creates a ConfigurationProvider for use in a service
-func Load() ConfigurationProvider {
-	var static []ConfigurationProvider
+// Load creates a Provider for use in a service
+func Load() Provider {
+	var static []Provider
 	for _, providerFunc := range _staticProviderFuncs {
 		cp, err := providerFunc()
 		if err != nil {
@@ -162,7 +162,7 @@ func Load() ConfigurationProvider {
 	}
 	baseCfg := NewProviderGroup("global", static...)
 
-	var dynamic = make([]ConfigurationProvider, 0, 2)
+	var dynamic = make([]Provider, 0, 2)
 	for _, providerFunc := range _dynamicProviderFuncs {
 		cp, err := providerFunc(baseCfg)
 		if err != nil {

@@ -22,30 +22,30 @@ package config
 
 type providerGroup struct {
 	name      string
-	providers []ConfigurationProvider
+	providers []Provider
 }
 
 // NewProviderGroup creates a configuration provider from a group of backends
-func NewProviderGroup(name string, providers ...ConfigurationProvider) ConfigurationProvider {
+func NewProviderGroup(name string, providers ...Provider) Provider {
 	group := providerGroup{
 		name: name,
 	}
 	for _, provider := range providers {
-		group.providers = append([]ConfigurationProvider{provider}, group.providers...)
+		group.providers = append([]Provider{provider}, group.providers...)
 	}
 	return group
 }
 
-// WithProvider updates the current ConfigurationProvider
-func (p providerGroup) WithProvider(provider ConfigurationProvider) ConfigurationProvider {
+// WithProvider updates the current Provider
+func (p providerGroup) WithProvider(provider Provider) Provider {
 	return providerGroup{
 		name:      p.name,
-		providers: append([]ConfigurationProvider{provider}, p.providers...),
+		providers: append([]Provider{provider}, p.providers...),
 	}
 }
 
-func (p providerGroup) GetValue(key string) ConfigurationValue {
-	cv := NewConfigurationValue(p, key, nil, false, GetValueType(nil), nil)
+func (p providerGroup) GetValue(key string) Value {
+	cv := NewValue(p, key, nil, false, GetValueType(nil), nil)
 
 	// loop through the providers and return the value defined by the highest priority provider
 	for _, provider := range p.providers {
@@ -83,6 +83,6 @@ func (p providerGroup) UnregisterChangeCallback(token string) error {
 	return nil
 }
 
-func (p providerGroup) Scope(prefix string) ConfigurationProvider {
+func (p providerGroup) Scope(prefix string) Provider {
 	return NewScopedProvider(prefix, p)
 }

@@ -31,13 +31,13 @@ type staticProvider struct {
 }
 
 type scopedStaticProvider struct {
-	ConfigurationProvider
+	Provider
 
 	prefix string
 }
 
 // NewStaticProvider should only be used in tests to isolate config from your environment
-func NewStaticProvider(data map[string]interface{}) ConfigurationProvider {
+func NewStaticProvider(data map[string]interface{}) Provider {
 	return &staticProvider{
 		data: data,
 	}
@@ -45,7 +45,7 @@ func NewStaticProvider(data map[string]interface{}) ConfigurationProvider {
 
 // StaticProvider returns function to create StaticProvider during configuration initialization
 func StaticProvider(data map[string]interface{}) ProviderFunc {
-	return func() (ConfigurationProvider, error) {
+	return func() (Provider, error) {
 		return NewStaticProvider(data), nil
 	}
 }
@@ -54,20 +54,20 @@ func (*staticProvider) Name() string {
 	return "static"
 }
 
-func (s *staticProvider) GetValue(key string) ConfigurationValue {
+func (s *staticProvider) GetValue(key string) Value {
 	s.RLock()
 	defer s.RUnlock()
 
 	if key == "" {
 		// NOTE: This returns access to the underlying map, which does not guarantee
 		// thread-safety. This is only used in the test suite.
-		return NewConfigurationValue(s, key, s.data, true, GetValueType(s.data), nil)
+		return NewValue(s, key, s.data, true, GetValueType(s.data), nil)
 	}
 	val, found := s.data[key]
-	return NewConfigurationValue(s, key, val, found, GetValueType(val), nil)
+	return NewValue(s, key, val, found, GetValueType(val), nil)
 }
 
-func (s *staticProvider) Scope(prefix string) ConfigurationProvider {
+func (s *staticProvider) Scope(prefix string) Provider {
 	return newScopedStaticProvider(s, prefix)
 }
 
@@ -81,19 +81,19 @@ func (s *staticProvider) UnregisterChangeCallback(token string) error {
 	return nil
 }
 
-func newScopedStaticProvider(s *staticProvider, prefix string) ConfigurationProvider {
+func newScopedStaticProvider(s *staticProvider, prefix string) Provider {
 	return &scopedStaticProvider{
-		ConfigurationProvider: s,
-		prefix:                prefix,
+		Provider: s,
+		prefix:   prefix,
 	}
 }
 
-func (s *scopedStaticProvider) GetValue(key string) ConfigurationValue {
+func (s *scopedStaticProvider) GetValue(key string) Value {
 	if s.prefix != "" {
 		key = fmt.Sprintf("%s.%s", s.prefix, key)
 	}
-	return s.ConfigurationProvider.GetValue(key)
+	return s.Provider.GetValue(key)
 }
 
-var _ ConfigurationProvider = &staticProvider{}
-var _ ConfigurationProvider = &scopedStaticProvider{}
+var _ Provider = &staticProvider{}
+var _ Provider = &scopedStaticProvider{}

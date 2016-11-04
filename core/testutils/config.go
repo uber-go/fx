@@ -26,8 +26,8 @@ import (
 	"go.uber.org/fx/core/config"
 )
 
-// StaticAppData creates a ConfigurationProvider for a valid appID/owner
-func StaticAppData(applicationID *string) config.ConfigurationProvider {
+// StaticAppData creates a Provider for a valid appID/owner
+func StaticAppData(applicationID *string) config.Provider {
 	data := makeValidData(applicationID)
 	return config.NewStaticProvider(data)
 }

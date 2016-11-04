@@ -35,9 +35,9 @@ type yamlConfigProvider struct {
 	roots []*yamlNode
 }
 
-var _ ConfigurationProvider = &yamlConfigProvider{}
+var _ Provider = &yamlConfigProvider{}
 
-func newYAMLProviderCore(files ...io.ReadCloser) ConfigurationProvider {
+func newYAMLProviderCore(files ...io.ReadCloser) Provider {
 	roots := make([]*yamlNode, len(files))
 
 	for n, v := range files {
@@ -55,7 +55,7 @@ func newYAMLProviderCore(files ...io.ReadCloser) ConfigurationProvider {
 
 // NewYAMLProviderFromFiles creates a configration provider from a set of YAML file
 // names
-func NewYAMLProviderFromFiles(mustExist bool, resolver FileResolver, files ...string) ConfigurationProvider {
+func NewYAMLProviderFromFiles(mustExist bool, resolver FileResolver, files ...string) Provider {
 
 	if resolver == nil {
 		resolver = NewRelativeResolver()
@@ -76,13 +76,13 @@ func NewYAMLProviderFromFiles(mustExist bool, resolver FileResolver, files ...st
 
 // NewYamlProviderFromReader creates a configuration provider from an
 // io.ReadCloser
-func NewYamlProviderFromReader(reader io.ReadCloser) ConfigurationProvider {
+func NewYamlProviderFromReader(reader io.ReadCloser) Provider {
 	return newYAMLProviderCore(reader)
 }
 
 // NewYAMLProviderFromBytes creates a config provider from a byte-backed YAML
 // blob.
-func NewYAMLProviderFromBytes(yaml []byte) ConfigurationProvider {
+func NewYAMLProviderFromBytes(yaml []byte) Provider {
 	reader := bytes.NewReader(yaml)
 	node, err := newyamlNode(ioutil.NopCloser(reader))
 	if err != nil {
@@ -116,17 +116,17 @@ func (y yamlConfigProvider) Name() string {
 }
 
 // GetValue returns a configuration value by name
-func (y yamlConfigProvider) GetValue(key string) ConfigurationValue {
+func (y yamlConfigProvider) GetValue(key string) Value {
 	node := y.getNode(key)
 
 	if node == nil {
-		return NewConfigurationValue(y, key, nil, false, Invalid, nil)
+		return NewValue(y, key, nil, false, Invalid, nil)
 	}
-	return NewConfigurationValue(y, key, node.value, true, GetValueType(node.value), nil)
+	return NewValue(y, key, node.value, true, GetValueType(node.value), nil)
 }
 
 // Scope returns a scoped configuration provider
-func (y yamlConfigProvider) Scope(prefix string) ConfigurationProvider {
+func (y yamlConfigProvider) Scope(prefix string) Provider {
 	return NewScopedProvider(prefix, y)
 }
 

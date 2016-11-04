@@ -77,10 +77,10 @@ func GetValueType(value interface{}) ValueType {
 	return Invalid
 }
 
-// A ConfigurationValue holds the value of a configuration
-type ConfigurationValue struct {
-	root         ConfigurationProvider
-	provider     ConfigurationProvider
+// A Value holds the value of a configuration
+type Value struct {
+	root         Provider
+	provider     Provider
 	key          string
 	value        interface{}
 	found        bool
@@ -89,17 +89,17 @@ type ConfigurationValue struct {
 	Type         ValueType
 }
 
-// NewConfigurationValue creates a configuration value from a provider and a set
+// NewValue creates a configuration value from a provider and a set
 // of parameters describing the key
-func NewConfigurationValue(
-	provider ConfigurationProvider,
+func NewValue(
+	provider Provider,
 	key string,
 	value interface{},
 	found bool,
 	t ValueType,
 	timestamp *time.Time,
-) ConfigurationValue {
-	cv := ConfigurationValue{
+) Value {
+	cv := Value{
 		provider:     provider,
 		key:          key,
 		value:        value,
@@ -117,7 +117,7 @@ func NewConfigurationValue(
 }
 
 // Source returns a configuration provider's name
-func (cv ConfigurationValue) Source() string {
+func (cv Value) Source() string {
 	if cv.provider == nil {
 		return ""
 	}
@@ -125,7 +125,7 @@ func (cv ConfigurationValue) Source() string {
 }
 
 // LastUpdated returns when the configuration value was last updated
-func (cv ConfigurationValue) LastUpdated() time.Time {
+func (cv Value) LastUpdated() time.Time {
 	if !cv.HasValue() {
 		return time.Time{} // zero value if never updated?
 	}
@@ -134,7 +134,7 @@ func (cv ConfigurationValue) LastUpdated() time.Time {
 
 // WithDefault creates a shallow copy of the current configuration value and
 // sets its default.
-func (cv ConfigurationValue) WithDefault(value interface{}) ConfigurationValue {
+func (cv Value) WithDefault(value interface{}) Value {
 	// TODO: create a "DefaultProvider" and chain that into the bottom of the current provider:
 	//
 	// provider = NewProviderGroup(defaultProvider, cv.provider)
@@ -145,19 +145,19 @@ func (cv ConfigurationValue) WithDefault(value interface{}) ConfigurationValue {
 }
 
 // TODO: Support enumerating child keys
-// 1. Add a method on ConfigurationProvider to get the child keys for a given prefix
+// 1. Add a method on Provider to get the child keys for a given prefix
 // 2. Implement in the various providers
 // 3. Merge the list here
 // 4. Return the set of keys.
 
 // ChildKeys returns the child keys
 // TODO(ai) what is this and do we need to keep it?
-func (cv ConfigurationValue) ChildKeys() []string {
+func (cv Value) ChildKeys() []string {
 	return nil
 }
 
 // TryAsString attempts to return the configuration value as a string
-func (cv ConfigurationValue) TryAsString() (string, bool) {
+func (cv Value) TryAsString() (string, bool) {
 	v := cv.Value()
 	if val, err := convertValue(v, reflect.TypeOf("")); v != nil && err == nil {
 		return val.(string), true
@@ -166,7 +166,7 @@ func (cv ConfigurationValue) TryAsString() (string, bool) {
 }
 
 // TryAsInt attempts to return the confniguration value as an int
-func (cv ConfigurationValue) TryAsInt() (int, bool) {
+func (cv Value) TryAsInt() (int, bool) {
 	v := cv.Value()
 	if val, err := convertValue(v, reflect.TypeOf(0)); v != nil && err == nil {
 		return val.(int), true
@@ -176,7 +176,7 @@ func (cv ConfigurationValue) TryAsInt() (int, bool) {
 }
 
 // TryAsBool attempts to return the configuration value as a bool
-func (cv ConfigurationValue) TryAsBool() (bool, bool) {
+func (cv Value) TryAsBool() (bool, bool) {
 	v := cv.Value()
 	if val, err := convertValue(v, reflect.TypeOf(true)); v != nil && err == nil {
 		return val.(bool), true
@@ -186,7 +186,7 @@ func (cv ConfigurationValue) TryAsBool() (bool, bool) {
 }
 
 // TryAsFloat attempts to return the configuration value as a float
-func (cv ConfigurationValue) TryAsFloat() (float64, bool) {
+func (cv Value) TryAsFloat() (float64, bool) {
 	f := float64(0)
 	v := cv.Value()
 	if val, err := convertValue(v, reflect.TypeOf(f)); v != nil && err == nil {
@@ -197,7 +197,7 @@ func (cv ConfigurationValue) TryAsFloat() (float64, bool) {
 
 // AsString returns the configuration value as a string, or panics if not
 // string-able
-func (cv ConfigurationValue) AsString() string {
+func (cv Value) AsString() string {
 	s, ok := cv.TryAsString()
 	if !ok {
 		panic(fmt.Sprintf("Can't convert to string: %v", cv.Value()))
@@ -207,7 +207,7 @@ func (cv ConfigurationValue) AsString() string {
 
 // AsInt returns the configuration value as an int, or panics if not
 // int-able
-func (cv ConfigurationValue) AsInt() int {
+func (cv Value) AsInt() int {
 	s, ok := cv.TryAsInt()
 	if !ok {
 		panic(fmt.Sprintf("Can't convert to int: %T %v", cv.Value(), cv.Value()))
@@ -217,7 +217,7 @@ func (cv ConfigurationValue) AsInt() int {
 
 // AsFloat returns the configuration value as an float64, or panics if not
 // float64-able
-func (cv ConfigurationValue) AsFloat() float64 {
+func (cv Value) AsFloat() float64 {
 	s, ok := cv.TryAsFloat()
 	if !ok {
 		panic(fmt.Sprintf("Can't convert to float64: %v", cv.Value()))
@@ -227,7 +227,7 @@ func (cv ConfigurationValue) AsFloat() float64 {
 
 // AsBool returns the configuration value as an bool, or panics if not
 // bool-able
-func (cv ConfigurationValue) AsBool() bool {
+func (cv Value) AsBool() bool {
 	s, ok := cv.TryAsBool()
 	if !ok {
 		panic(fmt.Sprintf("Can't convert to bool: %v", cv.Value()))
@@ -236,19 +236,19 @@ func (cv ConfigurationValue) AsBool() bool {
 }
 
 // IsDefault returns whether the return value is the default.
-func (cv ConfigurationValue) IsDefault() bool {
+func (cv Value) IsDefault() bool {
 	// TODO(ai) what should the semantics be if the provider has a value that's
 	// the same as the default value?
 	return !cv.found && cv.defaultValue != nil
 }
 
 // HasValue returns whether the configuration has a value that can be used
-func (cv ConfigurationValue) HasValue() bool {
+func (cv Value) HasValue() bool {
 	return cv.found || cv.IsDefault()
 }
 
 // Value returns the underlying configuration's value
-func (cv ConfigurationValue) Value() interface{} {
+func (cv Value) Value() interface{} {
 	if cv.found {
 		return cv.value
 	}
@@ -337,7 +337,7 @@ func convertValue(value interface{}, targetType reflect.Type) (interface{}, erro
 }
 
 // PopulateStruct fills in a struct from configuration
-func (cv ConfigurationValue) PopulateStruct(target interface{}) bool {
+func (cv Value) PopulateStruct(target interface{}) bool {
 	if !cv.HasValue() {
 		return false
 	}
@@ -347,14 +347,14 @@ func (cv ConfigurationValue) PopulateStruct(target interface{}) bool {
 	return found
 }
 
-func (cv ConfigurationValue) getGlobalProvider() ConfigurationProvider {
+func (cv Value) getGlobalProvider() Provider {
 	if cv.root == nil {
 		return cv.provider
 	}
 	return cv.root
 }
 
-func (cv ConfigurationValue) getValueStruct(key string, target interface{}) (interface{}, bool, error) {
+func (cv Value) getValueStruct(key string, target interface{}) (interface{}, bool, error) {
 	// walk through the struct and start asking the providers for values at each key.
 	//
 	// - for individual values, we terminate

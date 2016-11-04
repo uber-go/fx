@@ -13,16 +13,16 @@ In UberFx, we try very hard to make configuring UberFx convenient. Users can:
 
 
 
-ConfigurationProvider
+Provider
 
-ConfigurationProvider is the interface for anything that can provide values.
+Provider is the interface for anything that can provide values.
 We provide a few reference implementations (environment and YAML), but you are
 free to register your own providers via config.RegisterProviders() and
 config.RegisterDynamicProviders.
 
 Static configuration providers
 
-Static configuration providers conform to the ConfigurationProvider interface
+Static configuration providers conform to the Provider interface
 and are bootstraped first. Use these for simple providers such as file-backed or
 environment-based configuration providers.
 
@@ -30,21 +30,21 @@ Dynamic Configuration Providers
 
 Dynamic configuration providers frequently need some bootstrap configuration to
 be useful, so UberFx treats them specially. Dynamic configuration providers
-conform to the ConfigurationProvider interface, but they're instantianted
-**after** the Static ConfigurationProviders on order to read bootstarp values.
+conform to the Provider interface, but they're instantianted
+**after** the Static Providers on order to read bootstarp values.
 
 For example, if you were to implement a ZooKeeper-backed
-ConfigurationProvider, you'd likely need to specify (via YAML or environment
+Provider, you'd likely need to specify (via YAML or environment
 variables) where your ZooKeeper nodes live.
 
-ConfigurationValue
+Value
 
-ConfigurationValue is the return type of every configuration providers'
+Value is the return type of every configuration providers'
 GetValue(key string) method. Under the hood, we use the empty interface
 (interface{}) since we don't necessarily know the structure of your
 configuration ahead of time.
 
-You can use a ConfigurationValue for two main purposes:
+You can use a Value for two main purposes:
 
 • Get a single value out of configuration.
 

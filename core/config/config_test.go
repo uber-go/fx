@@ -267,7 +267,7 @@ func TestRegisteredProvidersInitialization(t *testing.T) {
 	RegisterProviders(StaticProvider(map[string]interface{}{
 		"hello": "world",
 	}))
-	RegisterDynamicProviders(func(dynamic ConfigurationProvider) (ConfigurationProvider, error) {
+	RegisterDynamicProviders(func(dynamic Provider) (Provider, error) {
 		return NewStaticProvider(map[string]interface{}{
 			"dynamic": "provider",
 		}), nil
@@ -282,7 +282,7 @@ func TestRegisteredProvidersInitialization(t *testing.T) {
 }
 
 func TestNilProvider(t *testing.T) {
-	RegisterProviders(func() (ConfigurationProvider, error) {
+	RegisterProviders(func() (Provider, error) {
 		return nil, fmt.Errorf("error creating Provider")
 	})
 	assert.Panics(t, func() { Load() }, "Can't initialize with nil provider")
@@ -293,7 +293,7 @@ func TestNilProvider(t *testing.T) {
 	}()
 
 	UnregisterProviders()
-	RegisterProviders(func() (ConfigurationProvider, error) {
+	RegisterProviders(func() (Provider, error) {
 		return nil, nil
 	})
 	// don't panic on Load

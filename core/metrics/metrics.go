@@ -47,7 +47,7 @@ var (
 // service.Host conforms to this, but can't be used directly since it causes an import cycle
 type ScopeInit interface {
 	Name() string
-	Config() config.ConfigurationProvider
+	Config() config.Provider
 }
 
 // ScopeFunc is used during service init time to register the reporter
