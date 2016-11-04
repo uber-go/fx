@@ -129,11 +129,11 @@ func BenchmarkYAMLPopulateStructNestedMultipleFiles(b *testing.B) {
 	}
 }
 
-func providerOneFile() ConfigurationProvider {
+func providerOneFile() Provider {
 	return NewYAMLProviderFromFiles(false, NewRelativeResolver("./testdata"), "benchmark1.yaml")
 }
 
-func providerTwoFiles() ConfigurationProvider {
+func providerTwoFiles() Provider {
 	return NewYAMLProviderFromFiles(
 		false,
 		NewRelativeResolver("./testdata"),

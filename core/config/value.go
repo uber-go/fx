@@ -79,8 +79,8 @@ func GetValueType(value interface{}) ValueType {
 
 // A ConfigurationValue holds the value of a configuration
 type ConfigurationValue struct {
-	root         ConfigurationProvider
-	provider     ConfigurationProvider
+	root         Provider
+	provider     Provider
 	key          string
 	value        interface{}
 	found        bool
@@ -92,7 +92,7 @@ type ConfigurationValue struct {
 // NewConfigurationValue creates a configuration value from a provider and a set
 // of parameters describing the key
 func NewConfigurationValue(
-	provider ConfigurationProvider,
+	provider Provider,
 	key string,
 	value interface{},
 	found bool,
@@ -145,7 +145,7 @@ func (cv ConfigurationValue) WithDefault(value interface{}) ConfigurationValue {
 }
 
 // TODO: Support enumerating child keys
-// 1. Add a method on ConfigurationProvider to get the child keys for a given prefix
+// 1. Add a method on Provider to get the child keys for a given prefix
 // 2. Implement in the various providers
 // 3. Merge the list here
 // 4. Return the set of keys.
@@ -347,7 +347,7 @@ func (cv ConfigurationValue) PopulateStruct(target interface{}) bool {
 	return found
 }
 
-func (cv ConfigurationValue) getGlobalProvider() ConfigurationProvider {
+func (cv ConfigurationValue) getGlobalProvider() Provider {
 	if cv.root == nil {
 		return cv.provider
 	}

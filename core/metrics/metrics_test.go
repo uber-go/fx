@@ -80,14 +80,14 @@ func getScope() tally.RootScope {
 
 type scopeIniter struct {
 	name   string
-	config config.ConfigurationProvider
+	config config.Provider
 }
 
 func (i scopeIniter) Name() string {
 	return i.name
 }
 
-func (i scopeIniter) Config() config.ConfigurationProvider {
+func (i scopeIniter) Config() config.Provider {
 	return i.config
 }
 
@@ -105,6 +105,6 @@ func cleanup() {
 	_frozen = false
 }
 
-func configData(data map[string]interface{}) config.ConfigurationProvider {
+func configData(data map[string]interface{}) config.Provider {
 	return config.NewStaticProvider(data)
 }

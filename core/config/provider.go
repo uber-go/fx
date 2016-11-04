@@ -25,14 +25,14 @@ import "fmt"
 // ConfigurationChangeCallback is called for updates of configuration data
 type ConfigurationChangeCallback func(key string, provider string, configdata interface{})
 
-// A ConfigurationProvider provides a unified interface to accessing
+// A Provider provides a unified interface to accessing
 // configuration systems.
-type ConfigurationProvider interface {
+type Provider interface {
 	// the Name of the provider (YAML, Env, etc)
 	Name() string
 	// GetValue pulls a config value
 	GetValue(key string) ConfigurationValue
-	Scope(prefix string) ConfigurationProvider
+	Scope(prefix string) Provider
 
 	// A RegisterChangeCallback provides callback registration for config providers.
 	// These callbacks are noop if a dynamic provider is not configured for the service.
@@ -46,13 +46,13 @@ func keyNotFound(key string) error {
 
 // ScopedProvider defines recursive interface of providers based on the prefix
 type ScopedProvider struct {
-	ConfigurationProvider
+	Provider
 
 	prefix string
 }
 
 // NewScopedProvider creates a child provider given a prefix
-func NewScopedProvider(prefix string, provider ConfigurationProvider) ConfigurationProvider {
+func NewScopedProvider(prefix string, provider Provider) Provider {
 	return &ScopedProvider{provider, prefix}
 }
 
@@ -61,10 +61,10 @@ func (sp ScopedProvider) GetValue(key string) ConfigurationValue {
 	if sp.prefix != "" {
 		key = fmt.Sprintf("%s.%s", sp.prefix, key)
 	}
-	return sp.ConfigurationProvider.GetValue(key)
+	return sp.Provider.GetValue(key)
 }
 
 // Scope returns new scoped provider, given a prefix
-func (sp ScopedProvider) Scope(prefix string) ConfigurationProvider {
+func (sp ScopedProvider) Scope(prefix string) Provider {
 	return NewScopedProvider(prefix, sp)
 }

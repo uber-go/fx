@@ -363,7 +363,7 @@ func (s *host) transitionState(to State) {
 
 const instanceConfigName = "ServiceConfig"
 
-func loadInstanceConfig(cfg config.ConfigurationProvider, key string, instance interface{}) bool {
+func loadInstanceConfig(cfg config.Provider, key string, instance interface{}) bool {
 	fieldName := instanceConfigName
 	if field, found := util.FindField(instance, &fieldName, nil); found {
 

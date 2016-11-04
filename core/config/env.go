@@ -38,7 +38,7 @@ type EnvironmentValueProvider interface {
 	GetValue(key string) (string, bool)
 }
 
-var _ ConfigurationProvider = &envConfigProvider{}
+var _ Provider = &envConfigProvider{}
 
 // foo.bar -> [prefix]__foo__bar
 func toEnvString(prefix string, key string) string {
@@ -46,7 +46,7 @@ func toEnvString(prefix string, key string) string {
 }
 
 // NewEnvProvider creates a configuration provider backed by an environment
-func NewEnvProvider(prefix string, provider EnvironmentValueProvider) ConfigurationProvider {
+func NewEnvProvider(prefix string, provider EnvironmentValueProvider) Provider {
 	e := envConfigProvider{
 		prefix:   prefix,
 		provider: provider,
@@ -71,7 +71,7 @@ func (p envConfigProvider) GetValue(key string) ConfigurationValue {
 	return cv
 }
 
-func (p envConfigProvider) Scope(prefix string) ConfigurationProvider {
+func (p envConfigProvider) Scope(prefix string) Provider {
 	return NewScopedProvider(prefix, p)
 }
 

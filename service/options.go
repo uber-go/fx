@@ -31,7 +31,7 @@ import (
 type Option func(Host) error
 
 // WithConfiguration adds configuration to a service host
-func WithConfiguration(config config.ConfigurationProvider) Option {
+func WithConfiguration(config config.Provider) Option {
 	return func(svc Host) error {
 		// TODO(ai) verify type assertion is correct
 		svc2 := svc.(*host)
