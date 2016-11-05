@@ -92,9 +92,11 @@ func newYarpcModule(
 		}
 	}
 
-	if module.Host().Config().GetValue(fmt.Sprintf("modules.%s", module.Name())).PopulateStruct(cfg) {
+	if err := module.Host().Config().GetValue(fmt.Sprintf("modules.%s", module.Name())).PopulateStruct(cfg); err == nil {
 		// found values, update module
 		module.config = *cfg
+	} else {
+		module.log.Error("Unable to load module config", "error", err)
 	}
 
 	module.interceptors = interceptorsFromCreateInfo(mi)

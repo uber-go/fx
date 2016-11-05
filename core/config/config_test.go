@@ -177,7 +177,7 @@ func TestSimpleConfigValues(t *testing.T) {
 	assert.Equal(t, 1.123, provider.GetValue("float").AsFloat())
 	nested := &nested{}
 	v := provider.GetValue("nonexisting")
-	assert.False(t, v.PopulateStruct(nested))
+	assert.Nil(t, v.PopulateStruct(nested))
 }
 
 func TestNestedStructs(t *testing.T) {
@@ -215,7 +215,7 @@ func TestArrayOfStructs(t *testing.T) {
 	v := provider.GetValue("")
 
 	assert.True(t, v.HasValue())
-	assert.True(t, v.PopulateStruct(target))
+	assert.Nil(t, v.PopulateStruct(target))
 	assert.Equal(t, 0, target.Things[0].ID1)
 	assert.Equal(t, -2, target.Things[2].ID1)
 }
@@ -229,7 +229,7 @@ func TestDefault(t *testing.T) {
 	target := &nested{}
 	v := provider.GetValue("")
 	assert.True(t, v.HasValue())
-	assert.True(t, v.PopulateStruct(target))
+	assert.Nil(t, v.PopulateStruct(target))
 	assert.Equal(t, "default_name", target.Name)
 }
 

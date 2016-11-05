@@ -61,6 +61,16 @@ mapStruct:
     additionalData: nesteddata
 `)
 
+type unsupportedMapStruct struct {
+	UnsupportedMap map[int]interface{} `yaml:"unsupportedMap"`
+}
+
+var unsupportedMapYaml = []byte(`
+unsupportedMapStruct:
+  unsupportedMap:
+    123: onetwothree
+`)
+
 var complexMapYaml = []byte(`
 mapStruct:
   oneTrueMap:

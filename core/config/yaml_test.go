@@ -60,7 +60,7 @@ func TestYamlStructRoot(t *testing.T) {
 
 	cs := &configStruct{}
 
-	assert.True(t, provider.GetValue("").PopulateStruct(cs))
+	assert.Nil(t, provider.GetValue("").PopulateStruct(cs))
 
 	assert.Equal(t, "keyvalue", cs.AppID)
 	assert.Equal(t, "uberfx@uber.com", cs.Owner)
@@ -75,7 +75,7 @@ func TestYamlStructChild(t *testing.T) {
 
 	cs := &rpcStruct{}
 
-	assert.True(t, provider.GetValue("modules.rpc").PopulateStruct(cs))
+	assert.Nil(t, provider.GetValue("modules.rpc").PopulateStruct(cs))
 
 	assert.Equal(t, ":28941", cs.Bind)
 }
@@ -94,7 +94,7 @@ func TestNewYamlProviderFromReader(t *testing.T) {
 	buff := bytes.NewBuffer([]byte(yamlConfig1))
 	provider := NewYamlProviderFromReader(ioutil.NopCloser(buff))
 	cs := &configStruct{}
-	assert.True(t, provider.GetValue("").PopulateStruct(cs))
+	assert.Nil(t, provider.GetValue("").PopulateStruct(cs))
 	assert.Equal(t, "yaml", provider.Scope("").Name())
 	assert.Equal(t, "keyvalue", cs.AppID)
 	assert.Equal(t, "uberfx@uber.com", cs.Owner)
@@ -198,5 +198,14 @@ func TestMapParsingSimpleMap(t *testing.T) {
 		assert.Equal(t, 2, ms.MyMap["two"])
 		assert.Equal(t, 3, ms.MyMap["three"])
 		assert.Equal(t, "nesteddata", ms.NestedStruct.AdditionalData)
+	})
+}
+
+func TestMapParsingUnsupportedMap(t *testing.T) {
+	withYamlBytes(t, unsupportedMapYaml, func(provider Provider) {
+		ms := unsupportedMapStruct{}
+		err := provider.GetValue("unsupportedMapStruct").PopulateStruct(&ms)
+		assert.Error(t, err)
+
 	})
 }

@@ -336,14 +336,14 @@ func convertValue(value interface{}, targetType reflect.Type) (interface{}, erro
 }
 
 // PopulateStruct fills in a struct from configuration
-func (cv Value) PopulateStruct(target interface{}) bool {
+func (cv Value) PopulateStruct(target interface{}) error {
 	if !cv.HasValue() {
-		return false
+		return nil
 	}
 
-	_, found, _ := cv.getValueStruct(cv.key, target)
+	_, err := cv.getValueStruct(cv.key, target)
 
-	return found
+	return err
 }
 
 func (cv Value) getGlobalProvider() Provider {
@@ -353,7 +353,7 @@ func (cv Value) getGlobalProvider() Provider {
 	return cv.root
 }
 
-func (cv Value) getValueStruct(key string, target interface{}) (interface{}, bool, error) {
+func (cv Value) getValueStruct(key string, target interface{}) (interface{}, error) {
 	// walk through the struct and start asking the providers for values at each key.
 	//
 	// - for individual values, we terminate
@@ -361,7 +361,6 @@ func (cv Value) getValueStruct(key string, target interface{}) (interface{}, boo
 	// - for object values, we recurse.
 	//
 
-	found := false
 	targetValue := reflect.Indirect(reflect.ValueOf(target))
 	targetType := targetValue.Type()
 	// if b := getBucket(targetValue); b == bucketInvalid {
@@ -416,14 +415,13 @@ func (cv Value) getValueStruct(key string, target interface{}) (interface{}, boo
 			//
 			if v2 := global.GetValue(childKey); v2.HasValue() {
 				val = v2.Value()
-				found = true
 			} else if fieldInfo.DefaultValue != "" {
 				val = fieldInfo.DefaultValue
 			}
 			if val != nil {
 				v3, err := convertValue(val, fieldValue.Type())
 				if err != nil {
-					return nil, false, err
+					return nil, err
 				}
 
 				val = v3
@@ -443,7 +441,6 @@ func (cv Value) getValueStruct(key string, target interface{}) (interface{}, boo
 					newTarget = newTarget.Elem()
 				}
 				fieldValue.Set(newTarget)
-				found = true
 			}
 		case bucketArray:
 			destSlice := reflect.MakeSlice(fieldType, 0, 4)
@@ -478,7 +475,6 @@ func (cv Value) getValueStruct(key string, target interface{}) (interface{}, boo
 
 					item := destSlice.Index(ai)
 					item.Set(reflect.ValueOf(itemValue))
-					found = true
 				} else {
 					break
 				}
@@ -487,19 +483,19 @@ func (cv Value) getValueStruct(key string, target interface{}) (interface{}, boo
 				fieldValue.Set(destSlice)
 			}
 		case bucketMap:
-			createMap := reflect.MakeMap(fieldType).Interface()
+			destMap := reflect.MakeMap(fieldType).Interface()
 			val := global.GetValue(childKey).Value()
 
 			if val != nil {
 				switch v := val.(type) {
 				case map[interface{}]interface{}:
-					destMap := createMap.(map[string]interface{})
 					for key, value := range v {
 						switch key := key.(type) {
 						case string:
+							destMap := destMap.(map[string]interface{})
 							destMap[key] = value
 						default:
-							panic(fmt.Sprintf("Can't parse the input yaml. Map key must be string: %v", key))
+							return nil, fmt.Errorf("Can't populate struct from the input yaml. Map key must be a string: %v", key)
 						}
 					}
 					fieldValue.Set(reflect.ValueOf(destMap))
@@ -508,11 +504,8 @@ func (cv Value) getValueStruct(key string, target interface{}) (interface{}, boo
 		}
 	}
 
-	if found {
-		if errs := validator.Validate(target); errs != nil {
-			return nil, true, errs
-		}
-		return target, true, nil
+	if errs := validator.Validate(target); errs != nil {
+		return target, errs
 	}
-	return nil, false, nil
+	return target, nil
 }
