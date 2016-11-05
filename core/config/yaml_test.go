@@ -206,6 +206,5 @@ func TestMapParsingUnsupportedMap(t *testing.T) {
 		ms := unsupportedMapStruct{}
 		err := provider.GetValue("unsupportedMapStruct").PopulateStruct(&ms)
 		assert.Error(t, err)
-
 	})
 }

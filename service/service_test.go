@@ -102,9 +102,9 @@ func TestWithObserver_Nil(t *testing.T) {
 }
 
 func TestServiceCreation_MissingRequiredParams(t *testing.T) {
-	_, err := New(withConfig(nil))
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "zero value")
+	assert.Panics(t, func() {
+		New(withConfig(nil))
+	}, "Expected ServiceName to be provided.")
 }
 
 func TestServiceWithRoles(t *testing.T) {
