@@ -433,8 +433,10 @@ func (cv Value) getValueStruct(key string, target interface{}) (interface{}, err
 			newTarget := reflect.New(ntt)
 			if v2 := global.GetValue(childKey); v2.HasValue() {
 
-				v2.PopulateStruct(newTarget.Interface())
-
+				err := v2.PopulateStruct(newTarget.Interface())
+				if err != nil {
+					return nil, err
+				}
 				// if the target is not a pointer, deref the value
 				// for copy semantics
 				if fieldType.Kind() != reflect.Ptr {
@@ -462,7 +464,10 @@ func (cv Value) getValueStruct(key string, target interface{}) (interface{}, err
 				case bucketObject:
 					newTarget := reflect.New(elementType)
 					if v2 := global.GetValue(arrayKey); v2.HasValue() {
-						v2.PopulateStruct(newTarget.Interface())
+						err := v2.PopulateStruct(newTarget.Interface())
+						if err != nil {
+							return nil, err
+						}
 						itemValue = reflect.Indirect(newTarget).Interface()
 					}
 				}

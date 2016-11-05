@@ -108,11 +108,15 @@ func New(options ...Option) (Owner, error) {
 
 	// load standard config
 	// TODO(glib): `.GetValue("")` is a confusing interface for getting the root config node
-	svc.configProvider.GetValue("").PopulateStruct(&svc.standardConfig)
+	if err := svc.configProvider.GetValue("").PopulateStruct(&svc.standardConfig); err != nil {
+		panic(err)
+	}
 
 	if svc.log == nil {
 		// load and configure logging
-		svc.configProvider.GetValue("logging").PopulateStruct(&svc.logConfig)
+		if err := svc.configProvider.GetValue("logging").PopulateStruct(&svc.logConfig); err != nil {
+			ulog.Logger().Info("Logging configuration is not provided, setting to default logger", "error", err)
+		}
 		ulog.Configure(svc.logConfig)
 		svc.log = ulog.Logger()
 	} else {
