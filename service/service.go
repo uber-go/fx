@@ -114,7 +114,8 @@ func New(options ...Option) (Owner, error) {
 
 	if svc.log == nil {
 		// load and configure logging
-		if err := svc.configProvider.GetValue("logging").PopulateStruct(&svc.logConfig); err != nil {
+		err := svc.configProvider.GetValue("logging").PopulateStruct(&svc.logConfig)
+		if err != nil {
 			ulog.Logger().Info("Logging configuration is not provided, setting to default logger", "error", err)
 		}
 		ulog.Configure(svc.logConfig)

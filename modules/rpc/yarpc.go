@@ -92,16 +92,13 @@ func newYarpcModule(
 		}
 	}
 
-	if err := module.Host().Config().GetValue(fmt.Sprintf("modules.%s", module.Name())).PopulateStruct(cfg); err == nil {
-		// found values, update module
-		module.config = *cfg
-	} else {
-		module.log.Error("Unable to load module config", "error", err)
-	}
+	err := module.Host().Config().GetValue(fmt.Sprintf("modules.%s", module.Name())).PopulateStruct(cfg)
+	// found values, update module
+	module.config = *cfg
 
 	module.interceptors = interceptorsFromCreateInfo(mi)
 
-	return module, nil
+	return module, err
 }
 
 // Initialize sets up a YAPR-backed module

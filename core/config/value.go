@@ -508,9 +508,6 @@ func (cv Value) getValueStruct(key string, target interface{}) (interface{}, err
 			}
 		}
 	}
-
-	if errs := validator.Validate(target); errs != nil {
-		return target, errs
-	}
-	return target, nil
+	errs := validator.Validate(target)
+	return target, errs
 }
