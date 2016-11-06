@@ -60,7 +60,7 @@ func TestYamlStructRoot(t *testing.T) {
 
 	cs := &configStruct{}
 
-	assert.Nil(t, provider.GetValue("").PopulateStruct(cs))
+	assert.NoError(t, provider.GetValue("").PopulateStruct(cs))
 
 	assert.Equal(t, "keyvalue", cs.AppID)
 	assert.Equal(t, "uberfx@uber.com", cs.Owner)
@@ -75,7 +75,7 @@ func TestYamlStructChild(t *testing.T) {
 
 	cs := &rpcStruct{}
 
-	assert.Nil(t, provider.GetValue("modules.rpc").PopulateStruct(cs))
+	assert.NoError(t, provider.GetValue("modules.rpc").PopulateStruct(cs))
 
 	assert.Equal(t, ":28941", cs.Bind)
 }
@@ -94,7 +94,7 @@ func TestNewYamlProviderFromReader(t *testing.T) {
 	buff := bytes.NewBuffer([]byte(yamlConfig1))
 	provider := NewYamlProviderFromReader(ioutil.NopCloser(buff))
 	cs := &configStruct{}
-	assert.Nil(t, provider.GetValue("").PopulateStruct(cs))
+	assert.NoError(t, provider.GetValue("").PopulateStruct(cs))
 	assert.Equal(t, "yaml", provider.Scope("").Name())
 	assert.Equal(t, "keyvalue", cs.AppID)
 	assert.Equal(t, "uberfx@uber.com", cs.Owner)
