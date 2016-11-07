@@ -120,7 +120,6 @@ func (y yamlConfigProvider) Name() string {
 // GetValue returns a configuration value by name
 func (y yamlConfigProvider) GetValue(key string) Value {
 	// check the cache for the value
-	//
 	if node, ok := y.vCache[key]; ok {
 		return node
 	}
@@ -131,7 +130,6 @@ func (y yamlConfigProvider) GetValue(key string) Value {
 	}
 
 	// cache the found value
-	//
 	value := NewValue(y, key, node.value, true, GetValueType(node.value), nil)
 	y.vCache[key] = value
 
@@ -216,7 +214,6 @@ func (n *yamlNode) Find(dottedPath string) *yamlNode {
 			return node
 		}
 		// does this part exist?
-		//
 		children := node.Children()
 		if len(children) == 0 {
 			// not found
