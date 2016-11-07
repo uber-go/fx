@@ -181,16 +181,19 @@ func TestSimpleConfigValues(t *testing.T) {
 }
 
 func TestGetAsIntegerValue(t *testing.T) {
-	cv := NewValue(NewStaticProvider(nil), "key", float32(2), true, Integer, nil)
-	assert.Equal(t, 2, cv.AsInt())
-	cv = NewValue(NewStaticProvider(nil), "key", int(2), true, Integer, nil)
-	assert.Equal(t, 2, cv.AsInt())
-	cv = NewValue(NewStaticProvider(nil), "key", float64(2), true, Integer, nil)
-	assert.Equal(t, 2, cv.AsInt())
-	cv = NewValue(NewStaticProvider(nil), "key", int32(2), true, Integer, nil)
-	assert.Equal(t, 2, cv.AsInt())
-	cv = NewValue(NewStaticProvider(nil), "key", int64(2), true, Integer, nil)
-	assert.Equal(t, 2, cv.AsInt())
+	testCases := []struct {
+		value interface{}
+	}{
+		{float32(2)},
+		{float64(2)},
+		{int(2)},
+		{int32(2)},
+		{int64(2)},
+	}
+	for _, tc := range testCases {
+		cv := NewValue(NewStaticProvider(nil), "key", tc.value, true, Integer, nil)
+		assert.Equal(t, 2, cv.AsInt())
+	}
 }
 
 func TestNestedStructs(t *testing.T) {
