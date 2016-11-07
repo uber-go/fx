@@ -171,8 +171,18 @@ func (cv Value) TryAsInt() (int, bool) {
 	if val, err := convertValue(v, reflect.TypeOf(0)); v != nil && err == nil {
 		return val.(int), true
 	}
-	return 0, false
-
+	switch val := v.(type) {
+	case int32:
+		return int(val), true
+	case int64:
+		return int(val), true
+	case float32:
+		return int(val), true
+	case float64:
+		return int(val), true
+	default:
+		return 0, false
+	}
 }
 
 // TryAsBool attempts to return the configuration value as a bool

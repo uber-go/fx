@@ -180,6 +180,22 @@ func TestSimpleConfigValues(t *testing.T) {
 	assert.NoError(t, v.PopulateStruct(nested))
 }
 
+func TestGetAsIntegerValue(t *testing.T) {
+	testCases := []struct {
+		value interface{}
+	}{
+		{float32(2)},
+		{float64(2)},
+		{int(2)},
+		{int32(2)},
+		{int64(2)},
+	}
+	for _, tc := range testCases {
+		cv := NewValue(NewStaticProvider(nil), "key", tc.value, true, Integer, nil)
+		assert.Equal(t, 2, cv.AsInt())
+	}
+}
+
 func TestNestedStructs(t *testing.T) {
 	provider := NewProviderGroup(
 		"test",
