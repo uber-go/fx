@@ -180,6 +180,19 @@ func TestSimpleConfigValues(t *testing.T) {
 	assert.NoError(t, v.PopulateStruct(nested))
 }
 
+func TestGetAsIntegerValue(t *testing.T) {
+	cv := NewValue(NewStaticProvider(nil), "key", float32(2), true, Integer, nil)
+	assert.Equal(t, 2, cv.AsInt())
+	cv = NewValue(NewStaticProvider(nil), "key", int(2), true, Integer, nil)
+	assert.Equal(t, 2, cv.AsInt())
+	cv = NewValue(NewStaticProvider(nil), "key", float64(2), true, Integer, nil)
+	assert.Equal(t, 2, cv.AsInt())
+	cv = NewValue(NewStaticProvider(nil), "key", int32(2), true, Integer, nil)
+	assert.Equal(t, 2, cv.AsInt())
+	cv = NewValue(NewStaticProvider(nil), "key", int64(2), true, Integer, nil)
+	assert.Equal(t, 2, cv.AsInt())
+}
+
 func TestNestedStructs(t *testing.T) {
 	provider := NewProviderGroup(
 		"test",
