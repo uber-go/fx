@@ -61,11 +61,11 @@ func TestBuilder_WithErrModule(t *testing.T) {
 
 func TestBuilder_SkipsModulesBadInit(t *testing.T) {
 	empty := ""
-
-	_, err := NewBuilder(
-		WithConfiguration(StaticAppData(&empty)),
-	).WithModules(noopModule).Build()
-	assert.Error(t, err)
+	assert.Panics(t, func() {
+		NewBuilder(
+			WithConfiguration(StaticAppData(&empty)),
+		).WithModules(noopModule).Build()
+	}, "Expected ServiceName to be provided.")
 }
 
 func TestWithModules_OK(t *testing.T) {

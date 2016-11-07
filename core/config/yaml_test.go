@@ -60,7 +60,7 @@ func TestYamlStructRoot(t *testing.T) {
 
 	cs := &configStruct{}
 
-	assert.True(t, provider.GetValue("").PopulateStruct(cs))
+	assert.NoError(t, provider.GetValue("").PopulateStruct(cs))
 
 	assert.Equal(t, "keyvalue", cs.AppID)
 	assert.Equal(t, "uberfx@uber.com", cs.Owner)
@@ -75,7 +75,7 @@ func TestYamlStructChild(t *testing.T) {
 
 	cs := &rpcStruct{}
 
-	assert.True(t, provider.GetValue("modules.rpc").PopulateStruct(cs))
+	assert.NoError(t, provider.GetValue("modules.rpc").PopulateStruct(cs))
 
 	assert.Equal(t, ":28941", cs.Bind)
 }
@@ -94,7 +94,7 @@ func TestNewYamlProviderFromReader(t *testing.T) {
 	buff := bytes.NewBuffer([]byte(yamlConfig1))
 	provider := NewYamlProviderFromReader(ioutil.NopCloser(buff))
 	cs := &configStruct{}
-	assert.True(t, provider.GetValue("").PopulateStruct(cs))
+	assert.NoError(t, provider.GetValue("").PopulateStruct(cs))
 	assert.Equal(t, "yaml", provider.Scope("").Name())
 	assert.Equal(t, "keyvalue", cs.AppID)
 	assert.Equal(t, "uberfx@uber.com", cs.Owner)
@@ -122,58 +122,89 @@ func TestYamlNode_Callbacks(t *testing.T) {
 	assert.NoError(t, p.UnregisterChangeCallback("token"))
 }
 
-type emptystruct struct {
-	Slice []string
+func withYamlBytes(t *testing.T, yamlBytes []byte, f func(Provider)) {
+	provider := NewProviderGroup("global", NewYAMLProviderFromBytes(yamlBytes))
+	f(provider)
 }
 
-var emptyyaml = []byte(`
-emptystruct:
-  nonexist: true
-`)
-
 func TestMatchEmptyStruct(t *testing.T) {
-	provider := NewProviderGroup("global", NewYAMLProviderFromBytes([]byte(``)))
-	es := emptystruct{}
-	provider.GetValue("emptystruct").PopulateStruct(&es)
-	empty := reflect.New(reflect.TypeOf(es)).Elem().Interface()
-	assert.True(t, reflect.DeepEqual(empty, es))
+	withYamlBytes(t, []byte(``), func(provider Provider) {
+		es := emptystruct{}
+		provider.GetValue("emptystruct").PopulateStruct(&es)
+		empty := reflect.New(reflect.TypeOf(es)).Elem().Interface()
+		assert.True(t, reflect.DeepEqual(empty, es))
+	})
 }
 
 func TestMatchPopulatedEmptyStruct(t *testing.T) {
-	provider := NewProviderGroup("global", NewYAMLProviderFromBytes(emptyyaml))
-	es := emptystruct{}
-	provider.GetValue("emptystruct").PopulateStruct(&es)
-	empty := reflect.New(reflect.TypeOf(es)).Elem().Interface()
-	assert.True(t, reflect.DeepEqual(empty, es))
+	withYamlBytes(t, emptyyaml, func(provider Provider) {
+		es := emptystruct{}
+		provider.GetValue("emptystruct").PopulateStruct(&es)
+		empty := reflect.New(reflect.TypeOf(es)).Elem().Interface()
+		assert.True(t, reflect.DeepEqual(empty, es))
+	})
 }
-
-type pointerStruct struct {
-	MyTrueBool  *bool   `yaml:"myTrueBool"`
-	MyFalseBool *bool   `yaml:"myFalseBool"`
-	MyString    *string `yaml:"myString"`
-}
-
-var pointerYaml = []byte(`
-pointerStruct:
-  myTrueBool: true
-  myFalseBool: false
-  myString: hello
-`)
 
 func TestPopulateStructWithPointers(t *testing.T) {
-	provider := NewProviderGroup("global", NewYAMLProviderFromBytes(pointerYaml))
-	ps := pointerStruct{}
-	provider.GetValue("pointerStruct").PopulateStruct(&ps)
-	assert.True(t, *ps.MyTrueBool)
-	assert.False(t, *ps.MyFalseBool)
-	assert.Equal(t, "hello", *ps.MyString)
+	withYamlBytes(t, pointerYaml, func(provider Provider) {
+		ps := pointerStruct{}
+		provider.GetValue("pointerStruct").PopulateStruct(&ps)
+		assert.True(t, *ps.MyTrueBool)
+		assert.False(t, *ps.MyFalseBool)
+		assert.Equal(t, "hello", *ps.MyString)
+	})
 }
 
 func TestNonExistingPopulateStructWithPointers(t *testing.T) {
-	provider := NewProviderGroup("global", NewYAMLProviderFromBytes([]byte(``)))
-	ps := pointerStruct{}
-	provider.GetValue("pointerStruct").PopulateStruct(&ps)
-	assert.Nil(t, ps.MyTrueBool)
-	assert.Nil(t, ps.MyFalseBool)
-	assert.Nil(t, ps.MyString)
+	withYamlBytes(t, []byte(``), func(provider Provider) {
+		ps := pointerStruct{}
+		provider.GetValue("pointerStruct").PopulateStruct(&ps)
+		assert.Nil(t, ps.MyTrueBool)
+		assert.Nil(t, ps.MyFalseBool)
+		assert.Nil(t, ps.MyString)
+	})
+}
+
+func TestMapParsing(t *testing.T) {
+	withYamlBytes(t, complexMapYaml, func(provider Provider) {
+		ms := mapStruct{}
+		provider.GetValue("mapStruct").PopulateStruct(&ms)
+
+		assert.NotNil(t, ms.MyMap)
+		assert.NotZero(t, len(ms.MyMap))
+
+		found := false
+		switch p := ms.MyMap["policy"].(type) {
+		case map[interface{}]interface{}:
+			for key, val := range p {
+				switch key := key.(type) {
+				case string:
+					assert.Equal(t, "makeway", key)
+					assert.Equal(t, "notanoption", val)
+					found = true
+				}
+			}
+		}
+		assert.True(t, found)
+		assert.Equal(t, "nesteddata", ms.NestedStruct.AdditionalData)
+	})
+}
+
+func TestMapParsingSimpleMap(t *testing.T) {
+	withYamlBytes(t, simpleMapYaml, func(provider Provider) {
+		ms := mapStruct{}
+		provider.GetValue("mapStruct").PopulateStruct(&ms)
+		assert.Equal(t, 1, ms.MyMap["one"])
+		assert.Equal(t, 2, ms.MyMap["two"])
+		assert.Equal(t, 3, ms.MyMap["three"])
+		assert.Equal(t, "nesteddata", ms.NestedStruct.AdditionalData)
+	})
+}
+
+func TestMapParsingUnsupportedMap(t *testing.T) {
+	withYamlBytes(t, unsupportedMapYaml, func(provider Provider) {
+		ms := unsupportedMapStruct{}
+		err := provider.GetValue("unsupportedMapStruct").PopulateStruct(&ms)
+		assert.Error(t, err)
+	})
 }

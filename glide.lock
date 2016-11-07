@@ -1,5 +1,5 @@
 hash: 17c11874095295474a88fbbf7cc80974f2522276834531771a08377a08117f5e
-updated: 2016-11-02T15:30:12.833451164-07:00
+updated: 2016-11-05T22:43:25.383579575-07:00
 imports:
 - name: github.com/facebookgo/clock
   version: 600d898af40aa09a7a93ecb9265d87b0504b6f03
@@ -55,7 +55,7 @@ imports:
   - transport/tchannel
   - transport/tchannel/internal
 - name: golang.org/x/net
-  version: 6c4ac8bdbf06a105c4baf3dcda28bd9b0fb15588
+  version: 55a3084c9119aeb9ba2437d595b0a7e9cb635da9
   subpackages:
   - context
   - context/ctxhttp

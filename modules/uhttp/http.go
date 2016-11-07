@@ -127,7 +127,10 @@ func newModule(
 		handlers:   createService(mi.Host),
 	}
 
-	module.Host().Config().GetValue(getConfigKey(mi.Name)).PopulateStruct(cfg)
+	err := module.Host().Config().GetValue(getConfigKey(mi.Name)).PopulateStruct(cfg)
+	if err != nil {
+		ulog.Logger().Error("Error loading http module configuration", "error", err)
+	}
 	module.config = *cfg
 
 	module.log = ulog.Logger().With("moduleName", mi.Name)

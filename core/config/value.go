@@ -260,6 +260,7 @@ const (
 	bucketPrimative = 0
 	bucketArray     = 1
 	bucketObject    = 2
+	bucketMap       = 3
 )
 
 func getBucket(t reflect.Type) int {
@@ -275,9 +276,7 @@ func getBucket(t reflect.Type) int {
 	case reflect.Func:
 		fallthrough
 	case reflect.Map:
-		// TODO: Support bucketMap.  Needs a way to enumerate
-		// the child keys of a value.
-		return bucketInvalid
+		return bucketMap
 	case reflect.Array:
 		fallthrough
 	case reflect.Slice:
@@ -337,14 +336,14 @@ func convertValue(value interface{}, targetType reflect.Type) (interface{}, erro
 }
 
 // PopulateStruct fills in a struct from configuration
-func (cv Value) PopulateStruct(target interface{}) bool {
+func (cv Value) PopulateStruct(target interface{}) error {
 	if !cv.HasValue() {
-		return false
+		return nil
 	}
 
-	_, found, _ := cv.getValueStruct(cv.key, target)
+	_, err := cv.getValueStruct(cv.key, target)
 
-	return found
+	return err
 }
 
 func (cv Value) getGlobalProvider() Provider {
@@ -354,7 +353,7 @@ func (cv Value) getGlobalProvider() Provider {
 	return cv.root
 }
 
-func (cv Value) getValueStruct(key string, target interface{}) (interface{}, bool, error) {
+func (cv Value) getValueStruct(key string, target interface{}) (interface{}, error) {
 	// walk through the struct and start asking the providers for values at each key.
 	//
 	// - for individual values, we terminate
@@ -362,7 +361,6 @@ func (cv Value) getValueStruct(key string, target interface{}) (interface{}, boo
 	// - for object values, we recurse.
 	//
 
-	found := false
 	targetValue := reflect.Indirect(reflect.ValueOf(target))
 	targetType := targetValue.Type()
 	// if b := getBucket(targetValue); b == bucketInvalid {
@@ -417,14 +415,13 @@ func (cv Value) getValueStruct(key string, target interface{}) (interface{}, boo
 			//
 			if v2 := global.GetValue(childKey); v2.HasValue() {
 				val = v2.Value()
-				found = true
 			} else if fieldInfo.DefaultValue != "" {
 				val = fieldInfo.DefaultValue
 			}
 			if val != nil {
 				v3, err := convertValue(val, fieldValue.Type())
 				if err != nil {
-					return nil, false, err
+					return nil, err
 				}
 
 				val = v3
@@ -436,15 +433,15 @@ func (cv Value) getValueStruct(key string, target interface{}) (interface{}, boo
 			newTarget := reflect.New(ntt)
 			if v2 := global.GetValue(childKey); v2.HasValue() {
 
-				v2.PopulateStruct(newTarget.Interface())
-
+				if err := v2.PopulateStruct(newTarget.Interface()); err != nil {
+					return nil, err
+				}
 				// if the target is not a pointer, deref the value
 				// for copy semantics
 				if fieldType.Kind() != reflect.Ptr {
 					newTarget = newTarget.Elem()
 				}
 				fieldValue.Set(newTarget)
-				found = true
 			}
 		case bucketArray:
 			destSlice := reflect.MakeSlice(fieldType, 0, 4)
@@ -466,7 +463,9 @@ func (cv Value) getValueStruct(key string, target interface{}) (interface{}, boo
 				case bucketObject:
 					newTarget := reflect.New(elementType)
 					if v2 := global.GetValue(arrayKey); v2.HasValue() {
-						v2.PopulateStruct(newTarget.Interface())
+						if err := v2.PopulateStruct(newTarget.Interface()); err != nil {
+							return nil, err
+						}
 						itemValue = reflect.Indirect(newTarget).Interface()
 					}
 				}
@@ -479,7 +478,6 @@ func (cv Value) getValueStruct(key string, target interface{}) (interface{}, boo
 
 					item := destSlice.Index(ai)
 					item.Set(reflect.ValueOf(itemValue))
-					found = true
 				} else {
 					break
 				}
@@ -487,15 +485,28 @@ func (cv Value) getValueStruct(key string, target interface{}) (interface{}, boo
 			if destSlice.Len() > 0 {
 				fieldValue.Set(destSlice)
 			}
-		}
+		case bucketMap:
+			destMap := reflect.MakeMap(fieldType).Interface()
+			val := global.GetValue(childKey).Value()
 
-	}
-
-	if found {
-		if errs := validator.Validate(target); errs != nil {
-			return nil, true, errs
+			if val != nil {
+				// child yamlnode parsed from yaml file is of type map[interface{}]interface{}
+				// type casting here makes sure that we are iterating over a parsed map.
+				v, ok := val.(map[interface{}]interface{})
+				if ok {
+					for key, value := range v {
+						switch key := key.(type) {
+						case string:
+							destMap := destMap.(map[string]interface{})
+							destMap[key] = value
+						default:
+							return nil, fmt.Errorf("can't populate struct from the input yaml. Map key must be a string: %v", key)
+						}
+					}
+					fieldValue.Set(reflect.ValueOf(destMap))
+				}
+			}
 		}
-		return target, true, nil
 	}
-	return nil, false, nil
+	return target, validator.Validate(target)
 }
