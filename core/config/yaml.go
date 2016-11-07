@@ -32,7 +32,8 @@ import (
 )
 
 type yamlConfigProvider struct {
-	roots []*yamlNode
+	roots  []*yamlNode
+	vCache map[string]Value
 }
 
 var _ Provider = &yamlConfigProvider{}
@@ -49,14 +50,14 @@ func newYAMLProviderCore(files ...io.ReadCloser) Provider {
 	}
 
 	return &yamlConfigProvider{
-		roots: roots,
+		roots:  roots,
+		vCache: make(map[string]Value),
 	}
 }
 
 // NewYAMLProviderFromFiles creates a configration provider from a set of YAML file
 // names
 func NewYAMLProviderFromFiles(mustExist bool, resolver FileResolver, files ...string) Provider {
-
 	if resolver == nil {
 		resolver = NewRelativeResolver()
 	}
@@ -71,6 +72,7 @@ func NewYAMLProviderFromFiles(mustExist bool, resolver FileResolver, files ...st
 			readers = append(readers, reader)
 		}
 	}
+
 	return newYAMLProviderCore(readers...)
 }
 
@@ -90,7 +92,8 @@ func NewYAMLProviderFromBytes(yaml []byte) Provider {
 	}
 
 	return &yamlConfigProvider{
-		roots: []*yamlNode{node},
+		roots:  []*yamlNode{node},
+		vCache: make(map[string]Value),
 	}
 }
 
@@ -98,7 +101,6 @@ func (y yamlConfigProvider) getNode(key string) *yamlNode {
 	var found *yamlNode
 
 	for _, node := range y.roots {
-
 		if key == "" {
 			return node
 		}
@@ -117,12 +119,21 @@ func (y yamlConfigProvider) Name() string {
 
 // GetValue returns a configuration value by name
 func (y yamlConfigProvider) GetValue(key string) Value {
-	node := y.getNode(key)
+	// check the cache for the value
+	if node, ok := y.vCache[key]; ok {
+		return node
+	}
 
+	node := y.getNode(key)
 	if node == nil {
 		return NewValue(y, key, nil, false, Invalid, nil)
 	}
-	return NewValue(y, key, node.value, true, GetValueType(node.value), nil)
+
+	// cache the found value
+	value := NewValue(y, key, node.value, true, GetValueType(node.value), nil)
+	y.vCache[key] = value
+
+	return value
 }
 
 // Scope returns a scoped configuration provider
@@ -195,25 +206,23 @@ func newyamlNode(reader io.ReadCloser) (*yamlNode, error) {
 }
 
 func (n *yamlNode) Find(dottedPath string) *yamlNode {
-
 	node := n
 	parts := strings.Split(dottedPath, ".")
 
 	for {
-
 		if len(parts) == 0 {
 			return node
 		}
 		// does this part exist?
-		//
-		if len(node.Children()) == 0 {
+		children := node.Children()
+		if len(children) == 0 {
 			// not found
 			break
 		}
 
 		part := parts[0]
 		found := false
-		for _, v := range node.Children() {
+		for _, v := range children {
 			if strings.EqualFold(v.key, part) {
 				parts = parts[1:]
 				node = v
@@ -226,6 +235,7 @@ func (n *yamlNode) Find(dottedPath string) *yamlNode {
 			break
 		}
 	}
+
 	return nil
 }
 
@@ -241,15 +251,11 @@ func (n yamlNode) getNodeType(val interface{}) nodeType {
 }
 
 func (n *yamlNode) Children() []*yamlNode {
-
 	if n.children == nil {
-
 		n.children = []*yamlNode{}
-		// generate children
 
 		switch n.nodeType {
 		case objectNode:
-
 			for k, v := range n.value.(map[interface{}]interface{}) {
 				n2 := &yamlNode{
 					nodeType: n.getNodeType(v),
@@ -276,5 +282,6 @@ func (n *yamlNode) Children() []*yamlNode {
 	for n, v := range n.children {
 		nodes[n] = v
 	}
+
 	return nodes
 }
