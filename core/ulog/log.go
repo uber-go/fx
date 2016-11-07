@@ -63,7 +63,9 @@ type Log interface {
 	// Create a child logger with some context
 	With(...interface{}) Log
 	SetLevel(zap.Level)
+	SetLogger(zap.Logger)
 	Check(zap.Level, string) *zap.CheckedMessage
+	RawLogger() zap.Logger
 
 	Log(zap.Level, string, ...interface{})
 	Debug(string, ...interface{})

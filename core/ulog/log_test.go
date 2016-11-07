@@ -66,7 +66,7 @@ func withInMemoryLogger(t *testing.T, opts []zap.Option, f func(zap.Logger, *tes
 func TestSimpleLogger(t *testing.T) {
 	withInMemoryLogger(t, nil, func(zaplogger zap.Logger, buf *testBuffer) {
 		log := Logger()
-		log.(*baselogger).SetLogger(zaplogger)
+		log.SetLogger(zaplogger)
 		log.Debug("debug message", "a", "b")
 		log.Info("info message", "c", "d")
 		log.Warn("warn message", "e", "f")
@@ -83,7 +83,7 @@ func TestSimpleLogger(t *testing.T) {
 func TestLoggerWithInitFields(t *testing.T) {
 	withInMemoryLogger(t, nil, func(zaplogger zap.Logger, buf *testBuffer) {
 		log := Logger("method", "test_method")
-		log.(*baselogger).SetLogger(zaplogger)
+		log.SetLogger(zaplogger)
 
 		log.Debug("debug message", "a", "b")
 		log.Info("info message", "c", "d")
@@ -101,7 +101,7 @@ func TestLoggerWithInitFields(t *testing.T) {
 func TestLoggerWithInvalidFields(t *testing.T) {
 	withInMemoryLogger(t, nil, func(zaplogger zap.Logger, buf *testBuffer) {
 		log := Logger()
-		log.(*baselogger).SetLogger(zaplogger)
+		log.SetLogger(zaplogger)
 		log.Info("info message", "c")
 		log.Info("info message", "c", "d", "e")
 		log.DFatal("debug message")
@@ -116,7 +116,7 @@ func TestLoggerWithInvalidFields(t *testing.T) {
 func TestFatalsAndPanics(t *testing.T) {
 	withInMemoryLogger(t, nil, func(zaplogger zap.Logger, buf *testBuffer) {
 		log := Logger()
-		log.(*baselogger).SetLogger(zaplogger)
+		log.SetLogger(zaplogger)
 		assert.Panics(t, func() { log.Panic("panic level") }, "Expected to panic")
 		assert.Equal(t, `{"level":"panic","msg":"panic level"}`, buf.Stripped(), "Unexpected output")
 	})
@@ -134,7 +134,7 @@ func TestConfiguredLogger(t *testing.T) {
 			Verbose:       false,
 		}
 		log.Configure(cfg)
-		zaplogger := log.(*baselogger).RawLogger()
+		zaplogger := log.RawLogger()
 		assert.Equal(t, zap.DebugLevel, zaplogger.Level())
 	})
 }
@@ -155,7 +155,7 @@ func TestConfiguredLoggerWithTextFormatter(t *testing.T) {
 			},
 		}
 		log.Configure(cfg)
-		zaplogger := log.(*baselogger).RawLogger()
+		zaplogger := log.RawLogger()
 		assert.Equal(t, zap.DebugLevel, zaplogger.Level())
 	})
 }
@@ -175,7 +175,7 @@ func TestConfiguredLoggerWithStdout(t *testing.T) {
 			},
 		}
 		log.Configure(cfg)
-		zaplogger := log.(*baselogger).RawLogger()
+		zaplogger := log.RawLogger()
 		assert.Equal(t, zap.DebugLevel, zaplogger.Level())
 	})
 }
@@ -210,7 +210,7 @@ func withLogger(t *testing.T, f func(string, string)) {
 func TestDefaultPackageLogger(t *testing.T) {
 	withLogger(t, func(tmpDir string, logFile string) {
 		logger := Logger()
-		zaplogger := logger.(*baselogger).RawLogger()
+		zaplogger := logger.RawLogger()
 		assert.Equal(t, zap.ErrorLevel, zaplogger.Level())
 		logger.SetLevel(zap.WarnLevel)
 		assert.Equal(t, zap.WarnLevel, zaplogger.Level())
@@ -263,5 +263,5 @@ func TestFieldConversion(t *testing.T) {
 
 func TestRawLogger(t *testing.T) {
 	log := Logger()
-	assert.NotNil(t, log.(*baselogger).RawLogger())
+	assert.NotNil(t, log.RawLogger())
 }
