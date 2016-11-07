@@ -391,7 +391,6 @@ func (cv Value) getValueStruct(key string, target interface{}) (interface{}, err
 		case bucketInvalid:
 			continue
 		case bucketPrimative:
-
 			var val interface{}
 
 			if fieldType.Kind() == reflect.Ptr {
