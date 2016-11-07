@@ -495,10 +495,9 @@ func (cv Value) getValueStruct(key string, target interface{}) (interface{}, err
 				fieldValue.Set(destSlice)
 			}
 		case bucketMap:
-			destMap := reflect.MakeMap(fieldType).Interface()
 			val := global.GetValue(childKey).Value()
-
 			if val != nil {
+				destMap := reflect.MakeMap(fieldType).Interface()
 				// child yamlnode parsed from yaml file is of type map[interface{}]interface{}
 				// type casting here makes sure that we are iterating over a parsed map.
 				v, ok := val.(map[interface{}]interface{})
