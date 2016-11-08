@@ -102,9 +102,9 @@ func TestWithObserver_Nil(t *testing.T) {
 }
 
 func TestServiceCreation_MissingRequiredParams(t *testing.T) {
-	assert.Panics(t, func() {
-		New(withConfig(nil))
-	}, "Expected ServiceName to be provided.")
+	_, err := New(withConfig(nil))
+	assert.Error(t, err, "should fail with missing service name")
+	assert.Contains(t, err.Error(), "zero value")
 }
 
 func TestServiceWithRoles(t *testing.T) {
@@ -126,12 +126,8 @@ func TestBadOption_Panics(t *testing.T) {
 		return errors.New("nope")
 	}
 
-	assert.Panics(t, func() {
-		_, err := New(withConfig(validServiceConfig), opt)
-		if err != nil {
-			assert.Fail(t, "should not reach this path")
-		}
-	})
+	_, err := New(withConfig(validServiceConfig), opt)
+	assert.Error(t, err, "should fail with invalid option")
 }
 
 func TestNew_WithObserver(t *testing.T) {
