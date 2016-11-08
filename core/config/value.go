@@ -27,6 +27,7 @@ import (
 	"time"
 
 	"github.com/go-validator/validator"
+	"github.com/pkg/errors"
 )
 
 // A ValueType is a type-description of a configuration value
@@ -442,7 +443,7 @@ func (cv Value) getValueStruct(key string, target interface{}) (interface{}, err
 			if v2 := global.GetValue(childKey); v2.HasValue() {
 
 				if err := v2.PopulateStruct(newTarget.Interface()); err != nil {
-					return nil, err
+					return nil, errors.Wrap(err, "unable to populate struct of object target")
 				}
 				// if the target is not a pointer, deref the value
 				// for copy semantics
@@ -472,7 +473,7 @@ func (cv Value) getValueStruct(key string, target interface{}) (interface{}, err
 					newTarget := reflect.New(elementType)
 					if v2 := global.GetValue(arrayKey); v2.HasValue() {
 						if err := v2.PopulateStruct(newTarget.Interface()); err != nil {
-							return nil, err
+							return nil, errors.Wrap(err, "unable to populate struct of object")
 						}
 						itemValue = reflect.Indirect(newTarget).Interface()
 					}

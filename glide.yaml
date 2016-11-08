@@ -13,6 +13,8 @@ import:
   version: dev
 - package: github.com/go-validator/validator
   version: v2
+- package: github.com/pkg/errors
+  version: ^0.8.0
 
 testImport:
 - package: golang.org/x/tools

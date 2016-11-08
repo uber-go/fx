@@ -26,6 +26,7 @@ import (
 	"go.uber.org/fx/core/ulog"
 
 	"github.com/go-validator/validator"
+	"github.com/pkg/errors"
 	"github.com/uber-go/tally"
 )
 
@@ -91,7 +92,7 @@ func New(options ...Option) (Owner, error) {
 	// Run the rest of the options
 	for _, opt := range options {
 		if optionErr := opt(svc); optionErr != nil {
-			panic(optionErr)
+			return nil, errors.Wrap(optionErr, "option failed to apply")
 		}
 	}
 
@@ -102,14 +103,10 @@ func New(options ...Option) (Owner, error) {
 		svc.configProvider = config.Load()
 	}
 
-	// prepend the default options.
-	// TODO: This isn't right.  Do we order the options so we make sure to use
-	// the passed in options?
-
 	// load standard config
 	// TODO(glib): `.GetValue("")` is a confusing interface for getting the root config node
 	if err := svc.configProvider.GetValue("").PopulateStruct(&svc.standardConfig); err != nil {
-		panic(err)
+		return nil, errors.Wrap(err, "unable to load standard configuration")
 	}
 
 	if svc.log == nil {
@@ -126,7 +123,7 @@ func New(options ...Option) (Owner, error) {
 
 	if errs := validator.Validate(svc.standardConfig); errs != nil {
 		svc.Logger().Error("Invalid service configuration", "error", errs)
-		return svc, errs
+		return svc, errors.Wrap(errs, "service configuration failed validation")
 	}
 
 	// Initialize metrics. If no metrics reporters were Registered, do noop

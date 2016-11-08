@@ -1,5 +1,5 @@
-hash: 17c11874095295474a88fbbf7cc80974f2522276834531771a08377a08117f5e
-updated: 2016-11-08T03:15:45.291654609-08:00
+hash: 5a08798a1b8d67dfc5138a65752c365685860511ed03f5dd5f4c35ab09088e59
+updated: 2016-11-08T03:31:10.827278088-08:00
 imports:
 - name: github.com/facebookgo/clock
   version: 600d898af40aa09a7a93ecb9265d87b0504b6f03
@@ -14,6 +14,8 @@ imports:
   subpackages:
   - ext
   - log
+- name: github.com/pkg/errors
+  version: 645ef00459ed84a119197bfb8d8205042c6df63d
 - name: github.com/uber-go/atomic
   version: 0c9e689d64f004564b79d9a663634756df322902
 - name: github.com/uber-go/tally
