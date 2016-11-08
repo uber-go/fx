@@ -1,4 +1,5 @@
 /vendor
+/.bench
 *.test
 *.log
 *.out
