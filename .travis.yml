@@ -25,4 +25,4 @@ script:
   - make test
 
 after_success:
-   - make coveralls
+   - '[ "${TRAVIS_GO_VERSION}" -ne "tip" ] && make coveralls'
