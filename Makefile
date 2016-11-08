@@ -39,10 +39,10 @@ endif
 COVER_OUT := profile.coverprofile
 
 $(COV_REPORT): $(PKG_FILES) $(ALL_SRC)
-	$(call label,Generating example RPC bindings)
+	@$(call label,Generating example RPC bindings)
 	@echo
 	$(ECHO_V)$(MAKE) -C examples/keyvalue/ kv/types.go ECHO_V=$(ECHO_V)
-	$(call label,Running tests)
+	@$(call label,Running tests)
 	@echo
 	$(ECHO_V)$(OVERALLS) -project=$(PROJECT_ROOT) \
 		-ignore "$(OVERALLS_IGNORE)" \
@@ -64,17 +64,17 @@ $(COV_HTML): $(COV_REPORT)
 coveralls: $(COV_REPORT)
 	$(ECHO_V)goveralls -service=travis-ci -coverprofile=overalls.coverprofile
 
-.PHONY: bench
 BENCH ?= .
 BENCH_FILE ?= .bench/new.txt
+.PHONY: bench
 bench:
 	@$(call label,Running benchmarks)
-	$(ECHO_V)$(foreach pkg,$(BENCH_PKGS),go test -bench=. -run="^$$" $(BENCH_FLAGS) $(pkg) |\
+	$(ECHO_V)$(foreach pkg,$(BENCH_PKGS),go test -bench=. -run="^$$" $(BENCH_FLAGS) $(pkg) | \
 		tee $(BENCH_FILE);)
 
-.PHONY: bench_base
 BASELINE_BENCH_FILE=.bench/old.txt
-bench_base:
+.PHONY: benchbase
+benchbase:
 	$(ECHO_V)if [ -z "$(IGNORE_BASELINE_CHECK)" ] && [ -z "$(git diff master)" ]; then \
 		echo "$(ERROR_STYLE)Can't record baseline with code changes off master." ; \
 		echo "Check out master and try again$(COLOR_RESET)"; \
@@ -85,8 +85,8 @@ bench_base:
 	@echo
 	$(ECHO_V)$(MAKE) bench BENCH_FILE=$(BASELINE_BENCH_FILE)
 
-.PHONY: bench_cmp
-bench_cmp:
+.PHONY: benchcmp
+benchcmp:
 	$(ECHO_V)which benchcmp >/dev/null || go get -u golang.org/x/tools/cmd/benchcmp
 	$(ECHO_V)test -s $(BASELINE_BENCH_FILE) || \
 		$(call die,Baseline benchmark file missing. Check out master and run \'make bench\')
@@ -95,10 +95,10 @@ bench_cmp:
 		$(MAKE) bench
 	$(ECHO_V)benchcmp $(BASELINE_BENCH_FILE) $(BENCH_FILE)
 
-.PHONY: bench_reset
-bench_reset:
-	$(ECHO_V)if [ -a $(BASELINE_BENCH_FILE) ]; then rm $(BASELINE_BENCH_FILE); fi
-	$(ECHO_V)if [ -a $(BENCH_FILE) ]; then rm $(BENCH_FILE); fi
+.PHONY: benchreset
+benchreset:
+	$(ECHO_V)rm -f $(BASELINE_BENCH_FILE)
+	$(ECHO_V)rm -f $(BENCH_FILE)
 
 
 include $(SUPPORT_FILES)/lint.mk
