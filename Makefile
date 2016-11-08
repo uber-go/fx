@@ -66,8 +66,29 @@ coveralls: $(COV_REPORT)
 
 .PHONY: bench
 BENCH ?= .
+BENCH_FILE ?= .bench/new.txt
 bench:
-	$(ECHO_V)$(foreach pkg,$(BENCH_PKGS),go test -bench=$(BENCH) -run="^$$" $(BENCH_FLAGS) $(pkg);)
+	$(ECHO_V)$(foreach pkg,$(BENCH_PKGS),go test -bench=. -run="^$$" $(BENCH_FLAGS) $(pkg) |\
+		tee $(BENCH_FILE);)
+
+.PHONY: benchbase
+BASELINE_BENCH_FILE=.bench/old.txt
+benchbase:
+	$(ECHO_V)$(MAKE) bench BENCH_FILE=$(BASELINE_BENCH_FILE)
+
+.PHONY: benchcmp
+benchcmp:
+	$(ECHO_V)which benchcmp >/dev/null || go get -u golang.org/x/tools/cmd/benchcmp
+	$(ECHO_V)test -s $(BASELINE_BENCH_FILE) ||\
+		$(error "Must have a baseline bench file. *Check out master* and run `make benchbase`")
+	$(ECHO_V)test -s $(BENCH_FILE) || $(error "Must have a new benchmark file. Run `make bench`")
+	$(ECHO_V)benchcmp $(BASELINE_BENCH_FILE) $(BENCH_FILE)
+
+.PHONY: benchclean
+benchclean:
+	$(ECHO_V)if [ -a $(BASELINE_BENCH_FILE) ]; then rm $(BASELINE_BENCH_FILE); fi
+	$(ECHO_V)if [ -a $(BENCH_FILE) ]; then rm $(BENCH_FILE); fi
+
 
 include $(SUPPORT_FILES)/lint.mk
 include $(SUPPORT_FILES)/licence.mk
