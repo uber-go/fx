@@ -1,5 +1,5 @@
 hash: 5a08798a1b8d67dfc5138a65752c365685860511ed03f5dd5f4c35ab09088e59
-updated: 2016-11-08T00:41:38.761392742-08:00
+updated: 2016-11-08T03:31:10.827278088-08:00
 imports:
 - name: github.com/facebookgo/clock
   version: 600d898af40aa09a7a93ecb9265d87b0504b6f03
@@ -30,7 +30,7 @@ imports:
   - trand
   - typed
 - name: go.uber.org/thriftrw
-  version: a78f779abe5af7db8b856dcfd5726671dbc01613
+  version: 3cc88481bdd6ea4f272b3e632a979f731ecf968a
   subpackages:
   - envelope
   - internal/envelope/exception
@@ -39,7 +39,7 @@ imports:
   - version
   - wire
 - name: go.uber.org/yarpc
-  version: 14570a0d02d637772f43db4687dab626ce59bb7a
+  version: eaeb0fdcb1116b77dea2049002d83de4bd602325
   subpackages:
   - encoding/raw
   - encoding/thrift
@@ -57,7 +57,7 @@ imports:
   - transport/tchannel
   - transport/tchannel/internal
 - name: golang.org/x/net
-  version: 4bb47a1098b37d69980d96237e2ae4ff56bb5a95
+  version: 87635b2611e4683a6f0aa595c36683021a00b2e4
   subpackages:
   - context
   - context/ctxhttp
