@@ -21,6 +21,7 @@
 package rpc
 
 import (
+	"github.com/pkg/errors"
 	"go.uber.org/fx/modules"
 	"go.uber.org/fx/service"
 
@@ -35,7 +36,7 @@ func ThriftModule(hookup CreateThriftServiceFunc, options ...modules.Option) ser
 	return func(mi service.ModuleCreateInfo) ([]service.Module, error) {
 		mod, err := newYarpcThriftModule(mi, hookup, options...)
 		if err != nil {
-			return nil, err
+			return nil, errors.Wrap(err, "unable to instantiate Thrift module")
 		}
 
 		return []service.Module{mod}, nil
@@ -49,7 +50,7 @@ func newYarpcThriftModule(
 ) (*YarpcModule, error) {
 	registrants, err := createService(mi.Host)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "unable to create YARPC thrift handler")
 	}
 
 	reg := func(mod *YarpcModule) {
