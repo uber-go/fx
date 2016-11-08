@@ -3,6 +3,7 @@
 [![GoDoc][doc-img]][doc]
 [![Coverage Status][cov-img]][cov]
 [![Build Status][ci-img]][ci]
+[![Report Card][report-card-img]][report-card]
 
 ## Status
 
@@ -67,7 +68,7 @@ service may expose RPC endpoints and also ingest Kafka messages.
 
 In UberFX, there is a simpler model where we create a single binary,
 but turn its modules on and off based on roles which are specified via the
-commmand line.
+command line.
 
 For example, imagine we wanted a "worker" and a "service" role that handled
 Kafka and TChannel, respectively:
@@ -227,3 +228,5 @@ Then running the above example will result in **Port is 3000**
 [cov-img]: https://coveralls.io/repos/github/uber-go/fx/badge.svg?branch=master
 [ci]: https://travis-ci.org/uber-go/fx
 [ci-img]: https://travis-ci.org/uber-go/fx.svg?branch=master
+[report-card]: https://goreportcard.com/report/github.com/uber-go/fx
+[report-card-img]: https://goreportcard.com/badge/github.com/uber-go/fx

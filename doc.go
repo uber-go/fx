@@ -3,7 +3,8 @@ Package fx is the UberFx Service Framework.
 
 [][doc]
 [][cov]
-[]ci (https://travis-ci.org/uber-go/fx)
+[][ci]
+[]report-card (https://goreportcard.com/report/github.com/uber-go/fx)
 
 Status
 
@@ -65,7 +66,7 @@ service may expose RPC endpoints and also ingest Kafka messages.
 
 In UberFX, there is a simpler model where we create a single binary,
 but turn its modules on and off based on roles which are specified via the
-commmand line.
+command line.
 
 For example, imagine we wanted a "worker" and a "service" role that handled
 Kafka and TChannel, respectively:
