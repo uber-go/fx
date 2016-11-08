@@ -57,7 +57,7 @@ func (b *Builder) WithOptions(options ...Option) *Builder {
 func (b *Builder) Build() (Owner, error) {
 	svc, err := New(b.options...)
 	if err != nil {
-		return nil, errors.Wrap(err, "service instantiation failed with optinos")
+		return nil, errors.Wrap(err, "service instantiation failed due to options")
 	}
 
 	if err := svc.AddModules(b.modules...); err != nil {
