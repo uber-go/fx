@@ -29,6 +29,7 @@ import (
 	"go.uber.org/fx/modules"
 	"go.uber.org/fx/service"
 
+	"github.com/pkg/errors"
 	"github.com/uber/tchannel-go"
 	"go.uber.org/yarpc"
 	"go.uber.org/yarpc/transport"
@@ -88,7 +89,7 @@ func newYarpcModule(
 	for _, opt := range options {
 		if err := opt(&mi); err != nil {
 			module.log.Error("Unable to apply option", "error", err, "option", opt)
-			return module, err
+			return module, errors.Wrap(err, "unable to apply option to YARPC module")
 		}
 	}
 
