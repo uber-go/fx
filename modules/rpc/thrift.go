@@ -21,10 +21,10 @@
 package rpc
 
 import (
-	"github.com/pkg/errors"
 	"go.uber.org/fx/modules"
 	"go.uber.org/fx/service"
 
+	"github.com/pkg/errors"
 	"go.uber.org/yarpc/transport"
 )
 
