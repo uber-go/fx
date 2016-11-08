@@ -497,21 +497,16 @@ func (cv Value) getValueStruct(key string, target interface{}) (interface{}, err
 		case bucketMap:
 			val := global.GetValue(childKey).Value()
 			if val != nil {
-				destMap := reflect.MakeMap(fieldType).Interface()
+				destMap := reflect.ValueOf(reflect.MakeMap(fieldType).Interface())
+
 				// child yamlnode parsed from yaml file is of type map[interface{}]interface{}
 				// type casting here makes sure that we are iterating over a parsed map.
 				v, ok := val.(map[interface{}]interface{})
 				if ok {
 					for key, value := range v {
-						switch key := key.(type) {
-						case string:
-							destMap := destMap.(map[string]interface{})
-							destMap[key] = value
-						default:
-							return nil, fmt.Errorf("can't populate struct from the input yaml. Map key must be a string: %v", key)
-						}
+						destMap.SetMapIndex(reflect.ValueOf(key), reflect.ValueOf(value))
 					}
-					fieldValue.Set(reflect.ValueOf(destMap))
+					fieldValue.Set(destMap)
 				}
 			}
 		}

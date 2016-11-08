@@ -201,10 +201,11 @@ func TestMapParsingSimpleMap(t *testing.T) {
 	})
 }
 
-func TestMapParsingUnsupportedMap(t *testing.T) {
-	withYamlBytes(t, unsupportedMapYaml, func(provider Provider) {
-		ms := unsupportedMapStruct{}
-		err := provider.GetValue("unsupportedMapStruct").PopulateStruct(&ms)
-		assert.Error(t, err)
+func TestMapParsingMapWithNonStringKeys(t *testing.T) {
+	withYamlBytes(t, intKeyMapYaml, func(provider Provider) {
+		ik := intKeyMapStruct{}
+		err := provider.GetValue("intKeyMapStruct").PopulateStruct(&ik)
+		assert.NoError(t, err)
+		assert.Equal(t, "onetwothree", ik.IntKeyMap[123])
 	})
 }

@@ -48,6 +48,8 @@ type nestedStruct struct {
 
 type mapStruct struct {
 	MyMap        map[string]interface{} `yaml:"oneTrueMap"`
+	IntMap       map[string]int         `yaml:"intMap"`
+	StringMap    map[string]string      `yaml:"stringMap"`
 	NestedStruct nestedStruct           `yaml:"nestedStruct"`
 }
 
@@ -57,17 +59,23 @@ mapStruct:
     one: 1
     two: 2
     three: 3
+  intMap:
+    one: 1
+    two: 2
+  stringMap:
+    one: uno
+    two: dos
   nestedStruct:
     additionalData: nesteddata
 `)
 
-type unsupportedMapStruct struct {
-	UnsupportedMap map[int]interface{} `yaml:"unsupportedMap"`
+type intKeyMapStruct struct {
+	IntKeyMap map[int]string `yaml:"intKeyMap"`
 }
 
-var unsupportedMapYaml = []byte(`
-unsupportedMapStruct:
-  unsupportedMap:
+var intKeyMapYaml = []byte(`
+intKeyMapStruct:
+  intKeyMap:
     123: onetwothree
 `)
 
