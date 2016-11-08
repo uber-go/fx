@@ -74,10 +74,14 @@ bench:
 .PHONY: benchbase
 BASELINE_BENCH_FILE=.bench/old.txt
 benchbase:
-	# TODO: This flag check is not working properly...
-	if [ -z "$(IGNORE_BASELINE_CHECK)" && -z "$$(git diff master)" ]; then \
-		$(error "Can't record baseline with code changes off master. Check out master and try again);\
+	$(ECHO_V)if [ -z "$(IGNORE_BASELINE_CHECK)" ] && [ -z "$(git diff master)" ]; then \
+		echo "$(ERROR_STYLE)Can't record baseline with code changes off master." ; \
+		echo "Check out master and try again$(COLOR_RESET)"; \
+		exit 1; \
 	fi
+
+	@echo "$(LABEL_STYLE)Running baseline benchmark$(COLOR_RESET)"
+	@echo
 	$(ECHO_V)$(MAKE) bench BENCH_FILE=$(BASELINE_BENCH_FILE)
 
 .PHONY: benchcmp
