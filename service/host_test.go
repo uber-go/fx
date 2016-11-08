@@ -140,7 +140,7 @@ foo:
 	assert.Equal(t, 1, instance.ServiceConfig.Bar)
 }
 
-func TestLoadInstanceConfig_InvalidConfig(t *testing.T) {
+func TestLoadInstanceConfig_IntKey(t *testing.T) {
 	cfg := config.NewYAMLProviderFromBytes([]byte(`
 foo:
   bar:
@@ -152,7 +152,8 @@ foo:
 			Bar map[int]interface{} `yaml:"bar"`
 		}
 	}{}
-	assert.False(t, loadInstanceConfig(cfg, "foo", &instance))
+	assert.True(t, loadInstanceConfig(cfg, "foo", &instance))
+	assert.Equal(t, instance.ServiceConfig.Bar[1], "baz")
 }
 
 func TestHostStop_NoError(t *testing.T) {
