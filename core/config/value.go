@@ -267,7 +267,7 @@ func (cv Value) Value() interface{} {
 
 const (
 	bucketInvalid   = -1
-	bucketPrimative = 0
+	bucketPrimitive = 0
 	bucketArray     = 1
 	bucketObject    = 2
 	bucketMap       = 3
@@ -294,7 +294,7 @@ func getBucket(t reflect.Type) int {
 	case reflect.Struct:
 		return bucketObject
 	}
-	return bucketPrimative
+	return bucketPrimitive
 }
 
 type fieldInfo struct {
@@ -375,7 +375,7 @@ func (cv Value) getValueStruct(key string, target interface{}) (interface{}, err
 	targetType := targetValue.Type()
 	// if b := getBucket(targetValue); b == bucketInvalid {
 	// 	return nil, false, errors.Error("Invalid target object kind")
-	// } else if b == bucketPrimative {
+	// } else if b == bucketPrimitive {
 	// 	return cc.GetValue(key, def)
 	// }
 
@@ -400,7 +400,7 @@ func (cv Value) getValueStruct(key string, target interface{}) (interface{}, err
 		switch getBucket(fieldType) {
 		case bucketInvalid:
 			continue
-		case bucketPrimative:
+		case bucketPrimitive:
 			var val interface{}
 
 			if fieldType.Kind() == reflect.Ptr {
@@ -420,8 +420,7 @@ func (cv Value) getValueStruct(key string, target interface{}) (interface{}, err
 				continue
 			}
 
-			// For primative values, just get the value and set it into the field
-			//
+			// For primitive values, just get the value and set it into the field
 			if v2 := global.GetValue(childKey); v2.HasValue() {
 				val = v2.Value()
 			} else if fieldInfo.DefaultValue != "" {
@@ -465,7 +464,7 @@ func (cv Value) getValueStruct(key string, target interface{}) (interface{}, err
 
 				var itemValue interface{}
 				switch bucket {
-				case bucketPrimative:
+				case bucketPrimitive:
 					if v2 := global.GetValue(arrayKey); v2.HasValue() {
 						itemValue = v2.Value()
 					}
