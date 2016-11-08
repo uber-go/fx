@@ -33,6 +33,7 @@ import (
 	"go.uber.org/fx/service"
 
 	"github.com/gorilla/mux"
+	"github.com/pkg/errors"
 )
 
 // ModuleType is a human-friendly representation of the module
@@ -101,7 +102,7 @@ func New(hookup CreateHTTPRegistrantsFunc, options ...modules.Option) service.Mo
 	return func(mi service.ModuleCreateInfo) ([]service.Module, error) {
 		mod, err := newModule(mi, hookup, options...)
 		if err != nil {
-			return nil, err
+			return nil, errors.Wrap(err, "unable to instantiate HTTP module")
 		}
 		return []service.Module{mod}, nil
 	}
@@ -138,7 +139,7 @@ func newModule(
 	for _, option := range options {
 		if err := option(&mi); err != nil {
 			module.log.Error("Unable to apply option", "error", err, "option", option)
-			return module, err
+			return module, errors.Wrap(err, "unable to apply option to module")
 		}
 	}
 
@@ -187,7 +188,7 @@ func (m *Module) Start(ready chan<- struct{}) <-chan error {
 	// Set up the socket
 	listener, err := net.Listen("tcp", fmt.Sprintf(":%d", m.config.Port))
 	if err != nil {
-		ret <- err
+		ret <- errors.Wrap(err, "unable to open TCP listener for HTTP module")
 		return ret
 	}
 
@@ -251,7 +252,7 @@ func panicWrap(h http.Handler) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		defer func() {
 			if err := recover(); err != nil {
-				// TODO log this
+				// TODO(ai) log and add stats to this
 				w.Header().Add(ContentType, ContentTypeText)
 				w.WriteHeader(http.StatusInternalServerError)
 				fmt.Fprintf(w, "Server error: %+v", err)
