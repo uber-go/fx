@@ -149,6 +149,11 @@ func (s *host) shutdown(err error, reason string, exitCode *int) (bool, error) {
 		s.scope.Close()
 	}
 
+	// Flush tracing buffers
+	if s.tracerCloser != nil {
+		s.tracerCloser.Close()
+	}
+
 	// report that we shutdown.
 	s.closeChan <- *s.shutdownReason
 	close(s.closeChan)

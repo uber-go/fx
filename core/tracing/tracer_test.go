@@ -42,21 +42,24 @@ var (
 )
 
 func TestInitGlobalTracer_Simple(t *testing.T) {
-	tracer, err := InitGlobalTracer(emptyJaegerConfig, serviceName, logger, scope)
+	tracer, closer, err := InitGlobalTracer(emptyJaegerConfig, serviceName, logger, scope)
 	assert.NotNil(t, tracer)
+	assert.NotNil(t, closer)
 	assert.NoError(t, err)
 }
 
 func TestInitGlobalTracer_Disabled(t *testing.T) {
-	tracer, err := InitGlobalTracer(disabledJaegerConfig, serviceName, logger, scope)
+	tracer, closer, err := InitGlobalTracer(disabledJaegerConfig, serviceName, logger, scope)
 	assert.NotNil(t, tracer)
+	assert.NotNil(t, closer)
 	assert.NoError(t, err)
 }
 
 func TestInitGlobalTracer_NoServiceName(t *testing.T) {
-	tracer, err := InitGlobalTracer(emptyJaegerConfig, "", logger, scope)
+	tracer, closer, err := InitGlobalTracer(emptyJaegerConfig, "", logger, scope)
 	assert.NotNil(t, err)
 	assert.Nil(t, tracer)
+	assert.Nil(t, closer)
 }
 
 func TestLoadAppConfig(t *testing.T) {

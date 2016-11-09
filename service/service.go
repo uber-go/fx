@@ -140,8 +140,10 @@ func New(options ...Option) (Owner, error) {
 	}
 
 	if svc.Tracer() == nil {
-		svc.configProvider.GetValue("tracing").PopulateStruct(&svc.tracerConfig)
-		tracer, err := tracing.InitGlobalTracer(
+		if err := svc.configProvider.GetValue("tracing").PopulateStruct(&svc.tracerConfig); err != nil {
+			return nil, errors.Wrap(err, "unable to load tracing configuration")
+		}
+		tracer, closer, err := tracing.InitGlobalTracer(
 			&svc.tracerConfig,
 			svc.standardConfig.ServiceName,
 			svc.log,
@@ -151,6 +153,7 @@ func New(options ...Option) (Owner, error) {
 			return svc, err
 		}
 		svc.tracer = tracer
+		svc.tracerCloser = closer
 	}
 
 	// if we have an observer, look for a property called "config" and load the service

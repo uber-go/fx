@@ -21,6 +21,7 @@
 package service
 
 import (
+	"io"
 	"sync"
 
 	"go.uber.org/fx/core/config"
@@ -75,6 +76,7 @@ type serviceCore struct {
 	log            ulog.Log
 	tracerConfig   jaegerconfig.Configuration
 	tracer         opentracing.Tracer
+	tracerCloser   io.Closer
 }
 
 var _ Host = &serviceCore{}
