@@ -61,7 +61,7 @@ func TestInitGlobalTracer_Disabled(t *testing.T) {
 
 func TestInitGlobalTracer_NoServiceName(t *testing.T) {
 	tracer, closer, err := InitGlobalTracer(_emptyJaegerConfig, "", getLogger(), _scope)
-	assert.NotNil(t, err)
+	assert.Error(t, err)
 	assert.Nil(t, tracer)
 	assert.Nil(t, closer)
 }
