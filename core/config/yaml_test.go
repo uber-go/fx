@@ -25,6 +25,7 @@ import (
 	"io/ioutil"
 	"reflect"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -207,5 +208,24 @@ func TestMapParsingMapWithNonStringKeys(t *testing.T) {
 		err := provider.GetValue("intKeyMapStruct").PopulateStruct(&ik)
 		assert.NoError(t, err)
 		assert.Equal(t, "onetwothree", ik.IntKeyMap[123])
+	})
+}
+
+func TestDurationParsing(t *testing.T) {
+	withYamlBytes(t, durationYaml, func(provider Provider) {
+		ds := durationStruct{}
+		err := provider.GetValue("durationStruct").PopulateStruct(&ds)
+		assert.NoError(t, err)
+		expectedDuration, err := time.ParseDuration("30s")
+		assert.NoError(t, err)
+		assert.Equal(t, expectedDuration, ds.Duration)
+	})
+}
+
+func TestParsingUnparsableDuration(t *testing.T) {
+	withYamlBytes(t, unparsableDurationYaml, func(provider Provider) {
+		ds := durationStruct{}
+		err := provider.GetValue("durationStruct").PopulateStruct(&ds)
+		assert.Error(t, err)
 	})
 }

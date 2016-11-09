@@ -421,6 +421,17 @@ func (cv Value) getValueStruct(key string, target interface{}) (interface{}, err
 				continue
 			}
 
+			if fieldType == reflect.TypeOf(time.Duration(0)) {
+				if v := global.GetValue(childKey); v.HasValue() {
+					duration, err := time.ParseDuration(v.AsString())
+					if err != nil {
+						return nil, errors.Wrap(err, "unable to parse time.Duration")
+					}
+					fieldValue.Set(reflect.ValueOf(duration))
+					continue
+				}
+			}
+
 			// For primitive values, just get the value and set it into the field
 			if v2 := global.GetValue(childKey); v2.HasValue() {
 				val = v2.Value()

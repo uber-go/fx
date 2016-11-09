@@ -20,6 +20,8 @@
 
 package config
 
+import "time"
+
 type emptystruct struct {
 	Slice []string
 }
@@ -67,6 +69,21 @@ mapStruct:
     two: dos
   nestedStruct:
     additionalData: nesteddata
+`)
+
+type durationStruct struct {
+	Duration           time.Duration `yaml:"duration"`
+	UnparsableDuration time.Duration `yaml:"unparsableDuration"`
+}
+
+var durationYaml = []byte(`
+durationStruct:
+  duration: 30s
+`)
+
+var unparsableDurationYaml = []byte(`
+durationStruct:
+  unparsableDuration: 25thhour
 `)
 
 type intKeyMapStruct struct {
