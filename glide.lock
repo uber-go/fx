@@ -1,5 +1,5 @@
-hash: 5d91f2515bcac503e00eb03a2e0e9d38ae49128bbfdacbde5356fd2f1618c3cc
-updated: 2016-11-09T11:43:36.286538359-08:00
+hash: e3a55e489ca973f86d9f558d7b9f26d4f992985a85e51e3cdf7e732182658a3e
+updated: 2016-11-09T11:54:13.199701522-08:00
 imports:
 - name: github.com/facebookgo/clock
   version: 600d898af40aa09a7a93ecb9265d87b0504b6f03
@@ -98,6 +98,8 @@ testImports:
   version: 52676fb0053ff19b59451b2aed2a1b8de7d89592
 - name: github.com/sectioneight/md-to-godoc
   version: b2154631a41e9d76c25588601522965a387c1316
+- name: github.com/shurcooL/sanitized_anchor_name
+  version: 1dba4b3954bc059efc3991ec364f9f9a35f597d2
 - name: github.com/stretchr/testify
   version: 69483b4bd14f5845b5a1e55bca19e954e827f1d0
   subpackages:
