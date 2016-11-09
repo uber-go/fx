@@ -11,6 +11,8 @@ dependencies:
 	$(ECHO_V)go install ./vendor/github.com/golang/lint/golint
 	@$(call label,Installing errcheck...)
 	$(ECHO_V)go install ./vendor/github.com/kisielk/errcheck
+	@$(call label,Installing md-to-godoc...)
+	$(ECHO_V)go install ./vendor/github.com/sectioneight/md-to-godoc
 
 GOCOV := gocov
 OVERALLS := overalls

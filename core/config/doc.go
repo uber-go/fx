@@ -7,10 +7,10 @@ have knobs to tune, and not everything can have intelligent defaults.
 
 In UberFx, we try very hard to make configuring UberFx convenient. Users can:
 
+
 • Get components working with minimal configuration
 
 • Override any field if the default doesn't make sense for their use case
-
 
 
 Provider
@@ -46,21 +46,23 @@ configuration ahead of time.
 
 You can use a Value for two main purposes:
 
-• Get a single value out of configuration.
 
+• Get a single value out of configuration.
 
 
 For example, if we have a YAML configuration like so:
 
   one:
     two: hello
+
 You could access the value using "dotted notation":
 
   foo := provider.GetValue("one.two").AsString()
   fmt.Println(foo)
   // Output: hello
-• Populate a struct (PopulateStruct(&myStruct))
 
+
+• Populate a struct (PopulateStruct(&myStruct))
 
 
 The As* method has two variants: TryAs* and As*. The former is a
@@ -82,6 +84,7 @@ For example, say we have the following YAML file:
   hello:
     world: yes
     number: 42
+
 We could deserialize into our custom type with the following code:
 
   type myConfig struct {
@@ -93,6 +96,7 @@ We could deserialize into our custom type with the following code:
   provider.GetValue("hello").Populate(&m)
   fmt.Println(m.World)
   // Output: yes
+
 Note that any fields you wish to deserialize into must be exported, just like
 json.Unmarshal and friends.
 

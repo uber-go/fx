@@ -40,6 +40,11 @@ testImport:
   - assert
 - package: github.com/axw/gocov
 - package: github.com/go-playground/overalls
+- package: github.com/sectioneight/md-to-godoc
+# specified manually since we don't import md-to-godoc
+- package: github.com/russross/blackfriday
+  version: 2
+- package: github.com/shurcooL/sanitized_anchor_name
 
 # This is listed as a dependency because we need it for the thriftrw-yarpc
 # plugin which isn't imported in code.

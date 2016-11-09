@@ -1,10 +1,10 @@
 /*
 Package fx is the UberFx Service Framework.
 
-[][doc]
-[][cov]
-[][ci]
-[]report-card (https://goreportcard.com/report/github.com/uber-go/fx)
+GoDoc (https://godoc.org/go.uber.org/fx)
+Coverage Status (https://coveralls.io/github/uber-go/fx?branch=master)
+Build Status (https://travis-ci.org/uber-go/fx)
+Report Card (https://goreportcard.com/report/github.com/uber-go/fx)
 
 Status
 
@@ -59,6 +59,7 @@ in the case of a simple TChannel Service, main.go might look like this:
     // * Report a non-zero exit code if shutdown is caused by an error
     svc.Start(true)
   }
+
 Roles
 
 It's common for a service to handle many different workloads. For example, a
@@ -87,18 +88,19 @@ Kafka and TChannel, respectively:
 
     svc.Start(true)
   }
+
 Which then allows us to set the roles either via a command line variable:
 
 export CONFIG__roles__0=worker
 
 Or via the service parameters, we would activate in the following ways:
 
+
 • ./myservice or ./myservice --roles "service,worker": Runs all modules
 
 • ./myservice --roles "worker": Runs only the **Kakfa** module
 
 • Etc...
-
 
 
 Modules
@@ -108,18 +110,18 @@ functionality that is managed by the service.
 
 Implemented modules:
 
+
 • HTTP server
 
 • TChannel server
 
 
-
 Planned modules:
+
 
 • Kafka ingester
 
 • Delayed jobs
-
 
 
 Module Configuration
@@ -136,6 +138,7 @@ modules of the same type, such as multiple Kafka ingesters.
     http:
       port: 8080
       timeout: 60s
+
 In this example, a module named: "rpc" would lookup it's advertise name as
 modules.rpc.advertiseName.
 
@@ -158,10 +161,10 @@ typed structs.
 The configuration system wraps a set of *providers* that each know how to get
 values from an underlying source:
 
+
 • Static YAML configuration
 
 • Environment variables
-
 
 
 So by stacking these providers, we can have a priority system for defining
@@ -180,12 +183,14 @@ As an example, imagine a YAML config that looks like:
     server:
       port: 8081
       greeting: Hello There!
+
 UberFx Config allows direct key access, such as foo.bar.baz:
 
   cfg := svc.Config()
   if value := cfg.GetValue("foo.bar.baz"); value.HasValue() {
     fmt.Printf("Say %s", value.AsString()) // "Say hello"
   }
+
 Or via a strongly typed structure, even as a nest value, such as:
 
   type myStuff struct {
@@ -202,6 +207,7 @@ Or via a strongly typed structure, even as a nest value, such as:
   }
 
   fmt.Printf("Port is: %v", target.Port)
+
 Prints **Port is 8081**
 
 This model respects priority of providers to allow overriding of individual
@@ -209,6 +215,7 @@ values.  In this example, we override the server port via an environment
 variable:
 
   export CONFIG__stuff__server__port=3000
+
 Then running the above example will result in **Port is 3000**
 
 License
