@@ -33,11 +33,11 @@ import (
 )
 
 var (
-	serviceName            = "serviceName"
-	scope                  = tally.NoopScope
-	emptyJaegerConfig      = &config.Configuration{}
-	disabledJaegerConfig   = &config.Configuration{Disabled: true}
-	jaegerConfigWithLogger = &config.Configuration{Logger: jaeger.NullLogger}
+	_serviceName            = "serviceName"
+	_scope                  = tally.NoopScope
+	_emptyJaegerConfig      = &config.Configuration{}
+	_disabledJaegerConfig   = &config.Configuration{Disabled: true}
+	_jaegerConfigWithLogger = &config.Configuration{Logger: jaeger.NullLogger}
 )
 
 func getLogger() ulog.Log {
@@ -45,34 +45,34 @@ func getLogger() ulog.Log {
 }
 
 func TestInitGlobalTracer_Simple(t *testing.T) {
-	tracer, closer, err := InitGlobalTracer(emptyJaegerConfig, serviceName, getLogger(), scope)
+	tracer, closer, err := InitGlobalTracer(_emptyJaegerConfig, _serviceName, getLogger(), _scope)
 	assert.NotNil(t, tracer)
 	assert.NotNil(t, closer)
 	assert.NoError(t, err)
 }
 
 func TestInitGlobalTracer_Disabled(t *testing.T) {
-	tracer, closer, err := InitGlobalTracer(disabledJaegerConfig, serviceName, getLogger(), scope)
+	tracer, closer, err := InitGlobalTracer(_disabledJaegerConfig, _serviceName, getLogger(), _scope)
 	assert.NotNil(t, tracer)
 	assert.NotNil(t, closer)
 	assert.NoError(t, err)
 }
 
 func TestInitGlobalTracer_NoServiceName(t *testing.T) {
-	tracer, closer, err := InitGlobalTracer(emptyJaegerConfig, "", getLogger(), scope)
+	tracer, closer, err := InitGlobalTracer(_emptyJaegerConfig, "", getLogger(), _scope)
 	assert.NotNil(t, err)
 	assert.Nil(t, tracer)
 	assert.Nil(t, closer)
 }
 
 func TestLoadAppConfig(t *testing.T) {
-	jConfig := loadAppConfig(emptyJaegerConfig, getLogger())
+	jConfig := loadAppConfig(_emptyJaegerConfig, getLogger())
 	assert.NotNil(t, jConfig)
 	assert.NotNil(t, jConfig.Logger)
 }
 
 func TestLoadAppConfig_JaegerConfigWithLogger(t *testing.T) {
-	jConfig := loadAppConfig(jaegerConfigWithLogger, getLogger())
+	jConfig := loadAppConfig(_jaegerConfigWithLogger, getLogger())
 	assert.NotNil(t, jConfig)
 	assert.Equal(t, jaeger.NullLogger, jConfig.Logger)
 }
