@@ -1,5 +1,5 @@
-hash: 5a08798a1b8d67dfc5138a65752c365685860511ed03f5dd5f4c35ab09088e59
-updated: 2016-11-08T03:31:10.827278088-08:00
+hash: 5d91f2515bcac503e00eb03a2e0e9d38ae49128bbfdacbde5356fd2f1618c3cc
+updated: 2016-11-09T11:43:36.286538359-08:00
 imports:
 - name: github.com/facebookgo/clock
   version: 600d898af40aa09a7a93ecb9265d87b0504b6f03
@@ -30,7 +30,7 @@ imports:
   - trand
   - typed
 - name: go.uber.org/thriftrw
-  version: 3cc88481bdd6ea4f272b3e632a979f731ecf968a
+  version: e64354195130301f448ccb83483e4ff0cf3d37ba
   subpackages:
   - envelope
   - internal/envelope/exception
@@ -39,7 +39,7 @@ imports:
   - version
   - wire
 - name: go.uber.org/yarpc
-  version: eaeb0fdcb1116b77dea2049002d83de4bd602325
+  version: e029a7a3ac9ee87ba2a7ecc28bb4258416ad8d59
   subpackages:
   - encoding/raw
   - encoding/thrift
@@ -57,7 +57,7 @@ imports:
   - transport/tchannel
   - transport/tchannel/internal
 - name: golang.org/x/net
-  version: 87635b2611e4683a6f0aa595c36683021a00b2e4
+  version: 40d3034e575b6eafbca34e64224da61de35ae04c
   subpackages:
   - context
   - context/ctxhttp
@@ -81,7 +81,7 @@ testImports:
   subpackages:
   - golint
 - name: github.com/jessevdk/go-flags
-  version: 0648c820cd4e564706597268ae2d2c7d9e6900c6
+  version: 8bc97d602c3bfeb5fc6fc9b5a9c898f245495637
 - name: github.com/kisielk/errcheck
   version: 9c1292e1c962175f76516859f4a88aabd86dc495
 - name: github.com/kisielk/gotool
@@ -94,6 +94,10 @@ testImports:
   version: 792786c7400a136282c1664665ae0a8db921c6c2
   subpackages:
   - difflib
+- name: github.com/russross/blackfriday
+  version: 52676fb0053ff19b59451b2aed2a1b8de7d89592
+- name: github.com/sectioneight/md-to-godoc
+  version: b2154631a41e9d76c25588601522965a387c1316
 - name: github.com/stretchr/testify
   version: 69483b4bd14f5845b5a1e55bca19e954e827f1d0
   subpackages:

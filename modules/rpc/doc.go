@@ -6,6 +6,7 @@ creators for both JSON- and Thrift-encoded messages.
 
 This module works in a way that's pretty similar to existing RPC projects:
 
+
 • Create an IDL file and run the appropriate tools on it (e.g. **thriftrw**) to
 generate the service and handler interfaces
 
@@ -16,12 +17,12 @@ rpc.CreateThriftServiceFunc signature (uberfx/modules/rpc/thrift.go that
 returns a []transport.Registrant YARPC implementation from the handler:
 
 
-
   func NewMyServiceHandler(svc service.Host) ([]transport.Registrant, error) {
     return myservice.New(&MyServiceHandler{}), nil
   }
-• Pass that method into the module initialization:
 
+
+• Pass that method into the module initialization:
 
 
   func main() {
@@ -38,6 +39,7 @@ returns a []transport.Registrant YARPC implementation from the handler:
 
     svc.Start(true)
   }
+
 This will spin up the service.
 
 */
