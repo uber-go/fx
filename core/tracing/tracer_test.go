@@ -37,11 +37,18 @@ var (
 	logger                 = ulog.Logger()
 	scope                  = tally.NoopScope
 	emptyJaegerConfig      = &jaegerconfig.Configuration{}
+	disabledJaegerConfig   = &jaegerconfig.Configuration{Disabled: true}
 	jaegerConfigWithLogger = &jaegerconfig.Configuration{Logger: jaeger.NullLogger}
 )
 
 func TestInitGlobalTracer_Simple(t *testing.T) {
 	tracer, err := InitGlobalTracer(emptyJaegerConfig, serviceName, logger, scope)
+	assert.NotNil(t, tracer)
+	assert.NoError(t, err)
+}
+
+func TestInitGlobalTracer_Disabled(t *testing.T) {
+	tracer, err := InitGlobalTracer(disabledJaegerConfig, serviceName, logger, scope)
 	assert.NotNil(t, tracer)
 	assert.NoError(t, err)
 }

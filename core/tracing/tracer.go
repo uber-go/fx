@@ -17,9 +17,13 @@ func InitGlobalTracer(
 	logger ulog.Log,
 	scope tally.Scope,
 ) (opentracing.Tracer, error) {
-	appCfg := loadAppConfig(cfg, logger)
-	reporter := &jaegerReporter{
-		reporter: scope.Reporter(),
+	appCfg := cfg
+	var reporter *jaegerReporter
+	if cfg == nil || !cfg.Disabled {
+		appCfg = loadAppConfig(cfg, logger)
+		reporter = &jaegerReporter{
+			reporter: scope.Reporter(),
+		}
 	}
 	tracer, closer, err := appCfg.New(serviceName, reporter)
 	if err != nil {
@@ -31,11 +35,9 @@ func InitGlobalTracer(
 }
 
 func loadAppConfig(cfg *jaegerconfig.Configuration, logger ulog.Log) *jaegerconfig.Configuration {
-	var appCfg *jaegerconfig.Configuration
-	if cfg == nil {
+	appCfg := cfg
+	if appCfg == nil {
 		appCfg = &jaegerconfig.Configuration{}
-	} else {
-		appCfg = cfg
 	}
 	if appCfg.Logger == nil {
 		jaegerlogger := &jaegerLogger{
