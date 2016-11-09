@@ -23,6 +23,7 @@ package tracing
 import (
 	"testing"
 
+	"go.uber.org/fx/core/testutils"
 	"go.uber.org/fx/core/ulog"
 
 	"github.com/stretchr/testify/assert"
@@ -84,7 +85,7 @@ func TestLoadAppConfig_NilJaegerConfig(t *testing.T) {
 }
 
 func TestJaegerLogger(t *testing.T) {
-	ulog.WithInMemoryLogger(t, nil, func(zaplogger zap.Logger, buf *ulog.TestBuffer) {
+	testutils.WithInMemoryLogger(t, nil, func(zaplogger zap.Logger, buf *testutils.TestBuffer) {
 		loggerWithZap := ulog.Logger()
 		loggerWithZap.SetLogger(zaplogger)
 		jLogger := jaegerLogger{log: loggerWithZap}

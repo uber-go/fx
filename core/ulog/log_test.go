@@ -30,13 +30,15 @@ import (
 	"testing"
 	"time"
 
+	"go.uber.org/fx/core/testutils"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/uber-go/zap"
 )
 
 func TestSimpleLogger(t *testing.T) {
-	WithInMemoryLogger(t, nil, func(zaplogger zap.Logger, buf *TestBuffer) {
+	testutils.WithInMemoryLogger(t, nil, func(zaplogger zap.Logger, buf *testutils.TestBuffer) {
 		log := Logger()
 		log.SetLogger(zaplogger)
 		log.Debug("debug message", "a", "b")
@@ -53,7 +55,7 @@ func TestSimpleLogger(t *testing.T) {
 }
 
 func TestLoggerWithInitFields(t *testing.T) {
-	WithInMemoryLogger(t, nil, func(zaplogger zap.Logger, buf *TestBuffer) {
+	testutils.WithInMemoryLogger(t, nil, func(zaplogger zap.Logger, buf *testutils.TestBuffer) {
 		log := Logger("method", "test_method")
 		log.SetLogger(zaplogger)
 
@@ -71,7 +73,7 @@ func TestLoggerWithInitFields(t *testing.T) {
 }
 
 func TestLoggerWithInvalidFields(t *testing.T) {
-	WithInMemoryLogger(t, nil, func(zaplogger zap.Logger, buf *TestBuffer) {
+	testutils.WithInMemoryLogger(t, nil, func(zaplogger zap.Logger, buf *testutils.TestBuffer) {
 		log := Logger()
 		log.SetLogger(zaplogger)
 		log.Info("info message", "c")
@@ -86,7 +88,7 @@ func TestLoggerWithInvalidFields(t *testing.T) {
 }
 
 func TestFatalsAndPanics(t *testing.T) {
-	WithInMemoryLogger(t, nil, func(zaplogger zap.Logger, buf *TestBuffer) {
+	testutils.WithInMemoryLogger(t, nil, func(zaplogger zap.Logger, buf *testutils.TestBuffer) {
 		log := Logger()
 		log.SetLogger(zaplogger)
 		assert.Panics(t, func() { log.Panic("panic level") }, "Expected to panic")
