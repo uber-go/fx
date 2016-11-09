@@ -29,53 +29,56 @@ import (
 	"github.com/uber-go/tally"
 	"github.com/uber-go/zap"
 	"github.com/uber/jaeger-client-go"
-	jaegerconfig "github.com/uber/jaeger-client-go/config"
+	"github.com/uber/jaeger-client-go/config"
 )
 
 var (
 	serviceName            = "serviceName"
-	logger                 = ulog.Logger()
 	scope                  = tally.NoopScope
-	emptyJaegerConfig      = &jaegerconfig.Configuration{}
-	disabledJaegerConfig   = &jaegerconfig.Configuration{Disabled: true}
-	jaegerConfigWithLogger = &jaegerconfig.Configuration{Logger: jaeger.NullLogger}
+	emptyJaegerConfig      = &config.Configuration{}
+	disabledJaegerConfig   = &config.Configuration{Disabled: true}
+	jaegerConfigWithLogger = &config.Configuration{Logger: jaeger.NullLogger}
 )
 
+func getLogger() ulog.Log {
+	return ulog.Logger()
+}
+
 func TestInitGlobalTracer_Simple(t *testing.T) {
-	tracer, closer, err := InitGlobalTracer(emptyJaegerConfig, serviceName, logger, scope)
+	tracer, closer, err := InitGlobalTracer(emptyJaegerConfig, serviceName, getLogger(), scope)
 	assert.NotNil(t, tracer)
 	assert.NotNil(t, closer)
 	assert.NoError(t, err)
 }
 
 func TestInitGlobalTracer_Disabled(t *testing.T) {
-	tracer, closer, err := InitGlobalTracer(disabledJaegerConfig, serviceName, logger, scope)
+	tracer, closer, err := InitGlobalTracer(disabledJaegerConfig, serviceName, getLogger(), scope)
 	assert.NotNil(t, tracer)
 	assert.NotNil(t, closer)
 	assert.NoError(t, err)
 }
 
 func TestInitGlobalTracer_NoServiceName(t *testing.T) {
-	tracer, closer, err := InitGlobalTracer(emptyJaegerConfig, "", logger, scope)
+	tracer, closer, err := InitGlobalTracer(emptyJaegerConfig, "", getLogger(), scope)
 	assert.NotNil(t, err)
 	assert.Nil(t, tracer)
 	assert.Nil(t, closer)
 }
 
 func TestLoadAppConfig(t *testing.T) {
-	jConfig := loadAppConfig(emptyJaegerConfig, logger)
+	jConfig := loadAppConfig(emptyJaegerConfig, getLogger())
 	assert.NotNil(t, jConfig)
 	assert.NotNil(t, jConfig.Logger)
 }
 
 func TestLoadAppConfig_JaegerConfigWithLogger(t *testing.T) {
-	jConfig := loadAppConfig(jaegerConfigWithLogger, logger)
+	jConfig := loadAppConfig(jaegerConfigWithLogger, getLogger())
 	assert.NotNil(t, jConfig)
 	assert.Equal(t, jaeger.NullLogger, jConfig.Logger)
 }
 
 func TestLoadAppConfig_NilJaegerConfig(t *testing.T) {
-	jConfig := loadAppConfig(nil, logger)
+	jConfig := loadAppConfig(nil, getLogger())
 	assert.NotNil(t, jConfig)
 	assert.NotNil(t, jConfig.Logger)
 }

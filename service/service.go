@@ -150,7 +150,7 @@ func New(options ...Option) (Owner, error) {
 			svc.scope.SubScope("tracing"),
 		)
 		if err != nil {
-			return svc, err
+			return svc, errors.Wrap(err, "unable to initialize global tracer")
 		}
 		svc.tracer = tracer
 		svc.tracerCloser = closer

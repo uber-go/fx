@@ -151,7 +151,9 @@ func (s *host) shutdown(err error, reason string, exitCode *int) (bool, error) {
 
 	// Flush tracing buffers
 	if s.tracerCloser != nil {
-		s.tracerCloser.Close()
+		if err = s.tracerCloser.Close(); err != nil {
+			ulog.Logger().Error("Failure to close tracer", "error", err)
+		}
 	}
 
 	// report that we shutdown.

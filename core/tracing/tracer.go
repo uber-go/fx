@@ -28,12 +28,12 @@ import (
 
 	"github.com/opentracing/opentracing-go"
 	"github.com/uber-go/tally"
-	jaegerconfig "github.com/uber/jaeger-client-go/config"
+	"github.com/uber/jaeger-client-go/config"
 )
 
 // InitGlobalTracer instantiates a new global tracer
 func InitGlobalTracer(
-	cfg *jaegerconfig.Configuration,
+	cfg *config.Configuration,
 	serviceName string,
 	logger ulog.Log,
 	scope tally.Scope,
@@ -52,9 +52,9 @@ func InitGlobalTracer(
 	return tracer, closer, err
 }
 
-func loadAppConfig(cfg *jaegerconfig.Configuration, logger ulog.Log) *jaegerconfig.Configuration {
+func loadAppConfig(cfg *config.Configuration, logger ulog.Log) *config.Configuration {
 	if cfg == nil {
-		cfg = &jaegerconfig.Configuration{}
+		cfg = &config.Configuration{}
 	}
 	if cfg.Logger == nil {
 		jaegerlogger := &jaegerLogger{
