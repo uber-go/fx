@@ -1,5 +1,4 @@
 package: go.uber.org/fx
-
 import:
 - package: github.com/uber-go/zap
 - package: github.com/uber-go/tally
@@ -15,7 +14,8 @@ import:
   version: v2
 - package: github.com/pkg/errors
   version: ^0.8.0
-
+- package: github.com/uber/jaeger-client-go
+  version: ^1.6.0
 testImport:
 - package: golang.org/x/tools
   version: 3fe2afc9e626f32e91aff6eddb78b14743446865
@@ -24,7 +24,6 @@ testImport:
 - package: github.com/anmitsu/go-shlex
 - package: github.com/jessevdk/go-flags
 - package: github.com/mattn/goveralls
-# Necessary for goveralls
 - package: github.com/pborman/uuid
 - package: github.com/golang/lint
   subpackages:
@@ -38,14 +37,5 @@ testImport:
   version: ^1.1.3
   subpackages:
   - assert
-- package: github.com/axw/gocov
 - package: github.com/go-playground/overalls
-- package: github.com/sectioneight/md-to-godoc
-# specified manually since we don't import md-to-godoc
-- package: github.com/russross/blackfriday
-  version: 2
-- package: github.com/shurcooL/sanitized_anchor_name
-
-# This is listed as a dependency because we need it for the thriftrw-yarpc
-# plugin which isn't imported in code.
 - package: go.uber.org/atomic

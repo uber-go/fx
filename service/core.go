@@ -26,7 +26,9 @@ import (
 	"go.uber.org/fx/core/config"
 	"go.uber.org/fx/core/ulog"
 
+	"github.com/opentracing/opentracing-go"
 	"github.com/uber-go/tally"
+	jaegerconfig "github.com/uber/jaeger-client-go/config"
 )
 
 // A Host represents the hosting environment for a service instance
@@ -40,6 +42,7 @@ type Host interface {
 	Config() config.Provider
 	Items() map[string]interface{}
 	Logger() ulog.Log
+	Tracer() opentracing.Tracer
 }
 
 // A HostContainer is meant to be embedded in a LifecycleObserver
@@ -70,6 +73,8 @@ type serviceCore struct {
 	items          map[string]interface{}
 	logConfig      ulog.Configuration
 	log            ulog.Log
+	tracerConfig   jaegerconfig.Configuration
+	tracer         opentracing.Tracer
 }
 
 var _ Host = &serviceCore{}
@@ -115,4 +120,8 @@ func (s *serviceCore) Config() config.Provider {
 
 func (s *serviceCore) Logger() ulog.Log {
 	return s.log
+}
+
+func (s *serviceCore) Tracer() opentracing.Tracer {
+	return s.tracer
 }

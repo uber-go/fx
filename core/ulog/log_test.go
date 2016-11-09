@@ -21,7 +21,6 @@
 package ulog
 
 import (
-	"bytes"
 	"fmt"
 	"io/ioutil"
 	"net"
@@ -36,35 +35,8 @@ import (
 	"github.com/uber-go/zap"
 )
 
-type testBuffer struct {
-	bytes.Buffer
-}
-
-func (b *testBuffer) Sync() error {
-	return nil
-}
-
-func (b *testBuffer) Lines() []string {
-	output := strings.Split(b.String(), "\n")
-	return output[:len(output)-1]
-}
-
-func (b *testBuffer) Stripped() string {
-	return strings.TrimRight(b.String(), "\n")
-}
-
-func withInMemoryLogger(t *testing.T, opts []zap.Option, f func(zap.Logger, *testBuffer)) {
-	sink := &testBuffer{}
-	errSink := &testBuffer{}
-
-	allOpts := make([]zap.Option, 0, 3+len(opts))
-	allOpts = append(allOpts, zap.DebugLevel, zap.Output(sink), zap.ErrorOutput(errSink))
-	allOpts = append(allOpts, opts...)
-	f(zap.New(zap.NewJSONEncoder(zap.NoTime()), allOpts...), sink)
-}
-
 func TestSimpleLogger(t *testing.T) {
-	withInMemoryLogger(t, nil, func(zaplogger zap.Logger, buf *testBuffer) {
+	WithInMemoryLogger(t, nil, func(zaplogger zap.Logger, buf *TestBuffer) {
 		log := Logger()
 		log.SetLogger(zaplogger)
 		log.Debug("debug message", "a", "b")
@@ -81,7 +53,7 @@ func TestSimpleLogger(t *testing.T) {
 }
 
 func TestLoggerWithInitFields(t *testing.T) {
-	withInMemoryLogger(t, nil, func(zaplogger zap.Logger, buf *testBuffer) {
+	WithInMemoryLogger(t, nil, func(zaplogger zap.Logger, buf *TestBuffer) {
 		log := Logger("method", "test_method")
 		log.SetLogger(zaplogger)
 
@@ -99,7 +71,7 @@ func TestLoggerWithInitFields(t *testing.T) {
 }
 
 func TestLoggerWithInvalidFields(t *testing.T) {
-	withInMemoryLogger(t, nil, func(zaplogger zap.Logger, buf *testBuffer) {
+	WithInMemoryLogger(t, nil, func(zaplogger zap.Logger, buf *TestBuffer) {
 		log := Logger()
 		log.SetLogger(zaplogger)
 		log.Info("info message", "c")
@@ -114,7 +86,7 @@ func TestLoggerWithInvalidFields(t *testing.T) {
 }
 
 func TestFatalsAndPanics(t *testing.T) {
-	withInMemoryLogger(t, nil, func(zaplogger zap.Logger, buf *testBuffer) {
+	WithInMemoryLogger(t, nil, func(zaplogger zap.Logger, buf *TestBuffer) {
 		log := Logger()
 		log.SetLogger(zaplogger)
 		assert.Panics(t, func() { log.Panic("panic level") }, "Expected to panic")

@@ -23,6 +23,7 @@ package service
 import (
 	"go.uber.org/fx/core/config"
 	"go.uber.org/fx/core/metrics"
+	"go.uber.org/fx/core/tracing"
 	"go.uber.org/fx/core/ulog"
 
 	"github.com/go-validator/validator"
@@ -136,6 +137,20 @@ func New(options ...Option) (Owner, error) {
 		}
 
 		metrics.Freeze()
+	}
+
+	if svc.Tracer() == nil {
+		svc.configProvider.GetValue("tracing").PopulateStruct(&svc.tracerConfig)
+		tracer, err := tracing.InitGlobalTracer(
+			&svc.tracerConfig,
+			svc.standardConfig.ServiceName,
+			svc.log,
+			svc.scope.SubScope("tracing"),
+		)
+		if err != nil {
+			return svc, err
+		}
+		svc.tracer = tracer
 	}
 
 	// if we have an observer, look for a property called "config" and load the service

@@ -22,11 +22,11 @@ package rpc
 
 import (
 	"bytes"
-	"context"
 	"testing"
 
 	"go.uber.org/yarpc/encoding/raw"
 	"go.uber.org/yarpc/transport"
+	"golang.org/x/net/context"
 )
 
 func TestRegisterDispatcher_OK(t *testing.T) {
