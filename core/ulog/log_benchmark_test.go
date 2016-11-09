@@ -40,11 +40,16 @@ func logfields() []interface{} {
 	}
 }
 
+func discardedLogger() zap.Logger {
+	return zap.New(
+		zap.NewJSONEncoder(),
+		zap.DiscardOutput,
+	)
+}
+
 func BenchmarkUlogWithoutFields(b *testing.B) {
 	log := Logger()
-	log.SetLogger(zap.New(
-		zap.NewJSONEncoder(),
-		zap.DiscardOutput))
+	log.SetLogger(discardedLogger())
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
@@ -55,10 +60,7 @@ func BenchmarkUlogWithoutFields(b *testing.B) {
 
 func BenchmarkUlogWithFields(b *testing.B) {
 	log := Logger()
-	log.SetLogger(zap.New(
-		zap.NewJSONEncoder(),
-		zap.DiscardOutput,
-	))
+	log.SetLogger(discardedLogger())
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
@@ -69,10 +71,7 @@ func BenchmarkUlogWithFields(b *testing.B) {
 
 func BenchmarkUlogLiteWithFields(b *testing.B) {
 	log := Logger()
-	log.SetLogger(zap.New(
-		zap.NewJSONEncoder(),
-		zap.DiscardOutput,
-	))
+	log.SetLogger(discardedLogger())
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
@@ -97,10 +96,7 @@ func BenchmarkUlogTextEncoderWithFields(b *testing.B) {
 
 func BenchmarkUlogWithFieldsPreset(b *testing.B) {
 	log := Logger(logfields())
-	log.SetLogger(zap.New(
-		zap.NewJSONEncoder(),
-		zap.DiscardOutput,
-	))
+	log.SetLogger(discardedLogger())
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
