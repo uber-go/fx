@@ -140,13 +140,21 @@ func (s *host) shutdown(err error, reason string, exitCode *int) (bool, error) {
 	errs := s.stopModules()
 	if len(errs) > 0 {
 		for k, v := range errs {
-			ulog.Logger().Error("Failure to shut down module", "name", k.Name(), "error", v.Error())
+			s.Logger().Error("Failure to shut down module", "name", k.Name(), "error", v.Error())
 		}
 	}
 
 	// Stop the metrics reporting
 	if s.scope != nil {
 		s.scope.Close()
+	}
+
+	// Flush tracing buffers
+	if s.tracerCloser != nil {
+		s.Logger().Debug("Closing tracer")
+		if err = s.tracerCloser.Close(); err != nil {
+			s.Logger().Error("Failure to close tracer", "error", err)
+		}
 	}
 
 	// report that we shutdown.
@@ -225,7 +233,7 @@ func (s *host) Start(waitForShutdown bool) (<-chan Exit, <-chan struct{}, error)
 
 				s.shutdownMu.Unlock()
 				if _, err := s.shutdown(e, "", nil); err != nil {
-					ulog.Logger().Error("Unable to shut down modules", "initialError", e, "shutdownError", err)
+					s.Logger().Error("Unable to shut down modules", "initialError", e, "shutdownError", err)
 				}
 				return errChan, readyCh, e
 			}

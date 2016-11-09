@@ -24,6 +24,7 @@ import (
 	"go.uber.org/fx/core/config"
 	"go.uber.org/fx/core/ulog"
 
+	"github.com/opentracing/opentracing-go"
 	"github.com/uber-go/tally"
 )
 
@@ -55,6 +56,15 @@ func WithMetricsRootScope(scope tally.RootScope) Option {
 	return func(svc Host) error {
 		svc2 := svc.(*host)
 		svc2.scope = scope
+		return nil
+	}
+}
+
+// WithTracer configures a service host with a tracer
+func WithTracer(tracer opentracing.Tracer) Option {
+	return func(svc Host) error {
+		svc2 := svc.(*host)
+		svc2.tracer = tracer
 		return nil
 	}
 }

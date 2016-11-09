@@ -1,5 +1,4 @@
 package: go.uber.org/fx
-
 import:
 - package: github.com/uber-go/zap
 - package: github.com/uber-go/tally
@@ -15,7 +14,8 @@ import:
   version: v2
 - package: github.com/pkg/errors
   version: ^0.8.0
-
+- package: github.com/uber/jaeger-client-go
+  version: ^1.6.0
 testImport:
 - package: golang.org/x/tools
   version: 3fe2afc9e626f32e91aff6eddb78b14743446865

@@ -18,48 +18,44 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package service
+package testutils
 
 import (
-	"errors"
+	"bytes"
+	"strings"
 	"testing"
 
-	"go.uber.org/fx/core/ulog"
-
-	"github.com/opentracing/opentracing-go"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
+	"github.com/uber-go/zap"
 )
 
-func TestAddModules_OK(t *testing.T) {
-	sh := &host{}
-	require.NoError(t, sh.AddModules(successModuleCreate))
-	assert.Empty(t, sh.Modules())
+// TestBuffer is a buffer used to test the zap logger
+type TestBuffer struct {
+	bytes.Buffer
 }
 
-func TestAddModules_Errors(t *testing.T) {
-	sh := &host{}
-	assert.Error(t, sh.AddModules(errorModuleCreate))
+// Sync is a noop to conform to zap.WriteSyncer interface
+func (b *TestBuffer) Sync() error {
+	return nil
 }
 
-func TestWithLogger_OK(t *testing.T) {
-	logger := ulog.Logger()
-	assert.NotPanics(t, func() {
-		New(WithLogger(logger))
-	})
+// Lines returns buffer as array of strings
+func (b *TestBuffer) Lines() []string {
+	output := strings.Split(b.String(), "\n")
+	return output[:len(output)-1]
 }
 
-func TestWithTracing_OK(t *testing.T) {
-	tracer := &opentracing.NoopTracer{}
-	assert.NotPanics(t, func() {
-		New(WithTracer(tracer))
-	})
+// Stripped returns buffer as a string without the newline
+func (b *TestBuffer) Stripped() string {
+	return strings.TrimRight(b.String(), "\n")
 }
 
-func successModuleCreate(_ ModuleCreateInfo) ([]Module, error) {
-	return nil, nil
-}
+// WithInMemoryLogger creates an in-memory zap logger that can be used in tests
+func WithInMemoryLogger(t *testing.T, opts []zap.Option, f func(zap.Logger, *TestBuffer)) {
+	sink := &TestBuffer{}
+	errSink := &TestBuffer{}
 
-func errorModuleCreate(_ ModuleCreateInfo) ([]Module, error) {
-	return nil, errors.New("can't create module")
+	allOpts := make([]zap.Option, 0, 3+len(opts))
+	allOpts = append(allOpts, zap.DebugLevel, zap.Output(sink), zap.ErrorOutput(errSink))
+	allOpts = append(allOpts, opts...)
+	f(zap.New(zap.NewJSONEncoder(zap.NoTime()), allOpts...), sink)
 }
