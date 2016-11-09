@@ -26,6 +26,7 @@ import (
 
 	"go.uber.org/fx/core/ulog"
 
+	"github.com/opentracing/opentracing-go"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -45,6 +46,13 @@ func TestWithLogger_OK(t *testing.T) {
 	logger := ulog.Logger()
 	assert.NotPanics(t, func() {
 		New(WithLogger(logger))
+	})
+}
+
+func TestWithTracing_OK(t *testing.T) {
+	tracer := &opentracing.NoopTracer{}
+	assert.NotPanics(t, func() {
+		New(WithTracer(tracer))
 	})
 }
 
