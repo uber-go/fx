@@ -1,5 +1,5 @@
-hash: b5856771466a9ea214b3ff0afec1e7233a8f5cc7f711f5b3bba4094c61eaca69
-updated: 2016-11-08T16:42:49.282992334-08:00
+hash: 14974dac5026a608854ec42d45484d99755a2c63f59e1abfebfc762b20adf8f0
+updated: 2016-11-09T12:13:19.402532325-08:00
 imports:
 - name: github.com/apache/thrift
   version: 74c99ba38b02288daf05229cdf34e60261d2d01e
@@ -49,7 +49,7 @@ imports:
   - trand
   - typed
 - name: go.uber.org/thriftrw
-  version: 6aa07c0009457cc6c7ff5497695f1581ad184350
+  version: e64354195130301f448ccb83483e4ff0cf3d37ba
   subpackages:
   - envelope
   - internal/envelope/exception
@@ -58,7 +58,7 @@ imports:
   - version
   - wire
 - name: go.uber.org/yarpc
-  version: 5cb0df4c43be85f526cfe84352983966a83db29d
+  version: e029a7a3ac9ee87ba2a7ecc28bb4258416ad8d59
   subpackages:
   - encoding/raw
   - encoding/thrift
@@ -89,7 +89,7 @@ testImports:
   subpackages:
   - gocov
 - name: github.com/davecgh/go-spew
-  version: 6d212800a42e8ab5c146b8ace3490ee17e5225f9
+  version: 346938d642f2ec3594ed81d874461961cd0faa76
   subpackages:
   - spew
 - name: github.com/go-playground/overalls
@@ -112,6 +112,12 @@ testImports:
   version: 792786c7400a136282c1664665ae0a8db921c6c2
   subpackages:
   - difflib
+- name: github.com/russross/blackfriday
+  version: 52676fb0053ff19b59451b2aed2a1b8de7d89592
+- name: github.com/sectioneight/md-to-godoc
+  version: b2154631a41e9d76c25588601522965a387c1316
+- name: github.com/shurcooL/sanitized_anchor_name
+  version: 1dba4b3954bc059efc3991ec364f9f9a35f597d2
 - name: github.com/stretchr/testify
   version: 69483b4bd14f5845b5a1e55bca19e954e827f1d0
   subpackages:
