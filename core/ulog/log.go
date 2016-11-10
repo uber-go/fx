@@ -60,20 +60,44 @@ type baselogger struct {
 type Log interface {
 	// Configure Log object with the provided log.Configuration
 	Configure(Configuration)
-	// Create a child logger with some context
+
+	// With creates a child logger with the provided paramets as key value pairs
 	With(...interface{}) Log
+
+	// SetLevel sets the log level for ulog
 	SetLevel(zap.Level)
+
+	// SetLogger allows users to set their own initialized logger to work with ulog APIs
 	SetLogger(zap.Logger)
+
+	// Check returns a zap.CheckedMessage if logging a message at the specified level is enabled.
 	Check(zap.Level, string) *zap.CheckedMessage
+
+	// RawLogger returns underlying logger implementation (zap.Logger) to get around the ulog.Log interface
 	RawLogger() zap.Logger
 
+	// Log at the provided zap.Level with message, and parameters as key value pairs
 	Log(zap.Level, string, ...interface{})
+
+	// Debug logs at Debug level with message, and parameters as key value pairs
 	Debug(string, ...interface{})
+
+	// Info logs at Info level with message, and parameters as key value pairs
 	Info(string, ...interface{})
+
+	// Warn ogs at Warn level with message, and parameters as key value pairs
 	Warn(string, ...interface{})
+
+	// Error logs at Error level with message, and parameters as key value pairs
 	Error(string, ...interface{})
+
+	// Panic logs at Panic level with message, and parameters as key value pairs
 	Panic(string, ...interface{})
+
+	// Fatal logs at Fatal level with message, and parameters as key value pairs
 	Fatal(string, ...interface{})
+
+	// DFatal logs at Debug level (Fatal for development) with message, and parameters as key value pairs
 	DFatal(string, ...interface{})
 }
 
