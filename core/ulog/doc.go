@@ -18,11 +18,12 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-// Package ulog is the Logging package
+// Package ulog is the Ulog package.
 //
 // ulog provides an interface and abstraction layer over the logger implementation used underneath,
 // and provides simple APIs for logging. The logger is instantiated as default logger and can be configured
 // Configure() API and provided yaml configuration.
+//
 //
 //   package main
 //
@@ -46,21 +47,23 @@
 // ulog configuration can be defined in multiple ways, either by writing the struct yourself, or describing in the yaml
 // and populating using config package.
 //
-// • Defining config structure -
 //
-//   loggingConfig := ulog.Configuration {
-//     stdout: true,
-//   }
+// • Defining config structure:
 //
-// • Fetching configuration from yaml -
+// loggingConfig := ulog.Configuration {
+//   stdout: true,
+// }
 //
-//   base.yaml-
-//   logging:
-//     stdout: true
-//     level: Debug
 //
-//   var loggingConfig ulog.Configuration
+// • Fetching configuration from yaml:
 //
-//   err := cfg.GetValue("logging").PopulateStruct(&loggingConfig)
+//     logging:
+//       stdout: true
+//       level: Debug
+//
+//     var loggingConfig ulog.Configuration
+//
+//     err := cfg.GetValue("logging").PopulateStruct(&loggingConfig)
+//
 //
 package ulog
