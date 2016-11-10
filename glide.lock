@@ -1,5 +1,5 @@
-hash: 70f5a1723eadc49c68937aa7fb789167f285baa29e6a55057d644e31a30bd537
-updated: 2016-11-09T22:37:22.262007964-08:00
+hash: ccf2d446d11e5e2daa4ea867c5c9ca11155a17ac5eda6e53bbf49e620e33f9ed
+updated: 2016-11-09T22:44:53.365387523-08:00
 imports:
 - name: github.com/apache/thrift
   version: 74c99ba38b02288daf05229cdf34e60261d2d01e
@@ -45,7 +45,7 @@ imports:
   - trand
   - typed
 - name: go.uber.org/thriftrw
-  version: e64354195130301f448ccb83483e4ff0cf3d37ba
+  version: 4b6ad6e796868b8066e22774636768235a064935
   subpackages:
   - envelope
   - internal/envelope/exception
@@ -111,7 +111,7 @@ testImports:
 - name: github.com/russross/blackfriday
   version: 52676fb0053ff19b59451b2aed2a1b8de7d89592
 - name: github.com/sectioneight/md-to-godoc
-  version: b2154631a41e9d76c25588601522965a387c1316
+  version: ac8c3af3d0f95ef8321b1f0c951bf054bf6175ca
 - name: github.com/shurcooL/sanitized_anchor_name
   version: 1dba4b3954bc059efc3991ec364f9f9a35f597d2
 - name: github.com/stretchr/testify
