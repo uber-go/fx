@@ -72,13 +72,17 @@ mapStruct:
 `)
 
 type durationStruct struct {
-	Duration           time.Duration `yaml:"duration"`
+	Seconds            time.Duration `yaml:"seconds"`
+	Minutes            time.Duration `yaml:"minutes"`
+	Hours              time.Duration `yaml:"hours"`
 	UnparsableDuration time.Duration `yaml:"unparsableDuration"`
 }
 
 var durationYaml = []byte(`
 durationStruct:
-  duration: 30s
+  seconds: 10s
+  minutes: 20m
+  hours: 30h
 `)
 
 var unparsableDurationYaml = []byte(`

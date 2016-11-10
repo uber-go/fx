@@ -216,9 +216,10 @@ func TestDurationParsing(t *testing.T) {
 		ds := durationStruct{}
 		err := provider.GetValue("durationStruct").PopulateStruct(&ds)
 		assert.NoError(t, err)
-		expectedDuration, err := time.ParseDuration("30s")
 		assert.NoError(t, err)
-		assert.Equal(t, expectedDuration, ds.Duration)
+		assert.Equal(t, 10*time.Second, ds.Seconds)
+		assert.Equal(t, 20*time.Minute, ds.Minutes)
+		assert.Equal(t, 30*time.Hour, ds.Hours)
 	})
 }
 

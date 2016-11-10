@@ -50,6 +50,8 @@ const (
 	Dictionary
 )
 
+var _zeroTimeDuration = time.Duration(0)
+
 // GetValueType returns GO type of the provided object
 func GetValueType(value interface{}) ValueType {
 	if value == nil {
@@ -421,7 +423,7 @@ func (cv Value) getValueStruct(key string, target interface{}) (interface{}, err
 				continue
 			}
 
-			if fieldType == reflect.TypeOf(time.Duration(0)) {
+			if fieldType == reflect.TypeOf(_zeroTimeDuration) {
 				if v := global.GetValue(childKey); v.HasValue() {
 					duration, err := time.ParseDuration(v.AsString())
 					if err != nil {
