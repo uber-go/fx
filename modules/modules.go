@@ -23,6 +23,7 @@ package modules
 import (
 	"go.uber.org/fx/service"
 
+	"github.com/opentracing/opentracing-go"
 	"github.com/uber-go/tally"
 )
 
@@ -39,6 +40,7 @@ type ModuleBase struct {
 	isRunning  bool
 	roles      []string
 	scope      tally.Scope
+	tracer     opentracing.Tracer
 }
 
 // NewModuleBase configures a new ModuleBase
@@ -54,6 +56,7 @@ func NewModuleBase(
 		host:       service,
 		roles:      roles,
 		scope:      service.Metrics().SubScope(name),
+		tracer:     service.Tracer(),
 	}
 }
 
@@ -75,4 +78,9 @@ func (mb ModuleBase) Type() string {
 // Name returns the module's name
 func (mb ModuleBase) Name() string {
 	return mb.name
+}
+
+// Tracer returns the module's service tracer
+func (mb ModuleBase) Tracer() opentracing.Tracer {
+	return mb.tracer
 }
