@@ -22,7 +22,7 @@
 //
 // Status
 //
-// Pre-ALPHA. API Changes are**highly likely**.
+// Pre-ALPHA. API Changes are **highly likely**.
 //
 // Abstract
 //
@@ -32,7 +32,7 @@
 //
 // Service Model
 //
-// A service is a container for a set of**modules**, controlling their lifecycle.
+// A service is a container for a set of **modules**, controlling their lifecycle.
 // Service can have any number of modules that are responsible for a specific type
 // of functionality, such as a Kafka message ingestion, exposing an HTTP server, or
 // a set of RPC service endpoints.
@@ -118,7 +118,7 @@
 //
 // • ./myservice or./myservice --roles "service,worker": Runs all modules
 //
-// • ./myservice --roles "worker": Runs only the**Kakfa** module
+// • ./myservice --roles "worker": Runs only the **Kakfa** module
 //
 // • Etc...
 //
@@ -177,7 +177,7 @@
 // typed structs.
 //
 //
-// The configuration system wraps a set of*providers* that each know how to get
+// The configuration system wraps a set of *providers* that each know how to get
 // values from an underlying source:
 //
 //
@@ -227,7 +227,7 @@
 //
 //   fmt.Printf("Port is: %v", target.Port)
 //
-// Prints**Port is 8081**
+// Prints **Port is 8081**
 //
 // This model respects priority of providers to allow overriding of individual
 // values.  In this example, we override the server port via an environment
@@ -236,7 +236,7 @@
 //
 //   export CONFIG__stuff__server__port=3000
 //
-// Then running the above example will result in**Port is 3000**
+// Then running the above example will result in **Port is 3000**
 //
 // License
 //

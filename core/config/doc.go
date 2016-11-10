@@ -52,7 +52,7 @@
 // be useful, so UberFx treats them specially. Dynamic configuration providers
 // conform to the
 // Provider interface, but they're instantianted
-// **after** the StaticProviders on order to read bootstarp values.
+//  **after** the StaticProviders on order to read bootstarp values.
 //
 // For example, if you were to implement a ZooKeeper-backed
 // Provider, you'd likely need to specify (via YAML or environment

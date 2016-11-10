@@ -1,5 +1,5 @@
-hash: ccf2d446d11e5e2daa4ea867c5c9ca11155a17ac5eda6e53bbf49e620e33f9ed
-updated: 2016-11-09T22:44:53.365387523-08:00
+hash: b222221d039c919348507d7a06673c643974e16707aed8f07ec8c7274ce4a50f
+updated: 2016-11-09T23:53:35.71862965-08:00
 imports:
 - name: github.com/apache/thrift
   version: 74c99ba38b02288daf05229cdf34e60261d2d01e
@@ -111,7 +111,7 @@ testImports:
 - name: github.com/russross/blackfriday
   version: 52676fb0053ff19b59451b2aed2a1b8de7d89592
 - name: github.com/sectioneight/md-to-godoc
-  version: ac8c3af3d0f95ef8321b1f0c951bf054bf6175ca
+  version: 250dd48c18f8f2bfc4db9f3c145d1f9f0352525d
 - name: github.com/shurcooL/sanitized_anchor_name
   version: 1dba4b3954bc059efc3991ec364f9f9a35f597d2
 - name: github.com/stretchr/testify

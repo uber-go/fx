@@ -41,7 +41,7 @@ testImport:
 - package: github.com/axw/gocov
 - package: github.com/go-playground/overalls
 - package: github.com/sectioneight/md-to-godoc
-  version: ac8c3af3d0f95ef8321b1f0c951bf054bf6175ca
+  version: master
 # specified manually since we don't import md-to-godoc
 - package: github.com/russross/blackfriday
   version: 2
