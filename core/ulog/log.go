@@ -62,43 +62,43 @@ type Log interface {
 	Configure(Configuration)
 
 	// With creates a child logger with the provided paramets as key value pairs
-	With(...interface{}) Log
+	With(args ...interface{}) Log
 
 	// SetLevel sets the log level for ulog
-	SetLevel(zap.Level)
+	SetLevel(level zap.Level)
 
 	// SetLogger allows users to set their own initialized logger to work with ulog APIs
-	SetLogger(zap.Logger)
+	SetLogger(log zap.Logger)
 
 	// Check returns a zap.CheckedMessage if logging a message at the specified level is enabled.
-	Check(zap.Level, string) *zap.CheckedMessage
+	Check(level zap.Level, message string) *zap.CheckedMessage
 
 	// RawLogger returns underlying logger implementation (zap.Logger) to get around the ulog.Log interface
 	RawLogger() zap.Logger
 
 	// Log at the provided zap.Level with message, and parameters as key value pairs
-	Log(zap.Level, string, ...interface{})
+	Log(level zap.Level, message string, args ...interface{})
 
 	// Debug logs at Debug level with message, and parameters as key value pairs
-	Debug(string, ...interface{})
+	Debug(message string, args ...interface{})
 
 	// Info logs at Info level with message, and parameters as key value pairs
-	Info(string, ...interface{})
+	Info(message string, args ...interface{})
 
 	// Warn ogs at Warn level with message, and parameters as key value pairs
-	Warn(string, ...interface{})
+	Warn(message string, args ...interface{})
 
 	// Error logs at Error level with message, and parameters as key value pairs
-	Error(string, ...interface{})
+	Error(message string, args ...interface{})
 
 	// Panic logs at Panic level with message, and parameters as key value pairs
-	Panic(string, ...interface{})
+	Panic(message string, args ...interface{})
 
 	// Fatal logs at Fatal level with message, and parameters as key value pairs
-	Fatal(string, ...interface{})
+	Fatal(message string, args ...interface{})
 
 	// DFatal logs at Debug level (Fatal for development) with message, and parameters as key value pairs
-	DFatal(string, ...interface{})
+	DFatal(message string, args ...interface{})
 }
 
 var development = strings.Contains(config.GetEnvironment(), "development")
@@ -198,36 +198,36 @@ func (l *baselogger) Check(level zap.Level, expr string) *zap.CheckedMessage {
 	return l.log.Check(level, expr)
 }
 
-func (l *baselogger) Debug(msg string, args ...interface{}) {
-	l.Log(zap.DebugLevel, msg, args...)
+func (l *baselogger) Debug(message string, args ...interface{}) {
+	l.Log(zap.DebugLevel, message, args...)
 }
 
-func (l *baselogger) Info(msg string, args ...interface{}) {
-	l.Log(zap.InfoLevel, msg, args...)
+func (l *baselogger) Info(message string, args ...interface{}) {
+	l.Log(zap.InfoLevel, message, args...)
 }
 
-func (l *baselogger) Warn(msg string, args ...interface{}) {
-	l.Log(zap.WarnLevel, msg, args...)
+func (l *baselogger) Warn(message string, args ...interface{}) {
+	l.Log(zap.WarnLevel, message, args...)
 }
 
-func (l *baselogger) Error(msg string, args ...interface{}) {
-	l.Log(zap.ErrorLevel, msg, args...)
+func (l *baselogger) Error(message string, args ...interface{}) {
+	l.Log(zap.ErrorLevel, message, args...)
 }
 
-func (l *baselogger) Panic(msg string, args ...interface{}) {
-	l.Log(zap.PanicLevel, msg, args...)
+func (l *baselogger) Panic(message string, args ...interface{}) {
+	l.Log(zap.PanicLevel, message, args...)
 }
 
-func (l *baselogger) Fatal(msg string, args ...interface{}) {
-	l.Log(zap.FatalLevel, msg, args...)
+func (l *baselogger) Fatal(message string, args ...interface{}) {
+	l.Log(zap.FatalLevel, message, args...)
 }
 
-func (l *baselogger) DFatal(msg string, args ...interface{}) {
-	l.log.DFatal(msg, l.compileLogFields(args)...)
+func (l *baselogger) DFatal(message string, args ...interface{}) {
+	l.log.DFatal(message, l.compileLogFields(args)...)
 }
 
-func (l *baselogger) Log(lvl zap.Level, msg string, args ...interface{}) {
-	if cm := l.Check(lvl, msg); cm.OK() {
+func (l *baselogger) Log(lvl zap.Level, message string, args ...interface{}) {
+	if cm := l.Check(lvl, message); cm.OK() {
 		cm.Write(l.compileLogFields(args...)...)
 	}
 }
