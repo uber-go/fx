@@ -9,7 +9,7 @@ import:
 - package: go.uber.org/yarpc
   version: dev
 - package: go.uber.org/thriftrw
-  version: dev
+  version: 4b6ad6e796868b8066e22774636768235a064935
 - package: github.com/go-validator/validator
   version: v2
 - package: github.com/pkg/errors
@@ -41,6 +41,7 @@ testImport:
 - package: github.com/axw/gocov
 - package: github.com/go-playground/overalls
 - package: github.com/sectioneight/md-to-godoc
+  version: master
 # specified manually since we don't import md-to-godoc
 - package: github.com/russross/blackfriday
   version: 2

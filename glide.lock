@@ -1,5 +1,5 @@
-hash: 14974dac5026a608854ec42d45484d99755a2c63f59e1abfebfc762b20adf8f0
-updated: 2016-11-09T12:13:19.402532325-08:00
+hash: b222221d039c919348507d7a06673c643974e16707aed8f07ec8c7274ce4a50f
+updated: 2016-11-09T23:53:35.71862965-08:00
 imports:
 - name: github.com/apache/thrift
   version: 74c99ba38b02288daf05229cdf34e60261d2d01e
@@ -40,16 +40,12 @@ imports:
 - name: github.com/uber/tchannel-go
   version: 4a23f3aae76694b21107f118ece763a61b98ea07
   subpackages:
-  - atomic
   - relay
-  - thrift
-  - thrift/gen-go/meta
   - tnet
-  - trace/thrift/gen-go/tcollector
   - trand
   - typed
 - name: go.uber.org/thriftrw
-  version: e64354195130301f448ccb83483e4ff0cf3d37ba
+  version: 4b6ad6e796868b8066e22774636768235a064935
   subpackages:
   - envelope
   - internal/envelope/exception
@@ -58,7 +54,7 @@ imports:
   - version
   - wire
 - name: go.uber.org/yarpc
-  version: e029a7a3ac9ee87ba2a7ecc28bb4258416ad8d59
+  version: 1f469341223bdbdca34a0902ad20354eae15caba
   subpackages:
   - encoding/raw
   - encoding/thrift
@@ -76,7 +72,7 @@ imports:
   - transport/tchannel
   - transport/tchannel/internal
 - name: golang.org/x/net
-  version: 55a3084c9119aeb9ba2437d595b0a7e9cb635da9
+  version: 9ef22118a4b25863aa94546daffbc0a18feaafb3
   subpackages:
   - context
 - name: gopkg.in/yaml.v2
@@ -115,7 +111,7 @@ testImports:
 - name: github.com/russross/blackfriday
   version: 52676fb0053ff19b59451b2aed2a1b8de7d89592
 - name: github.com/sectioneight/md-to-godoc
-  version: b2154631a41e9d76c25588601522965a387c1316
+  version: 250dd48c18f8f2bfc4db9f3c145d1f9f0352525d
 - name: github.com/shurcooL/sanitized_anchor_name
   version: 1dba4b3954bc059efc3991ec364f9f9a35f597d2
 - name: github.com/stretchr/testify

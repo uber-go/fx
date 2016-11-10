@@ -72,7 +72,7 @@ If the underlying value cannot be converted to the requested type, `As*` will
 ## PopulateStruct
 
 `PopulateStruct` is akin to `json.Unmarshal()` in that it takes a pointer to a
-custom struct and fills in the fields. It returns a `true`` if the requested
+custom struct and fills in the fields. It returns a `true` if the requested
 fields were found and populated properly, and `false` otherwise.
 
 For example, say we have the following YAML file:
