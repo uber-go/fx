@@ -1,5 +1,5 @@
-hash: 14974dac5026a608854ec42d45484d99755a2c63f59e1abfebfc762b20adf8f0
-updated: 2016-11-09T12:13:19.402532325-08:00
+hash: 70f5a1723eadc49c68937aa7fb789167f285baa29e6a55057d644e31a30bd537
+updated: 2016-11-09T22:37:22.262007964-08:00
 imports:
 - name: github.com/apache/thrift
   version: 74c99ba38b02288daf05229cdf34e60261d2d01e
@@ -40,12 +40,8 @@ imports:
 - name: github.com/uber/tchannel-go
   version: 4a23f3aae76694b21107f118ece763a61b98ea07
   subpackages:
-  - atomic
   - relay
-  - thrift
-  - thrift/gen-go/meta
   - tnet
-  - trace/thrift/gen-go/tcollector
   - trand
   - typed
 - name: go.uber.org/thriftrw
@@ -58,7 +54,7 @@ imports:
   - version
   - wire
 - name: go.uber.org/yarpc
-  version: e029a7a3ac9ee87ba2a7ecc28bb4258416ad8d59
+  version: 1f469341223bdbdca34a0902ad20354eae15caba
   subpackages:
   - encoding/raw
   - encoding/thrift
@@ -76,7 +72,7 @@ imports:
   - transport/tchannel
   - transport/tchannel/internal
 - name: golang.org/x/net
-  version: 55a3084c9119aeb9ba2437d595b0a7e9cb635da9
+  version: 9ef22118a4b25863aa94546daffbc0a18feaafb3
   subpackages:
   - context
 - name: gopkg.in/yaml.v2

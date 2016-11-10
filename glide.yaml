@@ -9,7 +9,7 @@ import:
 - package: go.uber.org/yarpc
   version: dev
 - package: go.uber.org/thriftrw
-  version: dev
+  version: e64354195130301f448ccb83483e4ff0cf3d37ba
 - package: github.com/go-validator/validator
   version: v2
 - package: github.com/pkg/errors
