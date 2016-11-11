@@ -22,7 +22,7 @@
 //
 // The HTTP module is built on top ofGorilla Mux (https://github.com/gorilla/mux),
 // but the details of that are abstracted away through
-// uhttp.RouteHandler.
+//  uhttp.RouteHandler.
 //
 //   package main
 //
