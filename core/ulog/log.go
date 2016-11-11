@@ -61,7 +61,7 @@ type Log interface {
 	// Configure Log object with the provided log.Configuration
 	Configure(Configuration)
 
-	// With creates a child logger with the provided paramets as key value pairs
+	// With creates a child logger with the provided parameters as key value pairs
 	With(args ...interface{}) Log
 
 	// SetLevel sets the log level for ulog
