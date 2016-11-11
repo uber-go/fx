@@ -1,8 +1,8 @@
-hash: b222221d039c919348507d7a06673c643974e16707aed8f07ec8c7274ce4a50f
-updated: 2016-11-09T23:53:35.71862965-08:00
+hash: 34abf7bf90054a375359a2c6636c0b9837a5128e6722d67b7a90b38cad31d64c
+updated: 2016-11-11T12:03:46.123653903-08:00
 imports:
 - name: github.com/apache/thrift
-  version: 74c99ba38b02288daf05229cdf34e60261d2d01e
+  version: fd832242bba9d4eaba71c7c08e8eed440b106f98
   subpackages:
   - lib/go/thrift
 - name: github.com/facebookgo/clock
@@ -45,7 +45,7 @@ imports:
   - trand
   - typed
 - name: go.uber.org/thriftrw
-  version: 4b6ad6e796868b8066e22774636768235a064935
+  version: 6aa07c0009457cc6c7ff5497695f1581ad184350
   subpackages:
   - envelope
   - internal/envelope/exception
@@ -54,7 +54,7 @@ imports:
   - version
   - wire
 - name: go.uber.org/yarpc
-  version: 1f469341223bdbdca34a0902ad20354eae15caba
+  version: 7c6a4c5618cb38228ef9f0eb85ea71d8fc5af2c4
   subpackages:
   - encoding/raw
   - encoding/thrift
@@ -111,7 +111,7 @@ testImports:
 - name: github.com/russross/blackfriday
   version: 52676fb0053ff19b59451b2aed2a1b8de7d89592
 - name: github.com/sectioneight/md-to-godoc
-  version: 250dd48c18f8f2bfc4db9f3c145d1f9f0352525d
+  version: f7ad6a1a485df328ddc1bf11b8f384f82498f6dc
 - name: github.com/shurcooL/sanitized_anchor_name
   version: 1dba4b3954bc059efc3991ec364f9f9a35f597d2
 - name: github.com/stretchr/testify
