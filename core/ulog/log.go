@@ -62,6 +62,9 @@ type Log interface {
 	Configure(Configuration)
 
 	// With creates a child logger with the provided parameters as key value pairs
+	// ulog uses uber-go/zap library as its child logger which needs pairs of key value objects
+	// in the form of zap.Fields(key, value). ulog performs field conversion from
+	// supplied keyvals pair to zap.Fields format.
 	With(keyvals ...interface{}) Log
 
 	// SetLevel sets the log level for ulog
