@@ -62,7 +62,7 @@ type Log interface {
 	Configure(Configuration)
 
 	// With creates a child logger with the provided parameters as key value pairs
-	With(args ...interface{}) Log
+	With(keyvals ...interface{}) Log
 
 	// SetLevel sets the log level for ulog
 	SetLevel(level zap.Level)
@@ -76,29 +76,29 @@ type Log interface {
 	// RawLogger returns underlying logger implementation (zap.Logger) to get around the ulog.Log interface
 	RawLogger() zap.Logger
 
-	// Log at the provided zap.Level with message, and parameters as key value pairs
-	Log(level zap.Level, message string, args ...interface{})
+	// Log at the provided zap.Level with message, and a sequence of parameters as key value pairs
+	Log(level zap.Level, message string, keyvals ...interface{})
 
 	// Debug logs at Debug level with message, and parameters as key value pairs
-	Debug(message string, args ...interface{})
+	Debug(message string, keyvals ...interface{})
 
 	// Info logs at Info level with message, and parameters as key value pairs
-	Info(message string, args ...interface{})
+	Info(message string, keyvals ...interface{})
 
 	// Warn ogs at Warn level with message, and parameters as key value pairs
-	Warn(message string, args ...interface{})
+	Warn(message string, keyvals ...interface{})
 
 	// Error logs at Error level with message, and parameters as key value pairs
-	Error(message string, args ...interface{})
+	Error(message string, keyvals ...interface{})
 
 	// Panic logs at Panic level with message, and parameters as key value pairs
-	Panic(message string, args ...interface{})
+	Panic(message string, keyvals ...interface{})
 
 	// Fatal logs at Fatal level with message, and parameters as key value pairs
-	Fatal(message string, args ...interface{})
+	Fatal(message string, keyvals ...interface{})
 
 	// DFatal logs at Debug level (Fatal for development) with message, and parameters as key value pairs
-	DFatal(message string, args ...interface{})
+	DFatal(message string, keyvals ...interface{})
 }
 
 var development = strings.Contains(config.GetEnvironment(), "development")
@@ -198,57 +198,57 @@ func (l *baselogger) Check(level zap.Level, expr string) *zap.CheckedMessage {
 	return l.log.Check(level, expr)
 }
 
-func (l *baselogger) Debug(message string, args ...interface{}) {
-	l.Log(zap.DebugLevel, message, args...)
+func (l *baselogger) Debug(message string, keyvals ...interface{}) {
+	l.Log(zap.DebugLevel, message, keyvals...)
 }
 
-func (l *baselogger) Info(message string, args ...interface{}) {
-	l.Log(zap.InfoLevel, message, args...)
+func (l *baselogger) Info(message string, keyvals ...interface{}) {
+	l.Log(zap.InfoLevel, message, keyvals...)
 }
 
-func (l *baselogger) Warn(message string, args ...interface{}) {
-	l.Log(zap.WarnLevel, message, args...)
+func (l *baselogger) Warn(message string, keyvals ...interface{}) {
+	l.Log(zap.WarnLevel, message, keyvals...)
 }
 
-func (l *baselogger) Error(message string, args ...interface{}) {
-	l.Log(zap.ErrorLevel, message, args...)
+func (l *baselogger) Error(message string, keyvals ...interface{}) {
+	l.Log(zap.ErrorLevel, message, keyvals...)
 }
 
-func (l *baselogger) Panic(message string, args ...interface{}) {
-	l.Log(zap.PanicLevel, message, args...)
+func (l *baselogger) Panic(message string, keyvals ...interface{}) {
+	l.Log(zap.PanicLevel, message, keyvals...)
 }
 
-func (l *baselogger) Fatal(message string, args ...interface{}) {
-	l.Log(zap.FatalLevel, message, args...)
+func (l *baselogger) Fatal(message string, keyvals ...interface{}) {
+	l.Log(zap.FatalLevel, message, keyvals...)
 }
 
-func (l *baselogger) DFatal(message string, args ...interface{}) {
-	l.log.DFatal(message, l.compileLogFields(args)...)
+func (l *baselogger) DFatal(message string, keyvals ...interface{}) {
+	l.log.DFatal(message, l.compileLogFields(keyvals)...)
 }
 
-func (l *baselogger) Log(lvl zap.Level, message string, args ...interface{}) {
+func (l *baselogger) Log(lvl zap.Level, message string, keyvals ...interface{}) {
 	if cm := l.Check(lvl, message); cm.OK() {
-		cm.Write(l.compileLogFields(args...)...)
+		cm.Write(l.compileLogFields(keyvals...)...)
 	}
 }
 
-func (l *baselogger) compileLogFields(args ...interface{}) []zap.Field {
+func (l *baselogger) compileLogFields(keyvals ...interface{}) []zap.Field {
 	var fields []interface{}
 	fields = append(fields, l.initFields...)
-	fields = append(fields, args...)
+	fields = append(fields, keyvals...)
 	return l.fieldsConversion(fields...)
 }
 
-func (l *baselogger) fieldsConversion(args ...interface{}) []zap.Field {
-	fields := make([]zap.Field, 0, len(args)/2)
-	if len(args)%2 != 0 {
+func (l *baselogger) fieldsConversion(keyvals ...interface{}) []zap.Field {
+	fields := make([]zap.Field, 0, len(keyvals)/2)
+	if len(keyvals)%2 != 0 {
 		fields = append(fields, zap.Error(fmt.Errorf("invalid number of arguments")))
 		return fields
 	}
-	for idx := 0; idx < len(args); idx += 2 {
-		if key, ok := args[idx].(string); ok {
-			key = args[idx].(string)
-			switch value := args[idx+1].(type) {
+	for idx := 0; idx < len(keyvals); idx += 2 {
+		if key, ok := keyvals[idx].(string); ok {
+			key = keyvals[idx].(string)
+			switch value := keyvals[idx+1].(type) {
 			case bool:
 				fields = append(fields, zap.Bool(key, value))
 			case float64:
