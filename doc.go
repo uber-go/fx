@@ -221,7 +221,7 @@
 //
 //   target := &myStuff{}
 //   cfg := svc.Config()
-//   if !cfg.GetValue("stuff.server").PopulateStruct(target) {
+//   if err := cfg.GetValue("stuff.server").PopulateStruct(target); err != nil {
 //     // fail, we didn't find it.
 //   }
 //
