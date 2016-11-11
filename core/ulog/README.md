@@ -1,13 +1,13 @@
 # Logging package
 
-ulog provides an interface and abstraction layer over the logger implementation used underneath,
-and provides simple APIs for logging. The logger is instantiated as logger with default options and can be configured
+ulog provides an API wrapper around the logging library (zap Logger)
+The logger is instantiated as logger with default options and can be configured
 via `Configure()` API and provided yaml configuration.
 
 ```go
 package main
 
-import "go.uber.org/core/ulog"
+import "go.uber.org/fx/core/ulog"
 
 func main() {
   // Initialize logger object
@@ -22,7 +22,7 @@ func main() {
 }
 ```
 
-Note that the log methods (`Info`,`Warn`, `Debug`) takes parameter as key value pairs for formatting (message, (key, value)...)
+Note that the log methods (`Info`,`Warn`, `Debug`) takes parameter as key value pairs (message, (key, value)...)
 
 ulog configuration can be defined in multiple ways, either by writing the struct yourself, or describing in the yaml
 and populating using config package.
@@ -44,7 +44,7 @@ loggingConfig := ulog.Configuration {
 ```
 
 ```go
-  var loggingConfig ulog.Configuration
+var loggingConfig ulog.Configuration
 
-  err := cfg.GetValue("logging").PopulateStruct(&loggingConfig)
+err := cfg.GetValue("logging").PopulateStruct(&loggingConfig)
 ```
