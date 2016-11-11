@@ -55,9 +55,9 @@
 //
 // • Configuration defined in YAML:
 //
-//     logging:
-//       stdout: true
-//       level: debug
+//   logging:
+//     stdout: true
+//     level: debug
 //
 //
 package ulog

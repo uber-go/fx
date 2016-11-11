@@ -38,7 +38,7 @@ loggingConfig := ulog.Configuration{
 * Configuration defined in YAML:
 
 ```yaml
-  logging:
-    stdout: true
-    level: debug
+logging:
+  stdout: true
+  level: debug
 ```
