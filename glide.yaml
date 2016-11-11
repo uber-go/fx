@@ -7,9 +7,9 @@ import:
 - package: github.com/gorilla/context
   version: ^1.1.0
 - package: go.uber.org/yarpc
-  version: dev
+  version: 7c6a4c5618cb38228ef9f0eb85ea71d8fc5af2c4
 - package: go.uber.org/thriftrw
-  version: 4b6ad6e796868b8066e22774636768235a064935
+  version: 6aa07c0009457cc6c7ff5497695f1581ad184350
 - package: github.com/go-validator/validator
   version: v2
 - package: github.com/pkg/errors
