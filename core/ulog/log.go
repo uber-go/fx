@@ -250,7 +250,6 @@ func (l *baselogger) fieldsConversion(keyvals ...interface{}) []zap.Field {
 	}
 	for idx := 0; idx < len(keyvals); idx += 2 {
 		if key, ok := keyvals[idx].(string); ok {
-			key = keyvals[idx].(string)
 			switch value := keyvals[idx+1].(type) {
 			case bool:
 				fields = append(fields, zap.Bool(key, value))
