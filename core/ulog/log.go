@@ -23,6 +23,7 @@ package ulog
 import (
 	"fmt"
 	"io"
+	"io/ioutil"
 	"os"
 	"path"
 	"strings"
@@ -145,12 +146,18 @@ func (l *baselogger) Configure(cfg Configuration) {
 		}
 	}
 	if cfg.File == nil || !cfg.File.Enabled {
-		options = append(options, zap.Output(zap.AddSync(os.Stdout)))
+		options = append(options, zap.Output(zap.AddSync(ioutil.Discard)))
 	} else {
 		options = append(options, zap.Output(l.fileOutput(cfg.File, cfg.Stdout, cfg.Verbose)))
 	}
 
-	if cfg.TextFormatter != nil && *cfg.TextFormatter || cfg.TextFormatter == nil && development {
+	if development {
+		if cfg.TextFormatter == nil || (cfg.TextFormatter != nil && *cfg.TextFormatter) {
+			l.SetLogger(zap.New(zap.NewTextEncoder(), options...))
+			return
+		}
+	}
+	if cfg.TextFormatter != nil && *cfg.TextFormatter {
 		l.SetLogger(zap.New(zap.NewTextEncoder(), options...))
 		return
 	}
