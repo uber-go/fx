@@ -69,13 +69,14 @@ BENCH_FILE ?= .bench/new.txt
 .PHONY: bench
 bench:
 	@$(call label,Running benchmarks)
+	$(ECHO_V)rm $(BENCH_FILE)
 	$(ECHO_V)$(foreach pkg,$(BENCH_PKGS),go test -bench=. -run="^$$" $(BENCH_FLAGS) $(pkg) | \
-		tee $(BENCH_FILE);)
+		tee -a $(BENCH_FILE);)
 
 BASELINE_BENCH_FILE=.bench/old.txt
 .PHONY: benchbase
 benchbase:
-	$(ECHO_V)if [ -z "$(IGNORE_BASELINE_CHECK)" ] && [ -z "$(git diff master)" ]; then \
+	$(ECHO_V)if [ -z $(IGNORE_BASELINE_CHECK) ] && [ -z "$(git diff master)" ]; then \
 		echo "$(ERROR_STYLE)Can't record baseline with code changes off master." ; \
 		echo "Check out master and try again$(COLOR_RESET)"; \
 		exit 1; \
@@ -92,8 +93,7 @@ benchcmp:
 		$(call die,Baseline benchmark file missing. Check out master and run \'make bench\')
 	$(ECHO_V)test -s $(BENCH_FILE) || \
 		$(call label,No current benchmark file. Will generate) ;\
-		$(MAKE) bench
-	$(ECHO_V)benchcmp $(BASELINE_BENCH_FILE) $(BENCH_FILE)
+	benchcmp $(BASELINE_BENCH_FILE) $(BENCH_FILE)
 
 .PHONY: benchreset
 benchreset:
