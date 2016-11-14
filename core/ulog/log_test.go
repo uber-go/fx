@@ -134,6 +134,24 @@ func TestConfiguredLoggerWithTextFormatter(t *testing.T) {
 	})
 }
 
+func TestConfiguredLoggerWithTextFormatter_NonDev(t *testing.T) {
+	dev := development
+	development = false
+	defer func() {
+		development = dev
+	}()
+	withLogger(t, func(tmpDir string, logFile string) {
+		log := Logger()
+		txt := true
+		log.Configure(Configuration{
+			Level:         "debug",
+			TextFormatter: &txt,
+		})
+		zaplogger := log.RawLogger()
+		assert.Equal(t, zap.DebugLevel, zaplogger.Level())
+	})
+}
+
 func TestConfiguredLoggerWithStdout(t *testing.T) {
 	withLogger(t, func(tmpDir string, logFile string) {
 		log := Logger()
