@@ -22,25 +22,20 @@ package ulog
 
 import (
 	"fmt"
-	"io/ioutil"
 	"net"
-	"os"
-	"path/filepath"
-	"strings"
 	"testing"
 	"time"
 
 	"go.uber.org/fx/core/testutils"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"github.com/uber-go/zap"
 )
 
 func TestSimpleLogger(t *testing.T) {
 	testutils.WithInMemoryLogger(t, nil, func(zaplogger zap.Logger, buf *testutils.TestBuffer) {
-		log := Logger()
-		log.SetLogger(zaplogger)
+		log := NewBuilder().SetLogger(zaplogger).Build()
+
 		log.Debug("debug message", "a", "b")
 		log.Info("info message", "c", "d")
 		log.Warn("warn message", "e", "f")
@@ -56,9 +51,7 @@ func TestSimpleLogger(t *testing.T) {
 
 func TestLoggerWithInitFields(t *testing.T) {
 	testutils.WithInMemoryLogger(t, nil, func(zaplogger zap.Logger, buf *testutils.TestBuffer) {
-		log := Logger("method", "test_method")
-		log.SetLogger(zaplogger)
-
+		log := NewBuilder().SetLogger(zaplogger).Build().With("method", "test_method")
 		log.Debug("debug message", "a", "b")
 		log.Info("info message", "c", "d")
 		log.Warn("warn message", "e", "f")
@@ -74,132 +67,25 @@ func TestLoggerWithInitFields(t *testing.T) {
 
 func TestLoggerWithInvalidFields(t *testing.T) {
 	testutils.WithInMemoryLogger(t, nil, func(zaplogger zap.Logger, buf *testutils.TestBuffer) {
-		log := Logger()
-		log.SetLogger(zaplogger)
+		log := NewBuilder().SetLogger(zaplogger).Build()
 		log.Info("info message", "c")
 		log.Info("info message", "c", "d", "e")
 		log.DFatal("debug message")
 		assert.Equal(t, []string{
 			`{"level":"info","msg":"info message","error":"invalid number of arguments"}`,
 			`{"level":"info","msg":"info message","error":"invalid number of arguments"}`,
-			`{"level":"error","msg":"debug message","error":"invalid number of arguments"}`,
+			`{"level":"error","msg":"debug message"}`,
 		}, buf.Lines(), "Incorrect output from logger")
 	})
 }
 
 func TestFatalsAndPanics(t *testing.T) {
 	testutils.WithInMemoryLogger(t, nil, func(zaplogger zap.Logger, buf *testutils.TestBuffer) {
-		log := Logger()
-		log.SetLogger(zaplogger)
+		log := NewBuilder().SetLogger(zaplogger).Build()
 		assert.Panics(t, func() { log.Panic("panic level") }, "Expected to panic")
 		assert.Equal(t, `{"level":"panic","msg":"panic level"}`, buf.Stripped(), "Unexpected output")
 	})
 
-}
-
-func TestConfiguredLogger(t *testing.T) {
-	withLogger(t, func(tmpDir string, logFile string) {
-		log := Logger()
-		txt := false
-		cfg := Configuration{
-			Level:         "debug",
-			Stdout:        false,
-			TextFormatter: &txt,
-			Verbose:       false,
-		}
-		log.Configure(cfg)
-		zaplogger := log.RawLogger()
-		assert.Equal(t, zap.DebugLevel, zaplogger.Level())
-	})
-}
-
-func TestConfiguredLoggerWithTextFormatter(t *testing.T) {
-	withLogger(t, func(tmpDir string, logFile string) {
-		log := Logger()
-		txt := true
-		cfg := Configuration{
-			Level:         "debug",
-			Stdout:        false,
-			TextFormatter: &txt,
-			Verbose:       false,
-			File: &FileConfiguration{
-				Directory: tmpDir,
-				FileName:  logFile,
-				Enabled:   true,
-			},
-		}
-		log.Configure(cfg)
-		zaplogger := log.RawLogger()
-		assert.Equal(t, zap.DebugLevel, zaplogger.Level())
-	})
-}
-
-func TestConfiguredLoggerWithStdout(t *testing.T) {
-	withLogger(t, func(tmpDir string, logFile string) {
-		log := Logger()
-		txt := false
-		cfg := Configuration{
-			Stdout:        true,
-			TextFormatter: &txt,
-			Verbose:       true,
-			File: &FileConfiguration{
-				Enabled:   true,
-				Directory: tmpDir,
-				FileName:  logFile,
-			},
-		}
-		log.Configure(cfg)
-		zaplogger := log.RawLogger()
-		assert.Equal(t, zap.DebugLevel, zaplogger.Level())
-	})
-}
-
-func withLogger(t *testing.T, f func(string, string)) {
-	tmpDir, err := ioutil.TempDir("", "default_log")
-	defer func() {
-		assert.NoError(t, os.RemoveAll(tmpDir), "should be able to delete tempdir")
-	}()
-	require.NoError(t, err)
-
-	tmpFile, err := ioutil.TempFile(tmpDir, "temp_log.txt")
-	require.NoError(t, err)
-	logFile, err := filepath.Rel(tmpDir, tmpFile.Name())
-	require.NoError(t, err)
-	txt := false
-	cfg := Configuration{
-		Level:         "error",
-		Stdout:        false,
-		TextFormatter: &txt,
-		Verbose:       false,
-		File: &FileConfiguration{
-			Enabled:   true,
-			Directory: tmpDir,
-			FileName:  logFile,
-		},
-	}
-	Configure(cfg)
-	f(tmpDir, logFile)
-}
-
-func TestDefaultPackageLogger(t *testing.T) {
-	withLogger(t, func(tmpDir string, logFile string) {
-		logger := Logger()
-		zaplogger := logger.RawLogger()
-		assert.Equal(t, zap.ErrorLevel, zaplogger.Level())
-		logger.SetLevel(zap.WarnLevel)
-		assert.Equal(t, zap.WarnLevel, zaplogger.Level())
-	})
-}
-
-func TestDefaultLoggingWithInitFields(t *testing.T) {
-	withLogger(t, func(tmpDir string, logFile string) {
-		logger := Logger("a", "b")
-		logger.Error("test log")
-		content, err := ioutil.ReadFile(filepath.Join(tmpDir, logFile))
-		require.NoError(t, err)
-		assert.True(t, strings.Contains(string(content), "test log"))
-		assert.True(t, strings.Contains(string(content), `"a":"b"`))
-	})
 }
 
 type marshalObject struct {
@@ -212,7 +98,7 @@ func (m *marshalObject) MarshalLog(kv zap.KeyValue) error {
 }
 
 func TestFieldConversion(t *testing.T) {
-	log := Logger()
+	log := NewBuilder().Build()
 	base := log.(*baselogger)
 
 	assert.Equal(t, zap.Bool("a", true), base.fieldsConversion("a", true)[0])
@@ -236,6 +122,11 @@ func TestFieldConversion(t *testing.T) {
 }
 
 func TestRawLogger(t *testing.T) {
+	log := NewBuilder().Build()
+	assert.NotNil(t, log.RawLogger())
+}
+
+func TestLogger(t *testing.T) {
 	log := Logger()
 	assert.NotNil(t, log.RawLogger())
 }

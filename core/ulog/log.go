@@ -22,56 +22,23 @@ package ulog
 
 import (
 	"fmt"
-	"io"
-	"os"
-	"path"
-	"strings"
 	"time"
-
-	"go.uber.org/fx/core/config"
 
 	"github.com/uber-go/zap"
 )
 
-// Configuration for logging with uberfx
-type Configuration struct {
-	Level   string
-	File    *FileConfiguration
-	Stdout  bool
-	Verbose bool
-
-	prefixWithFileLine *bool `yaml:"prefix_with_fileline"`
-	TextFormatter      *bool // use TextFormatter (default json)
-}
-
-// FileConfiguration describes the properties needed to log to a file
-type FileConfiguration struct {
-	Enabled   bool
-	Directory string
-	FileName  string
-}
-
 type baselogger struct {
-	log        zap.Logger
-	initFields []interface{}
+	log zap.Logger
 }
 
 // Log is the Uberfx wrapper for underlying logging service
 type Log interface {
-	// Configure Log object with the provided log.Configuration
-	Configure(Configuration)
 
 	// With creates a child logger with the provided parameters as key value pairs
 	// ulog uses uber-go/zap library as its child logger which needs pairs of key value objects
 	// in the form of zap.Fields(key, value). ulog performs field conversion from
 	// supplied keyvals pair to zap.Fields format.
 	With(keyvals ...interface{}) Log
-
-	// SetLevel sets the log level for ulog
-	SetLevel(level zap.Level)
-
-	// SetLogger allows users to set their own initialized logger to work with ulog APIs
-	SetLogger(log zap.Logger)
 
 	// Check returns a zap.CheckedMessage if logging a message at the specified level is enabled.
 	Check(level zap.Level, message string) *zap.CheckedMessage
@@ -104,81 +71,19 @@ type Log interface {
 	DFatal(message string, keyvals ...interface{})
 }
 
-var development = strings.Contains(config.GetEnvironment(), "development")
-
-var std = defaultLogger()
+var _std = defaultLogger()
 
 func defaultLogger() Log {
 	return &baselogger{
-		log:        zap.New(zap.NewJSONEncoder()),
-		initFields: nil,
+		log: zap.New(zap.NewJSONEncoder()),
 	}
 }
 
 // Logger returns the package-level logger configured for the service
-func Logger(fields ...interface{}) Log {
+func Logger() Log {
 	return &baselogger{
-		log:        std.(*baselogger).log,
-		initFields: fields,
+		log: _std.(*baselogger).log,
 	}
-}
-
-// Configure the package-level logger based on provided configuration
-func Configure(cfg Configuration) {
-	std.Configure(cfg)
-}
-
-// Configure the calling logger based on provided configuration
-func (l *baselogger) Configure(cfg Configuration) {
-	options := make([]zap.Option, 0, 3)
-	if cfg.Verbose {
-		options = append(options, zap.DebugLevel)
-	} else {
-		l.With(zap.String("Level", cfg.Level)).Debug("setting log level")
-		var lv zap.Level
-		err := lv.UnmarshalText([]byte(cfg.Level))
-		if err != nil {
-			l.With(zap.String("Level", cfg.Level)).Debug("cannot parse log level. setting to Debug as default")
-			options = append(options, zap.DebugLevel)
-		} else {
-			options = append(options, lv)
-		}
-	}
-	if cfg.File == nil || !cfg.File.Enabled {
-		options = append(options, zap.Output(zap.AddSync(os.Stdout)))
-	} else {
-		options = append(options, zap.Output(l.fileOutput(cfg.File, cfg.Stdout, cfg.Verbose)))
-	}
-
-	if cfg.TextFormatter != nil && *cfg.TextFormatter || cfg.TextFormatter == nil && development {
-		l.SetLogger(zap.New(zap.NewTextEncoder(), options...))
-		return
-	}
-	l.SetLogger(zap.New(zap.NewJSONEncoder(), options...))
-}
-
-func (l *baselogger) fileOutput(cfg *FileConfiguration, stdout bool, verbose bool) zap.WriteSyncer {
-	fileLoc := path.Join(cfg.Directory, cfg.FileName)
-	l.Debug("adding log file output to zap")
-	err := os.MkdirAll(cfg.Directory, os.FileMode(0755))
-	if err != nil {
-		l.Fatal("failed to create log directory: ", err)
-	}
-	file, err := os.OpenFile(fileLoc, os.O_WRONLY|os.O_APPEND|os.O_CREATE, os.FileMode(0755))
-	if err != nil {
-		l.With(zap.Error(err)).Fatal("failed to open log file for writing.")
-	}
-	l.With(zap.String("filename", fileLoc)).Debug("logfile created successfully")
-	if verbose || stdout {
-		return zap.AddSync(io.MultiWriter(os.Stdout, file))
-	}
-	return zap.AddSync(file)
-}
-
-// SetLogger allows users to inject underlying zap.Logger. Use this
-// for test, or or if you fancy your own logging setup
-func (l *baselogger) SetLogger(log zap.Logger) {
-	l.log = log
 }
 
 // RawLogger returns underneath zap implementation for use
@@ -186,14 +91,9 @@ func (l *baselogger) RawLogger() zap.Logger {
 	return l.log
 }
 
-func (l *baselogger) SetLevel(level zap.Level) {
-	l.log.SetLevel(level)
-}
-
-func (l *baselogger) With(fields ...interface{}) Log {
+func (l *baselogger) With(keyvals ...interface{}) Log {
 	return &baselogger{
-		log:        l.log.With(l.compileLogFields(fields...)...),
-		initFields: l.initFields,
+		log: l.log.With(l.fieldsConversion(keyvals...)...),
 	}
 }
 
@@ -226,20 +126,13 @@ func (l *baselogger) Fatal(message string, keyvals ...interface{}) {
 }
 
 func (l *baselogger) DFatal(message string, keyvals ...interface{}) {
-	l.log.DFatal(message, l.compileLogFields(keyvals)...)
+	l.log.DFatal(message, l.fieldsConversion(keyvals...)...)
 }
 
 func (l *baselogger) Log(lvl zap.Level, message string, keyvals ...interface{}) {
 	if cm := l.Check(lvl, message); cm.OK() {
-		cm.Write(l.compileLogFields(keyvals...)...)
+		cm.Write(l.fieldsConversion(keyvals...)...)
 	}
-}
-
-func (l *baselogger) compileLogFields(keyvals ...interface{}) []zap.Field {
-	var fields []interface{}
-	fields = append(fields, l.initFields...)
-	fields = append(fields, keyvals...)
-	return l.fieldsConversion(fields...)
 }
 
 func (l *baselogger) fieldsConversion(keyvals ...interface{}) []zap.Field {
@@ -250,7 +143,6 @@ func (l *baselogger) fieldsConversion(keyvals ...interface{}) []zap.Field {
 	}
 	for idx := 0; idx < len(keyvals); idx += 2 {
 		if key, ok := keyvals[idx].(string); ok {
-			key = keyvals[idx].(string)
 			switch value := keyvals[idx+1].(type) {
 			case bool:
 				fields = append(fields, zap.Bool(key, value))

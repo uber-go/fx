@@ -35,8 +35,7 @@ func discardedLogger() zap.Logger {
 }
 
 func BenchmarkUlogWithoutFields(b *testing.B) {
-	log := Logger()
-	log.SetLogger(discardedLogger())
+	log := NewBuilder().SetLogger(discardedLogger()).Build()
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
@@ -46,8 +45,7 @@ func BenchmarkUlogWithoutFields(b *testing.B) {
 }
 
 func BenchmarkUlogWithFieldsLogIFace(b *testing.B) {
-	log := Logger()
-	log.SetLogger(discardedLogger())
+	log := NewBuilder().SetLogger(discardedLogger()).Build()
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
@@ -65,8 +63,7 @@ func BenchmarkUlogWithFieldsLogIFace(b *testing.B) {
 }
 
 func BenchmarkUlogWithFieldsBaseLoggerStruct(b *testing.B) {
-	log := Logger()
-	log.SetLogger(discardedLogger())
+	log := NewBuilder().SetLogger(discardedLogger()).Build()
 	base := log.(*baselogger)
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
@@ -85,7 +82,7 @@ func BenchmarkUlogWithFieldsBaseLoggerStruct(b *testing.B) {
 }
 
 func BenchmarkUlogWithFieldsZapLogger(b *testing.B) {
-	log := discardedLogger()
+	log := NewBuilder().SetLogger(discardedLogger()).Build()
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
@@ -103,31 +100,11 @@ func BenchmarkUlogWithFieldsZapLogger(b *testing.B) {
 }
 
 func BenchmarkUlogLiteWithFields(b *testing.B) {
-	log := Logger()
-	log.SetLogger(discardedLogger())
+	log := NewBuilder().SetLogger(discardedLogger()).Build()
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
 			log.Info("Ulog message", "integer", 123, "string", "string")
-		}
-	})
-}
-
-func BenchmarkUlogWithFieldsPreset(b *testing.B) {
-	log := Logger(
-		"int", 123,
-		"int64", 123,
-		"float", 123.123,
-		"string", "four!",
-		"bool", true,
-		"time", time.Unix(0, 0),
-		"duration", time.Second,
-		"another string", "done!")
-	log.SetLogger(discardedLogger())
-	b.ResetTimer()
-	b.RunParallel(func(pb *testing.PB) {
-		for pb.Next() {
-			log.Info("Ulog message")
 		}
 	})
 }
