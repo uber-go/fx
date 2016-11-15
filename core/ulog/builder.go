@@ -59,11 +59,9 @@ type LogBuilder struct {
 
 var _development = strings.Contains(config.GetEnvironment(), "development")
 
-// NewBuilder creates an empty builder for building ulog.Log object
-func NewBuilder(keyvals ...interface{}) *LogBuilder {
-	return &LogBuilder{
-		level: -1,
-	}
+// Builder creates an empty builder for building ulog.Log object
+func Builder() *LogBuilder {
+	return &LogBuilder{}
 }
 
 // WithConfiguration sets up configuration for the log builder
@@ -100,31 +98,29 @@ func (lb *LogBuilder) Build() Log {
 	} else {
 		log = lb.Configure()
 	}
-	if lb.level > 0 {
+
+	if lb.level > log.Level() {
 		log.SetLevel(lb.level)
 	}
+
 	return &baselogger{
 		log: log,
 	}
 }
 
 func (lb *LogBuilder) devLogger() zap.Logger {
-	options := make([]zap.Option, 0, 3)
-	options = append(options, zap.DebugLevel)
-	return zap.New(zap.NewTextEncoder(), options...)
+	return zap.New(zap.NewTextEncoder(), zap.DebugLevel)
 }
 
 func (lb *LogBuilder) defaultLogger() zap.Logger {
-	options := make([]zap.Option, 0, 3)
-	options = append(options, zap.InfoLevel, zap.Output(zap.AddSync(os.Stdout)))
-	return zap.New(zap.NewJSONEncoder(), options...)
+	return zap.New(zap.NewJSONEncoder(), zap.InfoLevel, zap.Output(zap.AddSync(os.Stdout)))
 }
 
 // Configure Log object with the provided log.Configuration
 func (lb *LogBuilder) Configure() zap.Logger {
 	lb.log = lb.defaultLogger()
 
-	options := make([]zap.Option, 0, 3)
+	var options []zap.Option
 	if lb.logConfig.Verbose {
 		options = append(options, zap.DebugLevel)
 	} else {

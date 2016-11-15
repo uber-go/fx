@@ -43,7 +43,7 @@ func TestAddModules_Errors(t *testing.T) {
 }
 
 func TestWithLogger_OK(t *testing.T) {
-	logger := ulog.NewBuilder().Build()
+	logger := ulog.Builder().Build()
 	assert.NotPanics(t, func() {
 		New(WithLogger(logger))
 	})

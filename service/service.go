@@ -111,7 +111,7 @@ func New(options ...Option) (Owner, error) {
 	}
 
 	if svc.log == nil {
-		logBuilder := ulog.NewBuilder()
+		logBuilder := ulog.Builder()
 		// load and configure logging
 		err := svc.configProvider.GetValue("logging").PopulateStruct(&svc.logConfig)
 		if err != nil {

@@ -60,7 +60,7 @@ func TestConfiguredLoggerWithTextFormatter(t *testing.T) {
 				Enabled:   true,
 			},
 		}
-		log := NewBuilder().WithConfiguration(cfg).Build()
+		log := Builder().WithConfiguration(cfg).Build()
 		zaplogger := log.RawLogger()
 		assert.Equal(t, zap.DebugLevel, zaplogger.Level())
 	})
@@ -69,7 +69,7 @@ func TestConfiguredLoggerWithTextFormatter(t *testing.T) {
 func TestConfiguredLoggerWithTextFormatter_NonDev(t *testing.T) {
 	withLogger(t, func(builder *LogBuilder, tmpDir string, logFile string) {
 		txt := true
-		log := NewBuilder().WithConfiguration(Configuration{
+		log := Builder().WithConfiguration(Configuration{
 			Level:         "debug",
 			TextFormatter: &txt,
 		}).Build()
@@ -91,7 +91,7 @@ func TestConfiguredLoggerWithStdout(t *testing.T) {
 				FileName:  logFile,
 			},
 		}
-		log := NewBuilder().WithConfiguration(cfg).Build()
+		log := Builder().WithConfiguration(cfg).Build()
 		zaplogger := log.RawLogger()
 		assert.Equal(t, zap.DebugLevel, zaplogger.Level())
 	})
@@ -125,7 +125,7 @@ func withLogger(t *testing.T, f func(*LogBuilder, string, string)) {
 			FileName:  logFile,
 		},
 	}
-	builder := NewBuilder().WithConfiguration(cfg)
+	builder := Builder().WithConfiguration(cfg)
 	f(builder, tmpDir, logFile)
 }
 
@@ -136,11 +136,11 @@ func TestDefaultPackageLogger(t *testing.T) {
 		defer func() {
 			_development = dev
 		}()
-		log := NewBuilder().Build()
+		log := Builder().Build()
 		zaplogger := log.RawLogger()
 		assert.Equal(t, zap.DebugLevel, zaplogger.Level())
 
-		log = NewBuilder().SetLevel(zap.WarnLevel).Build()
+		log = Builder().SetLevel(zap.WarnLevel).Build()
 		zaplogger = log.RawLogger()
 		assert.Equal(t, zap.WarnLevel, zaplogger.Level())
 	})

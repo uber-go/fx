@@ -79,6 +79,7 @@ func defaultLogger() Log {
 	}
 }
 
+// TODO: (at) Remove Logger() call, _std and defaultLogger() access in ulog
 // Logger returns the package-level logger configured for the service
 func Logger() Log {
 	return &baselogger{
