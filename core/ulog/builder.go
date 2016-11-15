@@ -59,7 +59,7 @@ type LogBuilder struct {
 
 var _development = strings.Contains(config.GetEnvironment(), "development")
 
-// NewBuilder creates an empty builder to building ulog
+// NewBuilder creates an empty builder for building ulog.Log object
 func NewBuilder(keyvals ...interface{}) *LogBuilder {
 	return &LogBuilder{
 		level: -1,
@@ -72,13 +72,13 @@ func (lb *LogBuilder) WithConfiguration(logConfig Configuration) *LogBuilder {
 	return lb
 }
 
-// SetLogger sets the logger for use
+// SetLogger allows users to set their own initialized logger to work with ulog APIs
 func (lb *LogBuilder) SetLogger(zap zap.Logger) *LogBuilder {
 	lb.log = zap
 	return lb
 }
 
-// SetLevel sets the logger level
+// SetLevel sets the log level for ulog
 func (lb *LogBuilder) SetLevel(level zap.Level) *LogBuilder {
 	lb.level = level
 	return lb
@@ -120,7 +120,7 @@ func (lb *LogBuilder) defaultLogger() zap.Logger {
 	return zap.New(zap.NewJSONEncoder(), options...)
 }
 
-// Configure the calling logger based on provided configuration
+// Configure Log object with the provided log.Configuration
 func (lb *LogBuilder) Configure() zap.Logger {
 	lb.log = lb.defaultLogger()
 
