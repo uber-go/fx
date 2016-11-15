@@ -20,13 +20,20 @@
 
 package testutils
 
-import "os"
+import (
+	"os"
+	"testing"
+
+	"github.com/stretchr/testify/require"
+)
 
 // EnvOverride overrides the environment variable for testing purpose
-func EnvOverride(key, value string) func() {
+func EnvOverride(t *testing.T, key, value string) func() {
 	old := os.Getenv(key)
-	os.Setenv(key, value)
+	err := os.Setenv(key, value)
+	require.NoError(t, err)
 	return func() {
-		os.Setenv(key, old)
+		err := os.Setenv(key, old)
+		require.NoError(t, err)
 	}
 }

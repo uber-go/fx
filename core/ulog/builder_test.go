@@ -103,7 +103,7 @@ func TestConfiguredLoggerWithStdout(t *testing.T) {
 }
 
 func withLogger(t *testing.T, f func(*LogBuilder, string, string)) {
-	testutils.EnvOverride(config.GetEnvironmentPrefix()+_environment, "madeup_env")
+	defer testutils.EnvOverride(t, config.GetEnvironmentPrefix()+_environment, "madeup_env")()
 	tmpDir, err := ioutil.TempDir("", "default_log")
 	defer func() {
 		assert.NoError(t, os.RemoveAll(tmpDir), "should be able to delete tempdir")
@@ -132,7 +132,7 @@ func withLogger(t *testing.T, f func(*LogBuilder, string, string)) {
 
 func TestDefaultPackageLogger(t *testing.T) {
 	withLogger(t, func(builder *LogBuilder, tmpDir string, logFile string) {
-		testutils.EnvOverride(config.GetEnvironmentPrefix()+_environment, "development")
+		defer testutils.EnvOverride(t, config.GetEnvironmentPrefix()+_environment, "development")()
 		log := Builder().Build()
 		zaplogger := log.RawLogger()
 		assert.Equal(t, zap.DebugLevel, zaplogger.Level())
