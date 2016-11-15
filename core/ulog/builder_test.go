@@ -26,12 +26,15 @@ import (
 	"path/filepath"
 	"testing"
 
+	"go.uber.org/fx/core/config"
+	"go.uber.org/fx/core/testutils"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/uber-go/zap"
 )
 
-var _isDevelopment = true
+var _environment = "_ENVIRONMENT"
 
 func TestConfiguredLogger(t *testing.T) {
 	withLogger(t, func(builder *LogBuilder, tmpDir string, logFile string) {
@@ -100,11 +103,7 @@ func TestConfiguredLoggerWithStdout(t *testing.T) {
 }
 
 func withLogger(t *testing.T, f func(*LogBuilder, string, string)) {
-	dev := _development
-	_development = !_isDevelopment
-	defer func() {
-		_development = dev
-	}()
+	testutils.EnvOverride(config.GetEnvironmentPrefix()+_environment, "madeup_env")
 	tmpDir, err := ioutil.TempDir("", "default_log")
 	defer func() {
 		assert.NoError(t, os.RemoveAll(tmpDir), "should be able to delete tempdir")
@@ -133,11 +132,7 @@ func withLogger(t *testing.T, f func(*LogBuilder, string, string)) {
 
 func TestDefaultPackageLogger(t *testing.T) {
 	withLogger(t, func(builder *LogBuilder, tmpDir string, logFile string) {
-		dev := _development
-		_development = _isDevelopment
-		defer func() {
-			_development = dev
-		}()
+		testutils.EnvOverride(config.GetEnvironmentPrefix()+_environment, "development")
 		log := Builder().Build()
 		zaplogger := log.RawLogger()
 		assert.Equal(t, zap.DebugLevel, zaplogger.Level())

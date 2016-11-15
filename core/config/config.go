@@ -23,6 +23,7 @@ package config
 import (
 	"fmt"
 	"os"
+	"strings"
 	"sync"
 )
 
@@ -47,6 +48,10 @@ var (
 	_envPrefix            = "APP"
 	_staticProviderFuncs  = []ProviderFunc{YamlProvider(), EnvProvider()}
 	_dynamicProviderFuncs []DynamicProviderFunc
+)
+
+var (
+	_devEnv = "development"
 )
 
 func getConfigFiles() []string {
@@ -91,9 +96,14 @@ func EnvProvider() ProviderFunc {
 func GetEnvironment() string {
 	env := os.Getenv(GetEnvironmentPrefix() + environment)
 	if env == "" {
-		env = "development"
+		env = _devEnv
 	}
 	return env
+}
+
+// IsDevelopment returns true if the current environment is set to development
+func IsDevelopment() bool {
+	return strings.Contains(GetEnvironment(), _devEnv)
 }
 
 // Path returns path to the yaml configurations

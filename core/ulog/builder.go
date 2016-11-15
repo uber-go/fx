@@ -25,7 +25,6 @@ import (
 	"io/ioutil"
 	"os"
 	"path"
-	"strings"
 
 	"go.uber.org/fx/core/config"
 
@@ -57,8 +56,6 @@ type LogBuilder struct {
 	level     zap.Level
 	setlevel  *bool
 }
-
-var _development = strings.Contains(config.GetEnvironment(), "development")
 
 // Builder creates an empty builder for building ulog.Log object
 func Builder() *LogBuilder {
@@ -96,7 +93,7 @@ func (lb *LogBuilder) Build() Log {
 		}
 	}
 
-	if _development {
+	if config.IsDevelopment() {
 		log = lb.devLogger()
 	} else {
 		log = lb.Configure()
