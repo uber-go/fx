@@ -31,6 +31,8 @@ import (
 	"github.com/uber-go/zap"
 )
 
+var _isDevelopment = true
+
 func TestConfiguredLogger(t *testing.T) {
 	withLogger(t, func(builder *LogBuilder, tmpDir string, logFile string) {
 		txt := false
@@ -99,7 +101,7 @@ func TestConfiguredLoggerWithStdout(t *testing.T) {
 
 func withLogger(t *testing.T, f func(*LogBuilder, string, string)) {
 	dev := _development
-	_development = false
+	_development = !_isDevelopment
 	defer func() {
 		_development = dev
 	}()
@@ -132,7 +134,7 @@ func withLogger(t *testing.T, f func(*LogBuilder, string, string)) {
 func TestDefaultPackageLogger(t *testing.T) {
 	withLogger(t, func(builder *LogBuilder, tmpDir string, logFile string) {
 		dev := _development
-		_development = true
+		_development = _isDevelopment
 		defer func() {
 			_development = dev
 		}()

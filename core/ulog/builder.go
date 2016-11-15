@@ -62,9 +62,7 @@ var _development = strings.Contains(config.GetEnvironment(), "development")
 
 // Builder creates an empty builder for building ulog.Log object
 func Builder() *LogBuilder {
-	return &LogBuilder{
-		level: -2,
-	}
+	return &LogBuilder{}
 }
 
 // WithConfiguration sets up configuration for the log builder
