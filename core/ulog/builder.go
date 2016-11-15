@@ -55,13 +55,16 @@ type LogBuilder struct {
 	log       zap.Logger
 	logConfig Configuration
 	level     zap.Level
+	setlevel  *bool
 }
 
 var _development = strings.Contains(config.GetEnvironment(), "development")
 
 // Builder creates an empty builder for building ulog.Log object
 func Builder() *LogBuilder {
-	return &LogBuilder{}
+	return &LogBuilder{
+		level: -2,
+	}
 }
 
 // WithConfiguration sets up configuration for the log builder
@@ -78,6 +81,8 @@ func (lb *LogBuilder) SetLogger(zap zap.Logger) *LogBuilder {
 
 // SetLevel sets the log level for ulog
 func (lb *LogBuilder) SetLevel(level zap.Level) *LogBuilder {
+	setlevel := true
+	lb.setlevel = &setlevel
 	lb.level = level
 	return lb
 }
@@ -99,7 +104,7 @@ func (lb *LogBuilder) Build() Log {
 		log = lb.Configure()
 	}
 
-	if lb.level > log.Level() {
+	if lb.setlevel != nil && *lb.setlevel {
 		log.SetLevel(lb.level)
 	}
 
