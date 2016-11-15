@@ -93,7 +93,7 @@ benchbase:
 benchcmp:
 	$(ECHO_V)which benchcmp >/dev/null || go get -u golang.org/x/tools/cmd/benchcmp
 	$(ECHO_V)test -s $(BASELINE_BENCH_FILE) || \
-		$(call die,Baseline benchmark file missing. Check out master and run \'make bench\')
+		$(call die,Baseline benchmark file missing. Check out master and run \'make benchbase\')
 	$(ECHO_V)test -s $(BENCH_FILE) || \
 		$(call label,No current benchmark file. Will generate) ;\
 	benchcmp $(BASELINE_BENCH_FILE) $(BENCH_FILE)
