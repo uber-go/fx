@@ -62,6 +62,11 @@ func Builder() *LogBuilder {
 	return &LogBuilder{}
 }
 
+// New instance of ulog.Log is returned with the default setup
+func New() Log {
+	return Builder().Build()
+}
+
 // WithConfiguration sets up configuration for the log builder
 func (lb *LogBuilder) WithConfiguration(logConfig Configuration) *LogBuilder {
 	lb.logConfig = logConfig

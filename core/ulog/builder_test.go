@@ -131,7 +131,7 @@ func withLogger(t *testing.T, f func(*LogBuilder, string, string)) {
 func TestDefaultPackageLogger(t *testing.T) {
 	withLogger(t, func(builder *LogBuilder, tmpDir string, logFile string) {
 		defer testutils.EnvOverride(t, config.EnvironmentKey(), "development")()
-		log := Builder().Build()
+		log := New()
 		zaplogger := log.RawLogger()
 		assert.Equal(t, zap.DebugLevel, zaplogger.Level())
 

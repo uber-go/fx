@@ -98,7 +98,7 @@ func (m *marshalObject) MarshalLog(kv zap.KeyValue) error {
 }
 
 func TestFieldConversion(t *testing.T) {
-	log := Builder().Build()
+	log := New()
 	base := log.(*baselogger)
 
 	assert.Equal(t, zap.Bool("a", true), base.fieldsConversion("a", true)[0])
@@ -121,7 +121,7 @@ func TestFieldConversion(t *testing.T) {
 }
 
 func TestRawLogger(t *testing.T) {
-	log := Builder().Build()
+	log := New()
 	assert.NotNil(t, log.RawLogger())
 }
 
