@@ -21,8 +21,10 @@
 package main
 
 import (
-	"context"
+	gcontext "context"
 	"sync"
+
+	"golang.org/x/net/context"
 
 	"go.uber.org/fx/examples/keyvalue/kv"
 	kvs "go.uber.org/fx/examples/keyvalue/kv/yarpc/keyvalueserver"
@@ -37,12 +39,12 @@ type YarpcHandler struct {
 	items map[string]string
 }
 
-func NewYarpcThriftHandler(svc service.Host) ([]transport.Registrant, error) {
+func NewYarpcThriftHandler(ctx service.Context) ([]transport.Registrant, error) {
 	handler := &YarpcHandler{items: map[string]string{}}
 	return kvs.New(handler), nil
 }
 
-func (h *YarpcHandler) GetValue(ctx context.Context, req yarpc.ReqMeta, key *string) (string, yarpc.ResMeta, error) {
+func (h *YarpcHandler) GetValue(ctx gcontext.Context, req yarpc.ReqMeta, key *string) (string, yarpc.ResMeta, error) {
 	h.RLock()
 	defer h.RUnlock()
 
@@ -53,7 +55,7 @@ func (h *YarpcHandler) GetValue(ctx context.Context, req yarpc.ReqMeta, key *str
 	return "", nil, &kv.ResourceDoesNotExist{Key: *key}
 }
 
-func (h *YarpcHandler) SetValue(ctx context.Context, req yarpc.ReqMeta, key *string, value *string) (yarpc.ResMeta, error) {
+func (h *YarpcHandler) SetValue(ctx gcontext.Context, req yarpc.ReqMeta, key *string, value *string) (yarpc.ResMeta, error) {
 	h.Lock()
 
 	h.items[*key] = *value

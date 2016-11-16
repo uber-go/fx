@@ -21,6 +21,7 @@
 package uhttp
 
 import (
+	gcontext "context"
 	"errors"
 	"fmt"
 	"io"
@@ -136,7 +137,7 @@ func withModule(
 	fn func(*Module),
 ) {
 	mi := service.ModuleCreateInfo{
-		Host: service.NullHost(),
+		Ctx: service.NewContext(gcontext.Background(), service.NullHost(), nil),
 	}
 	mod, err := newModule(mi, hookup, options...)
 	if expectError {
@@ -149,7 +150,7 @@ func withModule(
 
 	// us an ephemeral port on tests
 	mod.config.Port = 0
-	require.NoError(t, mod.Initialize(mi.Host), "Expected initialize to succeed")
+	require.NoError(t, mod.Initialize(mi.Ctx), "Expected initialize to succeed")
 
 	errs := make(chan error, 1)
 	readyChan := make(chan struct{}, 1)
@@ -201,7 +202,7 @@ func makeRequest(m *Module, method, url string, body io.Reader, fn func(r *http.
 	fn(response)
 }
 
-func registerNothing(_ service.Host) []RouteHandler {
+func registerNothing(_ service.Context) []RouteHandler {
 	return nil
 }
 
@@ -214,13 +215,13 @@ func makeSingleHandler(path string, fn func(http.ResponseWriter, *http.Request))
 	}
 }
 
-func registerCustomHealth(_ service.Host) []RouteHandler {
+func registerCustomHealth(_ service.Context) []RouteHandler {
 	return makeSingleHandler("/health", func(w http.ResponseWriter, r *http.Request) {
 		io.WriteString(w, "not ok")
 	})
 }
 
-func registerPanic(_ service.Host) []RouteHandler {
+func registerPanic(_ service.Context) []RouteHandler {
 	return makeSingleHandler("/", func(_ http.ResponseWriter, r *http.Request) {
 		panic("Intentional panic for:" + r.URL.Path)
 	})

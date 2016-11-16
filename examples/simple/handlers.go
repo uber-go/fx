@@ -40,7 +40,7 @@ func enforceHeader(r uhttp.Route) uhttp.Route {
 	return r.Headers("X-Uber-FX", "yass")
 }
 
-func registerHTTPers(service service.Host) []uhttp.RouteHandler {
+func registerHTTPers(ctx service.Context) []uhttp.RouteHandler {
 	handler := &exampleHandler{}
 	return []uhttp.RouteHandler{
 		uhttp.NewRouteHandler("/", handler, enforceHeader),

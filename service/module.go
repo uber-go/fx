@@ -25,7 +25,7 @@ type ModuleType string
 
 // A Module is the basic building block of an UberFx service
 type Module interface {
-	Initialize(host Host) error
+	Initialize(ctx Context) error
 	Type() string
 	Name() string
 	Start(ready chan<- struct{}) <-chan error
@@ -41,7 +41,7 @@ type ModuleCreateInfo struct {
 	Name  string
 	Roles []string
 	Items map[string]interface{}
-	Host  Host
+	Ctx   Context
 }
 
 // A ModuleCreateFunc handles instantiating modules from creation configuration

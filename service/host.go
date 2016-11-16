@@ -21,6 +21,7 @@
 package service
 
 import (
+	gcontext "context"
 	"fmt"
 	"os"
 	"os/signal"
@@ -62,7 +63,7 @@ func (s *host) addModule(module Module) error {
 		return fmt.Errorf("can't add module: service already started")
 	}
 	s.modules = append(s.modules, module)
-	return module.Initialize(s)
+	return module.Initialize(NewContext(gcontext.Background(), s, nil))
 }
 
 func (s *host) supportsRole(roles ...string) bool {
@@ -171,8 +172,8 @@ func (s *host) shutdown(err error, reason string, exitCode *int) (bool, error) {
 func (s *host) AddModules(modules ...ModuleCreateFunc) error {
 	for _, mcf := range modules {
 		mi := ModuleCreateInfo{
-			Host:  s,
 			Items: make(map[string]interface{}),
+			Ctx:   NewContext(gcontext.Background(), s, nil),
 		}
 
 		mods, err := mcf(mi)

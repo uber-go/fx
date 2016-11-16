@@ -22,7 +22,7 @@ package service
 
 // A StubModule implements the Module interface for testing
 type StubModule struct {
-	Host             Host
+	Ctx              Context
 	InitError        error
 	TypeVal, NameVal string
 	StartError       error
@@ -38,8 +38,8 @@ func NewStubModule() *StubModule {
 }
 
 // Initialize fakes an init call on the module
-func (s *StubModule) Initialize(host Host) error {
-	s.Host = host
+func (s *StubModule) Initialize(ctx Context) error {
+	s.Ctx = ctx
 	return s.InitError
 }
 

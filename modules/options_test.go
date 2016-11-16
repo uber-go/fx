@@ -21,6 +21,7 @@
 package modules
 
 import (
+	gcontext "context"
 	"testing"
 
 	"go.uber.org/fx/service"
@@ -49,6 +50,6 @@ func TestWithRoles_OK(t *testing.T) {
 
 func mci() *service.ModuleCreateInfo {
 	return &service.ModuleCreateInfo{
-		Host: service.NullHost(),
+		Ctx: service.NewContext(gcontext.Background(), service.NullHost(), nil),
 	}
 }

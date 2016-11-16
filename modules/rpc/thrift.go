@@ -29,7 +29,7 @@ import (
 )
 
 // CreateThriftServiceFunc creates a Thrift service from a service host
-type CreateThriftServiceFunc func(svc service.Host) ([]transport.Registrant, error)
+type CreateThriftServiceFunc func(ctx service.Context) ([]transport.Registrant, error)
 
 // ThriftModule creates a Thrift Module from a service func
 func ThriftModule(hookup CreateThriftServiceFunc, options ...modules.Option) service.ModuleCreateFunc {
@@ -48,7 +48,7 @@ func newYarpcThriftModule(
 	createService CreateThriftServiceFunc,
 	options ...modules.Option,
 ) (*YarpcModule, error) {
-	registrants, err := createService(mi.Host)
+	registrants, err := createService(mi.Ctx)
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to create YARPC thrift handler")
 	}
