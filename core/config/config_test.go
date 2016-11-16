@@ -105,7 +105,7 @@ func TestGlobalConfig(t *testing.T) {
 	cfg := Load()
 
 	assert.Equal(t, "global", cfg.Name())
-	assert.Equal(t, "development", GetEnvironment())
+	assert.Equal(t, "development", Environment())
 
 	cfg = NewProviderGroup("test", NewYAMLProviderFromBytes([]byte(`applicationID: sample`)))
 	assert.Equal(t, "test", cfg.Name())

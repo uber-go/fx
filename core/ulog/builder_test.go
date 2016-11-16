@@ -34,8 +34,6 @@ import (
 	"github.com/uber-go/zap"
 )
 
-var _environment = "_ENVIRONMENT"
-
 func TestConfiguredLogger(t *testing.T) {
 	withLogger(t, func(builder *LogBuilder, tmpDir string, logFile string) {
 		txt := false
@@ -103,7 +101,7 @@ func TestConfiguredLoggerWithStdout(t *testing.T) {
 }
 
 func withLogger(t *testing.T, f func(*LogBuilder, string, string)) {
-	defer testutils.EnvOverride(t, config.GetEnvironmentPrefix()+_environment, "madeup_env")()
+	defer testutils.EnvOverride(t, config.EnvironmentKey(), "madeup")()
 	tmpDir, err := ioutil.TempDir("", "default_log")
 	defer func() {
 		assert.NoError(t, os.RemoveAll(tmpDir), "should be able to delete tempdir")
@@ -132,7 +130,7 @@ func withLogger(t *testing.T, f func(*LogBuilder, string, string)) {
 
 func TestDefaultPackageLogger(t *testing.T) {
 	withLogger(t, func(builder *LogBuilder, tmpDir string, logFile string) {
-		defer testutils.EnvOverride(t, config.GetEnvironmentPrefix()+_environment, "development")()
+		defer testutils.EnvOverride(t, config.EnvironmentKey(), "development")()
 		log := Builder().Build()
 		zaplogger := log.RawLogger()
 		assert.Equal(t, zap.DebugLevel, zaplogger.Level())
