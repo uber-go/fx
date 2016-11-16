@@ -20,10 +20,9 @@
 
 // Package ulog is the Logging package.
 //
-// ulog provides an API wrapper around the logging library (zap Logger).
-// ulog uses builder pattern to instantiate the logger. Using
-//  LogBuilder user can set up
-// configuration, inject logger and log level prior to log initialization.
+//  package ulog provides an API wrapper around the logging library (zap Logger).
+//  ulog uses builder pattern to instantiate the logger. Using LogBuilder user can set up
+// configuration, inject logger and log level prior to the logger initialization.
 //
 //
 //   package main
@@ -49,9 +48,9 @@
 // pairs (message, (key, value)...)
 //
 //
-// ulog configuration can be defined in multiple ways, either by writing the struct
-// yourself, or describing in the YAML and populating using config package.
-//
+//  ulog.Configuration can be setup in multiple ways, either by initializing the struct,
+// or describing in the YAML and populating using
+//  config package.
 //
 // • Defining config structure:
 //
@@ -75,7 +74,7 @@
 //     return ulog.Builder().SetLogger(zaplogger).Build()
 //   }
 //
-// • Benchmarks
+// • Current benchmarks
 //
 // Current performance benchmark data with ulog interface, ulog baselogger struct, and zap.Logger
 //
