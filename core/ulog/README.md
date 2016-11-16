@@ -1,8 +1,12 @@
 # Logging package
 
-`package ulog` provides an API wrapper around the logging library (zap Logger).
-`ulog` uses builder pattern to instantiate the logger. Using `LogBuilder` user can set up
-configuration, inject logger and log level prior to the logger initialization.
+`package ulog` provides an API wrapper around the logging library [zap](https://github.com/uber-go/zap).
+`ulog` uses the builder pattern to instantiate the logger. With `LogBuilder` you can perform pre-initialization set up
+by injecting configuration, custom logger and log level prior to building the usable `ulog.Log` object. `ulog.Log`
+interface provides a few benifits -
+- Decouple services from the logger used undeaneath the framework.
+- Easy to use API for logging.
+- Easily swappable backend logger without changing the service.
 
 ```go
 package main
@@ -25,11 +29,11 @@ func main() {
 }
 ```
 
-Note that the log methods (`Info`,`Warn`, `Debug`) takes parameter as key value
+Note that the log methods (`Info`,`Warn`, `Debug`) take parameters as key value
 pairs (message, (key, value)...)
 
-`ulog.Configuration` can be setup in multiple ways, either by initializing the struct,
-or describing in the YAML and populating using `config` package.
+`ulog.Configuration` can be set up in one of two ways, either by initializing the struct,
+or describing necessary `logging` configuration in the YAML and populating using `config` package.
 
 * Defining config structure:
 
@@ -47,9 +51,9 @@ logging:
   level: debug
 ```
 
-User can initialize their own `zap.Logger` implementation and inject into ulog.
-To configure and inject `zap.Logger`, setup the logger prior to building
-the `ulog.Log` object
+You can initialize your own `zap.Logger` implementation and inject into `ulog`.
+To configure and inject `zap.Logger`, set up the logger prior to building
+the `ulog.Log` object.
 
 ```go
 func setupMyZapLogger(zaplogger zap.Logger) ulog.Log {
