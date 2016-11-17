@@ -166,7 +166,7 @@ func TestOnCriticalError_ObserverShutdown(t *testing.T) {
 	sh := &host{
 		observer: o,
 		serviceCore: serviceCore{
-			log: ulog.Logger(),
+			log: ulog.New(),
 		},
 	}
 
@@ -258,7 +258,7 @@ func TestStartHost_WithErrors(t *testing.T) {
 func makeHost() *host {
 	return &host{
 		serviceCore: serviceCore{
-			log: ulog.Logger(),
+			log: ulog.New(),
 		},
 	}
 }
