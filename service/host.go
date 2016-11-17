@@ -63,7 +63,7 @@ func (s *host) addModule(module Module) error {
 		return fmt.Errorf("can't add module: service already started")
 	}
 	s.modules = append(s.modules, module)
-	return module.Initialize(NewContext(gcontext.Background(), s, nil))
+	return module.Initialize(NewContext(gcontext.Background(), s))
 }
 
 func (s *host) supportsRole(roles ...string) bool {
@@ -173,7 +173,7 @@ func (s *host) AddModules(modules ...ModuleCreateFunc) error {
 	for _, mcf := range modules {
 		mi := ModuleCreateInfo{
 			Items: make(map[string]interface{}),
-			Ctx:   NewContext(gcontext.Background(), s, nil),
+			Ctx:   NewContext(gcontext.Background(), s),
 		}
 
 		mods, err := mcf(mi)

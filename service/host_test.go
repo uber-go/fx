@@ -222,7 +222,7 @@ func TestAddModule_Locked(t *testing.T) {
 func TestAddModule_NotLocked(t *testing.T) {
 	mod := NewStubModule()
 	sh := &host{}
-	ctx := NewContext(gcontext.Background(), sh, nil)
+	ctx := NewContext(gcontext.Background(), sh)
 	assert.NoError(t, sh.addModule(mod))
 	assert.Equal(t, ctx, mod.Ctx)
 }

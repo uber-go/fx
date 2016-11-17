@@ -50,6 +50,6 @@ func TestWithRoles_OK(t *testing.T) {
 
 func mci() *service.ModuleCreateInfo {
 	return &service.ModuleCreateInfo{
-		Ctx: service.NewContext(gcontext.Background(), service.NullHost(), nil),
+		Ctx: service.NewContext(gcontext.Background(), service.NullHost()),
 	}
 }

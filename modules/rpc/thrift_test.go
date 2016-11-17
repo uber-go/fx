@@ -71,7 +71,7 @@ func testInitRunModule(t *testing.T, mod service.Module, mci service.ModuleCreat
 
 func mch() service.ModuleCreateInfo {
 	return service.ModuleCreateInfo{
-		Ctx: service.NewContext(gcontext.Background(), service.NullHost(), nil),
+		Ctx: service.NewContext(gcontext.Background(), service.NullHost()),
 	}
 }
 

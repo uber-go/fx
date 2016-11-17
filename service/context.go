@@ -31,19 +31,32 @@ type context struct {
 	gcontext.Context
 	Host
 
-	resources interface{}
+	resources map[string]interface{}
 }
 
 // NewContext always returns service.Context for use in the service
-func NewContext(ctx gcontext.Context, host Host, resources interface{}) Context {
+func NewContext(ctx gcontext.Context, host Host) Context {
 	return &context{
 		Context:   ctx,
 		Host:      host,
-		resources: resources,
+		resources: make(map[string]interface{}),
 	}
 }
 
 // Resources returns resources associated with the current context
-func (c *context) Resources() interface{} {
-	return c.resources
+func (c *context) Resource(key string) interface{} {
+	if res, ok := c.tryResource(key); ok {
+		return res
+	}
+	return nil
+}
+
+func (c *context) tryResource(key string) (interface{}, bool) {
+	res, ok := c.resources[key]
+	return res, ok
+}
+
+// SetResource sets resource on the specified key
+func (c *context) SetResource(key string, value interface{}) {
+	c.resources[key] = value
 }

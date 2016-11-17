@@ -137,7 +137,7 @@ func withModule(
 	fn func(*Module),
 ) {
 	mi := service.ModuleCreateInfo{
-		Ctx: service.NewContext(gcontext.Background(), service.NullHost(), nil),
+		Ctx: service.NewContext(gcontext.Background(), service.NullHost()),
 	}
 	mod, err := newModule(mi, hookup, options...)
 	if expectError {
