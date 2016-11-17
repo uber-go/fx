@@ -111,13 +111,13 @@ func New(options ...Option) (Owner, error) {
 	}
 
 	if svc.log == nil {
+		logBuilder := ulog.Builder()
 		// load and configure logging
 		err := svc.configProvider.GetValue("logging").PopulateStruct(&svc.logConfig)
 		if err != nil {
 			ulog.Logger().Info("Logging configuration is not provided, setting to default logger", "error", err)
 		}
-		ulog.Configure(svc.logConfig)
-		svc.log = ulog.Logger()
+		svc.log = logBuilder.WithConfiguration(svc.logConfig).Build()
 	} else {
 		svc.log.Debug("Using custom log provider due to service.WithLogger option")
 	}

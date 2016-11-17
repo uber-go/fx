@@ -18,48 +18,22 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package service
+package testutils
 
 import (
-	"errors"
+	"os"
 	"testing"
 
-	"go.uber.org/fx/core/ulog"
-
-	"github.com/opentracing/opentracing-go"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-func TestAddModules_OK(t *testing.T) {
-	sh := &host{}
-	require.NoError(t, sh.AddModules(successModuleCreate))
-	assert.Empty(t, sh.Modules())
-}
-
-func TestAddModules_Errors(t *testing.T) {
-	sh := &host{}
-	assert.Error(t, sh.AddModules(errorModuleCreate))
-}
-
-func TestWithLogger_OK(t *testing.T) {
-	logger := ulog.New()
-	assert.NotPanics(t, func() {
-		New(WithLogger(logger))
-	})
-}
-
-func TestWithTracing_OK(t *testing.T) {
-	tracer := &opentracing.NoopTracer{}
-	assert.NotPanics(t, func() {
-		New(WithTracer(tracer))
-	})
-}
-
-func successModuleCreate(_ ModuleCreateInfo) ([]Module, error) {
-	return nil, nil
-}
-
-func errorModuleCreate(_ ModuleCreateInfo) ([]Module, error) {
-	return nil, errors.New("can't create module")
+// EnvOverride overrides the environment variable for testing purpose
+func EnvOverride(t *testing.T, key, value string) func() {
+	old := os.Getenv(key)
+	err := os.Setenv(key, value)
+	require.NoError(t, err)
+	return func() {
+		err := os.Setenv(key, old)
+		require.NoError(t, err)
+	}
 }

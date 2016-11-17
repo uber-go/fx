@@ -23,6 +23,7 @@ package config
 import (
 	"fmt"
 	"os"
+	"strings"
 	"sync"
 )
 
@@ -49,9 +50,13 @@ var (
 	_dynamicProviderFuncs []DynamicProviderFunc
 )
 
+var (
+	_devEnv = "development"
+)
+
 func getConfigFiles() []string {
-	env := GetEnvironment()
-	dc := os.Getenv(GetEnvironmentPrefix() + datacenter)
+	env := Environment()
+	dc := os.Getenv(EnvironmentPrefix() + datacenter)
 
 	var files []string
 	if dc != "" && env != "" {
@@ -87,18 +92,23 @@ func EnvProvider() ProviderFunc {
 	}
 }
 
-// GetEnvironment returns current environment setup for the service
-func GetEnvironment() string {
-	env := os.Getenv(GetEnvironmentPrefix() + environment)
+// Environment returns current environment setup for the service
+func Environment() string {
+	env := os.Getenv(EnvironmentKey())
 	if env == "" {
-		env = "development"
+		env = _devEnv
 	}
 	return env
 }
 
+// IsDevelopment returns true if the current environment is set to development
+func IsDevelopment() bool {
+	return strings.Contains(Environment(), _devEnv)
+}
+
 // Path returns path to the yaml configurations
 func Path() string {
-	configPath := os.Getenv(GetEnvironmentPrefix() + configdir)
+	configPath := os.Getenv(EnvironmentPrefix() + configdir)
 	if configPath == "" {
 		configPath = config
 	}
@@ -110,9 +120,14 @@ func SetEnvironmentPrefix(envPrefix string) {
 	_envPrefix = envPrefix
 }
 
-// GetEnvironmentPrefix returns environment prefix for the application
-func GetEnvironmentPrefix() string {
+// EnvironmentPrefix returns environment prefix for the application
+func EnvironmentPrefix() string {
 	return _envPrefix
+}
+
+// EnvironmentKey returns environment variable key name
+func EnvironmentKey() string {
+	return _envPrefix + environment
 }
 
 // ProviderFunc is used to create config providers on configuration initialization
