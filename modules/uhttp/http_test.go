@@ -130,7 +130,7 @@ func configOption() service.Option {
 
 func withModule(
 	t testing.TB,
-	hookup CreateHTTPRegistrantsFunc,
+	hookup GetHandlersFunc,
 	options []modules.Option,
 	expectError bool,
 	fn func(*Module),

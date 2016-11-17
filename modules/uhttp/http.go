@@ -61,6 +61,7 @@ const (
 )
 
 var _ service.Module = &Module{}
+var tracingKey = struct{}{}
 
 // Response is an envelope for returning the results of an HTTP call
 type Response struct {
@@ -82,6 +83,7 @@ type Module struct {
 	listener net.Listener
 	handlers []RouteHandler
 	listenMu sync.RWMutex
+	filters  []Filter
 }
 
 var _ service.Module = &Module{}
@@ -94,11 +96,11 @@ type Config struct {
 	Debug   *bool         `yaml:"debug"`
 }
 
-// CreateHTTPRegistrantsFunc returns a slice of registrants from a service host
-type CreateHTTPRegistrantsFunc func(service service.Host) []RouteHandler
+// GetHandlersFunc returns a slice of registrants from a service host
+type GetHandlersFunc func(service service.Host) []RouteHandler
 
 // New returns a new HTTP module
-func New(hookup CreateHTTPRegistrantsFunc, options ...modules.Option) service.ModuleCreateFunc {
+func New(hookup GetHandlersFunc, options ...modules.Option) service.ModuleCreateFunc {
 	return func(mi service.ModuleCreateInfo) ([]service.Module, error) {
 		mod, err := newModule(mi, hookup, options...)
 		if err != nil {
@@ -110,7 +112,7 @@ func New(hookup CreateHTTPRegistrantsFunc, options ...modules.Option) service.Mo
 
 func newModule(
 	mi service.ModuleCreateInfo,
-	createService CreateHTTPRegistrantsFunc,
+	getHandlers GetHandlersFunc,
 	options ...modules.Option,
 ) (*Module, error) {
 	// setup config defaults
@@ -123,9 +125,11 @@ func newModule(
 		mi.Name = "http"
 	}
 
+	handlers := addHealth(getHandlers(mi.Host))
 	module := &Module{
 		ModuleBase: *modules.NewModuleBase(ModuleType, mi.Name, mi.Host, []string{}),
-		handlers:   createService(mi.Host),
+		handlers:   handlers,
+		filters:    []Filter{tracerFilter{tracer: mi.Host.Tracer()}, FilterFunc(errorFilter)},
 	}
 
 	err := module.Host().Config().GetValue(getConfigKey(mi.Name)).PopulateStruct(cfg)
@@ -159,26 +163,16 @@ func (m *Module) Start(ready chan<- struct{}) <-chan error {
 
 	m.mux.Handle("/", m.router)
 
-	healthFound := false
 	for _, h := range m.handlers {
-		if h.Path == healthPath {
-			healthFound = true
+		handle := executionChain{
+			filters:      m.filters,
+			finalHandler: h.Handler,
 		}
-		handle := h.Handler
-		handle = panicWrap(handle)
-		// TODO other middlewares, logging, tracing?
-		route := m.router.Handle(h.Path, handle)
-		// apply all route options
-		for _, opt := range h.Options {
-			opt(Route{route})
-		}
-	}
-
-	if !healthFound {
-		m.router.HandleFunc(healthPath, handleHealth)
+		m.router.Handle(h.Path, handle)
 	}
 
 	// Debug is opt-out
+	// TODO (madhu): Apply filters to the debug handler too?
 	if m.config.Debug == nil || *m.config.Debug {
 		m.router.PathPrefix("/debug/pprof").Handler(http.DefaultServeMux)
 	}
@@ -245,20 +239,16 @@ func getConfigKey(name string) string {
 	return fmt.Sprintf("modules.%s", name)
 }
 
-// Middlewares
-
-// handle any panics and return an error
-func panicWrap(h http.Handler) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		defer func() {
-			if err := recover(); err != nil {
-				// TODO(ai) log and add stats to this
-				w.Header().Add(ContentType, ContentTypeText)
-				w.WriteHeader(http.StatusInternalServerError)
-				fmt.Fprintf(w, "Server error: %+v", err)
-			}
-		}()
-
-		h.ServeHTTP(w, r)
+// addHealth adds in the default if health handler is not set
+func addHealth(handlers []RouteHandler) []RouteHandler {
+	healthFound := false
+	for _, h := range handlers {
+		if h.Path == healthPath {
+			healthFound = true
+		}
 	}
+	if !healthFound {
+		handlers = append(handlers, NewRouteHandler(healthPath, healthHandler{}))
+	}
+	return handlers
 }
