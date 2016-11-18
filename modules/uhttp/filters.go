@@ -47,7 +47,6 @@ type tracerFilter struct {
 	tracer opentracing.Tracer
 }
 
-// Middlewares
 func (t tracerFilter) Apply(w http.ResponseWriter, r *http.Request, next http.Handler) {
 	ctx := r.Context()
 	if ctx == nil {
@@ -58,7 +57,7 @@ func (t tracerFilter) Apply(w http.ResponseWriter, r *http.Request, next http.Ha
 	next.ServeHTTP(w, r)
 }
 
-// handle any panics and return an error
+// errorFilter handles any panics and return an error
 func errorFilter(w http.ResponseWriter, r *http.Request, next http.Handler) {
 	defer func() {
 		if err := recover(); err != nil {
@@ -71,7 +70,6 @@ func errorFilter(w http.ResponseWriter, r *http.Request, next http.Handler) {
 	next.ServeHTTP(w, r)
 }
 
-// NewExecutionChain creates a new execution chain with given filters and final handler
 func newExecutionChain(filters []Filter, finalHandler http.Handler) executionChain {
 	return executionChain{
 		filters:      filters,

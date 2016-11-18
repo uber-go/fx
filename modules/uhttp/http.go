@@ -126,6 +126,7 @@ func newModule(
 	}
 
 	handlers := addHealth(getHandlers(mi.Host))
+	// TODO (madhu): Add other middleware - logging, metrics
 	module := &Module{
 		ModuleBase: *modules.NewModuleBase(ModuleType, mi.Name, mi.Host, []string{}),
 		handlers:   handlers,
@@ -169,7 +170,7 @@ func (m *Module) Start(ready chan<- struct{}) <-chan error {
 	}
 
 	// Debug is opt-out
-	// TODO (madhu): Apply filters to the debug handler too?
+	// TODO(madhu): Apply filters to the debug handler too?
 	if m.config.Debug == nil || *m.config.Debug {
 		m.router.PathPrefix("/debug/pprof").Handler(http.DefaultServeMux)
 	}
