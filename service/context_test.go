@@ -20,49 +20,37 @@
 
 package service
 
-import gcontext "context"
+import (
+	"testing"
 
-// Context embedds Host and go context for use
-type Context interface {
-	gcontext.Context
-	Host
+	"github.com/stretchr/testify/assert"
 
-	Resource(key string) interface{}
-	SetResource(key string, value interface{})
+	gcontext "context"
+)
+
+type _testStruct struct {
+	data string
 }
 
-type context struct {
-	gcontext.Context
-	Host
-
-	resources map[string]interface{}
-}
-
-var _ Context = &context{}
-
-// NewContext always returns service.Context for use in the service
-func NewContext(ctx gcontext.Context, host Host) Context {
-	return &context{
-		Context:   ctx,
-		Host:      host,
-		resources: make(map[string]interface{}),
+func TestContext_Simple(t *testing.T) {
+	ctx := NewContext(gcontext.Background(), NullHost())
+	testStruct := _testStruct{
+		data: "hello",
 	}
+	ctx.SetResource("resource", testStruct)
+
+	assert.NotNil(t, ctx.Resource("resource"))
+	assert.Equal(t, "hello", ctx.Resource("resource").(_testStruct).data)
 }
 
-// Resources returns resources associated with the current context
-func (c *context) Resource(key string) interface{} {
-	if res, ok := c.TryResource(key); ok {
-		return res
-	}
-	return nil
+func TestContext_NilResource(t *testing.T) {
+	ctx := NewContext(gcontext.Background(), NullHost())
+
+	assert.Nil(t, ctx.Resource("resource"))
 }
 
-func (c *context) TryResource(key string) (interface{}, bool) {
-	res, ok := c.resources[key]
-	return res, ok
-}
-
-// SetResource sets resource on the specified key
-func (c *context) SetResource(key string, value interface{}) {
-	c.resources[key] = value
+func TestContext_HostAccess(t *testing.T) {
+	ctx := NewContext(gcontext.Background(), NullHost())
+	assert.NotNil(t, ctx.Config())
+	assert.Equal(t, "dummy", ctx.Name())
 }
