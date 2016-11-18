@@ -125,11 +125,12 @@ func newModule(
 	}
 
 	handlers := addHealth(getHandlers(mi.Host))
-	// TODO (madhu): Add other middleware - logging, metrics
+	// TODO (madhu): Add other middleware - logging, metrics.
+	// TODO (madhu): Once context propagation is done, change tracerFilter to take in the context
 	module := &Module{
 		ModuleBase: *modules.NewModuleBase(ModuleType, mi.Name, mi.Host, []string{}),
 		handlers:   handlers,
-		filters:    []Filter{tracerFilter{tracer: mi.Host.Tracer()}, FilterFunc(errorFilter)},
+		filters:    []Filter{tracerFilter{tracer: mi.Host.Tracer()}, FilterFunc(panicFilter)},
 	}
 
 	err := module.Host().Config().GetValue(getConfigKey(mi.Name)).PopulateStruct(cfg)

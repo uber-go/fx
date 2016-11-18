@@ -43,11 +43,11 @@ func TestExecutionChain(t *testing.T) {
 
 func TestExecutionChainFilters(t *testing.T) {
 	chain := newExecutionChain(
-		[]Filter{tracerFilter{tracer: noopTracer}, FilterFunc(errorFilter)},
+		[]Filter{tracerFilter{tracer: noopTracer}, FilterFunc(panicFilter)},
 		getNoopHandler(),
 	)
 	response := testServeHTTP(chain)
-	assert.True(t, strings.Contains(response.Body.String(), "filters ok"))
+	assert.Contains(t, response.Body.String(), "filters ok")
 }
 
 func testServeHTTP(chain executionChain) *httptest.ResponseRecorder {

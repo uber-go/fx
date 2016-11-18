@@ -22,8 +22,9 @@ package uhttp
 
 import (
 	"fmt"
-	"log"
 	"net/http"
+
+	"go.uber.org/fx/core/ulog"
 
 	"golang.org/x/net/context"
 
@@ -54,7 +55,8 @@ func (t tracerFilter) Apply(w http.ResponseWriter, r *http.Request, next http.Ha
 	carrier := opentracing.HTTPHeadersCarrier(r.Header)
 	spanCtx, err := t.tracer.Extract(opentracing.HTTPHeaders, carrier)
 	if err != nil && err != opentracing.ErrSpanContextNotFound {
-		log.Printf("Malformed inbound tracing context: %s", err.Error())
+		// TODO (madhu): Once context propagation is done, use the context logger instead
+		ulog.Logger().Info("Malformed inbound tracing context: %s", err.Error())
 	}
 	span := t.tracer.StartSpan(operationName, ext.RPCServerOption(spanCtx))
 	ext.HTTPUrl.Set(span, r.URL.String())
@@ -68,8 +70,8 @@ func (t tracerFilter) Apply(w http.ResponseWriter, r *http.Request, next http.Ha
 	next.ServeHTTP(w, r)
 }
 
-// errorFilter handles any panics and return an error
-func errorFilter(w http.ResponseWriter, r *http.Request, next http.Handler) {
+// panicFilter handles any panics and return an error
+func panicFilter(w http.ResponseWriter, r *http.Request, next http.Handler) {
 	defer func() {
 		if err := recover(); err != nil {
 			// TODO(ai) log and add stats to this
