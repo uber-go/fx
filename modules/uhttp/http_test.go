@@ -35,6 +35,7 @@ import (
 	"go.uber.org/fx/service"
 	. "go.uber.org/fx/service/testutils"
 
+	"github.com/opentracing/opentracing-go"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -60,6 +61,15 @@ func TestHTTPModule_Panic_OK(t *testing.T) {
 		assert.NotNil(t, m)
 		makeRequest(m, "GET", "/", nil, func(r *http.Response) {
 			assert.Equal(t, http.StatusInternalServerError, r.StatusCode, "Expected 500 with panic wrapper")
+		})
+	})
+}
+
+func TestHTTPModule_Tracer(t *testing.T) {
+	withModule(t, registerTracerCheckHandler, nil, false, func(m *Module) {
+		assert.NotNil(t, m)
+		makeRequest(m, "GET", "/", nil, func(r *http.Response) {
+			assert.Equal(t, http.StatusOK, r.StatusCode, "Expected 200 with tracer check")
 		})
 	})
 }
@@ -212,6 +222,18 @@ func makeSingleHandler(path string, fn func(http.ResponseWriter, *http.Request))
 			Handler: http.HandlerFunc(fn),
 		},
 	}
+}
+
+func registerTracerCheckHandler(host service.Host) []RouteHandler {
+	return makeSingleHandler("/", func(_ http.ResponseWriter, r *http.Request) {
+		tracerInterface := r.Context().Value(tracingKey)
+		tracer, ok := tracerInterface.(opentracing.Tracer)
+		if !ok || tracer != host.Tracer() {
+			panic(fmt.Sprintf(
+				"Intentional panic, tracer does not match. Expected: %v Actual: %v", host.Tracer(), tracer,
+			))
+		}
+	})
 }
 
 func registerCustomHealth(_ service.Host) []RouteHandler {

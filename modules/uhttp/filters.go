@@ -34,7 +34,7 @@ func (t tracerFilter) Apply(w http.ResponseWriter, r *http.Request, next http.Ha
 		ctx = context.Background()
 	}
 	ctx = context.WithValue(ctx, tracingKey, t.tracer)
-	r.WithContext(ctx)
+	r = r.WithContext(ctx)
 	next.ServeHTTP(w, r)
 }
 
