@@ -164,10 +164,7 @@ func (m *Module) Start(ready chan<- struct{}) <-chan error {
 	m.mux.Handle("/", m.router)
 
 	for _, h := range m.handlers {
-		handle := executionChain{
-			filters:      m.filters,
-			finalHandler: h.Handler,
-		}
+		handle := newExecutionChain(m.filters, h.Handler)
 		m.router.Handle(h.Path, handle)
 	}
 

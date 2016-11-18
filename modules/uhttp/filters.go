@@ -71,6 +71,14 @@ func errorFilter(w http.ResponseWriter, r *http.Request, next http.Handler) {
 	next.ServeHTTP(w, r)
 }
 
+// NewExecutionChain creates a new execution chain with given filters and final handler
+func newExecutionChain(filters []Filter, finalHandler http.Handler) executionChain {
+	return executionChain{
+		filters:      filters,
+		finalHandler: finalHandler,
+	}
+}
+
 type executionChain struct {
 	currentFilter int
 	filters       []Filter
