@@ -128,7 +128,7 @@ func (m *YarpcModule) Start(readyCh chan<- struct{}) <-chan error {
 			tch.NewInbound(channel, tch.ListenAddr(m.config.Bind)),
 		},
 		Interceptor: interceptor,
-		Tracer:      m.ModuleBase.Tracer(),
+		Tracer:      m.Tracer(),
 	})
 
 	if err != nil {
