@@ -26,9 +26,6 @@ import (
 	"github.com/gorilla/mux"
 )
 
-// A RouteOption gives you the ability to mangle routes
-type RouteOption func(r Route) Route
-
 // FromGorilla turns a gorilla mux route into an UberFx route
 func FromGorilla(r *mux.Route) Route {
 	return Route{
@@ -40,15 +37,13 @@ func FromGorilla(r *mux.Route) Route {
 type RouteHandler struct {
 	Path    string
 	Handler http.Handler
-	Options []RouteOption
 }
 
-// NewRouteHandler creates a route handler given the options
-func NewRouteHandler(path string, handler http.Handler, options ...RouteOption) RouteHandler {
+// NewRouteHandler creates a route handler
+func NewRouteHandler(path string, handler http.Handler) RouteHandler {
 	return RouteHandler{
 		Path:    path,
 		Handler: handler,
-		Options: options,
 	}
 }
 

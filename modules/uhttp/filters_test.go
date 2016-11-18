@@ -21,13 +21,44 @@
 package uhttp
 
 import (
-	"fmt"
+	"io"
 	"net/http"
+	"net/http/httptest"
+	"strings"
+	"testing"
+
+	"github.com/opentracing/opentracing-go"
+	"github.com/stretchr/testify/assert"
 )
 
-type healthHandler struct{}
+var (
+	noopTracer = opentracing.NoopTracer{}
+)
 
-func (h healthHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	// TODO(ai) import more sophisticated health mechanism from internal libraries
-	fmt.Fprintf(w, "OK\n")
+func TestExecutionChain(t *testing.T) {
+	chain := newExecutionChain([]Filter{}, getNoopHandler())
+	response := testServeHTTP(chain)
+	assert.True(t, strings.Contains(response.Body.String(), "filters ok"))
+}
+
+func TestExecutionChainFilters(t *testing.T) {
+	chain := newExecutionChain(
+		[]Filter{tracerFilter{tracer: noopTracer}, FilterFunc(panicFilter)},
+		getNoopHandler(),
+	)
+	response := testServeHTTP(chain)
+	assert.Contains(t, response.Body.String(), "filters ok")
+}
+
+func testServeHTTP(chain executionChain) *httptest.ResponseRecorder {
+	request := httptest.NewRequest("", "http://filters", nil)
+	response := httptest.NewRecorder()
+	chain.ServeHTTP(response, request)
+	return response
+}
+
+func getNoopHandler() http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		io.WriteString(w, "filters ok")
+	})
 }

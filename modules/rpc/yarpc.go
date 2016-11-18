@@ -121,7 +121,6 @@ func (m *YarpcModule) Start(readyCh chan<- struct{}) <-chan error {
 
 	interceptor := yarpc.Interceptors(m.interceptors...)
 
-	// TODO(ai/madhu) pass option for opentracing to NewDispatcher
 	m.rpc, err = _dispatcherFn(m.Host(), yarpc.Config{
 		Name: m.config.AdvertiseName,
 		Inbounds: []transport.Inbound{
