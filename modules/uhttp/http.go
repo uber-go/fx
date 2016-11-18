@@ -95,7 +95,7 @@ type Config struct {
 }
 
 // CreateHTTPRegistrantsFunc returns a slice of registrants from a service host
-type CreateHTTPRegistrantsFunc func(service service.Host) []RouteHandler
+type CreateHTTPRegistrantsFunc func(ctx service.Context) []RouteHandler
 
 // New returns a new HTTP module
 func New(hookup CreateHTTPRegistrantsFunc, options ...modules.Option) service.ModuleCreateFunc {
@@ -124,11 +124,11 @@ func newModule(
 	}
 
 	module := &Module{
-		ModuleBase: *modules.NewModuleBase(ModuleType, mi.Name, mi.Host, []string{}),
-		handlers:   createService(mi.Host),
+		ModuleBase: *modules.NewModuleBase(ModuleType, mi.Name, mi.Ctx, []string{}),
+		handlers:   createService(mi.Ctx),
 	}
 
-	err := module.Host().Config().GetValue(getConfigKey(mi.Name)).PopulateStruct(cfg)
+	err := module.Ctx().Config().GetValue(getConfigKey(mi.Name)).PopulateStruct(cfg)
 	if err != nil {
 		ulog.Logger().Error("Error loading http module configuration", "error", err)
 	}
@@ -147,7 +147,7 @@ func newModule(
 }
 
 // Initialize sets up an HTTP-backed module
-func (m *Module) Initialize(host service.Host) error {
+func (m *Module) Initialize(ctx service.Context) error {
 	return nil
 }
 

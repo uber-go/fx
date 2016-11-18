@@ -21,6 +21,7 @@
 package rpc
 
 import (
+	gcontext "context"
 	"errors"
 	"testing"
 
@@ -58,7 +59,7 @@ func TestThrfitModule_Error(t *testing.T) {
 
 func testInitRunModule(t *testing.T, mod service.Module, mci service.ModuleCreateInfo) {
 	readyCh := make(chan struct{}, 1)
-	assert.NoError(t, mod.Initialize(mci.Host))
+	assert.NoError(t, mod.Initialize(mci.Ctx))
 	assert.NoError(t, mod.Stop())
 	errs := mod.Start(readyCh)
 	defer func() {
@@ -70,7 +71,7 @@ func testInitRunModule(t *testing.T, mod service.Module, mci service.ModuleCreat
 
 func mch() service.ModuleCreateInfo {
 	return service.ModuleCreateInfo{
-		Host: service.NullHost(),
+		Ctx: service.NewContext(gcontext.Background(), service.NullHost()),
 	}
 }
 
@@ -78,12 +79,12 @@ func errorOption(_ *service.ModuleCreateInfo) error {
 	return errors.New("bad option")
 }
 
-func okCreate(_ service.Host) ([]transport.Registrant, error) {
+func okCreate(_ service.Context) ([]transport.Registrant, error) {
 	return []transport.Registrant{{
 		Service: "foo",
 	}}, nil
 }
 
-func badCreateService(_ service.Host) ([]transport.Registrant, error) {
+func badCreateService(_ service.Context) ([]transport.Registrant, error) {
 	return nil, errors.New("can't create service")
 }

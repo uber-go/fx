@@ -29,7 +29,7 @@ import (
 	"go.uber.org/yarpc/transport"
 )
 
-func registerJSONers(service service.Host) ([]transport.Registrant, error) {
+func registerJSONers(ctx service.Context) ([]transport.Registrant, error) {
 	return nil, nil
 }
 

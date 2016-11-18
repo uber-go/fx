@@ -18,47 +18,39 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package main
+package service
 
 import (
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+
 	gcontext "context"
-	"sync"
-
-	"golang.org/x/net/context"
-
-	"go.uber.org/fx/examples/keyvalue/kv"
-	kvs "go.uber.org/fx/examples/keyvalue/kv/yarpc/keyvalueserver"
-	"go.uber.org/fx/service"
-	"go.uber.org/yarpc"
-	"go.uber.org/yarpc/transport"
 )
 
-type YarpcHandler struct {
-	sync.RWMutex
-
-	items map[string]string
+type _testStruct struct {
+	data string
 }
 
-func NewYarpcThriftHandler(ctx service.Context) ([]transport.Registrant, error) {
-	handler := &YarpcHandler{items: map[string]string{}}
-	return kvs.New(handler), nil
-}
-
-func (h *YarpcHandler) GetValue(ctx gcontext.Context, req yarpc.ReqMeta, key *string) (string, yarpc.ResMeta, error) {
-	h.RLock()
-	defer h.RUnlock()
-
-	if value, ok := h.items[*key]; ok {
-		return value, nil, nil
+func TestContext_Simple(t *testing.T) {
+	ctx := NewContext(gcontext.Background(), NullHost())
+	testStruct := _testStruct{
+		data: "hello",
 	}
+	ctx.SetResource("resource", testStruct)
 
-	return "", nil, &kv.ResourceDoesNotExist{Key: *key}
+	assert.NotNil(t, ctx.Resource("resource"))
+	assert.Equal(t, "hello", ctx.Resource("resource").(_testStruct).data)
 }
 
-func (h *YarpcHandler) SetValue(ctx gcontext.Context, req yarpc.ReqMeta, key *string, value *string) (yarpc.ResMeta, error) {
-	h.Lock()
+func TestContext_NilResource(t *testing.T) {
+	ctx := NewContext(gcontext.Background(), NullHost())
 
-	h.items[*key] = *value
-	h.Unlock()
-	return nil, nil
+	assert.Nil(t, ctx.Resource("resource"))
+}
+
+func TestContext_HostAccess(t *testing.T) {
+	ctx := NewContext(gcontext.Background(), NullHost())
+	assert.NotNil(t, ctx.Config())
+	assert.Equal(t, "dummy", ctx.Name())
 }

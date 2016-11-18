@@ -23,6 +23,8 @@ package modules
 import (
 	"testing"
 
+	gcontext "context"
+
 	"go.uber.org/fx/service"
 
 	"github.com/stretchr/testify/assert"
@@ -48,11 +50,6 @@ func TestNewModuleBase_Name(t *testing.T) {
 	assert.Equal(t, "foo", mb.Name())
 }
 
-func TestNewModuleBase_Host(t *testing.T) {
-	mb := nmb("test", "foo", nil)
-	assert.NotNil(t, mb.Host())
-}
-
 func TestNewModuleBase_Tracer(t *testing.T) {
 	mb := nmb("test", "foo", nil)
 	assert.NotNil(t, mb.Tracer())
@@ -60,11 +57,11 @@ func TestNewModuleBase_Tracer(t *testing.T) {
 
 func nmb(moduleType, name string, roles []string) *ModuleBase {
 	host := service.NullHost()
-
+	ctx := service.NewContext(gcontext.Background(), host)
 	return NewModuleBase(
 		moduleType,
 		name,
-		host,
+		ctx,
 		roles,
 	)
 }

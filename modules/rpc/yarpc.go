@@ -70,7 +70,7 @@ func newYarpcModule(
 	options ...modules.Option,
 ) (*YarpcModule, error) {
 	cfg := &yarpcConfig{
-		AdvertiseName: mi.Host.Name(),
+		AdvertiseName: mi.Ctx.Name(),
 		Bind:          ":0",
 	}
 
@@ -80,7 +80,7 @@ func newYarpcModule(
 	}
 
 	module := &YarpcModule{
-		ModuleBase: *modules.NewModuleBase(RPCModuleType, name, mi.Host, []string{}),
+		ModuleBase: *modules.NewModuleBase(RPCModuleType, name, mi.Ctx, []string{}),
 		register:   reg,
 		config:     *cfg,
 	}
@@ -93,7 +93,7 @@ func newYarpcModule(
 		}
 	}
 
-	err := module.Host().Config().GetValue(fmt.Sprintf("modules.%s", module.Name())).PopulateStruct(cfg)
+	err := module.Ctx().Config().GetValue(fmt.Sprintf("modules.%s", module.Name())).PopulateStruct(cfg)
 	// found values, update module
 	module.config = *cfg
 
@@ -103,7 +103,7 @@ func newYarpcModule(
 }
 
 // Initialize sets up a YAPR-backed module
-func (m *YarpcModule) Initialize(service service.Host) error {
+func (m *YarpcModule) Initialize(ctx service.Context) error {
 	return nil
 }
 
@@ -122,7 +122,7 @@ func (m *YarpcModule) Start(readyCh chan<- struct{}) <-chan error {
 	interceptor := yarpc.Interceptors(m.interceptors...)
 
 	// TODO(ai/madhu) pass option for opentracing to NewDispatcher
-	m.rpc, err = _dispatcherFn(m.Host(), yarpc.Config{
+	m.rpc, err = _dispatcherFn(m.Ctx(), yarpc.Config{
 		Name: m.config.AdvertiseName,
 		Inbounds: []transport.Inbound{
 			tch.NewInbound(channel, tch.ListenAddr(m.config.Bind)),

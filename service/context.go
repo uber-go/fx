@@ -18,47 +18,51 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package main
+package service
 
-import (
-	gcontext "context"
-	"sync"
+import gcontext "context"
 
-	"golang.org/x/net/context"
+// Context embedds Host and go context for use
+type Context interface {
+	gcontext.Context
+	Host
 
-	"go.uber.org/fx/examples/keyvalue/kv"
-	kvs "go.uber.org/fx/examples/keyvalue/kv/yarpc/keyvalueserver"
-	"go.uber.org/fx/service"
-	"go.uber.org/yarpc"
-	"go.uber.org/yarpc/transport"
-)
-
-type YarpcHandler struct {
-	sync.RWMutex
-
-	items map[string]string
+	Resource(key string) interface{}
+	SetResource(key string, value interface{})
 }
 
-func NewYarpcThriftHandler(ctx service.Context) ([]transport.Registrant, error) {
-	handler := &YarpcHandler{items: map[string]string{}}
-	return kvs.New(handler), nil
+type context struct {
+	gcontext.Context
+	Host
+
+	resources map[string]interface{}
 }
 
-func (h *YarpcHandler) GetValue(ctx gcontext.Context, req yarpc.ReqMeta, key *string) (string, yarpc.ResMeta, error) {
-	h.RLock()
-	defer h.RUnlock()
+var _ Context = &context{}
 
-	if value, ok := h.items[*key]; ok {
-		return value, nil, nil
+// NewContext always returns service.Context for use in the service
+func NewContext(ctx gcontext.Context, host Host) Context {
+	return &context{
+		Context:   ctx,
+		Host:      host,
+		resources: make(map[string]interface{}),
 	}
-
-	return "", nil, &kv.ResourceDoesNotExist{Key: *key}
 }
 
-func (h *YarpcHandler) SetValue(ctx gcontext.Context, req yarpc.ReqMeta, key *string, value *string) (yarpc.ResMeta, error) {
-	h.Lock()
+// Resources returns resources associated with the current context
+func (c *context) Resource(key string) interface{} {
+	if res, ok := c.TryResource(key); ok {
+		return res
+	}
+	return nil
+}
 
-	h.items[*key] = *value
-	h.Unlock()
-	return nil, nil
+func (c *context) TryResource(key string) (interface{}, bool) {
+	res, ok := c.resources[key]
+	return res, ok
+}
+
+// SetResource sets resource on the specified key
+func (c *context) SetResource(key string, value interface{}) {
+	c.resources[key] = value
 }

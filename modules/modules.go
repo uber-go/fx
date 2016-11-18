@@ -36,7 +36,7 @@ type ModuleConfig struct {
 type ModuleBase struct {
 	moduleType string
 	name       string
-	host       service.Host
+	ctx        service.Context
 	isRunning  bool
 	roles      []string
 	scope      tally.Scope
@@ -47,22 +47,22 @@ type ModuleBase struct {
 func NewModuleBase(
 	moduleType string,
 	name string,
-	service service.Host,
+	ctx service.Context,
 	roles []string,
 ) *ModuleBase {
 	return &ModuleBase{
 		moduleType: moduleType,
 		name:       name,
-		host:       service,
+		ctx:        ctx,
 		roles:      roles,
-		scope:      service.Metrics().SubScope(name),
-		tracer:     service.Tracer(),
+		scope:      ctx.Metrics().SubScope(name),
+		tracer:     ctx.Tracer(),
 	}
 }
 
-// Host returns the module's service host
-func (mb ModuleBase) Host() service.Host {
-	return mb.host
+// Ctx returns module context
+func (mb ModuleBase) Ctx() service.Context {
+	return mb.ctx
 }
 
 // Roles returns the module's roles

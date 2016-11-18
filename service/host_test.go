@@ -21,6 +21,7 @@
 package service
 
 import (
+	gcontext "context"
 	"errors"
 	"testing"
 	"time"
@@ -221,8 +222,9 @@ func TestAddModule_Locked(t *testing.T) {
 func TestAddModule_NotLocked(t *testing.T) {
 	mod := NewStubModule()
 	sh := &host{}
+	ctx := NewContext(gcontext.Background(), sh)
 	assert.NoError(t, sh.addModule(mod))
-	assert.Equal(t, sh, mod.Host)
+	assert.Equal(t, ctx, mod.Ctx)
 }
 
 func TestStartModule_NoErrors(t *testing.T) {
