@@ -226,11 +226,13 @@ func makeSingleHandler(path string, fn func(http.ResponseWriter, *http.Request))
 
 func registerTracerCheckHandler(host service.Host) []RouteHandler {
 	return makeSingleHandler("/", func(_ http.ResponseWriter, r *http.Request) {
-		tracerInterface := r.Context().Value(tracingKey)
-		tracer, ok := tracerInterface.(opentracing.Tracer)
-		if !ok || tracer != host.Tracer() {
+		span := opentracing.SpanFromContext(r.Context())
+		if span == nil {
+			panic(fmt.Sprintf("Intentional panic, invalid span: %v", span))
+		} else if span.Tracer() != host.Tracer() {
 			panic(fmt.Sprintf(
-				"Intentional panic, tracer does not match. Expected: %v Actual: %v", host.Tracer(), tracer,
+				"Intentional panic, expected tracer: %v different from actual tracer: %v", span.Tracer(),
+				host.Tracer(),
 			))
 		}
 	})

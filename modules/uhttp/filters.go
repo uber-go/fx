@@ -22,11 +22,13 @@ package uhttp
 
 import (
 	"fmt"
+	"log"
 	"net/http"
 
-	"github.com/opentracing/opentracing-go"
-
 	"golang.org/x/net/context"
+
+	"github.com/opentracing/opentracing-go"
+	"github.com/opentracing/opentracing-go/ext"
 )
 
 // Filter applies filters on requests, request contexts or responses such as
@@ -48,11 +50,20 @@ type tracerFilter struct {
 }
 
 func (t tracerFilter) Apply(w http.ResponseWriter, r *http.Request, next http.Handler) {
+	operationName := r.Method
+	carrier := opentracing.HTTPHeadersCarrier(r.Header)
+	spanCtx, err := t.tracer.Extract(opentracing.HTTPHeaders, carrier)
+	if err != nil && err != opentracing.ErrSpanContextNotFound {
+		log.Printf("Malformed inbound tracing context: %s", err.Error())
+	}
+	span := t.tracer.StartSpan(operationName, ext.RPCServerOption(spanCtx))
+	ext.HTTPUrl.Set(span, r.URL.String())
+	defer span.Finish()
 	ctx := r.Context()
 	if ctx == nil {
 		ctx = context.Background()
 	}
-	ctx = context.WithValue(ctx, tracingKey, t.tracer)
+	ctx = opentracing.ContextWithSpan(ctx, span)
 	r = r.WithContext(ctx)
 	next.ServeHTTP(w, r)
 }

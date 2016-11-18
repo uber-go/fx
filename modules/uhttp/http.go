@@ -61,7 +61,6 @@ const (
 )
 
 var _ service.Module = &Module{}
-var tracingKey = struct{}{}
 
 // Response is an envelope for returning the results of an HTTP call
 type Response struct {
