@@ -41,7 +41,7 @@
 //     log.Info("Message describing loggging reason", "key", "value")
 //   }
 //
-// Note that the log methods (Info,Warn,Debug) takes parameter as key value pairs (message, (key, value)...)
+// Note that the log methods (Info,Warn, Debug) takes parameter as key value pairs (message, (key, value)...)
 //
 // ulog configuration can be defined in multiple ways, either by writing the struct yourself, or describing in the YAML
 // and populating using config package.

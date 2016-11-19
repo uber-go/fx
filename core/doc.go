@@ -29,7 +29,7 @@
 // could import
 // go.uber.org/core/config and use it in a stand-alone CLI app.
 //
-// It is separate from theservice package, which contains logic specifically to
+// It is separate from the service package, which contains logic specifically to
 // a running service.
 //
 //

@@ -116,7 +116,7 @@
 //
 // Or via the service parameters, we would activate in the following ways:
 //
-// • ./myservice or./myservice --roles "service,worker": Runs all modules
+// • ./myservice or ./myservice --roles "service,worker": Runs all modules
 //
 // • ./myservice --roles "worker": Runs only the **Kakfa** module
 //
@@ -203,7 +203,7 @@
 //       port: 8081
 //       greeting: Hello There!
 //
-// UberFx Config allows direct key access, such asfoo.bar.baz:
+// UberFx Config allows direct key access, such as foo.bar.baz:
 //
 //   cfg := svc.Config()
 //   if value := cfg.GetValue("foo.bar.baz"); value.HasValue() {

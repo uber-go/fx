@@ -41,7 +41,7 @@
 //
 // Static configuration providers
 //
-// Static configuration providers conform to theProvider interface
+// Static configuration providers conform to the Provider interface
 // and are bootstraped first. Use these for simple providers such as file-backed or
 // environment-based configuration providers.
 //
@@ -52,7 +52,7 @@
 // be useful, so UberFx treats them specially. Dynamic configuration providers
 // conform to the
 // Provider interface, but they're instantianted
-//  **after** the StaticProviders on order to read bootstarp values.
+// **after** the Static Providers on order to read bootstarp values.
 //
 // For example, if you were to implement a ZooKeeper-backed
 // Provider, you'd likely need to specify (via YAML or environment
@@ -68,7 +68,7 @@
 // configuration ahead of time.
 //
 //
-// You can use aValue for two main purposes:
+// You can use a Value for two main purposes:
 //
 // • Get a single value out of configuration.
 //
@@ -85,18 +85,18 @@
 //
 // • Populate a struct (PopulateStruct(&myStruct))
 //
-// TheAs* method has two variants:TryAs* andAs*. The former is a
+// The As* method has two variants: TryAs* and As*. The former is a
 // two-value return, similar to a type assertion, where the user checks if the second
 // bool is true before using the value.
 //
-// TheAs* methods are similar to theMust* pattern in the standard library.
+// The As* methods are similar to the Must* pattern in the standard library.
 // If the underlying value cannot be converted to the requested type,
 // As* will
 // panic.
 //
 // PopulateStruct
 //
-// PopulateStruct is akin tojson.Unmarshal() in that it takes a pointer to a
+// PopulateStruct is akin to json.Unmarshal() in that it takes a pointer to a
 // custom struct and fills in the fields. It returns a
 // true if the requested
 // fields were found and populated properly, and
