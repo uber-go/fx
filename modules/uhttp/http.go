@@ -32,7 +32,6 @@ import (
 	"go.uber.org/fx/modules"
 	"go.uber.org/fx/service"
 
-	"github.com/gorilla/mux"
 	"github.com/pkg/errors"
 )
 
@@ -78,7 +77,7 @@ type Module struct {
 	config   Config
 	log      ulog.Log
 	mux      *http.ServeMux
-	router   *mux.Router
+	router   *Router
 	listener net.Listener
 	handlers []RouteHandler
 	listenMu sync.RWMutex
@@ -126,11 +125,10 @@ func newModule(
 
 	handlers := addHealth(getHandlers(mi.Host))
 	// TODO (madhu): Add other middleware - logging, metrics.
-	// TODO (madhu): Once context propagation is done, change tracerFilter to take in the context
 	module := &Module{
 		ModuleBase: *modules.NewModuleBase(ModuleType, mi.Name, mi.Host, []string{}),
 		handlers:   handlers,
-		filters:    []Filter{tracerFilter{tracer: mi.Host.Tracer()}, FilterFunc(panicFilter)},
+		filters:    []Filter{tracerFilter{}, FilterFunc(panicFilter)},
 	}
 
 	err := module.Host().Config().GetValue(getConfigKey(mi.Name)).PopulateStruct(cfg)
@@ -160,19 +158,17 @@ func (m *Module) Initialize(host service.Host) error {
 func (m *Module) Start(ready chan<- struct{}) <-chan error {
 	m.mux = http.NewServeMux()
 	// Do something unrelated to annotations
-	m.router = mux.NewRouter()
+	m.router = NewRouter(m.Host())
 
 	m.mux.Handle("/", m.router)
 
 	for _, h := range m.handlers {
 		handle := newExecutionChain(m.filters, h.Handler)
-		m.router.Handle(h.Path, handle)
+		m.router.AddPatternRoute(h.Path, handle)
 	}
 
-	// Debug is opt-out
-	// TODO(madhu): Apply filters to the debug handler too?
 	if m.config.Debug == nil || *m.config.Debug {
-		m.router.PathPrefix("/debug/pprof").Handler(http.DefaultServeMux)
+		// TODO(anup): introduce debug handler
 	}
 
 	ret := make(chan error, 1)

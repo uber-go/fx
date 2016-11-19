@@ -25,6 +25,8 @@ import (
 	"net/http"
 	"testing"
 
+	"go.uber.org/fx/service"
+
 	"github.com/gorilla/mux"
 	"github.com/stretchr/testify/assert"
 )
@@ -37,7 +39,7 @@ func TestFromGorilla_OK(t *testing.T) {
 }
 
 func TestNewRouteHandler(t *testing.T) {
-	rh := NewRouteHandler("/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	rh := NewRouteHandler("/", HandlerFunc(func(ctx service.Context, w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintf(w, "Hi\n")
 	}))
 

@@ -24,9 +24,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"go.uber.org/fx/core/ulog"
-
-	"golang.org/x/net/context"
+	"go.uber.org/fx/service"
 
 	"github.com/opentracing/opentracing-go"
 	"github.com/opentracing/opentracing-go/ext"
@@ -35,43 +33,36 @@ import (
 // Filter applies filters on requests, request contexts or responses such as
 // adding tracing to the context
 type Filter interface {
-	Apply(w http.ResponseWriter, r *http.Request, next http.Handler)
+	Apply(ctx service.Context, w http.ResponseWriter, r *http.Request, next Handler)
 }
 
 // FilterFunc is an adaptor to call normal functions to apply filters
-type FilterFunc func(w http.ResponseWriter, r *http.Request, next http.Handler)
+type FilterFunc func(ctx service.Context, w http.ResponseWriter, r *http.Request, next Handler)
 
 // Apply implements Apply from the Filter interface and simply delegates to the function
-func (f FilterFunc) Apply(w http.ResponseWriter, r *http.Request, next http.Handler) {
-	f(w, r, next)
+func (f FilterFunc) Apply(ctx service.Context, w http.ResponseWriter, r *http.Request, next Handler) {
+	f(ctx, w, r, next)
 }
 
-type tracerFilter struct {
-	tracer opentracing.Tracer
-}
+type tracerFilter struct{}
 
-func (t tracerFilter) Apply(w http.ResponseWriter, r *http.Request, next http.Handler) {
+func (t tracerFilter) Apply(ctx service.Context, w http.ResponseWriter, r *http.Request, next Handler) {
 	operationName := r.Method
 	carrier := opentracing.HTTPHeadersCarrier(r.Header)
-	spanCtx, err := t.tracer.Extract(opentracing.HTTPHeaders, carrier)
+	spanCtx, err := ctx.Tracer().Extract(opentracing.HTTPHeaders, carrier)
 	if err != nil && err != opentracing.ErrSpanContextNotFound {
-		// TODO (madhu): Once context propagation is done, use the context logger instead
-		ulog.Logger().Info("Malformed inbound tracing context: %s", err.Error())
+		ctx.Logger().Info("Malformed inbound tracing context: %s", err.Error())
 	}
-	span := t.tracer.StartSpan(operationName, ext.RPCServerOption(spanCtx))
+	span := ctx.Tracer().StartSpan(operationName, ext.RPCServerOption(spanCtx))
 	ext.HTTPUrl.Set(span, r.URL.String())
 	defer span.Finish()
-	ctx := r.Context()
-	if ctx == nil {
-		ctx = context.Background()
-	}
-	ctx = opentracing.ContextWithSpan(ctx, span)
-	r = r.WithContext(ctx)
-	next.ServeHTTP(w, r)
+
+	gctx := service.NewContext(opentracing.ContextWithSpan(ctx, span), ctx)
+	next.ServeHTTP(gctx, w, r)
 }
 
 // panicFilter handles any panics and return an error
-func panicFilter(w http.ResponseWriter, r *http.Request, next http.Handler) {
+func panicFilter(ctx service.Context, w http.ResponseWriter, r *http.Request, next Handler) {
 	defer func() {
 		if err := recover(); err != nil {
 			// TODO(ai) log and add stats to this
@@ -80,10 +71,10 @@ func panicFilter(w http.ResponseWriter, r *http.Request, next http.Handler) {
 			fmt.Fprintf(w, "Server error: %+v", err)
 		}
 	}()
-	next.ServeHTTP(w, r)
+	next.ServeHTTP(ctx, w, r)
 }
 
-func newExecutionChain(filters []Filter, finalHandler http.Handler) executionChain {
+func newExecutionChain(filters []Filter, finalHandler Handler) executionChain {
 	return executionChain{
 		filters:      filters,
 		finalHandler: finalHandler,
@@ -93,15 +84,15 @@ func newExecutionChain(filters []Filter, finalHandler http.Handler) executionCha
 type executionChain struct {
 	currentFilter int
 	filters       []Filter
-	finalHandler  http.Handler
+	finalHandler  Handler
 }
 
-func (ec executionChain) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+func (ec executionChain) ServeHTTP(ctx service.Context, w http.ResponseWriter, req *http.Request) {
 	if ec.currentFilter < len(ec.filters) {
 		filter := ec.filters[ec.currentFilter]
 		ec.currentFilter++
-		filter.Apply(w, req, ec)
+		filter.Apply(ctx, w, req, ec)
 	} else {
-		ec.finalHandler.ServeHTTP(w, req)
+		ec.finalHandler.ServeHTTP(ctx, w, req)
 	}
 }

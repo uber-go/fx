@@ -20,49 +20,22 @@
 
 package uhttp
 
-import "github.com/gorilla/mux"
+import (
+	"net/http"
 
-// FromGorilla turns a gorilla mux route into an UberFx route
-func FromGorilla(r *mux.Route) Route {
-	return Route{
-		r: r,
-	}
+	"go.uber.org/fx/service"
+)
+
+// Handler is a context-aware extension of http.Handler.
+type Handler interface {
+	ServeHTTP(ctx service.Context, w http.ResponseWriter, r *http.Request)
 }
 
-// A RouteHandler is an HTTP handler for a single route
-type RouteHandler struct {
-	Path    string
-	Handler Handler
-}
+// The HandlerFunc type is an adapter to allow the use of
+// ordinary functions as HTTP handlers.
+type HandlerFunc func(ctx service.Context, w http.ResponseWriter, r *http.Request)
 
-// NewRouteHandler creates a route handler
-func NewRouteHandler(path string, handler Handler) RouteHandler {
-	return RouteHandler{
-		Path:    path,
-		Handler: handler,
-	}
-}
-
-// A Route represents a handler for HTTP requests, with restrictions
-type Route struct {
-	r *mux.Route
-}
-
-// GorillaMux returns the underlying mux if you need to use it directly
-func (r Route) GorillaMux() *mux.Route {
-	return r.r
-}
-
-// Headers allows easy enforcement of headers
-func (r Route) Headers(headerPairs ...string) Route {
-	return Route{
-		r.r.Headers(headerPairs...),
-	}
-}
-
-// Methods allows easy enforcement of metthods (HTTP Verbs)
-func (r Route) Methods(methods ...string) Route {
-	return Route{
-		r.r.Methods(methods...),
-	}
+// ServeHTTP calls the caller HandlerFunc.
+func (f HandlerFunc) ServeHTTP(ctx service.Context, w http.ResponseWriter, r *http.Request) {
+	f(ctx, w, r)
 }
