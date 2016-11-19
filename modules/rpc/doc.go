@@ -20,7 +20,7 @@
 
 // Package rpc is the RPC Module.
 //
-// The RPC module wrapsYARPC (https://github.com/yarpc/yarpc-go) and exposes
+// The RPC module wraps YARPC (https://github.com/yarpc/yarpc-go) and exposes
 // creators for both JSON- and Thrift-encoded messages.
 //
 //
@@ -33,9 +33,9 @@
 // • Implement the service interface handlers as method receivers on a struct
 //
 // • Implement a top-level function, conforming to the
-//  rpc.CreateThriftServiceFunc signature ( uberfx/modules/rpc/thrift.go that
+// rpc.CreateThriftServiceFunc signature (uberfx/modules/rpc/thrift.go that
 // returns a
-//  []transport.Registrant YARPC implementation from the handler:
+// []transport.Registrant YARPC implementation from the handler:
 //
 //   func NewMyServiceHandler(svc service.Host) ([]transport.Registrant, error) {
 //     return myservice.New(&MyServiceHandler{}), nil

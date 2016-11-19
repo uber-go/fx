@@ -47,7 +47,7 @@
 //
 // This model results in a simple, consistent way to start a service.  For example,
 // in the case of a simple TChannel Service,
-//  main.go might look like this:
+// main.go might look like this:
 //
 //   package main
 //
@@ -112,13 +112,13 @@
 //
 // Which then allows us to set the roles either via a command line variable:
 //
-//  export CONFIG__roles__0=worker
+// export CONFIG__roles__0=worker
 //
 // Or via the service parameters, we would activate in the following ways:
 //
-// •  ./myservice or ./myservice --roles "service,worker": Runs all modules
+// • ./myservice or ./myservice --roles "service,worker": Runs all modules
 //
-// •  ./myservice --roles "worker": Runs only the **Kakfa** module
+// • ./myservice --roles "worker": Runs only the **Kakfa** module
 //
 // • Etc...
 //
@@ -157,7 +157,7 @@
 //       timeout: 60s
 //
 // In this example, a module named: "rpc" would lookup it's advertise name as
-//  modules.rpc.advertiseName.
+// modules.rpc.advertiseName.
 //
 // Metrics
 //
@@ -167,7 +167,7 @@
 // Internally, this uses a pluggable mechanism for reporting these values, so they
 // can be reported to M3, logging, etc., at the service owner's discretion.
 // By default the metrics are not reported (using a
-//  tally.NoopScope)
+// tally.NoopScope)
 //
 // Configuration
 //

@@ -27,7 +27,7 @@
 //
 // If, for example, you just want use the configuration logic from UberFx, you
 // could import
-//  go.uber.org/core/config and use it in a stand-alone CLI app.
+// go.uber.org/core/config and use it in a stand-alone CLI app.
 //
 // It is separate from the service package, which contains logic specifically to
 // a running service.

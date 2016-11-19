@@ -22,7 +22,7 @@
 //
 // Service, being a bit of an overloaded term, requires some
 // specific care to explain the various components in the
-//  servicepackage in UberFx.
+// servicepackage in UberFx.
 //
 //
 // Instantiation
@@ -50,13 +50,13 @@
 //
 // Once you have a service, you generally want to call .Start() on it.
 //
-//  Start(bool) comes in two variants: a blocking, and a non-blocking version. In
+// Start(bool) comes in two variants: a blocking, and a non-blocking version. In
 // our sample apps, we choose to use the blocking version (
-//  svc.Start(true)) and
+// svc.Start(true)) and
 // yield control to the service lifecycle manager. If you wish to do other things
 // after starting your service, you may pass
-//  false and use the return values of
-//  svc.Start(bool) to listen on channels and trigger manual shutdowns.
+// false and use the return values of
+// svc.Start(bool) to listen on channels and trigger manual shutdowns.
 //
 //
 package service
