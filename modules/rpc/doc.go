@@ -20,7 +20,7 @@
 
 // Package rpc is the RPC Module.
 //
-// The RPC module wrapsYARPC (https://github.com/yarpc/yarpc-go) and exposes
+// The RPC module wraps YARPC (https://github.com/yarpc/yarpc-go) and exposes
 // creators for both JSON- and Thrift-encoded messages.
 //
 //
