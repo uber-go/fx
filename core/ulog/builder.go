@@ -22,7 +22,6 @@ package ulog
 
 import (
 	"io"
-	"io/ioutil"
 	"os"
 	"path"
 
@@ -140,7 +139,7 @@ func (lb *LogBuilder) Configure() zap.Logger {
 		}
 	}
 	if lb.logConfig.File == nil || !lb.logConfig.File.Enabled {
-		options = append(options, zap.Output(zap.AddSync(ioutil.Discard)))
+		options = append(options, zap.Output(zap.AddSync(os.Stdout)))
 	} else {
 		options = append(options, zap.Output(lb.fileOutput(lb.logConfig.File, lb.logConfig.Stdout, lb.logConfig.Verbose)))
 	}
