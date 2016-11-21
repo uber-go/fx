@@ -206,7 +206,7 @@
 // UberFx Config allows direct key access, such as foo.bar.baz:
 //
 //   cfg := svc.Config()
-//   if value := cfg.GetValue("foo.bar.baz"); value.HasValue() {
+//   if value := cfg.Get("foo.bar.baz"); value.HasValue() {
 //     fmt.Printf("Say %s", value.AsString()) // "Say hello"
 //   }
 //
@@ -221,7 +221,7 @@
 //
 //   target := &myStuff{}
 //   cfg := svc.Config()
-//   if err := cfg.GetValue("stuff.server").PopulateStruct(target); err != nil {
+//   if err := cfg.Get("stuff.server").PopulateStruct(target); err != nil {
 //     // fail, we didn't find it.
 //   }
 //

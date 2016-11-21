@@ -93,7 +93,7 @@ func newYarpcModule(
 		}
 	}
 
-	err := module.Host().Config().GetValue(fmt.Sprintf("modules.%s", module.Name())).PopulateStruct(cfg)
+	err := module.Host().Config().Get(fmt.Sprintf("modules.%s", module.Name())).PopulateStruct(cfg)
 	// found values, update module
 	module.config = *cfg
 

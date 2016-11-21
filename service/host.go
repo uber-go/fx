@@ -378,7 +378,7 @@ func loadInstanceConfig(cfg config.Provider, key string, instance interface{}) b
 		configValue := reflect.New(field.Type())
 
 		// Try to load the service config
-		err := cfg.GetValue(key).PopulateStruct(configValue.Interface())
+		err := cfg.Get(key).PopulateStruct(configValue.Interface())
 		if err != nil {
 			ulog.Logger().Error("Unable to load instance config", "error", err)
 			return false

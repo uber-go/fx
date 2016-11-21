@@ -105,15 +105,15 @@ func New(options ...Option) (Owner, error) {
 	}
 
 	// load standard config
-	// TODO(glib): `.GetValue("")` is a confusing interface for getting the root config node
-	if err := svc.configProvider.GetValue("").PopulateStruct(&svc.standardConfig); err != nil {
+	// TODO(glib): `.Get("")` is a confusing interface for getting the root config node
+	if err := svc.configProvider.Get("").PopulateStruct(&svc.standardConfig); err != nil {
 		return nil, errors.Wrap(err, "unable to load standard configuration")
 	}
 
 	if svc.log == nil {
 		logBuilder := ulog.Builder()
 		// load and configure logging
-		err := svc.configProvider.GetValue("logging").PopulateStruct(&svc.logConfig)
+		err := svc.configProvider.Get("logging").PopulateStruct(&svc.logConfig)
 		if err != nil {
 			ulog.Logger().Info("Logging configuration is not provided, setting to default logger", "error", err)
 		}
@@ -140,7 +140,7 @@ func New(options ...Option) (Owner, error) {
 	}
 
 	if svc.Tracer() == nil {
-		if err := svc.configProvider.GetValue("tracing").PopulateStruct(&svc.tracerConfig); err != nil {
+		if err := svc.configProvider.Get("tracing").PopulateStruct(&svc.tracerConfig); err != nil {
 			return nil, errors.Wrap(err, "unable to load tracing configuration")
 		}
 		tracer, closer, err := tracing.InitGlobalTracer(

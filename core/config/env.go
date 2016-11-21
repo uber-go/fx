@@ -35,7 +35,7 @@ const defaultEnvPrefix = "CONFIG"
 
 // An EnvironmentValueProvider provides configuration from your environment
 type EnvironmentValueProvider interface {
-	GetValue(key string) (string, bool)
+	Get(key string) (string, bool)
 }
 
 var _ Provider = &envConfigProvider{}
@@ -62,11 +62,11 @@ func (p envConfigProvider) Name() string {
 	return "env"
 }
 
-func (p envConfigProvider) GetValue(key string) Value {
+func (p envConfigProvider) Get(key string) Value {
 	env := toEnvString(p.prefix, key)
 
 	var cv Value
-	value, found := p.provider.GetValue(env)
+	value, found := p.provider.Get(env)
 	cv = NewValue(p, key, value, found, String, nil)
 	return cv
 }
@@ -87,7 +87,7 @@ func (p envConfigProvider) UnregisterChangeCallback(token string) error {
 
 type osEnvironmentProvider struct{}
 
-func (p osEnvironmentProvider) GetValue(key string) (string, bool) {
+func (p osEnvironmentProvider) Get(key string) (string, bool) {
 	return os.LookupEnv(key)
 }
 
@@ -95,7 +95,7 @@ type mapEnvironmentProvider struct {
 	values map[string]string
 }
 
-func (p mapEnvironmentProvider) GetValue(key string) (string, bool) {
+func (p mapEnvironmentProvider) Get(key string) (string, bool) {
 	val, ok := p.values[key]
 	return val, ok
 }
