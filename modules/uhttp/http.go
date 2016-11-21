@@ -164,11 +164,11 @@ func (m *Module) Start(ready chan<- struct{}) <-chan error {
 
 	for _, h := range m.handlers {
 		handle := newExecutionChain(m.filters, h.Handler)
-		m.router.AddPatternRoute(h.Path, handle)
+		m.router.HandleRoute(m.Host(), h.Path, handle)
 	}
 
 	if m.config.Debug == nil || *m.config.Debug {
-		// TODO(anup): introduce debug handler
+		m.router.PathPrefix("/debug/pprof").Handler(http.DefaultServeMux)
 	}
 
 	ret := make(chan error, 1)

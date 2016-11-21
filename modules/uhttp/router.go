@@ -21,37 +21,20 @@
 package uhttp
 
 import (
-	gcontext "context"
-	"net/http"
-	"regexp"
-	"sync"
+	"github.com/gorilla/mux"
 
 	"go.uber.org/fx/service"
 )
 
-// A RequestMatcher is a matching predicate for an HTTP Request
-type RequestMatcher func(r *http.Request) bool
-
-// PathMatchesRegexp returns a matcher that evaluates the path against the given regexp
-func PathMatchesRegexp(re *regexp.Regexp) RequestMatcher {
-	return func(r *http.Request) bool {
-		return re.MatchString(r.URL.Path)
-	}
-}
-
 type route struct {
-	matches RequestMatcher
 	handler Handler
 }
 
-// Router is an HTTP handler that can route based on arbitrary RequestMatchers.
-// It applies Filter (or filter chain) before invoking the actual routes.
-// If the filter is nil, it uses tracerFilter
+// Router is wrapper around gorila mux
 type Router struct {
-	mux    sync.RWMutex
-	routes []route
-	filter Filter
-	host   service.Host
+	mux.Router
+
+	host service.Host
 }
 
 // NewRouter creates a new empty router
@@ -61,47 +44,7 @@ func NewRouter(host service.Host) *Router {
 	}
 }
 
-// ServeHTTP creates a new service.Context, and runs the filter chain,
-// eventually routing to the appropriate handler based on the incoming path.
-func (h *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	ctx := service.NewContext(gcontext.Background(), h.host)
-	filter := h.filter
-	if filter == nil {
-		filter = tracerFilter{}
-	}
-	filter.Apply(ctx, w, r, HandlerFunc(h.serveHTTP))
-}
-
-// serveHTTP routes to the appropriate handler based on the incoming path
-func (h *Router) serveHTTP(ctx service.Context, w http.ResponseWriter, r *http.Request) {
-	var handler Handler
-
-	h.mux.RLock()
-	for idx := range h.routes {
-		if h.routes[idx].matches(r) {
-			handler = h.routes[idx].handler
-			break
-		}
-	}
-	h.mux.RUnlock()
-
-	if handler != nil {
-		handler.ServeHTTP(ctx, w, r)
-	} else {
-		http.NotFound(w, r)
-	}
-}
-
-// AddPatternRoute is a convenience function for routing to the given handler
-// based on a path regex.
-func (h *Router) AddPatternRoute(pattern string, handler Handler) {
-	h.AddRoute(PathMatchesRegexp(regexp.MustCompile(pattern)), handler)
-}
-
-// AddRoute adds a new router
-func (h *Router) AddRoute(matches RequestMatcher, handler Handler) {
-	h.mux.Lock()
-	defer h.mux.Unlock()
-
-	h.routes = append(h.routes, route{matches: matches, handler: handler})
+// HandleRoute wraps and calls the http.Handler underneath
+func (h *Router) HandleRoute(host service.Host, path string, handler Handler) {
+	h.Handle(path, Wrap(host, handler))
 }

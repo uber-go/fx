@@ -21,6 +21,7 @@
 package uhttp
 
 import (
+	"context"
 	"net/http"
 
 	"go.uber.org/fx/service"
@@ -38,4 +39,23 @@ type HandlerFunc func(ctx service.Context, w http.ResponseWriter, r *http.Reques
 // ServeHTTP calls the caller HandlerFunc.
 func (f HandlerFunc) ServeHTTP(ctx service.Context, w http.ResponseWriter, r *http.Request) {
 	f(ctx, w, r)
+}
+
+// Wrap the handler and host provided and return http.Handler for gorilla mux
+func Wrap(host service.Host, handler Handler) http.Handler {
+	return &handlerWrapper{
+		host:    host,
+		handler: handler,
+	}
+}
+
+type handlerWrapper struct {
+	host    service.Host
+	handler Handler
+}
+
+// ServeHTTP calls Handler.ServeHTTP(ctx, w, r) and injects a new service context for use.
+func (h *handlerWrapper) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	ctx := service.NewContext(context.Background(), h.host)
+	h.handler.ServeHTTP(ctx, w, r)
 }

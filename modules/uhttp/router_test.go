@@ -25,7 +25,6 @@ import (
 	"io/ioutil"
 	"net"
 	"net/http"
-	"regexp"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -45,12 +44,11 @@ func withRouter(t *testing.T, f func(r *Router, l net.Listener)) {
 	r := NewRouter(service.NullHost())
 	l := serve(t, r)
 	defer l.Close()
-
-	r.AddRoute(PathMatchesRegexp(regexp.MustCompile("/foo/(bar|zed)/quokka")),
+	r.HandleRoute(service.NullHost(), "/foo/baz/quokka",
 		HandlerFunc(func(ctx service.Context, w http.ResponseWriter, r *http.Request) {
 			w.Write([]byte("hello"))
 		}))
-	r.AddPatternRoute("/foo/(ren|stimpy)/quokka",
+	r.HandleRoute(service.NullHost(), "/foo/bar/quokka",
 		HandlerFunc(func(ctx service.Context, w http.ResponseWriter, r *http.Request) {
 			w.Write([]byte("world"))
 		}))
@@ -59,7 +57,7 @@ func withRouter(t *testing.T, f func(r *Router, l net.Listener)) {
 
 func TestRouting_ExpectSecond(t *testing.T) {
 	withRouter(t, func(r *Router, l net.Listener) {
-		req, err := http.NewRequest("GET", fmt.Sprintf("http://%s/foo/ren/quokka", l.Addr().String()), nil)
+		req, err := http.NewRequest("GET", fmt.Sprintf("http://%s/foo/bar/quokka", l.Addr().String()), nil)
 		require.NoError(t, err)
 		resp, err := http.DefaultClient.Do(req)
 		require.NoError(t, err)
@@ -71,7 +69,7 @@ func TestRouting_ExpectSecond(t *testing.T) {
 
 func TestRouting_ExpectFirst(t *testing.T) {
 	withRouter(t, func(r *Router, l net.Listener) {
-		req, err := http.NewRequest("GET", fmt.Sprintf("http://%s/foo/bar/quokka", l.Addr().String()), nil)
+		req, err := http.NewRequest("GET", fmt.Sprintf("http://%s/foo/baz/quokka", l.Addr().String()), nil)
 		require.NoError(t, err)
 		resp, err := http.DefaultClient.Do(req)
 		require.NoError(t, err)

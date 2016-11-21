@@ -101,6 +101,15 @@ func TestOverrideHealth_OK(t *testing.T) {
 	})
 }
 
+func TestPProf_Registered(t *testing.T) {
+	withModule(t, registerNothing, nil, false, func(m *Module) {
+		assert.NotNil(t, m)
+		makeRequest(m, "GET", "/debug/pprof", nil, func(r *http.Response) {
+			assert.Equal(t, http.StatusOK, r.StatusCode, "Expected 200 from pprof handler")
+		})
+	})
+}
+
 func TestHookupOptions(t *testing.T) {
 	options := []modules.Option{
 		modules.WithName("an optional name"),

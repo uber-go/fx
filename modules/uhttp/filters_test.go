@@ -21,7 +21,7 @@
 package uhttp
 
 import (
-	gcontext "context"
+	"context"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -51,7 +51,7 @@ func TestExecutionChainFilters(t *testing.T) {
 func testServeHTTP(chain executionChain) *httptest.ResponseRecorder {
 	request := httptest.NewRequest("", "http://filters", nil)
 	response := httptest.NewRecorder()
-	ctx := service.NewContext(gcontext.Background(), service.NullHost())
+	ctx := service.NewContext(context.Background(), service.NullHost())
 	chain.ServeHTTP(ctx, response, request)
 	return response
 }
