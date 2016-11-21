@@ -238,6 +238,10 @@
 //
 // Then running the above example will result in **Port is 3000**
 //
+// Compatibility
+//
+// UberFx is compatible with Go 1.7 and above.
+//
 // License
 //
 // MIT (LICENSE.txt)
