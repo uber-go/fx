@@ -240,9 +240,7 @@
 //
 // Compatibility
 //
-// UberFx is compatible with Go 1.7 and above. The standard library continues to
-// get better, and we want to utilizie the latest features and improvements.
-//
+// UberFx is compatible with Go 1.7 and above.
 //
 // License
 //

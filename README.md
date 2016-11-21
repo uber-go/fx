@@ -220,8 +220,7 @@ Then running the above example will result in **Port is 3000**
 
 ## Compatibility
 
-UberFx is compatible with Go 1.7 and above. The standard library continues to
-get better, and we want to utilizie the latest features and improvements.
+UberFx is compatible with Go 1.7 and above.
 
 ## License
 
