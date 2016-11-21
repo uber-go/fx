@@ -30,16 +30,11 @@ import (
 type Context interface {
 	gcontext.Context
 	service.Host
-
-	Resource(key string) interface{}
-	SetResource(key string, value interface{})
 }
 
 type context struct {
 	gcontext.Context
 	service.Host
-
-	resources map[string]interface{}
 }
 
 var _ Context = &context{}
@@ -47,26 +42,7 @@ var _ Context = &context{}
 // NewContext always returns core.Context for use in the service
 func NewContext(ctx gcontext.Context, host service.Host) Context {
 	return &context{
-		Context:   ctx,
-		Host:      host,
-		resources: make(map[string]interface{}),
+		Context: ctx,
+		Host:    host,
 	}
-}
-
-// Resources returns resources associated with the current context
-func (c *context) Resource(key string) interface{} {
-	if res, ok := c.TryResource(key); ok {
-		return res
-	}
-	return nil
-}
-
-func (c *context) TryResource(key string) (interface{}, bool) {
-	res, ok := c.resources[key]
-	return res, ok
-}
-
-// SetResource sets resource on the specified key
-func (c *context) SetResource(key string, value interface{}) {
-	c.resources[key] = value
 }
