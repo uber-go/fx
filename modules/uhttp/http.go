@@ -164,7 +164,7 @@ func (m *Module) Start(ready chan<- struct{}) <-chan error {
 
 	for _, h := range m.handlers {
 		handle := newExecutionChain(m.filters, h.Handler)
-		m.router.HandleRoute(m.Host(), h.Path, handle)
+		m.router.Handle(h.Path, handle)
 	}
 
 	if m.config.Debug == nil || *m.config.Debug {
