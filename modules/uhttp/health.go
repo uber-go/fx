@@ -24,12 +24,12 @@ import (
 	"fmt"
 	"net/http"
 
-	"go.uber.org/fx/service"
+	"go.uber.org/fx/core"
 )
 
 type healthHandler struct{}
 
-func (h healthHandler) ServeHTTP(ctx service.Context, w http.ResponseWriter, r *http.Request) {
+func (h healthHandler) ServeHTTP(ctx core.Context, w http.ResponseWriter, r *http.Request) {
 	// TODO(ai) import more sophisticated health mechanism from internal libraries
 	fmt.Fprintf(w, "OK\n")
 }

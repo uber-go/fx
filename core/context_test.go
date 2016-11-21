@@ -18,10 +18,12 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package service
+package core
 
 import (
 	"testing"
+
+	"go.uber.org/fx/service"
 
 	"github.com/stretchr/testify/assert"
 
@@ -33,7 +35,7 @@ type _testStruct struct {
 }
 
 func TestContext_Simple(t *testing.T) {
-	ctx := NewContext(gcontext.Background(), NullHost())
+	ctx := NewContext(gcontext.Background(), service.NullHost())
 	testStruct := _testStruct{
 		data: "hello",
 	}
@@ -44,13 +46,13 @@ func TestContext_Simple(t *testing.T) {
 }
 
 func TestContext_NilResource(t *testing.T) {
-	ctx := NewContext(gcontext.Background(), NullHost())
+	ctx := NewContext(gcontext.Background(), service.NullHost())
 
 	assert.Nil(t, ctx.Resource("resource"))
 }
 
 func TestContext_HostAccess(t *testing.T) {
-	ctx := NewContext(gcontext.Background(), NullHost())
+	ctx := NewContext(gcontext.Background(), service.NullHost())
 	assert.NotNil(t, ctx.Config())
 	assert.Equal(t, "dummy", ctx.Name())
 }

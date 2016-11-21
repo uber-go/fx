@@ -18,14 +18,18 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package service
+package core
 
-import gcontext "context"
+import (
+	gcontext "context"
+
+	"go.uber.org/fx/service"
+)
 
 // Context embedds Host and go context for use
 type Context interface {
 	gcontext.Context
-	Host
+	service.Host
 
 	Resource(key string) interface{}
 	SetResource(key string, value interface{})
@@ -33,15 +37,15 @@ type Context interface {
 
 type context struct {
 	gcontext.Context
-	Host
+	service.Host
 
 	resources map[string]interface{}
 }
 
 var _ Context = &context{}
 
-// NewContext always returns service.Context for use in the service
-func NewContext(ctx gcontext.Context, host Host) Context {
+// NewContext always returns core.Context for use in the service
+func NewContext(ctx gcontext.Context, host service.Host) Context {
 	return &context{
 		Context:   ctx,
 		Host:      host,

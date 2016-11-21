@@ -24,7 +24,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"go.uber.org/fx/service"
+	"go.uber.org/fx/core"
 
 	"github.com/opentracing/opentracing-go"
 	"github.com/opentracing/opentracing-go/ext"
@@ -33,20 +33,20 @@ import (
 // Filter applies filters on requests, request contexts or responses such as
 // adding tracing to the context
 type Filter interface {
-	Apply(ctx service.Context, w http.ResponseWriter, r *http.Request, next Handler)
+	Apply(ctx core.Context, w http.ResponseWriter, r *http.Request, next Handler)
 }
 
 // FilterFunc is an adaptor to call normal functions to apply filters
-type FilterFunc func(ctx service.Context, w http.ResponseWriter, r *http.Request, next Handler)
+type FilterFunc func(ctx core.Context, w http.ResponseWriter, r *http.Request, next Handler)
 
 // Apply implements Apply from the Filter interface and simply delegates to the function
-func (f FilterFunc) Apply(ctx service.Context, w http.ResponseWriter, r *http.Request, next Handler) {
+func (f FilterFunc) Apply(ctx core.Context, w http.ResponseWriter, r *http.Request, next Handler) {
 	f(ctx, w, r, next)
 }
 
 type tracerFilter struct{}
 
-func (t tracerFilter) Apply(ctx service.Context, w http.ResponseWriter, r *http.Request, next Handler) {
+func (t tracerFilter) Apply(ctx core.Context, w http.ResponseWriter, r *http.Request, next Handler) {
 	operationName := r.Method
 	carrier := opentracing.HTTPHeadersCarrier(r.Header)
 	spanCtx, err := ctx.Tracer().Extract(opentracing.HTTPHeaders, carrier)
@@ -57,12 +57,12 @@ func (t tracerFilter) Apply(ctx service.Context, w http.ResponseWriter, r *http.
 	ext.HTTPUrl.Set(span, r.URL.String())
 	defer span.Finish()
 
-	gctx := service.NewContext(opentracing.ContextWithSpan(ctx, span), ctx)
+	gctx := core.NewContext(opentracing.ContextWithSpan(ctx, span), ctx)
 	next.ServeHTTP(gctx, w, r)
 }
 
 // panicFilter handles any panics and return an error
-func panicFilter(ctx service.Context, w http.ResponseWriter, r *http.Request, next Handler) {
+func panicFilter(ctx core.Context, w http.ResponseWriter, r *http.Request, next Handler) {
 	defer func() {
 		if err := recover(); err != nil {
 			// TODO(ai) log and add stats to this
@@ -87,7 +87,7 @@ type executionChain struct {
 	finalHandler  Handler
 }
 
-func (ec executionChain) ServeHTTP(ctx service.Context, w http.ResponseWriter, req *http.Request) {
+func (ec executionChain) ServeHTTP(ctx core.Context, w http.ResponseWriter, req *http.Request) {
 	if ec.currentFilter < len(ec.filters) {
 		filter := ec.filters[ec.currentFilter]
 		ec.currentFilter++
