@@ -74,10 +74,10 @@ func TestCoreConfig(t *testing.T) {
 	assert.Equal(t, "static", cfg.Name())
 }
 
-func TestCoreItems(t *testing.T) {
+func TestCoreResources(t *testing.T) {
 	sh := &serviceCore{
-		items: map[string]interface{}{"test": true},
+		resources: map[string]interface{}{"test": true},
 	}
 
-	assert.True(t, sh.Items()["test"].(bool))
+	assert.True(t, sh.Resources()["test"].(bool))
 }

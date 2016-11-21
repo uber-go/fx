@@ -41,7 +41,7 @@ type Host interface {
 	Metrics() tally.Scope
 	Observer() Observer
 	Config() config.Provider
-	Items() map[string]interface{}
+	Resources() map[string]interface{}
 	Logger() ulog.Log
 	Tracer() opentracing.Tracer
 }
@@ -71,7 +71,7 @@ type serviceCore struct {
 	scopeMux       sync.Mutex
 	scope          tally.RootScope
 	observer       Observer
-	items          map[string]interface{}
+	resources      map[string]interface{}
 	logConfig      ulog.Configuration
 	log            ulog.Log
 	tracerConfig   jaegerconfig.Configuration
@@ -104,8 +104,8 @@ func (s *serviceCore) Roles() []string {
 }
 
 // What items?
-func (s *serviceCore) Items() map[string]interface{} {
-	return s.items
+func (s *serviceCore) Resources() map[string]interface{} {
+	return s.resources
 }
 
 func (s *serviceCore) Metrics() tally.Scope {

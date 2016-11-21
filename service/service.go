@@ -80,7 +80,7 @@ func New(options ...Option) (Owner, error) {
 		// TODO: get these out of config struct instead
 		modules: []Module{},
 		serviceCore: serviceCore{
-			items: map[string]interface{}{},
+			resources: map[string]interface{}{},
 		},
 	}
 
