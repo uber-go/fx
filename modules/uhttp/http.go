@@ -131,7 +131,7 @@ func newModule(
 		filters:    []Filter{tracerFilter{}, FilterFunc(panicFilter)},
 	}
 
-	err := module.Host().Config().GetValue(getConfigKey(mi.Name)).PopulateStruct(cfg)
+	err := module.Host().Config().Get(getConfigKey(mi.Name)).PopulateStruct(cfg)
 	if err != nil {
 		ulog.Logger().Error("Error loading http module configuration", "error", err)
 	}

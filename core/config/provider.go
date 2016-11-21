@@ -30,8 +30,8 @@ type ConfigurationChangeCallback func(key string, provider string, configdata in
 type Provider interface {
 	// the Name of the provider (YAML, Env, etc)
 	Name() string
-	// GetValue pulls a config value
-	GetValue(key string) Value
+	// Get pulls a config value
+	Get(key string) Value
 	Scope(prefix string) Provider
 
 	// A RegisterChangeCallback provides callback registration for config providers.
@@ -56,12 +56,12 @@ func NewScopedProvider(prefix string, provider Provider) Provider {
 	return &ScopedProvider{provider, prefix}
 }
 
-// GetValue returns configuration value
-func (sp ScopedProvider) GetValue(key string) Value {
+// Get returns configuration value
+func (sp ScopedProvider) Get(key string) Value {
 	if sp.prefix != "" {
 		key = fmt.Sprintf("%s.%s", sp.prefix, key)
 	}
-	return sp.Provider.GetValue(key)
+	return sp.Provider.Get(key)
 }
 
 // Scope returns new scoped provider, given a prefix

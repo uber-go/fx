@@ -62,7 +62,7 @@
 // Value
 //
 // Value is the return type of every configuration providers'
-// GetValue(key string) method. Under the hood, we use the empty interface
+// Get(key string) method. Under the hood, we use the empty interface
 // (
 // interface{}) since we don't necessarily know the structure of your
 // configuration ahead of time.
@@ -79,7 +79,7 @@
 //
 // You could access the value using "dotted notation":
 //
-//   foo := provider.GetValue("one.two").AsString()
+//   foo := provider.Get("one.two").AsString()
 //   fmt.Println(foo)
 //   // Output: hello
 //
@@ -116,7 +116,7 @@
 //   }
 //
 //   m := myConfig{}
-//   provider.GetValue("hello").Populate(&m)
+//   provider.Get("hello").Populate(&m)
 //   fmt.Println(m.World)
 //   // Output: yes
 //

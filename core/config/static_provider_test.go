@@ -34,7 +34,7 @@ func TestStaticProvider_Name(t *testing.T) {
 func TestNewStaticProvider_NilData(t *testing.T) {
 	p := NewStaticProvider(nil)
 
-	val := p.GetValue("something")
+	val := p.Get("something")
 	assert.False(t, val.HasValue())
 }
 
@@ -44,7 +44,7 @@ func TestStaticProvider_WithData(t *testing.T) {
 	}
 	p := NewStaticProvider(data)
 
-	val := p.GetValue("hello")
+	val := p.Get("hello")
 	assert.True(t, val.HasValue())
 	assert.False(t, val.IsDefault())
 	assert.Equal(t, "world", val.AsString())
@@ -56,11 +56,11 @@ func TestStaticProvider_WithScope(t *testing.T) {
 	}
 	p := NewStaticProvider(data)
 
-	val := p.GetValue("hello")
+	val := p.Get("hello")
 	assert.False(t, val.HasValue())
 
 	sub := p.Scope("hello")
-	val = sub.GetValue("world")
+	val = sub.Get("world")
 	assert.True(t, val.HasValue())
 	assert.Equal(t, 42, val.AsInt())
 }

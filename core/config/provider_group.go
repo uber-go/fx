@@ -44,12 +44,12 @@ func (p providerGroup) WithProvider(provider Provider) Provider {
 	}
 }
 
-func (p providerGroup) GetValue(key string) Value {
-	cv := NewValue(p, key, nil, false, GetValueType(nil), nil)
+func (p providerGroup) Get(key string) Value {
+	cv := NewValue(p, key, nil, false, GetType(nil), nil)
 
 	// loop through the providers and return the value defined by the highest priority provider
 	for _, provider := range p.providers {
-		if val := provider.GetValue(key); val.HasValue() && !val.IsDefault() {
+		if val := provider.Get(key); val.HasValue() && !val.IsDefault() {
 			cv = val
 			break
 		}

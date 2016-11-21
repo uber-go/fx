@@ -30,7 +30,7 @@ import (
 func TestProviderGroup(t *testing.T) {
 	pg := NewProviderGroup("test-group", NewYAMLProviderFromBytes([]byte(`id: test`)))
 	assert.Equal(t, "test-group", pg.Name())
-	assert.Equal(t, "test", pg.GetValue("id").AsString())
+	assert.Equal(t, "test", pg.Get("id").AsString())
 	// TODO this should not require a cast GFM-74
 	assert.Empty(t, pg.(providerGroup).RegisterChangeCallback("", nil))
 	assert.Nil(t, pg.(providerGroup).UnregisterChangeCallback(""))
@@ -39,7 +39,7 @@ func TestProviderGroup(t *testing.T) {
 func TestProviderGroupScope(t *testing.T) {
 	data := map[string]interface{}{"hello.world": 42}
 	pg := NewProviderGroup("test-group", NewStaticProvider(data))
-	assert.Equal(t, 42, pg.Scope("hello").GetValue("world").AsInt())
+	assert.Equal(t, 42, pg.Scope("hello").Get("world").AsInt())
 }
 
 func TestCallbacks_WithDynamicProvider(t *testing.T) {
@@ -75,9 +75,9 @@ func (*mockDynamicProvider) Name() string {
 	return "mock"
 }
 
-func (s *mockDynamicProvider) GetValue(key string) Value {
+func (s *mockDynamicProvider) Get(key string) Value {
 	val, found := s.data[key]
-	return NewValue(s, key, val, found, GetValueType(val), nil)
+	return NewValue(s, key, val, found, GetType(val), nil)
 }
 
 func (s *mockDynamicProvider) Scope(prefix string) Provider {

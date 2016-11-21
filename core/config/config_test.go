@@ -118,12 +118,12 @@ func TestDirectAccess(t *testing.T) {
 		NewEnvProvider(defaultEnvPrefix, mapEnvironmentProvider{values: env}),
 	)
 
-	v := provider.GetValue("n1.id1").WithDefault("xxx")
+	v := provider.Get("n1.id1").WithDefault("xxx")
 
 	assert.True(t, v.HasValue())
 	assert.Equal(t, 111, v.Value())
 
-	v2 := provider.GetValue("n1.id2").WithDefault("xxx")
+	v2 := provider.Get("n1.id2").WithDefault("xxx")
 
 	assert.True(t, v2.HasValue())
 	assert.Equal(t, "-1", v2.Value())
@@ -138,8 +138,8 @@ func TestScopedAccess(t *testing.T) {
 
 	provider = provider.Scope("n1")
 
-	v1 := provider.GetValue("id1")
-	v2 := provider.GetValue("idx").WithDefault("nope")
+	v1 := provider.Get("id1")
+	v2 := provider.Get("idx").WithDefault("nope")
 
 	assert.True(t, v1.HasValue())
 	assert.Equal(t, 111, v1.AsInt())
@@ -157,7 +157,7 @@ func TestOverrideSimple(t *testing.T) {
 	)
 
 	rpc := &rpcStruct{}
-	v := provider.GetValue("modules.rpc")
+	v := provider.Get("modules.rpc")
 	assert.True(t, v.HasValue())
 	v.PopulateStruct(rpc)
 	assert.Equal(t, ":8888", rpc.Bind)
@@ -169,14 +169,14 @@ func TestSimpleConfigValues(t *testing.T) {
 		"test",
 		NewYAMLProviderFromBytes(yamlConfig3),
 	)
-	assert.Equal(t, 123, provider.GetValue("int").AsInt())
-	assert.Equal(t, "test string", provider.GetValue("string").AsString())
-	_, ok := provider.GetValue("nonexisting").TryAsString()
+	assert.Equal(t, 123, provider.Get("int").AsInt())
+	assert.Equal(t, "test string", provider.Get("string").AsString())
+	_, ok := provider.Get("nonexisting").TryAsString()
 	assert.False(t, ok)
-	assert.Equal(t, true, provider.GetValue("bool").AsBool())
-	assert.Equal(t, 1.123, provider.GetValue("float").AsFloat())
+	assert.Equal(t, true, provider.Get("bool").AsBool())
+	assert.Equal(t, 1.123, provider.Get("float").AsFloat())
 	nested := &nested{}
-	v := provider.GetValue("nonexisting")
+	v := provider.Get("nonexisting")
 	assert.NoError(t, v.PopulateStruct(nested))
 }
 
@@ -205,7 +205,7 @@ func TestNestedStructs(t *testing.T) {
 
 	str := &root{}
 
-	v := provider.GetValue("")
+	v := provider.Get("")
 
 	assert.True(t, v.HasValue())
 	v.PopulateStruct(str)
@@ -228,7 +228,7 @@ func TestArrayOfStructs(t *testing.T) {
 
 	target := &arrayOfStructs{}
 
-	v := provider.GetValue("")
+	v := provider.Get("")
 
 	assert.True(t, v.HasValue())
 	assert.NoError(t, v.PopulateStruct(target))
@@ -243,7 +243,7 @@ func TestDefault(t *testing.T) {
 		NewEnvProvider(defaultEnvPrefix, mapEnvironmentProvider{values: env}),
 	)
 	target := &nested{}
-	v := provider.GetValue("")
+	v := provider.Get("")
 	assert.True(t, v.HasValue())
 	assert.NoError(t, v.PopulateStruct(target))
 	assert.Equal(t, "default_name", target.Name)
@@ -254,7 +254,7 @@ func TestDefaultValue(t *testing.T) {
 		"test",
 		NewEnvProvider(defaultEnvPrefix, mapEnvironmentProvider{values: env}),
 	)
-	v := provider.GetValue("stuff")
+	v := provider.Get("stuff")
 	assert.False(t, v.HasValue())
 
 	v = v.WithDefault("ok")
@@ -263,7 +263,7 @@ func TestDefaultValue(t *testing.T) {
 	assert.True(t, v.IsDefault())
 	assert.Equal(t, "ok", v.Value())
 
-	v2 := provider.GetValue("other_stuff")
+	v2 := provider.Get("other_stuff")
 	assert.False(t, v2.HasValue())
 }
 
@@ -274,9 +274,9 @@ boolean:
 `)
 	provider := NewYAMLProviderFromBytes(valueType)
 	assert.Panics(t, func() { NewYAMLProviderFromBytes([]byte("bytes: \n\x010")) }, "Can't parse empty boolean")
-	assert.Panics(t, func() { provider.GetValue("id").AsInt() }, "Can't parse as int")
-	assert.Panics(t, func() { provider.GetValue("boolean").AsBool() }, "Can't parse empty boolean")
-	assert.Panics(t, func() { provider.GetValue("id").AsFloat() }, "Can't parse as float")
+	assert.Panics(t, func() { provider.Get("id").AsInt() }, "Can't parse as int")
+	assert.Panics(t, func() { provider.Get("boolean").AsBool() }, "Can't parse empty boolean")
+	assert.Panics(t, func() { provider.Get("id").AsFloat() }, "Can't parse as float")
 }
 
 func TestRegisteredProvidersInitialization(t *testing.T) {
@@ -290,8 +290,8 @@ func TestRegisteredProvidersInitialization(t *testing.T) {
 	})
 	cfg := Load()
 	assert.Equal(t, "global", cfg.Name())
-	assert.Equal(t, "world", cfg.GetValue("hello").AsString())
-	assert.Equal(t, "provider", cfg.GetValue("dynamic").AsString())
+	assert.Equal(t, "world", cfg.Get("hello").AsString())
+	assert.Equal(t, "provider", cfg.Get("dynamic").AsString())
 	UnregisterProviders()
 	assert.Nil(t, _staticProviderFuncs)
 	assert.Nil(t, _dynamicProviderFuncs)

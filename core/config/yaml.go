@@ -117,8 +117,8 @@ func (y yamlConfigProvider) Name() string {
 	return "yaml"
 }
 
-// GetValue returns a configuration value by name
-func (y yamlConfigProvider) GetValue(key string) Value {
+// Get returns a configuration value by name
+func (y yamlConfigProvider) Get(key string) Value {
 	// check the cache for the value
 	if node, ok := y.vCache[key]; ok {
 		return node
@@ -130,7 +130,7 @@ func (y yamlConfigProvider) GetValue(key string) Value {
 	}
 
 	// cache the found value
-	value := NewValue(y, key, node.value, true, GetValueType(node.value), nil)
+	value := NewValue(y, key, node.value, true, GetType(node.value), nil)
 	y.vCache[key] = value
 
 	return value

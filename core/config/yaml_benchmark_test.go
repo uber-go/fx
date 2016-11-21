@@ -38,7 +38,7 @@ func BenchmarkYAMLSimpleGetLevel1(b *testing.B) {
 	provider := NewYAMLProviderFromBytes([]byte(`foo: 1`))
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
-		provider.GetValue("foo")
+		provider.Get("foo")
 	}
 }
 
@@ -50,7 +50,7 @@ foo:
 `))
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
-		provider.GetValue("foo.bar.baz")
+		provider.Get("foo.bar.baz")
 	}
 }
 
@@ -66,7 +66,7 @@ foo:
 `))
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
-		provider.GetValue("foo.bar.baz.alpha.bravo.charlie.foxtrot")
+		provider.Get("foo.bar.baz.alpha.bravo.charlie.foxtrot")
 	}
 }
 
@@ -81,7 +81,7 @@ func BenchmarkYAMLPopulateStruct(b *testing.B) {
 	b.ResetTimer()
 
 	for n := 0; n < b.N; n++ {
-		p.GetValue("api.credentials").PopulateStruct(c)
+		p.Get("api.credentials").PopulateStruct(c)
 	}
 }
 
@@ -102,7 +102,7 @@ func BenchmarkYAMLPopulateStructNested(b *testing.B) {
 	b.ResetTimer()
 
 	for n := 0; n < b.N; n++ {
-		p.GetValue("api").PopulateStruct(s)
+		p.Get("api").PopulateStruct(s)
 	}
 }
 
@@ -125,7 +125,7 @@ func BenchmarkYAMLPopulateStructNestedMultipleFiles(b *testing.B) {
 	b.ResetTimer()
 
 	for n := 0; n < b.N; n++ {
-		p.GetValue("api").PopulateStruct(s)
+		p.Get("api").PopulateStruct(s)
 	}
 }
 

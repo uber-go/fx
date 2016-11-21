@@ -54,17 +54,17 @@ func (*staticProvider) Name() string {
 	return "static"
 }
 
-func (s *staticProvider) GetValue(key string) Value {
+func (s *staticProvider) Get(key string) Value {
 	s.RLock()
 	defer s.RUnlock()
 
 	if key == "" {
 		// NOTE: This returns access to the underlying map, which does not guarantee
 		// thread-safety. This is only used in the test suite.
-		return NewValue(s, key, s.data, true, GetValueType(s.data), nil)
+		return NewValue(s, key, s.data, true, GetType(s.data), nil)
 	}
 	val, found := s.data[key]
-	return NewValue(s, key, val, found, GetValueType(val), nil)
+	return NewValue(s, key, val, found, GetType(val), nil)
 }
 
 func (s *staticProvider) Scope(prefix string) Provider {
@@ -88,11 +88,11 @@ func newScopedStaticProvider(s *staticProvider, prefix string) Provider {
 	}
 }
 
-func (s *scopedStaticProvider) GetValue(key string) Value {
+func (s *scopedStaticProvider) Get(key string) Value {
 	if s.prefix != "" {
 		key = fmt.Sprintf("%s.%s", s.prefix, key)
 	}
-	return s.Provider.GetValue(key)
+	return s.Provider.Get(key)
 }
 
 var _ Provider = &staticProvider{}

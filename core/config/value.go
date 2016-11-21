@@ -52,8 +52,8 @@ const (
 
 var _typeTimeDuration = reflect.TypeOf(time.Duration(0))
 
-// GetValueType returns GO type of the provided object
-func GetValueType(value interface{}) ValueType {
+// GetType returns GO type of the provided object
+func GetType(value interface{}) ValueType {
 	if value == nil {
 		return Invalid
 	}
@@ -354,7 +354,7 @@ func (cv Value) PopulateStruct(target interface{}) error {
 		return nil
 	}
 
-	_, err := cv.getValueStruct(cv.key, target)
+	_, err := cv.valueStruct(cv.key, target)
 
 	return err
 }
@@ -366,7 +366,7 @@ func (cv Value) getGlobalProvider() Provider {
 	return cv.root
 }
 
-func (cv Value) getValueStruct(key string, target interface{}) (interface{}, error) {
+func (cv Value) valueStruct(key string, target interface{}) (interface{}, error) {
 	// walk through the struct and start asking the providers for values at each key.
 	//
 	// - for individual values, we terminate
@@ -374,12 +374,12 @@ func (cv Value) getValueStruct(key string, target interface{}) (interface{}, err
 	// - for object values, we recurse.
 	//
 
-	targetValue := reflect.Indirect(reflect.ValueOf(target))
-	targetType := targetValue.Type()
-	// if b := getBucket(targetValue); b == bucketInvalid {
+	tarGet := reflect.Indirect(reflect.ValueOf(target))
+	targetType := tarGet.Type()
+	// if b := getBucket(tarGet); b == bucketInvalid {
 	// 	return nil, false, errors.Error("Invalid target object kind")
 	// } else if b == bucketPrimitive {
-	// 	return cc.GetValue(key, def)
+	// 	return cc.Get(key, def)
 	// }
 
 	global := cv.getGlobalProvider()
@@ -398,7 +398,7 @@ func (cv Value) getValueStruct(key string, target interface{}) (interface{}, err
 		if key != "" {
 			childKey = key + "." + childKey
 		}
-		fieldValue := targetValue.Field(i)
+		fieldValue := tarGet.Field(i)
 
 		switch getBucket(fieldType) {
 		case bucketInvalid:
@@ -407,7 +407,7 @@ func (cv Value) getValueStruct(key string, target interface{}) (interface{}, err
 			var val interface{}
 
 			if fieldType.Kind() == reflect.Ptr {
-				if v1 := global.GetValue(childKey); v1.HasValue() {
+				if v1 := global.Get(childKey); v1.HasValue() {
 					val = v1.Value()
 					if val != nil {
 						// We cannot assign reflect.ValueOf(Val) to it as is to fieldValue.
@@ -424,7 +424,7 @@ func (cv Value) getValueStruct(key string, target interface{}) (interface{}, err
 			}
 
 			if fieldType == _typeTimeDuration {
-				if v := global.GetValue(childKey); v.HasValue() {
+				if v := global.Get(childKey); v.HasValue() {
 					duration, err := time.ParseDuration(v.AsString())
 					if err != nil {
 						return nil, errors.Wrap(err, "unable to parse time.Duration")
@@ -435,7 +435,7 @@ func (cv Value) getValueStruct(key string, target interface{}) (interface{}, err
 			}
 
 			// For primitive values, just get the value and set it into the field
-			if v2 := global.GetValue(childKey); v2.HasValue() {
+			if v2 := global.Get(childKey); v2.HasValue() {
 				val = v2.Value()
 			} else if fieldInfo.DefaultValue != "" {
 				val = fieldInfo.DefaultValue
@@ -453,7 +453,7 @@ func (cv Value) getValueStruct(key string, target interface{}) (interface{}, err
 		case bucketObject:
 			ntt := derefType(fieldType)
 			newTarget := reflect.New(ntt)
-			if v2 := global.GetValue(childKey); v2.HasValue() {
+			if v2 := global.Get(childKey); v2.HasValue() {
 
 				if err := v2.PopulateStruct(newTarget.Interface()); err != nil {
 					return nil, errors.Wrap(err, "unable to populate struct of object target")
@@ -479,12 +479,12 @@ func (cv Value) getValueStruct(key string, target interface{}) (interface{}, err
 				var itemValue interface{}
 				switch bucket {
 				case bucketPrimitive:
-					if v2 := global.GetValue(arrayKey); v2.HasValue() {
+					if v2 := global.Get(arrayKey); v2.HasValue() {
 						itemValue = v2.Value()
 					}
 				case bucketObject:
 					newTarget := reflect.New(elementType)
-					if v2 := global.GetValue(arrayKey); v2.HasValue() {
+					if v2 := global.Get(arrayKey); v2.HasValue() {
 						if err := v2.PopulateStruct(newTarget.Interface()); err != nil {
 							return nil, errors.Wrap(err, "unable to populate struct of object")
 						}
@@ -508,7 +508,7 @@ func (cv Value) getValueStruct(key string, target interface{}) (interface{}, err
 				fieldValue.Set(destSlice)
 			}
 		case bucketMap:
-			val := global.GetValue(childKey).Value()
+			val := global.Get(childKey).Value()
 			if val != nil {
 				destMap := reflect.ValueOf(reflect.MakeMap(fieldType).Interface())
 
