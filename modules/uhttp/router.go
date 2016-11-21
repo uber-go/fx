@@ -20,49 +20,31 @@
 
 package uhttp
 
-import "github.com/gorilla/mux"
+import (
+	"github.com/gorilla/mux"
 
-// FromGorilla turns a gorilla mux route into an UberFx route
-func FromGorilla(r *mux.Route) Route {
-	return Route{
-		r: r,
+	"go.uber.org/fx/service"
+)
+
+type route struct {
+	handler Handler
+}
+
+// Router is wrapper around gorila mux
+type Router struct {
+	mux.Router
+
+	host service.Host
+}
+
+// NewRouter creates a new empty router
+func NewRouter(host service.Host) *Router {
+	return &Router{
+		host: host,
 	}
 }
 
-// A RouteHandler is an HTTP handler for a single route
-type RouteHandler struct {
-	Path    string
-	Handler Handler
-}
-
-// NewRouteHandler creates a route handler
-func NewRouteHandler(path string, handler Handler) RouteHandler {
-	return RouteHandler{
-		Path:    path,
-		Handler: handler,
-	}
-}
-
-// A Route represents a handler for HTTP requests, with restrictions
-type Route struct {
-	r *mux.Route
-}
-
-// GorillaMux returns the underlying mux if you need to use it directly
-func (r Route) GorillaMux() *mux.Route {
-	return r.r
-}
-
-// Headers allows easy enforcement of headers
-func (r Route) Headers(headerPairs ...string) Route {
-	return Route{
-		r.r.Headers(headerPairs...),
-	}
-}
-
-// Methods allows easy enforcement of metthods (HTTP Verbs)
-func (r Route) Methods(methods ...string) Route {
-	return Route{
-		r.r.Methods(methods...),
-	}
+// Handle wraps and calls the http.Handler underneath
+func (h *Router) Handle(path string, handler Handler) {
+	h.Router.Handle(path, Wrap(h.host, handler))
 }

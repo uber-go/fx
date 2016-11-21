@@ -20,49 +20,43 @@
 
 package uhttp
 
-import "github.com/gorilla/mux"
+import (
+	"context"
+	"net/http"
 
-// FromGorilla turns a gorilla mux route into an UberFx route
-func FromGorilla(r *mux.Route) Route {
-	return Route{
-		r: r,
+	"go.uber.org/fx/core"
+	"go.uber.org/fx/service"
+)
+
+// Handler is a context-aware extension of http.Handler.
+type Handler interface {
+	ServeHTTP(ctx core.Context, w http.ResponseWriter, r *http.Request)
+}
+
+// The HandlerFunc type is an adapter to allow the use of
+// ordinary functions as HTTP handlers.
+type HandlerFunc func(ctx core.Context, w http.ResponseWriter, r *http.Request)
+
+// ServeHTTP calls the caller HandlerFunc.
+func (f HandlerFunc) ServeHTTP(ctx core.Context, w http.ResponseWriter, r *http.Request) {
+	f(ctx, w, r)
+}
+
+// Wrap the handler and host provided and return http.Handler for gorilla mux
+func Wrap(host service.Host, handler Handler) http.Handler {
+	return &handlerWrapper{
+		host:    host,
+		handler: handler,
 	}
 }
 
-// A RouteHandler is an HTTP handler for a single route
-type RouteHandler struct {
-	Path    string
-	Handler Handler
+type handlerWrapper struct {
+	host    service.Host
+	handler Handler
 }
 
-// NewRouteHandler creates a route handler
-func NewRouteHandler(path string, handler Handler) RouteHandler {
-	return RouteHandler{
-		Path:    path,
-		Handler: handler,
-	}
-}
-
-// A Route represents a handler for HTTP requests, with restrictions
-type Route struct {
-	r *mux.Route
-}
-
-// GorillaMux returns the underlying mux if you need to use it directly
-func (r Route) GorillaMux() *mux.Route {
-	return r.r
-}
-
-// Headers allows easy enforcement of headers
-func (r Route) Headers(headerPairs ...string) Route {
-	return Route{
-		r.r.Headers(headerPairs...),
-	}
-}
-
-// Methods allows easy enforcement of metthods (HTTP Verbs)
-func (r Route) Methods(methods ...string) Route {
-	return Route{
-		r.r.Methods(methods...),
-	}
+// ServeHTTP calls Handler.ServeHTTP(ctx, w, r) and injects a new service context for use.
+func (h *handlerWrapper) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	ctx := core.NewContext(context.Background(), h.host)
+	h.handler.ServeHTTP(ctx, w, r)
 }

@@ -18,51 +18,41 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package uhttp
+package core
 
-import "github.com/gorilla/mux"
+import (
+	"testing"
 
-// FromGorilla turns a gorilla mux route into an UberFx route
-func FromGorilla(r *mux.Route) Route {
-	return Route{
-		r: r,
+	"go.uber.org/fx/service"
+
+	"github.com/stretchr/testify/assert"
+
+	gcontext "context"
+)
+
+type _testStruct struct {
+	data string
+}
+
+func TestContext_Simple(t *testing.T) {
+	ctx := NewContext(gcontext.Background(), service.NullHost())
+	testStruct := _testStruct{
+		data: "hello",
 	}
+	ctx.SetResource("resource", testStruct)
+
+	assert.NotNil(t, ctx.Resource("resource"))
+	assert.Equal(t, "hello", ctx.Resource("resource").(_testStruct).data)
 }
 
-// A RouteHandler is an HTTP handler for a single route
-type RouteHandler struct {
-	Path    string
-	Handler Handler
+func TestContext_NilResource(t *testing.T) {
+	ctx := NewContext(gcontext.Background(), service.NullHost())
+
+	assert.Nil(t, ctx.Resource("resource"))
 }
 
-// NewRouteHandler creates a route handler
-func NewRouteHandler(path string, handler Handler) RouteHandler {
-	return RouteHandler{
-		Path:    path,
-		Handler: handler,
-	}
-}
-
-// A Route represents a handler for HTTP requests, with restrictions
-type Route struct {
-	r *mux.Route
-}
-
-// GorillaMux returns the underlying mux if you need to use it directly
-func (r Route) GorillaMux() *mux.Route {
-	return r.r
-}
-
-// Headers allows easy enforcement of headers
-func (r Route) Headers(headerPairs ...string) Route {
-	return Route{
-		r.r.Headers(headerPairs...),
-	}
-}
-
-// Methods allows easy enforcement of metthods (HTTP Verbs)
-func (r Route) Methods(methods ...string) Route {
-	return Route{
-		r.r.Methods(methods...),
-	}
+func TestContext_HostAccess(t *testing.T) {
+	ctx := NewContext(gcontext.Background(), service.NullHost())
+	assert.NotNil(t, ctx.Config())
+	assert.Equal(t, "dummy", ctx.Name())
 }

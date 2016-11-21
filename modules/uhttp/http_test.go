@@ -30,6 +30,7 @@ import (
 	"testing"
 	"time"
 
+	"go.uber.org/fx/core"
 	. "go.uber.org/fx/core/testutils"
 	"go.uber.org/fx/modules"
 	"go.uber.org/fx/service"
@@ -215,37 +216,37 @@ func registerNothing(_ service.Host) []RouteHandler {
 	return nil
 }
 
-func makeSingleHandler(path string, fn func(http.ResponseWriter, *http.Request)) []RouteHandler {
+func makeSingleHandler(path string, fn func(core.Context, http.ResponseWriter, *http.Request)) []RouteHandler {
 	return []RouteHandler{
 		{
 			Path:    path,
-			Handler: http.HandlerFunc(fn),
+			Handler: HandlerFunc(fn),
 		},
 	}
 }
 
 func registerTracerCheckHandler(host service.Host) []RouteHandler {
-	return makeSingleHandler("/", func(_ http.ResponseWriter, r *http.Request) {
-		span := opentracing.SpanFromContext(r.Context())
+	return makeSingleHandler("/", func(ctx core.Context, _ http.ResponseWriter, r *http.Request) {
+		span := opentracing.SpanFromContext(ctx)
 		if span == nil {
 			panic(fmt.Sprintf("Intentional panic, invalid span: %v", span))
-		} else if span.Tracer() != host.Tracer() {
+		} else if span.Tracer() != ctx.Tracer() {
 			panic(fmt.Sprintf(
 				"Intentional panic, expected tracer: %v different from actual tracer: %v", span.Tracer(),
-				host.Tracer(),
+				ctx.Tracer(),
 			))
 		}
 	})
 }
 
 func registerCustomHealth(_ service.Host) []RouteHandler {
-	return makeSingleHandler("/health", func(w http.ResponseWriter, r *http.Request) {
+	return makeSingleHandler("/health", func(ctx core.Context, w http.ResponseWriter, r *http.Request) {
 		io.WriteString(w, "not ok")
 	})
 }
 
 func registerPanic(_ service.Host) []RouteHandler {
-	return makeSingleHandler("/", func(_ http.ResponseWriter, r *http.Request) {
+	return makeSingleHandler("/", func(ctx core.Context, _ http.ResponseWriter, r *http.Request) {
 		panic("Intentional panic for:" + r.URL.Path)
 	})
 }

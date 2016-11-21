@@ -18,51 +18,55 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package uhttp
+package core
 
-import "github.com/gorilla/mux"
+import (
+	gcontext "context"
 
-// FromGorilla turns a gorilla mux route into an UberFx route
-func FromGorilla(r *mux.Route) Route {
-	return Route{
-		r: r,
+	"go.uber.org/fx/service"
+)
+
+// Context embedds Host and go context for use
+type Context interface {
+	gcontext.Context
+	service.Host
+
+	Resource(key string) interface{}
+	SetResource(key string, value interface{})
+}
+
+type context struct {
+	gcontext.Context
+	service.Host
+
+	resources map[string]interface{}
+}
+
+var _ Context = &context{}
+
+// NewContext always returns core.Context for use in the service
+func NewContext(ctx gcontext.Context, host service.Host) Context {
+	return &context{
+		Context:   ctx,
+		Host:      host,
+		resources: make(map[string]interface{}),
 	}
 }
 
-// A RouteHandler is an HTTP handler for a single route
-type RouteHandler struct {
-	Path    string
-	Handler Handler
-}
-
-// NewRouteHandler creates a route handler
-func NewRouteHandler(path string, handler Handler) RouteHandler {
-	return RouteHandler{
-		Path:    path,
-		Handler: handler,
+// Resources returns resources associated with the current context
+func (c *context) Resource(key string) interface{} {
+	if res, ok := c.TryResource(key); ok {
+		return res
 	}
+	return nil
 }
 
-// A Route represents a handler for HTTP requests, with restrictions
-type Route struct {
-	r *mux.Route
+func (c *context) TryResource(key string) (interface{}, bool) {
+	res, ok := c.resources[key]
+	return res, ok
 }
 
-// GorillaMux returns the underlying mux if you need to use it directly
-func (r Route) GorillaMux() *mux.Route {
-	return r.r
-}
-
-// Headers allows easy enforcement of headers
-func (r Route) Headers(headerPairs ...string) Route {
-	return Route{
-		r.r.Headers(headerPairs...),
-	}
-}
-
-// Methods allows easy enforcement of metthods (HTTP Verbs)
-func (r Route) Methods(methods ...string) Route {
-	return Route{
-		r.r.Methods(methods...),
-	}
+// SetResource sets resource on the specified key
+func (c *context) SetResource(key string, value interface{}) {
+	c.resources[key] = value
 }

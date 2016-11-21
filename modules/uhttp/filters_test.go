@@ -21,18 +21,17 @@
 package uhttp
 
 import (
+	"context"
 	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
 
-	"github.com/opentracing/opentracing-go"
-	"github.com/stretchr/testify/assert"
-)
+	"go.uber.org/fx/core"
+	"go.uber.org/fx/service"
 
-var (
-	noopTracer = opentracing.NoopTracer{}
+	"github.com/stretchr/testify/assert"
 )
 
 func TestExecutionChain(t *testing.T) {
@@ -43,7 +42,7 @@ func TestExecutionChain(t *testing.T) {
 
 func TestExecutionChainFilters(t *testing.T) {
 	chain := newExecutionChain(
-		[]Filter{tracerFilter{tracer: noopTracer}, FilterFunc(panicFilter)},
+		[]Filter{tracerFilter{}, FilterFunc(panicFilter)},
 		getNoopHandler(),
 	)
 	response := testServeHTTP(chain)
@@ -53,12 +52,13 @@ func TestExecutionChainFilters(t *testing.T) {
 func testServeHTTP(chain executionChain) *httptest.ResponseRecorder {
 	request := httptest.NewRequest("", "http://filters", nil)
 	response := httptest.NewRecorder()
-	chain.ServeHTTP(response, request)
+	ctx := core.NewContext(context.Background(), service.NullHost())
+	chain.ServeHTTP(ctx, response, request)
 	return response
 }
 
-func getNoopHandler() http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+func getNoopHandler() Handler {
+	return HandlerFunc(func(ctx core.Context, w http.ResponseWriter, r *http.Request) {
 		io.WriteString(w, "filters ok")
 	})
 }
