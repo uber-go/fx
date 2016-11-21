@@ -354,7 +354,7 @@ func (cv Value) PopulateStruct(target interface{}) error {
 		return nil
 	}
 
-	_, err := cv.GetStruct(cv.key, target)
+	_, err := cv.valueStruct(cv.key, target)
 
 	return err
 }
@@ -366,7 +366,7 @@ func (cv Value) getGlobalProvider() Provider {
 	return cv.root
 }
 
-func (cv Value) GetStruct(key string, target interface{}) (interface{}, error) {
+func (cv Value) valueStruct(key string, target interface{}) (interface{}, error) {
 	// walk through the struct and start asking the providers for values at each key.
 	//
 	// - for individual values, we terminate
