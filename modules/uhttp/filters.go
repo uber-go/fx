@@ -44,20 +44,19 @@ func (f FilterFunc) Apply(ctx core.Context, w http.ResponseWriter, r *http.Reque
 	f(ctx, w, r, next)
 }
 
-type tracerFilter struct{}
-
-func (t tracerFilter) Apply(ctx core.Context, w http.ResponseWriter, r *http.Request, next Handler) {
+func tracingServerFilter(ctx core.Context, w http.ResponseWriter, r *http.Request, next Handler) {
 	operationName := r.Method
 	carrier := opentracing.HTTPHeadersCarrier(r.Header)
 	spanCtx, err := ctx.Tracer().Extract(opentracing.HTTPHeaders, carrier)
 	if err != nil && err != opentracing.ErrSpanContextNotFound {
-		ctx.Logger().Info("Malformed inbound tracing context: %s", err.Error())
+		ctx.Logger().Info("Malformed inbound tracing context: ", "error", err.Error())
 	}
 	span := ctx.Tracer().StartSpan(operationName, ext.RPCServerOption(spanCtx))
 	ext.HTTPUrl.Set(span, r.URL.String())
 	defer span.Finish()
 
 	gctx := core.NewContext(opentracing.ContextWithSpan(ctx, span), ctx)
+	r = r.WithContext(gctx)
 	next.ServeHTTP(gctx, w, r)
 }
 

@@ -41,6 +41,9 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// Custom default client since http's defaultClient does not set timeout
+var defaultClient = &http.Client{Timeout: 5 * time.Second}
+
 func TestNew_OK(t *testing.T) {
 	WithService(New(registerNothing), nil, []service.Option{configOption()}, func(s service.Owner) {
 		assert.NotNil(t, s, "Should create a module")
@@ -205,7 +208,7 @@ func makeRequest(m *Module, method, url string, body io.Reader, fn func(r *http.
 		panic(err)
 	}
 
-	response, err := http.DefaultClient.Do(request)
+	response, err := defaultClient.Do(request)
 	if err != nil {
 		panic(err)
 	}
