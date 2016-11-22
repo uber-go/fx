@@ -111,9 +111,8 @@ func (lb *LogBuilder) Configure() zap.Logger {
 	lb.log = lb.defaultLogger()
 
 	var options []zap.Option
-	dlevel := zap.DynamicLevel()
 	if lb.logConfig.Verbose {
-		dlevel.SetLevel(zap.DebugLevel)
+		options = append(options, zap.DebugLevel)
 	} else {
 		lb.log.With(zap.String("Level", lb.logConfig.Level)).Debug("setting log level")
 		var lv zap.Level
@@ -121,10 +120,9 @@ func (lb *LogBuilder) Configure() zap.Logger {
 		if err != nil {
 			lb.log.With(zap.String("Level", lb.logConfig.Level)).Debug("cannot parse log level. setting to Debug as default")
 		} else {
-			dlevel.SetLevel(lv)
+			options = append(options, lv)
 		}
 	}
-	options = append(options, dlevel)
 
 	if lb.logConfig.File == nil || !lb.logConfig.File.Enabled {
 		options = append(options, zap.Output(zap.AddSync(os.Stdout)))
