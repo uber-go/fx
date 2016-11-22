@@ -236,10 +236,12 @@ func TestStartModule_NoErrors(t *testing.T) {
 	}()
 	defer func() {
 		assert.NoError(t, s.Stop("test", 0))
+		assert.Equal(t, s.state, Stopped)
 	}()
 
 	assert.NoError(t, err)
 	assert.True(t, mod.IsRunning())
+	assert.Equal(t, s.state, Running)
 }
 
 func TestStartHost_WithErrors(t *testing.T) {
