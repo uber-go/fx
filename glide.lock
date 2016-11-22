@@ -1,10 +1,14 @@
-hash: 34abf7bf90054a375359a2c6636c0b9837a5128e6722d67b7a90b38cad31d64c
-updated: 2016-11-11T12:03:46.123653903-08:00
+hash: cafcc2c159448839c2858b98c9b98f7f5e63d900023fc3f2da812248fa8c262a
+updated: 2016-11-22T11:34:34.666075064-08:00
 imports:
 - name: github.com/apache/thrift
-  version: fd832242bba9d4eaba71c7c08e8eed440b106f98
+  version: 84d6af4cf903571319e0ebddd7beb12bc93fb752
   subpackages:
   - lib/go/thrift
+- name: github.com/davecgh/go-spew
+  version: 346938d642f2ec3594ed81d874461961cd0faa76
+  subpackages:
+  - spew
 - name: github.com/facebookgo/clock
   version: 600d898af40aa09a7a93ecb9265d87b0504b6f03
 - name: github.com/go-validator/validator
@@ -20,6 +24,15 @@ imports:
   - log
 - name: github.com/pkg/errors
   version: 645ef00459ed84a119197bfb8d8205042c6df63d
+- name: github.com/pmezard/go-difflib
+  version: 792786c7400a136282c1664665ae0a8db921c6c2
+  subpackages:
+  - difflib
+- name: github.com/stretchr/testify
+  version: 69483b4bd14f5845b5a1e55bca19e954e827f1d0
+  subpackages:
+  - assert
+  - require
 - name: github.com/uber-go/atomic
   version: 0c9e689d64f004564b79d9a663634756df322902
 - name: github.com/uber-go/tally
@@ -72,7 +85,7 @@ imports:
   - transport/tchannel
   - transport/tchannel/internal
 - name: golang.org/x/net
-  version: 9ef22118a4b25863aa94546daffbc0a18feaafb3
+  version: 4971afdc2f162e82d185353533d3cf16188a9f4e
   subpackages:
   - context
 - name: gopkg.in/yaml.v2
@@ -84,10 +97,6 @@ testImports:
   version: 54b98cfcac0c63fb3f9bd8e7ad241b724d4e985b
   subpackages:
   - gocov
-- name: github.com/davecgh/go-spew
-  version: 346938d642f2ec3594ed81d874461961cd0faa76
-  subpackages:
-  - spew
 - name: github.com/go-playground/overalls
   version: 6de3f6a9f4b3449d179d98d63b521716cda834fb
 - name: github.com/golang/lint
@@ -104,21 +113,12 @@ testImports:
   version: edf7508a2bcb40ec1160e94518c983c2fc169f02
 - name: github.com/pborman/uuid
   version: 3d4f2ba23642d3cfd06bd4b54cf03d99d95c0f1b
-- name: github.com/pmezard/go-difflib
-  version: 792786c7400a136282c1664665ae0a8db921c6c2
-  subpackages:
-  - difflib
 - name: github.com/russross/blackfriday
   version: 52676fb0053ff19b59451b2aed2a1b8de7d89592
 - name: github.com/sectioneight/md-to-godoc
-  version: f7ad6a1a485df328ddc1bf11b8f384f82498f6dc
+  version: f274e5a4257c85a9eaf60ac820ee813b78cac6ab
 - name: github.com/shurcooL/sanitized_anchor_name
   version: 1dba4b3954bc059efc3991ec364f9f9a35f597d2
-- name: github.com/stretchr/testify
-  version: 69483b4bd14f5845b5a1e55bca19e954e827f1d0
-  subpackages:
-  - assert
-  - require
 - name: go.uber.org/atomic
   version: 9e99152552a6ce13fa3b2ce4a9c4fb117cca4506
 - name: golang.org/x/tools
