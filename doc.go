@@ -43,84 +43,7 @@
 // access standard values such as the Service name or basic configuration.
 //
 //
-// Service Core
-//
-// This model results in a simple, consistent way to start a service.  For example,
-// in the case of a simple TChannel Service,
-// main.go might look like this:
-//
-//   package main
-//
-//   import (
-//     "go.uber.org/fx/core/config"
-//     "go.uber.org/fx/modules/rpc"
-//     "go.uber.org/fx/service"
-//   )
-//
-//   func main() {
-//     // Create the service object
-//     svc, err := service.WithModules(
-//       // The list of module creators for this service, in this case
-//       // creates a Thrift RPC module called "keyvalue"
-//       rpc.ThriftModule(
-//         rpc.CreateThriftServiceFunc(NewYarpcThriftHandler),
-//         modules.WithName("keyvalue"),
-//       ),
-//     ).Build()
-//
-//     if err != nil {
-//       log.Fatal("Could not initialize service: ", err)
-//     }
-//
-//     // Start the service, with "true" meaning:
-//     // * Wait for service exit
-//     // * Report a non-zero exit code if shutdown is caused by an error
-//     svc.Start(true)
-//   }
-//
-// Roles
-//
-// It's common for a service to handle many different workloads. For example, a
-// service may expose RPC endpoints and also ingest Kafka messages.
-//
-//
-// In UberFX, there is a simpler model where we create a single binary,
-// but turn its modules on and off based on roles which are specified via the
-// command line.
-//
-//
-// For example, imagine we wanted a "worker" and a "service" role that handled
-// Kafka and TChannel, respectively:
-//
-//
-//   func main() {
-//     svc, err := service.WithModules(
-//       kafka.Module("kakfa_topic1", []string{"worker"}),
-//       rpc.ThriftModule(
-//         rpc.CreateThriftServiceFunc(NewYarpcThriftHandler),
-//         modules.WithName("keyvalue"),
-//         modules.WithRoles("service"),
-//       ),
-//     ).Build()
-//
-//     if err != nil {
-//       log.Fatal("Could not initialize service: ", err)
-//     }
-//
-//     svc.Start(true)
-//   }
-//
-// Which then allows us to set the roles either via a command line variable:
-//
-// export CONFIG__roles__0=worker
-//
-// Or via the service parameters, we would activate in the following ways:
-//
-// • ./myservice or ./myservice --roles "service,worker": Runs all modules
-//
-// • ./myservice --roles "worker": Runs only the **Kakfa** module
-//
-// • Etc...
+// Read more about service model (service/README.md)
 //
 // Modules
 //
@@ -177,66 +100,7 @@
 // typed structs.
 //
 //
-// The configuration system wraps a set of *providers* that each know how to get
-// values from an underlying source:
-//
-//
-// • Static YAML configuration
-//
-// • Environment variables
-//
-// So by stacking these providers, we can have a priority system for defining
-// configuration that can be overridden by higher priority providers. For example,
-// the static YAML configuration would be the lowest priority and those values
-// should be overridden by values specified as environment variables.
-//
-//
-// As an example, imagine a YAML config that looks like:
-//
-//   foo:
-//     bar:
-//       boo: 1
-//       baz: hello
-//
-//   stuff:
-//     server:
-//       port: 8081
-//       greeting: Hello There!
-//
-// UberFx Config allows direct key access, such as foo.bar.baz:
-//
-//   cfg := svc.Config()
-//   if value := cfg.Get("foo.bar.baz"); value.HasValue() {
-//     fmt.Printf("Say %s", value.AsString()) // "Say hello"
-//   }
-//
-// Or via a strongly typed structure, even as a nest value, such as:
-//
-//   type myStuff struct {
-//     Port     int    `yaml:"port" default:"8080"`
-//     Greeting string `yaml:"greeting"`
-//   }
-//
-//   // ....
-//
-//   target := &myStuff{}
-//   cfg := svc.Config()
-//   if err := cfg.Get("stuff.server").PopulateStruct(target); err != nil {
-//     // fail, we didn't find it.
-//   }
-//
-//   fmt.Printf("Port is: %v", target.Port)
-//
-// Prints **Port is 8081**
-//
-// This model respects priority of providers to allow overriding of individual
-// values.  In this example, we override the server port via an environment
-// variable:
-//
-//
-//   export CONFIG__stuff__server__port=3000
-//
-// Then running the above example will result in **Port is 3000**
+// Read more about configuration (core/config/README.md)
 //
 // Compatibility
 //

@@ -9,6 +9,73 @@ In UberFx, we try very hard to make configuring UberFx convenient. Users can:
 * Get components working with minimal configuration
 * Override any field if the default doesn't make sense for their use case
 
+## Nesting
+
+The configuration system wraps a set of _providers_ that each know how to get
+values from an underlying source:
+
+* Static YAML configuration
+* Environment variables
+
+So by stacking these providers, we can have a priority system for defining
+configuration that can be overridden by higher priority providers. For example,
+the static YAML configuration would be the lowest priority and those values
+should be overridden by values specified as environment variables.
+
+As an example, imagine a YAML config that looks like:
+
+```yaml
+foo:
+  bar:
+    boo: 1
+    baz: hello
+
+stuff:
+  server:
+    port: 8081
+    greeting: Hello There!
+```
+
+UberFx Config allows direct key access, such as `foo.bar.baz`:
+
+```go
+cfg := svc.Config()
+if value := cfg.Get("foo.bar.baz"); value.HasValue() {
+  fmt.Printf("Say %s", value.AsString()) // "Say hello"
+}
+```
+
+Or via a strongly typed structure, even as a nest value, such as:
+
+```go
+type myStuff struct {
+  Port     int    `yaml:"port" default:"8080"`
+  Greeting string `yaml:"greeting"`
+}
+
+// ....
+
+target := &myStuff{}
+cfg := svc.Config()
+if err := cfg.Get("stuff.server").PopulateStruct(target); err != nil {
+  // fail, we didn't find it.
+}
+
+fmt.Printf("Port is: %v", target.Port)
+```
+
+Prints **Port is 8081**
+
+This model respects priority of providers to allow overriding of individual
+values.  In this example, we override the server port via an environment
+variable:
+
+```sh
+export CONFIG__stuff__server__port=3000
+```
+
+Then running the above example will result in **Port is 3000**
+
 ## Provider
 
 `Provider` is the interface for anything that can provide values.
