@@ -43,7 +43,7 @@
 // access standard values such as the Service name or basic configuration.
 //
 //
-// Read more about service model (service/README.md)
+// Read more about the service model (service/README.md)
 //
 // Modules
 //
