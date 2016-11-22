@@ -25,7 +25,7 @@ imports:
 - name: github.com/uber-go/tally
   version: 17aa18f4826bf57be74cbb9a94984cdb7aa63716
 - name: github.com/uber-go/zap
-  version: 5c7c5002f484c5062d2e7ec0ba3ca08773c0692d
+  version: dd147206a25aad11c300c661617a2fe26b4a81a7
 - name: github.com/uber/jaeger-client-go
   version: e39d0f1b622558cae3d9db0062a739cc6ffa700f
   subpackages:

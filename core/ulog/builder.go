@@ -52,8 +52,6 @@ type FileConfiguration struct {
 type LogBuilder struct {
 	log       zap.Logger
 	logConfig Configuration
-	level     zap.Level
-	setlevel  *bool
 }
 
 // Builder creates an empty builder for building ulog.Log object
@@ -78,14 +76,6 @@ func (lb *LogBuilder) SetLogger(zap zap.Logger) *LogBuilder {
 	return lb
 }
 
-// SetLevel sets the log level for ulog
-func (lb *LogBuilder) SetLevel(level zap.Level) *LogBuilder {
-	setlevel := true
-	lb.setlevel = &setlevel
-	lb.level = level
-	return lb
-}
-
 // Build the ulog logger for use
 func (lb *LogBuilder) Build() Log {
 	var log zap.Logger
@@ -101,10 +91,6 @@ func (lb *LogBuilder) Build() Log {
 		log = lb.devLogger()
 	} else {
 		log = lb.Configure()
-	}
-
-	if lb.setlevel != nil && *lb.setlevel {
-		log.SetLevel(lb.level)
 	}
 
 	return &baselogger{
@@ -125,19 +111,21 @@ func (lb *LogBuilder) Configure() zap.Logger {
 	lb.log = lb.defaultLogger()
 
 	var options []zap.Option
+	dlevel := zap.DynamicLevel()
 	if lb.logConfig.Verbose {
-		options = append(options, zap.DebugLevel)
+		dlevel.SetLevel(zap.DebugLevel)
 	} else {
 		lb.log.With(zap.String("Level", lb.logConfig.Level)).Debug("setting log level")
 		var lv zap.Level
 		err := lv.UnmarshalText([]byte(lb.logConfig.Level))
 		if err != nil {
 			lb.log.With(zap.String("Level", lb.logConfig.Level)).Debug("cannot parse log level. setting to Debug as default")
-			options = append(options, zap.DebugLevel)
 		} else {
-			options = append(options, lv)
+			dlevel.SetLevel(lv)
 		}
 	}
+	options = append(options, dlevel)
+
 	if lb.logConfig.File == nil || !lb.logConfig.File.Enabled {
 		options = append(options, zap.Output(zap.AddSync(os.Stdout)))
 	} else {

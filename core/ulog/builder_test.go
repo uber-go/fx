@@ -45,7 +45,7 @@ func TestConfiguredLogger(t *testing.T) {
 		}
 		log := builder.WithConfiguration(cfg).Build()
 		zaplogger := log.RawLogger()
-		assert.Equal(t, zap.DebugLevel, zaplogger.Level())
+		assert.True(t, zaplogger.Check(zap.DebugLevel, "").OK())
 	})
 }
 
@@ -65,7 +65,7 @@ func TestConfiguredLoggerWithTextFormatter(t *testing.T) {
 		}
 		log := Builder().WithConfiguration(cfg).Build()
 		zaplogger := log.RawLogger()
-		assert.Equal(t, zap.DebugLevel, zaplogger.Level())
+		assert.True(t, zaplogger.Check(zap.DebugLevel, "").OK())
 	})
 }
 
@@ -77,7 +77,7 @@ func TestConfiguredLoggerWithTextFormatter_NonDev(t *testing.T) {
 			TextFormatter: &txt,
 		}).Build()
 		zaplogger := log.RawLogger()
-		assert.Equal(t, zap.DebugLevel, zaplogger.Level())
+		assert.True(t, zaplogger.Check(zap.DebugLevel, "").OK())
 	})
 }
 
@@ -96,7 +96,7 @@ func TestConfiguredLoggerWithStdout(t *testing.T) {
 		}
 		log := Builder().WithConfiguration(cfg).Build()
 		zaplogger := log.RawLogger()
-		assert.Equal(t, zap.DebugLevel, zaplogger.Level())
+		assert.True(t, zaplogger.Check(zap.DebugLevel, "").OK())
 	})
 }
 
@@ -133,10 +133,6 @@ func TestDefaultPackageLogger(t *testing.T) {
 		defer testutils.EnvOverride(t, config.EnvironmentKey(), "development")()
 		log := New()
 		zaplogger := log.RawLogger()
-		assert.Equal(t, zap.DebugLevel, zaplogger.Level())
-
-		log = Builder().SetLevel(zap.WarnLevel).Build()
-		zaplogger = log.RawLogger()
-		assert.Equal(t, zap.WarnLevel, zaplogger.Level())
+		assert.True(t, zaplogger.Check(zap.DebugLevel, "").OK())
 	})
 }
