@@ -42,7 +42,7 @@ import (
 )
 
 // Custom default client since http's defaultClient does not set timeout
-var defaultClient = &http.Client{Timeout: 5 * time.Second}
+var _defaultClient = &http.Client{Timeout: 5 * time.Second}
 
 func TestNew_OK(t *testing.T) {
 	WithService(New(registerNothing), nil, []service.Option{configOption()}, func(s service.Owner) {
@@ -208,7 +208,7 @@ func makeRequest(m *Module, method, url string, body io.Reader, fn func(r *http.
 		panic(err)
 	}
 
-	response, err := defaultClient.Do(request)
+	response, err := _defaultClient.Do(request)
 	if err != nil {
 		panic(err)
 	}
