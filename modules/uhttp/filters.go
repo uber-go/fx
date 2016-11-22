@@ -64,7 +64,8 @@ func tracingServerFilter(ctx core.Context, w http.ResponseWriter, r *http.Reques
 func panicFilter(ctx core.Context, w http.ResponseWriter, r *http.Request, next Handler) {
 	defer func() {
 		if err := recover(); err != nil {
-			// TODO(ai) log and add stats to this
+			ctx.Logger().Error("Panic recovered serving request", "error", err, "url", r.URL)
+			ctx.Metrics().Counter("http.panic").Inc(1)
 			w.Header().Add(ContentType, ContentTypeText)
 			w.WriteHeader(http.StatusInternalServerError)
 			fmt.Fprintf(w, "Server error: %+v", err)

@@ -22,6 +22,7 @@ package service
 
 import (
 	"go.uber.org/fx/core/config"
+	"go.uber.org/fx/core/ulog"
 
 	"github.com/opentracing/opentracing-go"
 	"github.com/uber-go/tally"
@@ -35,6 +36,7 @@ func NullHost() Host {
 			ServiceOwner:       "root@example.com",
 			ServiceDescription: "does cool stuff",
 		},
+		log:            ulog.Logger(),
 		scope:          tally.NoopScope,
 		configProvider: config.NewStaticProvider(nil),
 		tracer:         opentracing.NoopTracer{},
