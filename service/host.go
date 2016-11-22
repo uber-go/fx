@@ -119,6 +119,8 @@ func (s *host) shutdown(err error, reason string, exitCode *int) (bool, error) {
 		return false, nil
 	}
 
+	s.transitionState(Stopping)
+
 	s.shutdownReason = &Exit{
 		Reason:   reason,
 		Error:    err,
@@ -164,6 +166,9 @@ func (s *host) shutdown(err error, reason string, exitCode *int) (bool, error) {
 	if s.observer != nil {
 		s.observer.OnShutdown(*s.shutdownReason)
 	}
+
+	s.transitionState(Stopped)
+
 	return true, err
 }
 
@@ -201,6 +206,7 @@ func (s *host) Start(waitForShutdown bool) (<-chan Exit, <-chan struct{}, error)
 	var err error
 	s.locked = true
 	s.shutdownMu.Lock()
+	s.transitionState(Starting)
 
 	readyCh := make(chan struct{}, 1)
 	defer func() {
@@ -209,6 +215,7 @@ func (s *host) Start(waitForShutdown bool) (<-chan Exit, <-chan struct{}, error)
 	if s.inShutdown {
 		return nil, readyCh, fmt.Errorf("errShuttingDown")
 	} else if s.IsRunning() {
+		s.shutdownMu.Unlock()
 		return s.closeChan, readyCh, nil
 	} else {
 		if s.observer != nil {
@@ -240,12 +247,14 @@ func (s *host) Start(waitForShutdown bool) (<-chan Exit, <-chan struct{}, error)
 		}
 	}
 
-	s.shutdownMu.Unlock()
 	s.registerSignalHandlers()
 
 	if waitForShutdown {
 		s.WaitForShutdown(nil)
 	}
+
+	s.transitionState(Running)
+	s.shutdownMu.Unlock()
 
 	return s.closeChan, readyCh, err
 }
