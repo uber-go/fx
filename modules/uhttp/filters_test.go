@@ -42,7 +42,7 @@ func TestExecutionChain(t *testing.T) {
 
 func TestExecutionChainFilters(t *testing.T) {
 	chain := newExecutionChain(
-		[]Filter{tracerFilter{}, FilterFunc(panicFilter)},
+		[]Filter{FilterFunc(tracingServerFilter), FilterFunc(panicFilter)},
 		getNoopHandler(),
 	)
 	response := testServeHTTP(chain)
