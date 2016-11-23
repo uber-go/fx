@@ -34,7 +34,7 @@ import (
 var yamlConfig1 = []byte(`
 appid: keyvalue
 desc: A simple keyvalue service
-appowner: uberfx@uber.com
+appowner: owner@service.com
 modules:
   rpc:
     bind: :28941
@@ -64,7 +64,7 @@ func TestYamlStructRoot(t *testing.T) {
 	assert.NoError(t, provider.Get("").PopulateStruct(cs))
 
 	assert.Equal(t, "keyvalue", cs.AppID)
-	assert.Equal(t, "uberfx@uber.com", cs.Owner)
+	assert.Equal(t, "owner@service.com", cs.Owner)
 }
 
 type rpcStruct struct {
@@ -98,7 +98,7 @@ func TestNewYamlProviderFromReader(t *testing.T) {
 	assert.NoError(t, provider.Get("").PopulateStruct(cs))
 	assert.Equal(t, "yaml", provider.Scope("").Name())
 	assert.Equal(t, "keyvalue", cs.AppID)
-	assert.Equal(t, "uberfx@uber.com", cs.Owner)
+	assert.Equal(t, "owner@service.com", cs.Owner)
 }
 
 func TestYamlNode(t *testing.T) {

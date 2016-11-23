@@ -1,6 +1,6 @@
 applicationID: keyvalue
 applicationDesc: A simple keyvalue service
-applicationOwner: uberfx@uber.com
+applicationOwner: owner@service.com
 modules:
   yarpc:
     advertiseName: keyvalue
