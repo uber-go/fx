@@ -20,8 +20,9 @@ type Client struct {
 // NewClient creates a new instance of uhttp Client
 func NewClient(client http.Client, filters ...ClientFilter) *Client {
 	if filters == nil {
-		filters = []ClientFilter{ClientFilterFunc(tracingClientFilter)}
+		filters = []ClientFilter{}
 	}
+	filters = append(filters, ClientFilterFunc(tracingClientFilter))
 	return &Client{Client: client, filters: filters}
 }
 
@@ -29,8 +30,9 @@ func NewClient(client http.Client, filters ...ClientFilter) *Client {
 func (c *Client) Do(ctx core.Context, req *http.Request) (resp *http.Response, err error) {
 	filters := c.filters
 	if filters == nil {
-		filters = []ClientFilter{ClientFilterFunc(tracingClientFilter)}
+		filters = []ClientFilter{}
 	}
+	filters = append(filters, ClientFilterFunc(tracingClientFilter))
 	execChain := newClientExecutionChain(filters, BasicClientFunc(c.do))
 	return execChain.Do(ctx, req)
 }

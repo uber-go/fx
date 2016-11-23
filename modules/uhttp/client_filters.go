@@ -3,10 +3,10 @@ package uhttp
 import (
 	"net/http"
 
-	"github.com/opentracing/opentracing-go"
-
-	"github.com/opentracing/opentracing-go/ext"
 	"go.uber.org/fx/core"
+
+	"github.com/opentracing/opentracing-go"
+	"github.com/opentracing/opentracing-go/ext"
 )
 
 // ClientFilter applies filters on client requests, request contexts such as
