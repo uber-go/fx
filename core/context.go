@@ -26,7 +26,7 @@ import (
 	"go.uber.org/fx/service"
 )
 
-// Context embeds Host and go context for use
+// Context embeds Host and Go stdlib context for use
 type Context interface {
 	gcontext.Context
 	service.Host
