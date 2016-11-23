@@ -62,7 +62,11 @@ func tracingClientFilter(
 
 	ctx = ctx.WithContext(opentracing.ContextWithSpan(ctx, span))
 	carrier := opentracing.HTTPHeadersCarrier(req.Header)
-	span.Tracer().Inject(span.Context(), opentracing.HTTPHeaders, carrier)
+	err = span.Tracer().Inject(span.Context(), opentracing.HTTPHeaders, carrier)
+	if err != nil {
+		span.SetTag("error", err.Error())
+		return nil, err
+	}
 
 	resp, err = next.Do(ctx, req)
 	if resp != nil {
