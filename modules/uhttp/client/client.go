@@ -33,12 +33,12 @@ import (
 
 // Client wraps around a http client
 type Client struct {
-	http.Client
+	*http.Client
 	filters []Filter
 }
 
 // New creates a new instance of uhttp Client
-func New(client http.Client, filters ...Filter) *Client {
+func New(client *http.Client, filters ...Filter) *Client {
 	filters = append(filters, FilterFunc(tracingFilter))
 	return &Client{Client: client, filters: filters}
 }
@@ -56,7 +56,7 @@ func (c *Client) Do(ctx core.Context, req *http.Request) (resp *http.Response, e
 }
 
 func (c *Client) do(ctx core.Context, req *http.Request) (resp *http.Response, err error) {
-	return ctxhttp.Do(ctx, &c.Client, req)
+	return ctxhttp.Do(ctx, c.Client, req)
 }
 
 // Get is a context-aware, filter-enabled extension of Get() in http.Client

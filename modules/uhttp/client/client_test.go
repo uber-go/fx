@@ -34,11 +34,11 @@ import (
 )
 
 var _defaultHTTPClient = &http.Client{Timeout: 2 * time.Second}
-var _defaultUHTTPClient = New(*_defaultHTTPClient)
+var _defaultUHTTPClient = New(_defaultHTTPClient)
 
 func TestNew(t *testing.T) {
-	uhttpClient := New(*_defaultHTTPClient)
-	assert.Equal(t, *_defaultHTTPClient, uhttpClient.Client)
+	uhttpClient := New(_defaultHTTPClient)
+	assert.Equal(t, _defaultHTTPClient, uhttpClient.Client)
 	assert.Equal(t, 1, len(uhttpClient.filters))
 }
 
@@ -50,7 +50,7 @@ func TestClientDo(t *testing.T) {
 }
 
 func TestClientDoWithoutFilters(t *testing.T) {
-	uhttpClient := &Client{Client: *_defaultHTTPClient}
+	uhttpClient := &Client{Client: _defaultHTTPClient}
 	svr := startServer()
 	req := createHTTPClientRequest(svr.URL)
 	resp, err := uhttpClient.Do(createContext(), req)
