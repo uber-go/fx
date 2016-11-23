@@ -18,7 +18,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package uhttp
+package client
 
 import (
 	"net/http"
@@ -29,25 +29,25 @@ import (
 	"github.com/opentracing/opentracing-go/ext"
 )
 
-// ClientFilter applies filters on client requests, request contexts such as
+// Filter applies filters on client requests, request contexts such as
 // adding tracing to the context
-type ClientFilter interface {
+type Filter interface {
 	Apply(ctx core.Context, r *http.Request, next BasicClient) (resp *http.Response, err error)
 }
 
-// ClientFilterFunc is an adaptor to call normal functions to apply filters
-type ClientFilterFunc func(
+// FilterFunc is an adaptor to call normal functions to apply filters
+type FilterFunc func(
 	ctx core.Context, r *http.Request, next BasicClient,
 ) (resp *http.Response, err error)
 
 // Apply implements Apply from the Filter interface and simply delegates to the function
-func (f ClientFilterFunc) Apply(
+func (f FilterFunc) Apply(
 	ctx core.Context, r *http.Request, next BasicClient,
 ) (resp *http.Response, err error) {
 	return f(ctx, r, next)
 }
 
-func tracingClientFilter(
+func tracingFilter(
 	ctx core.Context, req *http.Request, next BasicClient,
 ) (resp *http.Response, err error) {
 	opName := req.Method
@@ -78,22 +78,22 @@ func tracingClientFilter(
 	return resp, err
 }
 
-func newClientExecutionChain(
-	filters []ClientFilter, finalClient BasicClient,
-) clientExecutionChain {
-	return clientExecutionChain{
+func newExecutionChain(
+	filters []Filter, finalClient BasicClient,
+) executionChain {
+	return executionChain{
 		filters:     filters,
 		finalClient: finalClient,
 	}
 }
 
-type clientExecutionChain struct {
+type executionChain struct {
 	currentFilter int
-	filters       []ClientFilter
+	filters       []Filter
 	finalClient   BasicClient
 }
 
-func (ec clientExecutionChain) Do(
+func (ec executionChain) Do(
 	ctx core.Context, req *http.Request,
 ) (resp *http.Response, err error) {
 	if ec.currentFilter < len(ec.filters) {

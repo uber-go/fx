@@ -18,7 +18,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package uhttp
+package client
 
 import (
 	"io"
@@ -34,12 +34,12 @@ import (
 // Client wraps around a http client
 type Client struct {
 	http.Client
-	filters []ClientFilter
+	filters []Filter
 }
 
-// NewClient creates a new instance of uhttp Client
-func NewClient(client http.Client, filters ...ClientFilter) *Client {
-	filters = append(filters, ClientFilterFunc(tracingClientFilter))
+// New creates a new instance of uhttp Client
+func New(client http.Client, filters ...Filter) *Client {
+	filters = append(filters, FilterFunc(tracingFilter))
 	return &Client{Client: client, filters: filters}
 }
 
@@ -49,9 +49,9 @@ func (c *Client) Do(ctx core.Context, req *http.Request) (resp *http.Response, e
 	// TODO: Need a way to handle the case where Client is initialized without the NewClient method
 	// and some filters are set. Need to always include the tracing filter
 	if len(filters) == 0 {
-		filters = append(filters, ClientFilterFunc(tracingClientFilter))
+		filters = append(filters, FilterFunc(tracingFilter))
 	}
-	execChain := newClientExecutionChain(filters, BasicClientFunc(c.do))
+	execChain := newExecutionChain(filters, BasicClientFunc(c.do))
 	return execChain.Do(ctx, req)
 }
 
