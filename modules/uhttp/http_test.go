@@ -42,7 +42,7 @@ import (
 )
 
 // Custom default client since http's defaultClient does not set timeout
-var _defaultClient = &http.Client{Timeout: 5 * time.Second}
+var _defaultHTTPClient = &http.Client{Timeout: 5 * time.Second}
 
 func TestNew_OK(t *testing.T) {
 	WithService(New(registerNothing), nil, []service.Option{configOption()}, func(s service.Owner) {
@@ -202,13 +202,14 @@ func getURL(m *Module) string {
 
 func makeRequest(m *Module, method, url string, body io.Reader, fn func(r *http.Response)) {
 	base := getURL(m)
+	fmt.Printf("Method: %v URL: %v Body: %v\n", method, base+url, body)
 	request, err := http.NewRequest(method, base+url, body)
 	if err != nil {
 		// Yes, panics are OK for programmer errors in test suites
 		panic(err)
 	}
 
-	response, err := _defaultClient.Do(request)
+	response, err := _defaultHTTPClient.Do(request)
 	if err != nil {
 		panic(err)
 	}
