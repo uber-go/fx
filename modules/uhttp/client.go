@@ -26,9 +26,9 @@ import (
 	"net/url"
 	"strings"
 
-	"golang.org/x/net/context/ctxhttp"
-
 	"go.uber.org/fx/core"
+
+	"golang.org/x/net/context/ctxhttp"
 )
 
 // Client wraps around a http client

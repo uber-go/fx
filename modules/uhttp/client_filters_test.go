@@ -34,7 +34,7 @@ import (
 var (
 	_respOK   = &http.Response{StatusCode: http.StatusOK}
 	_req      = httptest.NewRequest("", "http://localhost", nil)
-	errClient = errors.New("Client error")
+	errClient = errors.New("client test error")
 )
 
 func TestClientExecutionChain(t *testing.T) {

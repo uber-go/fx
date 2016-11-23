@@ -27,9 +27,9 @@ import (
 
 	"go.uber.org/fx/core"
 	"go.uber.org/fx/service"
-	"golang.org/x/net/context"
 
 	"github.com/stretchr/testify/assert"
+	"golang.org/x/net/context"
 )
 
 var _defaultUHTTPClient = NewClient(*_defaultHTTPClient)
