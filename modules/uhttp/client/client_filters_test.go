@@ -18,7 +18,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package uhttp
+package client
 
 import (
 	"errors"
@@ -37,16 +37,16 @@ var (
 	errClient = errors.New("client test error")
 )
 
-func TestClientExecutionChain(t *testing.T) {
-	execChain := newClientExecutionChain([]ClientFilter{}, getNoopClient())
+func TestExecutionChain(t *testing.T) {
+	execChain := newExecutionChain([]Filter{}, getNoopClient())
 	resp, err := execChain.Do(nil, _req)
 	assert.NoError(t, err)
 	assert.Equal(t, _respOK, resp)
 }
 
-func TestClientExecutionChainFilters(t *testing.T) {
-	execChain := newClientExecutionChain(
-		[]ClientFilter{ClientFilterFunc(tracingClientFilter)}, getNoopClient(),
+func TestExecutionChainFilters(t *testing.T) {
+	execChain := newExecutionChain(
+		[]Filter{FilterFunc(tracingFilter)}, getNoopClient(),
 	)
 	ctx := createContext()
 	resp, err := execChain.Do(ctx, _req)
@@ -54,9 +54,9 @@ func TestClientExecutionChainFilters(t *testing.T) {
 	assert.Equal(t, _respOK, resp)
 }
 
-func TestClientExecutionChainFiltersError(t *testing.T) {
-	execChain := newClientExecutionChain(
-		[]ClientFilter{ClientFilterFunc(tracingClientFilter)}, getErrorClient(),
+func TestExecutionChainFiltersError(t *testing.T) {
+	execChain := newExecutionChain(
+		[]Filter{FilterFunc(tracingFilter)}, getErrorClient(),
 	)
 	resp, err := execChain.Do(createContext(), _req)
 	assert.Error(t, err)
