@@ -1,6 +1,6 @@
 applicationID: simple
 applicationDesc: A simple example service
-applicationOwner: uberfx@uber.com
+applicationOwner: owner@service.com
 
 service:
   timeout: 500

@@ -83,7 +83,7 @@ things:
 var yamlConfig2 = []byte(`
 appid: keyvalue
 desc: A simple keyvalue service
-appowner: uberfx@uber.com
+appowner: owner@service.com
 modules:
   rpc:
     bind: :28941
