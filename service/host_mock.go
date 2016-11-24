@@ -36,7 +36,7 @@ func NullHost() Host {
 			ServiceOwner:       "root@example.com",
 			ServiceDescription: "does cool stuff",
 		},
-		log:            ulog.Logger(),
+		log:            ulog.NoopLogger,
 		scope:          tally.NoopScope,
 		configProvider: config.NewStaticProvider(nil),
 		tracer:         opentracing.NoopTracer{},
