@@ -45,18 +45,18 @@
 //
 // Read more about the service model (service/README.md)
 //
-// Framework Core
+// Core packages
 //
-// The core package contains the nuts and bolts useful to have in a fully-fledged
-// service, but are not specific to an instance of a service or even the idea of a
-// service.
+// The top-level packages (except for service) contain the nuts and bolts useful
+// to have in a fully-fledged service, but are not specific to an instance of a
+// service or even the idea of a service.
 //
 //
 // If, for example, you just want use the configuration logic from UberFx, you
 // could import
 // go.uber.org/config and use it in a stand-alone CLI app.
 //
-// It is separate from the service package, which contains logic specifically to
+// It is separate from the service package, which contains logic specific to
 // a running service.
 //
 //
