@@ -21,8 +21,7 @@
 package main
 
 import (
-	"log"
-
+	"go.uber.org/fx/core/ulog"
 	"go.uber.org/fx/modules/rpc"
 	"go.uber.org/fx/modules/uhttp"
 	"go.uber.org/fx/service"
@@ -40,7 +39,7 @@ func main() {
 	).Build()
 
 	if err != nil {
-		log.Fatal("Unable to initialize service: ", err)
+		ulog.Logger().Fatal("Unable to initialize service: ", err)
 	}
 
 	service.Start(true)
