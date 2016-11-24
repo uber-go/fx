@@ -114,11 +114,14 @@ func (lb *LogBuilder) Configure() zap.Logger {
 	if lb.logConfig.Verbose {
 		options = append(options, zap.DebugLevel)
 	} else {
-		lb.log.With(zap.String("Level", lb.logConfig.Level)).Debug("setting log level")
+		lb.log.Debug("Setting log level", zap.String("level", lb.logConfig.Level))
 		var lv zap.Level
 		err := lv.UnmarshalText([]byte(lb.logConfig.Level))
 		if err != nil {
-			lb.log.With(zap.String("Level", lb.logConfig.Level)).Debug("cannot parse log level. setting to Debug as default")
+			lb.log.Debug(
+				"Cannot parse log level. Setting to Debug as default",
+				zap.String("level", lb.logConfig.Level),
+			)
 		} else {
 			options = append(options, lv)
 		}
@@ -141,13 +144,13 @@ func (lb *LogBuilder) fileOutput(cfg *FileConfiguration, stdout bool, verbose bo
 	lb.log.Debug("adding log file output to zap")
 	err := os.MkdirAll(cfg.Directory, os.FileMode(0755))
 	if err != nil {
-		lb.log.Fatal("failed to create log directory: ", zap.Error(err))
+		lb.log.Fatal("Failed to create log directory: ", zap.Error(err))
 	}
 	file, err := os.OpenFile(fileLoc, os.O_WRONLY|os.O_APPEND|os.O_CREATE, os.FileMode(0755))
 	if err != nil {
-		lb.log.Fatal("failed to open log file for writing.", zap.Error(err))
+		lb.log.Fatal("Failed to open log file for writing.", zap.Error(err))
 	}
-	lb.log.With(zap.String("filename", fileLoc)).Debug("logfile created successfully")
+	lb.log.Debug("Logfile created successfully", zap.String("filename", fileLoc))
 	if verbose || stdout {
 		return zap.AddSync(io.MultiWriter(os.Stdout, file))
 	}
