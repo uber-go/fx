@@ -18,40 +18,44 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package testutils
+package fx
 
 import (
-	"math/rand"
+	gcontext "context"
 
-	"go.uber.org/fx/core/config"
+	"go.uber.org/fx/service"
 )
 
-// StaticAppData creates a Provider for a valid appID/owner
-func StaticAppData(applicationID *string) config.Provider {
-	data := makeValidData(applicationID)
-	return config.NewStaticProvider(data)
+// Context embeds Host and Go stdlib context for use
+type Context interface {
+	gcontext.Context
+	service.Host
+	WithContext(ctx gcontext.Context) *context
 }
 
-func makeValidData(applicationID *string) map[string]interface{} {
-	if applicationID == nil {
-		_appID := "test" + randStringBytes(10)
-		applicationID = &_appID
-	}
-	applicationOwner := "test" + randStringBytes(10)
-
-	data := map[string]interface{}{
-		"applicationID":    *applicationID,
-		"applicationOwner": applicationOwner,
-	}
-	return data
+type context struct {
+	gcontext.Context
+	service.Host
 }
 
-const letterBytes = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
-
-func randStringBytes(n int) string {
-	b := make([]byte, n)
-	for i := range b {
-		b[i] = letterBytes[rand.Intn(len(letterBytes))]
+// WithContext returns a shallow copy of c with its context changed to ctx.
+// The provided ctx must be non-nil. Follows from net/http Request WithContext.
+func (c *context) WithContext(ctx gcontext.Context) (newC *context) {
+	if ctx == nil {
+		panic("nil context")
 	}
-	return string(b)
+	newC = new(context)
+	*newC = *c
+	newC.Context = ctx
+	return newC
+}
+
+var _ Context = &context{}
+
+// NewContext always returns fx.Context for use in the service
+func NewContext(ctx gcontext.Context, host service.Host) Context {
+	return &context{
+		Context: ctx,
+		Host:    host,
+	}
 }

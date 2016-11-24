@@ -25,14 +25,14 @@ import (
 	"io"
 	"net/http"
 
-	"go.uber.org/fx/core"
+	"go.uber.org/fx"
 	"go.uber.org/fx/modules/uhttp"
 	"go.uber.org/fx/service"
 )
 
 type exampleHandler struct{}
 
-func (exampleHandler) ServeHTTP(ctx core.Context, w http.ResponseWriter, r *http.Request) {
+func (exampleHandler) ServeHTTP(ctx fx.Context, w http.ResponseWriter, r *http.Request) {
 	io.WriteString(w, fmt.Sprintf("Headers: %+v", r.Header))
 }
 

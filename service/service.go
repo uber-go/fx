@@ -21,10 +21,10 @@
 package service
 
 import (
-	"go.uber.org/fx/core/config"
-	"go.uber.org/fx/core/metrics"
-	"go.uber.org/fx/core/tracing"
-	"go.uber.org/fx/core/ulog"
+	"go.uber.org/fx/config"
+	"go.uber.org/fx/metrics"
+	"go.uber.org/fx/tracing"
+	"go.uber.org/fx/ulog"
 
 	"github.com/go-validator/validator"
 	"github.com/pkg/errors"

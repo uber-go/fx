@@ -25,7 +25,7 @@ import (
 	"os"
 	"path"
 
-	"go.uber.org/fx/core/config"
+	"go.uber.org/fx/config"
 
 	"github.com/uber-go/zap"
 )

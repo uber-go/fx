@@ -24,7 +24,7 @@ import (
 	"errors"
 	"testing"
 
-	"go.uber.org/fx/core/ulog"
+	"go.uber.org/fx/ulog"
 
 	"github.com/opentracing/opentracing-go"
 	"github.com/stretchr/testify/assert"

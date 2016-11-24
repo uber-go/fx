@@ -27,6 +27,18 @@ access standard values such as the Service name or basic configuration.
 
 [Read more about the service model](service/README.md)
 
+## Framework Core
+
+The core package contains the nuts and bolts useful to have in a fully-fledged
+service, but are not specific to an instance of a service or even the idea of a
+service.
+
+If, for example, you just want use the configuration logic from UberFx, you
+could import `go.uber.org/config` and use it in a stand-alone CLI app.
+
+It is separate from the `service` package, which contains logic specifically to
+a running service.
+
 ## Modules
 
 Modules are pluggable components that provide an encapsulated set of
@@ -78,7 +90,7 @@ interface to configuration from pluggable configuration sources. This interface
 defines methods for accessing values directly or into strongly
 typed structs.
 
-[Read more about configuration](core/config/README.md)
+[Read more about configuration](config/README.md)
 
 ## Compatibility
 

@@ -29,7 +29,7 @@
 //
 //   package main
 //
-//   import "go.uber.org/fx/core/ulog"
+//   import "go.uber.org/fx/ulog"
 //
 //   func main() {
 //     // Initialize logger object
@@ -66,7 +66,7 @@
 //
 //   package main
 //
-//   import "go.uber.org/fx/core/ulog"
+//   import "go.uber.org/fx/ulog"
 //
 //   func main() {
 //     log := ulog.Logger()

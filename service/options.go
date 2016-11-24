@@ -21,8 +21,8 @@
 package service
 
 import (
-	"go.uber.org/fx/core/config"
-	"go.uber.org/fx/core/ulog"
+	"go.uber.org/fx/config"
+	"go.uber.org/fx/ulog"
 
 	"github.com/opentracing/opentracing-go"
 	"github.com/uber-go/tally"

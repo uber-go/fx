@@ -26,7 +26,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"go.uber.org/fx/core"
+	"go.uber.org/fx"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -66,7 +66,7 @@ func TestExecutionChainFiltersError(t *testing.T) {
 
 func getNoopClient() BasicClient {
 	return BasicClientFunc(
-		func(ctx core.Context, req *http.Request) (resp *http.Response, err error) {
+		func(ctx fx.Context, req *http.Request) (resp *http.Response, err error) {
 			return _respOK, nil
 		},
 	)
@@ -74,7 +74,7 @@ func getNoopClient() BasicClient {
 
 func getErrorClient() BasicClient {
 	return BasicClientFunc(
-		func(ctx core.Context, req *http.Request) (resp *http.Response, err error) {
+		func(ctx fx.Context, req *http.Request) (resp *http.Response, err error) {
 			return nil, errClient
 		},
 	)

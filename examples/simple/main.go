@@ -21,10 +21,10 @@
 package main
 
 import (
-	"go.uber.org/fx/core/ulog"
 	"go.uber.org/fx/modules/rpc"
 	"go.uber.org/fx/modules/uhttp"
 	"go.uber.org/fx/service"
+	"go.uber.org/fx/ulog"
 	"go.uber.org/yarpc/transport"
 )
 

@@ -26,8 +26,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	"go.uber.org/fx/core/config"
-	"go.uber.org/fx/core/testutils"
+	"go.uber.org/fx/config"
+	"go.uber.org/fx/testutils"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"

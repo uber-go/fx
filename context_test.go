@@ -18,4 +18,37 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package core
+package fx
+
+import (
+	"testing"
+
+	"go.uber.org/fx/service"
+
+	"github.com/stretchr/testify/assert"
+
+	gcontext "context"
+)
+
+func TestContext_HostAccess(t *testing.T) {
+	ctx := NewContext(gcontext.Background(), service.NullHost())
+	assert.NotNil(t, ctx)
+	assert.NotNil(t, ctx.Config())
+	assert.Equal(t, "dummy", ctx.Name())
+}
+
+func TestWithContext(t *testing.T) {
+	gctx := gcontext.WithValue(gcontext.Background(), "key", "val")
+	ctx := NewContext(gctx, service.NullHost())
+	assert.Equal(t, "val", ctx.Value("key"))
+
+	gctx1 := gcontext.WithValue(gcontext.Background(), "key1", "val1")
+	ctx = ctx.WithContext(gctx1)
+	assert.Equal(t, nil, ctx.Value("key"))
+	assert.Equal(t, "val1", ctx.Value("key1"))
+}
+
+func TestWithContextNil(t *testing.T) {
+	ctx := NewContext(gcontext.Background(), service.NullHost())
+	assert.Panics(t, func() { ctx.WithContext(nil) })
+}

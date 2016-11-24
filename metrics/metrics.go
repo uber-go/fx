@@ -25,7 +25,7 @@ import (
 	"sync"
 	"time"
 
-	"go.uber.org/fx/core/config"
+	"go.uber.org/fx/config"
 
 	"github.com/uber-go/tally"
 )

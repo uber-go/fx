@@ -28,9 +28,9 @@ import (
 	"sync"
 	"time"
 
-	"go.uber.org/fx/core/ulog"
 	"go.uber.org/fx/modules"
 	"go.uber.org/fx/service"
+	"go.uber.org/fx/ulog"
 
 	"github.com/pkg/errors"
 )
