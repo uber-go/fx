@@ -114,7 +114,7 @@ func (lb *LogBuilder) Configure() zap.Logger {
 	if lb.logConfig.Verbose {
 		options = append(options, zap.DebugLevel)
 	} else {
-		lb.log.Debug("Setting log level", zap.String("level", lb.logConfig.Level))
+		lb.log.Info("Setting log level", zap.String("level", lb.logConfig.Level))
 		var lv zap.Level
 		err := lv.UnmarshalText([]byte(lb.logConfig.Level))
 		if err != nil {
