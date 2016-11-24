@@ -25,9 +25,9 @@ import (
 	"fmt"
 	"sync"
 
-	"go.uber.org/fx/core/ulog"
 	"go.uber.org/fx/modules"
 	"go.uber.org/fx/service"
+	"go.uber.org/fx/ulog"
 
 	errs "github.com/pkg/errors"
 	"github.com/uber/tchannel-go"

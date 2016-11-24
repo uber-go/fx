@@ -34,7 +34,7 @@
 //   package main
 //
 //   import (
-//     "go.uber.org/fx/core/config"
+//     "go.uber.org/fx/config"
 //     "go.uber.org/fx/modules/rpc"
 //     "go.uber.org/fx/service"
 //   )

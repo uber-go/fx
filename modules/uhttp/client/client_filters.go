@@ -23,7 +23,7 @@ package client
 import (
 	"net/http"
 
-	"go.uber.org/fx/core"
+	"go.uber.org/fx"
 
 	"github.com/opentracing/opentracing-go"
 	"github.com/opentracing/opentracing-go/ext"
@@ -32,23 +32,23 @@ import (
 // Filter applies filters on client requests, request contexts such as
 // adding tracing to the context
 type Filter interface {
-	Apply(ctx core.Context, r *http.Request, next BasicClient) (resp *http.Response, err error)
+	Apply(ctx fx.Context, r *http.Request, next BasicClient) (resp *http.Response, err error)
 }
 
 // FilterFunc is an adaptor to call normal functions to apply filters
 type FilterFunc func(
-	ctx core.Context, r *http.Request, next BasicClient,
+	ctx fx.Context, r *http.Request, next BasicClient,
 ) (resp *http.Response, err error)
 
 // Apply implements Apply from the Filter interface and simply delegates to the function
 func (f FilterFunc) Apply(
-	ctx core.Context, r *http.Request, next BasicClient,
+	ctx fx.Context, r *http.Request, next BasicClient,
 ) (resp *http.Response, err error) {
 	return f(ctx, r, next)
 }
 
 func tracingFilter(
-	ctx core.Context, req *http.Request, next BasicClient,
+	ctx fx.Context, req *http.Request, next BasicClient,
 ) (resp *http.Response, err error) {
 	opName := req.Method
 	var parent opentracing.SpanContext
@@ -94,7 +94,7 @@ type executionChain struct {
 }
 
 func (ec executionChain) Do(
-	ctx core.Context, req *http.Request,
+	ctx fx.Context, req *http.Request,
 ) (resp *http.Response, err error) {
 	if ec.currentFilter < len(ec.filters) {
 		filter := ec.filters[ec.currentFilter]

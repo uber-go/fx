@@ -18,37 +18,40 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package core
+package testutils
 
 import (
-	"testing"
+	"math/rand"
 
-	"go.uber.org/fx/service"
-
-	"github.com/stretchr/testify/assert"
-
-	gcontext "context"
+	"go.uber.org/fx/config"
 )
 
-func TestContext_HostAccess(t *testing.T) {
-	ctx := NewContext(gcontext.Background(), service.NullHost())
-	assert.NotNil(t, ctx)
-	assert.NotNil(t, ctx.Config())
-	assert.Equal(t, "dummy", ctx.Name())
+// StaticAppData creates a Provider for a valid appID/owner
+func StaticAppData(applicationID *string) config.Provider {
+	data := makeValidData(applicationID)
+	return config.NewStaticProvider(data)
 }
 
-func TestWithContext(t *testing.T) {
-	gctx := gcontext.WithValue(gcontext.Background(), "key", "val")
-	ctx := NewContext(gctx, service.NullHost())
-	assert.Equal(t, "val", ctx.Value("key"))
+func makeValidData(applicationID *string) map[string]interface{} {
+	if applicationID == nil {
+		_appID := "test" + randStringBytes(10)
+		applicationID = &_appID
+	}
+	applicationOwner := "test" + randStringBytes(10)
 
-	gctx1 := gcontext.WithValue(gcontext.Background(), "key1", "val1")
-	ctx = ctx.WithContext(gctx1)
-	assert.Equal(t, nil, ctx.Value("key"))
-	assert.Equal(t, "val1", ctx.Value("key1"))
+	data := map[string]interface{}{
+		"applicationID":    *applicationID,
+		"applicationOwner": applicationOwner,
+	}
+	return data
 }
 
-func TestWithContextNil(t *testing.T) {
-	ctx := NewContext(gcontext.Background(), service.NullHost())
-	assert.Panics(t, func() { ctx.WithContext(nil) })
+const letterBytes = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+
+func randStringBytes(n int) string {
+	b := make([]byte, n)
+	for i := range b {
+		b[i] = letterBytes[rand.Intn(len(letterBytes))]
+	}
+	return string(b)
 }

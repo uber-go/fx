@@ -9,7 +9,7 @@ via `Configure()` API and provided YAML configuration.
 ```go
 package main
 
-import "go.uber.org/fx/core/ulog"
+import "go.uber.org/fx/ulog"
 
 func main() {
   // Initialize logger object
@@ -45,7 +45,7 @@ For example, the following piece of code:
 ```go
 package main
 
-import "go.uber.org/fx/core/ulog"
+import "go.uber.org/fx/ulog"
 
 func main() {
   log := ulog.Logger()

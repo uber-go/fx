@@ -23,8 +23,8 @@ package tracing
 import (
 	"testing"
 
-	"go.uber.org/fx/core/testutils"
-	"go.uber.org/fx/core/ulog"
+	"go.uber.org/fx/testutils"
+	"go.uber.org/fx/ulog"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/uber-go/tally"

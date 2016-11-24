@@ -28,7 +28,7 @@ import (
 	"strings"
 	"testing"
 
-	"go.uber.org/fx/core"
+	"go.uber.org/fx"
 	"go.uber.org/fx/service"
 
 	"github.com/stretchr/testify/assert"
@@ -52,13 +52,13 @@ func TestExecutionChainFilters(t *testing.T) {
 func testServeHTTP(chain executionChain) *httptest.ResponseRecorder {
 	request := httptest.NewRequest("", "http://filters", nil)
 	response := httptest.NewRecorder()
-	ctx := core.NewContext(context.Background(), service.NullHost())
+	ctx := fx.NewContext(context.Background(), service.NullHost())
 	chain.ServeHTTP(ctx, response, request)
 	return response
 }
 
 func getNoopHandler() Handler {
-	return HandlerFunc(func(ctx core.Context, w http.ResponseWriter, r *http.Request) {
+	return HandlerFunc(func(ctx fx.Context, w http.ResponseWriter, r *http.Request) {
 		io.WriteString(w, "filters ok")
 	})
 }

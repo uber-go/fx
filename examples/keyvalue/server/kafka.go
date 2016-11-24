@@ -21,8 +21,8 @@
 package main
 
 // import (
-// 	"go.uber.org/fx/core"
-// 	"go.uber.org/fx/core/ulog"
+// 	"go.uber.org/fx"
+// 	"go.uber.org/fx/ulog"
 // 	"go.uber.org/fx/modules/kafka"
 // 	"golang.org/x/net/context"
 // )

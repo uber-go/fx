@@ -24,7 +24,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"go.uber.org/fx/core"
+	"go.uber.org/fx"
 
 	"github.com/opentracing/opentracing-go"
 	"github.com/opentracing/opentracing-go/ext"
@@ -33,18 +33,18 @@ import (
 // Filter applies filters on requests, request contexts or responses such as
 // adding tracing to the context
 type Filter interface {
-	Apply(ctx core.Context, w http.ResponseWriter, r *http.Request, next Handler)
+	Apply(ctx fx.Context, w http.ResponseWriter, r *http.Request, next Handler)
 }
 
 // FilterFunc is an adaptor to call normal functions to apply filters
-type FilterFunc func(ctx core.Context, w http.ResponseWriter, r *http.Request, next Handler)
+type FilterFunc func(ctx fx.Context, w http.ResponseWriter, r *http.Request, next Handler)
 
 // Apply implements Apply from the Filter interface and simply delegates to the function
-func (f FilterFunc) Apply(ctx core.Context, w http.ResponseWriter, r *http.Request, next Handler) {
+func (f FilterFunc) Apply(ctx fx.Context, w http.ResponseWriter, r *http.Request, next Handler) {
 	f(ctx, w, r, next)
 }
 
-func tracingServerFilter(ctx core.Context, w http.ResponseWriter, r *http.Request, next Handler) {
+func tracingServerFilter(ctx fx.Context, w http.ResponseWriter, r *http.Request, next Handler) {
 	operationName := r.Method
 	carrier := opentracing.HTTPHeadersCarrier(r.Header)
 	spanCtx, err := ctx.Tracer().Extract(opentracing.HTTPHeaders, carrier)
@@ -55,13 +55,13 @@ func tracingServerFilter(ctx core.Context, w http.ResponseWriter, r *http.Reques
 	ext.HTTPUrl.Set(span, r.URL.String())
 	defer span.Finish()
 
-	gctx := core.NewContext(opentracing.ContextWithSpan(ctx, span), ctx)
+	gctx := fx.NewContext(opentracing.ContextWithSpan(ctx, span), ctx)
 	r = r.WithContext(gctx)
 	next.ServeHTTP(gctx, w, r)
 }
 
 // panicFilter handles any panics and return an error
-func panicFilter(ctx core.Context, w http.ResponseWriter, r *http.Request, next Handler) {
+func panicFilter(ctx fx.Context, w http.ResponseWriter, r *http.Request, next Handler) {
 	defer func() {
 		if err := recover(); err != nil {
 			ctx.Logger().Error("Panic recovered serving request", "error", err, "url", r.URL)
@@ -87,7 +87,7 @@ type executionChain struct {
 	finalHandler  Handler
 }
 
-func (ec executionChain) ServeHTTP(ctx core.Context, w http.ResponseWriter, req *http.Request) {
+func (ec executionChain) ServeHTTP(ctx fx.Context, w http.ResponseWriter, req *http.Request) {
 	if ec.currentFilter < len(ec.filters) {
 		filter := ec.filters[ec.currentFilter]
 		ec.currentFilter++

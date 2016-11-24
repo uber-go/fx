@@ -26,7 +26,7 @@ import (
 	"net/url"
 	"strings"
 
-	"go.uber.org/fx/core"
+	"go.uber.org/fx"
 
 	"golang.org/x/net/context/ctxhttp"
 )
@@ -44,7 +44,7 @@ func New(client *http.Client, filters ...Filter) *Client {
 }
 
 // Do is a context-aware, filter-enabled extension of Do() in http.Client
-func (c *Client) Do(ctx core.Context, req *http.Request) (resp *http.Response, err error) {
+func (c *Client) Do(ctx fx.Context, req *http.Request) (resp *http.Response, err error) {
 	filters := c.filters
 	// TODO: Need a way to handle the case where Client is initialized without the NewClient method
 	// and some filters are set. Need to always include the tracing filter
@@ -55,12 +55,12 @@ func (c *Client) Do(ctx core.Context, req *http.Request) (resp *http.Response, e
 	return execChain.Do(ctx, req)
 }
 
-func (c *Client) do(ctx core.Context, req *http.Request) (resp *http.Response, err error) {
+func (c *Client) do(ctx fx.Context, req *http.Request) (resp *http.Response, err error) {
 	return ctxhttp.Do(ctx, c.Client, req)
 }
 
 // Get is a context-aware, filter-enabled extension of Get() in http.Client
-func (c *Client) Get(ctx core.Context, url string) (resp *http.Response, err error) {
+func (c *Client) Get(ctx fx.Context, url string) (resp *http.Response, err error) {
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return nil, err
@@ -70,7 +70,7 @@ func (c *Client) Get(ctx core.Context, url string) (resp *http.Response, err err
 
 // Post is a context-aware, filter-enabled extension of Post() in http.Client
 func (c *Client) Post(
-	ctx core.Context,
+	ctx fx.Context,
 	url string,
 	bodyType string,
 	body io.Reader,
@@ -85,7 +85,7 @@ func (c *Client) Post(
 
 // PostForm is a context-aware, filter-enabled extension of PostForm() in http.Client
 func (c *Client) PostForm(
-	ctx core.Context,
+	ctx fx.Context,
 	url string,
 	data url.Values,
 ) (resp *http.Response, err error) {
@@ -94,7 +94,7 @@ func (c *Client) PostForm(
 }
 
 // Head is a context-aware, filter-enabled extension of Head() in http.Client
-func (c *Client) Head(ctx core.Context, url string) (resp *http.Response, err error) {
+func (c *Client) Head(ctx fx.Context, url string) (resp *http.Response, err error) {
 	req, err := http.NewRequest("HEAD", url, nil)
 	if err != nil {
 		return nil, err
@@ -106,15 +106,15 @@ func (c *Client) Head(ctx core.Context, url string) (resp *http.Response, err er
 type BasicClient interface {
 	// Do sends an HTTP request and returns an HTTP response, following
 	// policy (e.g. redirects, cookies, auth) as configured on the client.
-	Do(ctx core.Context, req *http.Request) (resp *http.Response, err error)
+	Do(ctx fx.Context, req *http.Request) (resp *http.Response, err error)
 }
 
 // The BasicClientFunc type is an adapter to allow the use of ordinary functions as BasicClient.
-type BasicClientFunc func(ctx core.Context, req *http.Request) (resp *http.Response, err error)
+type BasicClientFunc func(ctx fx.Context, req *http.Request) (resp *http.Response, err error)
 
 // Do implements Do from the BasicClient interface
 func (f BasicClientFunc) Do(
-	ctx core.Context, req *http.Request,
+	ctx fx.Context, req *http.Request,
 ) (resp *http.Response, err error) {
 	return f(ctx, req)
 }

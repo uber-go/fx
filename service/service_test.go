@@ -26,7 +26,7 @@ import (
 	"testing"
 	"time"
 
-	"go.uber.org/fx/core/config"
+	"go.uber.org/fx/config"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
