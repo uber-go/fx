@@ -38,6 +38,11 @@ type Log interface {
 	// ulog uses uber-go/zap library as its child logger which needs pairs of key value objects
 	// in the form of zap.Fields(key, value). ulog performs field conversion from
 	// supplied keyvals pair to zap.Fields format.
+	//
+	// **IMPORTANT**: With should never be used if the resulting logger
+	// object is not being retained. If you need to add some context to
+	// a logging message, use the Error, Info, etc. functions
+	// and pass in additional interface{} pairs for logging.
 	With(keyvals ...interface{}) Log
 
 	// Check returns a zap.CheckedMessage if logging a message at the specified level is enabled.
