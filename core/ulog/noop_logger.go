@@ -18,27 +18,15 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package service
+package ulog
 
-import (
-	"go.uber.org/fx/core/config"
-	"go.uber.org/fx/core/ulog"
+import "github.com/uber-go/zap"
 
-	"github.com/opentracing/opentracing-go"
-	"github.com/uber-go/tally"
-)
-
-// NullHost is to be used in tests
-func NullHost() Host {
-	return &serviceCore{
-		standardConfig: serviceConfig{
-			ServiceName:        "dummy",
-			ServiceOwner:       "root@example.com",
-			ServiceDescription: "does cool stuff",
-		},
-		log:            ulog.NoopLogger,
-		scope:          tally.NoopScope,
-		configProvider: config.NewStaticProvider(nil),
-		tracer:         opentracing.NoopTracer{},
+func noopLogger() Log {
+	return &baselogger{
+		log: zap.New(zap.NullEncoder()),
 	}
 }
+
+// NoopLogger should be used in tests if you wish to discard the output
+var NoopLogger = noopLogger()
