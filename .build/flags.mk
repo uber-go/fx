@@ -1,9 +1,9 @@
 BENCH_FLAGS ?= -cpuprofile=cpu.pprof -memprofile=mem.pprof -benchmem
 PKGS ?= $(shell glide novendor)
 BENCH_PKGS ?= $(shell go list ./... | grep -v /vendor/)
+
 # Many Go tools take file globs or directories as arguments instead of packages.
-PKG_FILES ?= *.go service examples internal modules
-FILES_TO_FORMAT ?= *.go service internal modules
+PKG_FILES ?= *.go config internal metrics modules service tracing ulog
 
 # The linting tools evolve with each Go version, so run them only on the latest
 # stable release.
