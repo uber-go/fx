@@ -36,12 +36,9 @@
 //   import "go.uber.org/fx/ulog"
 //
 //   func main() {
-//     // Initialize logger object
-//     logBuilder := ulog.Builder()
-//
-//     // Optional, configure logger with configuration preferred by your service
+//     // Configure logger with configuration preferred by your service
 //     logConfig := ulog.Configuration{}
-//     logBuilder := logBuilder.WithConfiguration(&logConfig)
+//     logBuilder := ulog.Builder().WithConfiguration(&logConfig)
 //
 //     // build ulog.Log from logBuilder
 //     log := lobBuilder.Build()
