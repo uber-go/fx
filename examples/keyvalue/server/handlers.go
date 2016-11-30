@@ -27,9 +27,8 @@ import (
 	"go.uber.org/fx/examples/keyvalue/kv"
 	kvs "go.uber.org/fx/examples/keyvalue/kv/yarpc/keyvalueserver"
 	"go.uber.org/fx/service"
-	"go.uber.org/yarpc/transport"
-
 	"go.uber.org/yarpc"
+	"go.uber.org/yarpc/transport"
 )
 
 type YarpcHandler struct {

@@ -29,27 +29,21 @@ import (
 	"go.uber.org/yarpc/transport"
 )
 
-// Handler is a context-aware extension of transport.Handler.
-type Handler interface {
-	// Handle the given request, writing the response to the given ResponseWriter.
-	Handle(ctx fx.Context, req *transport.Request, resw transport.ResponseWriter) error
-}
-
 type handlerWrapper struct {
 	service.Host
-	h Handler
+	transport.Handler
 }
 
 // Handle calls Handler.Handle(ctx, req, resp) and use injected fx.context
 func (hw *handlerWrapper) Handle(ctx context.Context, req *transport.Request, resw transport.ResponseWriter) error {
 	fxctx := fx.NewContext(ctx, hw.Host)
-	return hw.h.Handle(fxctx, req, resw)
+	return hw.Handler.Handle(fxctx, req, resw)
 }
 
-// WrapHandler wraps the handler and returns implementation of transport.Handler for yarpc calls
-func WrapHandler(host service.Host, handler Handler) transport.Handler {
+// Wrap wraps the handler and returns implementation of transport.Handler for yarpc calls
+func Wrap(host service.Host, handler transport.Handler) transport.Handler {
 	return &handlerWrapper{
-		Host: host,
-		h:    handler,
+		Host:    host,
+		Handler: handler,
 	}
 }

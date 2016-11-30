@@ -29,7 +29,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.uber.org/fx"
 	"go.uber.org/fx/modules"
 	"go.uber.org/fx/service"
 
@@ -41,7 +40,7 @@ var _yarpcResponseBody = "hello world"
 // rpc.Handler implementation
 type dummyHandler struct{}
 
-func (d dummyHandler) Handle(ctx fx.Context, req *transport.Request, resp transport.ResponseWriter) error {
+func (d dummyHandler) Handle(ctx context.Context, req *transport.Request, resp transport.ResponseWriter) error {
 	arr := []byte(_yarpcResponseBody)
 	resp.Write(arr)
 	return nil
@@ -67,7 +66,7 @@ func dummyCreate(host service.Host) ([]transport.Registrant, error) {
 	reg = append(reg, transport.Registrant{
 		Service:   "foo",
 		Procedure: "bar",
-		Handler:   WrapHandler(host, dummyHandler{}),
+		Handler:   Wrap(host, dummyHandler{}),
 	})
 	return reg, nil
 }

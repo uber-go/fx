@@ -21,13 +21,13 @@
 package rpc
 
 import (
+	"context"
 	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"go.uber.org/fx"
 	"go.uber.org/fx/modules"
 	"go.uber.org/fx/service"
 	"go.uber.org/yarpc/transport"
@@ -83,7 +83,7 @@ func okCreate(host service.Host) ([]transport.Registrant, error) {
 	var reg []transport.Registrant
 	reg = append(reg, transport.Registrant{
 		Service: "foo",
-		Handler: WrapHandler(host, &MockHandler{host: host}),
+		Handler: Wrap(host, &MockHandler{host: host}),
 	})
 	return reg, nil
 }
@@ -93,8 +93,10 @@ func badCreateService(_ service.Host) ([]transport.Registrant, error) {
 }
 
 // Mock of Handler interface
-type MockHandler struct{ host service.Host }
+type MockHandler struct {
+	host service.Host
+}
 
-func (_m MockHandler) Handle(ctx fx.Context, req *transport.Request, resp transport.ResponseWriter) error {
+func (_m MockHandler) Handle(ctx context.Context, req *transport.Request, resp transport.ResponseWriter) error {
 	return nil
 }
