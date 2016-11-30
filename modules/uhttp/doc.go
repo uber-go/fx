@@ -35,7 +35,7 @@
 //   )
 //
 //   func main() {
-//     service, err := service.WithModules(
+//     svc, err := service.WithModules(
 //       uhttp.New(registerHTTP),
 //     ).Build()
 //
@@ -43,7 +43,7 @@
 //       log.Fatal("Could not initialize service: ", err)
 //     }
 //
-//     service.Start(true)
+//     svc.Start(true)
 //   }
 //
 //   func registerHTTP(service service.Host) []uhttp.RouteHandler {
