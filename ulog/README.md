@@ -14,7 +14,7 @@ interface provides a few benefits -
 ```go
 package main
 
-import "go.uber.org/fx/core/ulog"
+import "go.uber.org/fx/ulog"
 
 func main() {
   // Initialize logger object
