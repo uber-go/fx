@@ -26,9 +26,9 @@ import (
 
 	"go.uber.org/fx/examples/keyvalue/kv"
 	kvs "go.uber.org/fx/examples/keyvalue/kv/yarpc/keyvalueserver"
-
 	"go.uber.org/fx/modules/rpc"
 	"go.uber.org/fx/service"
+
 	"go.uber.org/yarpc"
 )
 

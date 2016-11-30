@@ -22,18 +22,17 @@ package rpc
 
 import (
 	"bytes"
+	"context"
 	"runtime"
 	"testing"
 	"time"
 
-	"golang.org/x/net/context"
-
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-
 	"go.uber.org/fx"
 	"go.uber.org/fx/modules"
 	"go.uber.org/fx/service"
+
 	"go.uber.org/yarpc/transport"
 )
 
