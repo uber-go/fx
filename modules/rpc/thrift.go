@@ -23,12 +23,13 @@ package rpc
 import (
 	"go.uber.org/fx/modules"
 	"go.uber.org/fx/service"
+	"go.uber.org/yarpc/transport"
 
 	"github.com/pkg/errors"
 )
 
 // CreateThriftServiceFunc creates a Thrift service from a service host
-type CreateThriftServiceFunc func(svc service.Host) ([]Registrant, error)
+type CreateThriftServiceFunc func(svc service.Host) ([]transport.Registrant, error)
 
 // ThriftModule creates a Thrift Module from a service func
 func ThriftModule(hookup CreateThriftServiceFunc, options ...modules.Option) service.ModuleCreateFunc {

@@ -49,8 +49,11 @@ func NewDispatcher(host service.Host, dispatcher yarpc.Dispatcher) Dispatcher {
 }
 
 // Register dispatcher
-func (d Dispatcher) Register(rs []Registrant) {
+func (d Dispatcher) Register(tRegistrant []transport.Registrant) {
 	var registrants []transport.Registrant
+
+	rs := wrapRegistrants(d.Host, tRegistrant)
+
 	for _, r := range rs {
 		registrants = append(registrants, transport.Registrant{
 			Service:   r.Service,
@@ -61,10 +64,7 @@ func (d Dispatcher) Register(rs []Registrant) {
 	d.Dispatcher.Register(registrants)
 }
 
-// WrapRegistrants wraps transport.Registrant into rpc package's wrapper Registrant
-// Users need to Wrap transport.Registrants into rpc.Registrants in order to use fx.Context
-// in their thrift APIs
-func WrapRegistrants(host service.Host, reg []transport.Registrant) []Registrant {
+func wrapRegistrants(host service.Host, reg []transport.Registrant) []Registrant {
 	var registrants []Registrant
 	for _, r := range reg {
 		reg := Registrant{

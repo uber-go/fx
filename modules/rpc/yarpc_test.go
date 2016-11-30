@@ -62,14 +62,14 @@ func TestCall_OK(t *testing.T) {
 	})
 }
 
-func dummyCreate(host service.Host) ([]Registrant, error) {
+func dummyCreate(host service.Host) ([]transport.Registrant, error) {
 	var reg []transport.Registrant
 	reg = append(reg, transport.Registrant{
 		Service:   "foo",
 		Procedure: "bar",
 		Handler:   WrapHandler(host, dummyHandler{}),
 	})
-	return WrapRegistrants(host, reg), nil
+	return reg, nil
 }
 
 func withYARPCModule(

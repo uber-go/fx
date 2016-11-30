@@ -26,8 +26,8 @@ import (
 
 	"go.uber.org/fx/examples/keyvalue/kv"
 	kvs "go.uber.org/fx/examples/keyvalue/kv/yarpc/keyvalueserver"
-	"go.uber.org/fx/modules/rpc"
 	"go.uber.org/fx/service"
+	"go.uber.org/yarpc/transport"
 
 	"go.uber.org/yarpc"
 )
@@ -38,9 +38,9 @@ type YarpcHandler struct {
 	items map[string]string
 }
 
-func NewYarpcThriftHandler(svc service.Host) ([]rpc.Registrant, error) {
+func NewYarpcThriftHandler(svc service.Host) ([]transport.Registrant, error) {
 	handler := &YarpcHandler{items: map[string]string{}}
-	return rpc.WrapRegistrants(svc, kvs.New(handler)), nil
+	return kvs.New(handler), nil
 }
 
 func (h *YarpcHandler) GetValue(ctx context.Context, req yarpc.ReqMeta, key *string) (string, yarpc.ResMeta, error) {

@@ -79,16 +79,16 @@ func errorOption(_ *service.ModuleCreateInfo) error {
 	return errors.New("bad option")
 }
 
-func okCreate(host service.Host) ([]Registrant, error) {
+func okCreate(host service.Host) ([]transport.Registrant, error) {
 	var reg []transport.Registrant
 	reg = append(reg, transport.Registrant{
 		Service: "foo",
 		Handler: WrapHandler(host, &MockHandler{host: host}),
 	})
-	return WrapRegistrants(host, reg), nil
+	return reg, nil
 }
 
-func badCreateService(_ service.Host) ([]Registrant, error) {
+func badCreateService(_ service.Host) ([]transport.Registrant, error) {
 	return nil, errors.New("can't create service")
 }
 
