@@ -26,6 +26,7 @@ import (
 
 	"go.uber.org/fx/examples/keyvalue/kv"
 	kvs "go.uber.org/fx/examples/keyvalue/kv/yarpc/keyvalueserver"
+
 	"go.uber.org/fx/modules/rpc"
 	"go.uber.org/fx/service"
 	"go.uber.org/yarpc"
@@ -54,7 +55,6 @@ func (h *YarpcHandler) GetValue(ctx context.Context, req yarpc.ReqMeta, key *str
 }
 
 func (h *YarpcHandler) SetValue(ctx context.Context, req yarpc.ReqMeta, key *string, value *string) (yarpc.ResMeta, error) {
-
 	h.Lock()
 
 	h.items[*key] = *value

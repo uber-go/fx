@@ -36,19 +36,19 @@ type Handler interface {
 
 type handlerWrapper struct {
 	service.Host
-	handler Handler
+	h Handler
 }
 
 // Handle calls Handler.Handle(ctx, req, resp) and use injected fx.context
-func (h *handlerWrapper) Handle(ctx context.Context, req *transport.Request, resw transport.ResponseWriter) error {
-	fxctx := fx.NewContext(ctx, h.Host)
-	return h.handler.Handle(fxctx, req, resw)
+func (hw *handlerWrapper) Handle(ctx context.Context, req *transport.Request, resw transport.ResponseWriter) error {
+	fxctx := fx.NewContext(ctx, hw.Host)
+	return hw.h.Handle(fxctx, req, resw)
 }
 
 // WrapHandler wraps the handler and returns implementation of transport.Handler for yarpc calls
 func WrapHandler(host service.Host, handler Handler) transport.Handler {
 	return &handlerWrapper{
-		Host:    host,
-		handler: handler,
+		Host: host,
+		h:    handler,
 	}
 }

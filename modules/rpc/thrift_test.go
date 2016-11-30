@@ -80,10 +80,11 @@ func errorOption(_ *service.ModuleCreateInfo) error {
 }
 
 func okCreate(host service.Host) ([]Registrant, error) {
-	reg := []transport.Registrant{transport.Registrant{
+	var reg []transport.Registrant
+	reg = append(reg, transport.Registrant{
 		Service: "foo",
 		Handler: WrapHandler(host, &MockHandler{host: host}),
-	}}
+	})
 	return WrapRegistrants(host, reg), nil
 }
 
