@@ -29,7 +29,7 @@ import (
 )
 
 func main() {
-	service, err := service.NewBuilder(
+	svc, err := service.NewBuilder(
 		service.WithObserver(&Observer{}),
 	).WithModules(
 		// Create a YARPC module that exposes endpoints
@@ -43,5 +43,5 @@ func main() {
 		log.Fatal("Unable to initialize service: ", err)
 	}
 
-	service.Start(true)
+	svc.Start(true)
 }

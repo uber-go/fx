@@ -33,7 +33,7 @@ func registerJSONers(service service.Host) ([]transport.Registrant, error) {
 }
 
 func main() {
-	service, err := service.WithModules(
+	svc, err := service.WithModules(
 		rpc.JSONModule(registerJSONers),
 		uhttp.New(registerHTTPers),
 	).Build()
@@ -42,5 +42,5 @@ func main() {
 		ulog.Logger().Fatal("Unable to initialize service: ", err)
 	}
 
-	service.Start(true)
+	svc.Start(true)
 }
