@@ -3,8 +3,8 @@
 `package ulog` provides an API wrapper around the logging library [zap](https://github.com/uber-go/zap).
 `ulog` uses the builder pattern to instantiate the logger. With `LogBuilder` you can perform pre-initialization setup
 by injecting configuration, custom logger, and log level prior to building the usable `ulog.Log` object. `ulog.Log`
-interface provides a few benefits -
-- Decouple services from the logger used undeaneath the framework.
+interface provides a few benefits:
+- Decouple services from the logger used underneath the framework.
 - Easy to use API for logging.
 - Easily swappable backend logger without changing the service.
 
