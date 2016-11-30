@@ -19,5 +19,3 @@
 // THE SOFTWARE.
 
 package rpc
-
-// Its time to write rpc test
