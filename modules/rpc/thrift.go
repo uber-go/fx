@@ -25,11 +25,10 @@ import (
 	"go.uber.org/fx/service"
 
 	"github.com/pkg/errors"
-	"go.uber.org/yarpc/transport"
 )
 
 // CreateThriftServiceFunc creates a Thrift service from a service host
-type CreateThriftServiceFunc func(svc service.Host) ([]transport.Registrant, error)
+type CreateThriftServiceFunc func(svc service.Host) ([]Registrant, error)
 
 // ThriftModule creates a Thrift Module from a service func
 func ThriftModule(hookup CreateThriftServiceFunc, options ...modules.Option) service.ModuleCreateFunc {

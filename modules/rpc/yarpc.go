@@ -39,7 +39,7 @@ import (
 // YarpcModule is an implementation of a core module using YARPC
 type YarpcModule struct {
 	modules.ModuleBase
-	rpc          yarpc.Dispatcher
+	rpc          Dispatcher
 	register     registerServiceFunc
 	config       yarpcConfig
 	log          ulog.Log
@@ -139,7 +139,7 @@ func (m *YarpcModule) Start(readyCh chan<- struct{}) <-chan error {
 	// TODO update log object to be accessed via context.Context #74
 	m.log.Info("Service started", "service", m.config.AdvertiseName, "port", m.config.Bind)
 
-	ret <- m.rpc.Start()
+	ret <- m.rpc.Dispatcher.Start()
 	readyCh <- struct{}{}
 	return ret
 }
@@ -148,10 +148,9 @@ func (m *YarpcModule) Start(readyCh chan<- struct{}) <-chan error {
 func (m *YarpcModule) Stop() error {
 	m.stateMu.Lock()
 	defer m.stateMu.Unlock()
-
-	if m.rpc != nil {
-		err := m.rpc.Stop()
-		m.rpc = nil
+	if m.rpc.Dispatcher != nil {
+		err := m.rpc.Dispatcher.Stop()
+		m.rpc.Dispatcher = nil
 		return err
 	}
 	return nil
@@ -161,16 +160,16 @@ func (m *YarpcModule) Stop() error {
 func (m *YarpcModule) IsRunning() bool {
 	m.stateMu.RLock()
 	defer m.stateMu.RUnlock()
-	return m.rpc != nil
+	return m.rpc.Dispatcher != nil
 }
 
-type yarpcDispatcherFn func(service.Host, yarpc.Config) (yarpc.Dispatcher, error)
+type yarpcDispatcherFn func(service.Host, yarpc.Config) (Dispatcher, error)
 
 // RegisterDispatcher allows you to override the YARPC dispatcher registration
 func RegisterDispatcher(dispatchFn yarpcDispatcherFn) {
 	_dispatcherFn = dispatchFn
 }
 
-func defaultYarpcDispatcher(_ service.Host, cfg yarpc.Config) (yarpc.Dispatcher, error) {
-	return yarpc.NewDispatcher(cfg), nil
+func defaultYarpcDispatcher(host service.Host, cfg yarpc.Config) (Dispatcher, error) {
+	return NewDispatcher(host, yarpc.NewDispatcher(cfg)), nil
 }

@@ -27,6 +27,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"go.uber.org/fx"
 	"go.uber.org/fx/modules"
 	"go.uber.org/fx/service"
 	"go.uber.org/yarpc/transport"
@@ -78,12 +79,21 @@ func errorOption(_ *service.ModuleCreateInfo) error {
 	return errors.New("bad option")
 }
 
-func okCreate(_ service.Host) ([]transport.Registrant, error) {
-	return []transport.Registrant{{
+func okCreate(host service.Host) ([]Registrant, error) {
+	reg := []transport.Registrant{transport.Registrant{
 		Service: "foo",
-	}}, nil
+		Handler: WrapHandler(host, &MockHandler{host: host}),
+	}}
+	return WrapRegistrants(host, reg), nil
 }
 
-func badCreateService(_ service.Host) ([]transport.Registrant, error) {
+func badCreateService(_ service.Host) ([]Registrant, error) {
 	return nil, errors.New("can't create service")
+}
+
+// Mock of Handler interface
+type MockHandler struct{ host service.Host }
+
+func (_m MockHandler) Handle(ctx fx.Context, req *transport.Request, resp transport.ResponseWriter) error {
+	return nil
 }

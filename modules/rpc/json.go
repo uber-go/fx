@@ -23,12 +23,10 @@ package rpc
 import (
 	"go.uber.org/fx/modules"
 	"go.uber.org/fx/service"
-
-	"go.uber.org/yarpc/transport"
 )
 
 // CreateJSONRegistrantsFunc returns a slice of registrants from a service host
-type CreateJSONRegistrantsFunc func(service service.Host) ([]transport.Registrant, error)
+type CreateJSONRegistrantsFunc func(service service.Host) ([]Registrant, error)
 
 // JSONModule instantiates a core module from a registrant func
 func JSONModule(hookup CreateJSONRegistrantsFunc, options ...modules.Option) service.ModuleCreateFunc {

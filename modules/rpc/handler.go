@@ -20,4 +20,35 @@
 
 package rpc
 
-// Its time to write rpc test
+import (
+	"context"
+
+	"go.uber.org/fx"
+	"go.uber.org/fx/service"
+	"go.uber.org/yarpc/transport"
+)
+
+// Handler is a context-aware extension of transport.Handler.
+type Handler interface {
+	// Handle the given request, writing the response to the given ResponseWriter.
+	Handle(ctx fx.Context, req *transport.Request, resw transport.ResponseWriter) error
+}
+
+type handlerWrapper struct {
+	service.Host
+	handler Handler
+}
+
+// Handle calls Handler.Handle(ctx, req, resp) and use injected fx.context
+func (h *handlerWrapper) Handle(ctx context.Context, req *transport.Request, resw transport.ResponseWriter) error {
+	fxctx := fx.NewContext(ctx, h.Host)
+	return h.handler.Handle(fxctx, req, resw)
+}
+
+// WrapHandler wraps the handler and returns implementation of transport.Handler for yarpc calls
+func WrapHandler(host service.Host, handler Handler) transport.Handler {
+	return &handlerWrapper{
+		Host:    host,
+		handler: handler,
+	}
+}
