@@ -25,6 +25,7 @@ import (
 	"sync"
 
 	"go.uber.org/fx/config"
+	"go.uber.org/fx/metrics"
 	"go.uber.org/fx/ulog"
 
 	"github.com/opentracing/opentracing-go"
@@ -39,6 +40,7 @@ type Host interface {
 	Roles() []string
 	State() State
 	Metrics() tally.Scope
+	RuntimeMetrics() *metrics.RuntimeReporter
 	Observer() Observer
 	Config() config.Provider
 	Resources() map[string]interface{}
@@ -64,19 +66,20 @@ type SetContainerer interface {
 }
 
 type serviceCore struct {
-	standardConfig serviceConfig
-	roles          []string
-	state          State
-	configProvider config.Provider
-	scopeMux       sync.Mutex
-	scope          tally.RootScope
-	observer       Observer
-	resources      map[string]interface{}
-	logConfig      ulog.Configuration
-	log            ulog.Log
-	tracerConfig   jaegerconfig.Configuration
-	tracer         opentracing.Tracer
-	tracerCloser   io.Closer
+	standardConfig  serviceConfig
+	roles           []string
+	state           State
+	configProvider  config.Provider
+	scopeMux        sync.Mutex
+	scope           tally.RootScope
+	runtimeReporter *metrics.RuntimeReporter
+	observer        Observer
+	resources       map[string]interface{}
+	logConfig       ulog.Configuration
+	log             ulog.Log
+	tracerConfig    jaegerconfig.Configuration
+	tracer          opentracing.Tracer
+	tracerCloser    io.Closer
 }
 
 var _ Host = &serviceCore{}
@@ -110,6 +113,10 @@ func (s *serviceCore) Resources() map[string]interface{} {
 
 func (s *serviceCore) Metrics() tally.Scope {
 	return s.scope
+}
+
+func (s *serviceCore) RuntimeMetrics() *metrics.RuntimeReporter {
+	return s.runtimeReporter
 }
 
 func (s *serviceCore) Observer() Observer {

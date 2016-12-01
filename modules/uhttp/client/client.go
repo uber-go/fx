@@ -43,6 +43,9 @@ func New(client *http.Client, filters ...Filter) *Client {
 	return &Client{Client: client, filters: filters}
 }
 
+// DefaultClient is the default uhttp client with defaults for http client and filters.
+var DefaultClient = New(http.DefaultClient)
+
 // Do is a context-aware, filter-enabled extension of Do() in http.Client
 func (c *Client) Do(ctx fx.Context, req *http.Request) (resp *http.Response, err error) {
 	filters := c.filters

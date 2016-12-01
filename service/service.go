@@ -21,6 +21,8 @@
 package service
 
 import (
+	"time"
+
 	"go.uber.org/fx/config"
 	"go.uber.org/fx/metrics"
 	"go.uber.org/fx/tracing"
@@ -152,6 +154,10 @@ func New(options ...Option) (Owner, error) {
 		}
 
 		metrics.Freeze()
+	}
+
+	if svc.RuntimeMetrics() == nil {
+		svc.runtimeReporter = metrics.StartReportingRuntimeMetrics(svc.scope, time.Second)
 	}
 
 	if svc.Tracer() == nil {
