@@ -23,40 +23,122 @@ package rpc
 import (
 	"bytes"
 	"context"
+	"runtime"
 	"testing"
+	"time"
 
-	"go.uber.org/yarpc/encoding/raw"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"go.uber.org/fx/modules"
+	"go.uber.org/fx/service"
+
 	"go.uber.org/yarpc/transport"
 )
+
+var _yarpcResponseBody = "hello world"
+
+// rpc.Handler implementation
+type dummyHandler struct{}
+
+func (d dummyHandler) Handle(ctx context.Context, req *transport.Request, resp transport.ResponseWriter) error {
+	arr := []byte(_yarpcResponseBody)
+	resp.Write(arr)
+	return nil
+}
 
 func TestRegisterDispatcher_OK(t *testing.T) {
 	RegisterDispatcher(defaultYarpcDispatcher)
 }
 
-func makeRequest() *transport.Request {
-	return &transport.Request{
-		Caller:    "the test suite",
-		Service:   "any service",
-		Encoding:  raw.Encoding,
-		Procedure: "hello",
-		Body:      bytes.NewReader([]byte{1, 2, 3}),
+func TestCall_OK(t *testing.T) {
+	withYARPCModule(t, dummyCreate, nil, false, func(m *YarpcModule) {
+		assert.NotNil(t, m)
+		handler, err := m.rpc.GetHandler("foo", "bar")
+		require.NoError(t, err)
+		fake := new(FakeResponseWriter)
+		handler.Handle(context.Background(), &transport.Request{}, fake)
+		assert.Equal(t, _yarpcResponseBody, string(fake.Body.Bytes()))
+	})
+}
+
+func dummyCreate(host service.Host) ([]transport.Registrant, error) {
+	var reg []transport.Registrant
+	reg = append(reg, transport.Registrant{
+		Service:   "foo",
+		Procedure: "bar",
+		Handler:   Wrap(host, dummyHandler{}),
+	})
+	return reg, nil
+}
+
+func withYARPCModule(
+	t testing.TB,
+	hookup CreateThriftServiceFunc,
+	options []modules.Option,
+	expectError bool,
+	fn func(*YarpcModule),
+) {
+	mi := service.ModuleCreateInfo{
+		Host: service.NullHost(),
+	}
+	mod, err := newYarpcThriftModule(mi, hookup, options...)
+	if expectError {
+		require.Error(t, err, "Expected error instantiating module")
+		fn(nil)
+		return
+	}
+
+	require.NoError(t, err, "Unable to instantiate module")
+
+	require.NoError(t, mod.Initialize(mi.Host), "Expected initialize to succeed")
+
+	errs := make(chan error, 1)
+	readyChan := make(chan struct{}, 1)
+	go func() {
+		errs <- <-mod.Start(readyChan)
+	}()
+	select {
+	case <-readyChan:
+	case <-time.After(time.Second):
+		assert.Fail(t, "Module failed to start after 1 second")
+	}
+
+	var exitError error
+	defer func() {
+		exitError = mod.Stop()
+	}()
+
+	fn(mod)
+	runtime.Gosched()
+	assert.NoError(t, exitError, "No exit error should occur")
+	select {
+	case err := <-errs:
+		assert.NoError(t, err, "Got error from listening")
+	default:
 	}
 }
 
-func makeHandler(err error) transport.Handler {
-	return dummyHandler{
-		err: err,
+// FakeResponseWriter is a ResponseWriter implementation that records
+// headers and body written to it.
+type FakeResponseWriter struct {
+	IsApplicationError bool
+	Headers            transport.Headers
+	Body               bytes.Buffer
+}
+
+// SetApplicationError for FakeResponseWriter.
+func (fw *FakeResponseWriter) SetApplicationError() {
+	fw.IsApplicationError = true
+}
+
+// AddHeaders for FakeResponseWriter.
+func (fw *FakeResponseWriter) AddHeaders(h transport.Headers) {
+	for k, v := range h.Items() {
+		fw.Headers = fw.Headers.With(k, v)
 	}
 }
 
-type dummyHandler struct {
-	err error
-}
-
-func (d dummyHandler) Handle(
-	ctx context.Context,
-	r *transport.Request,
-	w transport.ResponseWriter,
-) error {
-	return d.err
+// Write for FakeResponseWriter.
+func (fw *FakeResponseWriter) Write(s []byte) (int, error) {
+	return fw.Body.Write(s)
 }

@@ -23,7 +23,6 @@ package rpc
 import (
 	"go.uber.org/fx/modules"
 	"go.uber.org/fx/service"
-
 	"go.uber.org/yarpc/transport"
 )
 

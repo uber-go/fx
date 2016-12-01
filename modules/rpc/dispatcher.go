@@ -21,40 +21,30 @@
 package rpc
 
 import (
-	"go.uber.org/fx/modules"
 	"go.uber.org/fx/service"
-	"go.uber.org/yarpc/transport"
 
-	"github.com/pkg/errors"
+	"go.uber.org/yarpc"
+	"go.uber.org/yarpc/transport"
 )
 
-// CreateThriftServiceFunc creates a Thrift service from a service host
-type CreateThriftServiceFunc func(svc service.Host) ([]transport.Registrant, error)
+// Dispatcher is wrapper around yarpc.Dispatcher with rpc.Handler registration
+type Dispatcher struct {
+	yarpc.Dispatcher
+	service.Host
+}
 
-// ThriftModule creates a Thrift Module from a service func
-func ThriftModule(hookup CreateThriftServiceFunc, options ...modules.Option) service.ModuleCreateFunc {
-	return func(mi service.ModuleCreateInfo) ([]service.Module, error) {
-		mod, err := newYarpcThriftModule(mi, hookup, options...)
-		if err != nil {
-			return nil, errors.Wrap(err, "unable to instantiate Thrift module")
-		}
-
-		return []service.Module{mod}, nil
+// NewDispatcher creates a new dispatcher for yarpc
+func NewDispatcher(host service.Host, dispatcher yarpc.Dispatcher) Dispatcher {
+	return Dispatcher{
+		Host:       host,
+		Dispatcher: dispatcher,
 	}
 }
 
-func newYarpcThriftModule(
-	mi service.ModuleCreateInfo,
-	createService CreateThriftServiceFunc,
-	options ...modules.Option,
-) (*YarpcModule, error) {
-	registrants, err := createService(mi.Host)
-	if err != nil {
-		return nil, errors.Wrap(err, "unable to create YARPC thrift handler")
+// Register dispatcher
+func (d Dispatcher) Register(registrants []transport.Registrant) {
+	for _, r := range registrants {
+		r.Handler = Wrap(d.Host, r.Handler)
 	}
-
-	reg := func(mod *YarpcModule) {
-		mod.rpc.Register(registrants)
-	}
-	return newYarpcModule(mi, reg, options...)
+	d.Dispatcher.Register(registrants)
 }

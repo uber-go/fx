@@ -21,6 +21,7 @@
 package rpc
 
 import (
+	"context"
 	"errors"
 	"testing"
 
@@ -78,12 +79,24 @@ func errorOption(_ *service.ModuleCreateInfo) error {
 	return errors.New("bad option")
 }
 
-func okCreate(_ service.Host) ([]transport.Registrant, error) {
-	return []transport.Registrant{{
+func okCreate(host service.Host) ([]transport.Registrant, error) {
+	var reg []transport.Registrant
+	reg = append(reg, transport.Registrant{
 		Service: "foo",
-	}}, nil
+		Handler: Wrap(host, &MockHandler{host: host}),
+	})
+	return reg, nil
 }
 
 func badCreateService(_ service.Host) ([]transport.Registrant, error) {
 	return nil, errors.New("can't create service")
+}
+
+// Mock of Handler interface
+type MockHandler struct {
+	host service.Host
+}
+
+func (_m MockHandler) Handle(ctx context.Context, req *transport.Request, resp transport.ResponseWriter) error {
+	return nil
 }

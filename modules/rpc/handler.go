@@ -21,40 +21,29 @@
 package rpc
 
 import (
-	"go.uber.org/fx/modules"
-	"go.uber.org/fx/service"
-	"go.uber.org/yarpc/transport"
+	"context"
 
-	"github.com/pkg/errors"
+	"go.uber.org/fx"
+	"go.uber.org/fx/service"
+
+	"go.uber.org/yarpc/transport"
 )
 
-// CreateThriftServiceFunc creates a Thrift service from a service host
-type CreateThriftServiceFunc func(svc service.Host) ([]transport.Registrant, error)
-
-// ThriftModule creates a Thrift Module from a service func
-func ThriftModule(hookup CreateThriftServiceFunc, options ...modules.Option) service.ModuleCreateFunc {
-	return func(mi service.ModuleCreateInfo) ([]service.Module, error) {
-		mod, err := newYarpcThriftModule(mi, hookup, options...)
-		if err != nil {
-			return nil, errors.Wrap(err, "unable to instantiate Thrift module")
-		}
-
-		return []service.Module{mod}, nil
-	}
+type handlerWrapper struct {
+	service.Host
+	transport.Handler
 }
 
-func newYarpcThriftModule(
-	mi service.ModuleCreateInfo,
-	createService CreateThriftServiceFunc,
-	options ...modules.Option,
-) (*YarpcModule, error) {
-	registrants, err := createService(mi.Host)
-	if err != nil {
-		return nil, errors.Wrap(err, "unable to create YARPC thrift handler")
-	}
+// Handle calls Handler.Handle(ctx, req, resp) and use injected fx.context
+func (hw *handlerWrapper) Handle(ctx context.Context, req *transport.Request, resw transport.ResponseWriter) error {
+	fxctx := fx.NewContext(ctx, hw.Host)
+	return hw.Handler.Handle(fxctx, req, resw)
+}
 
-	reg := func(mod *YarpcModule) {
-		mod.rpc.Register(registrants)
+// Wrap wraps the handler and returns implementation of transport.Handler for yarpc calls
+func Wrap(host service.Host, handler transport.Handler) transport.Handler {
+	return &handlerWrapper{
+		Host:    host,
+		Handler: handler,
 	}
-	return newYarpcModule(mi, reg, options...)
 }
