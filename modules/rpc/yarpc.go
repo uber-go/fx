@@ -39,12 +39,12 @@ import (
 // YarpcModule is an implementation of a core module using YARPC
 type YarpcModule struct {
 	modules.ModuleBase
-	rpc          yarpc.Dispatcher
-	register     registerServiceFunc
-	config       yarpcConfig
-	log          ulog.Log
-	stateMu      sync.RWMutex
-	interceptors []transport.Interceptor
+	rpc                yarpc.Dispatcher
+	register           registerServiceFunc
+	config             yarpcConfig
+	log                ulog.Log
+	stateMu            sync.RWMutex
+	inboundMiddlewares []transport.UnaryInboundMiddleware
 }
 
 var (
@@ -97,12 +97,12 @@ func newYarpcModule(
 	// found values, update module
 	module.config = *cfg
 
-	module.interceptors = interceptorsFromCreateInfo(mi)
+	module.inboundMiddlewares = inboundMiddlewaresFromCreateInfo(mi)
 
 	return module, err
 }
 
-// Initialize sets up a YAPR-backed module
+// Initialize sets up a YARPC-backed module
 func (m *YarpcModule) Initialize(service service.Host) error {
 	return nil
 }
@@ -119,15 +119,17 @@ func (m *YarpcModule) Start(readyCh chan<- struct{}) <-chan error {
 		return ret
 	}
 
-	interceptor := yarpc.Interceptors(m.interceptors...)
+	interceptor := yarpc.UnaryInboundMiddleware(m.inboundMiddlewares...)
 
 	m.rpc, err = _dispatcherFn(m.Host(), yarpc.Config{
 		Name: m.config.AdvertiseName,
 		Inbounds: []transport.Inbound{
 			tch.NewInbound(channel, tch.ListenAddr(m.config.Bind)),
 		},
-		Interceptor: interceptor,
-		Tracer:      m.Tracer(),
+		InboundMiddleware: yarpc.InboundMiddleware{
+			Unary: interceptor,
+		},
+		Tracer: m.Tracer(),
 	})
 
 	if err != nil {

@@ -30,18 +30,18 @@ import (
 	"go.uber.org/yarpc/transport"
 )
 
-func TestWithInterceptors_OK(t *testing.T) {
-	opt := WithInterceptors(transport.NopInterceptor)
+func TestWithUnaryInboundMiddleware_OK(t *testing.T) {
+	opt := WithUnaryInboundMiddleware(transport.NopUnaryInboundMiddleware)
 	mc := &service.ModuleCreateInfo{
 		Items: make(map[string]interface{}),
 	}
 
 	require.NoError(t, opt(mc))
-	assert.Equal(t, 1, len(interceptorsFromCreateInfo(*mc)))
+	assert.Equal(t, 1, len(inboundMiddlewaresFromCreateInfo(*mc)))
 }
 
-func TestWithInterceptors_PanicsBadData(t *testing.T) {
-	opt := WithInterceptors(transport.NopInterceptor)
+func TestWithUnaryInboundMiddleware_PanicsBadData(t *testing.T) {
+	opt := WithUnaryInboundMiddleware(transport.NopUnaryInboundMiddleware)
 	mc := &service.ModuleCreateInfo{
 		Items: map[string]interface{}{
 			_interceptorKey: "foo",
