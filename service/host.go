@@ -203,6 +203,8 @@ func (s *host) AddModules(modules ...ModuleCreateFunc) error {
 // Start runs the serve loop. If Shutdown() was called then the shutdown reason
 // will be returned.
 func (s *host) Start(waitForShutdown bool) (<-chan Exit, <-chan struct{}, error) {
+	// TODO(glib): this function has a lot of different exits and different
+	// mutex unlock spots, maybe a rewrite is in order?
 	var err error
 	s.locked = true
 	s.shutdownMu.Lock()
@@ -213,6 +215,7 @@ func (s *host) Start(waitForShutdown bool) (<-chan Exit, <-chan struct{}, error)
 		readyCh <- struct{}{}
 	}()
 	if s.inShutdown {
+		s.shutdownMu.Unlock()
 		return nil, readyCh, fmt.Errorf("errShuttingDown")
 	} else if s.IsRunning() {
 		s.shutdownMu.Unlock()
@@ -241,6 +244,7 @@ func (s *host) Start(waitForShutdown bool) (<-chan Exit, <-chan struct{}, error)
 				if _, err := s.shutdown(e, "", nil); err != nil {
 					s.Logger().Error("Unable to shut down modules", "initialError", e, "shutdownError", err)
 				}
+				s.shutdownMu.Unlock()
 				return errChan, readyCh, e
 			}
 		}
