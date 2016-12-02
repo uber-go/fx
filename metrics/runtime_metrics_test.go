@@ -31,32 +31,39 @@ import (
 
 func TestRuntimeReporter(t *testing.T) {
 	reporter := NewRuntimeReporter(tally.NoopScope, time.Millisecond)
+	defer closeReporter(t, reporter)
+
 	assert.False(t, reporter.IsRunning())
 	reporter.Start()
 	assert.True(t, reporter.IsRunning())
 	runtime.GC()
 	time.Sleep(5 * time.Millisecond)
 	reporter.report()
-	reporter.Close()
 }
 
 func TestStartRuntimeReporter(t *testing.T) {
 	reporter := StartReportingRuntimeMetrics(tally.NoopScope, time.Millisecond)
-	assert.True(t, reporter.IsRunning())
+	defer closeReporter(t, reporter)
 
+	assert.True(t, reporter.IsRunning())
 	runtime.GC()
-	time.Sleep(5 * time.Millisecond)
+	time.Sleep(time.Millisecond)
 	reporter.report()
-	time.Sleep(5 * time.Millisecond)
+	time.Sleep(time.Millisecond)
 	reporter.report()
-	reporter.Close()
 }
 
 func TestStartRuntimeReporterStartAgain(t *testing.T) {
 	reporter := StartReportingRuntimeMetrics(tally.NoopScope, time.Millisecond)
-	assert.True(t, reporter.IsRunning())
+	defer closeReporter(t, reporter)
 
+	assert.True(t, reporter.IsRunning())
 	reporter.Start()
 	assert.True(t, reporter.IsRunning())
-	reporter.Close()
+}
+
+func closeReporter(t *testing.T, r *RuntimeReporter) {
+	r.Close()
+	_, ok := <-r.quit
+	assert.False(t, ok)
 }
