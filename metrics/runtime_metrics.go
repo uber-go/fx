@@ -28,21 +28,18 @@ import (
 	"github.com/uber-go/tally"
 )
 
-// StartReportingRuntimeMetrics starts reporting runtime metrics under given metrics scope with
+// StartCollectingRuntimeMetrics starts generating runtime metrics under given metrics scope with
 // given frequency.
-// This is just a convenience wrapper around creating and starting a new reporter manually.
 // Recommended usage:
-//     StartReportingRuntimeMetrics(rootScope.Scope("runtime"), time.Second)
-// If you want to stop the reporter later:
-//     rmr := StartReportingRuntimeMetrics(rootScope.Scope("runtime"), time.Second)
+//     rmr := StartCollectingRuntimeMetrics(rootScope.Scope("runtime"), time.Second)
 //     ...
 //     rmr.Close()
-func StartReportingRuntimeMetrics(
-	scope tally.Scope, reportInterval time.Duration,
-) *RuntimeReporter {
-	runtimeReporter := NewRuntimeReporter(scope, reportInterval)
-	runtimeReporter.Start()
-	return runtimeReporter
+func StartCollectingRuntimeMetrics(
+	scope tally.Scope, collectInterval time.Duration,
+) *RuntimeCollector {
+	runtimeCollector := NewRuntimeCollector(scope, collectInterval)
+	runtimeCollector.Start()
+	return runtimeCollector
 }
 
 type runtimeMetrics struct {
@@ -58,24 +55,24 @@ type runtimeMetrics struct {
 	lastNumGC       uint32
 }
 
-// RuntimeReporter is a struct containing the state of the RuntimeMetricsReporter.
-type RuntimeReporter struct {
-	scope          tally.Scope
-	reportInterval time.Duration
-	metrics        runtimeMetrics
-	started        bool
-	quit           chan struct{}
+// RuntimeCollector is a struct containing the state of the runtimeMetrics.
+type RuntimeCollector struct {
+	scope           tally.Scope
+	collectInterval time.Duration
+	metrics         runtimeMetrics
+	started         bool
+	quit            chan struct{}
 }
 
-// NewRuntimeReporter creates a new RuntimeMetricsReporter.
-func NewRuntimeReporter(
-	scope tally.Scope, reportInterval time.Duration,
-) *RuntimeReporter {
+// NewRuntimeCollector creates a new RuntimeCollector.
+func NewRuntimeCollector(
+	scope tally.Scope, collectInterval time.Duration,
+) *RuntimeCollector {
 	var memstats runtime.MemStats
 	runtime.ReadMemStats(&memstats)
-	return &RuntimeReporter{
-		scope:          scope,
-		reportInterval: reportInterval,
+	return &RuntimeCollector{
+		scope:           scope,
+		collectInterval: collectInterval,
 		metrics: runtimeMetrics{
 			numGoRoutines:   scope.Gauge("num-goroutines"),
 			goMaxProcs:      scope.Gauge("gomaxprocs"),
@@ -93,22 +90,22 @@ func NewRuntimeReporter(
 	}
 }
 
-// IsRunning returns true if the reporter has been started and false if not.
-func (r *RuntimeReporter) IsRunning() bool {
+// IsRunning returns true if the collector has been started and false if not.
+func (r *RuntimeCollector) IsRunning() bool {
 	return r.started
 }
 
-// Start starts the reporter thread that periodically emits metrics.
-func (r *RuntimeReporter) Start() {
+// Start starts the collector thread that periodically emits metrics.
+func (r *RuntimeCollector) Start() {
 	if r.started {
 		return
 	}
 	go func() {
-		ticker := time.NewTicker(r.reportInterval)
+		ticker := time.NewTicker(r.collectInterval)
 		for {
 			select {
 			case <-ticker.C:
-				r.report()
+				r.generate()
 			case <-r.quit:
 				ticker.Stop()
 				return
@@ -118,8 +115,8 @@ func (r *RuntimeReporter) Start() {
 	r.started = true
 }
 
-// report Sends runtime metrics to the local metrics collector.
-func (r *RuntimeReporter) report() {
+// generate sends runtime metrics to the local metrics collector.
+func (r *RuntimeCollector) generate() {
 	var memStats runtime.MemStats
 	runtime.ReadMemStats(&memStats)
 
@@ -137,7 +134,7 @@ func (r *RuntimeReporter) report() {
 	if delta := num - lastNum; delta > 0 {
 		r.metrics.numGC.Inc(int64(delta))
 		if delta > 255 {
-			// too many GCs happened, the timestamps buffer got wrapped around. Report only the last 256
+			// too many GCs happened, the timestamps buffer got wrapped around. Generate only the last 256
 			lastNum = num - 256
 		}
 		for i := lastNum; i != num; i++ {
@@ -147,8 +144,8 @@ func (r *RuntimeReporter) report() {
 	}
 }
 
-// Close stops reporting runtime metrics. The reporter cannot be started again after it's
+// Close stops collecting runtime metrics. It cannot be started again after it's
 // been stopped.
-func (r *RuntimeReporter) Close() {
+func (r *RuntimeCollector) Close() {
 	close(r.quit)
 }

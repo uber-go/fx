@@ -149,9 +149,9 @@ func (s *host) shutdown(err error, reason string, exitCode *int) (bool, error) {
 		}
 	}
 
-	// Stop runtime metrics reporting. Uses scope, should be closed before scope is closed.
-	if s.runtimeReporter != nil {
-		s.runtimeReporter.Close()
+	// Stop runtime metrics collection. Uses scope, should be closed before scope is closed.
+	if s.runtimeCollector != nil {
+		s.runtimeCollector.Close()
 	}
 
 	// Stop the metrics reporting

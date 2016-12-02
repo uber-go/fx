@@ -156,8 +156,8 @@ func New(options ...Option) (Owner, error) {
 		metrics.Freeze()
 	}
 
-	if svc.RuntimeMetrics() == nil {
-		svc.runtimeReporter = metrics.StartReportingRuntimeMetrics(svc.scope, time.Second)
+	if svc.RuntimeMetricsCollector() == nil {
+		svc.runtimeCollector = metrics.StartCollectingRuntimeMetrics(svc.scope, time.Second)
 	}
 
 	if svc.Tracer() == nil {

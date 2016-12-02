@@ -29,40 +29,40 @@ import (
 	"github.com/uber-go/tally"
 )
 
-func TestRuntimeReporter(t *testing.T) {
-	reporter := NewRuntimeReporter(tally.NoopScope, time.Millisecond)
-	defer closeReporter(t, reporter)
+func TestRuntimecollector(t *testing.T) {
+	collector := NewRuntimeCollector(tally.NoopScope, time.Millisecond)
+	defer closeCollector(t, collector)
 
-	assert.False(t, reporter.IsRunning())
-	reporter.Start()
-	assert.True(t, reporter.IsRunning())
+	assert.False(t, collector.IsRunning())
+	collector.Start()
+	assert.True(t, collector.IsRunning())
 	runtime.GC()
 	time.Sleep(5 * time.Millisecond)
-	reporter.report()
+	collector.generate()
 }
 
-func TestStartRuntimeReporter(t *testing.T) {
-	reporter := StartReportingRuntimeMetrics(tally.NoopScope, time.Millisecond)
-	defer closeReporter(t, reporter)
+func TestStartRuntimecollector(t *testing.T) {
+	collector := StartCollectingRuntimeMetrics(tally.NoopScope, time.Millisecond)
+	defer closeCollector(t, collector)
 
-	assert.True(t, reporter.IsRunning())
+	assert.True(t, collector.IsRunning())
 	runtime.GC()
 	time.Sleep(time.Millisecond)
-	reporter.report()
+	collector.generate()
 	time.Sleep(time.Millisecond)
-	reporter.report()
+	collector.generate()
 }
 
-func TestStartRuntimeReporterStartAgain(t *testing.T) {
-	reporter := StartReportingRuntimeMetrics(tally.NoopScope, time.Millisecond)
-	defer closeReporter(t, reporter)
+func TestStartRuntimecollectorStartAgain(t *testing.T) {
+	collector := StartCollectingRuntimeMetrics(tally.NoopScope, time.Millisecond)
+	defer closeCollector(t, collector)
 
-	assert.True(t, reporter.IsRunning())
-	reporter.Start()
-	assert.True(t, reporter.IsRunning())
+	assert.True(t, collector.IsRunning())
+	collector.Start()
+	assert.True(t, collector.IsRunning())
 }
 
-func closeReporter(t *testing.T, r *RuntimeReporter) {
+func closeCollector(t *testing.T, r *RuntimeCollector) {
 	r.Close()
 	_, ok := <-r.quit
 	assert.False(t, ok)

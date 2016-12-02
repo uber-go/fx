@@ -40,7 +40,7 @@ type Host interface {
 	Roles() []string
 	State() State
 	Metrics() tally.Scope
-	RuntimeMetrics() *metrics.RuntimeReporter
+	RuntimeMetricsCollector() *metrics.RuntimeCollector
 	Observer() Observer
 	Config() config.Provider
 	Resources() map[string]interface{}
@@ -66,16 +66,16 @@ type SetContainerer interface {
 }
 
 type metricsCore struct {
-	scope           tally.RootScope
-	runtimeReporter *metrics.RuntimeReporter
+	scope            tally.RootScope
+	runtimeCollector *metrics.RuntimeCollector
 }
 
 func (mc *metricsCore) Metrics() tally.Scope {
 	return mc.scope
 }
 
-func (mc *metricsCore) RuntimeMetrics() *metrics.RuntimeReporter {
-	return mc.runtimeReporter
+func (mc *metricsCore) RuntimeMetricsCollector() *metrics.RuntimeCollector {
+	return mc.runtimeCollector
 }
 
 type tracerCore struct {
