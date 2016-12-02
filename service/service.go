@@ -157,7 +157,9 @@ func New(options ...Option) (Owner, error) {
 	}
 
 	if svc.RuntimeMetricsCollector() == nil {
-		svc.runtimeCollector = metrics.StartCollectingRuntimeMetrics(svc.scope, time.Second)
+		svc.runtimeCollector = metrics.StartCollectingRuntimeMetrics(
+			svc.scope.SubScope("runtime"), time.Second,
+		)
 	}
 
 	if svc.Tracer() == nil {
