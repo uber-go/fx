@@ -29,9 +29,8 @@ import (
 	"github.com/uber-go/tally"
 )
 
-func TestRuntimeMetricsReporter(t *testing.T) {
+func TestRuntimeReporter(t *testing.T) {
 	reporter := NewRuntimeReporter(tally.NoopScope, time.Millisecond)
-
 	assert.False(t, reporter.IsRunning())
 	reporter.Start()
 	assert.True(t, reporter.IsRunning())
@@ -41,12 +40,23 @@ func TestRuntimeMetricsReporter(t *testing.T) {
 	reporter.Close()
 }
 
-func TestStartRuntimeMetricsReporter(t *testing.T) {
+func TestStartRuntimeReporter(t *testing.T) {
 	reporter := StartReportingRuntimeMetrics(tally.NoopScope, time.Millisecond)
 	assert.True(t, reporter.IsRunning())
 
 	runtime.GC()
 	time.Sleep(5 * time.Millisecond)
 	reporter.report()
+	time.Sleep(5 * time.Millisecond)
+	reporter.report()
+	reporter.Close()
+}
+
+func TestStartRuntimeReporterStartAgain(t *testing.T) {
+	reporter := StartReportingRuntimeMetrics(tally.NoopScope, time.Millisecond)
+	assert.True(t, reporter.IsRunning())
+
+	reporter.Start()
+	assert.True(t, reporter.IsRunning())
 	reporter.Close()
 }
