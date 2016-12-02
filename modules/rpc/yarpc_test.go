@@ -43,7 +43,7 @@ func makeRequest() *transport.Request {
 	}
 }
 
-func makeHandler(err error) transport.Handler {
+func makeHandler(err error) transport.UnaryHandler {
 	return dummyHandler{
 		err: err,
 	}

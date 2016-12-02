@@ -29,6 +29,7 @@ import (
 
 	"go.uber.org/fx/modules"
 	"go.uber.org/fx/service"
+	"go.uber.org/yarpc/encoding/thrift"
 	"go.uber.org/yarpc/transport"
 )
 
@@ -79,9 +80,10 @@ func errorOption(_ *service.ModuleCreateInfo) error {
 }
 
 func okCreate(_ service.Host) ([]transport.Registrant, error) {
-	return []transport.Registrant{{
-		Service: "foo",
-	}}, nil
+	reg := thrift.BuildRegistrants(thrift.Service{
+		Name: "foo",
+	})
+	return reg, nil
 }
 
 func badCreateService(_ service.Host) ([]transport.Registrant, error) {

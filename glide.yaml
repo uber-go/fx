@@ -9,9 +9,9 @@ import:
 - package: github.com/gorilla/context
   version: ^1.1.0
 - package: go.uber.org/yarpc
-  version: 7c6a4c5618cb38228ef9f0eb85ea71d8fc5af2c4
+  version: v1.0.0-rc1
 - package: go.uber.org/thriftrw
-  version: 6aa07c0009457cc6c7ff5497695f1581ad184350
+  version: ^1
 - package: github.com/go-validator/validator
   version: v2
 - package: github.com/pkg/errors
@@ -49,7 +49,3 @@ testImport:
 - package: github.com/russross/blackfriday
   version: 2
 - package: github.com/shurcooL/sanitized_anchor_name
-
-# This is listed as a dependency because we need it for the thriftrw-yarpc
-# plugin which isn't imported in code.
-- package: go.uber.org/atomic

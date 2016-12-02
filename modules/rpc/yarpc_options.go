@@ -27,26 +27,26 @@ import (
 )
 
 const (
-	_interceptorKey = "yarpcInterceptors"
+	_interceptorKey = "yarpcUnaryInboundMiddleware"
 )
 
-// WithInterceptors adds custom YARPC interceptors to the module
-func WithInterceptors(i ...transport.Interceptor) modules.Option {
+// WithUnaryInboundMiddleware adds custom YARPC inboundMiddlewares to the module
+func WithUnaryInboundMiddleware(i ...transport.UnaryInboundMiddleware) modules.Option {
 	return func(mci *service.ModuleCreateInfo) error {
-		interceptors := interceptorsFromCreateInfo(*mci)
-		interceptors = append(interceptors, i...)
-		mci.Items[_interceptorKey] = interceptors
+		inboundMiddlewares := inboundMiddlewaresFromCreateInfo(*mci)
+		inboundMiddlewares = append(inboundMiddlewares, i...)
+		mci.Items[_interceptorKey] = inboundMiddlewares
 
 		return nil
 	}
 }
 
-func interceptorsFromCreateInfo(mci service.ModuleCreateInfo) []transport.Interceptor {
+func inboundMiddlewaresFromCreateInfo(mci service.ModuleCreateInfo) []transport.UnaryInboundMiddleware {
 	items, ok := mci.Items[_interceptorKey]
 	if !ok {
 		return nil
 	}
 
 	// Intentionally panic if programmer adds non-interceptor slice to the data
-	return items.([]transport.Interceptor)
+	return items.([]transport.UnaryInboundMiddleware)
 }

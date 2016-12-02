@@ -1,5 +1,5 @@
-hash: 33315208f69dde5b12a1fd0ea73baefaa96328eee3b3e6c6bdbf8498901bd180
-updated: 2016-11-22T14:59:34.742671317-08:00
+hash: 6aa48aed1b8bc8939540694805f798941b93e10e1229d80fb7e5fbccba77d9ee
+updated: 2016-12-01T13:36:26.640122301-08:00
 imports:
 - name: github.com/apache/thrift
   version: 84d6af4cf903571319e0ebddd7beb12bc93fb752
@@ -57,27 +57,31 @@ imports:
   - tnet
   - trand
   - typed
+- name: go.uber.org/atomic
+  version: 0c9e689d64f004564b79d9a663634756df322902
 - name: go.uber.org/thriftrw
-  version: 6aa07c0009457cc6c7ff5497695f1581ad184350
+  version: c98a13058faa5dd41584a77221a268d2c72d832d
   subpackages:
   - envelope
   - internal/envelope/exception
+  - internal/semver
   - protocol
   - protocol/binary
   - version
   - wire
 - name: go.uber.org/yarpc
-  version: 7c6a4c5618cb38228ef9f0eb85ea71d8fc5af2c4
+  version: 6048dff5656e15859918b9d40fdf12199d0c6e3d
   subpackages:
   - encoding/raw
   - encoding/thrift
   - encoding/thrift/internal
   - internal
+  - internal/channel
   - internal/encoding
   - internal/errors
-  - internal/filter
-  - internal/interceptor
+  - internal/inboundmiddleware
   - internal/meta
+  - internal/outboundmiddleware
   - internal/request
   - internal/sync
   - transport
@@ -88,6 +92,7 @@ imports:
   version: 4971afdc2f162e82d185353533d3cf16188a9f4e
   subpackages:
   - context
+  - context/ctxhttp
 - name: gopkg.in/yaml.v2
   version: a83829b6f1293c91addabc89d0571c246397bbf4
 testImports:
@@ -119,8 +124,6 @@ testImports:
   version: f274e5a4257c85a9eaf60ac820ee813b78cac6ab
 - name: github.com/shurcooL/sanitized_anchor_name
   version: 1dba4b3954bc059efc3991ec364f9f9a35f597d2
-- name: go.uber.org/atomic
-  version: 9e99152552a6ce13fa3b2ce4a9c4fb117cca4506
 - name: golang.org/x/tools
   version: 3fe2afc9e626f32e91aff6eddb78b14743446865
   subpackages:
