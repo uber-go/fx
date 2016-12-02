@@ -238,7 +238,6 @@ func (s *host) Start(waitForShutdown bool) (<-chan Exit, <-chan struct{}, error)
 					ExitCode: 4,
 				}
 
-				s.shutdownMu.Unlock()
 				if _, err := s.shutdown(e, "", nil); err != nil {
 					s.Logger().Error("Unable to shut down modules", "initialError", e, "shutdownError", err)
 				}
@@ -249,12 +248,12 @@ func (s *host) Start(waitForShutdown bool) (<-chan Exit, <-chan struct{}, error)
 
 	s.registerSignalHandlers()
 
+	s.shutdownMu.Unlock()
+	s.transitionState(Running)
+
 	if waitForShutdown {
 		s.WaitForShutdown(nil)
 	}
-
-	s.transitionState(Running)
-	s.shutdownMu.Unlock()
 
 	return s.closeChan, readyCh, err
 }
