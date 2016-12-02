@@ -57,7 +57,7 @@ type Owner interface {
 
 	// Start service is used for blocking the call on service start. Start will block the
 	// call and yield the control to the service lifecyce manager.
-	Start() Control
+	Start()
 
 	// StartAsync service is used as a non-blocking the call on service start. StartAsync will
 	// return the call to the caller with a Control to listen on channels
