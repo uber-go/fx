@@ -46,15 +46,15 @@ func StartReportingRuntimeMetrics(
 }
 
 type runtimeMetrics struct {
-	NumGoRoutines   tally.Gauge
-	GoMaxProcs      tally.Gauge
-	MemoryAllocated tally.Gauge
-	MemoryHeap      tally.Gauge
-	MemoryHeapIdle  tally.Gauge
-	MemoryHeapInuse tally.Gauge
-	MemoryStack     tally.Gauge
-	NumGC           tally.Counter
-	GcPauseMs       tally.Timer
+	numGoRoutines   tally.Gauge
+	goMaxProcs      tally.Gauge
+	memoryAllocated tally.Gauge
+	memoryHeap      tally.Gauge
+	memoryHeapIdle  tally.Gauge
+	memoryHeapInuse tally.Gauge
+	memoryStack     tally.Gauge
+	numGC           tally.Counter
+	gcPauseMs       tally.Timer
 	lastNumGC       uint32
 }
 
@@ -77,15 +77,15 @@ func NewRuntimeReporter(
 		scope:          scope,
 		reportInterval: reportInterval,
 		metrics: runtimeMetrics{
-			NumGoRoutines:   scope.Gauge("num-goroutines"),
-			GoMaxProcs:      scope.Gauge("gomaxprocs"),
-			MemoryAllocated: scope.Gauge("memory.allocated"),
-			MemoryHeap:      scope.Gauge("memory.heap"),
-			MemoryHeapIdle:  scope.Gauge("memory.heapidle"),
-			MemoryHeapInuse: scope.Gauge("memory.heapinuse"),
-			MemoryStack:     scope.Gauge("memory.stack"),
-			NumGC:           scope.Counter("memory.num-gc"),
-			GcPauseMs:       scope.Timer("memory.gc-pause-ms"),
+			numGoRoutines:   scope.Gauge("num-goroutines"),
+			goMaxProcs:      scope.Gauge("gomaxprocs"),
+			memoryAllocated: scope.Gauge("memory.allocated"),
+			memoryHeap:      scope.Gauge("memory.heap"),
+			memoryHeapIdle:  scope.Gauge("memory.heapidle"),
+			memoryHeapInuse: scope.Gauge("memory.heapinuse"),
+			memoryStack:     scope.Gauge("memory.stack"),
+			numGC:           scope.Counter("memory.num-gc"),
+			gcPauseMs:       scope.Timer("memory.gc-pause-ms"),
 			lastNumGC:       memstats.NumGC,
 		},
 		started: false,
@@ -123,26 +123,26 @@ func (r *RuntimeReporter) report() {
 	var memStats runtime.MemStats
 	runtime.ReadMemStats(&memStats)
 
-	r.metrics.NumGoRoutines.Update(int64(runtime.NumGoroutine()))
-	r.metrics.GoMaxProcs.Update(int64(runtime.GOMAXPROCS(0)))
-	r.metrics.MemoryAllocated.Update(int64(memStats.Alloc))
-	r.metrics.MemoryHeap.Update(int64(memStats.HeapAlloc))
-	r.metrics.MemoryHeapIdle.Update(int64(memStats.HeapIdle))
-	r.metrics.MemoryHeapInuse.Update(int64(memStats.HeapInuse))
-	r.metrics.MemoryStack.Update(int64(memStats.StackInuse))
+	r.metrics.numGoRoutines.Update(int64(runtime.NumGoroutine()))
+	r.metrics.goMaxProcs.Update(int64(runtime.GOMAXPROCS(0)))
+	r.metrics.memoryAllocated.Update(int64(memStats.Alloc))
+	r.metrics.memoryHeap.Update(int64(memStats.HeapAlloc))
+	r.metrics.memoryHeapIdle.Update(int64(memStats.HeapIdle))
+	r.metrics.memoryHeapInuse.Update(int64(memStats.HeapInuse))
+	r.metrics.memoryStack.Update(int64(memStats.StackInuse))
 
 	// memStats.NumGC is a perpetually incrementing counter (unless it wraps at 2^32)
 	num := memStats.NumGC
 	lastNum := atomic.SwapUint32(&r.metrics.lastNumGC, num) // reset for the next iteration
 	if delta := num - lastNum; delta > 0 {
-		r.metrics.NumGC.Inc(int64(delta))
+		r.metrics.numGC.Inc(int64(delta))
 		if delta > 255 {
 			// too many GCs happened, the timestamps buffer got wrapped around. Report only the last 256
 			lastNum = num - 256
 		}
 		for i := lastNum; i != num; i++ {
 			pause := memStats.PauseNs[i%256]
-			r.metrics.GcPauseMs.Record(time.Duration(pause))
+			r.metrics.gcPauseMs.Record(time.Duration(pause))
 		}
 	}
 }

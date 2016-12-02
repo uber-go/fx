@@ -65,21 +65,49 @@ type SetContainerer interface {
 	SetContainer(Host)
 }
 
-type serviceCore struct {
-	standardConfig  serviceConfig
-	roles           []string
-	state           State
-	configProvider  config.Provider
-	scopeMux        sync.Mutex
+type metricsCore struct {
 	scope           tally.RootScope
 	runtimeReporter *metrics.RuntimeReporter
-	observer        Observer
-	resources       map[string]interface{}
-	logConfig       ulog.Configuration
-	log             ulog.Log
-	tracerConfig    jaegerconfig.Configuration
-	tracer          opentracing.Tracer
-	tracerCloser    io.Closer
+}
+
+func (mc *metricsCore) Metrics() tally.Scope {
+	return mc.scope
+}
+
+func (mc *metricsCore) RuntimeMetrics() *metrics.RuntimeReporter {
+	return mc.runtimeReporter
+}
+
+type tracerCore struct {
+	tracer       opentracing.Tracer
+	tracerCloser io.Closer
+	tracerConfig jaegerconfig.Configuration
+}
+
+func (tc *tracerCore) Tracer() opentracing.Tracer {
+	return tc.tracer
+}
+
+type loggingCore struct {
+	log       ulog.Log
+	logConfig ulog.Configuration
+}
+
+func (lc *loggingCore) Logger() ulog.Log {
+	return lc.log
+}
+
+type serviceCore struct {
+	loggingCore
+	metricsCore
+	tracerCore
+	configProvider config.Provider
+	observer       Observer
+	resources      map[string]interface{}
+	roles          []string
+	scopeMux       sync.Mutex
+	standardConfig serviceConfig
+	state          State
 }
 
 var _ Host = &serviceCore{}
@@ -111,26 +139,10 @@ func (s *serviceCore) Resources() map[string]interface{} {
 	return s.resources
 }
 
-func (s *serviceCore) Metrics() tally.Scope {
-	return s.scope
-}
-
-func (s *serviceCore) RuntimeMetrics() *metrics.RuntimeReporter {
-	return s.runtimeReporter
-}
-
 func (s *serviceCore) Observer() Observer {
 	return s.observer
 }
 
 func (s *serviceCore) Config() config.Provider {
 	return s.configProvider
-}
-
-func (s *serviceCore) Logger() ulog.Log {
-	return s.log
-}
-
-func (s *serviceCore) Tracer() opentracing.Tracer {
-	return s.tracer
 }

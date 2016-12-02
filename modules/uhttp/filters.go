@@ -55,7 +55,7 @@ func tracingServerFilter(ctx fx.Context, w http.ResponseWriter, r *http.Request,
 	ext.HTTPUrl.Set(span, r.URL.String())
 	defer span.Finish()
 
-	gctx := ctx.WithContext(opentracing.ContextWithSpan(ctx, span))
+	gctx := fx.NewContext(opentracing.ContextWithSpan(ctx, span), ctx)
 	r = r.WithContext(gctx)
 	next.ServeHTTP(gctx, w, r)
 }
