@@ -20,6 +20,7 @@ ALL_SRC := $(shell find . -name "*.go" | grep -v -e vendor \
 
 .PHONY: test
 test: $(COV_REPORT)
+	$(ECHO_V)go test -race $(PKGS)
 
 TEST_IGNORES = vendor .git
 COVER_IGNORES = $(TEST_IGNORES) examples testutils
