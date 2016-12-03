@@ -259,8 +259,6 @@ func (s *host) Start(waitForShutdown bool) (<-chan Exit, <-chan struct{}, error)
 		s.WaitForShutdown(nil)
 	}
 
-	fmt.Println("I never actually finish...")
-
 	return s.closeChan, readyCh, err
 }
 
