@@ -22,6 +22,7 @@ package metrics
 
 import (
 	"runtime"
+	"sync"
 	"sync/atomic"
 	"time"
 
@@ -63,7 +64,8 @@ type RuntimeCollector struct {
 	scope           tally.Scope
 	collectInterval time.Duration
 	metrics         runtimeMetrics
-	started         bool
+	startedMutex    sync.RWMutex
+	started         bool // protected by startedMutex
 	quit            chan struct{}
 }
 
@@ -100,14 +102,19 @@ func NewRuntimeCollector(
 
 // IsRunning returns true if the collector has been started and false if not.
 func (r *RuntimeCollector) IsRunning() bool {
+	r.startedMutex.RLock()
+	defer r.startedMutex.RUnlock()
 	return r.started
 }
 
 // Start starts the collector thread that periodically emits metrics.
 func (r *RuntimeCollector) Start() {
+	r.startedMutex.RLock()
 	if r.started {
+		r.startedMutex.RUnlock()
 		return
 	}
+	r.startedMutex.RUnlock()
 	go func() {
 		ticker := time.NewTicker(r.collectInterval)
 		for {
@@ -120,7 +127,9 @@ func (r *RuntimeCollector) Start() {
 			}
 		}
 	}()
+	r.startedMutex.Lock()
 	r.started = true
+	r.startedMutex.Unlock()
 }
 
 // generate sends runtime metrics to the local metrics collector.
