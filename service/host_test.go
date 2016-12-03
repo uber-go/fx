@@ -226,6 +226,7 @@ func TestAddModule_NotLocked(t *testing.T) {
 }
 
 func TestStartStopRegressionDeadlock(t *testing.T) {
+	// TODO(glib): sort out this test
 	t.Skip("Fix me when Start/Stop functions are refactored")
 	sh := makeHost()
 	go func() {
