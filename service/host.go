@@ -250,6 +250,7 @@ func (s *host) start(waitForShutdown bool) Control {
 		s.shutdownReason = nil
 		s.closeChan = make(chan Exit, 1)
 		errs := s.startModules()
+		s.registerSignalHandlers()
 		if len(errs) > 0 {
 			// grab the first error, shut down the service
 			// and return the error
@@ -261,10 +262,10 @@ func (s *host) start(waitForShutdown bool) Control {
 					ExitCode: 4,
 				}
 
+				s.shutdownMu.Unlock()
 				if _, err := s.shutdown(e, "", nil); err != nil {
 					s.Logger().Error("Unable to shut down modules", "initialError", e, "shutdownError", err)
 				}
-				s.shutdownMu.Unlock()
 				return Control{
 					ExitChan:     errChan,
 					ReadyChan:    readyCh,
@@ -274,10 +275,8 @@ func (s *host) start(waitForShutdown bool) Control {
 		}
 	}
 
-	s.registerSignalHandlers()
-
-	s.shutdownMu.Unlock()
 	s.transitionState(Running)
+	s.shutdownMu.Unlock()
 
 	if waitForShutdown {
 		s.WaitForShutdown(nil)
@@ -381,6 +380,9 @@ func (s *host) WaitForShutdown(exitCallback ExitCallback) {
 }
 
 func (s *host) transitionState(to State) {
+	s.stateMu.Lock()
+	defer s.stateMu.Unlock()
+
 	// TODO(ai) this isn't used yet
 	if to < s.state {
 		s.Logger().Fatal("Can't down from state", "from", s.state, "to", to, "service", s.Name())
