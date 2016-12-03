@@ -22,7 +22,7 @@ ALL_SRC := $(shell find . -name "*.go" | grep -v -e vendor \
 test:
 	$(ECHO_V)$(MAKE) -C examples/keyvalue/ kv/types.go ECHO_V=$(ECHO_V)
 	$(ECHO_V)go test $(RACE) -timeout=1s $(PKGS)
-	$(MAKE) $(COV_REPORT)
+	$(ECHO_V) $(MAKE) $(COV_REPORT)
 
 TEST_IGNORES = vendor .git
 COVER_IGNORES = $(TEST_IGNORES) examples testutils
