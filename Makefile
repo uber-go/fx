@@ -20,7 +20,7 @@ ALL_SRC := $(shell find . -name "*.go" | grep -v -e vendor \
 
 .PHONY: test
 test: $(COV_REPORT)
-	$(ECHO_V)go test -race $(PKGS)
+	$(ECHO_V)go test -race -timeout=1s $(PKGS)
 
 TEST_IGNORES = vendor .git
 COVER_IGNORES = $(TEST_IGNORES) examples testutils
@@ -49,7 +49,7 @@ $(COV_REPORT): $(PKG_FILES) $(ALL_SRC)
 		-ignore "$(OVERALLS_IGNORE)" \
 		-covermode=atomic \
 		$(DEBUG_FLAG) -- \
-		$(TEST_FLAGS) $(RACE) $(TEST_VERBOSITY_FLAG) | \
+		$(TEST_FLAGS) $(RACE) -timeout=1s $(TEST_VERBOSITY_FLAG) | \
 		grep -v "No Go Test files" | \
 		$(_FILTER_OVERALLS)
 	$(ECHO_V)if [ -a $(COV_REPORT) ]; then \

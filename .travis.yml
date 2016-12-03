@@ -22,7 +22,7 @@ install:
 
 script:
   - make lint
-  - make test  RACE=-race
+  - make test
 
 after_success:
    - '[ "${TRAVIS_GO_VERSION}" != "tip" ] && make coveralls'
