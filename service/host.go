@@ -201,11 +201,20 @@ func (s *host) AddModules(modules ...ModuleCreateFunc) error {
 	return nil
 }
 
-// Start runs the serve loop. If Shutdown() was called then the shutdown reason
-// will be returned.
-func (s *host) Start(waitForShutdown bool) (<-chan Exit, <-chan struct{}, error) {
-	// TODO(glib): this function has a lot of different exits and different
-	// mutex unlock spots, maybe a rewrite is in order?
+// StartAsync service is used as a non-blocking the call on service start. StartAsync will
+// return the call to the caller with a Control to listen on channels
+// and trigger manual shutdowns.
+func (s *host) StartAsync() Control {
+	return s.start(false)
+}
+
+// Start service is used for blocking the call on service start. Start will block the
+// call and yield the control to the service lifecyce manager.
+func (s *host) Start() Control {
+	return s.start(true)
+}
+
+func (s *host) start(waitForShutdown bool) Control {
 	var err error
 	s.locked = true
 	s.shutdownMu.Lock()
@@ -217,21 +226,30 @@ func (s *host) Start(waitForShutdown bool) (<-chan Exit, <-chan struct{}, error)
 	}()
 	if s.inShutdown {
 		s.shutdownMu.Unlock()
-		return nil, readyCh, fmt.Errorf("errShuttingDown")
+		return Control{
+			ReadyChan:    readyCh,
+			ServiceError: fmt.Errorf("errShuttingDown"),
+		}
 	} else if s.IsRunning() {
 		s.shutdownMu.Unlock()
-		return s.closeChan, readyCh, nil
+		return Control{
+			ExitChan:     s.closeChan,
+			ReadyChan:    readyCh,
+			ServiceError: nil,
+		}
 	} else {
 		if s.observer != nil {
 			if err := s.observer.OnInit(s); err != nil {
 				s.shutdownMu.Unlock()
-				return nil, readyCh, err
+				return Control{
+					ReadyChan:    readyCh,
+					ServiceError: err,
+				}
 			}
 		}
 		s.shutdownReason = nil
 		s.closeChan = make(chan Exit, 1)
 		errs := s.startModules()
-		s.registerSignalHandlers()
 		if len(errs) > 0 {
 			// grab the first error, shut down the service
 			// and return the error
@@ -243,23 +261,33 @@ func (s *host) Start(waitForShutdown bool) (<-chan Exit, <-chan struct{}, error)
 					ExitCode: 4,
 				}
 
-				s.shutdownMu.Unlock()
 				if _, err := s.shutdown(e, "", nil); err != nil {
 					s.Logger().Error("Unable to shut down modules", "initialError", e, "shutdownError", err)
 				}
-				return errChan, readyCh, e
+				s.shutdownMu.Unlock()
+				return Control{
+					ExitChan:     errChan,
+					ReadyChan:    readyCh,
+					ServiceError: e,
+				}
 			}
 		}
 	}
 
-	s.transitionState(Running)
+	s.registerSignalHandlers()
+
 	s.shutdownMu.Unlock()
+	s.transitionState(Running)
 
 	if waitForShutdown {
 		s.WaitForShutdown(nil)
 	}
 
-	return s.closeChan, readyCh, err
+	return Control{
+		ExitChan:     s.closeChan,
+		ReadyChan:    readyCh,
+		ServiceError: err,
+	}
 }
 
 func (s *host) registerSignalHandlers() {
@@ -353,9 +381,6 @@ func (s *host) WaitForShutdown(exitCallback ExitCallback) {
 }
 
 func (s *host) transitionState(to State) {
-	s.stateMu.Lock()
-	defer s.stateMu.Unlock()
-
 	// TODO(ai) this isn't used yet
 	if to < s.state {
 		s.Logger().Fatal("Can't down from state", "from", s.state, "to", to, "service", s.Name())

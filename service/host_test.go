@@ -35,16 +35,16 @@ import (
 func TestOnCriticalError_NoObserver(t *testing.T) {
 	err := errors.New("Blargh")
 	sh := makeHost()
-	closeCh, ready, err := sh.Start(false)
-	require.NoError(t, err, "Expected no error starting up")
+	Control := sh.StartAsync()
+	require.NoError(t, Control.ServiceError, "Expected no error starting up")
 	select {
 	case <-time.After(time.Second):
 		assert.Fail(t, "Server failed to start up after 1 second")
-	case <-ready:
+	case <-Control.ReadyChan:
 		// do nothing
 	}
 	go func() {
-		<-closeCh
+		<-Control.ExitChan
 	}()
 	sh.OnCriticalError(err)
 	assert.Equal(t, err, sh.shutdownReason.Error)
@@ -188,16 +188,16 @@ func TestHostStart_InShutdown(t *testing.T) {
 	sh := &host{
 		inShutdown: true,
 	}
-	_, _, err := sh.Start(false)
-	assert.Error(t, err)
+	Control := sh.StartAsync()
+	assert.Error(t, Control.ServiceError)
 }
 
 func TestHostStart_AlreadyRunning(t *testing.T) {
 	sh := &host{
 		closeChan: make(chan Exit, 1),
 	}
-	_, _, err := sh.Start(false)
-	assert.NoError(t, err)
+	Control := sh.StartAsync()
+	assert.NoError(t, Control.ServiceError)
 }
 
 func TestStartWithObserver_InitError(t *testing.T) {
@@ -206,8 +206,8 @@ func TestStartWithObserver_InitError(t *testing.T) {
 	sh := &host{
 		observer: obs,
 	}
-	_, _, err := sh.Start(false)
-	assert.Error(t, err)
+	Control := sh.StartAsync()
+	assert.Error(t, Control.ServiceError)
 	assert.True(t, obs.init)
 }
 
@@ -233,7 +233,7 @@ func TestStartStopRegressionDeadlock(t *testing.T) {
 		time.Sleep(50 * time.Millisecond)
 		sh.Stop("stop nao!", 1)
 	}()
-	sh.Start(true)
+	sh.Start()
 }
 
 func TestStartModule_NoErrors(t *testing.T) {
@@ -241,16 +241,16 @@ func TestStartModule_NoErrors(t *testing.T) {
 	mod := NewStubModule()
 	require.NoError(t, s.addModule(mod))
 
-	closeCh, _, err := s.Start(false)
+	Control := s.StartAsync()
 	go func() {
-		<-closeCh
+		<-Control.ExitChan
 	}()
 	defer func() {
 		assert.NoError(t, s.Stop("test", 0))
 		assert.Equal(t, s.state, Stopped)
 	}()
 
-	assert.NoError(t, err)
+	assert.NoError(t, Control.ServiceError)
 	assert.True(t, mod.IsRunning())
 	assert.Equal(t, s.state, Running)
 }
@@ -261,11 +261,11 @@ func TestStartHost_WithErrors(t *testing.T) {
 	mod.StartError = errors.New("can't start this")
 	require.NoError(t, s.addModule(mod))
 
-	closeCh, _, err := s.Start(false)
+	Control := s.StartAsync()
 	go func() {
-		<-closeCh
+		<-Control.ExitChan
 	}()
-	assert.Error(t, err)
+	assert.Error(t, Control.ServiceError)
 }
 
 func makeHost() *host {

@@ -55,8 +55,22 @@ type Owner interface {
 
 	AddModules(modules ...ModuleCreateFunc) error
 
-	Start(waitForExit bool) (exit <-chan Exit, ready <-chan struct{}, err error)
+	// Start service is used for blocking the call on service start. Start will block the
+	// call and yield the control to the service lifecyce manager.
+	Start() Control
+
+	// StartAsync service is used as a non-blocking the call on service start. StartAsync will
+	// return the call to the caller with a Control to listen on channels
+	// and trigger manual shutdown.
+	StartAsync() Control
 	Stop(reason string, exitCode int) error
+}
+
+// Control keeps the listening channels from the service startup
+type Control struct {
+	ExitChan     chan Exit
+	ReadyChan    chan struct{}
+	ServiceError error
 }
 
 // Exit is a signal for a service that needs to exit
