@@ -35,8 +35,11 @@ import (
 //     ...
 //     rmr.Close()
 func StartCollectingRuntimeMetrics(
-	scope tally.Scope, collectInterval time.Duration,
+	scope tally.Scope, collectInterval time.Duration, config RuntimeConfig,
 ) *RuntimeCollector {
+	if config.Disabled {
+		return nil
+	}
 	runtimeCollector := NewRuntimeCollector(scope, collectInterval)
 	runtimeCollector.Start()
 	return runtimeCollector
@@ -62,6 +65,11 @@ type RuntimeCollector struct {
 	metrics         runtimeMetrics
 	started         bool
 	quit            chan struct{}
+}
+
+// RuntimeConfig contains configuration for initializing runtime metrics
+type RuntimeConfig struct {
+	Disabled bool `yaml:"enabled"`
 }
 
 // NewRuntimeCollector creates a new RuntimeCollector.

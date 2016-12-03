@@ -157,8 +157,13 @@ func New(options ...Option) (Owner, error) {
 	}
 
 	if svc.RuntimeMetricsCollector() == nil {
+		var runtimeMetricsConfig metrics.RuntimeConfig
+		err := svc.configProvider.Get("runtimeMetrics").PopulateStruct(&runtimeMetricsConfig)
+		if err != nil {
+			return nil, errors.Wrap(err, "unable to load runtime metrics configuration")
+		}
 		svc.runtimeCollector = metrics.StartCollectingRuntimeMetrics(
-			svc.scope.SubScope("runtime"), time.Second,
+			svc.scope.SubScope("runtime"), time.Second, runtimeMetricsConfig,
 		)
 	}
 

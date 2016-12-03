@@ -29,7 +29,9 @@ import (
 	"github.com/uber-go/tally"
 )
 
-func TestRuntimecollector(t *testing.T) {
+var _emptyRuntimeConfig = RuntimeConfig{}
+
+func TestRuntimeCollector(t *testing.T) {
 	collector := NewRuntimeCollector(tally.NoopScope, time.Millisecond)
 	defer closeCollector(t, collector)
 
@@ -41,8 +43,8 @@ func TestRuntimecollector(t *testing.T) {
 	collector.generate()
 }
 
-func TestStartRuntimecollector(t *testing.T) {
-	collector := StartCollectingRuntimeMetrics(tally.NoopScope, time.Millisecond)
+func TestStartRuntimeCollector(t *testing.T) {
+	collector := StartCollectingRuntimeMetrics(tally.NoopScope, time.Millisecond, _emptyRuntimeConfig)
 	defer closeCollector(t, collector)
 
 	assert.True(t, collector.IsRunning())
@@ -53,13 +55,19 @@ func TestStartRuntimecollector(t *testing.T) {
 	collector.generate()
 }
 
-func TestStartRuntimecollectorStartAgain(t *testing.T) {
-	collector := StartCollectingRuntimeMetrics(tally.NoopScope, time.Millisecond)
+func TestStartRuntimeCollectorStartAgain(t *testing.T) {
+	collector := StartCollectingRuntimeMetrics(tally.NoopScope, time.Millisecond, _emptyRuntimeConfig)
 	defer closeCollector(t, collector)
 
 	assert.True(t, collector.IsRunning())
 	collector.Start()
 	assert.True(t, collector.IsRunning())
+}
+
+func TestStartRuntimecollectorDisabled(t *testing.T) {
+	config := RuntimeConfig{Disabled: true}
+	collector := StartCollectingRuntimeMetrics(tally.NoopScope, time.Millisecond, config)
+	assert.Nil(t, collector)
 }
 
 func closeCollector(t *testing.T, r *RuntimeCollector) {
