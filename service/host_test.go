@@ -225,6 +225,16 @@ func TestAddModule_NotLocked(t *testing.T) {
 	assert.Equal(t, sh, mod.Host)
 }
 
+func TestStartStopRegressionDeadlock(t *testing.T) {
+	t.Skip("Fix me when Start/Stop functions are refactored")
+	sh := makeHost()
+	go func() {
+		time.Sleep(50 * time.Millisecond)
+		sh.Stop("stop nao!", 1)
+	}()
+	sh.Start(true)
+}
+
 func TestStartModule_NoErrors(t *testing.T) {
 	s := makeHost()
 	mod := NewStubModule()
