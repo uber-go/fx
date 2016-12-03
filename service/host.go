@@ -44,6 +44,7 @@ type host struct {
 	observer Observer
 	modules  []Module
 	roles    map[string]bool
+	stateMu  sync.Mutex
 
 	// Shutdown fields.
 	shutdownMu     sync.Mutex
@@ -230,6 +231,7 @@ func (s *host) Start(waitForShutdown bool) (<-chan Exit, <-chan struct{}, error)
 		s.shutdownReason = nil
 		s.closeChan = make(chan Exit, 1)
 		errs := s.startModules()
+		s.registerSignalHandlers()
 		if len(errs) > 0 {
 			// grab the first error, shut down the service
 			// and return the error
@@ -241,19 +243,17 @@ func (s *host) Start(waitForShutdown bool) (<-chan Exit, <-chan struct{}, error)
 					ExitCode: 4,
 				}
 
+				s.shutdownMu.Unlock()
 				if _, err := s.shutdown(e, "", nil); err != nil {
 					s.Logger().Error("Unable to shut down modules", "initialError", e, "shutdownError", err)
 				}
-				s.shutdownMu.Unlock()
 				return errChan, readyCh, e
 			}
 		}
 	}
 
-	s.registerSignalHandlers()
-
-	s.shutdownMu.Unlock()
 	s.transitionState(Running)
+	s.shutdownMu.Unlock()
 
 	if waitForShutdown {
 		s.WaitForShutdown(nil)
@@ -353,6 +353,9 @@ func (s *host) WaitForShutdown(exitCallback ExitCallback) {
 }
 
 func (s *host) transitionState(to State) {
+	s.stateMu.Lock()
+	defer s.stateMu.Unlock()
+
 	// TODO(ai) this isn't used yet
 	if to < s.state {
 		s.Logger().Fatal("Can't down from state", "from", s.state, "to", to, "service", s.Name())
