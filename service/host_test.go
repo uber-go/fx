@@ -35,16 +35,16 @@ import (
 func TestOnCriticalError_NoObserver(t *testing.T) {
 	err := errors.New("Blargh")
 	sh := makeHost()
-	Control := sh.StartAsync()
-	require.NoError(t, Control.ServiceError, "Expected no error starting up")
+	control := sh.StartAsync()
+	require.NoError(t, control.ServiceError, "Expected no error starting up")
 	select {
 	case <-time.After(time.Second):
 		assert.Fail(t, "Server failed to start up after 1 second")
-	case <-Control.ReadyChan:
+	case <-control.ReadyChan:
 		// do nothing
 	}
 	go func() {
-		<-Control.ExitChan
+		<-control.ExitChan
 	}()
 	sh.OnCriticalError(err)
 	assert.Equal(t, err, sh.shutdownReason.Error)
@@ -188,16 +188,16 @@ func TestHostStart_InShutdown(t *testing.T) {
 	sh := &host{
 		inShutdown: true,
 	}
-	Control := sh.StartAsync()
-	assert.Error(t, Control.ServiceError)
+	control := sh.StartAsync()
+	assert.Error(t, control.ServiceError)
 }
 
 func TestHostStart_AlreadyRunning(t *testing.T) {
 	sh := &host{
 		closeChan: make(chan Exit, 1),
 	}
-	Control := sh.StartAsync()
-	assert.NoError(t, Control.ServiceError)
+	control := sh.StartAsync()
+	assert.NoError(t, control.ServiceError)
 }
 
 func TestStartWithObserver_InitError(t *testing.T) {
@@ -206,8 +206,8 @@ func TestStartWithObserver_InitError(t *testing.T) {
 	sh := &host{
 		observer: obs,
 	}
-	Control := sh.StartAsync()
-	assert.Error(t, Control.ServiceError)
+	control := sh.StartAsync()
+	assert.Error(t, control.ServiceError)
 	assert.True(t, obs.init)
 }
 
@@ -241,16 +241,16 @@ func TestStartModule_NoErrors(t *testing.T) {
 	mod := NewStubModule()
 	require.NoError(t, s.addModule(mod))
 
-	Control := s.StartAsync()
+	control := s.StartAsync()
 	go func() {
-		<-Control.ExitChan
+		<-control.ExitChan
 	}()
 	defer func() {
 		assert.NoError(t, s.Stop("test", 0))
 		assert.Equal(t, s.state, Stopped)
 	}()
 
-	assert.NoError(t, Control.ServiceError)
+	assert.NoError(t, control.ServiceError)
 	assert.True(t, mod.IsRunning())
 	assert.Equal(t, s.state, Running)
 }
@@ -261,11 +261,11 @@ func TestStartHost_WithErrors(t *testing.T) {
 	mod.StartError = errors.New("can't start this")
 	require.NoError(t, s.addModule(mod))
 
-	Control := s.StartAsync()
+	control := s.StartAsync()
 	go func() {
-		<-Control.ExitChan
+		<-control.ExitChan
 	}()
-	assert.Error(t, Control.ServiceError)
+	assert.Error(t, control.ServiceError)
 }
 
 func makeHost() *host {
