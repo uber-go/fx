@@ -23,7 +23,6 @@ package metrics
 import (
 	"fmt"
 	"sync"
-	"time"
 
 	"go.uber.org/fx/config"
 
@@ -38,9 +37,6 @@ var (
 	// DefaultReporter does not do anything
 	// TODO(glib): add a logging reporter and use it by default, rather than noop
 	DefaultReporter = tally.NullStatsReporter
-
-	// DefaultReporterInterval controls how oftern the buffered metrics are flushed
-	DefaultReporterInterval = time.Second
 )
 
 // ScopeInit interface provides necessary data to properly initialize root metrics scope
@@ -53,7 +49,7 @@ type ScopeInit interface {
 // ScopeFunc is used during service init time to register the reporter
 type ScopeFunc func(i ScopeInit) (tally.RootScope, error)
 
-// Freeze ensures that after servce is started, no other metrics manipulations can be done
+// Freeze ensures that after service is started, no other metrics manipulations can be done
 //
 // This has to do with the fact that modules inherit sub-scopes of the main metrics, and the fact
 // that swapping a reporter might have unpredicted implications on already emitted metrics.
