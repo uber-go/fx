@@ -234,14 +234,14 @@ func (s *host) start() Control {
 		s.shutdownMu.Unlock()
 		return Control{
 			ReadyChan:    readyCh,
-			ServiceError: errors.New("error shutting down the service"),
+			ServiceError: errors.New("shutting down the service"),
 		}
 	} else if s.IsRunning() {
 		s.shutdownMu.Unlock()
 		return Control{
 			ExitChan:     s.closeChan,
 			ReadyChan:    readyCh,
-			ServiceError: nil,
+			ServiceError: errors.New("service is already running"),
 		}
 	} else {
 		if s.observer != nil {
