@@ -18,10 +18,12 @@ ALL_SRC := $(shell find . -name "*.go" | grep -v -e vendor \
 	-e "examples/keyvalue/.*" \
 	-e ".*/_.*")
 
+TEST_TIMEOUT := "-timeout=1s"
+
 .PHONY: test
 test:
 	$(ECHO_V)$(MAKE) -C examples/keyvalue/ kv/types.go ECHO_V=$(ECHO_V)
-	$(ECHO_V)go test $(RACE) -timeout=1s $(PKGS)
+	$(ECHO_V)go test $(RACE) $(TEST_TIMEOUT) $(PKGS)
 	$(ECHO_V)$(MAKE) $(COV_REPORT)
 
 TEST_IGNORES = vendor .git
@@ -51,7 +53,7 @@ $(COV_REPORT): $(PKG_FILES) $(ALL_SRC)
 		-ignore "$(OVERALLS_IGNORE)" \
 		-covermode=atomic \
 		$(DEBUG_FLAG) -- \
-		$(TEST_FLAGS) $(RACE) -timeout=1s $(TEST_VERBOSITY_FLAG) | \
+		$(TEST_FLAGS) $(RACE) $(TEST_TIMEOUT) $(TEST_VERBOSITY_FLAG) | \
 		grep -v "No Go Test files" | \
 		$(_FILTER_OVERALLS)
 	$(ECHO_V)if [ -a $(COV_REPORT) ]; then \
