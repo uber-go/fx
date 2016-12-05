@@ -29,6 +29,8 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/pkg/errors"
+
 	"go.uber.org/fx/config"
 	"go.uber.org/fx/internal/util"
 	"go.uber.org/fx/ulog"
@@ -232,7 +234,7 @@ func (s *host) start() Control {
 		s.shutdownMu.Unlock()
 		return Control{
 			ReadyChan:    readyCh,
-			ServiceError: fmt.Errorf("errShuttingDown"),
+			ServiceError: errors.New("error shutting down the service"),
 		}
 	} else if s.IsRunning() {
 		s.shutdownMu.Unlock()
@@ -247,7 +249,7 @@ func (s *host) start() Control {
 				s.shutdownMu.Unlock()
 				return Control{
 					ReadyChan:    readyCh,
-					ServiceError: err,
+					ServiceError: errors.Wrap(err, "failed to initialize the observer"),
 				}
 			}
 		}
@@ -256,10 +258,10 @@ func (s *host) start() Control {
 		errs := s.startModules()
 		s.registerSignalHandlers()
 		if len(errs) > 0 {
-			// grab the first error, shut down the service
-			// and return the error
+			var serviceErr error
+			errChan := make(chan Exit, 1)
+			// grab the first error, shut down the service and return the error
 			for _, e := range errs {
-				errChan := make(chan Exit, 1)
 				errChan <- Exit{
 					Error:    e,
 					Reason:   "Module start failed",
@@ -270,11 +272,16 @@ func (s *host) start() Control {
 				if _, err := s.shutdown(e, "", nil); err != nil {
 					s.Logger().Error("Unable to shut down modules", "initialError", e, "shutdownError", err)
 				}
-				return Control{
-					ExitChan:     errChan,
-					ReadyChan:    readyCh,
-					ServiceError: e,
+				s.Logger().Error("Error starting the module", "error", e)
+				// return first service error
+				if serviceErr == nil {
+					serviceErr = e
 				}
+			}
+			return Control{
+				ExitChan:     errChan,
+				ReadyChan:    readyCh,
+				ServiceError: serviceErr,
 			}
 		}
 	}
