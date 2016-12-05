@@ -18,7 +18,7 @@ ALL_SRC := $(shell find . -name "*.go" | grep -v -e vendor \
 	-e "examples/keyvalue/.*" \
 	-e ".*/_.*")
 
-TEST_TIMEOUT := "-timeout=1s"
+TEST_TIMEOUT := "-timeout=3s"
 
 .PHONY: test
 test:
