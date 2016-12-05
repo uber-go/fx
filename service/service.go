@@ -56,7 +56,8 @@ type Owner interface {
 	AddModules(modules ...ModuleCreateFunc) error
 
 	// Start service is used for blocking the call on service start. Start will block the
-	// call and yield the control to the service lifecyce manager.
+	// call and yield the control to the service lifecyce manager. No code will be executed
+	//after call to Start() the service.
 	Start()
 
 	// StartAsync service is used as a non-blocking the call on service start. StartAsync will

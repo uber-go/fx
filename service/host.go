@@ -205,16 +205,20 @@ func (s *host) AddModules(modules ...ModuleCreateFunc) error {
 // return the call to the caller with a Control to listen on channels
 // and trigger manual shutdowns.
 func (s *host) StartAsync() Control {
-	return s.start(false)
+	return s.start()
 }
 
 // Start service is used for blocking the call on service start. Start will block the
-// call and yield the control to the service lifecyce manager.
+// call and yield the control to the service lifecyce manager. Start will not yield back
+// the control to the caller, so no code will be executed after calling Star()
 func (s *host) Start() {
-	s.start(true)
+	s.start()
+
+	// block until forced exit
+	s.WaitForShutdown(nil)
 }
 
-func (s *host) start(waitForShutdown bool) Control {
+func (s *host) start() Control {
 	var err error
 	s.locked = true
 	s.shutdownMu.Lock()
@@ -277,10 +281,6 @@ func (s *host) start(waitForShutdown bool) Control {
 
 	s.transitionState(Running)
 	s.shutdownMu.Unlock()
-
-	if waitForShutdown {
-		s.WaitForShutdown(nil)
-	}
 
 	return Control{
 		ExitChan:     s.closeChan,
