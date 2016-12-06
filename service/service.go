@@ -21,6 +21,8 @@
 package service
 
 import (
+	"time"
+
 	"go.uber.org/fx/config"
 	"go.uber.org/fx/metrics"
 	"go.uber.org/fx/tracing"
@@ -152,6 +154,17 @@ func New(options ...Option) (Owner, error) {
 		}
 
 		metrics.Freeze()
+	}
+
+	if svc.RuntimeMetricsCollector() == nil {
+		var runtimeMetricsConfig metrics.RuntimeConfig
+		err := svc.configProvider.Get("metrics.runtime").PopulateStruct(&runtimeMetricsConfig)
+		if err != nil {
+			return nil, errors.Wrap(err, "unable to load runtime metrics configuration")
+		}
+		svc.runtimeCollector = metrics.StartCollectingRuntimeMetrics(
+			svc.scope.SubScope("runtime"), time.Second, runtimeMetricsConfig,
+		)
 	}
 
 	if svc.Tracer() == nil {

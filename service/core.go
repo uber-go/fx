@@ -25,6 +25,7 @@ import (
 	"sync"
 
 	"go.uber.org/fx/config"
+	"go.uber.org/fx/metrics"
 	"go.uber.org/fx/ulog"
 
 	"github.com/opentracing/opentracing-go"
@@ -39,6 +40,7 @@ type Host interface {
 	Roles() []string
 	State() State
 	Metrics() tally.Scope
+	RuntimeMetricsCollector() *metrics.RuntimeCollector
 	Observer() Observer
 	Config() config.Provider
 	Resources() map[string]interface{}
@@ -63,20 +65,49 @@ type SetContainerer interface {
 	SetContainer(Host)
 }
 
+type metricsCore struct {
+	scope            tally.RootScope
+	runtimeCollector *metrics.RuntimeCollector
+}
+
+func (mc *metricsCore) Metrics() tally.Scope {
+	return mc.scope
+}
+
+func (mc *metricsCore) RuntimeMetricsCollector() *metrics.RuntimeCollector {
+	return mc.runtimeCollector
+}
+
+type tracerCore struct {
+	tracer       opentracing.Tracer
+	tracerCloser io.Closer
+	tracerConfig jaegerconfig.Configuration
+}
+
+func (tc *tracerCore) Tracer() opentracing.Tracer {
+	return tc.tracer
+}
+
+type loggingCore struct {
+	log       ulog.Log
+	logConfig ulog.Configuration
+}
+
+func (lc *loggingCore) Logger() ulog.Log {
+	return lc.log
+}
+
 type serviceCore struct {
-	standardConfig serviceConfig
-	roles          []string
-	state          State
+	loggingCore
+	metricsCore
+	tracerCore
 	configProvider config.Provider
-	scopeMux       sync.Mutex
-	scope          tally.RootScope
 	observer       Observer
 	resources      map[string]interface{}
-	logConfig      ulog.Configuration
-	log            ulog.Log
-	tracerConfig   jaegerconfig.Configuration
-	tracer         opentracing.Tracer
-	tracerCloser   io.Closer
+	roles          []string
+	scopeMux       sync.Mutex
+	standardConfig serviceConfig
+	state          State
 }
 
 var _ Host = &serviceCore{}
@@ -108,22 +139,10 @@ func (s *serviceCore) Resources() map[string]interface{} {
 	return s.resources
 }
 
-func (s *serviceCore) Metrics() tally.Scope {
-	return s.scope
-}
-
 func (s *serviceCore) Observer() Observer {
 	return s.observer
 }
 
 func (s *serviceCore) Config() config.Provider {
 	return s.configProvider
-}
-
-func (s *serviceCore) Logger() ulog.Log {
-	return s.log
-}
-
-func (s *serviceCore) Tracer() opentracing.Tracer {
-	return s.tracer
 }

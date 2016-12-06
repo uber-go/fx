@@ -31,14 +31,20 @@ import (
 // NullHost is to be used in tests
 func NullHost() Host {
 	return &serviceCore{
+		configProvider: config.NewStaticProvider(nil),
 		standardConfig: serviceConfig{
 			ServiceName:        "dummy",
 			ServiceOwner:       "root@example.com",
 			ServiceDescription: "does cool stuff",
 		},
-		log:            ulog.NoopLogger,
-		scope:          tally.NoopScope,
-		configProvider: config.NewStaticProvider(nil),
-		tracer:         opentracing.NoopTracer{},
+		loggingCore: loggingCore{
+			log: ulog.NoopLogger,
+		},
+		metricsCore: metricsCore{
+			scope: tally.NoopScope,
+		},
+		tracerCore: tracerCore{
+			tracer: opentracing.NoopTracer{},
+		},
 	}
 }
