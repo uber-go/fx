@@ -14,6 +14,11 @@ Pre-ALPHA. API Changes are **highly likely**.
 This framework is a flexible, modularized basis for building robust and
 performant services at Uber with the minimum amount of developer code.
 
+## Examples
+
+To get a feel for what an UberFx application looks like,
+see our [examples](examples/).
+
 ## Service Model
 
 A service is a container for a set of **modules**, controlling their lifecycle.
