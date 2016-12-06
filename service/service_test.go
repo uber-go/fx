@@ -121,6 +121,22 @@ func TestServiceWithRoles(t *testing.T) {
 	assert.Contains(t, svc.Roles(), "foo")
 }
 
+func TestServiceWithMetricsRuntime(t *testing.T) {
+	data := []byte(`
+applicationID: name
+applicationOwner: owner
+metrics:
+  runtime:
+    disabled: true
+`)
+	cfgOpt := WithConfiguration(config.NewYAMLProviderFromBytes(data))
+
+	svc, err := New(cfgOpt)
+	require.NoError(t, err)
+
+	assert.Nil(t, svc.RuntimeMetricsCollector())
+}
+
 func TestBadOption_Panics(t *testing.T) {
 	opt := func(_ Host) error {
 		return errors.New("nope")

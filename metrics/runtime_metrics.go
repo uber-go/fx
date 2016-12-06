@@ -29,6 +29,9 @@ import (
 	"github.com/uber-go/tally"
 )
 
+// _numGCThreshold comes from the PauseNs buffer size https://golang.org/pkg/runtime/#MemStats
+var _numGCThreshold = uint32(256)
+
 // StartCollectingRuntimeMetrics starts generating runtime metrics under given metrics scope with
 // given frequency.
 // Recommended usage:
@@ -71,7 +74,7 @@ type RuntimeCollector struct {
 
 // RuntimeConfig contains configuration for initializing runtime metrics
 type RuntimeConfig struct {
-	Disabled bool `yaml:"enabled"`
+	Disabled bool `yaml:"disabled"`
 }
 
 // NewRuntimeCollector creates a new RuntimeCollector.
@@ -150,9 +153,9 @@ func (r *RuntimeCollector) generate() {
 	lastNum := atomic.SwapUint32(&r.metrics.lastNumGC, num) // reset for the next iteration
 	if delta := num - lastNum; delta > 0 {
 		r.metrics.numGC.Inc(int64(delta))
-		if delta > 255 {
-			// too many GCs happened, the timestamps buffer got wrapped around. Generate only the last 256
-			lastNum = num - 256
+		// Match the MemStats buffer and generate only the last _numGCThreshold
+		if delta >= _numGCThreshold {
+			lastNum = num - _numGCThreshold
 		}
 		for i := lastNum; i != num; i++ {
 			pause := memStats.PauseNs[i%256]

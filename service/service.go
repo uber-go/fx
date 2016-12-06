@@ -158,7 +158,7 @@ func New(options ...Option) (Owner, error) {
 
 	if svc.RuntimeMetricsCollector() == nil {
 		var runtimeMetricsConfig metrics.RuntimeConfig
-		err := svc.configProvider.Get("runtimeMetrics").PopulateStruct(&runtimeMetricsConfig)
+		err := svc.configProvider.Get("metrics.runtime").PopulateStruct(&runtimeMetricsConfig)
 		if err != nil {
 			return nil, errors.Wrap(err, "unable to load runtime metrics configuration")
 		}
