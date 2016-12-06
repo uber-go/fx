@@ -16,8 +16,8 @@ performant services at Uber with the minimum amount of developer code.
 
 ## Examples
 
-To get a feel for what an UberFx application looks like,
-see our [examples](examples/).
+To get a feel for what an UberFx service looks like, see our
+[examples](examples/).
 
 ## Service Model
 
