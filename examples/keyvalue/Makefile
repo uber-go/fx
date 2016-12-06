@@ -1,5 +1,7 @@
 .PHONY: deps
 deps:
+	@echo "Installing UberFx dependencies..."
+	$(ECHO_V)$(MAKE) -C ../.. libdeps
 	@echo "Installing thriftrw..."
 	$(ECHO_V)go install ../../vendor/go.uber.org/thriftrw
 	@echo "Installing thriftrw-plugin-yarpc..."
