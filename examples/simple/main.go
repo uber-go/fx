@@ -42,5 +42,5 @@ func main() {
 		ulog.Logger().Fatal("Unable to initialize service: ", err)
 	}
 
-	svc.Start(true)
+	svc.Start()
 }

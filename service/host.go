@@ -29,6 +29,8 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/pkg/errors"
+
 	"go.uber.org/fx/config"
 	"go.uber.org/fx/internal/util"
 	"go.uber.org/fx/ulog"
@@ -201,11 +203,24 @@ func (s *host) AddModules(modules ...ModuleCreateFunc) error {
 	return nil
 }
 
-// Start runs the serve loop. If Shutdown() was called then the shutdown reason
-// will be returned.
-func (s *host) Start(waitForShutdown bool) (<-chan Exit, <-chan struct{}, error) {
-	// TODO(glib): this function has a lot of different exits and different
-	// mutex unlock spots, maybe a rewrite is in order?
+// StartAsync service is used as a non-blocking the call on service start. StartAsync will
+// return the call to the caller with a Control to listen on channels
+// and trigger manual shutdowns.
+func (s *host) StartAsync() Control {
+	return s.start()
+}
+
+// Start service is used for blocking the call on service start. Start will block the
+// call and yield the control to the service lifecyce manager. Start will not yield back
+// the control to the caller, so no code will be executed after calling Start()
+func (s *host) Start() {
+	s.start()
+
+	// block until forced exit
+	s.WaitForShutdown(nil)
+}
+
+func (s *host) start() Control {
 	var err error
 	s.locked = true
 	s.shutdownMu.Lock()
@@ -217,15 +232,25 @@ func (s *host) Start(waitForShutdown bool) (<-chan Exit, <-chan struct{}, error)
 	}()
 	if s.inShutdown {
 		s.shutdownMu.Unlock()
-		return nil, readyCh, fmt.Errorf("errShuttingDown")
+		return Control{
+			ReadyChan:    readyCh,
+			ServiceError: errors.New("shutting down the service"),
+		}
 	} else if s.IsRunning() {
 		s.shutdownMu.Unlock()
-		return s.closeChan, readyCh, nil
+		return Control{
+			ExitChan:     s.closeChan,
+			ReadyChan:    readyCh,
+			ServiceError: errors.New("service is already running"),
+		}
 	} else {
 		if s.observer != nil {
 			if err := s.observer.OnInit(s); err != nil {
 				s.shutdownMu.Unlock()
-				return nil, readyCh, err
+				return Control{
+					ReadyChan:    readyCh,
+					ServiceError: errors.Wrap(err, "failed to initialize the observer"),
+				}
 			}
 		}
 		s.shutdownReason = nil
@@ -233,10 +258,10 @@ func (s *host) Start(waitForShutdown bool) (<-chan Exit, <-chan struct{}, error)
 		errs := s.startModules()
 		s.registerSignalHandlers()
 		if len(errs) > 0 {
-			// grab the first error, shut down the service
-			// and return the error
+			var serviceErr error
+			errChan := make(chan Exit, 1)
+			// grab the first error, shut down the service and return the error
 			for _, e := range errs {
-				errChan := make(chan Exit, 1)
 				errChan <- Exit{
 					Error:    e,
 					Reason:   "Module start failed",
@@ -247,7 +272,16 @@ func (s *host) Start(waitForShutdown bool) (<-chan Exit, <-chan struct{}, error)
 				if _, err := s.shutdown(e, "", nil); err != nil {
 					s.Logger().Error("Unable to shut down modules", "initialError", e, "shutdownError", err)
 				}
-				return errChan, readyCh, e
+				s.Logger().Error("Error starting the module", "error", e)
+				// return first service error
+				if serviceErr == nil {
+					serviceErr = e
+				}
+			}
+			return Control{
+				ExitChan:     errChan,
+				ReadyChan:    readyCh,
+				ServiceError: serviceErr,
 			}
 		}
 	}
@@ -255,11 +289,11 @@ func (s *host) Start(waitForShutdown bool) (<-chan Exit, <-chan struct{}, error)
 	s.transitionState(Running)
 	s.shutdownMu.Unlock()
 
-	if waitForShutdown {
-		s.WaitForShutdown(nil)
+	return Control{
+		ExitChan:     s.closeChan,
+		ReadyChan:    readyCh,
+		ServiceError: err,
 	}
-
-	return s.closeChan, readyCh, err
 }
 
 func (s *host) registerSignalHandlers() {
