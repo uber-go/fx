@@ -50,9 +50,9 @@ func TestStartRuntimeCollector(t *testing.T) {
 	assert.True(t, collector.IsRunning())
 	runtime.GC()
 	time.Sleep(time.Millisecond)
-	collector.generate()
+	// Generate gets called
 	time.Sleep(time.Millisecond)
-	collector.generate()
+	// Generate gets called
 }
 
 func TestStartRuntimeCollectorStartAgain(t *testing.T) {
