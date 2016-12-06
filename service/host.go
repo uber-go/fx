@@ -212,7 +212,7 @@ func (s *host) StartAsync() Control {
 
 // Start service is used for blocking the call on service start. Start will block the
 // call and yield the control to the service lifecyce manager. Start will not yield back
-// the control to the caller, so no code will be executed after calling Star()
+// the control to the caller, so no code will be executed after calling Start()
 func (s *host) Start() {
 	s.start()
 

@@ -197,7 +197,7 @@ func TestHostStart_AlreadyRunning(t *testing.T) {
 		closeChan: make(chan Exit, 1),
 	}
 	control := sh.StartAsync()
-	assert.NoError(t, control.ServiceError)
+	assert.Error(t, control.ServiceError)
 }
 
 func TestStartWithObserver_InitError(t *testing.T) {
