@@ -2,11 +2,6 @@ applicationID: simple
 applicationDesc: A simple example service
 applicationOwner: owner@service.com
 
-service:
-  timeout: 500
-  max_things: 12
-  info_prefix: blah
-
 modules:
   http:
     roles:
