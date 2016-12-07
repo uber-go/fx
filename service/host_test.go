@@ -316,14 +316,9 @@ func TestStartHost_WithErrors(t *testing.T) {
 }
 
 func makeRunningHost() *host {
-	return &host{
-		closeChan: make(chan Exit, 1), // Indicates service is running
-		serviceCore: serviceCore{
-			loggingCore: loggingCore{
-				log: ulog.NoopLogger,
-			},
-		},
-	}
+	h := makeHost()
+	h.closeChan = make(chan Exit, 1) // Indicates service is running
+	return h
 }
 
 func makeHost() *host {
