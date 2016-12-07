@@ -1,8 +1,8 @@
-hash: 6aa48aed1b8bc8939540694805f798941b93e10e1229d80fb7e5fbccba77d9ee
-updated: 2016-12-01T13:36:26.640122301-08:00
+hash: 83a6a1f464666e49a1576385dfb384041f83a890d6f0a20867fcd6e17ddc6cd1
+updated: 2016-12-06T18:10:26.891437353-08:00
 imports:
 - name: github.com/apache/thrift
-  version: 84d6af4cf903571319e0ebddd7beb12bc93fb752
+  version: 2a89bd94ac4ba8c645cad1e0c01606fdac6dc30b
   subpackages:
   - lib/go/thrift
 - name: github.com/davecgh/go-spew
@@ -36,7 +36,7 @@ imports:
 - name: github.com/uber-go/atomic
   version: 0c9e689d64f004564b79d9a663634756df322902
 - name: github.com/uber-go/tally
-  version: 17aa18f4826bf57be74cbb9a94984cdb7aa63716
+  version: 2750b4ae690cbeb294016efe18ceaeb80c4ce17c
 - name: github.com/uber-go/zap
   version: dd147206a25aad11c300c661617a2fe26b4a81a7
 - name: github.com/uber/jaeger-client-go
@@ -121,7 +121,7 @@ testImports:
 - name: github.com/russross/blackfriday
   version: 52676fb0053ff19b59451b2aed2a1b8de7d89592
 - name: github.com/sectioneight/md-to-godoc
-  version: f274e5a4257c85a9eaf60ac820ee813b78cac6ab
+  version: 9d2426c922bcd98343b29ef55eb22ab381b293b6
 - name: github.com/shurcooL/sanitized_anchor_name
   version: 1dba4b3954bc059efc3991ec364f9f9a35f597d2
 - name: golang.org/x/tools

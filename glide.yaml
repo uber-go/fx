@@ -3,7 +3,7 @@ import:
 - package: github.com/uber-go/zap
 # TODO(glib): Tally pinned for the time being until we've updated to the new API
 - package: github.com/uber-go/tally
-  version: 17aa18f4826bf57be74cbb9a94984cdb7aa63716
+  version: 2750b4ae690cbeb294016efe18ceaeb80c4ce17c
 - package: github.com/gorilla/mux
   version: ^1.1.0
 - package: github.com/gorilla/context
