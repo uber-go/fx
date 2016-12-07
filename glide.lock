@@ -1,8 +1,8 @@
-hash: 83a6a1f464666e49a1576385dfb384041f83a890d6f0a20867fcd6e17ddc6cd1
-updated: 2016-12-06T18:10:26.891437353-08:00
+hash: a2a69cfc3530997a341379de8ad2b2fdedba0fe92434f9704a62096cdea5e2bf
+updated: 2016-12-07T11:33:53.160525342-08:00
 imports:
 - name: github.com/apache/thrift
-  version: 2a89bd94ac4ba8c645cad1e0c01606fdac6dc30b
+  version: 7ab125a253e5aebbf2a0ed9a0a1602a4b879eca7
   subpackages:
   - lib/go/thrift
 - name: github.com/davecgh/go-spew
@@ -38,7 +38,7 @@ imports:
 - name: github.com/uber-go/tally
   version: 2750b4ae690cbeb294016efe18ceaeb80c4ce17c
 - name: github.com/uber-go/zap
-  version: dd147206a25aad11c300c661617a2fe26b4a81a7
+  version: 35cd7966cc81adc0449c91b3f6b1939812be73aa
 - name: github.com/uber/jaeger-client-go
   version: e39d0f1b622558cae3d9db0062a739cc6ffa700f
   subpackages:
@@ -89,7 +89,7 @@ imports:
   - transport/tchannel
   - transport/tchannel/internal
 - name: golang.org/x/net
-  version: 4971afdc2f162e82d185353533d3cf16188a9f4e
+  version: 9773060888fba93b172cedcd70127db1ab739bd1
   subpackages:
   - context
   - context/ctxhttp
@@ -119,9 +119,9 @@ testImports:
 - name: github.com/pborman/uuid
   version: 3d4f2ba23642d3cfd06bd4b54cf03d99d95c0f1b
 - name: github.com/russross/blackfriday
-  version: 52676fb0053ff19b59451b2aed2a1b8de7d89592
+  version: a4dd8ad4a6fda03e68be3eacb71efbf51565415e
 - name: github.com/sectioneight/md-to-godoc
-  version: 9d2426c922bcd98343b29ef55eb22ab381b293b6
+  version: f274e5a4257c85a9eaf60ac820ee813b78cac6ab
 - name: github.com/shurcooL/sanitized_anchor_name
   version: 1dba4b3954bc059efc3991ec364f9f9a35f597d2
 - name: golang.org/x/tools
