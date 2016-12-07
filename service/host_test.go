@@ -180,80 +180,46 @@ func TestOnCriticalError_ObserverShutdown(t *testing.T) {
 }
 
 func TestShutdownWithError_ReturnsError(t *testing.T) {
-	sh := &host{
-		closeChan: make(chan Exit, 1),
-	}
+	sh := makeRunningHost()
 	exitCode := 1
 	shutdown, err := sh.shutdown(errors.New("simulated"), "testing", &exitCode)
 	assert.True(t, shutdown)
 	assert.Error(t, err)
 }
 
-func TestHostShutdown_MetricsAndRuntimeCloser(t *testing.T) {
-	sh := &host{
-		closeChan: make(chan Exit, 1), // Indicates service is running
-		serviceCore: serviceCore{
-			metricsCore: metricsCore{
-				scope:            tally.NoopScope,
-				metricsCloser:    testutils.NoopCloser{},
-				runtimeCollector: metrics.NewRuntimeCollector(tally.NoopScope, time.Millisecond),
-			},
-		},
+func TestHostShutdown_RunningService(t *testing.T) {
+	sh := makeRunningHost()
+	checkShutdown(t, sh, false)
+}
+
+func TestHostShutdown_CloseSuccessful(t *testing.T) {
+	sh := makeRunningHost()
+	sh.serviceCore.metricsCore = metricsCore{
+		scope:            tally.NoopScope,
+		metricsCloser:    testutils.NoopCloser{},
+		runtimeCollector: metrics.NewRuntimeCollector(tally.NoopScope, time.Millisecond),
+	}
+	sh.serviceCore.tracerCore = tracerCore{
+		tracerCloser: testutils.NoopCloser{},
 	}
 	checkShutdown(t, sh, false)
 }
 
 func TestHostShutdown_MetricsCloserError(t *testing.T) {
-	sh := &host{
-		closeChan: make(chan Exit, 1), // Indicates service is running
-		serviceCore: serviceCore{
-			loggingCore: loggingCore{
-				log: ulog.NoopLogger,
-			},
-			metricsCore: metricsCore{
-				scope:         tally.NoopScope,
-				metricsCloser: testutils.ErrorCloser{},
-			},
-		},
+	sh := makeRunningHost()
+	sh.serviceCore.metricsCore = metricsCore{
+		scope:         tally.NoopScope,
+		metricsCloser: testutils.ErrorCloser{},
 	}
 	checkShutdown(t, sh, true)
-}
-
-func TestHostShutdown_TracerCloser(t *testing.T) {
-	sh := &host{
-		closeChan: make(chan Exit, 1), // Indicates service is running
-		serviceCore: serviceCore{
-			loggingCore: loggingCore{
-				log: ulog.NoopLogger,
-			},
-			tracerCore: tracerCore{
-				tracerCloser: testutils.NoopCloser{},
-			},
-		},
-	}
-	checkShutdown(t, sh, false)
 }
 
 func TestHostShutdown_TracerCloserError(t *testing.T) {
-	sh := &host{
-		closeChan: make(chan Exit, 1), // Indicates service is running
-		serviceCore: serviceCore{
-			loggingCore: loggingCore{
-				log: ulog.NoopLogger,
-			},
-			tracerCore: tracerCore{
-				tracerCloser: testutils.ErrorCloser{},
-			},
-		},
+	sh := makeRunningHost()
+	sh.serviceCore.tracerCore = tracerCore{
+		tracerCloser: testutils.ErrorCloser{},
 	}
 	checkShutdown(t, sh, true)
-}
-
-func TestHostShutdown_RunningService(t *testing.T) {
-	sh := &host{
-		closeChan: make(chan Exit, 1), // Indicates service is running
-	}
-	checkShutdown(t, sh, false)
 }
 
 func checkShutdown(t *testing.T, h *host, expectedErr bool) {
@@ -276,9 +242,7 @@ func TestHostStart_InShutdown(t *testing.T) {
 }
 
 func TestHostStart_AlreadyRunning(t *testing.T) {
-	sh := &host{
-		closeChan: make(chan Exit, 1),
-	}
+	sh := makeRunningHost()
 	control := sh.StartAsync()
 	assert.Error(t, control.ServiceError)
 }
@@ -349,6 +313,17 @@ func TestStartHost_WithErrors(t *testing.T) {
 		<-control.ExitChan
 	}()
 	assert.Error(t, control.ServiceError)
+}
+
+func makeRunningHost() *host {
+	return &host{
+		closeChan: make(chan Exit, 1), // Indicates service is running
+		serviceCore: serviceCore{
+			loggingCore: loggingCore{
+				log: ulog.NoopLogger,
+			},
+		},
+	}
 }
 
 func makeHost() *host {
