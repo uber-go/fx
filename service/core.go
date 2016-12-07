@@ -67,11 +67,16 @@ type SetContainerer interface {
 
 type metricsCore struct {
 	scope            tally.Scope
+	metricsCloser    io.Closer
 	runtimeCollector *metrics.RuntimeCollector
 }
 
 func (mc *metricsCore) Metrics() tally.Scope {
 	return mc.scope
+}
+
+func (mc *metricsCore) MetricsCloser() io.Closer {
+	return mc.metricsCloser
 }
 
 func (mc *metricsCore) RuntimeMetricsCollector() *metrics.RuntimeCollector {

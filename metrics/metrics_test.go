@@ -22,6 +22,7 @@ package metrics
 
 import (
 	"errors"
+	"io"
 	"testing"
 
 	"go.uber.org/fx/config"
@@ -33,10 +34,12 @@ import (
 func TestRegisterReporter_OK(t *testing.T) {
 	defer cleanup()
 
-	assert.Nil(t, getScope())
+	scope, _ := getScope()
+	assert.Nil(t, scope)
 
 	RegisterRootScope(goodScope)
-	assert.NotNil(t, getScope())
+	scope, _ = getScope()
+	assert.NotNil(t, scope)
 }
 
 func TestRegisterReporterPanics(t *testing.T) {
@@ -66,15 +69,15 @@ func TestRegisterBadReporterPanics(t *testing.T) {
 	})
 }
 
-func goodScope(i ScopeInit) (tally.Scope, error) {
-	return tally.NoopScope, nil
+func goodScope(i ScopeInit) (tally.Scope, io.Closer, error) {
+	return tally.NoopScope, nil, nil
 }
 
-func badScope(i ScopeInit) (tally.Scope, error) {
-	return nil, errors.New("fake error")
+func badScope(i ScopeInit) (tally.Scope, io.Closer, error) {
+	return nil, nil, errors.New("fake error")
 }
 
-func getScope() tally.Scope {
+func getScope() (tally.Scope, io.Closer) {
 	return RootScope(scopeInit())
 }
 

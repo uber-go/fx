@@ -22,6 +22,7 @@ package metrics
 
 import (
 	"fmt"
+	"io"
 	"sync"
 
 	"go.uber.org/fx/config"
@@ -47,7 +48,7 @@ type ScopeInit interface {
 }
 
 // ScopeFunc is used during service init time to register the reporter
-type ScopeFunc func(i ScopeInit) (tally.Scope, error)
+type ScopeFunc func(i ScopeInit) (tally.Scope, io.Closer, error)
 
 // Freeze ensures that after service is started, no other metrics manipulations can be done
 //
@@ -87,17 +88,17 @@ func RegisterRootScope(rep ScopeFunc) {
 }
 
 // RootScope returns the provided stats reporter, or nil
-func RootScope(i ScopeInit) tally.Scope {
+func RootScope(i ScopeInit) (tally.Scope, io.Closer) {
 	_mu.Lock()
 	defer _mu.Unlock()
 
 	if _scopeFunc != nil {
-		rep, err := _scopeFunc(i)
+		rep, closer, err := _scopeFunc(i)
 		if err != nil {
 			panic(fmt.Sprintf("Failed to initialize metrics reporter %v", err))
 		}
-		return rep
+		return rep, closer
 	}
 
-	return nil
+	return nil, nil
 }
