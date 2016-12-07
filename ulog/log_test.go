@@ -70,11 +70,11 @@ func TestLoggerWithInvalidFields(t *testing.T) {
 		log := Builder().SetLogger(zaplogger).Build()
 		log.Info("info message", "c")
 		log.Info("info message", "c", "d", "e")
-		log.DFatal("debug message")
+		log.DPanic("debug message")
 		assert.Equal(t, []string{
 			`{"level":"info","msg":"info message","error":"invalid number of arguments"}`,
 			`{"level":"info","msg":"info message","error":"invalid number of arguments"}`,
-			`{"level":"error","msg":"debug message"}`,
+			`{"level":"dpanic","msg":"debug message"}`,
 		}, buf.Lines(), "Incorrect output from logger")
 	})
 }

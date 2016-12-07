@@ -72,8 +72,8 @@ type Log interface {
 	// Fatal logs at Fatal level with message, and parameters as key value pairs
 	Fatal(message string, keyvals ...interface{})
 
-	// DFatal logs at Debug level (Fatal for development) with message, and parameters as key value pairs
-	DFatal(message string, keyvals ...interface{})
+	// DPanic logs at Debug level (Fatal for development) with message, and parameters as key value pairs
+	DPanic(message string, keyvals ...interface{})
 }
 
 var _std = defaultLogger()
@@ -131,8 +131,8 @@ func (l *baselogger) Fatal(message string, keyvals ...interface{}) {
 	l.Log(zap.FatalLevel, message, keyvals...)
 }
 
-func (l *baselogger) DFatal(message string, keyvals ...interface{}) {
-	l.log.DFatal(message, l.fieldsConversion(keyvals...)...)
+func (l *baselogger) DPanic(message string, keyvals ...interface{}) {
+	l.log.DPanic(message, l.fieldsConversion(keyvals...)...)
 }
 
 func (l *baselogger) Log(lvl zap.Level, message string, keyvals ...interface{}) {
