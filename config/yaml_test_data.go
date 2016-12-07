@@ -114,3 +114,31 @@ mapStruct:
   nestedStruct:
     additionalData: nesteddata
 `)
+
+type customTypeInt nestedTypeInt
+type nestedTypeInt int64
+
+type customTypeUInt nestedTypeUInt
+type nestedTypeUInt uint32
+
+type customTypeFloat nestedTypeFloat
+type nestedTypeFloat float32
+
+type nestedTypeStruct struct {
+	TestInt   *customTypeInt   `yaml:"testInt"`
+	TestUInt  *customTypeUInt  `yaml:"testUInt"`
+	TestFloat *customTypeFloat `yaml:"testFloat"`
+}
+
+type typeStruct nestedTypeStruct
+
+type typeStructStruct struct {
+	TypeStruct typeStruct `yaml:"typeStruct"`
+}
+
+var typeStructYaml = []byte(`
+typeStruct:
+  testInt: 123
+  testUInt: 456
+  testFloat: 123.456
+`)
