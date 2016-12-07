@@ -32,19 +32,22 @@ import (
 var _emptyRuntimeConfig = RuntimeConfig{}
 
 func TestRuntimeCollector(t *testing.T) {
-	collector := NewRuntimeCollector(tally.NoopScope, time.Millisecond)
+	testScope := tally.NewTestScope("", nil)
+	collector := NewRuntimeCollector(testScope, time.Millisecond)
 	defer closeCollector(t, collector)
 
 	assert.False(t, collector.IsRunning())
 	collector.Start()
 	assert.True(t, collector.IsRunning())
 	runtime.GC()
-	time.Sleep(5 * time.Millisecond)
+	time.Sleep(time.Millisecond)
 	collector.generate()
+	verifyMetrics(t, testScope)
 }
 
 func TestStartRuntimeCollector(t *testing.T) {
-	collector := StartCollectingRuntimeMetrics(tally.NoopScope, time.Millisecond, _emptyRuntimeConfig)
+	testScope := tally.NewTestScope("", nil)
+	collector := StartCollectingRuntimeMetrics(testScope, time.Millisecond, _emptyRuntimeConfig)
 	defer closeCollector(t, collector)
 
 	assert.True(t, collector.IsRunning())
@@ -53,6 +56,7 @@ func TestStartRuntimeCollector(t *testing.T) {
 	// Generate gets called
 	time.Sleep(time.Millisecond)
 	// Generate gets called
+	verifyMetrics(t, testScope)
 }
 
 func TestStartRuntimeCollectorStartAgain(t *testing.T) {
@@ -74,4 +78,23 @@ func closeCollector(t *testing.T, r *RuntimeCollector) {
 	r.Close()
 	_, ok := <-r.quit
 	assert.False(t, ok)
+}
+
+func verifyMetrics(t *testing.T, scope tally.TestScope) {
+	snapshot := scope.Snapshot()
+	// Check gauges
+	gauges := snapshot.Gauges()
+	assert.NotNil(t, gauges["num-goroutines"].Value())
+	assert.NotNil(t, gauges["gomaxprocs"].Value())
+	assert.NotNil(t, gauges["memory.allocated"].Value())
+	assert.NotNil(t, gauges["memory.heap"].Value())
+	assert.NotNil(t, gauges["memory.heapidle"].Value())
+	assert.NotNil(t, gauges["memory.heapinuse"].Value())
+	assert.NotNil(t, gauges["memory.stack"].Value)
+	// Check counters
+	counters := snapshot.Counters()
+	assert.NotZero(t, counters["memory.num-gc"].Value())
+	// Check timers
+	timers := snapshot.Timers()
+	assert.NotZero(t, len(timers["memory.gc-pause-ms"].Values()))
 }
