@@ -236,8 +236,8 @@ func TestTypeOfTypes(t *testing.T) {
 		tts := typeStructStruct{}
 		err := provider.Get("").PopulateStruct(&tts)
 		assert.NoError(t, err)
-		assert.Equal(t, customTypeInt(123), *tts.TypeStruct.TestInt)
-		assert.Equal(t, customTypeUInt(456), *tts.TypeStruct.TestUInt)
-		assert.Equal(t, customTypeFloat(123.456), *tts.TypeStruct.TestFloat)
+		assert.Equal(t, userDefinedTypeInt(123), *tts.TypeStruct.TestInt)
+		assert.Equal(t, userDefinedTypeUInt(456), *tts.TypeStruct.TestUInt)
+		assert.Equal(t, userDefinedTypeFloat(123.456), *tts.TypeStruct.TestFloat)
 	})
 }

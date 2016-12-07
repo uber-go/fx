@@ -115,19 +115,19 @@ mapStruct:
     additionalData: nesteddata
 `)
 
-type customTypeInt nestedTypeInt
+type userDefinedTypeInt nestedTypeInt
 type nestedTypeInt int64
 
-type customTypeUInt nestedTypeUInt
+type userDefinedTypeUInt nestedTypeUInt
 type nestedTypeUInt uint32
 
-type customTypeFloat nestedTypeFloat
+type userDefinedTypeFloat nestedTypeFloat
 type nestedTypeFloat float32
 
 type nestedTypeStruct struct {
-	TestInt   *customTypeInt   `yaml:"testInt"`
-	TestUInt  *customTypeUInt  `yaml:"testUInt"`
-	TestFloat *customTypeFloat `yaml:"testFloat"`
+	TestInt   *userDefinedTypeInt   `yaml:"testInt"`
+	TestUInt  *userDefinedTypeUInt  `yaml:"testUInt"`
+	TestFloat *userDefinedTypeFloat `yaml:"testFloat"`
 }
 
 type typeStruct nestedTypeStruct

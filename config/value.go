@@ -418,9 +418,9 @@ func (cv Value) valueStruct(key string, target interface{}) (interface{}, error)
 							fieldValue.Set(reflect.New(fieldType.Elem()))
 						}
 
-						// We cannot assign reflect.ValueOf(val) to fieldValue as is, when field is a custom type
+						// We cannot assign reflect.ValueOf(val) to fieldValue as is, when field is a user defined type
 						// We need to find the Kind of the custom type and set the fieldValue to the specific type
-						// that custom type is defined with.
+						// that user defined type is defined with.
 						kind := fieldType.Elem().Kind()
 						switch kind {
 						case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
