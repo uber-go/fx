@@ -230,3 +230,14 @@ func TestParsingUnparsableDuration(t *testing.T) {
 		assert.Error(t, err)
 	})
 }
+
+func TestTypeOfTypes(t *testing.T) {
+	withYamlBytes(t, typeStructYaml, func(provider Provider) {
+		tts := typeStructStruct{}
+		err := provider.Get("").PopulateStruct(&tts)
+		assert.NoError(t, err)
+		assert.Equal(t, userDefinedTypeInt(123), *tts.TypeStruct.TestInt)
+		assert.Equal(t, userDefinedTypeUInt(456), *tts.TypeStruct.TestUInt)
+		assert.Equal(t, userDefinedTypeFloat(123.456), *tts.TypeStruct.TestFloat)
+	})
+}

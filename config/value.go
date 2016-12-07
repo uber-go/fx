@@ -417,7 +417,23 @@ func (cv Value) valueStruct(key string, target interface{}) (interface{}, error)
 						if fieldValue.IsNil() {
 							fieldValue.Set(reflect.New(fieldType.Elem()))
 						}
-						fieldValue.Elem().Set(reflect.ValueOf(val))
+
+						// We cannot assign reflect.ValueOf(val) to fieldValue as is, when field is a user defined type
+						// We need to find the Kind of the custom type and set the fieldValue to the specific type
+						// that user defined type is defined with.
+						kind := fieldType.Elem().Kind()
+						switch kind {
+						case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+							fieldValue.Elem().SetInt(int64(val.(int)))
+						case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr:
+							fieldValue.Elem().SetUint(uint64(val.(int)))
+						case reflect.Float32, reflect.Float64:
+							fieldValue.Elem().SetFloat(float64(val.(float64)))
+						case reflect.String:
+							fieldValue.Elem().SetString(string(val.(string)))
+						default:
+							fieldValue.Elem().Set(reflect.ValueOf(val))
+						}
 					}
 				}
 				continue
