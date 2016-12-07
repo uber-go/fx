@@ -156,7 +156,9 @@ func (s *host) shutdown(err error, reason string, exitCode *int) (bool, error) {
 
 	// Stop the metrics reporting
 	if s.scope != nil {
-		s.metricsCloser.Close()
+		if err = s.metricsCloser.Close(); err != nil {
+			s.Logger().Error("Failure to close metrics", "error", err)
+		}
 	}
 
 	// Flush tracing buffers
