@@ -41,8 +41,9 @@ func InitGlobalTracer(
 	var reporter *jaegerReporter
 	if cfg == nil || !cfg.Disabled {
 		cfg = loadAppConfig(cfg, logger)
+		// TODO: Change to use the right stats reporter
 		reporter = &jaegerReporter{
-			reporter: scope.Reporter(),
+			reporter: tally.NullStatsReporter,
 		}
 	}
 	tracer, closer, err := cfg.New(serviceName, reporter)
@@ -90,7 +91,7 @@ func (jr *jaegerReporter) IncCounter(name string, tags map[string]string, value 
 
 // UpdateGauge updates metrics gauge
 func (jr *jaegerReporter) UpdateGauge(name string, tags map[string]string, value int64) {
-	jr.reporter.ReportGauge(name, tags, value)
+	jr.reporter.ReportGauge(name, tags, float64(value))
 }
 
 // RecordTimer records the metrics timer

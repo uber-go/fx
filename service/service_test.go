@@ -41,7 +41,7 @@ type testStatsReporter struct {
 	tw sync.WaitGroup
 
 	counters map[string]int64
-	gauges   map[string]int64
+	gauges   map[string]float64
 	timers   map[string]time.Duration
 }
 
@@ -52,7 +52,7 @@ func (r *testStatsReporter) ReportCounter(name string, tags map[string]string, v
 	r.m.Unlock()
 }
 
-func (r *testStatsReporter) ReportGauge(name string, tags map[string]string, value int64) {
+func (r *testStatsReporter) ReportGauge(name string, tags map[string]string, value float64) {
 	r.m.Lock()
 	r.gauges[name] = value
 	r.gw.Done()
@@ -66,12 +66,16 @@ func (r *testStatsReporter) ReportTimer(name string, tags map[string]string, int
 	r.m.Unlock()
 }
 
+func (r *testStatsReporter) Capabilities() tally.Capabilities {
+	return nil
+}
+
 func (r *testStatsReporter) Flush() {}
 
 func newTestStatsReporter() *testStatsReporter {
 	return &testStatsReporter{
 		counters: make(map[string]int64),
-		gauges:   make(map[string]int64),
+		gauges:   make(map[string]float64),
 		timers:   make(map[string]time.Duration),
 	}
 }
@@ -79,7 +83,8 @@ func newTestStatsReporter() *testStatsReporter {
 func TestServiceCreation(t *testing.T) {
 	r := newTestStatsReporter()
 	r.cw.Add(1)
-	scope := tally.NewRootScope("", nil, r, 50*time.Millisecond)
+	scope, closer := tally.NewRootScope("", nil, r, 50*time.Millisecond)
+	defer closer.Close()
 	svc, err := New(
 		withConfig(validServiceConfig),
 		WithMetricsRootScope(scope),

@@ -52,7 +52,7 @@ func WithLogger(log ulog.Log) Option {
 }
 
 // WithMetricsRootScope configures a service host with metrics
-func WithMetricsRootScope(scope tally.RootScope) Option {
+func WithMetricsRootScope(scope tally.Scope) Option {
 	return func(svc Host) error {
 		svc2 := svc.(*host)
 		svc2.scope = scope

@@ -66,15 +66,15 @@ func TestRegisterBadReporterPanics(t *testing.T) {
 	})
 }
 
-func goodScope(i ScopeInit) (tally.RootScope, error) {
+func goodScope(i ScopeInit) (tally.Scope, error) {
 	return tally.NoopScope, nil
 }
 
-func badScope(i ScopeInit) (tally.RootScope, error) {
+func badScope(i ScopeInit) (tally.Scope, error) {
 	return nil, errors.New("fake error")
 }
 
-func getScope() tally.RootScope {
+func getScope() tally.Scope {
 	return RootScope(scopeInit())
 }
 

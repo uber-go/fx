@@ -66,7 +66,7 @@ type SetContainerer interface {
 }
 
 type metricsCore struct {
-	scope            tally.RootScope
+	scope            tally.Scope
 	runtimeCollector *metrics.RuntimeCollector
 }
 

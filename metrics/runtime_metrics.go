@@ -140,13 +140,13 @@ func (r *RuntimeCollector) generate() {
 	var memStats runtime.MemStats
 	runtime.ReadMemStats(&memStats)
 
-	r.metrics.numGoRoutines.Update(int64(runtime.NumGoroutine()))
-	r.metrics.goMaxProcs.Update(int64(runtime.GOMAXPROCS(0)))
-	r.metrics.memoryAllocated.Update(int64(memStats.Alloc))
-	r.metrics.memoryHeap.Update(int64(memStats.HeapAlloc))
-	r.metrics.memoryHeapIdle.Update(int64(memStats.HeapIdle))
-	r.metrics.memoryHeapInuse.Update(int64(memStats.HeapInuse))
-	r.metrics.memoryStack.Update(int64(memStats.StackInuse))
+	r.metrics.numGoRoutines.Update(float64(runtime.NumGoroutine()))
+	r.metrics.goMaxProcs.Update(float64(runtime.GOMAXPROCS(0)))
+	r.metrics.memoryAllocated.Update(float64(memStats.Alloc))
+	r.metrics.memoryHeap.Update(float64(memStats.HeapAlloc))
+	r.metrics.memoryHeapIdle.Update(float64(memStats.HeapIdle))
+	r.metrics.memoryHeapInuse.Update(float64(memStats.HeapInuse))
+	r.metrics.memoryStack.Update(float64(memStats.StackInuse))
 
 	// memStats.NumGC is a perpetually incrementing counter (unless it wraps at 2^32)
 	num := memStats.NumGC

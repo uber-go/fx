@@ -47,7 +47,7 @@ type ScopeInit interface {
 }
 
 // ScopeFunc is used during service init time to register the reporter
-type ScopeFunc func(i ScopeInit) (tally.RootScope, error)
+type ScopeFunc func(i ScopeInit) (tally.Scope, error)
 
 // Freeze ensures that after service is started, no other metrics manipulations can be done
 //
@@ -87,7 +87,7 @@ func RegisterRootScope(rep ScopeFunc) {
 }
 
 // RootScope returns the provided stats reporter, or nil
-func RootScope(i ScopeInit) tally.RootScope {
+func RootScope(i ScopeInit) tally.Scope {
 	_mu.Lock()
 	defer _mu.Unlock()
 
