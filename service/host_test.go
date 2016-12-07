@@ -26,10 +26,13 @@ import (
 	"time"
 
 	"go.uber.org/fx/config"
+	"go.uber.org/fx/metrics"
+	"go.uber.org/fx/testutils"
 	"go.uber.org/fx/ulog"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/uber-go/tally"
 )
 
 func TestOnCriticalError_NoObserver(t *testing.T) {
@@ -177,13 +180,57 @@ func TestOnCriticalError_ObserverShutdown(t *testing.T) {
 }
 
 func TestShutdownWithError_ReturnsError(t *testing.T) {
-	sh := &host{
-		closeChan: make(chan Exit, 1),
-	}
+	sh := makeRunningHost()
 	exitCode := 1
 	shutdown, err := sh.shutdown(errors.New("simulated"), "testing", &exitCode)
 	assert.True(t, shutdown)
 	assert.Error(t, err)
+}
+
+func TestHostShutdown_RunningService(t *testing.T) {
+	sh := makeRunningHost()
+	checkShutdown(t, sh, false)
+}
+
+func TestHostShutdown_CloseSuccessful(t *testing.T) {
+	sh := makeRunningHost()
+	sh.serviceCore.metricsCore = metricsCore{
+		scope:            tally.NoopScope,
+		metricsCloser:    testutils.NoopCloser{},
+		runtimeCollector: metrics.NewRuntimeCollector(tally.NoopScope, time.Millisecond),
+	}
+	sh.serviceCore.tracerCore = tracerCore{
+		tracerCloser: testutils.NoopCloser{},
+	}
+	checkShutdown(t, sh, false)
+}
+
+func TestHostShutdown_MetricsCloserError(t *testing.T) {
+	sh := makeRunningHost()
+	sh.serviceCore.metricsCore = metricsCore{
+		scope:         tally.NoopScope,
+		metricsCloser: testutils.ErrorCloser{},
+	}
+	checkShutdown(t, sh, true)
+}
+
+func TestHostShutdown_TracerCloserError(t *testing.T) {
+	sh := makeRunningHost()
+	sh.serviceCore.tracerCore = tracerCore{
+		tracerCloser: testutils.ErrorCloser{},
+	}
+	checkShutdown(t, sh, true)
+}
+
+func checkShutdown(t *testing.T, h *host, expectedErr bool) {
+	exitCode := 1
+	shutdown, err := h.shutdown(nil, "testing", &exitCode)
+	assert.True(t, shutdown)
+	if expectedErr {
+		assert.Error(t, err)
+	} else {
+		assert.NoError(t, err)
+	}
 }
 
 func TestHostStart_InShutdown(t *testing.T) {
@@ -195,9 +242,7 @@ func TestHostStart_InShutdown(t *testing.T) {
 }
 
 func TestHostStart_AlreadyRunning(t *testing.T) {
-	sh := &host{
-		closeChan: make(chan Exit, 1),
-	}
+	sh := makeRunningHost()
 	control := sh.StartAsync()
 	assert.Error(t, control.ServiceError)
 }
@@ -268,6 +313,12 @@ func TestStartHost_WithErrors(t *testing.T) {
 		<-control.ExitChan
 	}()
 	assert.Error(t, control.ServiceError)
+}
+
+func makeRunningHost() *host {
+	h := makeHost()
+	h.closeChan = make(chan Exit, 1) // Indicates service is running
+	return h
 }
 
 func makeHost() *host {
