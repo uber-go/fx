@@ -195,7 +195,7 @@ func TestHostShutdown_RunningService(t *testing.T) {
 func TestHostShutdown_CloseSuccessful(t *testing.T) {
 	sh := makeRunningHost()
 	sh.serviceCore.metricsCore = metricsCore{
-		scope:            tally.NoopScope,
+		metrics:          tally.NoopScope,
 		metricsCloser:    testutils.NoopCloser{},
 		runtimeCollector: metrics.NewRuntimeCollector(tally.NoopScope, time.Millisecond),
 	}
@@ -208,7 +208,7 @@ func TestHostShutdown_CloseSuccessful(t *testing.T) {
 func TestHostShutdown_MetricsCloserError(t *testing.T) {
 	sh := makeRunningHost()
 	sh.serviceCore.metricsCore = metricsCore{
-		scope:         tally.NoopScope,
+		metrics:       tally.NoopScope,
 		metricsCloser: testutils.ErrorCloser{},
 	}
 	checkShutdown(t, sh, true)

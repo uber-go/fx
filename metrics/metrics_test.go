@@ -34,20 +34,22 @@ import (
 func TestRegisterReporter_OK(t *testing.T) {
 	defer cleanup()
 
-	scope, _ := getScope()
+	scope, reporter, _ := getScope()
 	assert.Nil(t, scope)
+	assert.Nil(t, reporter)
 
-	RegisterRootScope(goodScope)
-	scope, _ = getScope()
+	RegisterStatsReporter(goodScope)
+	scope, reporter, _ = getScope()
 	assert.NotNil(t, scope)
+	assert.NotNil(t, reporter)
 }
 
 func TestRegisterReporterPanics(t *testing.T) {
 	defer cleanup()
 
-	RegisterRootScope(goodScope)
+	RegisterStatsReporter(goodScope)
 	assert.Panics(t, func() {
-		RegisterRootScope(goodScope)
+		RegisterStatsReporter(goodScope)
 	})
 }
 
@@ -56,28 +58,28 @@ func TestRegisterReporterFrozen(t *testing.T) {
 
 	Freeze()
 	assert.Panics(t, func() {
-		RegisterRootScope(goodScope)
+		RegisterStatsReporter(goodScope)
 	})
 }
 
 func TestRegisterBadReporterPanics(t *testing.T) {
 	defer cleanup()
 
-	RegisterRootScope(badScope)
+	RegisterStatsReporter(badScope)
 	assert.Panics(t, func() {
 		getScope()
 	})
 }
 
-func goodScope(i ScopeInit) (tally.Scope, io.Closer, error) {
-	return tally.NoopScope, nil, nil
+func goodScope(i ScopeInit) (tally.StatsReporter, error) {
+	return tally.NullStatsReporter, nil
 }
 
-func badScope(i ScopeInit) (tally.Scope, io.Closer, error) {
-	return nil, nil, errors.New("fake error")
+func badScope(i ScopeInit) (tally.StatsReporter, error) {
+	return nil, errors.New("fake error")
 }
 
-func getScope() (tally.Scope, io.Closer) {
+func getScope() (tally.Scope, tally.StatsReporter, io.Closer) {
 	return RootScope(scopeInit())
 }
 
@@ -104,7 +106,7 @@ func scopeInit() ScopeInit {
 }
 
 func cleanup() {
-	_scopeFunc = nil
+	_repFunc = nil
 	_frozen = false
 }
 

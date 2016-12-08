@@ -29,13 +29,13 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/uber-go/tally"
 	"github.com/uber-go/zap"
-	"github.com/uber/jaeger-client-go"
+	jaeger "github.com/uber/jaeger-client-go"
 	"github.com/uber/jaeger-client-go/config"
 )
 
 var (
 	_serviceName            = "serviceName"
-	_scope                  = tally.NoopScope
+	_statsReporter          = tally.NullStatsReporter
 	_emptyJaegerConfig      = &config.Configuration{}
 	_disabledJaegerConfig   = &config.Configuration{Disabled: true}
 	_jaegerConfigWithLogger = &config.Configuration{Logger: jaeger.NullLogger}
@@ -46,21 +46,25 @@ func getLogger() ulog.Log {
 }
 
 func TestInitGlobalTracer_Simple(t *testing.T) {
-	tracer, closer, err := InitGlobalTracer(_emptyJaegerConfig, _serviceName, getLogger(), _scope)
+	tracer, closer, err := InitGlobalTracer(
+		_emptyJaegerConfig, _serviceName, getLogger(), _statsReporter,
+	)
 	assert.NotNil(t, tracer)
 	assert.NotNil(t, closer)
 	assert.NoError(t, err)
 }
 
 func TestInitGlobalTracer_Disabled(t *testing.T) {
-	tracer, closer, err := InitGlobalTracer(_disabledJaegerConfig, _serviceName, getLogger(), _scope)
+	tracer, closer, err := InitGlobalTracer(
+		_disabledJaegerConfig, _serviceName, getLogger(), _statsReporter,
+	)
 	assert.NotNil(t, tracer)
 	assert.NotNil(t, closer)
 	assert.NoError(t, err)
 }
 
 func TestInitGlobalTracer_NoServiceName(t *testing.T) {
-	tracer, closer, err := InitGlobalTracer(_emptyJaegerConfig, "", getLogger(), _scope)
+	tracer, closer, err := InitGlobalTracer(_emptyJaegerConfig, "", getLogger(), _statsReporter)
 	assert.Error(t, err)
 	assert.Nil(t, tracer)
 	assert.Nil(t, closer)

@@ -55,7 +55,7 @@ func WithLogger(log ulog.Log) Option {
 func WithMetricsRootScope(scope tally.Scope) Option {
 	return func(svc Host) error {
 		svc2 := svc.(*host)
-		svc2.scope = scope
+		svc2.metrics = scope
 		return nil
 	}
 }

@@ -36,14 +36,14 @@ func InitGlobalTracer(
 	cfg *config.Configuration,
 	serviceName string,
 	logger ulog.Log,
-	scope tally.Scope,
+	statsReporter tally.StatsReporter,
 ) (opentracing.Tracer, io.Closer, error) {
 	var reporter *jaegerReporter
 	if cfg == nil || !cfg.Disabled {
 		cfg = loadAppConfig(cfg, logger)
 		// TODO: Change to use the right stats reporter
 		reporter = &jaegerReporter{
-			reporter: tally.NullStatsReporter,
+			reporter: statsReporter,
 		}
 	}
 	tracer, closer, err := cfg.New(serviceName, reporter)

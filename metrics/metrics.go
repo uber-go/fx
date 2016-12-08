@@ -24,6 +24,7 @@ import (
 	"fmt"
 	"io"
 	"sync"
+	"time"
 
 	"go.uber.org/fx/config"
 
@@ -31,9 +32,9 @@ import (
 )
 
 var (
-	_scopeFunc ScopeFunc
-	_mu        sync.Mutex
-	_frozen    bool
+	_repFunc StatsReporterFunc
+	_mu      sync.Mutex
+	_frozen  bool
 
 	// DefaultReporter does not do anything
 	// TODO(glib): add a logging reporter and use it by default, rather than noop
@@ -47,8 +48,8 @@ type ScopeInit interface {
 	Config() config.Provider
 }
 
-// ScopeFunc is used during service init time to register the reporter
-type ScopeFunc func(i ScopeInit) (tally.Scope, io.Closer, error)
+// StatsReporterFunc is used during service init time to register the reporter
+type StatsReporterFunc func(i ScopeInit) (tally.StatsReporter, error)
 
 // Freeze ensures that after service is started, no other metrics manipulations can be done
 //
@@ -72,33 +73,33 @@ func ensureNotFrozen() {
 	}
 }
 
-// RegisterRootScope initializes the root scope for all the service metrics
-func RegisterRootScope(rep ScopeFunc) {
+// RegisterStatsReporter initializes the stats reporter for all the service metrics
+func RegisterStatsReporter(repFunc StatsReporterFunc) {
 	ensureNotFrozen()
 
 	_mu.Lock()
 	defer _mu.Unlock()
 
-	if _scopeFunc != nil {
+	if _repFunc != nil {
 		// TODO(glib): consider a "force" flag, or some way to clear out and replace the reporter
 		panic("There can be only one metrics reporter")
 	}
 
-	_scopeFunc = rep
+	_repFunc = repFunc
 }
 
 // RootScope returns the provided stats reporter, or nil
-func RootScope(i ScopeInit) (tally.Scope, io.Closer) {
+func RootScope(i ScopeInit) (tally.Scope, tally.StatsReporter, io.Closer) {
 	_mu.Lock()
 	defer _mu.Unlock()
 
-	if _scopeFunc != nil {
-		rep, closer, err := _scopeFunc(i)
+	if _repFunc != nil {
+		rep, err := _repFunc(i)
 		if err != nil {
 			panic(fmt.Sprintf("Failed to initialize metrics reporter %v", err))
 		}
-		return rep, closer
+		scope, closer := tally.NewRootScope("", nil, rep, time.Second)
+		return scope, rep, closer
 	}
-
-	return nil, nil
+	return nil, nil, nil
 }
