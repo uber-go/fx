@@ -90,11 +90,11 @@ func verifyMetrics(t *testing.T, scope tally.TestScope) {
 	assert.NotNil(t, gauges["memory.heap"].Value())
 	assert.NotNil(t, gauges["memory.heapidle"].Value())
 	assert.NotNil(t, gauges["memory.heapinuse"].Value())
-	assert.NotNil(t, gauges["memory.stack"].Value)
+	assert.NotNil(t, gauges["memory.stack"].Value())
 	// Check counters
 	counters := snapshot.Counters()
 	assert.NotZero(t, counters["memory.num-gc"].Value())
 	// Check timers
 	timers := snapshot.Timers()
-	assert.NotZero(t, len(timers["memory.gc-pause-ms"].Values()))
+	assert.NotEmpty(t, timers["memory.gc-pause-ms"].Values())
 }
