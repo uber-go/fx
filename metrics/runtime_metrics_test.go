@@ -48,7 +48,6 @@ func TestRuntimeCollector(t *testing.T) {
 }
 
 func TestStartRuntimeCollector(t *testing.T) {
-	t.Skip()
 	testScope := tally.NewTestScope("", nil)
 	collector := StartCollectingRuntimeMetrics(testScope, time.Millisecond, _emptyRuntimeConfig)
 	defer closeCollector(t, collector)
@@ -62,7 +61,6 @@ func TestStartRuntimeCollector(t *testing.T) {
 }
 
 func TestStartRuntimeCollectorStartAgain(t *testing.T) {
-	t.Skip()
 	collector := StartCollectingRuntimeMetrics(tally.NoopScope, time.Millisecond, _emptyRuntimeConfig)
 	defer closeCollector(t, collector)
 
@@ -72,7 +70,6 @@ func TestStartRuntimeCollectorStartAgain(t *testing.T) {
 }
 
 func TestStartRuntimecollectorDisabled(t *testing.T) {
-	t.Skip()
 	config := RuntimeConfig{Disabled: true}
 	collector := StartCollectingRuntimeMetrics(tally.NoopScope, time.Millisecond, config)
 	assert.Nil(t, collector)
