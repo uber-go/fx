@@ -8,7 +8,7 @@ run_uber_licence() {
   local bin="$LICENCE_BIN"
   # Ok, somebody hasn't run `npm install -g uber-licence`, that's cool
   if ! which "$bin" >/dev/null ; then
-    npm install "$bin"
+    npm install "$bin" >/dev/null
     bin="./node_modules/uber-licence/bin/licence"
   fi
 

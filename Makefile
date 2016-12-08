@@ -9,6 +9,7 @@ include $(SUPPORT_FILES)/verbosity.mk
 
 .PHONY: all
 all: lint test
+.DEFAULT_GOAL := all
 
 COV_REPORT := overalls.coverprofile
 
