@@ -33,8 +33,8 @@ import (
 )
 
 func TestSimpleLogger(t *testing.T) {
-	testutils.WithInMemoryLogger(t, nil, func(zaplogger zap.Logger, buf *testutils.TestBuffer) {
-		log := Builder().SetLogger(zaplogger).Build()
+	testutils.WithInMemoryLogger(t, nil, func(zapLogger zap.Logger, buf *testutils.TestBuffer) {
+		log := Builder().SetLogger(zapLogger).Build()
 
 		log.Debug("debug message", "a", "b")
 		log.Info("info message", "c", "d")
@@ -50,8 +50,8 @@ func TestSimpleLogger(t *testing.T) {
 }
 
 func TestLoggerWithInitFields(t *testing.T) {
-	testutils.WithInMemoryLogger(t, nil, func(zaplogger zap.Logger, buf *testutils.TestBuffer) {
-		log := Builder().SetLogger(zaplogger).Build().With("method", "test_method")
+	testutils.WithInMemoryLogger(t, nil, func(zapLogger zap.Logger, buf *testutils.TestBuffer) {
+		log := Builder().SetLogger(zapLogger).Build().With("method", "test_method")
 		log.Debug("debug message", "a", "b")
 		log.Info("info message", "c", "d")
 		log.Warn("warn message", "e", "f")
@@ -66,8 +66,8 @@ func TestLoggerWithInitFields(t *testing.T) {
 }
 
 func TestLoggerWithInvalidFields(t *testing.T) {
-	testutils.WithInMemoryLogger(t, nil, func(zaplogger zap.Logger, buf *testutils.TestBuffer) {
-		log := Builder().SetLogger(zaplogger).Build()
+	testutils.WithInMemoryLogger(t, nil, func(zapLogger zap.Logger, buf *testutils.TestBuffer) {
+		log := Builder().SetLogger(zapLogger).Build()
 		log.Info("info message", "c")
 		log.Info("info message", "c", "d", "e")
 		log.DPanic("debug message")
@@ -80,8 +80,8 @@ func TestLoggerWithInvalidFields(t *testing.T) {
 }
 
 func TestFatalsAndPanics(t *testing.T) {
-	testutils.WithInMemoryLogger(t, nil, func(zaplogger zap.Logger, buf *testutils.TestBuffer) {
-		log := Builder().SetLogger(zaplogger).Build()
+	testutils.WithInMemoryLogger(t, nil, func(zapLogger zap.Logger, buf *testutils.TestBuffer) {
+		log := Builder().SetLogger(zapLogger).Build()
 		assert.Panics(t, func() { log.Panic("panic level") }, "Expected to panic")
 		assert.Equal(t, `{"level":"panic","msg":"panic level"}`, buf.Stripped(), "Unexpected output")
 	})

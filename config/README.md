@@ -93,8 +93,8 @@ environment-based configuration providers.
 
 Dynamic configuration providers frequently need some bootstrap configuration to
 be useful, so UberFx treats them specially. Dynamic configuration providers
-conform to the `Provider` interface, but they're instantianted
-**after** the Static `Provider`s on order to read bootstarp values.
+conform to the `Provider` interface, but they're instantiated
+**after** the Static `Provider`s on order to read bootstrap values.
 
 For example, if you were to implement a ZooKeeper-backed
 `Provider`, you'd likely need to specify (via YAML or environment

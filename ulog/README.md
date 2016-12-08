@@ -28,13 +28,13 @@ func main() {
   log := lobBuilder.Build()
 
   // Use logger in your service
-  log.Info("Message describing loggging reason", "key", "value")
+  log.Info("Message describing logging reason", "key", "value")
 }
 ```
 
 ## Context
 
-It is very common that in addition to loggin a string message, it is desirable
+It is very common that in addition to logging a string message, it is desirable
 to provide additional information: customer uuid, tracing id, etc.
 
 For that very reason, the logging methods (`Info`,`Warn`, `Debug`, etc) take
