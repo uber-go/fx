@@ -49,6 +49,7 @@ func TestInitGlobalTracer_Simple(t *testing.T) {
 	tracer, closer, err := InitGlobalTracer(
 		_emptyJaegerConfig, _serviceName, getLogger(), _statsReporter,
 	)
+	defer closer.Close()
 	assert.NotNil(t, tracer)
 	assert.NotNil(t, closer)
 	assert.NoError(t, err)
@@ -58,6 +59,7 @@ func TestInitGlobalTracer_Disabled(t *testing.T) {
 	tracer, closer, err := InitGlobalTracer(
 		_disabledJaegerConfig, _serviceName, getLogger(), _statsReporter,
 	)
+	defer closer.Close()
 	assert.NotNil(t, tracer)
 	assert.NotNil(t, closer)
 	assert.NoError(t, err)

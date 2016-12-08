@@ -34,14 +34,17 @@ import (
 func TestRegisterReporter_OK(t *testing.T) {
 	defer cleanup()
 
-	scope, reporter, _ := getScope()
+	scope, reporter, closer := getScope()
 	assert.Nil(t, scope)
 	assert.Nil(t, reporter)
+	assert.Nil(t, closer)
 
 	RegisterStatsReporter(goodScope)
-	scope, reporter, _ = getScope()
+	scope, reporter, closer = getScope()
+	defer closer.Close()
 	assert.NotNil(t, scope)
 	assert.NotNil(t, reporter)
+	assert.NotNil(t, closer)
 }
 
 func TestRegisterReporterPanics(t *testing.T) {
