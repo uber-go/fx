@@ -32,27 +32,32 @@ import (
 var _emptyRuntimeConfig = RuntimeConfig{}
 
 func TestRuntimeCollector(t *testing.T) {
-	collector := NewRuntimeCollector(tally.NoopScope, time.Millisecond)
+	testScope := tally.NewTestScope("", nil)
+	// Setting this to second so that the only metrics generation call in this test comes from the
+	// explicit call to generate(). Note that this will not actually cause a 1 sec delay since we
+	// close the collector when this test ends.
+	collector := NewRuntimeCollector(testScope, time.Second)
 	defer closeCollector(t, collector)
 
 	assert.False(t, collector.IsRunning())
 	collector.Start()
 	assert.True(t, collector.IsRunning())
 	runtime.GC()
-	time.Sleep(5 * time.Millisecond)
 	collector.generate()
+	verifyMetrics(t, testScope, true)
 }
 
 func TestStartRuntimeCollector(t *testing.T) {
-	collector := StartCollectingRuntimeMetrics(tally.NoopScope, time.Millisecond, _emptyRuntimeConfig)
+	testScope := tally.NewTestScope("", nil)
+	collector := StartCollectingRuntimeMetrics(testScope, time.Millisecond, _emptyRuntimeConfig)
 	defer closeCollector(t, collector)
 
 	assert.True(t, collector.IsRunning())
-	runtime.GC()
 	time.Sleep(time.Millisecond)
 	// Generate gets called
 	time.Sleep(time.Millisecond)
 	// Generate gets called
+	verifyMetrics(t, testScope, false)
 }
 
 func TestStartRuntimeCollectorStartAgain(t *testing.T) {
@@ -74,4 +79,25 @@ func closeCollector(t *testing.T, r *RuntimeCollector) {
 	r.Close()
 	_, ok := <-r.quit
 	assert.False(t, ok)
+}
+
+func verifyMetrics(t *testing.T, scope tally.TestScope, withGC bool) {
+	snapshot := scope.Snapshot()
+	// Check gauges
+	gauges := snapshot.Gauges()
+	assert.NotNil(t, gauges["num-goroutines"].Value())
+	assert.NotNil(t, gauges["gomaxprocs"].Value())
+	assert.NotNil(t, gauges["memory.allocated"].Value())
+	assert.NotNil(t, gauges["memory.heap"].Value())
+	assert.NotNil(t, gauges["memory.heapidle"].Value())
+	assert.NotNil(t, gauges["memory.heapinuse"].Value())
+	assert.NotNil(t, gauges["memory.stack"].Value())
+	if withGC {
+		// Check counters
+		counters := snapshot.Counters()
+		assert.NotZero(t, counters["memory.num-gc"].Value())
+		// Check timers
+		timers := snapshot.Timers()
+		assert.NotEmpty(t, timers["memory.gc-pause-ms"].Values())
+	}
 }
