@@ -39,7 +39,7 @@ func TestRegisterReporter_OK(t *testing.T) {
 	assert.Nil(t, reporter)
 	assert.Nil(t, closer)
 
-	RegisterStatsReporter(goodScope)
+	RegisterStatsReporter(goodReporter)
 	scope, reporter, closer = getScope()
 	defer closer.Close()
 	assert.NotNil(t, scope)
@@ -50,9 +50,9 @@ func TestRegisterReporter_OK(t *testing.T) {
 func TestRegisterReporterPanics(t *testing.T) {
 	defer cleanup()
 
-	RegisterStatsReporter(goodScope)
+	RegisterStatsReporter(goodReporter)
 	assert.Panics(t, func() {
-		RegisterStatsReporter(goodScope)
+		RegisterStatsReporter(goodReporter)
 	})
 }
 
@@ -61,24 +61,24 @@ func TestRegisterReporterFrozen(t *testing.T) {
 
 	Freeze()
 	assert.Panics(t, func() {
-		RegisterStatsReporter(goodScope)
+		RegisterStatsReporter(goodReporter)
 	})
 }
 
 func TestRegisterBadReporterPanics(t *testing.T) {
 	defer cleanup()
 
-	RegisterStatsReporter(badScope)
+	RegisterStatsReporter(badReporter)
 	assert.Panics(t, func() {
 		getScope()
 	})
 }
 
-func goodScope(i ScopeInit) (tally.StatsReporter, error) {
+func goodReporter(i ScopeInit) (tally.StatsReporter, error) {
 	return tally.NullStatsReporter, nil
 }
 
-func badScope(i ScopeInit) (tally.StatsReporter, error) {
+func badReporter(i ScopeInit) (tally.StatsReporter, error) {
 	return nil, errors.New("fake error")
 }
 
