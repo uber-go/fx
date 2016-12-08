@@ -71,7 +71,7 @@ func BenchmarkUlogWithFieldsLogIFace(b *testing.B) {
 
 func BenchmarkUlogWithFieldsBaseLoggerStruct(b *testing.B) {
 	withDiscardedLogger(b, func(log Log) {
-		base := log.(*baselogger)
+		base := log.(*baseLogger)
 		b.ResetTimer()
 		b.RunParallel(func(pb *testing.PB) {
 			for pb.Next() {

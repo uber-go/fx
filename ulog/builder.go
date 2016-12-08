@@ -30,7 +30,7 @@ import (
 	"github.com/uber-go/zap"
 )
 
-// Configuration for logging with uberfx
+// Configuration for logging with UberFx
 type Configuration struct {
 	Level   string
 	File    *FileConfiguration
@@ -82,7 +82,7 @@ func (lb *LogBuilder) Build() Log {
 
 	// When setLogger is called, we will always use logger that has been set
 	if lb.log != nil {
-		return &baselogger{
+		return &baseLogger{
 			log: lb.log,
 		}
 	}
@@ -93,7 +93,7 @@ func (lb *LogBuilder) Build() Log {
 		log = lb.Configure()
 	}
 
-	return &baselogger{
+	return &baseLogger{
 		log: log,
 	}
 }

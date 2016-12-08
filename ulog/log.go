@@ -27,23 +27,23 @@ import (
 	"github.com/uber-go/zap"
 )
 
-type baselogger struct {
+type baseLogger struct {
 	log zap.Logger
 }
 
-// Log is the Uberfx wrapper for underlying logging service
+// Log is the UberFx wrapper for underlying logging service
 type Log interface {
 
 	// With creates a child logger with the provided parameters as key value pairs
 	// ulog uses uber-go/zap library as its child logger which needs pairs of key value objects
 	// in the form of zap.Fields(key, value). ulog performs field conversion from
-	// supplied keyvals pair to zap.Fields format.
+	// supplied keyVals pair to zap.Fields format.
 	//
 	// **IMPORTANT**: With should never be used if the resulting logger
 	// object is not being retained. If you need to add some context to
 	// a logging message, use the Error, Info, etc. functions
 	// and pass in additional interface{} pairs for logging.
-	With(keyvals ...interface{}) Log
+	With(keyVals ...interface{}) Log
 
 	// Check returns a zap.CheckedMessage if logging a message at the specified level is enabled.
 	Check(level zap.Level, message string) *zap.CheckedMessage
@@ -52,34 +52,34 @@ type Log interface {
 	RawLogger() zap.Logger
 
 	// Log at the provided zap.Level with message, and a sequence of parameters as key value pairs
-	Log(level zap.Level, message string, keyvals ...interface{})
+	Log(level zap.Level, message string, keyVals ...interface{})
 
 	// Debug logs at Debug level with message, and parameters as key value pairs
-	Debug(message string, keyvals ...interface{})
+	Debug(message string, keyVals ...interface{})
 
 	// Info logs at Info level with message, and parameters as key value pairs
-	Info(message string, keyvals ...interface{})
+	Info(message string, keyVals ...interface{})
 
 	// Warn ogs at Warn level with message, and parameters as key value pairs
-	Warn(message string, keyvals ...interface{})
+	Warn(message string, keyVals ...interface{})
 
 	// Error logs at Error level with message, and parameters as key value pairs
-	Error(message string, keyvals ...interface{})
+	Error(message string, keyVals ...interface{})
 
 	// Panic logs at Panic level with message, and parameters as key value pairs
-	Panic(message string, keyvals ...interface{})
+	Panic(message string, keyVals ...interface{})
 
 	// Fatal logs at Fatal level with message, and parameters as key value pairs
-	Fatal(message string, keyvals ...interface{})
+	Fatal(message string, keyVals ...interface{})
 
 	// DPanic logs at Debug level (Fatal for development) with message, and parameters as key value pairs
-	DPanic(message string, keyvals ...interface{})
+	DPanic(message string, keyVals ...interface{})
 }
 
 var _std = defaultLogger()
 
 func defaultLogger() Log {
-	return &baselogger{
+	return &baseLogger{
 		log: zap.New(zap.NewJSONEncoder()),
 	}
 }
@@ -87,69 +87,69 @@ func defaultLogger() Log {
 // Logger returns the package-level logger configured for the service
 // TODO:(at) Remove Logger() call, _std and defaultLogger() access in ulog
 func Logger() Log {
-	return &baselogger{
-		log: _std.(*baselogger).log,
+	return &baseLogger{
+		log: _std.(*baseLogger).log,
 	}
 }
 
 // RawLogger returns underneath zap implementation for use
-func (l *baselogger) RawLogger() zap.Logger {
+func (l *baseLogger) RawLogger() zap.Logger {
 	return l.log
 }
 
-func (l *baselogger) With(keyvals ...interface{}) Log {
-	return &baselogger{
-		log: l.log.With(l.fieldsConversion(keyvals...)...),
+func (l *baseLogger) With(keyVals ...interface{}) Log {
+	return &baseLogger{
+		log: l.log.With(l.fieldsConversion(keyVals...)...),
 	}
 }
 
-func (l *baselogger) Check(level zap.Level, expr string) *zap.CheckedMessage {
+func (l *baseLogger) Check(level zap.Level, expr string) *zap.CheckedMessage {
 	return l.log.Check(level, expr)
 }
 
-func (l *baselogger) Debug(message string, keyvals ...interface{}) {
-	l.Log(zap.DebugLevel, message, keyvals...)
+func (l *baseLogger) Debug(message string, keyVals ...interface{}) {
+	l.Log(zap.DebugLevel, message, keyVals...)
 }
 
-func (l *baselogger) Info(message string, keyvals ...interface{}) {
-	l.Log(zap.InfoLevel, message, keyvals...)
+func (l *baseLogger) Info(message string, keyVals ...interface{}) {
+	l.Log(zap.InfoLevel, message, keyVals...)
 }
 
-func (l *baselogger) Warn(message string, keyvals ...interface{}) {
-	l.Log(zap.WarnLevel, message, keyvals...)
+func (l *baseLogger) Warn(message string, keyVals ...interface{}) {
+	l.Log(zap.WarnLevel, message, keyVals...)
 }
 
-func (l *baselogger) Error(message string, keyvals ...interface{}) {
-	l.Log(zap.ErrorLevel, message, keyvals...)
+func (l *baseLogger) Error(message string, keyVals ...interface{}) {
+	l.Log(zap.ErrorLevel, message, keyVals...)
 }
 
-func (l *baselogger) Panic(message string, keyvals ...interface{}) {
-	l.Log(zap.PanicLevel, message, keyvals...)
+func (l *baseLogger) Panic(message string, keyVals ...interface{}) {
+	l.Log(zap.PanicLevel, message, keyVals...)
 }
 
-func (l *baselogger) Fatal(message string, keyvals ...interface{}) {
-	l.Log(zap.FatalLevel, message, keyvals...)
+func (l *baseLogger) Fatal(message string, keyVals ...interface{}) {
+	l.Log(zap.FatalLevel, message, keyVals...)
 }
 
-func (l *baselogger) DPanic(message string, keyvals ...interface{}) {
-	l.log.DPanic(message, l.fieldsConversion(keyvals...)...)
+func (l *baseLogger) DPanic(message string, keyVals ...interface{}) {
+	l.log.DPanic(message, l.fieldsConversion(keyVals...)...)
 }
 
-func (l *baselogger) Log(lvl zap.Level, message string, keyvals ...interface{}) {
+func (l *baseLogger) Log(lvl zap.Level, message string, keyVals ...interface{}) {
 	if cm := l.Check(lvl, message); cm.OK() {
-		cm.Write(l.fieldsConversion(keyvals...)...)
+		cm.Write(l.fieldsConversion(keyVals...)...)
 	}
 }
 
-func (l *baselogger) fieldsConversion(keyvals ...interface{}) []zap.Field {
-	fields := make([]zap.Field, 0, len(keyvals)/2)
-	if len(keyvals)%2 != 0 {
+func (l *baseLogger) fieldsConversion(keyVals ...interface{}) []zap.Field {
+	fields := make([]zap.Field, 0, len(keyVals)/2)
+	if len(keyVals)%2 != 0 {
 		fields = append(fields, zap.Error(fmt.Errorf("invalid number of arguments")))
 		return fields
 	}
-	for idx := 0; idx < len(keyvals); idx += 2 {
-		if key, ok := keyvals[idx].(string); ok {
-			switch value := keyvals[idx+1].(type) {
+	for idx := 0; idx < len(keyVals); idx += 2 {
+		if key, ok := keyVals[idx].(string); ok {
+			switch value := keyVals[idx+1].(type) {
 			case bool:
 				fields = append(fields, zap.Bool(key, value))
 			case float64:

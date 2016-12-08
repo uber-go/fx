@@ -20,10 +20,15 @@
 
 // Package ulog is the Logging package.
 //
-// package ulog provides an API wrapper around the logging library zap (https://github.com/uber-go/zap).
-// package ulog uses the builder pattern to instantiate the logger. With LogBuilder you can perform pre-initialization setup
-// by injecting configuration, custom logger, and log level prior to building the usable
-// ulog.Log object. ulog.Loginterface provides a few benefits:
+// package ulog provides an API wrapper around the logging library
+// zap (https://github.com/uber-go/zap). package ulog uses the builder pattern
+// to instantiate the logger. With
+// LogBuilder you can perform pre-initialization
+// setup by injecting configuration, custom logger, and log level prior to building
+// the usable
+// ulog.Log object.
+//
+// ulog.Log interface provides a few benefits:
 // - Decouple services from the logger used underneath the framework
 // - Easy to use API for logging
 // - Easily swappable backend logger without changing the service
@@ -107,7 +112,7 @@
 //
 // Benchmarks
 //
-// Current performance benchmark data with ulog interface, ulog baselogger struct, and zap.Logger
+// Current performance benchmark data with ulog interface, ulog baseLogger struct, and zap.Logger
 //
 // |-------------------------------------------|----------|-----------|-----------|------------|
 // |BenchmarkUlogWithoutFields-8               |5000000   |226 ns/op  |48 B/op    |1 allocs/op |

@@ -23,7 +23,7 @@ package ulog
 import "github.com/uber-go/zap"
 
 func noopLogger() Log {
-	return &baselogger{
+	return &baseLogger{
 		log: zap.New(zap.NullEncoder()),
 	}
 }

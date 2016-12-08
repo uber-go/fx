@@ -99,7 +99,7 @@ func (m *marshalObject) MarshalLog(kv zap.KeyValue) error {
 
 func TestFieldConversion(t *testing.T) {
 	log := New()
-	base := log.(*baselogger)
+	base := log.(*baseLogger)
 
 	assert.Equal(t, zap.Bool("a", true), base.fieldsConversion("a", true)[0])
 	assert.Equal(t, zap.Float64("a", 5.5), base.fieldsConversion("a", 5.5)[0])
