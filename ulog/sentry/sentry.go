@@ -21,7 +21,6 @@
 package sentry
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/uber-go/zap"
@@ -67,11 +66,11 @@ type Hook struct {
 }
 
 // Option pattern for Hook creation.
-type Option func(l *Hook)
+type Option func(sh *Hook)
 
 // New Sentry Hook.
 func New(dsn string, options ...Option) (*Hook, error) {
-	l := &Hook{
+	sh := &Hook{
 		minLevel:          zap.ErrorLevel,
 		traceEnabled:      true,
 		traceSkipFrames:   _traceSkipFrames,
@@ -80,7 +79,7 @@ func New(dsn string, options ...Option) (*Hook, error) {
 	}
 
 	for _, option := range options {
-		option(l)
+		option(sh)
 	}
 
 	client, err := raven.New(dsn)
@@ -88,82 +87,105 @@ func New(dsn string, options ...Option) (*Hook, error) {
 		return nil, errors.Wrap(err, "failed to create sentry client")
 	}
 
-	l.Capturer = &nonBlockingCapturer{Client: client}
+	sh.Capturer = &nonBlockingCapturer{Client: client}
 
-	return l, nil
+	return sh, nil
+}
+
+// Fields returns the currently accumulated context fields
+func (sh *Hook) Fields() map[string]interface{} {
+	return sh.fields
 }
 
 // MinLevel provides a minimum level threshold.
 // All log messages above the set level are sent to Sentry.
 func MinLevel(level zap.Level) Option {
-	return func(l *Hook) {
-		l.minLevel = level
+	return func(sh *Hook) {
+		sh.minLevel = level
 	}
 }
 
 // DisableTraces allows to turn off Stacktrace for sentry packets.
 func DisableTraces() Option {
-	return func(l *Hook) {
-		l.traceEnabled = false
+	return func(sh *Hook) {
+		sh.traceEnabled = false
 	}
 }
 
 // TraceContextLines sets how many lines of code (in on direction) are sent
 // with the Sentry packet.
 func TraceContextLines(lines int) Option {
-	return func(l *Hook) {
-		l.traceContextLines = lines
+	return func(sh *Hook) {
+		sh.traceContextLines = lines
 	}
 }
 
 // TraceAppPrefixes sets a list of go import prefixes that are considered "in app".
 func TraceAppPrefixes(prefixes []string) Option {
-	return func(l *Hook) {
-		l.traceAppPrefixes = prefixes
+	return func(sh *Hook) {
+		sh.traceAppPrefixes = prefixes
 	}
 }
 
 // TraceSkipFrames sets how many stacktrace frames to skip when sending a
 // sentry packet. This is very useful when helper functions are involved.
 func TraceSkipFrames(skip int) Option {
-	return func(l *Hook) {
-		l.traceSkipFrames = skip
+	return func(sh *Hook) {
+		sh.traceSkipFrames = skip
 	}
 }
 
 // Fields stores additional information for each Sentry event.
 func Fields(fields map[string]interface{}) Option {
-	return func(l *Hook) {
+	return func(sh *Hook) {
 		// TODO(glib): yuck!
 		f := make(map[string]interface{})
 		for k, v := range fields {
 			f[k] = v
 		}
-		l.fields = f
+		sh.fields = f
 	}
 }
 
 // AppendFields expands the currently stored context of the hook
-func (l *Hook) AppendFields(keyvals ...interface{}) {
+func (sh *Hook) AppendFields(keyvals ...interface{}) {
 	for idx := 0; idx < len(keyvals); idx += 2 {
 		if key, ok := keyvals[idx].(string); ok {
 			val := keyvals[idx+1]
-			l.fields[key] = val
+			sh.fields[key] = val
 		}
+	}
+}
+
+// Copy returns... well, what do you think it returns?
+func (sh *Hook) Copy() *Hook {
+	// another map copy...
+	f := make(map[string]interface{}, len(sh.fields))
+	for k, v := range sh.fields {
+		f[k] = v
+	}
+
+	return &Hook{
+		Capturer:          sh.Capturer,
+		fields:            f,
+		minLevel:          sh.minLevel,
+		traceEnabled:      sh.traceEnabled,
+		traceSkipFrames:   sh.traceSkipFrames,
+		traceContextLines: sh.traceContextLines,
+		traceAppPrefixes:  sh.traceAppPrefixes,
 	}
 }
 
 // CheckAndFire check to see if logging level is above Sentry treshold
 // and if so, fires off a Sentry packet
-func (l *Hook) CheckAndFire(lvl zap.Level, msg string, keyvals ...interface{}) {
-	fmt.Println(lvl)
-	if lvl < l.minLevel {
+func (sh *Hook) CheckAndFire(lvl zap.Level, msg string, keyvals ...interface{}) {
+	if lvl < sh.minLevel {
 		return
 	}
 
 	// append all the fields from the current log message to the stored ones
-	f := make(map[string]interface{}, len(l.fields)+len(keyvals)/2)
-	for k, v := range l.fields {
+	f := make(map[string]interface{}, len(sh.fields)+len(keyvals)/2)
+	for k, v := range sh.fields {
 		f[k] = v
 	}
 
@@ -182,14 +204,14 @@ func (l *Hook) CheckAndFire(lvl zap.Level, msg string, keyvals ...interface{}) {
 		Extra:     f,
 	}
 
-	if l.traceEnabled {
-		trace := raven.NewStacktrace(l.traceSkipFrames, l.traceContextLines, l.traceAppPrefixes)
+	if sh.traceEnabled {
+		trace := raven.NewStacktrace(sh.traceSkipFrames, sh.traceContextLines, sh.traceAppPrefixes)
 		if trace != nil {
 			packet.Interfaces = append(packet.Interfaces, trace)
 		}
 	}
 
-	err := l.Capture(packet)
+	err := sh.Capture(packet)
 	if err != nil {
 		// TODO(glib): Ok now what?
 		// Sentry just failed, should we log more about it and have it fail again?

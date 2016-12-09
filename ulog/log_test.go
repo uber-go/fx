@@ -146,3 +146,18 @@ func TestSentryHook(t *testing.T) {
 	p := c.Packets[0]
 	assert.Equal(t, "you work, yea?", p.Message)
 }
+
+func TestSentryHookDoesNotMutatePrevious(t *testing.T) {
+	h, err := sentry.New("")
+	assert.NoError(t, err)
+	defer h.Close()
+
+	l := Builder().WithSentryHook(h).Build()
+	assert.Equal(t, make(map[string]interface{}), l.Sentry().Fields())
+
+	l2 := l.With("key", "value")
+	assert.Equal(t, map[string]interface{}{}, l.Sentry().Fields())
+	assert.NotNil(t, l2.Sentry())
+	assert.NotNil(t, l2.Sentry().Fields())
+	assert.Equal(t, map[string]interface{}{"key": "value"}, l2.Sentry().Fields())
+}

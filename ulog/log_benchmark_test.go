@@ -24,6 +24,8 @@ import (
 	"testing"
 	"time"
 
+	"go.uber.org/fx/ulog/sentry"
+
 	"github.com/uber-go/zap"
 )
 
@@ -117,5 +119,16 @@ func BenchmarkUlogLiteWithFields(b *testing.B) {
 				log.Info("Ulog message", "integer", 123, "string", "string")
 			}
 		})
+	})
+}
+
+func BenchmarkUlogWithSentry(b *testing.B) {
+	h, _ := sentry.New("")
+	l := Builder().SetLogger(discardedLogger()).WithSentryHook(h).Build()
+	b.ResetTimer()
+	b.RunParallel(func(pb *testing.PB) {
+		for pb.Next() {
+			l.With("foo", "bar").Error("Ulog message", "string", "string")
+		}
 	})
 }

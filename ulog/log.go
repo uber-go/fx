@@ -108,13 +108,15 @@ func (l *baseLogger) Sentry() *sentry.Hook {
 }
 
 func (l *baseLogger) With(keyVals ...interface{}) Log {
+	var sh *sentry.Hook
 	if l.sh != nil {
-		l.sh.AppendFields(keyVals)
+		sh = l.sh.Copy()
+		sh.AppendFields(keyVals...)
 	}
 
 	return &baseLogger{
 		log: l.log.With(l.fieldsConversion(keyVals...)...),
-		sh:  l.sh,
+		sh:  sh,
 	}
 }
 
