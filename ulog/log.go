@@ -29,12 +29,8 @@ import (
 	"github.com/uber-go/zap"
 )
 
-<<<<<<< HEAD
 type baseLogger struct {
-=======
-type baselogger struct {
 	sh  *sentry.Hook
->>>>>>> Implement a sentry logging hook
 	log zap.Logger
 }
 
@@ -56,6 +52,9 @@ type Log interface {
 
 	// RawLogger returns underlying logger implementation (zap.Logger) to get around the ulog.Log interface
 	RawLogger() zap.Logger
+
+	// Sentry returns the underlying sentry hook
+	Sentry() *sentry.Hook
 
 	// Log at the provided zap.Level with message, and a sequence of parameters as key value pairs
 	Log(level zap.Level, message string, keyVals ...interface{})
@@ -103,13 +102,18 @@ func (l *baseLogger) RawLogger() zap.Logger {
 	return l.log
 }
 
+// Sentry returns underlying sentry hook
+func (l *baseLogger) Sentry() *sentry.Hook {
+	return l.sh
+}
+
 func (l *baseLogger) With(keyVals ...interface{}) Log {
 	if l.sh != nil {
-		l.sh.AppendFields(keyvals)
+		l.sh.AppendFields(keyVals)
 	}
 
-	return &baselogger{
-		log: l.log.With(l.fieldsConversion(keyvals...)...),
+	return &baseLogger{
+		log: l.log.With(l.fieldsConversion(keyVals...)...),
 		sh:  l.sh,
 	}
 }
@@ -148,7 +152,7 @@ func (l *baseLogger) DPanic(message string, keyVals ...interface{}) {
 
 func (l *baseLogger) Log(lvl zap.Level, message string, keyVals ...interface{}) {
 	if l.sh != nil {
-		l.sh.CheckAndFire(lvl, message, keyvals...)
+		l.sh.CheckAndFire(lvl, message, keyVals...)
 	}
 
 	if cm := l.Check(lvl, message); cm.OK() {

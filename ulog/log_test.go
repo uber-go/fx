@@ -142,8 +142,6 @@ func TestSentryHook(t *testing.T) {
 	l.Error("you work, yea?", "key", 123)
 	l.Info("this should not be sent, right?", "key", "val")
 
-	fmt.Println(c.Packets)
-
 	assert.Equal(t, 1, len(c.Packets))
 	p := c.Packets[0]
 	assert.Equal(t, "you work, yea?", p.Message)

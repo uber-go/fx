@@ -107,3 +107,34 @@ BenchmarkUlogWithFieldsBaseLoggerStruct-8  2000000   912 ns/op  795 B/op   18 al
 BenchmarkUlogWithFieldsZapLogger-8         3000000   558 ns/op  513 B/op   1 allocs/op
 BenchmarkUlogLiteWithFields-8              3000000   466 ns/op  297 B/op   7 allocs/op
 ```
+
+## Sentry
+
+`ulog` has a seamless integration with Sentry. For out-of-the-box usage
+just include this in your configuration yaml:
+
+```yaml
+logging:
+  sentry:
+    dsn: http://user:secret@your.sentry.dsn/project
+```
+
+If you'd like to take more control over the Sentry integration, see
+`sentry.Hook`
+
+For example, to turn off Stacktrace generation:
+
+```go
+import (
+  "github.com/uber-go/zap"
+  "go.uber.org/fx/ulog/ulog"
+  "go.uber.org/fx/ulog/sentry"
+  "go.uber.org/fx/service"
+)
+
+func main() {
+  h := sentry.New(MY_DSN, MinLevel(zap.InfoLevel), DisableTraces())
+  l := ulog.Builder().WithSentryHook(h).Build()
+  svc, err := service..WithLogger(l).Build()
+}
+```

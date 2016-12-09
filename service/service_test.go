@@ -142,6 +142,25 @@ metrics:
 	assert.Nil(t, svc.RuntimeMetricsCollector())
 }
 
+func TestServiceWithSentryHook(t *testing.T) {
+	data := []byte(`
+applicationID: name
+applicationOwner: owner
+logging:
+  sentry:
+    dsn: http://user:secret@your.sentry.dsn/project
+`)
+	cfgOpt := WithConfiguration(config.NewYAMLProviderFromBytes(data))
+
+	svc, err := New(cfgOpt)
+	require.NoError(t, err)
+
+	sh := svc.Logger().Sentry()
+
+	assert.NotNil(t, sh)
+	defer sh.Capturer.Close()
+}
+
 func TestBadOption_Panics(t *testing.T) {
 	opt := func(_ Host) error {
 		return errors.New("nope")
