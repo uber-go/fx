@@ -72,7 +72,7 @@ func ensureNotFrozen() {
 	}
 }
 
-// RegisterRootScope initializes the stats reporter for all the service metrics
+// RegisterRootScope initializes the root scope for all the service metrics
 func RegisterRootScope(scopeFunc ScopeFunc) {
 	ensureNotFrozen()
 	_mu.Lock()
@@ -86,7 +86,7 @@ func RegisterRootScope(scopeFunc ScopeFunc) {
 	_scopeFunc = scopeFunc
 }
 
-// RootScope returns the provided stats reporter, or nil
+// RootScope returns the provided metrics scope and stats reporter, or nil if not provided
 func RootScope(i ScopeInit) (tally.Scope, tally.StatsReporter, io.Closer) {
 	_mu.Lock()
 	defer _mu.Unlock()

@@ -66,7 +66,7 @@ func TestRegisterReporterFrozen(t *testing.T) {
 	})
 }
 
-func TestRegisterbadScopePanics(t *testing.T) {
+func TestRegisterBadReporterPanics(t *testing.T) {
 	defer cleanup()
 
 	RegisterRootScope(badScope)
