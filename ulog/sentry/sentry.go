@@ -45,7 +45,8 @@ var _zapToRavenMap = map[zap.Level]raven.Severity{
 	zap.FatalLevel: raven.FATAL,
 }
 
-// Hook allala
+// Hook wraps the default raven-go client for some out-of-box awesomeness
+// and tight integration with ulog
 type Hook struct {
 	Capturer
 
@@ -152,7 +153,8 @@ func (l *Hook) AppendFields(keyvals ...interface{}) {
 	}
 }
 
-// CheckAndFire lalala
+// CheckAndFire check to see if logging level is above Sentry treshold
+// and if so, fires off a Sentry packet
 func (l *Hook) CheckAndFire(lvl zap.Level, msg string, keyvals ...interface{}) {
 	fmt.Println(lvl)
 	if lvl < l.minLevel {
@@ -187,5 +189,10 @@ func (l *Hook) CheckAndFire(lvl zap.Level, msg string, keyvals ...interface{}) {
 		}
 	}
 
-	l.Capture(packet)
+	err := l.Capture(packet)
+	if err != nil {
+		// TODO(glib): Ok now what?
+		// Sentry just failed, should we log more about it and have it fail again?
+		// That can bring a whole service down...
+	}
 }
