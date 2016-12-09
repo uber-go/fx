@@ -1,16 +1,20 @@
-hash: a2a69cfc3530997a341379de8ad2b2fdedba0fe92434f9704a62096cdea5e2bf
-updated: 2016-12-07T11:33:53.160525342-08:00
+hash: 651629312a68a9d4145297cfeeb1af6c6fcc4f50e5580fd3beac47b0ac694d79
+updated: 2016-12-08T16:15:13.073285441-08:00
 imports:
 - name: github.com/apache/thrift
   version: 7ab125a253e5aebbf2a0ed9a0a1602a4b879eca7
   subpackages:
   - lib/go/thrift
+- name: github.com/certifi/gocertifi
+  version: a61bf5eafa3aee233ec8043e9da052447e5463dd
 - name: github.com/davecgh/go-spew
   version: 346938d642f2ec3594ed81d874461961cd0faa76
   subpackages:
   - spew
 - name: github.com/facebookgo/clock
   version: 600d898af40aa09a7a93ecb9265d87b0504b6f03
+- name: github.com/getsentry/raven-go
+  version: 3f7439d3e74d88e21d196ba20eb61a5a958bc118
 - name: github.com/go-validator/validator
   version: 0a9835d809fb647a62611d30cb792e0b5dd65b11
 - name: github.com/gorilla/context
@@ -39,6 +43,8 @@ imports:
   version: 2750b4ae690cbeb294016efe18ceaeb80c4ce17c
 - name: github.com/uber-go/zap
   version: 35cd7966cc81adc0449c91b3f6b1939812be73aa
+  subpackages:
+  - zwrap
 - name: github.com/uber/jaeger-client-go
   version: e39d0f1b622558cae3d9db0062a739cc6ffa700f
   subpackages:
@@ -89,7 +95,7 @@ imports:
   - transport/tchannel
   - transport/tchannel/internal
 - name: golang.org/x/net
-  version: 9773060888fba93b172cedcd70127db1ab739bd1
+  version: e31bd588d1077ee66a958c0ad3a235f2084b4195
   subpackages:
   - context
   - context/ctxhttp

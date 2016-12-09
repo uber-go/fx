@@ -24,16 +24,22 @@ import (
 	"fmt"
 	"time"
 
+	"go.uber.org/fx/ulog/sentry"
+
 	"github.com/uber-go/zap"
 )
 
+<<<<<<< HEAD
 type baseLogger struct {
+=======
+type baselogger struct {
+	sh  *sentry.Hook
+>>>>>>> Implement a sentry logging hook
 	log zap.Logger
 }
 
 // Log is the UberFx wrapper for underlying logging service
 type Log interface {
-
 	// With creates a child logger with the provided parameters as key value pairs
 	// ulog uses uber-go/zap library as its child logger which needs pairs of key value objects
 	// in the form of zap.Fields(key, value). ulog performs field conversion from
@@ -98,8 +104,13 @@ func (l *baseLogger) RawLogger() zap.Logger {
 }
 
 func (l *baseLogger) With(keyVals ...interface{}) Log {
-	return &baseLogger{
-		log: l.log.With(l.fieldsConversion(keyVals...)...),
+	if l.sh != nil {
+		l.sh.AppendFields(keyvals)
+	}
+
+	return &baselogger{
+		log: l.log.With(l.fieldsConversion(keyvals...)...),
+		sh:  l.sh,
 	}
 }
 
@@ -136,6 +147,10 @@ func (l *baseLogger) DPanic(message string, keyVals ...interface{}) {
 }
 
 func (l *baseLogger) Log(lvl zap.Level, message string, keyVals ...interface{}) {
+	if l.sh != nil {
+		l.sh.CheckAndFire(lvl, message, keyvals...)
+	}
+
 	if cm := l.Check(lvl, message); cm.OK() {
 		cm.Write(l.fieldsConversion(keyVals...)...)
 	}

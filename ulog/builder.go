@@ -26,6 +26,7 @@ import (
 	"path"
 
 	"go.uber.org/fx/config"
+	"go.uber.org/fx/ulog/sentry"
 
 	"github.com/uber-go/zap"
 )
@@ -50,8 +51,9 @@ type FileConfiguration struct {
 
 // LogBuilder is the struct containing logger
 type LogBuilder struct {
-	log       zap.Logger
-	logConfig Configuration
+	log        zap.Logger
+	logConfig  Configuration
+	sentryHook *sentry.Hook
 }
 
 // Builder creates an empty builder for building ulog.Log object
@@ -76,6 +78,12 @@ func (lb *LogBuilder) SetLogger(zap zap.Logger) *LogBuilder {
 	return lb
 }
 
+// WithSentryHook lalalal
+func (lb *LogBuilder) WithSentryHook(hook *sentry.Hook) *LogBuilder {
+	lb.sentryHook = hook
+	return lb
+}
+
 // Build the ulog logger for use
 func (lb *LogBuilder) Build() Log {
 	var log zap.Logger
@@ -95,6 +103,7 @@ func (lb *LogBuilder) Build() Log {
 
 	return &baseLogger{
 		log: log,
+		sh:  lb.sentryHook,
 	}
 }
 
