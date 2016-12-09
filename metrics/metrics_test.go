@@ -26,6 +26,7 @@ import (
 	"testing"
 
 	"go.uber.org/fx/config"
+	"go.uber.org/fx/testutils"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/uber-go/tally"
@@ -34,12 +35,17 @@ import (
 func TestRegisterReporter_OK(t *testing.T) {
 	defer cleanup()
 
-	scope, _ := getScope()
+	scope, reporter, closer := getScope()
 	assert.Nil(t, scope)
+	assert.Nil(t, reporter)
+	assert.Nil(t, closer)
 
 	RegisterRootScope(goodScope)
-	scope, _ = getScope()
+	scope, reporter, closer = getScope()
+	defer closer.Close()
 	assert.NotNil(t, scope)
+	assert.NotNil(t, reporter)
+	assert.NotNil(t, closer)
 }
 
 func TestRegisterReporterPanics(t *testing.T) {
@@ -69,15 +75,15 @@ func TestRegisterBadReporterPanics(t *testing.T) {
 	})
 }
 
-func goodScope(i ScopeInit) (tally.Scope, io.Closer, error) {
-	return tally.NoopScope, nil, nil
+func goodScope(i ScopeInit) (tally.Scope, tally.StatsReporter, io.Closer, error) {
+	return tally.NoopScope, tally.NullStatsReporter, testutils.NoopCloser{}, nil
 }
 
-func badScope(i ScopeInit) (tally.Scope, io.Closer, error) {
-	return nil, nil, errors.New("fake error")
+func badScope(i ScopeInit) (tally.Scope, tally.StatsReporter, io.Closer, error) {
+	return nil, nil, nil, errors.New("fake error")
 }
 
-func getScope() (tally.Scope, io.Closer) {
+func getScope() (tally.Scope, tally.StatsReporter, io.Closer) {
 	return RootScope(scopeInit())
 }
 

@@ -29,6 +29,7 @@ import (
 	"github.com/opentracing/opentracing-go"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/uber-go/tally"
 )
 
 func TestAddModules_OK(t *testing.T) {
@@ -46,6 +47,12 @@ func TestWithLogger_OK(t *testing.T) {
 	logger := ulog.New()
 	assert.NotPanics(t, func() {
 		New(WithLogger(logger))
+	})
+}
+
+func TestWithMetrics_OK(t *testing.T) {
+	assert.NotPanics(t, func() {
+		New(WithMetrics(tally.NoopScope, tally.NullStatsReporter))
 	})
 }
 

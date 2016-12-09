@@ -147,10 +147,13 @@ func New(options ...Option) (Owner, error) {
 	// Initialize metrics. If no metrics reporters were Registered, do noop
 	// TODO(glib): add a logging reporter and use it by default, rather than noop
 	if svc.Metrics() == nil {
-		svc.scope, svc.metricsCloser = metrics.RootScope(svc)
+		svc.metrics, svc.statsReporter, svc.metricsCloser = metrics.RootScope(svc)
 
-		if svc.scope == nil {
-			svc.scope = tally.NoopScope
+		if svc.metrics == nil {
+			svc.metrics = tally.NoopScope
+		}
+		if svc.statsReporter == nil {
+			svc.statsReporter = tally.NullStatsReporter
 		}
 
 		metrics.Freeze()
@@ -163,7 +166,7 @@ func New(options ...Option) (Owner, error) {
 			return nil, errors.Wrap(err, "unable to load runtime metrics configuration")
 		}
 		svc.runtimeCollector = metrics.StartCollectingRuntimeMetrics(
-			svc.scope.SubScope("runtime"), time.Second, runtimeMetricsConfig,
+			svc.metrics.SubScope("runtime"), time.Second, runtimeMetricsConfig,
 		)
 	}
 
@@ -175,7 +178,7 @@ func New(options ...Option) (Owner, error) {
 			&svc.tracerConfig,
 			svc.standardConfig.ServiceName,
 			svc.log,
-			svc.scope.SubScope("tracing"),
+			svc.statsReporter,
 		)
 		if err != nil {
 			return svc, errors.Wrap(err, "unable to initialize global tracer")
