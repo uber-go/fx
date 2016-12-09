@@ -98,5 +98,5 @@ func RootScope(i ScopeInit) (tally.Scope, tally.StatsReporter, io.Closer) {
 		}
 		return scope, reporter, closer
 	}
-	return nil, nil, nil
+	return tally.NoopScope, tally.NullStatsReporter, nil
 }

@@ -36,8 +36,8 @@ func TestRegisterReporter_OK(t *testing.T) {
 	defer cleanup()
 
 	scope, reporter, closer := getScope()
-	assert.Nil(t, scope)
-	assert.Nil(t, reporter)
+	assert.Equal(t, scope, tally.NoopScope)
+	assert.Equal(t, reporter, tally.NullStatsReporter)
 	assert.Nil(t, closer)
 
 	RegisterRootScope(goodScope)
