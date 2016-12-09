@@ -71,7 +71,7 @@ func BenchmarkUlogWithFieldsLogIFace(b *testing.B) {
 
 func BenchmarkUlogWithFieldsBaseLoggerStruct(b *testing.B) {
 	withDiscardedLogger(b, func(log Log) {
-		base := log.(*baselogger)
+		base := log.(*baseLogger)
 		b.ResetTimer()
 		b.RunParallel(func(pb *testing.PB) {
 			for pb.Next() {
@@ -91,11 +91,11 @@ func BenchmarkUlogWithFieldsBaseLoggerStruct(b *testing.B) {
 
 func BenchmarkUlogWithFieldsZapLogger(b *testing.B) {
 	withDiscardedLogger(b, func(log Log) {
-		zaplogger := log.RawLogger()
+		zapLogger := log.RawLogger()
 		b.ResetTimer()
 		b.RunParallel(func(pb *testing.PB) {
 			for pb.Next() {
-				zaplogger.Info("Ulog message",
+				zapLogger.Info("Ulog message",
 					zap.Int("int", 123),
 					zap.Int64("int64", 123),
 					zap.Float64("float", 123.123),

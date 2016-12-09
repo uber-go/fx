@@ -38,7 +38,7 @@ const (
 
 	environment = "_ENVIRONMENT"
 	datacenter  = "_DATACENTER"
-	configdir   = "_CONFIG_DIR"
+	configDir   = "_CONFIG_DIR"
 	config      = "config"
 )
 
@@ -108,7 +108,7 @@ func IsDevelopment() bool {
 
 // Path returns path to the yaml configurations
 func Path() string {
-	configPath := os.Getenv(EnvironmentPrefix() + configdir)
+	configPath := os.Getenv(EnvironmentPrefix() + configDir)
 	if configPath == "" {
 		configPath = config
 	}

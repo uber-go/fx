@@ -85,8 +85,8 @@ func TestLoadAppConfig_NilJaegerConfig(t *testing.T) {
 }
 
 func TestJaegerLogger(t *testing.T) {
-	testutils.WithInMemoryLogger(t, nil, func(zaplogger zap.Logger, buf *testutils.TestBuffer) {
-		loggerWithZap := ulog.Builder().SetLogger(zaplogger).Build()
+	testutils.WithInMemoryLogger(t, nil, func(zapLogger zap.Logger, buf *testutils.TestBuffer) {
+		loggerWithZap := ulog.Builder().SetLogger(zapLogger).Build()
 		jLogger := jaegerLogger{log: loggerWithZap}
 		jLogger.Infof("info message", "c", "d")
 		jLogger.Error("error message")

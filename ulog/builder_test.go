@@ -44,8 +44,8 @@ func TestConfiguredLogger(t *testing.T) {
 			Verbose:       false,
 		}
 		log := builder.WithConfiguration(cfg).Build()
-		zaplogger := log.RawLogger()
-		assert.True(t, zaplogger.Check(zap.DebugLevel, "").OK())
+		zapLogger := log.RawLogger()
+		assert.True(t, zapLogger.Check(zap.DebugLevel, "").OK())
 	})
 }
 
@@ -64,8 +64,8 @@ func TestConfiguredLoggerWithTextFormatter(t *testing.T) {
 			},
 		}
 		log := Builder().WithConfiguration(cfg).Build()
-		zaplogger := log.RawLogger()
-		assert.True(t, zaplogger.Check(zap.DebugLevel, "").OK())
+		zapLogger := log.RawLogger()
+		assert.True(t, zapLogger.Check(zap.DebugLevel, "").OK())
 	})
 }
 
@@ -76,8 +76,8 @@ func TestConfiguredLoggerWithTextFormatter_NonDev(t *testing.T) {
 			Level:         "debug",
 			TextFormatter: &txt,
 		}).Build()
-		zaplogger := log.RawLogger()
-		assert.True(t, zaplogger.Check(zap.DebugLevel, "").OK())
+		zapLogger := log.RawLogger()
+		assert.True(t, zapLogger.Check(zap.DebugLevel, "").OK())
 	})
 }
 
@@ -95,8 +95,8 @@ func TestConfiguredLoggerWithStdout(t *testing.T) {
 			},
 		}
 		log := Builder().WithConfiguration(cfg).Build()
-		zaplogger := log.RawLogger()
-		assert.True(t, zaplogger.Check(zap.DebugLevel, "").OK())
+		zapLogger := log.RawLogger()
+		assert.True(t, zapLogger.Check(zap.DebugLevel, "").OK())
 	})
 }
 
@@ -132,7 +132,7 @@ func TestDefaultPackageLogger(t *testing.T) {
 	withLogger(t, func(builder *LogBuilder, tmpDir string, logFile string) {
 		defer testutils.EnvOverride(t, config.EnvironmentKey(), "development")()
 		log := New()
-		zaplogger := log.RawLogger()
-		assert.True(t, zaplogger.Check(zap.DebugLevel, "").OK())
+		zapLogger := log.RawLogger()
+		assert.True(t, zapLogger.Check(zap.DebugLevel, "").OK())
 	})
 }

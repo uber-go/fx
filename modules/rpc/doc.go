@@ -33,7 +33,7 @@
 // • Implement the service interface handlers as method receivers on a struct
 //
 // • Implement a top-level function, conforming to the
-// rpc.CreateThriftServiceFunc signature (uberfx/modules/rpc/thrift.go that
+// rpc.CreateThriftServiceFunc signature (fx/modules/rpc/thrift.go that
 // returns a
 // []transport.Registrant YARPC implementation from the handler:
 //

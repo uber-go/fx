@@ -168,7 +168,7 @@ func (cv Value) TryAsString() (string, bool) {
 	return "", false
 }
 
-// TryAsInt attempts to return the confniguration value as an int
+// TryAsInt attempts to return the configuration value as an int
 func (cv Value) TryAsInt() (int, bool) {
 	v := cv.Value()
 	if val, err := convertValue(v, reflect.TypeOf(0)); v != nil && err == nil {
@@ -320,8 +320,8 @@ func derefType(t reflect.Type) reflect.Type {
 	return t
 }
 
-// this is a quick-and-dirty converstion method that only handles
-// a couple of cases and complains if it finds one it doen't like.
+// this is a quick-and-dirty conversion method that only handles
+// a couple of cases and complains if it finds one it doesn't like.
 // needs a bunch more cases.
 func convertValue(value interface{}, targetType reflect.Type) (interface{}, error) {
 	if value == nil {
@@ -528,7 +528,7 @@ func (cv Value) valueStruct(key string, target interface{}) (interface{}, error)
 			if val != nil {
 				destMap := reflect.ValueOf(reflect.MakeMap(fieldType).Interface())
 
-				// child yamlnode parsed from yaml file is of type map[interface{}]interface{}
+				// child yamlNode parsed from yaml file is of type map[interface{}]interface{}
 				// type casting here makes sure that we are iterating over a parsed map.
 				v, ok := val.(map[interface{}]interface{})
 				if ok {

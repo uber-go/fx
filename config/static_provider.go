@@ -72,7 +72,7 @@ func (s *staticProvider) Scope(prefix string) Provider {
 }
 
 func (s *staticProvider) RegisterChangeCallback(key string, callback ConfigurationChangeCallback) error {
-	// Staic provider don't receive callback events
+	// Static provider don't receive callback events
 	return nil
 }
 
