@@ -41,7 +41,8 @@ func NullHost() Host {
 			log: ulog.NoopLogger,
 		},
 		metricsCore: metricsCore{
-			metrics: tally.NoopScope,
+			metrics:       tally.NoopScope,
+			statsReporter: tally.NullStatsReporter,
 		},
 		tracerCore: tracerCore{
 			tracer: opentracing.NoopTracer{},
