@@ -87,7 +87,7 @@ func TestServiceCreation(t *testing.T) {
 	defer closer.Close()
 	svc, err := New(
 		withConfig(validServiceConfig),
-		WithMetricsRootScope(scope),
+		WithMetrics(scope, nil),
 	)
 	require.NoError(t, err)
 	assert.NotNil(t, svc, "Service should be created")

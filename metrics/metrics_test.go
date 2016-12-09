@@ -26,6 +26,7 @@ import (
 	"testing"
 
 	"go.uber.org/fx/config"
+	"go.uber.org/fx/testutils"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/uber-go/tally"
@@ -39,7 +40,7 @@ func TestRegisterReporter_OK(t *testing.T) {
 	assert.Nil(t, reporter)
 	assert.Nil(t, closer)
 
-	RegisterStatsReporter(goodReporter)
+	RegisterRootScope(goodScope)
 	scope, reporter, closer = getScope()
 	defer closer.Close()
 	assert.NotNil(t, scope)
@@ -50,9 +51,9 @@ func TestRegisterReporter_OK(t *testing.T) {
 func TestRegisterReporterPanics(t *testing.T) {
 	defer cleanup()
 
-	RegisterStatsReporter(goodReporter)
+	RegisterRootScope(goodScope)
 	assert.Panics(t, func() {
-		RegisterStatsReporter(goodReporter)
+		RegisterRootScope(goodScope)
 	})
 }
 
@@ -61,25 +62,25 @@ func TestRegisterReporterFrozen(t *testing.T) {
 
 	Freeze()
 	assert.Panics(t, func() {
-		RegisterStatsReporter(goodReporter)
+		RegisterRootScope(goodScope)
 	})
 }
 
-func TestRegisterBadReporterPanics(t *testing.T) {
+func TestRegisterbadScopePanics(t *testing.T) {
 	defer cleanup()
 
-	RegisterStatsReporter(badReporter)
+	RegisterRootScope(badScope)
 	assert.Panics(t, func() {
 		getScope()
 	})
 }
 
-func goodReporter(i ScopeInit) (tally.StatsReporter, error) {
-	return tally.NullStatsReporter, nil
+func goodScope(i ScopeInit) (tally.Scope, tally.StatsReporter, io.Closer, error) {
+	return tally.NoopScope, tally.NullStatsReporter, testutils.NoopCloser{}, nil
 }
 
-func badReporter(i ScopeInit) (tally.StatsReporter, error) {
-	return nil, errors.New("fake error")
+func badScope(i ScopeInit) (tally.Scope, tally.StatsReporter, io.Closer, error) {
+	return nil, nil, nil, errors.New("fake error")
 }
 
 func getScope() (tally.Scope, tally.StatsReporter, io.Closer) {
@@ -109,7 +110,7 @@ func scopeInit() ScopeInit {
 }
 
 func cleanup() {
-	_repFunc = nil
+	_scopeFunc = nil
 	_frozen = false
 }
 

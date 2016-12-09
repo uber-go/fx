@@ -152,6 +152,9 @@ func New(options ...Option) (Owner, error) {
 		if svc.metrics == nil {
 			svc.metrics = tally.NoopScope
 		}
+		if svc.statsReporter == nil {
+			svc.statsReporter = tally.NullStatsReporter
+		}
 
 		metrics.Freeze()
 	}
