@@ -122,7 +122,18 @@ func BenchmarkUlogLiteWithFields(b *testing.B) {
 	})
 }
 
-func BenchmarkUlogWithSentry(b *testing.B) {
+func BenchmarkUlogSentry(b *testing.B) {
+	h, _ := sentry.New("")
+	l := Builder().SetLogger(discardedLogger()).WithSentryHook(h).Build()
+	b.ResetTimer()
+	b.RunParallel(func(pb *testing.PB) {
+		for pb.Next() {
+			l.Error("Ulog message", "string", "string")
+		}
+	})
+}
+
+func BenchmarkUlogSentryWith(b *testing.B) {
 	h, _ := sentry.New("")
 	l := Builder().SetLogger(discardedLogger()).WithSentryHook(h).Build()
 	b.ResetTimer()
