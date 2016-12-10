@@ -30,7 +30,6 @@ import (
 
 	"github.com/go-validator/validator"
 	"github.com/pkg/errors"
-	"github.com/uber-go/tally"
 )
 
 // A State represents the state of a service
@@ -148,14 +147,6 @@ func New(options ...Option) (Owner, error) {
 	// TODO(glib): add a logging reporter and use it by default, rather than noop
 	if svc.Metrics() == nil {
 		svc.metrics, svc.statsReporter, svc.metricsCloser = metrics.RootScope(svc)
-
-		if svc.metrics == nil {
-			svc.metrics = tally.NoopScope
-		}
-		if svc.statsReporter == nil {
-			svc.statsReporter = tally.NullStatsReporter
-		}
-
 		metrics.Freeze()
 	}
 

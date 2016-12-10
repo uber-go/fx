@@ -23,6 +23,7 @@ package metrics
 import (
 	"fmt"
 	"io"
+	"io/ioutil"
 	"sync"
 
 	"go.uber.org/fx/config"
@@ -98,5 +99,6 @@ func RootScope(i ScopeInit) (tally.Scope, tally.StatsReporter, io.Closer) {
 		}
 		return scope, reporter, closer
 	}
-	return nil, nil, nil
+	// Returning all no-op values if metrics has not been configured
+	return tally.NoopScope, tally.NullStatsReporter, ioutil.NopCloser(nil)
 }
