@@ -23,6 +23,7 @@ package metrics
 import (
 	"errors"
 	"io"
+	"io/ioutil"
 	"testing"
 
 	"go.uber.org/fx/config"
@@ -38,7 +39,7 @@ func TestRegisterReporter_OK(t *testing.T) {
 	scope, reporter, closer := getScope()
 	assert.Equal(t, scope, tally.NoopScope)
 	assert.Equal(t, reporter, tally.NullStatsReporter)
-	assert.Nil(t, closer)
+	assert.Equal(t, ioutil.NopCloser(nil), closer)
 
 	RegisterRootScope(goodScope)
 	scope, reporter, closer = getScope()
