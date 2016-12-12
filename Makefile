@@ -126,8 +126,9 @@ clean:
 examples:
 	@$(call label,Installing thriftrw and YARPC plugins)
 	@echo
+	$(ECHO_V)test -d vendor || $(MAKE) libdeps
 	$(ECHO_V)which thriftrw >/dev/null || go install ./vendor/go.uber.org/thriftrw
 	$(ECHO_V)which thriftrw-plugin-yarpc >/dev/null || go install ./vendor/go.uber.org/yarpc/encoding/thrift/thriftrw-plugin-yarpc
 	@$(call label,Generating example RPC bindings)
 	@echo
-	$(MAKE) -C examples/keyvalue kv/types.go ECHO_V=$(ECHO_V)
+	$(ECHO_)$(MAKE) -C examples/keyvalue kv/types.go ECHO_V=$(ECHO_V)
