@@ -38,8 +38,21 @@ type UnaryHandler interface {
 // UnaryHandlerFunc calls the YARPC Handle with fx.Context
 type UnaryHandlerFunc func(fx.Context, yarpc.ReqMeta, wire.Value) (thrift.Response, error)
 
+// OnewayHandler is a wrapper for YARPC thrift.OnewayHandler
+type OnewayHandler interface {
+	HandleOneway(ctx fx.Context, reqMeta yarpc.ReqMeta, body wire.Value) error
+}
+
+// OnewayHandlerFunc calls the YARPC Handle with fx.Context
+type OnewayHandlerFunc func(fx.Context, yarpc.ReqMeta, wire.Value) error
+
 // Handle calls the caller HandlerFunc.
 func (f UnaryHandlerFunc) Handle(ctx fx.Context, reqMeta yarpc.ReqMeta, body wire.Value) (thrift.Response, error) {
+	return f(ctx, reqMeta, body)
+}
+
+// HandleOneway calls the caller OnewayHandlerFunc.
+func (f OnewayHandlerFunc) HandleOneway(ctx fx.Context, reqMeta yarpc.ReqMeta, body wire.Value) error {
 	return f(ctx, reqMeta, body)
 }
 
@@ -56,23 +69,10 @@ type unaryHandlerWrapper struct {
 	UnaryHandlerFunc
 }
 
-// Handle calls Handler.Handle(ctx, req, resp) and use injected fx.context
+// Handle calls Handler.Handle(ctx, req, resp) and use the injected fx.context
 func (hw *unaryHandlerWrapper) Handle(ctx context.Context, reqMeta yarpc.ReqMeta, body wire.Value) (thrift.Response, error) {
 	fxctx := fx.NewContext(ctx, hw.Host)
 	return hw.UnaryHandlerFunc.Handle(fxctx, reqMeta, body)
-}
-
-// OnewayHandler is a wrapper for YARPC thrift.OnewayHandler
-type OnewayHandler interface {
-	HandleOneway(ctx fx.Context, reqMeta yarpc.ReqMeta, body wire.Value) error
-}
-
-// OnewayHandlerFunc calls the YARPC Handle with fx.Context
-type OnewayHandlerFunc func(fx.Context, yarpc.ReqMeta, wire.Value) error
-
-// HandleOneway calls the caller OnewayHandlerFunc.
-func (f OnewayHandlerFunc) HandleOneway(ctx fx.Context, reqMeta yarpc.ReqMeta, body wire.Value) error {
-	return f(ctx, reqMeta, body)
 }
 
 // WrapOneway wraps the oneway handler and returns implementation of thrift.OnewayHandler for yarpc calls
@@ -88,7 +88,7 @@ type onewayHandlerWrapper struct {
 	OnewayHandlerFunc
 }
 
-// Handle calls Handler.Handle(ctx, req, resp) and use injected fx.context
+// HandleOneway calls OnewayHandlerFunc.HandleOneway(ctx, req, resp) and use the injected fx.context
 func (hw *onewayHandlerWrapper) HandleOneway(ctx context.Context, reqMeta yarpc.ReqMeta, body wire.Value) error {
 	fxctx := fx.NewContext(ctx, hw.Host)
 	return hw.OnewayHandlerFunc.HandleOneway(fxctx, reqMeta, body)
