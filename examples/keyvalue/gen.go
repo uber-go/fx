@@ -21,3 +21,4 @@
 package keyvalue
 
 //go:generate thriftrw --plugin=yarpc kv.thrift
+//go:generate thriftrw --plugin=fx kv.thrift
