@@ -117,11 +117,17 @@ gendoc:
 		xargs -I% md-to-godoc -input=%
 
 .PHONY: clean
-clean::
+clean:
 	$(ECHO_V)rm -f $(COV_REPORT) $(COV_HTML) $(LINT_LOG)
 	$(ECHO_V)find $(subst /...,,$(PKGS)) -name $(COVER_OUT) -delete
 	$(ECHO_V)rm -rf examples/keyvalue/kv/
 
 .PHONY: examples
-examples::
+examples:
+	@$(call label,Installing thriftrw and YARPC plugins)
+	@echo
+	$(ECHO_V)go install vendor/go.uber.org/thriftrw
+	$(ECHO_V)go install vendor/go.uber.org/yarpc/encoding/thrift/thriftrw-plugin-yarpc
+	@$(call label,Generating example RPC bindings)
+	@echo
 	$(MAKE) -C examples/keyvalue kv/types.go ECHO_V=$(ECHO_V)
