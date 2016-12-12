@@ -154,11 +154,9 @@ logging:
 
 	svc, err := New(cfgOpt)
 	require.NoError(t, err)
+	assert.NotNil(t, svc.Logger())
 
-	sh := svc.Logger().Sentry()
-
-	assert.NotNil(t, sh)
-	defer sh.Capturer.Close()
+	// TODO (madhu): Figure out how to test sentry here
 }
 
 func TestBadOption_Panics(t *testing.T) {

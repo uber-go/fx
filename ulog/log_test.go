@@ -152,12 +152,12 @@ func TestSentryHookDoesNotMutatePrevious(t *testing.T) {
 	assert.NoError(t, err)
 	defer h.Close()
 
-	l := Builder().WithSentryHook(h).Build()
-	assert.Equal(t, make(map[string]interface{}), l.Sentry().Fields())
+	l := Builder().WithSentryHook(h).Build().(*baseLogger)
+	assert.Equal(t, make(map[string]interface{}), l.sh.Fields())
 
-	l2 := l.With("key", "value")
-	assert.Equal(t, map[string]interface{}{}, l.Sentry().Fields())
-	assert.NotNil(t, l2.Sentry())
-	assert.NotNil(t, l2.Sentry().Fields())
-	assert.Equal(t, map[string]interface{}{"key": "value"}, l2.Sentry().Fields())
+	l2 := l.With("key", "value").(*baseLogger)
+	assert.Equal(t, map[string]interface{}{}, l.sh.Fields())
+	assert.NotNil(t, l2.sh)
+	assert.NotNil(t, l2.sh.Fields())
+	assert.Equal(t, map[string]interface{}{"key": "value"}, l2.sh.Fields())
 }

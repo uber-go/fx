@@ -86,7 +86,7 @@ func (lb *LogBuilder) SetLogger(zap zap.Logger) *LogBuilder {
 	return lb
 }
 
-// WithSentryHook allows to manually configure the sentry hook
+// WithSentryHook allows users to manually configure the sentry hook
 func (lb *LogBuilder) WithSentryHook(hook *sentry.Hook) *LogBuilder {
 	lb.sentryHook = hook
 	return lb
@@ -116,6 +116,8 @@ func (lb *LogBuilder) Build() Log {
 			hook, err := sentry.New(lb.logConfig.Sentry.DSN)
 			if err == nil {
 				lb.sentryHook = hook
+			} else {
+				log.Warn("Sentry creation failed with error", zap.Error(err))
 			}
 		}
 	}

@@ -135,6 +135,6 @@ import (
 func main() {
   h := sentry.New(MY_DSN, MinLevel(zap.InfoLevel), DisableTraces())
   l := ulog.Builder().WithSentryHook(h).Build()
-  svc, err := service..WithLogger(l).Build()
+  svc, err := service.WithLogger(l).Build()
 }
 ```
