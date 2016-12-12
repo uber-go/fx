@@ -22,8 +22,7 @@ ALL_SRC := $(shell find . -name "*.go" | grep -v -e vendor \
 TEST_TIMEOUT := "-timeout=3s"
 
 .PHONY: test
-test:
-	$(ECHO_V)$(MAKE) -C examples/keyvalue/ kv/types.go ECHO_V=$(ECHO_V)
+test: examples
 	$(ECHO_V)go test $(RACE) $(TEST_TIMEOUT) $(PKGS)
 	$(ECHO_V)$(MAKE) $(COV_REPORT)
 
@@ -45,9 +44,6 @@ endif
 COVER_OUT := profile.coverprofile
 
 $(COV_REPORT): $(PKG_FILES) $(ALL_SRC)
-	@$(call label,Generating example RPC bindings)
-	@echo
-	$(ECHO_V)$(MAKE) -C examples/keyvalue/ kv/types.go ECHO_V=$(ECHO_V)
 	@$(call label,Running tests)
 	@echo
 	$(ECHO_V)$(OVERALLS) -project=$(PROJECT_ROOT) \
@@ -126,3 +122,6 @@ clean::
 	$(ECHO_V)find $(subst /...,,$(PKGS)) -name $(COVER_OUT) -delete
 	$(ECHO_V)rm -rf examples/keyvalue/kv/
 
+.PHONY: examples
+examples::
+	$(MAKE) -C examples/keyvalue kv/types.go ECHO_V=$(ECHO_V)
