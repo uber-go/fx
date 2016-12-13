@@ -211,10 +211,5 @@ func (sh *Hook) CheckAndFire(lvl zap.Level, msg string, keyvals ...interface{}) 
 		}
 	}
 
-	err := sh.Capture(packet)
-	if err != nil {
-		// TODO(glib): Ok now what?
-		// Sentry just failed, should we log more about it and have it fail again?
-		// That can bring a whole service down...
-	}
+	sh.Capture(packet)
 }

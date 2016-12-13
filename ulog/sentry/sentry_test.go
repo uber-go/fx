@@ -147,10 +147,8 @@ func TestPacketSending(t *testing.T) {
 	withTestSentry(func(dsn string, ch <-chan *raven.Packet) {
 		sh, err := New(dsn)
 		defer sh.Close()
+		assert.NoError(t, err)
 
-		if err != nil {
-			panic("Failed to create sentry client")
-		}
 		sh.CheckAndFire(zap.ErrorLevel, "my error message", "mykey1", "myvalue1")
 		sh.CheckAndFire(zap.ErrorLevel, "my error message", "mykey1", "myvalue1")
 		p := <-ch

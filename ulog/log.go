@@ -145,12 +145,11 @@ func (l *baseLogger) DPanic(message string, keyVals ...interface{}) {
 }
 
 func (l *baseLogger) Log(lvl zap.Level, message string, keyVals ...interface{}) {
-	if l.sh != nil {
-		l.sh.CheckAndFire(lvl, message, keyVals...)
-	}
-
 	if cm := l.Check(lvl, message); cm.OK() {
 		cm.Write(l.fieldsConversion(keyVals...)...)
+	}
+	if l.sh != nil {
+		l.sh.CheckAndFire(lvl, message, keyVals...)
 	}
 }
 

@@ -149,8 +149,8 @@ func TestSentryHook(t *testing.T) {
 
 func TestSentryHookDoesNotMutatePrevious(t *testing.T) {
 	h, err := sentry.New("")
-	assert.NoError(t, err)
 	defer h.Close()
+	assert.NoError(t, err)
 
 	l := Builder().WithSentryHook(h).Build().(*baseLogger)
 	assert.Equal(t, make(map[string]interface{}), l.sh.Fields())
