@@ -21,14 +21,8 @@
 package service
 
 import (
-	"time"
-
 	"go.uber.org/fx/config"
-	"go.uber.org/fx/metrics"
-	"go.uber.org/fx/tracing"
-	"go.uber.org/fx/ulog"
 
-	"github.com/go-validator/validator"
 	"github.com/pkg/errors"
 )
 
@@ -120,73 +114,27 @@ func New(options ...Option) (Owner, error) {
 		svc.configProvider = config.Load()
 	}
 
+	svc.setupLogging(svc.configProvider)
+
 	// load standard config
 	// TODO(glib): `.Get("")` is a confusing interface for getting the root config node
-	if err := svc.configProvider.Get("").PopulateStruct(&svc.standardConfig); err != nil {
-		return nil, errors.Wrap(err, "unable to load standard configuration")
-	}
-
-	if svc.log == nil {
-		logBuilder := ulog.Builder()
-		// load and configure logging
-		err := svc.configProvider.Get("logging").PopulateStruct(&svc.logConfig)
-		if err != nil {
-			ulog.Logger().Info("Logging configuration is not provided, setting to default logger", "error", err)
-		}
-		svc.log = logBuilder.WithConfiguration(svc.logConfig).Build()
-	} else {
-		svc.log.Debug("Using custom log provider due to service.WithLogger option")
-	}
-
-	if errs := validator.Validate(svc.standardConfig); errs != nil {
-		svc.Logger().Error("Invalid service configuration", "error", errs)
-		return svc, errors.Wrap(errs, "service configuration failed validation")
+	if err := svc.setupStandardConfig(svc.Config()); err != nil {
+		return nil, err
 	}
 
 	// Initialize metrics. If no metrics reporters were Registered, do noop
 	// TODO(glib): add a logging reporter and use it by default, rather than noop
-	if svc.Metrics() == nil {
-		svc.metrics, svc.statsReporter, svc.metricsCloser = metrics.RootScope(svc)
-		metrics.Freeze()
-	}
+	svc.setupMetrics()
 
-	if svc.RuntimeMetricsCollector() == nil {
-		var runtimeMetricsConfig metrics.RuntimeConfig
-		err := svc.configProvider.Get("metrics.runtime").PopulateStruct(&runtimeMetricsConfig)
-		if err != nil {
-			return nil, errors.Wrap(err, "unable to load runtime metrics configuration")
-		}
-		svc.runtimeCollector = metrics.StartCollectingRuntimeMetrics(
-			svc.metrics.SubScope("runtime"), time.Second, runtimeMetricsConfig,
-		)
-	}
-
-	if svc.Tracer() == nil {
-		if err := svc.configProvider.Get("tracing").PopulateStruct(&svc.tracerConfig); err != nil {
-			return nil, errors.Wrap(err, "unable to load tracing configuration")
-		}
-		tracer, closer, err := tracing.InitGlobalTracer(
-			&svc.tracerConfig,
-			svc.standardConfig.ServiceName,
-			svc.log,
-			svc.statsReporter,
-		)
-		if err != nil {
-			return svc, errors.Wrap(err, "unable to initialize global tracer")
-		}
-		svc.tracer = tracer
-		svc.tracerCloser = closer
+	if err := svc.setupRuntimeMetricsCollector(svc.Config()); err != nil {
+		return nil, err
+	} else if err := svc.setupTracer(svc.Config()); err != nil {
+		return nil, err
 	}
 
 	// if we have an observer, look for a property called "config" and load the service
 	// node into that config.
-	if svc.observer != nil {
-		loadInstanceConfig(svc.configProvider, "service", svc.observer)
-
-		if shc, ok := svc.observer.(SetContainerer); ok {
-			shc.SetContainer(svc)
-		}
-	}
+	svc.setupObserver(svc.Config())
 
 	// Put service into Initialized state
 	svc.transitionState(Initialized)
