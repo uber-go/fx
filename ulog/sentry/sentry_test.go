@@ -66,7 +66,7 @@ func TestExtra(t *testing.T) {
 	s, err := New("", Fields(f))
 	s.CheckAndFire(zap.ErrorLevel, "error log", "foo", "bar")
 	assert.NoError(t, err)
-	assert.Equal(t, s.fields, f)
+	assert.Equal(t, f, s.Fields())
 }
 
 func TestWith(t *testing.T) {
@@ -76,7 +76,24 @@ func TestWith(t *testing.T) {
 	assert.NoError(t, err)
 	expected := map[string]interface{}{"someInt": 123, "someFloat": float64(10)}
 	sh.AppendFields("someFloat", float64(10))
-	assert.Equal(t, expected, sh.fields)
+	assert.Equal(t, expected, sh.Fields())
+}
+
+func TestCopy(t *testing.T) {
+	sh, err := New("", Fields(map[string]interface{}{
+		"someInt": 123,
+	}))
+	assert.NoError(t, err)
+	shCopy := sh.Copy()
+	for k, v := range sh.Fields() {
+		assert.Equal(t, v, shCopy.Fields()[k])
+	}
+	assert.Equal(t, sh.Capturer, shCopy.Capturer)
+	assert.Equal(t, sh.minLevel, shCopy.minLevel)
+	assert.Equal(t, sh.traceEnabled, shCopy.traceEnabled)
+	assert.Equal(t, sh.traceSkipFrames, shCopy.traceSkipFrames)
+	assert.Equal(t, sh.traceContextLines, shCopy.traceContextLines)
+	assert.Equal(t, sh.traceAppPrefixes, shCopy.traceAppPrefixes)
 }
 
 func TestWithTraceDisabled(t *testing.T) {
