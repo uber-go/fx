@@ -176,7 +176,7 @@ func (sh *Hook) Copy() *Hook {
 	}
 }
 
-// CheckAndFire check to see if logging level is above Sentry treshold
+// CheckAndFire check to see if logging level is above Sentry threshold
 // and if so, fires off a Sentry packet
 func (sh *Hook) CheckAndFire(lvl zap.Level, msg string, keyvals ...interface{}) {
 	if lvl < sh.minLevel {
