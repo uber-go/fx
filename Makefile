@@ -129,6 +129,7 @@ examples:
 	$(ECHO_V)test -d vendor || $(MAKE) libdeps
 	$(ECHO_V)which thriftrw >/dev/null || go install ./vendor/go.uber.org/thriftrw
 	$(ECHO_V)which thriftrw-plugin-yarpc >/dev/null || go install ./vendor/go.uber.org/yarpc/encoding/thrift/thriftrw-plugin-yarpc
+	$(ECHO_V)which thriftrw-plugin-fx >/dev/null || go install ./modules/rpc/thriftrw-plugin-fx
 	@$(call label,Generating example RPC bindings)
 	@echo
 	$(ECHO_)$(MAKE) -C examples/keyvalue kv/types.go ECHO_V=$(ECHO_V)
