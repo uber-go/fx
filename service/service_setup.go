@@ -28,8 +28,8 @@ import (
 	"go.uber.org/fx/tracing"
 	"go.uber.org/fx/ulog"
 
+	"github.com/go-validator/validator"
 	"github.com/pkg/errors"
-	"gopkg.in/validator.v2"
 )
 
 func (svc *serviceCore) setupLogging(cfg config.Provider) {
