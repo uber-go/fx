@@ -71,7 +71,7 @@ BENCH_FILE ?= .bench/new.txt
 .PHONY: bench
 bench:
 	@$(call label,Running benchmarks)
-	$(ECHO_V)rm $(BENCH_FILE)
+	$(ECHO_V)rm -f $(BENCH_FILE)
 	$(ECHO_V)$(foreach pkg,$(BENCH_PKGS),go test -bench=. -run="^$$" $(BENCH_FLAGS) $(pkg) | \
 		tee -a $(BENCH_FILE);)
 
