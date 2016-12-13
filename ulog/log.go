@@ -99,11 +99,6 @@ func (l *baseLogger) RawLogger() zap.Logger {
 	return l.log
 }
 
-// sentry returns underlying sentry hook
-func (l *baseLogger) sentry() *sentry.Hook {
-	return l.sh
-}
-
 func (l *baseLogger) With(keyVals ...interface{}) Log {
 	var sh *sentry.Hook
 	if l.sh != nil {
