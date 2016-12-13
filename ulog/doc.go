@@ -117,11 +117,41 @@
 // Current performance benchmark data with ulog interface,
 // ulog baseLogger struct, and zap.Logger
 //
-//   BenchmarkUlogWithoutFields-8               5000000   226 ns/op  48 B/op    1 allocs/op
-//   BenchmarkUlogWithFieldsLogIFace-8          2000000   1026 ns/op 1052 B/op  19 allocs/op
-//   BenchmarkUlogWithFieldsBaseLoggerStruct-8  2000000   912 ns/op  795 B/op   18 allocs/op
-//   BenchmarkUlogWithFieldsZapLogger-8         3000000   558 ns/op  513 B/op   1 allocs/op
-//   BenchmarkUlogLiteWithFields-8              3000000   466 ns/op  297 B/op   7 allocs/op
+//   BenchmarkUlogWithoutFields-8                    10000000               223 ns/op               0 B/op          0 allocs/op
+//   BenchmarkUlogWithFieldsLogIFace-8                1000000              1237 ns/op            1005 B/op         18 allocs/op
+//   BenchmarkUlogWithFieldsBaseLoggerStruct-8        1000000              1096 ns/op             748 B/op         17 allocs/op
+//   BenchmarkUlogWithFieldsZapLogger-8               2000000               664 ns/op             514 B/op          1 allocs/op
+//   BenchmarkUlogLiteWithFields-8                    3000000               489 ns/op             249 B/op          6 allocs/op
+//   BenchmarkUlogSentry-8                            3000000               407 ns/op             128 B/op          4 allocs/op
+//   BenchmarkUlogSentryWith-8                        1000000              1535 ns/op            1460 B/op         12 allocs/op
+//
+// Sentry
+//
+// ulog has a seamless integration with Sentry. For out-of-the-box usage
+// just include this in your configuration yaml:
+//
+//
+//   logging:
+//     sentry:
+//       dsn: http://user:secret@your.sentry.dsn/project
+//
+// If you'd like to take more control over the Sentry integration, see
+// sentry.Hook
+//
+// For example, to turn off Stacktrace generation:
+//
+//   import (
+//     "github.com/uber-go/zap"
+//     "go.uber.org/fx/ulog/ulog"
+//     "go.uber.org/fx/ulog/sentry"
+//     "go.uber.org/fx/service"
+//   )
+//
+//   func main() {
+//     h := sentry.New(MY_DSN, MinLevel(zap.InfoLevel), DisableTraces())
+//     l := ulog.Builder().WithSentryHook(h).Build()
+//     svc, err := service.WithLogger(l).Build()
+//   }
 //
 //
 package ulog

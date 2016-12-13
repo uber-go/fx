@@ -30,6 +30,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/uber-go/zap"
+	"go.uber.org/fx/ulog/sentry"
 )
 
 func TestSimpleLogger(t *testing.T) {
@@ -128,4 +129,35 @@ func TestRawLogger(t *testing.T) {
 func TestLogger(t *testing.T) {
 	log := Logger()
 	assert.NotNil(t, log.RawLogger())
+}
+
+func TestSentryHook(t *testing.T) {
+	c := &sentry.MemCapturer{}
+	h, err := sentry.New("")
+	assert.NoError(t, err, "Need to be able to create a sentry hook")
+	h.Capturer = c
+
+	l := Builder().WithSentryHook(h).Build()
+
+	l.Error("you work, yea?", "key", 123)
+	l.Info("this should not be sent, right?", "key", "val")
+
+	assert.Equal(t, 1, len(c.Packets))
+	p := c.Packets[0]
+	assert.Equal(t, "you work, yea?", p.Message)
+}
+
+func TestSentryHookDoesNotMutatePrevious(t *testing.T) {
+	h, err := sentry.New("")
+	defer h.Close()
+	assert.NoError(t, err)
+
+	l := Builder().WithSentryHook(h).Build().(*baseLogger)
+	assert.Equal(t, make(map[string]interface{}), l.sh.Fields())
+
+	l2 := l.With("key", "value").(*baseLogger)
+	assert.Equal(t, map[string]interface{}{}, l.sh.Fields())
+	assert.NotNil(t, l2.sh)
+	assert.NotNil(t, l2.sh.Fields())
+	assert.Equal(t, map[string]interface{}{"key": "value"}, l2.sh.Fields())
 }

@@ -136,3 +136,33 @@ func TestDefaultPackageLogger(t *testing.T) {
 		assert.True(t, zapLogger.Check(zap.DebugLevel, "").OK())
 	})
 }
+
+func TestConfiguredLoggerWithSentrySuccessful(t *testing.T) {
+	testSentry(t, "https://u:p@example.com/sentry/1", true)
+}
+
+func TestConfiguredLoggerWithSentryError(t *testing.T) {
+	testSentry(t, "invalid_dsn", false)
+}
+
+func testSentry(t *testing.T, dsn string, isValid bool) {
+	withLogger(t, func(builder *LogBuilder, tmpDir string, logFile string) {
+		txt := false
+		cfg := Configuration{
+			Level:         "debug",
+			Stdout:        false,
+			TextFormatter: &txt,
+			Verbose:       false,
+			Sentry:        &SentryConfiguration{DSN: dsn},
+		}
+		logBuilder := builder.WithConfiguration(cfg)
+		log := logBuilder.Build()
+		zapLogger := log.RawLogger()
+		assert.True(t, zapLogger.Check(zap.DebugLevel, "").OK())
+		if isValid {
+			assert.NotNil(t, logBuilder.sentryHook)
+		} else {
+			assert.Nil(t, logBuilder.sentryHook)
+		}
+	})
+}

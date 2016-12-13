@@ -18,6 +18,8 @@ import:
   version: v2
 - package: github.com/pkg/errors
   version: ^0.8.0
+- package: github.com/getsentry/raven-go
+  version: master
 - package: github.com/uber/jaeger-client-go
   version: ^1.6.0
 - package: github.com/stretchr/testify

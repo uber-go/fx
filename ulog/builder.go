@@ -26,6 +26,7 @@ import (
 	"path"
 
 	"go.uber.org/fx/config"
+	"go.uber.org/fx/ulog/sentry"
 
 	"github.com/uber-go/zap"
 )
@@ -37,8 +38,16 @@ type Configuration struct {
 	Stdout  bool
 	Verbose bool
 
+	Sentry *SentryConfiguration
+
 	prefixWithFileLine *bool `yaml:"prefix_with_fileline"`
 	TextFormatter      *bool // use TextFormatter (default json)
+}
+
+// SentryConfiguration provides sentry DSN
+// TODO(glib): allow other sentry config stuff through yaml: trace skips, etc
+type SentryConfiguration struct {
+	DSN string
 }
 
 // FileConfiguration describes the properties needed to log to a file
@@ -50,8 +59,9 @@ type FileConfiguration struct {
 
 // LogBuilder is the struct containing logger
 type LogBuilder struct {
-	log       zap.Logger
-	logConfig Configuration
+	log        zap.Logger
+	logConfig  Configuration
+	sentryHook *sentry.Hook
 }
 
 // Builder creates an empty builder for building ulog.Log object
@@ -76,6 +86,12 @@ func (lb *LogBuilder) SetLogger(zap zap.Logger) *LogBuilder {
 	return lb
 }
 
+// WithSentryHook allows users to manually configure the sentry hook
+func (lb *LogBuilder) WithSentryHook(hook *sentry.Hook) *LogBuilder {
+	lb.sentryHook = hook
+	return lb
+}
+
 // Build the ulog logger for use
 func (lb *LogBuilder) Build() Log {
 	var log zap.Logger
@@ -93,8 +109,22 @@ func (lb *LogBuilder) Build() Log {
 		log = lb.Configure()
 	}
 
+	// TODO(glib): document that yaml configuration takes precedence or
+	// make the situation better so yaml overrides only the DSN
+	if lb.logConfig.Sentry != nil {
+		if len(lb.logConfig.Sentry.DSN) > 0 {
+			hook, err := sentry.New(lb.logConfig.Sentry.DSN)
+			if err == nil {
+				lb.sentryHook = hook
+			} else {
+				log.Warn("Sentry creation failed with error", zap.Error(err))
+			}
+		}
+	}
+
 	return &baseLogger{
 		log: log,
+		sh:  lb.sentryHook,
 	}
 }
 
