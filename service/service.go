@@ -128,7 +128,9 @@ func New(options ...Option) (Owner, error) {
 
 	if err := svc.setupRuntimeMetricsCollector(svc.Config()); err != nil {
 		return nil, err
-	} else if err := svc.setupTracer(svc.Config()); err != nil {
+	}
+
+	if err := svc.setupTracer(svc.Config()); err != nil {
 		return nil, err
 	}
 

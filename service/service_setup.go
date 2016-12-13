@@ -66,36 +66,39 @@ func (svc *serviceCore) setupMetrics() {
 }
 
 func (svc *serviceCore) setupRuntimeMetricsCollector(cfg config.Provider) error {
-	if svc.RuntimeMetricsCollector() == nil {
-		var runtimeMetricsConfig metrics.RuntimeConfig
-		err := cfg.Get("metrics.runtime").PopulateStruct(&runtimeMetricsConfig)
-		if err != nil {
-			return errors.Wrap(err, "unable to load runtime metrics configuration")
-		}
-		svc.runtimeCollector = metrics.StartCollectingRuntimeMetrics(
-			svc.metrics.SubScope("runtime"), time.Second, runtimeMetricsConfig,
-		)
+	if svc.RuntimeMetricsCollector() != nil {
+		return nil
 	}
+
+	var runtimeMetricsConfig metrics.RuntimeConfig
+	err := cfg.Get("metrics.runtime").PopulateStruct(&runtimeMetricsConfig)
+	if err != nil {
+		return errors.Wrap(err, "unable to load runtime metrics configuration")
+	}
+	svc.runtimeCollector = metrics.StartCollectingRuntimeMetrics(
+		svc.metrics.SubScope("runtime"), time.Second, runtimeMetricsConfig,
+	)
 	return nil
 }
 
 func (svc *serviceCore) setupTracer(cfg config.Provider) error {
-	if svc.Tracer() == nil {
-		if err := cfg.Get("tracing").PopulateStruct(&svc.tracerConfig); err != nil {
-			return errors.Wrap(err, "unable to load tracing configuration")
-		}
-		tracer, closer, err := tracing.InitGlobalTracer(
-			&svc.tracerConfig,
-			svc.standardConfig.ServiceName,
-			svc.log,
-			svc.statsReporter,
-		)
-		if err != nil {
-			return errors.Wrap(err, "unable to initialize global tracer")
-		}
-		svc.tracer = tracer
-		svc.tracerCloser = closer
+	if svc.Tracer() != nil {
+		return nil
 	}
+	if err := cfg.Get("tracing").PopulateStruct(&svc.tracerConfig); err != nil {
+		return errors.Wrap(err, "unable to load tracing configuration")
+	}
+	tracer, closer, err := tracing.InitGlobalTracer(
+		&svc.tracerConfig,
+		svc.standardConfig.ServiceName,
+		svc.log,
+		svc.statsReporter,
+	)
+	if err != nil {
+		return errors.Wrap(err, "unable to initialize global tracer")
+	}
+	svc.tracer = tracer
+	svc.tracerCloser = closer
 	return nil
 }
 
