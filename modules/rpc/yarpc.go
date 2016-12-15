@@ -86,13 +86,12 @@ func newYarpcModule(
 		config:     *cfg,
 	}
 
-	options = append(options,
-		WithUnaryInboundMiddleware(fxContextUnaryInboundMiddleware{
-			Host: mi.Host,
-		}),
+	options = append([]modules.Option{WithUnaryInboundMiddleware(fxContextUnaryInboundMiddleware{
+		Host: mi.Host,
+	}),
 		WithOnewayInboundMiddleware(fxContextOnewayInboundMiddleware{
 			Host: mi.Host,
-		}))
+		})}, options...)
 
 	module.log = ulog.Logger().With("moduleName", name)
 	for _, opt := range options {
