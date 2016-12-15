@@ -1,8 +1,8 @@
-hash: 651629312a68a9d4145297cfeeb1af6c6fcc4f50e5580fd3beac47b0ac694d79
-updated: 2016-12-08T16:15:13.073285441-08:00
+hash: 47612d13426779e7a74a7c873888a1d94a5fa1607275ce585e746b09d7a5f22d
+updated: 2016-12-15T14:37:04.023171932-08:00
 imports:
 - name: github.com/apache/thrift
-  version: 7ab125a253e5aebbf2a0ed9a0a1602a4b879eca7
+  version: 0d9b713b173f35ce02552b2f4372899440a99b25
   subpackages:
   - lib/go/thrift
 - name: github.com/certifi/gocertifi
@@ -42,9 +42,7 @@ imports:
 - name: github.com/uber-go/tally
   version: 2750b4ae690cbeb294016efe18ceaeb80c4ce17c
 - name: github.com/uber-go/zap
-  version: 35cd7966cc81adc0449c91b3f6b1939812be73aa
-  subpackages:
-  - zwrap
+  version: 05dadc4e239529c50d6f730c17f0a3aaf35b64fd
 - name: github.com/uber/jaeger-client-go
   version: e39d0f1b622558cae3d9db0062a739cc6ffa700f
   subpackages:
@@ -69,10 +67,17 @@ imports:
   version: c98a13058faa5dd41584a77221a268d2c72d832d
   subpackages:
   - envelope
+  - internal/envelope
   - internal/envelope/exception
+  - internal/frame
+  - internal/goast
+  - internal/multiplex
   - internal/semver
+  - plugin
+  - plugin/api
   - protocol
   - protocol/binary
+  - ptr
   - version
   - wire
 - name: go.uber.org/yarpc
@@ -95,10 +100,14 @@ imports:
   - transport/tchannel
   - transport/tchannel/internal
 - name: golang.org/x/net
-  version: e31bd588d1077ee66a958c0ad3a235f2084b4195
+  version: 45e771701b814666a7eb299e6c7a57d0b1799e91
   subpackages:
   - context
   - context/ctxhttp
+- name: golang.org/x/tools
+  version: 3fe2afc9e626f32e91aff6eddb78b14743446865
+  subpackages:
+  - go/ast/astutil
 - name: gopkg.in/yaml.v2
   version: a83829b6f1293c91addabc89d0571c246397bbf4
 testImports:
@@ -122,6 +131,10 @@ testImports:
   version: 5e136deb9b893bbe6c8f23236ff4378b7a8a0dbb
 - name: github.com/mattn/goveralls
   version: edf7508a2bcb40ec1160e94518c983c2fc169f02
+- name: github.com/mvdan/interfacer
+  version: 588bd9940e912b1b2760d41bd836ef28ff97164d
+  subpackages:
+  - cmd/interfacer
 - name: github.com/pborman/uuid
   version: 3d4f2ba23642d3cfd06bd4b54cf03d99d95c0f1b
 - name: github.com/russross/blackfriday
@@ -130,7 +143,3 @@ testImports:
   version: f274e5a4257c85a9eaf60ac820ee813b78cac6ab
 - name: github.com/shurcooL/sanitized_anchor_name
   version: 1dba4b3954bc059efc3991ec364f9f9a35f597d2
-- name: golang.org/x/tools
-  version: 3fe2afc9e626f32e91aff6eddb78b14743446865
-  subpackages:
-  - cover
