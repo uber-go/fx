@@ -32,6 +32,7 @@ import (
 	"go.uber.org/thriftrw/wire"
 	"go.uber.org/yarpc"
 	"go.uber.org/yarpc/encoding/thrift"
+	"go.uber.org/yarpc/transport"
 )
 
 type fakeEnveloper struct {
@@ -87,4 +88,34 @@ func TestWrapOneway_error(t *testing.T) {
 	assert.NotNil(t, handlerFunc)
 	err := handlerFunc.HandleOneway(context.Background(), nil, wire.Value{})
 	assert.Error(t, err)
+}
+
+func TestUnaryInboundMiddleware_fxContext(t *testing.T) {
+	u := fxContextUnaryInboundMiddleware{
+		Host: service.NullHost(),
+	}
+	err := u.Handle(context.Background(), &transport.Request{}, nil, &fakeUnaryHandler{})
+	assert.Equal(t, "dummy", err.Error())
+}
+
+type fakeUnaryHandler struct{}
+
+func (_m *fakeUnaryHandler) Handle(ctx context.Context, _param1 *transport.Request, _param2 transport.ResponseWriter) error {
+	// TODO(anup): improve type assertion and context upgrading to fx.Context
+	return errors.New(ctx.(fx.Context).Name())
+}
+
+func TestOnewayInboundMiddleware_fxContext(t *testing.T) {
+	u := fxContextOnewayInboundMiddleware{
+		Host: service.NullHost(),
+	}
+	err := u.HandleOneway(context.Background(), &transport.Request{}, &fakeOnewayHandler{})
+	assert.Equal(t, "dummy", err.Error())
+}
+
+type fakeOnewayHandler struct{}
+
+func (_m *fakeOnewayHandler) HandleOneway(ctx context.Context, p *transport.Request) error {
+	// TODO(anup): improve type assertion and context upgrading to fx.Context
+	return errors.New(ctx.(fx.Context).Name())
 }

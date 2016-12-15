@@ -28,6 +28,7 @@ import (
 	"go.uber.org/thriftrw/wire"
 	"go.uber.org/yarpc"
 	"go.uber.org/yarpc/encoding/thrift"
+	"go.uber.org/yarpc/transport"
 )
 
 // UnaryHandler is a wrapper for YARPC thrift.UnaryHandler
@@ -57,6 +58,7 @@ func (f OnewayHandlerFunc) HandleOneway(ctx fx.Context, reqMeta yarpc.ReqMeta, b
 }
 
 // WrapUnary wraps the unary handler and returns implementation of thrift.UnaryHandler for yarpc calls
+// TODO(anup): fix wrapUnary signature to remove host once update yarpc plugin is imported in the repo
 func WrapUnary(host service.Host, unaryHandlerFunc UnaryHandlerFunc) thrift.UnaryHandler {
 	return &unaryHandlerWrapper{
 		Host:             host,
@@ -76,6 +78,7 @@ func (hw *unaryHandlerWrapper) Handle(ctx context.Context, reqMeta yarpc.ReqMeta
 }
 
 // WrapOneway wraps the oneway handler and returns implementation of thrift.OnewayHandler for yarpc calls
+// TODO(anup): fix wrapOneway signature to remove host once update yarpc plugin is imported in the repo
 func WrapOneway(host service.Host, onewayHandlerFunc OnewayHandlerFunc) thrift.OnewayHandler {
 	return &onewayHandlerWrapper{
 		Host:              host,
@@ -92,4 +95,22 @@ type onewayHandlerWrapper struct {
 func (hw *onewayHandlerWrapper) HandleOneway(ctx context.Context, reqMeta yarpc.ReqMeta, body wire.Value) error {
 	fxctx := fx.NewContext(ctx, hw.Host)
 	return hw.OnewayHandlerFunc.HandleOneway(fxctx, reqMeta, body)
+}
+
+type fxContextUnaryInboundMiddleware struct {
+	service.Host
+}
+
+func (f fxContextUnaryInboundMiddleware) Handle(ctx context.Context, req *transport.Request, resw transport.ResponseWriter, handler transport.UnaryHandler) error {
+	fxctx := fx.NewContext(ctx, f.Host)
+	return handler.Handle(fxctx, req, resw)
+}
+
+type fxContextOnewayInboundMiddleware struct {
+	service.Host
+}
+
+func (f fxContextOnewayInboundMiddleware) HandleOneway(ctx context.Context, req *transport.Request, handler transport.OnewayHandler) error {
+	fxctx := fx.NewContext(ctx, f.Host)
+	return handler.HandleOneway(fxctx, req)
 }

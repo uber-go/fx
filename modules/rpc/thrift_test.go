@@ -71,7 +71,8 @@ func testInitRunModule(t *testing.T, mod service.Module, mci service.ModuleCreat
 
 func mch() service.ModuleCreateInfo {
 	return service.ModuleCreateInfo{
-		Host: service.NullHost(),
+		Items: make(map[string]interface{}),
+		Host:  service.NullHost(),
 	}
 }
 

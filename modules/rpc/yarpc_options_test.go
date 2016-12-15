@@ -37,17 +37,37 @@ func TestWithUnaryInboundMiddleware_OK(t *testing.T) {
 	}
 
 	require.NoError(t, opt(mc))
-	assert.Equal(t, 1, len(inboundMiddlewaresFromCreateInfo(*mc)))
+	assert.Equal(t, 1, len(unaryInboundMiddlewaresFromCreateInfo(*mc)))
+}
+
+func TestWithOnewayInboundMiddleware_OK(t *testing.T) {
+	opt := WithOnewayInboundMiddleware(transport.NopOnewayInboundMiddleware)
+	mc := &service.ModuleCreateInfo{
+		Items: make(map[string]interface{}),
+	}
+	require.NoError(t, opt(mc))
+	assert.Equal(t, 1, len(onewayInboundMiddlewaresFromCreateInfo(*mc)))
 }
 
 func TestWithUnaryInboundMiddleware_PanicsBadData(t *testing.T) {
 	opt := WithUnaryInboundMiddleware(transport.NopUnaryInboundMiddleware)
 	mc := &service.ModuleCreateInfo{
 		Items: map[string]interface{}{
-			_interceptorKey: "foo",
+			_unaryInterceptorKey: "foo",
 		},
 	}
+	assert.Panics(t, func() {
+		opt(mc)
+	})
+}
 
+func TestWithOnewayInboundMiddleware_PanicsBadData(t *testing.T) {
+	opt := WithOnewayInboundMiddleware(transport.NopOnewayInboundMiddleware)
+	mc := &service.ModuleCreateInfo{
+		Items: map[string]interface{}{
+			_onewayInterceptorKey: "foo",
+		},
+	}
 	assert.Panics(t, func() {
 		opt(mc)
 	})

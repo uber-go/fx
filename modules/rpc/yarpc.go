@@ -39,12 +39,13 @@ import (
 // YarpcModule is an implementation of a core module using YARPC
 type YarpcModule struct {
 	modules.ModuleBase
-	rpc                yarpc.Dispatcher
-	register           registerServiceFunc
-	config             yarpcConfig
-	log                ulog.Log
-	stateMu            sync.RWMutex
-	inboundMiddlewares []transport.UnaryInboundMiddleware
+	rpc                      yarpc.Dispatcher
+	register                 registerServiceFunc
+	config                   yarpcConfig
+	log                      ulog.Log
+	stateMu                  sync.RWMutex
+	unaryInboundMiddlewares  []transport.UnaryInboundMiddleware
+	onewayInboundMiddlewares []transport.OnewayInboundMiddleware
 }
 
 var (
@@ -85,6 +86,14 @@ func newYarpcModule(
 		config:     *cfg,
 	}
 
+	options = append(options,
+		WithUnaryInboundMiddleware(fxContextUnaryInboundMiddleware{
+			Host: mi.Host,
+		}),
+		WithOnewayInboundMiddleware(fxContextOnewayInboundMiddleware{
+			Host: mi.Host,
+		}))
+
 	module.log = ulog.Logger().With("moduleName", name)
 	for _, opt := range options {
 		if err := opt(&mi); err != nil {
@@ -97,7 +106,8 @@ func newYarpcModule(
 	// found values, update module
 	module.config = *cfg
 
-	module.inboundMiddlewares = inboundMiddlewaresFromCreateInfo(mi)
+	module.unaryInboundMiddlewares = unaryInboundMiddlewaresFromCreateInfo(mi)
+	module.onewayInboundMiddlewares = onewayInboundMiddlewaresFromCreateInfo(mi)
 
 	return module, err
 }
@@ -119,7 +129,8 @@ func (m *YarpcModule) Start(readyCh chan<- struct{}) <-chan error {
 		return ret
 	}
 
-	interceptor := yarpc.UnaryInboundMiddleware(m.inboundMiddlewares...)
+	unaryInterceptor := yarpc.UnaryInboundMiddleware(m.unaryInboundMiddlewares...)
+	onewayInterceptor := yarpc.OnewayInboundMiddleware(m.onewayInboundMiddlewares...)
 
 	m.rpc, err = _dispatcherFn(m.Host(), yarpc.Config{
 		Name: m.config.AdvertiseName,
@@ -127,7 +138,8 @@ func (m *YarpcModule) Start(readyCh chan<- struct{}) <-chan error {
 			tch.NewInbound(channel, tch.ListenAddr(m.config.Bind)),
 		},
 		InboundMiddleware: yarpc.InboundMiddleware{
-			Unary: interceptor,
+			Unary:  unaryInterceptor,
+			Oneway: onewayInterceptor,
 		},
 		Tracer: m.Tracer(),
 	})
