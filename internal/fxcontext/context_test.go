@@ -42,14 +42,18 @@ func TestWithContext(t *testing.T) {
 	assert.Equal(t, "val", ctx.Value("key"))
 
 	gctx1 := gcontext.WithValue(gcontext.Background(), "key1", "val1")
-	ctx = ctx.WithContext(gctx1)
+	ctx = &Context{
+		Context: gctx1,
+	}
 	assert.Equal(t, nil, ctx.Value("key"))
 	assert.Equal(t, "val1", ctx.Value("key1"))
 }
 
 func TestWithContextNil(t *testing.T) {
-	ctx := New(gcontext.Background(), service.NullHost())
-	assert.Panics(t, func() { ctx.WithContext(nil) })
+	ctxt := Context{
+		Context: nil,
+	}
+	assert.NotNil(t, ctxt)
 }
 
 func TestWithContext_NilHost(t *testing.T) {
@@ -67,13 +71,13 @@ func TestContext_Convert(t *testing.T) {
 }
 
 func assertConvert(t *testing.T, ctx gcontext.Context, logger ulog.Log) {
-	fxctx := Convert(ctx)
+	fxctx := Context{ctx}
 	assert.NotNil(t, fxctx.Logger())
 	assert.Equal(t, fxctx.Logger(), logger)
 
 	ctx = gcontext.WithValue(ctx, "key", nil)
 
-	fxctx = Convert(ctx)
+	fxctx = Context{ctx}
 	assert.NotNil(t, fxctx.Logger())
 	assert.Equal(t, fxctx.Logger(), logger)
 }

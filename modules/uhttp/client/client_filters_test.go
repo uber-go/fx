@@ -26,9 +26,13 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"golang.org/x/net/context"
+
 	"go.uber.org/fx"
 
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/fx/internal/fxcontext"
+	"go.uber.org/fx/service"
 )
 
 var (
@@ -39,7 +43,7 @@ var (
 
 func TestExecutionChain(t *testing.T) {
 	execChain := newExecutionChain([]Filter{}, getNoopClient())
-	resp, err := execChain.Do(nil, _req)
+	resp, err := execChain.Do(fxcontext.New(context.Background(), service.NullHost()), _req)
 	assert.NoError(t, err)
 	assert.Equal(t, _respOK, resp)
 }

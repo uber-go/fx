@@ -101,7 +101,9 @@ type fakeUnaryHandler struct {
 }
 
 func (f fakeUnaryHandler) Handle(ctx context.Context, _param1 *transport.Request, _param2 transport.ResponseWriter) error {
-	assert.NotNil(f.t, fxcontext.Convert(ctx))
+	assert.NotNil(f.t, fxcontext.Context{
+		Context: ctx,
+	})
 	return errors.New("handle")
 }
 
@@ -118,6 +120,8 @@ type fakeOnewayHandler struct {
 }
 
 func (f fakeOnewayHandler) HandleOneway(ctx context.Context, p *transport.Request) error {
-	assert.NotNil(f.t, fxcontext.Convert(ctx))
+	assert.NotNil(f.t, fxcontext.Context{
+		Context: ctx,
+	})
 	return errors.New("oneway handle")
 }

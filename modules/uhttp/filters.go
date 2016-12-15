@@ -57,7 +57,9 @@ func contextFilter(host service.Host) FilterFunc {
 
 func tracingServerFilter(host service.Host) FilterFunc {
 	return func(ctx context.Context, w http.ResponseWriter, r *http.Request, next Handler) {
-		fxctx := fxcontext.Convert(ctx)
+		fxctx := &fxcontext.Context{
+			Context: ctx,
+		}
 		operationName := r.Method
 		carrier := opentracing.HTTPHeadersCarrier(r.Header)
 		spanCtx, err := opentracing.GlobalTracer().Extract(opentracing.HTTPHeaders, carrier)
@@ -69,7 +71,9 @@ func tracingServerFilter(host service.Host) FilterFunc {
 		ext.HTTPUrl.Set(span, r.URL.String())
 		defer span.Finish()
 
-		fxctx = fxctx.WithContext(opentracing.ContextWithSpan(ctx, span))
+		fxctx = &fxcontext.Context{
+			Context: opentracing.ContextWithSpan(ctx, span),
+		}
 		r = r.WithContext(fxctx)
 		next.ServeHTTP(fxctx, w, r)
 	}
@@ -78,7 +82,9 @@ func tracingServerFilter(host service.Host) FilterFunc {
 // panicFilter handles any panics and return an error
 func panicFilter(host service.Host) FilterFunc {
 	return func(ctx context.Context, w http.ResponseWriter, r *http.Request, next Handler) {
-		fxctx := fxcontext.Convert(ctx)
+		fxctx := &fxcontext.Context{
+			Context: ctx,
+		}
 		defer func() {
 			if err := recover(); err != nil {
 				fxctx.Logger().Error("Panic recovered serving request", "error", err, "url", r.URL)

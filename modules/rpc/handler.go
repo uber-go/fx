@@ -49,7 +49,9 @@ func (f UnaryHandlerFunc) Handle(ctx fx.Context, reqMeta yarpc.ReqMeta, body wir
 // TODO(anup): GFM-255 Remove host parameter once updated yarpc plugin is imported in the repo
 func WrapUnary(host service.Host, h UnaryHandlerFunc) thrift.UnaryHandlerFunc {
 	return func(ctx context.Context, reqMeta yarpc.ReqMeta, body wire.Value) (thrift.Response, error) {
-		fxctx := fxcontext.Convert(ctx)
+		fxctx := &fxcontext.Context{
+			Context: ctx,
+		}
 		return h.Handle(fxctx, reqMeta, body)
 	}
 }
@@ -71,7 +73,9 @@ func (f OnewayHandlerFunc) HandleOneway(ctx fx.Context, reqMeta yarpc.ReqMeta, b
 // TODO(anup): GFM-255 Remove host parameter once updated yarpc plugin is imported in the repo
 func WrapOneway(host service.Host, h OnewayHandlerFunc) thrift.OnewayHandlerFunc {
 	return func(ctx context.Context, reqMeta yarpc.ReqMeta, body wire.Value) error {
-		fxctx := fxcontext.Convert(ctx)
+		fxctx := &fxcontext.Context{
+			Context: ctx,
+		}
 		return h.HandleOneway(fxctx, reqMeta, body)
 	}
 }

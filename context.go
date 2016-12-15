@@ -31,5 +31,4 @@ type Context interface {
 	gcontext.Context
 
 	Logger() ulog.Log
-	WithContext(ctx gcontext.Context) Context
 }

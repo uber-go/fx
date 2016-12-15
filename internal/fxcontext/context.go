@@ -28,54 +28,39 @@ import (
 	"go.uber.org/fx/ulog"
 )
 
-var _logger = "logger"
+type contextKey int
 
-// Convert context.Context to fx.Context
-func Convert(ctx gcontext.Context) fx.Context {
-	fxctx, ok := ctx.(fx.Context)
-	if ok {
-		return fxctx
-	}
-	return New(ctx, nil)
-}
+const (
+	contextLogger contextKey = iota
+)
 
-type context struct {
+var _ fx.Context = &Context{}
+
+// Context embeds Host and Go stdlib context for use
+type Context struct {
 	gcontext.Context
 }
 
-var _ fx.Context = &context{}
-
-// New always returns fx.Context for use in the service
+// New always returns Context for use in the service
 func New(ctx gcontext.Context, host service.Host) fx.Context {
 	if host != nil {
-		return &context{
-			Context: gcontext.WithValue(ctx, _logger, host.Logger()),
+		return &Context{
+			gcontext.WithValue(ctx, contextLogger, host.Logger()),
 		}
 	}
-	return &context{
+	return &Context{
 		Context: ctx,
 	}
 }
 
-func (c *context) Logger() ulog.Log {
+// Logger returns context based logger
+func (c *Context) Logger() ulog.Log {
 	return c.getLogger()
 }
 
-// WithContext returns a shallow copy of c with its context changed to ctx.
-// The provided ctx must be non-nil. Follows from net/http Request WithContext.
-func (c *context) WithContext(ctx gcontext.Context) fx.Context {
-	if ctx == nil {
-		panic("nil context")
+func (c *Context) getLogger() ulog.Log {
+	if c.Context.Value(contextLogger) == nil {
+		c.Context = gcontext.WithValue(c.Context, contextLogger, ulog.Logger())
 	}
-	newC := new(context)
-	*newC = *c
-	newC.Context = ctx
-	return newC
-}
-
-func (c *context) getLogger() ulog.Log {
-	if c.Context.Value(_logger) == nil {
-		c.Context = gcontext.WithValue(c.Context, _logger, ulog.Logger())
-	}
-	return c.Context.Value(_logger).(ulog.Log)
+	return c.Context.Value(contextLogger).(ulog.Log)
 }
