@@ -101,7 +101,7 @@ func TestInboundMiddleware_fxContext(t *testing.T) {
 type fakeUnaryHandler struct{}
 
 func (fakeUnaryHandler) Handle(ctx context.Context, _param1 *transport.Request, _param2 transport.ResponseWriter) error {
-	// TODO(anup): improve type assertion and context upgrading to fx.Context
+	// TODO(anup): GFM-256 improve type assertion and context upgrading to fx.Context
 	return errors.New(ctx.(fx.Context).Name())
 }
 
@@ -115,7 +115,7 @@ func TestOnewayInboundMiddleware_fxContext(t *testing.T) {
 
 type fakeOnewayHandler struct{}
 
-func (_m *fakeOnewayHandler) HandleOneway(ctx context.Context, p *transport.Request) error {
-	// TODO(anup): improve type assertion and context upgrading to fx.Context
+func (fakeOnewayHandler) HandleOneway(ctx context.Context, p *transport.Request) error {
+	// TODO(anup): GFM-256 improve type assertion and context upgrading to fx.Context
 	return errors.New(ctx.(fx.Context).Name())
 }
