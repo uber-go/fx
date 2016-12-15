@@ -90,8 +90,8 @@ func TestWrapOneway_error(t *testing.T) {
 	assert.Error(t, err)
 }
 
-func TestUnaryInboundMiddleware_fxContext(t *testing.T) {
-	unary := fxContextUnaryInboundMiddleware{
+func TestInboundMiddleware_fxContext(t *testing.T) {
+	unary := fxContextInboundMiddleware{
 		Host: service.NullHost(),
 	}
 	err := unary.Handle(context.Background(), &transport.Request{}, nil, &fakeUnaryHandler{})
@@ -100,7 +100,7 @@ func TestUnaryInboundMiddleware_fxContext(t *testing.T) {
 
 type fakeUnaryHandler struct{}
 
-func (_m *fakeUnaryHandler) Handle(ctx context.Context, _param1 *transport.Request, _param2 transport.ResponseWriter) error {
+func (fakeUnaryHandler) Handle(ctx context.Context, _param1 *transport.Request, _param2 transport.ResponseWriter) error {
 	// TODO(anup): improve type assertion and context upgrading to fx.Context
 	return errors.New(ctx.(fx.Context).Name())
 }

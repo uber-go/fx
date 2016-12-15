@@ -58,7 +58,7 @@ func (f OnewayHandlerFunc) HandleOneway(ctx fx.Context, reqMeta yarpc.ReqMeta, b
 }
 
 // WrapUnary wraps the unary handler and returns implementation of thrift.UnaryHandler for yarpc calls
-// TODO(anup): Remove host parameter once updated yarpc plugin is imported in the repo
+// TODO(anup): GFM-255 Remove host parameter once updated yarpc plugin is imported in the repo
 func WrapUnary(host service.Host, unaryHandlerFunc UnaryHandlerFunc) thrift.UnaryHandler {
 	return &unaryHandlerWrapper{
 		Host:             host,
@@ -78,7 +78,7 @@ func (hw *unaryHandlerWrapper) Handle(ctx context.Context, reqMeta yarpc.ReqMeta
 }
 
 // WrapOneway wraps the oneway handler and returns implementation of thrift.OnewayHandler for yarpc calls
-// TODO(anup): Remove host parameter once updated yarpc plugin is imported in the repo
+// TODO(anup): GFM-255 Remove host parameter once updated yarpc plugin is imported in the repo
 func WrapOneway(host service.Host, onewayHandlerFunc OnewayHandlerFunc) thrift.OnewayHandler {
 	return &onewayHandlerWrapper{
 		Host:              host,
@@ -97,11 +97,11 @@ func (hw *onewayHandlerWrapper) HandleOneway(ctx context.Context, reqMeta yarpc.
 	return hw.OnewayHandlerFunc.HandleOneway(fxctx, reqMeta, body)
 }
 
-type fxContextUnaryInboundMiddleware struct {
+type fxContextInboundMiddleware struct {
 	service.Host
 }
 
-func (f fxContextUnaryInboundMiddleware) Handle(ctx context.Context, req *transport.Request, resw transport.ResponseWriter, handler transport.UnaryHandler) error {
+func (f fxContextInboundMiddleware) Handle(ctx context.Context, req *transport.Request, resw transport.ResponseWriter, handler transport.UnaryHandler) error {
 	fxctx := fx.NewContext(ctx, f.Host)
 	return handler.Handle(fxctx, req, resw)
 }

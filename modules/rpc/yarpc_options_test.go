@@ -30,14 +30,14 @@ import (
 	"go.uber.org/yarpc/transport"
 )
 
-func TestWithUnaryInboundMiddleware_OK(t *testing.T) {
-	opt := WithUnaryInboundMiddleware(transport.NopUnaryInboundMiddleware)
+func TestWithInboundMiddleware_OK(t *testing.T) {
+	opt := WithInboundMiddleware(transport.NopUnaryInboundMiddleware)
 	mc := &service.ModuleCreateInfo{
 		Items: make(map[string]interface{}),
 	}
 
 	require.NoError(t, opt(mc))
-	assert.Equal(t, 1, len(unaryInboundMiddlewaresFromCreateInfo(*mc)))
+	assert.Equal(t, 1, len(inboundMiddlewaresFromCreateInfo(*mc)))
 }
 
 func TestWithOnewayInboundMiddleware_OK(t *testing.T) {
@@ -49,11 +49,11 @@ func TestWithOnewayInboundMiddleware_OK(t *testing.T) {
 	assert.Equal(t, 1, len(onewayInboundMiddlewaresFromCreateInfo(*mc)))
 }
 
-func TestWithUnaryInboundMiddleware_PanicsBadData(t *testing.T) {
-	opt := WithUnaryInboundMiddleware(transport.NopUnaryInboundMiddleware)
+func TestWithInboundMiddleware_PanicsBadData(t *testing.T) {
+	opt := WithInboundMiddleware(transport.NopUnaryInboundMiddleware)
 	mc := &service.ModuleCreateInfo{
 		Items: map[string]interface{}{
-			_unaryInterceptorKey: "foo",
+			_interceptorKey: "foo",
 		},
 	}
 	assert.Panics(t, func() {

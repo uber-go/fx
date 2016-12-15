@@ -44,7 +44,7 @@ type YarpcModule struct {
 	config                   yarpcConfig
 	log                      ulog.Log
 	stateMu                  sync.RWMutex
-	unaryInboundMiddlewares  []transport.UnaryInboundMiddleware
+	inboundMiddlewares       []transport.UnaryInboundMiddleware
 	onewayInboundMiddlewares []transport.OnewayInboundMiddleware
 }
 
@@ -86,7 +86,7 @@ func newYarpcModule(
 		config:     *cfg,
 	}
 
-	options = append([]modules.Option{WithUnaryInboundMiddleware(fxContextUnaryInboundMiddleware{
+	options = append([]modules.Option{WithInboundMiddleware(fxContextInboundMiddleware{
 		Host: mi.Host,
 	}),
 		WithOnewayInboundMiddleware(fxContextOnewayInboundMiddleware{
@@ -105,7 +105,7 @@ func newYarpcModule(
 	// found values, update module
 	module.config = *cfg
 
-	module.unaryInboundMiddlewares = unaryInboundMiddlewaresFromCreateInfo(mi)
+	module.inboundMiddlewares = inboundMiddlewaresFromCreateInfo(mi)
 	module.onewayInboundMiddlewares = onewayInboundMiddlewaresFromCreateInfo(mi)
 
 	return module, err
@@ -128,7 +128,7 @@ func (m *YarpcModule) Start(readyCh chan<- struct{}) <-chan error {
 		return ret
 	}
 
-	unaryInterceptor := yarpc.UnaryInboundMiddleware(m.unaryInboundMiddlewares...)
+	interceptor := yarpc.UnaryInboundMiddleware(m.inboundMiddlewares...)
 	onewayInterceptor := yarpc.OnewayInboundMiddleware(m.onewayInboundMiddlewares...)
 
 	m.rpc, err = _dispatcherFn(m.Host(), yarpc.Config{
@@ -137,7 +137,7 @@ func (m *YarpcModule) Start(readyCh chan<- struct{}) <-chan error {
 			tch.NewInbound(channel, tch.ListenAddr(m.config.Bind)),
 		},
 		InboundMiddleware: yarpc.InboundMiddleware{
-			Unary:  unaryInterceptor,
+			Unary:  interceptor,
 			Oneway: onewayInterceptor,
 		},
 		Tracer: m.Tracer(),

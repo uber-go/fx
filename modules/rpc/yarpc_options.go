@@ -27,16 +27,16 @@ import (
 )
 
 const (
-	_unaryInterceptorKey  = "yarpcUnaryInboundMiddleware"
+	_interceptorKey       = "yarpcUnaryInboundMiddleware"
 	_onewayInterceptorKey = "yarpcOnewayInboundMiddleware"
 )
 
-// WithUnaryInboundMiddleware adds custom YARPC inboundMiddlewares to the module
-func WithUnaryInboundMiddleware(i ...transport.UnaryInboundMiddleware) modules.Option {
+// WithInboundMiddleware adds custom YARPC inboundMiddlewares to the module
+func WithInboundMiddleware(i ...transport.UnaryInboundMiddleware) modules.Option {
 	return func(mci *service.ModuleCreateInfo) error {
-		inboundMiddlewares := unaryInboundMiddlewaresFromCreateInfo(*mci)
+		inboundMiddlewares := inboundMiddlewaresFromCreateInfo(*mci)
 		inboundMiddlewares = append(inboundMiddlewares, i...)
-		mci.Items[_unaryInterceptorKey] = inboundMiddlewares
+		mci.Items[_interceptorKey] = inboundMiddlewares
 
 		return nil
 	}
@@ -52,8 +52,8 @@ func WithOnewayInboundMiddleware(i ...transport.OnewayInboundMiddleware) modules
 	}
 }
 
-func unaryInboundMiddlewaresFromCreateInfo(mci service.ModuleCreateInfo) []transport.UnaryInboundMiddleware {
-	items, ok := mci.Items[_unaryInterceptorKey]
+func inboundMiddlewaresFromCreateInfo(mci service.ModuleCreateInfo) []transport.UnaryInboundMiddleware {
+	items, ok := mci.Items[_interceptorKey]
 	if !ok {
 		return nil
 	}
