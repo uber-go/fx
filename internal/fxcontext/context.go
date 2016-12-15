@@ -75,7 +75,7 @@ func (c *context) WithContext(ctx gcontext.Context) fx.Context {
 
 func (c *context) getLogger() ulog.Log {
 	if c.Context.Value(_logger) == nil {
-		gcontext.WithValue(c.Context, _logger, ulog.Logger())
+		c.Context = gcontext.WithValue(c.Context, _logger, ulog.Logger())
 	}
 	return c.Context.Value(_logger).(ulog.Log)
 }

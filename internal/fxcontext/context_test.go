@@ -52,6 +52,11 @@ func TestWithContextNil(t *testing.T) {
 	assert.Panics(t, func() { ctx.WithContext(nil) })
 }
 
+func TestWithContext_NilHost(t *testing.T) {
+	ctx := New(gcontext.Background(), nil)
+	assert.NotNil(t, ctx.Logger())
+}
+
 func TestContext_Convert(t *testing.T) {
 	host := service.NullHost()
 	ctx := New(gcontext.Background(), host)
