@@ -233,10 +233,10 @@ func registerTracerCheckHandler(host service.Host) []RouteHandler {
 		span := opentracing.SpanFromContext(ctx)
 		if span == nil {
 			panic(fmt.Sprintf("Intentional panic, invalid span: %v", span))
-		} else if span.Tracer() != ctx.Tracer() {
+		} else if span.Tracer() != opentracing.GlobalTracer() {
 			panic(fmt.Sprintf(
 				"Intentional panic, expected tracer: %v different from actual tracer: %v", span.Tracer(),
-				ctx.Tracer(),
+				opentracing.GlobalTracer(),
 			))
 		}
 	})

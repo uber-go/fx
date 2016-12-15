@@ -128,7 +128,7 @@ func newModule(
 	module := &Module{
 		ModuleBase: *modules.NewModuleBase(ModuleType, mi.Name, mi.Host, []string{}),
 		handlers:   handlers,
-		filters:    []Filter{FilterFunc(tracingServerFilter), FilterFunc(panicFilter)},
+		filters:    []Filter{contextFilter(mi.Host), tracingServerFilter(mi.Host), panicFilter(mi.Host)},
 	}
 
 	err := module.Host().Config().Get(getConfigKey(mi.Name)).PopulateStruct(cfg)
@@ -164,8 +164,7 @@ func (m *Module) Start(ready chan<- struct{}) <-chan error {
 	m.mux.Handle("/", m.router)
 
 	for _, h := range m.handlers {
-		handle := newExecutionChain(m.filters, h.Handler)
-		m.router.Handle(h.Path, handle)
+		m.router.Handle(h.Path, newFilterChain(m.filters, h.Handler))
 	}
 
 	if m.config.Debug == nil || *m.config.Debug {

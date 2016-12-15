@@ -34,22 +34,25 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestExecutionChain(t *testing.T) {
-	chain := newExecutionChain([]Filter{}, getNoopHandler())
+func TestFilterChain(t *testing.T) {
+	host := service.NullHost()
+	chain := newFilterChain([]Filter{}, getNoopFilter(host))
 	response := testServeHTTP(chain)
 	assert.True(t, strings.Contains(response.Body.String(), "filters ok"))
 }
 
-func TestExecutionChainFilters(t *testing.T) {
-	chain := newExecutionChain(
-		[]Filter{FilterFunc(tracingServerFilter), FilterFunc(panicFilter)},
-		getNoopHandler(),
-	)
+func TestFilterChainFilters(t *testing.T) {
+	host := service.NullHost()
+	chain := newFilterChain([]Filter{
+		contextFilter(host),
+		tracingServerFilter(host),
+		panicFilter(host)},
+		getNoopFilter(host))
 	response := testServeHTTP(chain)
 	assert.Contains(t, response.Body.String(), "filters ok")
 }
 
-func testServeHTTP(chain executionChain) *httptest.ResponseRecorder {
+func testServeHTTP(chain filterChain) *httptest.ResponseRecorder {
 	request := httptest.NewRequest("", "http://filters", nil)
 	response := httptest.NewRecorder()
 	ctx := fx.NewContext(context.Background(), service.NullHost())
@@ -57,8 +60,8 @@ func testServeHTTP(chain executionChain) *httptest.ResponseRecorder {
 	return response
 }
 
-func getNoopHandler() Handler {
-	return HandlerFunc(func(ctx fx.Context, w http.ResponseWriter, r *http.Request) {
+func getNoopFilter(host service.Host) HandlerFunc {
+	return func(ctx fx.Context, w http.ResponseWriter, r *http.Request) {
 		io.WriteString(w, "filters ok")
-	})
+	}
 }

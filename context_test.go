@@ -21,20 +21,19 @@
 package fx
 
 import (
+	gcontext "context"
 	"testing"
-
-	"go.uber.org/fx/service"
 
 	"github.com/stretchr/testify/assert"
 
-	gcontext "context"
+	"go.uber.org/fx/service"
+	"go.uber.org/fx/ulog"
 )
 
 func TestContext_HostAccess(t *testing.T) {
 	ctx := NewContext(gcontext.Background(), service.NullHost())
 	assert.NotNil(t, ctx)
-	assert.NotNil(t, ctx.Config())
-	assert.Equal(t, "dummy", ctx.Name())
+	assert.NotNil(t, ctx.Logger())
 }
 
 func TestWithContext(t *testing.T) {
@@ -51,4 +50,25 @@ func TestWithContext(t *testing.T) {
 func TestWithContextNil(t *testing.T) {
 	ctx := NewContext(gcontext.Background(), service.NullHost())
 	assert.Panics(t, func() { ctx.WithContext(nil) })
+}
+
+func TestContext_Convert(t *testing.T) {
+	host := service.NullHost()
+	ctx := NewContext(gcontext.Background(), host)
+	logger := ctx.Logger()
+	assert.Equal(t, host.Logger(), logger)
+
+	assertConvert(t, ctx, logger)
+}
+
+func assertConvert(t *testing.T, ctx gcontext.Context, logger ulog.Log) {
+	fxctx := Convert(ctx)
+	assert.NotNil(t, fxctx.Logger())
+	assert.Equal(t, fxctx.Logger(), logger)
+
+	ctx = gcontext.WithValue(ctx, "key", nil)
+
+	fxctx = Convert(ctx)
+	assert.NotNil(t, fxctx.Logger())
+	assert.Equal(t, fxctx.Logger(), logger)
 }

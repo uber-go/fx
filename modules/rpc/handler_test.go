@@ -54,7 +54,7 @@ func (f fakeEnveloper) ToWire() (wire.Value, error) {
 func UnaryFakeHandlerFunc(ctx fx.Context, meta yarpc.ReqMeta, val wire.Value) (thrift.Response, error) {
 	return thrift.Response{
 		Body: fakeEnveloper{
-			serviceName: ctx.Name(),
+		// serviceName: ctx.Name(),
 		},
 	}, nil
 }
@@ -73,7 +73,6 @@ func TestWrapUnary(t *testing.T) {
 	resp, err := handlerFunc.Handle(context.Background(), nil, wire.Value{})
 	assert.NoError(t, err)
 	assert.NotNil(t, resp)
-	assert.Equal(t, "dummy", resp.Body.MethodName())
 }
 
 func TestWrapOneway(t *testing.T) {
@@ -94,28 +93,32 @@ func TestInboundMiddleware_fxContext(t *testing.T) {
 	unary := fxContextInboundMiddleware{
 		Host: service.NullHost(),
 	}
-	err := unary.Handle(context.Background(), &transport.Request{}, nil, &fakeUnaryHandler{})
-	assert.Equal(t, "dummy", err.Error())
+	err := unary.Handle(context.Background(), &transport.Request{}, nil, &fakeUnaryHandler{t: t})
+	assert.Equal(t, "handle", err.Error())
 }
 
-type fakeUnaryHandler struct{}
+type fakeUnaryHandler struct {
+	t *testing.T
+}
 
-func (fakeUnaryHandler) Handle(ctx context.Context, _param1 *transport.Request, _param2 transport.ResponseWriter) error {
-	// TODO(anup): GFM-256 improve type assertion and context upgrading to fx.Context
-	return errors.New(ctx.(fx.Context).Name())
+func (f fakeUnaryHandler) Handle(ctx context.Context, _param1 *transport.Request, _param2 transport.ResponseWriter) error {
+	assert.NotNil(f.t, fx.Convert(ctx))
+	return errors.New("handle")
 }
 
 func TestOnewayInboundMiddleware_fxContext(t *testing.T) {
 	oneway := fxContextOnewayInboundMiddleware{
 		Host: service.NullHost(),
 	}
-	err := oneway.HandleOneway(context.Background(), &transport.Request{}, &fakeOnewayHandler{})
-	assert.Equal(t, "dummy", err.Error())
+	err := oneway.HandleOneway(context.Background(), &transport.Request{}, &fakeOnewayHandler{t: t})
+	assert.Equal(t, "oneway handle", err.Error())
 }
 
-type fakeOnewayHandler struct{}
+type fakeOnewayHandler struct {
+	t *testing.T
+}
 
-func (fakeOnewayHandler) HandleOneway(ctx context.Context, p *transport.Request) error {
-	// TODO(anup): GFM-256 improve type assertion and context upgrading to fx.Context
-	return errors.New(ctx.(fx.Context).Name())
+func (f fakeOnewayHandler) HandleOneway(ctx context.Context, p *transport.Request) error {
+	assert.NotNil(f.t, fx.Convert(ctx))
+	return errors.New("oneway handle")
 }

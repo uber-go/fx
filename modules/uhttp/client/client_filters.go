@@ -55,7 +55,7 @@ func tracingFilter(
 	if s := opentracing.SpanFromContext(ctx); s != nil {
 		parent = s.Context()
 	}
-	span := ctx.Tracer().StartSpan(opName, opentracing.ChildOf(parent))
+	span := opentracing.GlobalTracer().StartSpan(opName, opentracing.ChildOf(parent))
 	ext.SpanKindRPCClient.Set(span)
 	ext.HTTPUrl.Set(span, req.URL.String())
 	defer span.Finish()
