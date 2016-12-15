@@ -72,7 +72,7 @@ BENCH_FILE ?= .bench/new.txt
 bench:
 	@$(call label,Running benchmarks)
 	$(ECHO_V)rm -f $(BENCH_FILE)
-	$(ECHO_V)$(foreach pkg,$(BENCH_PKGS),go test -bench=. -run="^$$" $(BENCH_FLAGS) $(pkg) | \
+	$(ECHO_V)$(foreach pkg,$(LIST_PKGS),go test -bench=. -run="^$$" $(BENCH_FLAGS) $(pkg) | \
 		tee -a $(BENCH_FILE);)
 
 BASELINE_BENCH_FILE = .bench/old.txt

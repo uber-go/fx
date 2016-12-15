@@ -19,6 +19,8 @@ lint:
 	$(ECHO_V)make examples
 	@echo "Installing test dependencies for vet..."
 	$(ECHO_V)go test -i $(PKGS)
+	@echo "Running interfacer..."
+	$(ECHO_V)interfacer $(LIST_PKGS) | tee -a $(LINT_LOG)
 	@echo "Removing YARPC generated code"
 	$(ECHO_V)rm -rf examples/keyvalue/kv
 	@echo "Checking formatting..."
