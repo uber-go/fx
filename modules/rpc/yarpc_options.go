@@ -27,16 +27,27 @@ import (
 )
 
 const (
-	_interceptorKey = "yarpcUnaryInboundMiddleware"
+	_interceptorKey       = "yarpcUnaryInboundMiddleware"
+	_onewayInterceptorKey = "yarpcOnewayInboundMiddleware"
 )
 
-// WithUnaryInboundMiddleware adds custom YARPC inboundMiddlewares to the module
-func WithUnaryInboundMiddleware(i ...transport.UnaryInboundMiddleware) modules.Option {
+// WithInboundMiddleware adds custom YARPC inboundMiddlewares to the module
+func WithInboundMiddleware(i ...transport.UnaryInboundMiddleware) modules.Option {
 	return func(mci *service.ModuleCreateInfo) error {
 		inboundMiddlewares := inboundMiddlewaresFromCreateInfo(*mci)
 		inboundMiddlewares = append(inboundMiddlewares, i...)
 		mci.Items[_interceptorKey] = inboundMiddlewares
 
+		return nil
+	}
+}
+
+// WithOnewayInboundMiddleware adds custom YARPC inboundMid dlewares to the module
+func WithOnewayInboundMiddleware(i ...transport.OnewayInboundMiddleware) modules.Option {
+	return func(mci *service.ModuleCreateInfo) error {
+		inboundMiddlewares := onewayInboundMiddlewaresFromCreateInfo(*mci)
+		inboundMiddlewares = append(inboundMiddlewares, i...)
+		mci.Items[_onewayInterceptorKey] = inboundMiddlewares
 		return nil
 	}
 }
@@ -49,4 +60,14 @@ func inboundMiddlewaresFromCreateInfo(mci service.ModuleCreateInfo) []transport.
 
 	// Intentionally panic if programmer adds non-interceptor slice to the data
 	return items.([]transport.UnaryInboundMiddleware)
+}
+
+func onewayInboundMiddlewaresFromCreateInfo(mci service.ModuleCreateInfo) []transport.OnewayInboundMiddleware {
+	items, ok := mci.Items[_onewayInterceptorKey]
+	if !ok {
+		return nil
+	}
+
+	// Intentionally panic if programmer adds non-interceptor slice to the data
+	return items.([]transport.OnewayInboundMiddleware)
 }

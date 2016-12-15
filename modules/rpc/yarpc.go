@@ -39,12 +39,13 @@ import (
 // YarpcModule is an implementation of a core module using YARPC
 type YarpcModule struct {
 	modules.ModuleBase
-	rpc                yarpc.Dispatcher
-	register           registerServiceFunc
-	config             yarpcConfig
-	log                ulog.Log
-	stateMu            sync.RWMutex
-	inboundMiddlewares []transport.UnaryInboundMiddleware
+	rpc                      yarpc.Dispatcher
+	register                 registerServiceFunc
+	config                   yarpcConfig
+	log                      ulog.Log
+	stateMu                  sync.RWMutex
+	inboundMiddlewares       []transport.UnaryInboundMiddleware
+	onewayInboundMiddlewares []transport.OnewayInboundMiddleware
 }
 
 var (
@@ -85,6 +86,13 @@ func newYarpcModule(
 		config:     *cfg,
 	}
 
+	options = append([]modules.Option{WithInboundMiddleware(fxContextInboundMiddleware{
+		Host: mi.Host,
+	}),
+		WithOnewayInboundMiddleware(fxContextOnewayInboundMiddleware{
+			Host: mi.Host,
+		})}, options...)
+
 	module.log = ulog.Logger().With("moduleName", name)
 	for _, opt := range options {
 		if err := opt(&mi); err != nil {
@@ -98,6 +106,7 @@ func newYarpcModule(
 	module.config = *cfg
 
 	module.inboundMiddlewares = inboundMiddlewaresFromCreateInfo(mi)
+	module.onewayInboundMiddlewares = onewayInboundMiddlewaresFromCreateInfo(mi)
 
 	return module, err
 }
@@ -120,6 +129,7 @@ func (m *YarpcModule) Start(readyCh chan<- struct{}) <-chan error {
 	}
 
 	interceptor := yarpc.UnaryInboundMiddleware(m.inboundMiddlewares...)
+	onewayInterceptor := yarpc.OnewayInboundMiddleware(m.onewayInboundMiddlewares...)
 
 	m.rpc, err = _dispatcherFn(m.Host(), yarpc.Config{
 		Name: m.config.AdvertiseName,
@@ -127,7 +137,8 @@ func (m *YarpcModule) Start(readyCh chan<- struct{}) <-chan error {
 			tch.NewInbound(channel, tch.ListenAddr(m.config.Bind)),
 		},
 		InboundMiddleware: yarpc.InboundMiddleware{
-			Unary: interceptor,
+			Unary:  interceptor,
+			Oneway: onewayInterceptor,
 		},
 		Tracer: m.Tracer(),
 	})
