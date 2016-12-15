@@ -91,10 +91,10 @@ func TestWrapOneway_error(t *testing.T) {
 }
 
 func TestUnaryInboundMiddleware_fxContext(t *testing.T) {
-	u := fxContextUnaryInboundMiddleware{
+	unary := fxContextUnaryInboundMiddleware{
 		Host: service.NullHost(),
 	}
-	err := u.Handle(context.Background(), &transport.Request{}, nil, &fakeUnaryHandler{})
+	err := unary.Handle(context.Background(), &transport.Request{}, nil, &fakeUnaryHandler{})
 	assert.Equal(t, "dummy", err.Error())
 }
 
@@ -106,10 +106,10 @@ func (_m *fakeUnaryHandler) Handle(ctx context.Context, _param1 *transport.Reque
 }
 
 func TestOnewayInboundMiddleware_fxContext(t *testing.T) {
-	u := fxContextOnewayInboundMiddleware{
+	oneway := fxContextOnewayInboundMiddleware{
 		Host: service.NullHost(),
 	}
-	err := u.HandleOneway(context.Background(), &transport.Request{}, &fakeOnewayHandler{})
+	err := oneway.HandleOneway(context.Background(), &transport.Request{}, &fakeOnewayHandler{})
 	assert.Equal(t, "dummy", err.Error())
 }
 
