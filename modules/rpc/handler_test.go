@@ -53,9 +53,7 @@ func (f fakeEnveloper) ToWire() (wire.Value, error) {
 
 func UnaryFakeHandlerFunc(ctx fx.Context, meta yarpc.ReqMeta, val wire.Value) (thrift.Response, error) {
 	return thrift.Response{
-		Body: fakeEnveloper{
-		// serviceName: ctx.Name(),
-		},
+		Body: fakeEnveloper{},
 	}, nil
 }
 
