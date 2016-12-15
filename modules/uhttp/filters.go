@@ -26,6 +26,7 @@ import (
 	"net/http"
 
 	"go.uber.org/fx"
+	"go.uber.org/fx/internal/fxcontext"
 	"go.uber.org/fx/service"
 
 	"github.com/opentracing/opentracing-go"
@@ -49,14 +50,14 @@ func (f FilterFunc) Apply(ctx context.Context, w http.ResponseWriter, r *http.Re
 // contextFilter updates context to fx.Context
 func contextFilter(host service.Host) FilterFunc {
 	return func(ctx context.Context, w http.ResponseWriter, r *http.Request, next Handler) {
-		fxctx := fx.NewContext(ctx, host)
+		fxctx := fxcontext.New(ctx, host)
 		next.ServeHTTP(fxctx, w, r)
 	}
 }
 
 func tracingServerFilter(host service.Host) FilterFunc {
 	return func(ctx context.Context, w http.ResponseWriter, r *http.Request, next Handler) {
-		fxctx := fx.Convert(ctx)
+		fxctx := fxcontext.Convert(ctx)
 		operationName := r.Method
 		carrier := opentracing.HTTPHeadersCarrier(r.Header)
 		spanCtx, err := opentracing.GlobalTracer().Extract(opentracing.HTTPHeaders, carrier)
@@ -77,7 +78,7 @@ func tracingServerFilter(host service.Host) FilterFunc {
 // panicFilter handles any panics and return an error
 func panicFilter(host service.Host) FilterFunc {
 	return func(ctx context.Context, w http.ResponseWriter, r *http.Request, next Handler) {
-		fxctx := fx.Convert(ctx)
+		fxctx := fxcontext.Convert(ctx)
 		defer func() {
 			if err := recover(); err != nil {
 				fxctx.Logger().Error("Panic recovered serving request", "error", err, "url", r.URL)

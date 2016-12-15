@@ -27,6 +27,7 @@ import (
 	"time"
 
 	"go.uber.org/fx"
+	"go.uber.org/fx/internal/fxcontext"
 	"go.uber.org/fx/service"
 
 	"github.com/stretchr/testify/assert"
@@ -121,5 +122,5 @@ func createHTTPClientRequest(url string) *http.Request {
 }
 
 func createContext() fx.Context {
-	return fx.NewContext(context.Background(), service.NullHost())
+	return fxcontext.New(context.Background(), service.NullHost())
 }

@@ -18,46 +18,64 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package uhttp
+package fxcontext
 
 import (
-	"context"
-	"net/http"
+	gcontext "context"
 
 	"go.uber.org/fx"
-	"go.uber.org/fx/internal/fxcontext"
 	"go.uber.org/fx/service"
+	"go.uber.org/fx/ulog"
 )
 
-// Handler is a context-aware extension of http.Handler.
-type Handler interface {
-	ServeHTTP(ctx fx.Context, w http.ResponseWriter, r *http.Request)
+var _logger = "logger"
+
+// Convert context.Context to fx.Context
+func Convert(ctx gcontext.Context) fx.Context {
+	fxctx, ok := ctx.(fx.Context)
+	if ok {
+		return fxctx
+	}
+	return New(ctx, nil)
 }
 
-// The HandlerFunc type is an adapter to allow the use of
-// ordinary functions as HTTP handlers.
-type HandlerFunc func(ctx fx.Context, w http.ResponseWriter, r *http.Request)
-
-// ServeHTTP calls the caller HandlerFunc.
-func (f HandlerFunc) ServeHTTP(ctx fx.Context, w http.ResponseWriter, r *http.Request) {
-	f(ctx, w, r)
+type context struct {
+	gcontext.Context
 }
 
-// Wrap the handler and host provided and return http.Handler for gorilla mux
-func Wrap(host service.Host, handler Handler) http.Handler {
-	return &handlerWrapper{
-		host:    host,
-		handler: handler,
+var _ fx.Context = &context{}
+
+// New always returns fx.Context for use in the service
+func New(ctx gcontext.Context, host service.Host) fx.Context {
+	if host != nil {
+		return &context{
+			Context: gcontext.WithValue(ctx, _logger, host.Logger()),
+		}
+	}
+	return &context{
+		Context: ctx,
 	}
 }
 
-type handlerWrapper struct {
-	host    service.Host
-	handler Handler
+func (c *context) Logger() ulog.Log {
+	return c.getLogger()
 }
 
-// ServeHTTP calls Handler.ServeHTTP(ctx, w, r) and injects a new service context for use.
-func (h *handlerWrapper) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	ctx := fxcontext.New(context.Background(), h.host)
-	h.handler.ServeHTTP(ctx, w, r)
+// WithContext returns a shallow copy of c with its context changed to ctx.
+// The provided ctx must be non-nil. Follows from net/http Request WithContext.
+func (c *context) WithContext(ctx gcontext.Context) fx.Context {
+	if ctx == nil {
+		panic("nil context")
+	}
+	newC := new(context)
+	*newC = *c
+	newC.Context = ctx
+	return newC
+}
+
+func (c *context) getLogger() ulog.Log {
+	if c.Context.Value(_logger) == nil {
+		gcontext.WithValue(c.Context, _logger, ulog.Logger())
+	}
+	return c.Context.Value(_logger).(ulog.Log)
 }

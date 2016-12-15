@@ -18,7 +18,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package fx
+package fxcontext
 
 import (
 	gcontext "context"
@@ -31,14 +31,14 @@ import (
 )
 
 func TestContext_HostAccess(t *testing.T) {
-	ctx := NewContext(gcontext.Background(), service.NullHost())
+	ctx := New(gcontext.Background(), service.NullHost())
 	assert.NotNil(t, ctx)
 	assert.NotNil(t, ctx.Logger())
 }
 
 func TestWithContext(t *testing.T) {
 	gctx := gcontext.WithValue(gcontext.Background(), "key", "val")
-	ctx := NewContext(gctx, service.NullHost())
+	ctx := New(gctx, service.NullHost())
 	assert.Equal(t, "val", ctx.Value("key"))
 
 	gctx1 := gcontext.WithValue(gcontext.Background(), "key1", "val1")
@@ -48,13 +48,13 @@ func TestWithContext(t *testing.T) {
 }
 
 func TestWithContextNil(t *testing.T) {
-	ctx := NewContext(gcontext.Background(), service.NullHost())
+	ctx := New(gcontext.Background(), service.NullHost())
 	assert.Panics(t, func() { ctx.WithContext(nil) })
 }
 
 func TestContext_Convert(t *testing.T) {
 	host := service.NullHost()
-	ctx := NewContext(gcontext.Background(), host)
+	ctx := New(gcontext.Background(), host)
 	logger := ctx.Logger()
 	assert.Equal(t, host.Logger(), logger)
 

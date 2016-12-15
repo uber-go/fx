@@ -28,6 +28,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"go.uber.org/fx"
+	"go.uber.org/fx/internal/fxcontext"
 	"go.uber.org/fx/service"
 	"go.uber.org/thriftrw/wire"
 	"go.uber.org/yarpc"
@@ -100,7 +101,7 @@ type fakeUnaryHandler struct {
 }
 
 func (f fakeUnaryHandler) Handle(ctx context.Context, _param1 *transport.Request, _param2 transport.ResponseWriter) error {
-	assert.NotNil(f.t, fx.Convert(ctx))
+	assert.NotNil(f.t, fxcontext.Convert(ctx))
 	return errors.New("handle")
 }
 
@@ -117,6 +118,6 @@ type fakeOnewayHandler struct {
 }
 
 func (f fakeOnewayHandler) HandleOneway(ctx context.Context, p *transport.Request) error {
-	assert.NotNil(f.t, fx.Convert(ctx))
+	assert.NotNil(f.t, fxcontext.Convert(ctx))
 	return errors.New("oneway handle")
 }

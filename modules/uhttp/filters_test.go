@@ -29,6 +29,7 @@ import (
 	"testing"
 
 	"go.uber.org/fx"
+	"go.uber.org/fx/internal/fxcontext"
 	"go.uber.org/fx/service"
 
 	"github.com/stretchr/testify/assert"
@@ -55,7 +56,7 @@ func TestFilterChainFilters(t *testing.T) {
 func testServeHTTP(chain filterChain) *httptest.ResponseRecorder {
 	request := httptest.NewRequest("", "http://filters", nil)
 	response := httptest.NewRecorder()
-	ctx := fx.NewContext(context.Background(), service.NullHost())
+	ctx := fxcontext.New(context.Background(), service.NullHost())
 	chain.ServeHTTP(ctx, response, request)
 	return response
 }

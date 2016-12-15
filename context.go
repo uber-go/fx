@@ -23,66 +23,13 @@ package fx
 import (
 	gcontext "context"
 
-	"go.uber.org/fx/service"
 	"go.uber.org/fx/ulog"
 )
-
-var _logger = "logger"
 
 // Context embeds Host and Go stdlib context for use
 type Context interface {
 	gcontext.Context
 
-	// unexported func ensures only fx package implements Context
-	fx()
 	Logger() ulog.Log
-	WithContext(ctx gcontext.Context) *context
-}
-
-type context struct {
-	gcontext.Context
-}
-
-// Convert context.Context to fx.Context
-func Convert(ctx gcontext.Context) Context {
-	fx, ok := ctx.(Context)
-	if ok {
-		return fx
-	}
-	return &context{
-		Context: ctx,
-	}
-}
-
-var _ Context = &context{}
-
-// NewContext always returns fx.Context for use in the service
-func NewContext(ctx gcontext.Context, host service.Host) Context {
-	return &context{
-		Context: gcontext.WithValue(ctx, _logger, host.Logger()),
-	}
-}
-
-func (c *context) fx() {
-	//noop
-}
-
-func (c *context) Logger() ulog.Log {
-	return c.getLogger()
-}
-
-// WithContext returns a shallow copy of c with its context changed to ctx.
-// The provided ctx must be non-nil. Follows from net/http Request WithContext.
-func (c *context) WithContext(ctx gcontext.Context) (newC *context) {
-	if ctx == nil {
-		panic("nil context")
-	}
-	newC = new(context)
-	*newC = *c
-	newC.Context = ctx
-	return newC
-}
-
-func (c *context) getLogger() ulog.Log {
-	return c.Context.Value(_logger).(ulog.Log)
+	WithContext(ctx gcontext.Context) Context
 }
