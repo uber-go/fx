@@ -37,7 +37,7 @@ import (
 
 func TestFilterChain(t *testing.T) {
 	host := service.NullHost()
-	chain := newFilterChain([]Filter{}, getNoopFilter(host))
+	chain := newFilterChain([]Filter{}, getNoopHandler(host))
 	response := testServeHTTP(chain)
 	assert.True(t, strings.Contains(response.Body.String(), "filters ok"))
 }
@@ -48,7 +48,7 @@ func TestFilterChainFilters(t *testing.T) {
 		contextFilter(host),
 		tracingServerFilter(host),
 		panicFilter(host)},
-		getNoopFilter(host))
+		getNoopHandler(host))
 	response := testServeHTTP(chain)
 	assert.Contains(t, response.Body.String(), "filters ok")
 }
@@ -61,7 +61,7 @@ func testServeHTTP(chain filterChain) *httptest.ResponseRecorder {
 	return response
 }
 
-func getNoopFilter(host service.Host) HandlerFunc {
+func getNoopHandler(host service.Host) HandlerFunc {
 	return func(ctx fx.Context, w http.ResponseWriter, r *http.Request) {
 		io.WriteString(w, "filters ok")
 	}

@@ -34,6 +34,7 @@ func TestContext_HostAccess(t *testing.T) {
 	ctx := New(gcontext.Background(), service.NullHost())
 	assert.NotNil(t, ctx)
 	assert.NotNil(t, ctx.Logger())
+	assert.NotNil(t, ctx.Value(_contextLogger))
 }
 
 func TestWithContext(t *testing.T) {
@@ -47,13 +48,6 @@ func TestWithContext(t *testing.T) {
 	}
 	assert.Equal(t, nil, ctx.Value("key"))
 	assert.Equal(t, "val1", ctx.Value("key1"))
-}
-
-func TestWithContextNil(t *testing.T) {
-	ctxt := Context{
-		Context: nil,
-	}
-	assert.NotNil(t, ctxt)
 }
 
 func TestWithContext_NilHost(t *testing.T) {

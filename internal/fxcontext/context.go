@@ -30,9 +30,7 @@ import (
 
 type contextKey int
 
-const (
-	contextLogger contextKey = iota
-)
+const _contextLogger contextKey = iota
 
 var _ fx.Context = &Context{}
 
@@ -45,7 +43,7 @@ type Context struct {
 func New(ctx gcontext.Context, host service.Host) fx.Context {
 	if host != nil {
 		return &Context{
-			gcontext.WithValue(ctx, contextLogger, host.Logger()),
+			gcontext.WithValue(ctx, _contextLogger, host.Logger()),
 		}
 	}
 	return &Context{
@@ -59,8 +57,8 @@ func (c *Context) Logger() ulog.Log {
 }
 
 func (c *Context) getLogger() ulog.Log {
-	if c.Context.Value(contextLogger) == nil {
-		c.Context = gcontext.WithValue(c.Context, contextLogger, ulog.Logger())
+	if c.Context.Value(_contextLogger) == nil {
+		c.Context = gcontext.WithValue(c.Context, _contextLogger, ulog.Logger())
 	}
-	return c.Context.Value(contextLogger).(ulog.Log)
+	return c.Context.Value(_contextLogger).(ulog.Log)
 }
