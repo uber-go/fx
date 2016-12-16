@@ -46,7 +46,9 @@ type Context struct {
 // New always returns Context for use in the service
 func New(ctx gcontext.Context, host service.Host) fx.Context {
 	if host != nil {
-		ctx = gcontext.WithValue(ctx, _fxContextStore, store{host.Logger()})
+		ctx = gcontext.WithValue(ctx, _fxContextStore, store{
+			log: host.Logger(),
+		})
 	}
 	return &Context{
 		Context: ctx,
