@@ -57,7 +57,7 @@ func contextFilter(host service.Host) FilterFunc {
 
 func tracingServerFilter(host service.Host) FilterFunc {
 	return func(ctx context.Context, w http.ResponseWriter, r *http.Request, next Handler) {
-		// TODO:(anup) GFM-257
+		// TODO:(anup) GFM-257 benchmark performance comparing with using type assertion
 		fxctx := &fxcontext.Context{
 			Context: ctx,
 		}
