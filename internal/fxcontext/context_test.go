@@ -18,37 +18,60 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package fx
+package fxcontext
 
 import (
+	gcontext "context"
 	"testing"
-
-	"go.uber.org/fx/service"
 
 	"github.com/stretchr/testify/assert"
 
-	gcontext "context"
+	"go.uber.org/fx/service"
+	"go.uber.org/fx/ulog"
 )
 
 func TestContext_HostAccess(t *testing.T) {
-	ctx := NewContext(gcontext.Background(), service.NullHost())
+	ctx := New(gcontext.Background(), service.NullHost())
 	assert.NotNil(t, ctx)
-	assert.NotNil(t, ctx.Config())
-	assert.Equal(t, "dummy", ctx.Name())
+	assert.NotNil(t, ctx.Logger())
+	assert.NotNil(t, ctx.Value(_contextLogger))
 }
 
 func TestWithContext(t *testing.T) {
 	gctx := gcontext.WithValue(gcontext.Background(), "key", "val")
-	ctx := NewContext(gctx, service.NullHost())
+	ctx := New(gctx, service.NullHost())
 	assert.Equal(t, "val", ctx.Value("key"))
 
 	gctx1 := gcontext.WithValue(gcontext.Background(), "key1", "val1")
-	ctx = ctx.WithContext(gctx1)
+	ctx = &Context{
+		Context: gctx1,
+	}
 	assert.Equal(t, nil, ctx.Value("key"))
 	assert.Equal(t, "val1", ctx.Value("key1"))
 }
 
-func TestWithContextNil(t *testing.T) {
-	ctx := NewContext(gcontext.Background(), service.NullHost())
-	assert.Panics(t, func() { ctx.WithContext(nil) })
+func TestWithContext_NilHost(t *testing.T) {
+	ctx := New(gcontext.Background(), nil)
+	assert.NotNil(t, ctx.Logger())
+}
+
+func TestContext_Convert(t *testing.T) {
+	host := service.NullHost()
+	ctx := New(gcontext.Background(), host)
+	logger := ctx.Logger()
+	assert.Equal(t, host.Logger(), logger)
+
+	assertConvert(t, ctx, logger)
+}
+
+func assertConvert(t *testing.T, ctx gcontext.Context, logger ulog.Log) {
+	fxctx := Context{ctx}
+	assert.NotNil(t, fxctx.Logger())
+	assert.Equal(t, fxctx.Logger(), logger)
+
+	ctx = gcontext.WithValue(ctx, "key", nil)
+
+	fxctx = Context{ctx}
+	assert.NotNil(t, fxctx.Logger())
+	assert.Equal(t, fxctx.Logger(), logger)
 }

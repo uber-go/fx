@@ -18,46 +18,47 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package uhttp
+package fxcontext
 
 import (
-	"context"
-	"net/http"
+	gcontext "context"
 
 	"go.uber.org/fx"
-	"go.uber.org/fx/internal/fxcontext"
 	"go.uber.org/fx/service"
+	"go.uber.org/fx/ulog"
 )
 
-// Handler is a context-aware extension of http.Handler.
-type Handler interface {
-	ServeHTTP(ctx fx.Context, w http.ResponseWriter, r *http.Request)
+type contextKey int
+
+const _contextLogger contextKey = iota
+
+var _ fx.Context = &Context{}
+
+// Context embeds Host and Go stdlib context for use
+type Context struct {
+	gcontext.Context
 }
 
-// The HandlerFunc type is an adapter to allow the use of
-// ordinary functions as HTTP handlers.
-type HandlerFunc func(ctx fx.Context, w http.ResponseWriter, r *http.Request)
-
-// ServeHTTP calls the caller HandlerFunc.
-func (f HandlerFunc) ServeHTTP(ctx fx.Context, w http.ResponseWriter, r *http.Request) {
-	f(ctx, w, r)
-}
-
-// Wrap the handler and host provided and return http.Handler for gorilla mux
-func Wrap(host service.Host, handler Handler) http.Handler {
-	return &handlerWrapper{
-		host:    host,
-		handler: handler,
+// New always returns Context for use in the service
+func New(ctx gcontext.Context, host service.Host) fx.Context {
+	if host != nil {
+		return &Context{
+			gcontext.WithValue(ctx, _contextLogger, host.Logger()),
+		}
+	}
+	return &Context{
+		Context: ctx,
 	}
 }
 
-type handlerWrapper struct {
-	host    service.Host
-	handler Handler
+// Logger returns context based logger
+func (c *Context) Logger() ulog.Log {
+	return c.getLogger()
 }
 
-// ServeHTTP calls Handler.ServeHTTP(ctx, w, r) and injects a new service context for use.
-func (h *handlerWrapper) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	ctx := fxcontext.New(context.Background(), h.host)
-	h.handler.ServeHTTP(ctx, w, r)
+func (c *Context) getLogger() ulog.Log {
+	if c.Context.Value(_contextLogger) == nil {
+		c.Context = gcontext.WithValue(c.Context, _contextLogger, ulog.Logger())
+	}
+	return c.Context.Value(_contextLogger).(ulog.Log)
 }

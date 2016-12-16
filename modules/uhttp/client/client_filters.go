@@ -24,6 +24,7 @@ import (
 	"net/http"
 
 	"go.uber.org/fx"
+	"go.uber.org/fx/internal/fxcontext"
 
 	"github.com/opentracing/opentracing-go"
 	"github.com/opentracing/opentracing-go/ext"
@@ -55,12 +56,14 @@ func tracingFilter(
 	if s := opentracing.SpanFromContext(ctx); s != nil {
 		parent = s.Context()
 	}
-	span := ctx.Tracer().StartSpan(opName, opentracing.ChildOf(parent))
+	span := opentracing.GlobalTracer().StartSpan(opName, opentracing.ChildOf(parent))
 	ext.SpanKindRPCClient.Set(span)
 	ext.HTTPUrl.Set(span, req.URL.String())
 	defer span.Finish()
 
-	ctx = ctx.WithContext(opentracing.ContextWithSpan(ctx, span))
+	ctx = &fxcontext.Context{
+		Context: opentracing.ContextWithSpan(ctx, span),
+	}
 	carrier := opentracing.HTTPHeadersCarrier(req.Header)
 	err = span.Tracer().Inject(span.Context(), opentracing.HTTPHeaders, carrier)
 	if err != nil {

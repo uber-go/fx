@@ -23,39 +23,12 @@ package fx
 import (
 	gcontext "context"
 
-	"go.uber.org/fx/service"
+	"go.uber.org/fx/ulog"
 )
 
 // Context embeds Host and Go stdlib context for use
 type Context interface {
 	gcontext.Context
-	service.Host
-	WithContext(ctx gcontext.Context) *context
-}
 
-type context struct {
-	gcontext.Context
-	service.Host
-}
-
-// WithContext returns a shallow copy of c with its context changed to ctx.
-// The provided ctx must be non-nil. Follows from net/http Request WithContext.
-func (c *context) WithContext(ctx gcontext.Context) (newC *context) {
-	if ctx == nil {
-		panic("nil context")
-	}
-	newC = new(context)
-	*newC = *c
-	newC.Context = ctx
-	return newC
-}
-
-var _ Context = &context{}
-
-// NewContext always returns fx.Context for use in the service
-func NewContext(ctx gcontext.Context, host service.Host) Context {
-	return &context{
-		Context: ctx,
-		Host:    host,
-	}
+	Logger() ulog.Log
 }
