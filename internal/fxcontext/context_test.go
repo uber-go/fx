@@ -24,17 +24,17 @@ import (
 	gcontext "context"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
-
 	"go.uber.org/fx/service"
 	"go.uber.org/fx/ulog"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestContext_HostAccess(t *testing.T) {
 	ctx := New(gcontext.Background(), service.NullHost())
 	assert.NotNil(t, ctx)
 	assert.NotNil(t, ctx.Logger())
-	assert.NotNil(t, ctx.Value(_contextLogger))
+	assert.NotNil(t, ctx.Value(_fxContextStore))
 }
 
 func TestWithContext(t *testing.T) {
