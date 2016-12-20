@@ -58,6 +58,10 @@ func New(ctx gcontext.Context, host service.Host) fx.Context {
 // Logger returns context based logger. If logger is absent from the context,
 // the function updates the context with a new context based logger
 func (c *Context) Logger() ulog.Log {
+	return c.getStore().log
+}
+
+func (c *Context) getStore() store {
 	fxctxStore := c.Context.Value(_fxContextStore)
 	if fxctxStore == nil {
 		fxctxStore = store{
@@ -65,5 +69,5 @@ func (c *Context) Logger() ulog.Log {
 		}
 		c.Context = gcontext.WithValue(c.Context, _fxContextStore, fxctxStore)
 	}
-	return fxctxStore.(store).log
+	return fxctxStore.(store)
 }
