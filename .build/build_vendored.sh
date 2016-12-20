@@ -71,7 +71,7 @@ cd "$GOPATH/src/$importPath" || die "Cannot find $importPath"
 # We have dependencies
 glideLock=$(findGlideLock "$GOPATH/src/$importPath")
 if [[ -n "$glideLock" ]]; then
-	glide install || die "Could not install dependencies"
+	(cd "$(dirname "$glideLock")" && glide install) || die "Could not install dependencies"
 	trap 'rm -rf $(dirname $glideLock)/vendor' EXIT
 fi
 
