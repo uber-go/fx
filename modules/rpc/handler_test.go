@@ -67,7 +67,7 @@ func OnewayFakeHandlerFuncWithError(ctx fx.Context, meta yarpc.ReqMeta, val wire
 }
 
 func TestWrapUnary(t *testing.T) {
-	handlerFunc := WrapUnary(service.NullHost(), UnaryFakeHandlerFunc)
+	handlerFunc := WrapUnary(UnaryFakeHandlerFunc)
 	assert.NotNil(t, handlerFunc)
 	resp, err := handlerFunc.Handle(context.Background(), nil, wire.Value{})
 	assert.NoError(t, err)
@@ -75,14 +75,14 @@ func TestWrapUnary(t *testing.T) {
 }
 
 func TestWrapOneway(t *testing.T) {
-	handlerFunc := WrapOneway(service.NullHost(), OnewayFakeHandlerFunc)
+	handlerFunc := WrapOneway(OnewayFakeHandlerFunc)
 	assert.NotNil(t, handlerFunc)
 	err := handlerFunc.HandleOneway(context.Background(), nil, wire.Value{})
 	assert.NoError(t, err)
 }
 
 func TestWrapOneway_error(t *testing.T) {
-	handlerFunc := WrapOneway(service.NullHost(), OnewayFakeHandlerFuncWithError)
+	handlerFunc := WrapOneway(OnewayFakeHandlerFuncWithError)
 	assert.NotNil(t, handlerFunc)
 	err := handlerFunc.HandleOneway(context.Background(), nil, wire.Value{})
 	assert.Error(t, err)

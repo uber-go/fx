@@ -37,9 +37,9 @@ type YarpcHandler struct {
 	items map[string]string
 }
 
-func NewYarpcThriftHandler(svc service.Host) ([]transport.Registrant, error) {
+func NewYarpcThriftHandler(service.Host) ([]transport.Registrant, error) {
 	handler := &YarpcHandler{items: map[string]string{}}
-	return kvs.New(svc, handler), nil
+	return kvs.New(handler), nil
 }
 
 func (h *YarpcHandler) GetValue(ctx fx.Context, req yarpc.ReqMeta, key *string) (string, yarpc.ResMeta, error) {
