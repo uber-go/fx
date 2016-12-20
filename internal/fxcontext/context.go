@@ -30,7 +30,11 @@ import (
 
 type contextKey int
 
-const _contextLogger contextKey = iota
+type store struct {
+	log ulog.Log
+}
+
+const _fxContextStore contextKey = iota
 
 var _ fx.Context = &Context{}
 
@@ -42,23 +46,28 @@ type Context struct {
 // New always returns Context for use in the service
 func New(ctx gcontext.Context, host service.Host) fx.Context {
 	if host != nil {
-		return &Context{
-			gcontext.WithValue(ctx, _contextLogger, host.Logger()),
-		}
+		ctx = gcontext.WithValue(ctx, _fxContextStore, store{
+			log: host.Logger(),
+		})
 	}
 	return &Context{
 		Context: ctx,
 	}
 }
 
-// Logger returns context based logger
+// Logger returns context based logger. If logger is absent from the context,
+// the function updates the context with a new context based logger
 func (c *Context) Logger() ulog.Log {
-	return c.getLogger()
+	return c.getStore().log
 }
 
-func (c *Context) getLogger() ulog.Log {
-	if c.Context.Value(_contextLogger) == nil {
-		c.Context = gcontext.WithValue(c.Context, _contextLogger, ulog.Logger())
+func (c *Context) getStore() store {
+	fxctxStore := c.Context.Value(_fxContextStore)
+	if fxctxStore == nil {
+		fxctxStore = store{
+			log: ulog.Logger(),
+		}
+		c.Context = gcontext.WithValue(c.Context, _fxContextStore, fxctxStore)
 	}
-	return c.Context.Value(_contextLogger).(ulog.Log)
+	return fxctxStore.(store)
 }

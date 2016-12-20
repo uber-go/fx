@@ -33,7 +33,7 @@ func withContext(t *testing.B, f func(fxctx fx.Context)) {
 	f(New(context.Background(), service.NullHost()))
 }
 
-func BenchmarkContext_StructWrapper(b *testing.B) {
+func BenchmarkContext_TypeConversion(b *testing.B) {
 	withContext(b, func(fxctx fx.Context) {
 		b.ResetTimer()
 		b.RunParallel(func(pb *testing.PB) {
@@ -45,9 +45,9 @@ func BenchmarkContext_StructWrapper(b *testing.B) {
 	})
 }
 
-func BenchmarkContext_StructWrapperWithValue(b *testing.B) {
+func BenchmarkContext_TypeConversionWithValue(b *testing.B) {
 	withContext(b, func(fxctx fx.Context) {
-		ctx := context.WithValue(fxctx, _contextLogger, ulog.Logger())
+		ctx := context.WithValue(fxctx, _fxContextStore, store{ulog.Logger()})
 
 		b.ResetTimer()
 		b.RunParallel(func(pb *testing.PB) {
@@ -64,7 +64,7 @@ func BenchmarkContext_WithTypeAssertion(b *testing.B) {
 		b.ResetTimer()
 		b.RunParallel(func(pb *testing.PB) {
 			for pb.Next() {
-				fxCtx := typeUpgrade(fxctx)
+				fxCtx := typeAssertion(fxctx)
 				fxCtx.Logger()
 			}
 		})
@@ -73,12 +73,12 @@ func BenchmarkContext_WithTypeAssertion(b *testing.B) {
 
 func BenchmarkContext_WithTypeAssertionWithValue(b *testing.B) {
 	withContext(b, func(fxctx fx.Context) {
-		ctx := context.WithValue(fxctx, _contextLogger, ulog.Logger())
+		ctx := context.WithValue(fxctx, _fxContextStore, store{ulog.Logger()})
 
 		b.ResetTimer()
 		b.RunParallel(func(pb *testing.PB) {
 			for pb.Next() {
-				fxCtx := typeUpgrade(ctx)
+				fxCtx := typeAssertion(ctx)
 				fxCtx.Logger()
 			}
 		})
@@ -89,7 +89,7 @@ func typeConversion(ctx context.Context) fx.Context {
 	return &Context{ctx}
 }
 
-func typeUpgrade(ctx context.Context) fx.Context {
+func typeAssertion(ctx context.Context) fx.Context {
 	fxctx, ok := ctx.(fx.Context)
 	if ok {
 		return fxctx

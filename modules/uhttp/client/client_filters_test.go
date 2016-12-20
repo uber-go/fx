@@ -21,18 +21,17 @@
 package client
 
 import (
+	"context"
 	"errors"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
-	"golang.org/x/net/context"
-
 	"go.uber.org/fx"
-
-	"github.com/stretchr/testify/assert"
 	"go.uber.org/fx/internal/fxcontext"
 	"go.uber.org/fx/service"
+
+	"github.com/stretchr/testify/assert"
 )
 
 var (
