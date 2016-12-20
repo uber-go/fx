@@ -1,5 +1,17 @@
 #!/bin/bash
 
+# build_vendored.sh builds executables from vendored code inside a repository.
+# For example,
+#
+# 	build_vendored.sh .bin go.uber.org/thriftrw
+#
+# Will build the version of thriftrw at vendor/go.uber.org/thriftrw and place
+# the executable at .bin/thriftrw.
+#
+# This is better than doing `go install ./vendor/go.uber.org/thriftrw` because
+# it takes care of fetching dependencies of the installed package (if it uses
+# Glide) and does not change the globally installed version.
+
 if [[ "$VERBOSE" == "1" ]]; then
 	set -x
 fi
