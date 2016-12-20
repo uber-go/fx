@@ -9,3 +9,4 @@
 *.coverprofile
 *.pprof
 node_modules
+/.bin
