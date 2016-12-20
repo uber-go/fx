@@ -123,13 +123,19 @@ clean:
 	$(ECHO_V)rm -rf examples/keyvalue/kv/
 
 .PHONY: examples
-examples:
+examples: .bin/thriftrw .bin/thriftrw-plugin-yarpc
 	@$(call label,Installing thriftrw and YARPC plugins)
 	@echo
 	$(ECHO_V)test -d vendor || $(MAKE) libdeps
-	$(ECHO_V)which thriftrw >/dev/null || go install ./vendor/go.uber.org/thriftrw
-	$(ECHO_V)which thriftrw-plugin-yarpc >/dev/null || go install ./vendor/go.uber.org/yarpc/encoding/thrift/thriftrw-plugin-yarpc
 	$(ECHO_V)which thriftrw-plugin-fx >/dev/null || go install ./modules/rpc/thriftrw-plugin-fx
 	@$(call label,Generating example RPC bindings)
 	@echo
-	$(ECHO_)$(MAKE) -C examples/keyvalue kv/types.go ECHO_V=$(ECHO_V)
+	PATH=$(shell pwd)/.bin:$$PATH $(ECHO_)$(MAKE) -C examples/keyvalue kv/types.go ECHO_V=$(ECHO_V)
+
+.bin/thriftrw:
+	mkdir -p .bin
+	./.build/vendor-build.sh .bin go.uber.org/thriftrw
+
+.bin/thriftrw-plugin-yarpc:
+	mkdir -p .bin
+	./.build/vendor-build.sh .bin go.uber.org/yarpc/encoding/thrift/thriftrw-plugin-yarpc
