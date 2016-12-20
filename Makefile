@@ -134,8 +134,8 @@ examples: .bin/thriftrw .bin/thriftrw-plugin-yarpc
 
 .bin/thriftrw:
 	mkdir -p .bin
-	./.build/vendor-build.sh .bin go.uber.org/thriftrw
+	./.build/build_vendored.sh .bin go.uber.org/thriftrw
 
 .bin/thriftrw-plugin-yarpc:
 	mkdir -p .bin
-	./.build/vendor-build.sh .bin go.uber.org/yarpc/encoding/thrift/thriftrw-plugin-yarpc
+	./.build/build_vendored.sh .bin go.uber.org/yarpc/encoding/thrift/thriftrw-plugin-yarpc
