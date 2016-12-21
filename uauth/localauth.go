@@ -32,7 +32,7 @@ type base struct {
 
 func defaultAuth() Client {
 	return &base{
-		authClient: stubClient(),
+		authClient: stubClient(nil),
 	}
 }
 

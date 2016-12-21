@@ -20,25 +20,26 @@
 
 package uauth
 
-import "context"
+import (
+	"context"
+	"errors"
+)
 
-var _ Client = &stub{}
-
-type stub struct {
+type failureClient struct {
 }
 
-func stubClient(info CreateAuthInfo) Client {
-	return &stub{}
+// FakeFailureClient fails all auth request and must only be used for testing
+func FakeFailureClient(info CreateAuthInfo) Client {
+	return &failureClient{}
 }
 
-func (s *stub) Name() string {
-	return "stub"
+func (*failureClient) Name() string {
+	return "failure"
+}
+func (*failureClient) Authenticate(ctx context.Context) (context.Context, error) {
+	return ctx, errors.New(ErrAuthentication)
 }
 
-func (s *stub) Authenticate(ctx context.Context) (context.Context, error) {
-	return ctx, nil
-}
-
-func (s *stub) Authorize(ctx context.Context) error {
-	return nil
+func (*failureClient) Authorize(ctx context.Context) error {
+	return errors.New(ErrAuthorization)
 }

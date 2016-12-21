@@ -58,6 +58,13 @@ func RegisterClient(registerFunc RegisterFunc) {
 	_registerFunc = registerFunc
 }
 
+// UnregisterClient unregisters uauth RegisterFunc for testing and resets to stubClient
+func UnregisterClient() {
+	_setupMux.Lock()
+	defer _setupMux.Unlock()
+	_registerFunc = stubClient
+}
+
 // SetupClient creates a Client instance based on registered auth client implementation
 func SetupClient(info CreateAuthInfo) {
 	_setupMux.Lock()
@@ -66,7 +73,7 @@ func SetupClient(info CreateAuthInfo) {
 	if _registerFunc != nil {
 		_std = _registerFunc(info)
 	} else {
-		_std = stubClient()
+		_std = stubClient(nil)
 	}
 }
 

@@ -31,6 +31,7 @@ import (
 	"go.uber.org/fx"
 	"go.uber.org/fx/internal/fxcontext"
 	"go.uber.org/fx/service"
+	"go.uber.org/fx/uauth"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -47,10 +48,28 @@ func TestFilterChainFilters(t *testing.T) {
 	chain := newFilterChain([]Filter{
 		contextFilter(host),
 		tracingServerFilter(host),
+		authorizationFilter(host),
 		panicFilter(host)},
 		getNoopHandler(host))
 	response := testServeHTTP(chain)
 	assert.Contains(t, response.Body.String(), "filters ok")
+}
+
+func TestFilterChainFilters_AuthFailure(t *testing.T) {
+	host := service.NullHost()
+	uauth.RegisterClient(uauth.FakeFailureClient)
+	uauth.SetupClient(host)
+	defer uauth.UnregisterClient()
+	defer uauth.SetupClient(host)
+	chain := newFilterChain([]Filter{
+		contextFilter(host),
+		tracingServerFilter(host),
+		authorizationFilter(host),
+		panicFilter(host)},
+		getNoopHandler(host))
+	response := testServeHTTP(chain)
+	assert.Contains(t, "Unauthorized access: Error authorizing the service", response.Body.String())
+	assert.Equal(t, 401, response.Code)
 }
 
 func testServeHTTP(chain filterChain) *httptest.ResponseRecorder {
