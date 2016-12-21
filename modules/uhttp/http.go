@@ -132,7 +132,8 @@ func newModule(
 			contextFilter(mi.Host),
 			tracingServerFilter(mi.Host),
 			authFilter(mi.Host),
-			panicFilter(mi.Host)},
+			panicFilter(mi.Host),
+		},
 	}
 
 	err := module.Host().Config().Get(getConfigKey(mi.Name)).PopulateStruct(cfg)

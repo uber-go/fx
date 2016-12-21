@@ -21,6 +21,7 @@
 package client
 
 import (
+	"context"
 	"io"
 	"net/http"
 	"net/url"
@@ -63,19 +64,14 @@ func (c *Client) do(ctx fx.Context, req *http.Request) (resp *http.Response, err
 
 // Get is a context-aware, filter-enabled extension of Get() in http.Client
 func (c *Client) Get(ctx fx.Context, url string) (resp *http.Response, err error) {
-	authClient := uauth.Client()
-	fxctx, err := authClient.Authenticate(ctx)
-	if err != nil {
-		ctx.Logger().Error(uauth.ErrAuthentication, "error", err)
-	}
-
+	authctx := authenticate(ctx)
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return nil, err
 	}
 
 	return c.Do(&fxcontext.Context{
-		Context: fxctx,
+		Context: authctx,
 	}, req)
 }
 
@@ -86,19 +82,14 @@ func (c *Client) Post(
 	bodyType string,
 	body io.Reader,
 ) (resp *http.Response, err error) {
-	authClient := uauth.Client()
-	fxctx, err := authClient.Authenticate(ctx)
-	if err != nil {
-		ctx.Logger().Error(uauth.ErrAuthentication, "error", err)
-	}
-
+	authctx := authenticate(ctx)
 	req, err := http.NewRequest("POST", url, body)
 	if err != nil {
 		return nil, err
 	}
 	req.Header.Set("Content-Type", bodyType)
 	return c.Do(&fxcontext.Context{
-		Context: fxctx,
+		Context: authctx,
 	}, req)
 }
 
@@ -114,19 +105,23 @@ func (c *Client) PostForm(
 
 // Head is a context-aware, filter-enabled extension of Head() in http.Client
 func (c *Client) Head(ctx fx.Context, url string) (resp *http.Response, err error) {
-	authClient := uauth.Client()
-	fxctx, err := authClient.Authenticate(ctx)
-	if err != nil {
-		ctx.Logger().Error(uauth.ErrAuthentication, "error", err)
-	}
-
+	authctx := authenticate(ctx)
 	req, err := http.NewRequest("HEAD", url, nil)
 	if err != nil {
 		return nil, err
 	}
 	return c.Do(&fxcontext.Context{
-		Context: fxctx,
+		Context: authctx,
 	}, req)
+}
+
+func authenticate(ctx fx.Context) context.Context {
+	authClient := uauth.Client()
+	authctx, err := authClient.Authenticate(ctx)
+	if err != nil {
+		ctx.Logger().Error(uauth.ErrAuthentication, "error", err)
+	}
+	return authctx
 }
 
 // BasicClient is the simplest, context-aware HTTP client with a single method Do.

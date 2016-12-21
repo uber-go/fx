@@ -28,10 +28,10 @@ import (
 	"go.uber.org/fx"
 	"go.uber.org/fx/internal/fxcontext"
 	"go.uber.org/fx/service"
+	"go.uber.org/fx/uauth"
 
 	"github.com/opentracing/opentracing-go"
 	"github.com/opentracing/opentracing-go/ext"
-	"go.uber.org/fx/uauth"
 )
 
 // Filter applies filters on requests, request contexts or responses such as
@@ -90,6 +90,7 @@ func authFilter(host service.Host) FilterFunc {
 		authClient := uauth.Client()
 		err := authClient.Authorize(fxctx)
 		if err != nil {
+			host.Metrics().Counter("http.authorize.fail").Inc(1)
 			fxctx.Logger().Error(uauth.ErrAuthorization, "error", err)
 		}
 		next.ServeHTTP(fxctx, w, r)

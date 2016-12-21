@@ -105,19 +105,11 @@ func (lc *loggingCore) Logger() ulog.Log {
 	return lc.log
 }
 
-type authCore struct {
-	authClient uauth.AuthClient
-}
-
-func (ac *authCore) AuthClient() uauth.AuthClient {
-	return ac.authClient
-}
-
 type serviceCore struct {
-	authCore
 	loggingCore
 	metricsCore
 	tracerCore
+	authClient     uauth.AuthClient
 	configProvider config.Provider
 	observer       Observer
 	resources      map[string]interface{}
@@ -128,6 +120,10 @@ type serviceCore struct {
 }
 
 var _ Host = &serviceCore{}
+
+func (s *serviceCore) AuthClient() uauth.AuthClient {
+	return s.authClient
+}
 
 func (s *serviceCore) Name() string {
 	return s.standardConfig.ServiceName
