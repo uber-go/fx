@@ -129,15 +129,15 @@ examples: .bin/thriftrw .bin/thriftrw-plugin-yarpc
 	$(ECHO_V)which thriftrw-plugin-fx >/dev/null || go install ./modules/rpc/thriftrw-plugin-fx
 	@$(call label,Generating example RPC bindings)
 	@echo
-	PATH=$(shell pwd)/.bin:$$PATH $(ECHO_)$(MAKE) -C examples/keyvalue kv/types.go ECHO_V=$(ECHO_V)
+	$(ECHO_V)PATH=$(shell pwd)/.bin:$$PATH $(MAKE) -C examples/keyvalue kv/types.go ECHO_V=$(ECHO_V)
 
 .bin/thriftrw: vendor
-	mkdir -p .bin
-	./.build/build_vendored.sh .bin go.uber.org/thriftrw
+	$(ECHO_V)mkdir -p .bin
+	$(ECHO_V)./.build/build_vendored.sh .bin go.uber.org/thriftrw
 
 .bin/thriftrw-plugin-yarpc: vendor
-	mkdir -p .bin
-	./.build/build_vendored.sh .bin go.uber.org/yarpc/encoding/thrift/thriftrw-plugin-yarpc
+	$(ECHO_V)mkdir -p .bin
+	$(ECHO_V)./.build/build_vendored.sh .bin go.uber.org/yarpc/encoding/thrift/thriftrw-plugin-yarpc
 
 .PHONY: vendor
 vendor:
