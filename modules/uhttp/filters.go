@@ -31,6 +31,7 @@ import (
 
 	"github.com/opentracing/opentracing-go"
 	"github.com/opentracing/opentracing-go/ext"
+	"go.uber.org/fx/uauth"
 )
 
 // Filter applies filters on requests, request contexts or responses such as
@@ -76,6 +77,21 @@ func tracingServerFilter(host service.Host) FilterFunc {
 			Context: opentracing.ContextWithSpan(ctx, span),
 		}
 		r = r.WithContext(fxctx)
+		next.ServeHTTP(fxctx, w, r)
+	}
+}
+
+// authFilter authorizes services based on configuration
+func authFilter(host service.Host) FilterFunc {
+	return func(ctx context.Context, w http.ResponseWriter, r *http.Request, next Handler) {
+		fxctx := &fxcontext.Context{
+			Context: ctx,
+		}
+		authClient := uauth.Client()
+		err := authClient.Authorize(fxctx)
+		if err != nil {
+			fxctx.Logger().Error(uauth.ErrAuthorization, "error", err)
+		}
 		next.ServeHTTP(fxctx, w, r)
 	}
 }

@@ -26,6 +26,7 @@ import (
 
 	"go.uber.org/fx/config"
 	"go.uber.org/fx/metrics"
+	"go.uber.org/fx/uauth"
 	"go.uber.org/fx/ulog"
 
 	"github.com/opentracing/opentracing-go"
@@ -35,6 +36,7 @@ import (
 
 // A Host represents the hosting environment for a service instance
 type Host interface {
+	AuthClient() uauth.AuthClient
 	Name() string
 	Description() string
 	Roles() []string
@@ -103,7 +105,16 @@ func (lc *loggingCore) Logger() ulog.Log {
 	return lc.log
 }
 
+type authCore struct {
+	authClient uauth.AuthClient
+}
+
+func (ac *authCore) AuthClient() uauth.AuthClient {
+	return ac.authClient
+}
+
 type serviceCore struct {
+	authCore
 	loggingCore
 	metricsCore
 	tracerCore

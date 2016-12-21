@@ -27,6 +27,8 @@ import (
 	"strings"
 
 	"go.uber.org/fx"
+	"go.uber.org/fx/internal/fxcontext"
+	"go.uber.org/fx/uauth"
 
 	"golang.org/x/net/context/ctxhttp"
 )
@@ -61,11 +63,20 @@ func (c *Client) do(ctx fx.Context, req *http.Request) (resp *http.Response, err
 
 // Get is a context-aware, filter-enabled extension of Get() in http.Client
 func (c *Client) Get(ctx fx.Context, url string) (resp *http.Response, err error) {
+	authClient := uauth.Client()
+	fxctx, err := authClient.Authenticate(ctx)
+	if err != nil {
+		ctx.Logger().Error(uauth.ErrAuthentication, "error", err)
+	}
+
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return nil, err
 	}
-	return c.Do(ctx, req)
+
+	return c.Do(&fxcontext.Context{
+		Context: fxctx,
+	}, req)
 }
 
 // Post is a context-aware, filter-enabled extension of Post() in http.Client
@@ -75,12 +86,20 @@ func (c *Client) Post(
 	bodyType string,
 	body io.Reader,
 ) (resp *http.Response, err error) {
+	authClient := uauth.Client()
+	fxctx, err := authClient.Authenticate(ctx)
+	if err != nil {
+		ctx.Logger().Error(uauth.ErrAuthentication, "error", err)
+	}
+
 	req, err := http.NewRequest("POST", url, body)
 	if err != nil {
 		return nil, err
 	}
 	req.Header.Set("Content-Type", bodyType)
-	return c.Do(ctx, req)
+	return c.Do(&fxcontext.Context{
+		Context: fxctx,
+	}, req)
 }
 
 // PostForm is a context-aware, filter-enabled extension of PostForm() in http.Client
@@ -95,11 +114,19 @@ func (c *Client) PostForm(
 
 // Head is a context-aware, filter-enabled extension of Head() in http.Client
 func (c *Client) Head(ctx fx.Context, url string) (resp *http.Response, err error) {
+	authClient := uauth.Client()
+	fxctx, err := authClient.Authenticate(ctx)
+	if err != nil {
+		ctx.Logger().Error(uauth.ErrAuthentication, "error", err)
+	}
+
 	req, err := http.NewRequest("HEAD", url, nil)
 	if err != nil {
 		return nil, err
 	}
-	return c.Do(ctx, req)
+	return c.Do(&fxcontext.Context{
+		Context: fxctx,
+	}, req)
 }
 
 // BasicClient is the simplest, context-aware HTTP client with a single method Do.
