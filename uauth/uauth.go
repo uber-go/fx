@@ -29,7 +29,7 @@ import (
 
 var (
 	_registerFunc RegisterFunc
-	_setupMux     sync.Mutex
+	_setupMu      sync.Mutex
 )
 
 var (
@@ -50,8 +50,8 @@ type RegisterFunc func(info CreateAuthInfo) Client
 
 // RegisterClient sets up the registerFunc for Auth client initialization
 func RegisterClient(registerFunc RegisterFunc) {
-	_setupMux.Lock()
-	defer _setupMux.Unlock()
+	_setupMu.Lock()
+	defer _setupMu.Unlock()
 	if _registerFunc != nil {
 		panic("There can be only one auth client")
 	}
@@ -60,20 +60,20 @@ func RegisterClient(registerFunc RegisterFunc) {
 
 // UnregisterClient unregisters uauth RegisterFunc for testing and resets to stubClient
 func UnregisterClient() {
-	_setupMux.Lock()
-	defer _setupMux.Unlock()
-	_registerFunc = stubClient
+	_setupMu.Lock()
+	defer _setupMu.Unlock()
+	_registerFunc = noopClient
 }
 
 // SetupClient creates a Client instance based on registered auth client implementation
 func SetupClient(info CreateAuthInfo) {
-	_setupMux.Lock()
-	defer _setupMux.Unlock()
+	_setupMu.Lock()
+	defer _setupMu.Unlock()
 
 	if _registerFunc != nil {
 		_std = _registerFunc(info)
 	} else {
-		_std = stubClient(nil)
+		_std = noopClient(nil)
 	}
 }
 

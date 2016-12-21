@@ -24,15 +24,15 @@ import "context"
 
 var _std = defaultAuth()
 
-var _ Client = &base{}
+var _ Client = &defaultClient{}
 
-type base struct {
+type defaultClient struct {
 	authClient Client
 }
 
 func defaultAuth() Client {
-	return &base{
-		authClient: stubClient(nil),
+	return &defaultClient{
+		authClient: noopClient(nil),
 	}
 }
 
@@ -41,14 +41,14 @@ func Instance() Client {
 	return _std
 }
 
-func (b *base) Name() string {
+func (*defaultClient) Name() string {
 	return "uauth"
 }
 
-func (b *base) Authenticate(ctx context.Context) (context.Context, error) {
-	return b.authClient.Authenticate(ctx)
+func (d *defaultClient) Authenticate(ctx context.Context) (context.Context, error) {
+	return d.authClient.Authenticate(ctx)
 }
 
-func (b *base) Authorize(ctx context.Context) error {
-	return b.authClient.Authorize(ctx)
+func (d *defaultClient) Authorize(ctx context.Context) error {
+	return d.authClient.Authorize(ctx)
 }

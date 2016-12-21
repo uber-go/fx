@@ -91,9 +91,7 @@ func authenticationFilter(
 		ctx.Logger().Error(uauth.ErrAuthentication, "error", err)
 		return nil, err
 	}
-	return next.Do(&fxcontext.Context{
-		Context: authctx,
-	}, req)
+	return next.Do(&fxcontext.Context{Context: authctx}, req)
 }
 
 func newExecutionChain(

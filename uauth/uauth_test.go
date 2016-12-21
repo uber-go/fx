@@ -64,7 +64,7 @@ func TestUauth_RegisterPanic(t *testing.T) {
 func TestUauth_Default(t *testing.T) {
 	_registerFunc = nil
 	SetupClient(fakeAuthInfo{})
-	assert.Equal(t, "stub", Instance().Name())
+	assert.Equal(t, "noop", Instance().Name())
 }
 
 type fakeAuthInfo struct{}

@@ -22,23 +22,23 @@ package uauth
 
 import "context"
 
-var _ Client = &stub{}
+var _ Client = &noop{}
 
-type stub struct {
+type noop struct {
 }
 
-func stubClient(info CreateAuthInfo) Client {
-	return &stub{}
+func noopClient(info CreateAuthInfo) Client {
+	return &noop{}
 }
 
-func (s *stub) Name() string {
-	return "stub"
+func (*noop) Name() string {
+	return "noop"
 }
 
-func (s *stub) Authenticate(ctx context.Context) (context.Context, error) {
+func (*noop) Authenticate(ctx context.Context) (context.Context, error) {
 	return ctx, nil
 }
 
-func (s *stub) Authorize(ctx context.Context) error {
+func (*noop) Authorize(ctx context.Context) error {
 	return nil
 }
