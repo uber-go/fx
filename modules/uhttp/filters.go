@@ -94,6 +94,7 @@ func authorizationFilter(host service.Host) FilterFunc {
 			fxctx.Logger().Error(uauth.ErrAuthorization, "error", err)
 			w.WriteHeader(http.StatusUnauthorized)
 			fmt.Fprintf(w, "Unauthorized access: %+v", err)
+			return
 		}
 		next.ServeHTTP(fxctx, w, r)
 	}
