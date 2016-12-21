@@ -21,20 +21,13 @@
 package main
 
 import (
-	"go.uber.org/fx/modules/rpc"
 	"go.uber.org/fx/modules/uhttp"
 	"go.uber.org/fx/service"
 	"go.uber.org/fx/ulog"
-	"go.uber.org/yarpc/transport"
 )
-
-func registerJSONers(service service.Host) ([]transport.Registrant, error) {
-	return nil, nil
-}
 
 func main() {
 	svc, err := service.WithModules(
-		rpc.JSONModule(registerJSONers),
 		uhttp.New(registerHTTPers),
 	).Build()
 
