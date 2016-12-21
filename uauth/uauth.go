@@ -46,7 +46,7 @@ type CreateAuthInfo interface {
 }
 
 // RegisterFunc is used during service init time to register the Auth client
-type RegisterFunc func(info CreateAuthInfo) AuthClient
+type RegisterFunc func(info CreateAuthInfo) Client
 
 // RegisterClient sets up the registerFunc for Auth client initialization
 func RegisterClient(registerFunc RegisterFunc) {
@@ -58,7 +58,7 @@ func RegisterClient(registerFunc RegisterFunc) {
 	_registerFunc = registerFunc
 }
 
-// SetupClient creates a AuthClient instance based on registered auth client implementation
+// SetupClient creates a Client instance based on registered auth client implementation
 func SetupClient(info CreateAuthInfo) {
 	_setupMux.Lock()
 	defer _setupMux.Unlock()
@@ -70,8 +70,8 @@ func SetupClient(info CreateAuthInfo) {
 	}
 }
 
-// AuthClient is an interface to perform authorization and authentication
-type AuthClient interface {
+// Client is an interface to perform authorization and authentication
+type Client interface {
 	// Name of the client implementation
 	Name() string
 

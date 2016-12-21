@@ -21,15 +21,12 @@
 package client
 
 import (
-	"context"
 	"io"
 	"net/http"
 	"net/url"
 	"strings"
 
 	"go.uber.org/fx"
-	"go.uber.org/fx/internal/fxcontext"
-	"go.uber.org/fx/uauth"
 
 	"golang.org/x/net/context/ctxhttp"
 )
@@ -42,7 +39,7 @@ type Client struct {
 
 // New creates a new instance of uhttp Client
 func New(client *http.Client, filters ...Filter) *Client {
-	filters = append(filters, FilterFunc(tracingFilter))
+	filters = append(filters, FilterFunc(tracingFilter), FilterFunc(authenticationFilter))
 	return &Client{Client: client, filters: filters}
 }
 
@@ -52,7 +49,7 @@ func (c *Client) Do(ctx fx.Context, req *http.Request) (resp *http.Response, err
 	// TODO: Need a way to handle the case where Client is initialized without the NewClient method
 	// and some filters are set. Need to always include the tracing filter
 	if len(filters) == 0 {
-		filters = append(filters, FilterFunc(tracingFilter))
+		filters = append(filters, FilterFunc(tracingFilter), FilterFunc(authenticationFilter))
 	}
 	execChain := newExecutionChain(filters, BasicClientFunc(c.do))
 	return execChain.Do(ctx, req)
@@ -64,15 +61,12 @@ func (c *Client) do(ctx fx.Context, req *http.Request) (resp *http.Response, err
 
 // Get is a context-aware, filter-enabled extension of Get() in http.Client
 func (c *Client) Get(ctx fx.Context, url string) (resp *http.Response, err error) {
-	authctx := authenticate(ctx)
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return nil, err
 	}
 
-	return c.Do(&fxcontext.Context{
-		Context: authctx,
-	}, req)
+	return c.Do(ctx, req)
 }
 
 // Post is a context-aware, filter-enabled extension of Post() in http.Client
@@ -82,15 +76,12 @@ func (c *Client) Post(
 	bodyType string,
 	body io.Reader,
 ) (resp *http.Response, err error) {
-	authctx := authenticate(ctx)
 	req, err := http.NewRequest("POST", url, body)
 	if err != nil {
 		return nil, err
 	}
 	req.Header.Set("Content-Type", bodyType)
-	return c.Do(&fxcontext.Context{
-		Context: authctx,
-	}, req)
+	return c.Do(ctx, req)
 }
 
 // PostForm is a context-aware, filter-enabled extension of PostForm() in http.Client
@@ -105,23 +96,11 @@ func (c *Client) PostForm(
 
 // Head is a context-aware, filter-enabled extension of Head() in http.Client
 func (c *Client) Head(ctx fx.Context, url string) (resp *http.Response, err error) {
-	authctx := authenticate(ctx)
 	req, err := http.NewRequest("HEAD", url, nil)
 	if err != nil {
 		return nil, err
 	}
-	return c.Do(&fxcontext.Context{
-		Context: authctx,
-	}, req)
-}
-
-func authenticate(ctx fx.Context) context.Context {
-	authClient := uauth.Client()
-	authctx, err := authClient.Authenticate(ctx)
-	if err != nil {
-		ctx.Logger().Error(uauth.ErrAuthentication, "error", err)
-	}
-	return authctx
+	return c.Do(ctx, req)
 }
 
 // BasicClient is the simplest, context-aware HTTP client with a single method Do.

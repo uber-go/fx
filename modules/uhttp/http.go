@@ -131,7 +131,7 @@ func newModule(
 		filters: []Filter{
 			contextFilter(mi.Host),
 			tracingServerFilter(mi.Host),
-			authFilter(mi.Host),
+			authorizationFilter(mi.Host),
 			panicFilter(mi.Host),
 		},
 	}

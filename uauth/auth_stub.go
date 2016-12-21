@@ -22,12 +22,12 @@ package uauth
 
 import "context"
 
-var _ AuthClient = &stub{}
+var _ Client = &stub{}
 
 type stub struct {
 }
 
-func stubClient() AuthClient {
+func stubClient() Client {
 	return &stub{}
 }
 

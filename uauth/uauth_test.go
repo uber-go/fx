@@ -32,7 +32,7 @@ import (
 )
 
 func TestUauth_Stub(t *testing.T) {
-	authClient := Client()
+	authClient := Instance()
 	assert.Equal(t, "uauth", authClient.Name())
 	assert.NotNil(t, authClient)
 	assert.Nil(t, authClient.Authorize(context.Background()))
@@ -44,7 +44,7 @@ func TestUauth_Stub(t *testing.T) {
 func TestUauth_Register(t *testing.T) {
 	RegisterClient(fakeClient)
 	SetupClient(fakeAuthInfo{})
-	authClient := Client()
+	authClient := Instance()
 	assert.Equal(t, "fake", authClient.Name())
 	assert.NotNil(t, authClient)
 	err := authClient.Authorize(context.Background())
@@ -65,7 +65,7 @@ func TestUauth_RegisterPanic(t *testing.T) {
 func TestUauth_Default(t *testing.T) {
 	_registerFunc = nil
 	SetupClient(fakeAuthInfo{})
-	assert.Equal(t, "stub", Client().Name())
+	assert.Equal(t, "stub", Instance().Name())
 }
 
 type fakeAuthInfo struct{}
@@ -77,7 +77,7 @@ func (fakeAuthInfo) Config() config.Provider {
 type fakeFailureClient struct {
 }
 
-func fakeClient(info CreateAuthInfo) AuthClient {
+func fakeClient(info CreateAuthInfo) Client {
 	return &fakeFailureClient{}
 }
 

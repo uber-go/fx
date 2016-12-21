@@ -36,7 +36,7 @@ import (
 
 // A Host represents the hosting environment for a service instance
 type Host interface {
-	AuthClient() uauth.AuthClient
+	AuthClient() uauth.Client
 	Name() string
 	Description() string
 	Roles() []string
@@ -109,7 +109,7 @@ type serviceCore struct {
 	loggingCore
 	metricsCore
 	tracerCore
-	authClient     uauth.AuthClient
+	authClient     uauth.Client
 	configProvider config.Provider
 	observer       Observer
 	resources      map[string]interface{}
@@ -121,7 +121,7 @@ type serviceCore struct {
 
 var _ Host = &serviceCore{}
 
-func (s *serviceCore) AuthClient() uauth.AuthClient {
+func (s *serviceCore) AuthClient() uauth.Client {
 	return s.authClient
 }
 

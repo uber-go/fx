@@ -24,20 +24,20 @@ import "context"
 
 var _std = defaultAuth()
 
-var _ AuthClient = &base{}
+var _ Client = &base{}
 
 type base struct {
-	authClient AuthClient
+	authClient Client
 }
 
-func defaultAuth() AuthClient {
+func defaultAuth() Client {
 	return &base{
 		authClient: stubClient(),
 	}
 }
 
-// Client returns initialized auth client
-func Client() AuthClient {
+// Instance returns initialized instance of auth client
+func Instance() Client {
 	return _std
 }
 

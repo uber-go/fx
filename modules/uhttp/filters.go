@@ -81,17 +81,19 @@ func tracingServerFilter(host service.Host) FilterFunc {
 	}
 }
 
-// authFilter authorizes services based on configuration
-func authFilter(host service.Host) FilterFunc {
+// authorizationFilter authorizes services based on configuration
+func authorizationFilter(host service.Host) FilterFunc {
 	return func(ctx context.Context, w http.ResponseWriter, r *http.Request, next Handler) {
 		fxctx := &fxcontext.Context{
 			Context: ctx,
 		}
-		authClient := uauth.Client()
+		authClient := uauth.Instance()
 		err := authClient.Authorize(fxctx)
 		if err != nil {
 			host.Metrics().Counter("http.authorize.fail").Inc(1)
 			fxctx.Logger().Error(uauth.ErrAuthorization, "error", err)
+			w.WriteHeader(http.StatusUnauthorized)
+			fmt.Fprintf(w, "Unauthorized access: %+v", err)
 		}
 		next.ServeHTTP(fxctx, w, r)
 	}

@@ -118,5 +118,5 @@ func (svc *serviceCore) setupAuthClient(cfg config.Provider) {
 		return
 	}
 	uauth.SetupClient(svc)
-	svc.authClient = uauth.Client()
+	svc.authClient = uauth.Instance()
 }
