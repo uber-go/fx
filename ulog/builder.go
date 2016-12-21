@@ -38,16 +38,10 @@ type Configuration struct {
 	Stdout  bool
 	Verbose bool
 
-	Sentry *SentryConfiguration
+	Sentry *sentry.Configuration
 
 	prefixWithFileLine *bool `yaml:"prefix_with_fileline"`
 	TextFormatter      *bool // use TextFormatter (default json)
-}
-
-// SentryConfiguration provides sentry DSN
-// TODO(glib): allow other sentry config stuff through yaml: trace skips, etc
-type SentryConfiguration struct {
-	DSN string
 }
 
 // FileConfiguration describes the properties needed to log to a file
@@ -113,7 +107,7 @@ func (lb *LogBuilder) Build() Log {
 	// make the situation better so yaml overrides only the DSN
 	if lb.logConfig.Sentry != nil {
 		if len(lb.logConfig.Sentry.DSN) > 0 {
-			hook, err := sentry.New(lb.logConfig.Sentry.DSN)
+			hook, err := sentry.FromConfig(*lb.logConfig.Sentry)
 			if err == nil {
 				lb.sentryHook = hook
 			} else {

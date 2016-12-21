@@ -28,6 +28,7 @@ import (
 
 	"go.uber.org/fx/config"
 	"go.uber.org/fx/testutils"
+	"go.uber.org/fx/ulog/sentry"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -142,6 +143,7 @@ func TestConfiguredLoggerWithSentrySuccessful(t *testing.T) {
 }
 
 func TestConfiguredLoggerWithSentryError(t *testing.T) {
+	testSentry(t, "", false)
 	testSentry(t, "invalid_dsn", false)
 }
 
@@ -153,7 +155,7 @@ func testSentry(t *testing.T, dsn string, isValid bool) {
 			Stdout:        false,
 			TextFormatter: &txt,
 			Verbose:       false,
-			Sentry:        &SentryConfiguration{DSN: dsn},
+			Sentry:        &sentry.Configuration{DSN: dsn},
 		}
 		logBuilder := builder.WithConfiguration(cfg)
 		log := logBuilder.Build()

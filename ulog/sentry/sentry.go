@@ -44,6 +44,16 @@ var _zapToRavenMap = map[zap.Level]raven.Severity{
 	zap.FatalLevel: raven.FATAL,
 }
 
+// Configuration provides sentry DSN and other optional parameters for logging
+type Configuration struct {
+	DSN               string
+	MinLevel          *string                `yaml:"min_level,omitempty"`
+	TraceEnabled      *bool                  `yaml:"trace_enabled,omitempty"`
+	TraceSkipFrames   *int                   `yaml:"trace_skip_frames,omitempty"`
+	TraceContextLines *int                   `yaml:"trace_context_lines,omitempty"`
+	Fields            map[string]interface{} `yaml:",omitempty"`
+}
+
 // Hook wraps the default raven-go client for some out-of-box awesomeness
 // and tight integration with ulog
 type Hook struct {
@@ -90,6 +100,38 @@ func New(dsn string, options ...Option) (*Hook, error) {
 	sh.Capturer = &nonBlockingCapturer{Client: client}
 
 	return sh, nil
+}
+
+// FromConfig returns a new Sentry Hook based on SentryConfiguration.
+func FromConfig(c Configuration) (*Hook, error) {
+	o := make([]Option, 0, 5)
+
+	if c.MinLevel != nil {
+		l := zap.ErrorLevel
+		if err := l.UnmarshalText([]byte(*c.MinLevel)); err != nil {
+			return nil, err
+		}
+
+		o = append(o, MinLevel(l))
+	}
+
+	if c.TraceEnabled != nil && !*c.TraceEnabled {
+		o = append(o, DisableTraces())
+	}
+
+	if c.TraceSkipFrames != nil {
+		o = append(o, TraceSkipFrames(*c.TraceSkipFrames))
+	}
+
+	if c.TraceContextLines != nil {
+		o = append(o, TraceContextLines(*c.TraceContextLines))
+	}
+
+	if len(c.Fields) != 0 {
+		o = append(o, Fields(c.Fields))
+	}
+
+	return New(c.DSN, o...)
 }
 
 // Fields returns the currently accumulated context fields

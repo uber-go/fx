@@ -158,6 +158,60 @@ func TestPacketSending(t *testing.T) {
 	})
 }
 
+func TestFromConfig(t *testing.T) {
+	fls := false
+	one := 1
+	two := 2
+	debug := zap.DebugLevel.String()
+	str := "random string"
+	testCases := []struct {
+		name  string
+		conf  Configuration
+		res   *Hook
+		isErr bool
+	}{
+		{"Empty", Configuration{}, &Hook{
+			traceEnabled:      true,
+			minLevel:          zap.ErrorLevel,
+			traceContextLines: _traceContextLines,
+			traceSkipFrames:   _traceSkipFrames,
+			fields:            map[string]interface{}{},
+		}, false},
+		{"SomeValues", Configuration{
+			MinLevel:          &debug,
+			TraceEnabled:      &fls,
+			TraceSkipFrames:   &one,
+			TraceContextLines: &two,
+			Fields:            map[string]interface{}{"mickey": "mouse"},
+		},
+			&Hook{
+				minLevel:          zap.DebugLevel,
+				traceEnabled:      false,
+				traceSkipFrames:   one,
+				traceContextLines: two,
+				fields:            map[string]interface{}{"mickey": "mouse"},
+			}, false},
+		{"ParseError", Configuration{MinLevel: &str}, nil, true},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			conf, err := FromConfig(tc.conf)
+			if tc.isErr {
+				assert.Error(t, err)
+				return
+			}
+
+			assert.Nil(t, err)
+			assert.Equal(t, tc.res.traceEnabled, conf.traceEnabled)
+			assert.Equal(t, tc.res.minLevel, conf.minLevel)
+			assert.Equal(t, tc.res.traceContextLines, conf.traceContextLines)
+			assert.Equal(t, tc.res.traceSkipFrames, conf.traceSkipFrames)
+			assert.Equal(t, tc.res.fields, conf.fields)
+		})
+	}
+}
+
 func capturePacket(f func(sh *Hook), options ...Option) (*Hook, *raven.Packet) {
 	l, ps := capturePackets(f, options...)
 	if len(ps) != 1 {
