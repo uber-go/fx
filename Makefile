@@ -129,14 +129,20 @@ examples: .bin/thriftrw .bin/thriftrw-plugin-yarpc .bin/thriftrw-plugin-fx
 	$(ECHO_V)PATH=$(shell pwd)/.bin:$$PATH $(MAKE) -C examples/keyvalue kv/types.go ECHO_V=$(ECHO_V)
 
 .bin/thriftrw: vendor ./vendor/go.uber.org/thriftrw/*.go
+	@$(call label,Building ThriftRW)
+	@echo
 	$(ECHO_V)mkdir -p .bin
 	$(ECHO_V)./.build/build_vendored.sh .bin go.uber.org/thriftrw
 
 .bin/thriftrw-plugin-yarpc: vendor ./vendor/go.uber.org/yarpc/encoding/thrift/thriftrw-plugin-yarpc/*.go
+	@$(call label,Building ThriftRW YARPC plugin)
+	@echo
 	$(ECHO_V)mkdir -p .bin
 	$(ECHO_V)./.build/build_vendored.sh .bin go.uber.org/yarpc/encoding/thrift/thriftrw-plugin-yarpc
 
 .bin/thriftrw-plugin-fx: vendor ./modules/rpc/thriftrw-plugin-fx/*.go
+	@$(call label,Building ThriftRW UberFx plugin)
+	@echo
 	$(ECHO_V)mkdir -p .bin
 	$(ECHO_V)go build -o .bin/thriftrw-plugin-fx ./modules/rpc/thriftrw-plugin-fx
 
