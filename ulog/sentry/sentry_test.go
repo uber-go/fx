@@ -33,6 +33,7 @@ import (
 
 	raven "github.com/getsentry/raven-go"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"github.com/uber-go/zap"
 )
 
@@ -164,9 +165,9 @@ func TestFromConfig(t *testing.T) {
 	debug := zap.DebugLevel.String()
 	str := "random string"
 	trace := struct {
-		Disabled     bool `yaml:",omitempty"`
-		SkipFrames   *int `yaml:"skip_frames,omitempty"`
-		ContextLines *int `yaml:"context_lines,omitempty"`
+		Disabled     bool
+		SkipFrames   *int `yaml:"skip_frames"`
+		ContextLines *int `yaml:"context_lines"`
 	}{
 		Disabled:     true,
 		SkipFrames:   &one,
@@ -212,7 +213,7 @@ func TestFromConfig(t *testing.T) {
 				return
 			}
 
-			assert.Nil(t, err)
+			require.NoError(t, err)
 			assert.Equal(t, tc.res.traceEnabled, conf.traceEnabled)
 			assert.Equal(t, tc.res.minLevel, conf.minLevel)
 			assert.Equal(t, tc.res.traceContextLines, conf.traceContextLines)

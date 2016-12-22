@@ -47,13 +47,13 @@ var _zapToRavenMap = map[zap.Level]raven.Severity{
 // Configuration provides sentry DSN and other optional parameters for logging
 type Configuration struct {
 	DSN      string
-	MinLevel *string                `yaml:"min_level,omitempty"`
-	Fields   map[string]interface{} `yaml:",omitempty"`
+	MinLevel *string `yaml:"min_level"`
+	Fields   map[string]interface{}
 	Trace    *struct {
-		Disabled     bool `yaml:",omitempty"`
-		SkipFrames   *int `yaml:"skip_frames,omitempty"`
-		ContextLines *int `yaml:"context_lines,omitempty"`
-	} `yaml:",omitempty"`
+		Disabled     bool
+		SkipFrames   *int `yaml:"skip_frames"`
+		ContextLines *int `yaml:"context_lines"`
+	}
 }
 
 // Hook wraps the default raven-go client for some out-of-box awesomeness
