@@ -40,7 +40,7 @@ var _defaultUHTTPClient = New(_defaultHTTPClient)
 func TestNew(t *testing.T) {
 	uhttpClient := New(_defaultHTTPClient)
 	assert.Equal(t, _defaultHTTPClient, uhttpClient.Client)
-	assert.Equal(t, 1, len(uhttpClient.filters))
+	assert.Equal(t, 2, len(uhttpClient.filters))
 }
 
 func TestClientDo(t *testing.T) {

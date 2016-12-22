@@ -39,7 +39,7 @@ type Client struct {
 
 // New creates a new instance of uhttp Client
 func New(client *http.Client, filters ...Filter) *Client {
-	filters = append(filters, FilterFunc(tracingFilter))
+	filters = append(filters, FilterFunc(tracingFilter), FilterFunc(authenticationFilter))
 	return &Client{Client: client, filters: filters}
 }
 
@@ -49,7 +49,7 @@ func (c *Client) Do(ctx fx.Context, req *http.Request) (resp *http.Response, err
 	// TODO: Need a way to handle the case where Client is initialized without the NewClient method
 	// and some filters are set. Need to always include the tracing filter
 	if len(filters) == 0 {
-		filters = append(filters, FilterFunc(tracingFilter))
+		filters = append(filters, FilterFunc(tracingFilter), FilterFunc(authenticationFilter))
 	}
 	execChain := newExecutionChain(filters, BasicClientFunc(c.do))
 	return execChain.Do(ctx, req)
@@ -65,6 +65,7 @@ func (c *Client) Get(ctx fx.Context, url string) (resp *http.Response, err error
 	if err != nil {
 		return nil, err
 	}
+
 	return c.Do(ctx, req)
 }
 

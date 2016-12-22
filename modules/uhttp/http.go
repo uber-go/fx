@@ -128,7 +128,12 @@ func newModule(
 	module := &Module{
 		ModuleBase: *modules.NewModuleBase(ModuleType, mi.Name, mi.Host, []string{}),
 		handlers:   handlers,
-		filters:    []Filter{contextFilter(mi.Host), tracingServerFilter(mi.Host), panicFilter(mi.Host)},
+		filters: []Filter{
+			contextFilter(mi.Host),
+			tracingServerFilter(mi.Host),
+			authorizationFilter(mi.Host),
+			panicFilter(mi.Host),
+		},
 	}
 
 	err := module.Host().Config().Get(getConfigKey(mi.Name)).PopulateStruct(cfg)

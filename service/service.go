@@ -116,6 +116,8 @@ func New(options ...Option) (Owner, error) {
 
 	svc.setupLogging(svc.configProvider)
 
+	svc.setupAuthClient(svc.configProvider)
+
 	// load standard config
 	// TODO(glib): `.Get("")` is a confusing interface for getting the root config node
 	if err := svc.setupStandardConfig(svc.Config()); err != nil {

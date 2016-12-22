@@ -28,6 +28,7 @@ import (
 	"go.uber.org/fx"
 	"go.uber.org/fx/internal/fxcontext"
 	"go.uber.org/fx/service"
+	"go.uber.org/fx/uauth"
 
 	"github.com/opentracing/opentracing-go"
 	"github.com/opentracing/opentracing-go/ext"
@@ -76,6 +77,25 @@ func tracingServerFilter(host service.Host) FilterFunc {
 			Context: opentracing.ContextWithSpan(ctx, span),
 		}
 		r = r.WithContext(fxctx)
+		next.ServeHTTP(fxctx, w, r)
+	}
+}
+
+// authorizationFilter authorizes services based on configuration
+func authorizationFilter(host service.Host) FilterFunc {
+	return func(ctx context.Context, w http.ResponseWriter, r *http.Request, next Handler) {
+		fxctx := &fxcontext.Context{
+			Context: ctx,
+		}
+		authClient := uauth.Instance()
+		err := authClient.Authorize(fxctx)
+		if err != nil {
+			host.Metrics().SubScope("http").SubScope("auth").Counter("fail").Inc(1)
+			fxctx.Logger().Error(uauth.ErrAuthorization, "error", err)
+			w.WriteHeader(http.StatusUnauthorized)
+			fmt.Fprintf(w, "Unauthorized access: %+v", err)
+			return
+		}
 		next.ServeHTTP(fxctx, w, r)
 	}
 }
