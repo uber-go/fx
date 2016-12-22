@@ -47,8 +47,8 @@ var _zapToRavenMap = map[zap.Level]raven.Severity{
 // Configuration provides sentry DSN and other optional parameters for logging
 type Configuration struct {
 	DSN      string
-	MinLevel *string `yaml:"min_level,omitempty"`
-	Fields   map[string]interface{}
+	MinLevel *string                `yaml:"min_level,omitempty"`
+	Fields   map[string]interface{} `yaml:",omitempty"`
 	Trace    *struct {
 		Disabled     bool `yaml:",omitempty"`
 		SkipFrames   *int `yaml:"skip_frames,omitempty"`
