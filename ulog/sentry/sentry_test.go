@@ -33,6 +33,7 @@ import (
 
 	raven "github.com/getsentry/raven-go"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"github.com/uber-go/zap"
 )
 
@@ -156,6 +157,71 @@ func TestPacketSending(t *testing.T) {
 		assert.Equal(t, p.Message, "my error message")
 		assert.Equal(t, map[string]interface{}{"mykey1": "myvalue1"}, p.Extra)
 	})
+}
+
+func TestConfigure(t *testing.T) {
+	one := 1
+	two := 2
+	debug := zap.DebugLevel.String()
+	str := "random string"
+	trace := struct {
+		Disabled     bool
+		SkipFrames   *int `yaml:"skip_frames"`
+		ContextLines *int `yaml:"context_lines"`
+	}{
+		Disabled:     true,
+		SkipFrames:   &one,
+		ContextLines: &two,
+	}
+
+	testCases := []struct {
+		name  string
+		conf  Configuration
+		res   *Hook
+		isErr bool
+	}{
+		{"Empty",
+			Configuration{},
+			&Hook{
+				traceEnabled:      true,
+				minLevel:          zap.ErrorLevel,
+				traceContextLines: _traceContextLines,
+				traceSkipFrames:   _traceSkipFrames,
+				fields:            map[string]interface{}{},
+			}, false},
+		{"SomeValues",
+			Configuration{
+				MinLevel: &debug,
+				Trace:    &trace,
+				Fields:   map[string]interface{}{"mickey": "mouse"},
+			},
+			&Hook{
+				minLevel:          zap.DebugLevel,
+				traceEnabled:      false,
+				traceSkipFrames:   one,
+				traceContextLines: two,
+				fields:            map[string]interface{}{"mickey": "mouse"},
+			}, false},
+		{"ParseError", Configuration{MinLevel: &str}, nil, true},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			conf, err := Configure(tc.conf)
+			if tc.isErr {
+				assert.Error(t, err)
+				return
+			}
+
+			require.NoError(t, err)
+			r := tc.res
+			assert.Equal(t, r.traceEnabled, conf.traceEnabled)
+			assert.Equal(t, r.minLevel, conf.minLevel)
+			assert.Equal(t, r.traceContextLines, conf.traceContextLines)
+			assert.Equal(t, r.traceSkipFrames, conf.traceSkipFrames)
+			assert.Equal(t, r.fields, conf.fields)
+		})
+	}
 }
 
 func capturePacket(f func(sh *Hook), options ...Option) (*Hook, *raven.Packet) {
