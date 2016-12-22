@@ -35,6 +35,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/uber-go/zap"
+	"gopkg.in/yaml.v2"
 )
 
 type fakeClient raven.Client
@@ -159,7 +160,7 @@ func TestPacketSending(t *testing.T) {
 	})
 }
 
-func TestFromConfig(t *testing.T) {
+func TestConfigure(t *testing.T) {
 	one := 1
 	two := 2
 	debug := zap.DebugLevel.String()
@@ -207,20 +208,31 @@ func TestFromConfig(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			conf, err := FromConfig(tc.conf)
+			conf, err := Configure(tc.conf)
 			if tc.isErr {
 				assert.Error(t, err)
 				return
 			}
 
 			require.NoError(t, err)
-			assert.Equal(t, tc.res.traceEnabled, conf.traceEnabled)
-			assert.Equal(t, tc.res.minLevel, conf.minLevel)
-			assert.Equal(t, tc.res.traceContextLines, conf.traceContextLines)
-			assert.Equal(t, tc.res.traceSkipFrames, conf.traceSkipFrames)
-			assert.Equal(t, tc.res.fields, conf.fields)
+			r := tc.res
+			assert.Equal(t, r.traceEnabled, conf.traceEnabled)
+			assert.Equal(t, r.minLevel, conf.minLevel)
+			assert.Equal(t, r.traceContextLines, conf.traceContextLines)
+			assert.Equal(t, r.traceSkipFrames, conf.traceSkipFrames)
+			assert.Equal(t, r.fields, conf.fields)
 		})
 	}
+}
+
+func TestParse(t *testing.T) {
+	str := `
+dsn: http://user:secret@your.sentry.dsn/project
+trace:
+  disabled: true`
+	c := Configuration{}
+	assert.Nil(t, yaml.Unmarshal([]byte(str), &c))
+	fmt.Printf("%+v\n%+v\n", c, c.Trace)
 }
 
 func capturePacket(f func(sh *Hook), options ...Option) (*Hook, *raven.Packet) {

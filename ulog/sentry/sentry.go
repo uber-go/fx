@@ -104,8 +104,8 @@ func New(dsn string, options ...Option) (*Hook, error) {
 	return sh, nil
 }
 
-// FromConfig returns a new Sentry Hook based on SentryConfiguration.
-func FromConfig(c Configuration) (*Hook, error) {
+// Configure returns a new Sentry Hook based on SentryConfiguration.
+func Configure(c Configuration) (*Hook, error) {
 	o := make([]Option, 0, 5)
 
 	if c.MinLevel != nil {

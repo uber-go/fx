@@ -107,7 +107,7 @@ func (lb *LogBuilder) Build() Log {
 	// make the situation better so yaml overrides only the DSN
 	if lb.logConfig.Sentry != nil {
 		if len(lb.logConfig.Sentry.DSN) > 0 {
-			hook, err := sentry.FromConfig(*lb.logConfig.Sentry)
+			hook, err := sentry.Configure(*lb.logConfig.Sentry)
 			if err == nil {
 				lb.sentryHook = hook
 			} else {

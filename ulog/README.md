@@ -122,9 +122,19 @@ logging:
 ```
 
 If you'd like to take more control over the Sentry integration, see
-`sentry.Hook`
+`sentry.Configuration`
 
 For example, to turn off Stacktrace generation:
+
+```yaml
+logging:
+  sentry:
+    dsn: http://user:secret@your.sentry.dsn/project
+    trace:
+      disabled: true
+```
+
+To set up Sentry in code use `sentry.Hook`. For example:
 
 ```go
 import (
