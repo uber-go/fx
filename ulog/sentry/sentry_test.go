@@ -170,20 +170,23 @@ func TestFromConfig(t *testing.T) {
 		res   *Hook
 		isErr bool
 	}{
-		{"Empty", Configuration{}, &Hook{
-			traceEnabled:      true,
-			minLevel:          zap.ErrorLevel,
-			traceContextLines: _traceContextLines,
-			traceSkipFrames:   _traceSkipFrames,
-			fields:            map[string]interface{}{},
-		}, false},
-		{"SomeValues", Configuration{
-			MinLevel:          &debug,
-			TraceEnabled:      &fls,
-			TraceSkipFrames:   &one,
-			TraceContextLines: &two,
-			Fields:            map[string]interface{}{"mickey": "mouse"},
-		},
+		{"Empty",
+			Configuration{},
+			&Hook{
+				traceEnabled:      true,
+				minLevel:          zap.ErrorLevel,
+				traceContextLines: _traceContextLines,
+				traceSkipFrames:   _traceSkipFrames,
+				fields:            map[string]interface{}{},
+			}, false},
+		{"SomeValues",
+			Configuration{
+				MinLevel:          &debug,
+				TraceEnabled:      &fls,
+				TraceSkipFrames:   &one,
+				TraceContextLines: &two,
+				Fields:            map[string]interface{}{"mickey": "mouse"},
+			},
 			&Hook{
 				minLevel:          zap.DebugLevel,
 				traceEnabled:      false,
