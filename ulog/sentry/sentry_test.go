@@ -159,11 +159,20 @@ func TestPacketSending(t *testing.T) {
 }
 
 func TestFromConfig(t *testing.T) {
-	fls := false
 	one := 1
 	two := 2
 	debug := zap.DebugLevel.String()
 	str := "random string"
+	trace := struct {
+		Disabled     bool `yaml:",omitempty"`
+		SkipFrames   *int `yaml:"skip_frames,omitempty"`
+		ContextLines *int `yaml:"context_lines,omitempty"`
+	}{
+		Disabled:     true,
+		SkipFrames:   &one,
+		ContextLines: &two,
+	}
+
 	testCases := []struct {
 		name  string
 		conf  Configuration
@@ -181,11 +190,9 @@ func TestFromConfig(t *testing.T) {
 			}, false},
 		{"SomeValues",
 			Configuration{
-				MinLevel:          &debug,
-				TraceEnabled:      &fls,
-				TraceSkipFrames:   &one,
-				TraceContextLines: &two,
-				Fields:            map[string]interface{}{"mickey": "mouse"},
+				MinLevel: &debug,
+				Trace:    &trace,
+				Fields:   map[string]interface{}{"mickey": "mouse"},
 			},
 			&Hook{
 				minLevel:          zap.DebugLevel,

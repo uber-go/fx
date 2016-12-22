@@ -46,12 +46,14 @@ var _zapToRavenMap = map[zap.Level]raven.Severity{
 
 // Configuration provides sentry DSN and other optional parameters for logging
 type Configuration struct {
-	DSN               string
-	MinLevel          *string                `yaml:"min_level,omitempty"`
-	TraceEnabled      *bool                  `yaml:"trace_enabled,omitempty"`
-	TraceSkipFrames   *int                   `yaml:"trace_skip_frames,omitempty"`
-	TraceContextLines *int                   `yaml:"trace_context_lines,omitempty"`
-	Fields            map[string]interface{} `yaml:",omitempty"`
+	DSN      string
+	MinLevel *string `yaml:"min_level,omitempty"`
+	Fields   map[string]interface{}
+	Trace    *struct {
+		Disabled     bool `yaml:",omitempty"`
+		SkipFrames   *int `yaml:"skip_frames,omitempty"`
+		ContextLines *int `yaml:"context_lines,omitempty"`
+	} `yaml:",omitempty"`
 }
 
 // Hook wraps the default raven-go client for some out-of-box awesomeness
@@ -115,16 +117,21 @@ func FromConfig(c Configuration) (*Hook, error) {
 		o = append(o, MinLevel(l))
 	}
 
-	if c.TraceEnabled != nil && !*c.TraceEnabled {
+	t := c.Trace
+	if t == nil {
+		return New(c.DSN, o...)
+	}
+
+	if t.Disabled {
 		o = append(o, DisableTraces())
 	}
 
-	if c.TraceSkipFrames != nil {
-		o = append(o, TraceSkipFrames(*c.TraceSkipFrames))
+	if t.SkipFrames != nil {
+		o = append(o, TraceSkipFrames(*t.SkipFrames))
 	}
 
-	if c.TraceContextLines != nil {
-		o = append(o, TraceContextLines(*c.TraceContextLines))
+	if t.ContextLines != nil {
+		o = append(o, TraceContextLines(*t.ContextLines))
 	}
 
 	if len(c.Fields) != 0 {
