@@ -50,8 +50,8 @@ type Log interface {
 	// Check returns a zap.CheckedMessage if logging a message at the specified level is enabled.
 	Check(level zap.Level, message string) *zap.CheckedMessage
 
-	// RawLogger returns underlying logger implementation (zap.Logger) to get around the ulog.Log interface
-	RawLogger() zap.Logger
+	// Typed returns underlying logger implementation (zap.Logger) to get around the ulog.Log interface
+	Typed() zap.Logger
 
 	// Log at the provided zap.Level with message, and a sequence of parameters as key value pairs
 	Log(level zap.Level, message string, keyVals ...interface{})
@@ -94,8 +94,8 @@ func Logger() Log {
 	}
 }
 
-// RawLogger returns underneath zap implementation for use
-func (l *baseLogger) RawLogger() zap.Logger {
+// Typed returns underneath zap implementation for use
+func (l *baseLogger) Typed() zap.Logger {
 	return l.log
 }
 
