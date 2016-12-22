@@ -93,7 +93,7 @@ func BenchmarkUlogWithFieldsBaseLoggerStruct(b *testing.B) {
 
 func BenchmarkUlogWithFieldsZapLogger(b *testing.B) {
 	withDiscardedLogger(b, func(log Log) {
-		zapLogger := log.RawLogger()
+		zapLogger := log.Typed()
 		b.ResetTimer()
 		b.RunParallel(func(pb *testing.PB) {
 			for pb.Next() {

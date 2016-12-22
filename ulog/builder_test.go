@@ -45,7 +45,7 @@ func TestConfiguredLogger(t *testing.T) {
 			Verbose:       false,
 		}
 		log := builder.WithConfiguration(cfg).Build()
-		zapLogger := log.RawLogger()
+		zapLogger := log.Typed()
 		assert.True(t, zapLogger.Check(zap.DebugLevel, "").OK())
 	})
 }
@@ -65,7 +65,7 @@ func TestConfiguredLoggerWithTextFormatter(t *testing.T) {
 			},
 		}
 		log := Builder().WithConfiguration(cfg).Build()
-		zapLogger := log.RawLogger()
+		zapLogger := log.Typed()
 		assert.True(t, zapLogger.Check(zap.DebugLevel, "").OK())
 	})
 }
@@ -77,7 +77,7 @@ func TestConfiguredLoggerWithTextFormatter_NonDev(t *testing.T) {
 			Level:         "debug",
 			TextFormatter: &txt,
 		}).Build()
-		zapLogger := log.RawLogger()
+		zapLogger := log.Typed()
 		assert.True(t, zapLogger.Check(zap.DebugLevel, "").OK())
 	})
 }
@@ -96,7 +96,7 @@ func TestConfiguredLoggerWithStdout(t *testing.T) {
 			},
 		}
 		log := Builder().WithConfiguration(cfg).Build()
-		zapLogger := log.RawLogger()
+		zapLogger := log.Typed()
 		assert.True(t, zapLogger.Check(zap.DebugLevel, "").OK())
 	})
 }
@@ -133,7 +133,7 @@ func TestDefaultPackageLogger(t *testing.T) {
 	withLogger(t, func(builder *LogBuilder, tmpDir string, logFile string) {
 		defer testutils.EnvOverride(t, config.EnvironmentKey(), "development")()
 		log := New()
-		zapLogger := log.RawLogger()
+		zapLogger := log.Typed()
 		assert.True(t, zapLogger.Check(zap.DebugLevel, "").OK())
 	})
 }
@@ -159,7 +159,7 @@ func testSentry(t *testing.T, dsn string, isValid bool) {
 		}
 		logBuilder := builder.WithConfiguration(cfg)
 		log := logBuilder.Build()
-		zapLogger := log.RawLogger()
+		zapLogger := log.Typed()
 		assert.True(t, zapLogger.Check(zap.DebugLevel, "").OK())
 		if isValid {
 			assert.NotNil(t, logBuilder.sentryHook)

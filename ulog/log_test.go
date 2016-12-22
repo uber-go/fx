@@ -121,14 +121,14 @@ func TestFieldConversion(t *testing.T) {
 	assert.Equal(t, zap.Error(err), base.fieldsConversion("error", err)[0])
 }
 
-func TestRawLogger(t *testing.T) {
+func TestTyped(t *testing.T) {
 	log := New()
-	assert.NotNil(t, log.RawLogger())
+	assert.NotNil(t, log.Typed())
 }
 
 func TestLogger(t *testing.T) {
 	log := Logger()
-	assert.NotNil(t, log.RawLogger())
+	assert.NotNil(t, log.Typed())
 }
 
 func TestSentryHook(t *testing.T) {
