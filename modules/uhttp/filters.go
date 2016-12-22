@@ -90,7 +90,7 @@ func authorizationFilter(host service.Host) FilterFunc {
 		authClient := uauth.Instance()
 		err := authClient.Authorize(fxctx)
 		if err != nil {
-			host.Metrics().Counter("http.authorize.fail").Inc(1)
+			host.Metrics().SubScope("http").Counter("authorize.fail").Inc(1)
 			fxctx.Logger().Error(uauth.ErrAuthorization, "error", err)
 			w.WriteHeader(http.StatusUnauthorized)
 			fmt.Fprintf(w, "Unauthorized access: %+v", err)

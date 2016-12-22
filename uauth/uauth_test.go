@@ -41,6 +41,7 @@ func TestUauth_Stub(t *testing.T) {
 }
 
 func TestUauth_Register(t *testing.T) {
+	UnregisterClient()
 	RegisterClient(FakeFailureClient)
 	SetupClient(fakeAuthInfo{})
 	authClient := Instance()
@@ -54,15 +55,16 @@ func TestUauth_Register(t *testing.T) {
 }
 
 func TestUauth_RegisterPanic(t *testing.T) {
-	_registerFunc = nil
+	UnregisterClient()
 	RegisterClient(FakeFailureClient)
+	SetupClient(nil)
 	assert.Panics(t, func() {
 		RegisterClient(FakeFailureClient)
 	})
 }
 
 func TestUauth_Default(t *testing.T) {
-	_registerFunc = nil
+	UnregisterClient()
 	SetupClient(fakeAuthInfo{})
 	assert.Equal(t, "noop", Instance().Name())
 }

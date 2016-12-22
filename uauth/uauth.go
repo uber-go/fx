@@ -36,7 +36,7 @@ var (
 	// ErrAuthentication is returned on authentication failure
 	ErrAuthentication = "Error authenticating the request"
 
-	// ErrAuthorization is returned on authroization failure
+	// ErrAuthorization is returned on authorization failure
 	ErrAuthorization = "Error authorizing the service"
 )
 
@@ -58,18 +58,21 @@ func RegisterClient(registerFunc RegisterFunc) {
 	_registerFunc = registerFunc
 }
 
-// UnregisterClient unregisters uauth RegisterFunc for testing and resets to stubClient
+// UnregisterClient unregisters uauth RegisterFunc for testing and resets to noopClient
 func UnregisterClient() {
 	_setupMu.Lock()
 	defer _setupMu.Unlock()
-	_registerFunc = noopClient
+	_registerFunc = nil
+	_std = nil
 }
 
 // SetupClient creates a Client instance based on registered auth client implementation
 func SetupClient(info CreateAuthInfo) {
 	_setupMu.Lock()
 	defer _setupMu.Unlock()
-
+	if _std != nil {
+		return
+	}
 	if _registerFunc != nil {
 		_std = _registerFunc(info)
 	} else {

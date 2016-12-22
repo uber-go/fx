@@ -57,6 +57,7 @@ func TestFilterChainFilters(t *testing.T) {
 
 func TestFilterChainFilters_AuthFailure(t *testing.T) {
 	host := service.NullHost()
+	uauth.UnregisterClient()
 	uauth.RegisterClient(uauth.FakeFailureClient)
 	uauth.SetupClient(host)
 	defer uauth.UnregisterClient()
