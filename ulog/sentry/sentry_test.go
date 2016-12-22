@@ -35,7 +35,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/uber-go/zap"
-	"gopkg.in/yaml.v2"
 )
 
 type fakeClient raven.Client
@@ -223,16 +222,6 @@ func TestConfigure(t *testing.T) {
 			assert.Equal(t, r.fields, conf.fields)
 		})
 	}
-}
-
-func TestParse(t *testing.T) {
-	str := `
-dsn: http://user:secret@your.sentry.dsn/project
-trace:
-  disabled: true`
-	c := Configuration{}
-	assert.Nil(t, yaml.Unmarshal([]byte(str), &c))
-	fmt.Printf("%+v\n%+v\n", c, c.Trace)
 }
 
 func capturePacket(f func(sh *Hook), options ...Option) (*Hook, *raven.Packet) {
