@@ -30,6 +30,13 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func withAuthClientSetup(t *testing.T, registerFunc RegisterFunc, info CreateAuthInfo, fn func()) {
+	UnregisterClient()
+	RegisterClient(registerFunc)
+	SetupClient(info)
+	fn()
+}
+
 func TestUauth_Stub(t *testing.T) {
 	authClient := Instance()
 	assert.Equal(t, "uauth", authClient.Name())
@@ -41,32 +48,30 @@ func TestUauth_Stub(t *testing.T) {
 }
 
 func TestUauth_Register(t *testing.T) {
-	UnregisterClient()
-	RegisterClient(FakeFailureClient)
-	SetupClient(fakeAuthInfo{})
-	authClient := Instance()
-	assert.Equal(t, "failure", authClient.Name())
-	assert.NotNil(t, authClient)
-	err := authClient.Authorize(context.Background())
-	assert.Error(t, err)
-	ctx, err := authClient.Authenticate(context.Background())
-	require.Error(t, err)
-	assert.NotNil(t, ctx)
+	withAuthClientSetup(t, FakeFailureClient, fakeAuthInfo{}, func() {
+		authClient := Instance()
+		assert.Equal(t, "failure", authClient.Name())
+		assert.NotNil(t, authClient)
+		err := authClient.Authorize(context.Background())
+		assert.Error(t, err)
+		ctx, err := authClient.Authenticate(context.Background())
+		require.Error(t, err)
+		assert.NotNil(t, ctx)
+	})
 }
 
 func TestUauth_RegisterPanic(t *testing.T) {
-	UnregisterClient()
-	RegisterClient(FakeFailureClient)
-	SetupClient(nil)
-	assert.Panics(t, func() {
-		RegisterClient(FakeFailureClient)
+	withAuthClientSetup(t, FakeFailureClient, nil, func() {
+		assert.Panics(t, func() {
+			RegisterClient(FakeFailureClient)
+		})
 	})
 }
 
 func TestUauth_Default(t *testing.T) {
-	UnregisterClient()
-	SetupClient(fakeAuthInfo{})
-	assert.Equal(t, "noop", Instance().Name())
+	withAuthClientSetup(t, nil, fakeAuthInfo{}, func() {
+		assert.Equal(t, "noop", Instance().Name())
+	})
 }
 
 type fakeAuthInfo struct{}
