@@ -61,7 +61,7 @@ func TestYamlStructRoot(t *testing.T) {
 
 	cs := &configStruct{}
 
-	assert.NoError(t, provider.Get("").PopulateStruct(cs))
+	assert.NoError(t, provider.Get(Root).PopulateStruct(cs))
 
 	assert.Equal(t, "keyvalue", cs.AppID)
 	assert.Equal(t, "owner@service.com", cs.Owner)
@@ -95,8 +95,8 @@ func TestNewYamlProviderFromReader(t *testing.T) {
 	buff := bytes.NewBuffer([]byte(yamlConfig1))
 	provider := NewYamlProviderFromReader(ioutil.NopCloser(buff))
 	cs := &configStruct{}
-	assert.NoError(t, provider.Get("").PopulateStruct(cs))
-	assert.Equal(t, "yaml", provider.Scope("").Name())
+	assert.NoError(t, provider.Get(Root).PopulateStruct(cs))
+	assert.Equal(t, "yaml", provider.Scope(Root).Name())
 	assert.Equal(t, "keyvalue", cs.AppID)
 	assert.Equal(t, "owner@service.com", cs.Owner)
 }
@@ -234,7 +234,7 @@ func TestParsingUnparsableDuration(t *testing.T) {
 func TestTypeOfTypes(t *testing.T) {
 	withYamlBytes(t, typeStructYaml, func(provider Provider) {
 		tts := typeStructStruct{}
-		err := provider.Get("").PopulateStruct(&tts)
+		err := provider.Get(Root).PopulateStruct(&tts)
 		assert.NoError(t, err)
 		assert.Equal(t, userDefinedTypeInt(123), *tts.TypeStruct.TestInt)
 		assert.Equal(t, userDefinedTypeUInt(456), *tts.TypeStruct.TestUInt)

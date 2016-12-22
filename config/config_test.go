@@ -215,7 +215,7 @@ func TestNestedStructs(t *testing.T) {
 
 	str := &root{}
 
-	v := provider.Get("")
+	v := provider.Get(Root)
 
 	assert.True(t, v.HasValue())
 	v.PopulateStruct(str)
@@ -238,7 +238,7 @@ func TestArrayOfStructs(t *testing.T) {
 
 	target := &arrayOfStructs{}
 
-	v := provider.Get("")
+	v := provider.Get(Root)
 
 	assert.True(t, v.HasValue())
 	assert.NoError(t, v.PopulateStruct(target))
@@ -253,7 +253,7 @@ func TestDefault(t *testing.T) {
 		NewEnvProvider(defaultEnvPrefix, mapEnvironmentProvider{values: env}),
 	)
 	target := &nested{}
-	v := provider.Get("")
+	v := provider.Get(Root)
 	assert.True(t, v.HasValue())
 	assert.NoError(t, v.PopulateStruct(target))
 	assert.Equal(t, "default_name", target.Name)
