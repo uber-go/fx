@@ -111,6 +111,16 @@ func TestGlobalConfig(t *testing.T) {
 	assert.Equal(t, "test", cfg.Name())
 }
 
+func TestRootNodeConfig(t *testing.T) {
+	txt := []byte(`
+one:
+  two: hello
+`)
+
+	cfg := NewYAMLProviderFromBytes(txt).Get(Root).AsString()
+	assert.Equal(t, "map[one:map[two:hello]]", cfg)
+}
+
 func TestDirectAccess(t *testing.T) {
 	provider := NewProviderGroup(
 		"test",
