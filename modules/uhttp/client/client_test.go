@@ -27,11 +27,8 @@ import (
 	"time"
 
 	"go.uber.org/fx"
-	"go.uber.org/fx/internal/fxcontext"
-	"go.uber.org/fx/service"
 
 	"github.com/stretchr/testify/assert"
-	"golang.org/x/net/context"
 )
 
 var _defaultHTTPClient = &http.Client{Timeout: 2 * time.Second}
@@ -46,7 +43,7 @@ func TestNew(t *testing.T) {
 func TestClientDo(t *testing.T) {
 	svr := startServer()
 	req := createHTTPClientRequest(svr.URL)
-	resp, err := _defaultUHTTPClient.Do(createContext(), req)
+	resp, err := _defaultUHTTPClient.Do(fx.NoopContext, req)
 	checkOKResponse(t, resp, err)
 }
 
@@ -54,49 +51,49 @@ func TestClientDoWithoutFilters(t *testing.T) {
 	uhttpClient := &Client{Client: _defaultHTTPClient}
 	svr := startServer()
 	req := createHTTPClientRequest(svr.URL)
-	resp, err := uhttpClient.Do(createContext(), req)
+	resp, err := uhttpClient.Do(fx.NoopContext, req)
 	checkOKResponse(t, resp, err)
 }
 
 func TestClientGet(t *testing.T) {
 	svr := startServer()
-	resp, err := _defaultUHTTPClient.Get(createContext(), svr.URL)
+	resp, err := _defaultUHTTPClient.Get(fx.NoopContext, svr.URL)
 	checkOKResponse(t, resp, err)
 }
 
 func TestClientGetError(t *testing.T) {
 	// Causing newRequest to fail, % does not parse as URL
-	resp, err := _defaultUHTTPClient.Get(createContext(), "%")
+	resp, err := _defaultUHTTPClient.Get(fx.NoopContext, "%")
 	checkErrResponse(t, resp, err)
 }
 
 func TestClientHead(t *testing.T) {
 	svr := startServer()
-	resp, err := _defaultUHTTPClient.Head(createContext(), svr.URL)
+	resp, err := _defaultUHTTPClient.Head(fx.NoopContext, svr.URL)
 	checkOKResponse(t, resp, err)
 }
 
 func TestClientHeadError(t *testing.T) {
 	// Causing newRequest to fail, % does not parse as URL
-	resp, err := _defaultUHTTPClient.Head(createContext(), "%")
+	resp, err := _defaultUHTTPClient.Head(fx.NoopContext, "%")
 	checkErrResponse(t, resp, err)
 }
 
 func TestClientPost(t *testing.T) {
 	svr := startServer()
-	resp, err := _defaultUHTTPClient.Post(createContext(), svr.URL, "", nil)
+	resp, err := _defaultUHTTPClient.Post(fx.NoopContext, svr.URL, "", nil)
 	checkOKResponse(t, resp, err)
 }
 
 func TestClientPostError(t *testing.T) {
-	resp, err := _defaultUHTTPClient.Post(createContext(), "%", "", nil)
+	resp, err := _defaultUHTTPClient.Post(fx.NoopContext, "%", "", nil)
 	checkErrResponse(t, resp, err)
 }
 
 func TestClientPostForm(t *testing.T) {
 	svr := startServer()
 	var urlValues map[string][]string
-	resp, err := _defaultUHTTPClient.PostForm(createContext(), svr.URL, urlValues)
+	resp, err := _defaultUHTTPClient.PostForm(fx.NoopContext, svr.URL, urlValues)
 	checkOKResponse(t, resp, err)
 }
 
@@ -119,8 +116,4 @@ func createHTTPClientRequest(url string) *http.Request {
 	// To prevent http: Request.RequestURI can't be set in client requests
 	req.RequestURI = ""
 	return req
-}
-
-func createContext() fx.Context {
-	return fxcontext.New(context.Background(), service.NullHost())
 }
