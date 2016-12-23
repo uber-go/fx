@@ -51,7 +51,7 @@ func TestExecutionChainFilters(t *testing.T) {
 	execChain := newExecutionChain(
 		[]Filter{FilterFunc(tracingFilter)}, getNoopClient(),
 	)
-	ctx := createContext()
+	ctx := fx.NoopContext
 	resp, err := execChain.Do(ctx, _req)
 	assert.NoError(t, err)
 	assert.Equal(t, _respOK, resp)
@@ -61,7 +61,7 @@ func TestExecutionChainFiltersError(t *testing.T) {
 	execChain := newExecutionChain(
 		[]Filter{FilterFunc(tracingFilter)}, getErrorClient(),
 	)
-	resp, err := execChain.Do(createContext(), _req)
+	resp, err := execChain.Do(fx.NoopContext, _req)
 	assert.Error(t, err)
 	assert.Equal(t, errClient, err)
 	assert.Nil(t, resp)
