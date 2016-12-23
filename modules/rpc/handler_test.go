@@ -111,7 +111,7 @@ func TestInboundMiddleware_auth(t *testing.T) {
 			Host: service.NullHost(),
 		}
 		err := unary.Handle(context.Background(), &transport.Request{}, nil, &fakeUnaryHandler{t: t})
-		assert.Equal(t, "handle", err.Error())
+		assert.EqualError(t, err, "handle")
 	})
 }
 
@@ -121,7 +121,7 @@ func TestInboundMiddleware_authFailure(t *testing.T) {
 			Host: service.NullHost(),
 		}
 		err := unary.Handle(context.Background(), &transport.Request{}, nil, &fakeUnaryHandler{t: t})
-		assert.Equal(t, "Error authorizing the service", err.Error())
+		assert.EqualError(t, err, "Error authorizing the service")
 	})
 }
 
@@ -131,7 +131,8 @@ func TestOnewayInboundMiddleware_auth(t *testing.T) {
 			Host: service.NullHost(),
 		}
 		err := oneway.HandleOneway(context.Background(), &transport.Request{}, &fakeOnewayHandler{t: t})
-		assert.Equal(t, "oneway handle", err.Error())
+		assert.EqualError(t, err, "oneway handle")
+
 	})
 }
 
@@ -141,7 +142,7 @@ func TestOnewayInboundMiddleware_authFailure(t *testing.T) {
 			Host: service.NullHost(),
 		}
 		err := oneway.HandleOneway(context.Background(), &transport.Request{}, &fakeOnewayHandler{t: t})
-		assert.Equal(t, "Error authorizing the service", err.Error())
+		assert.EqualError(t, err, "Error authorizing the service")
 	})
 }
 
