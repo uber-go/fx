@@ -26,6 +26,7 @@ import (
 	"go.uber.org/fx"
 	"go.uber.org/fx/internal/fxcontext"
 	"go.uber.org/fx/service"
+	"go.uber.org/fx/uauth"
 	"go.uber.org/thriftrw/wire"
 	"go.uber.org/yarpc"
 	"go.uber.org/yarpc/encoding/thrift"
@@ -96,4 +97,42 @@ type fxContextOnewayInboundMiddleware struct {
 func (f fxContextOnewayInboundMiddleware) HandleOneway(ctx context.Context, req *transport.Request, handler transport.OnewayHandler) error {
 	fxctx := fxcontext.New(ctx, f.Host)
 	return handler.HandleOneway(fxctx, req)
+}
+
+type authInboundMiddleware struct {
+	service.Host
+}
+
+func (a authInboundMiddleware) Handle(ctx context.Context, req *transport.Request, resw transport.ResponseWriter, handler transport.UnaryHandler) error {
+	fxctx, err := authorize(ctx, a.Host)
+	if err != nil {
+		return err
+	}
+	return handler.Handle(fxctx, req, resw)
+}
+
+type authOnewayInboundMiddleware struct {
+	service.Host
+}
+
+func (a authOnewayInboundMiddleware) HandleOneway(ctx context.Context, req *transport.Request, handler transport.OnewayHandler) error {
+	fxctx, err := authorize(ctx, a.Host)
+	if err != nil {
+		return err
+	}
+	return handler.HandleOneway(fxctx, req)
+}
+
+func authorize(ctx context.Context, host service.Host) (fx.Context, error) {
+	fxctx := &fxcontext.Context{
+		Context: ctx,
+	}
+	authClient := uauth.Instance()
+	err := authClient.Authorize(fxctx)
+	if err != nil {
+		host.Metrics().SubScope("rpc").SubScope("auth").Counter("fail").Inc(1)
+		fxctx.Logger().Error(uauth.ErrAuthorization, "error", err)
+		return nil, err
+	}
+	return fxctx, nil
 }

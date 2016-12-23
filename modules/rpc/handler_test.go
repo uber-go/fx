@@ -30,6 +30,7 @@ import (
 	"go.uber.org/fx"
 	"go.uber.org/fx/internal/fxcontext"
 	"go.uber.org/fx/service"
+	"go.uber.org/fx/uauth"
 	"go.uber.org/thriftrw/wire"
 	"go.uber.org/yarpc"
 	"go.uber.org/yarpc/encoding/thrift"
@@ -96,6 +97,61 @@ func TestInboundMiddleware_fxContext(t *testing.T) {
 	assert.Equal(t, "handle", err.Error())
 }
 
+func TestOnewayInboundMiddleware_fxContext(t *testing.T) {
+	oneway := fxContextOnewayInboundMiddleware{
+		Host: service.NullHost(),
+	}
+	err := oneway.HandleOneway(context.Background(), &transport.Request{}, &fakeOnewayHandler{t: t})
+	assert.Equal(t, "oneway handle", err.Error())
+}
+
+func TestInboundMiddleware_auth(t *testing.T) {
+	withAuthClient(t, nil, func() {
+		unary := authInboundMiddleware{
+			Host: service.NullHost(),
+		}
+		err := unary.Handle(context.Background(), &transport.Request{}, nil, &fakeUnaryHandler{t: t})
+		assert.Equal(t, "handle", err.Error())
+	})
+}
+
+func TestInboundMiddleware_authFailure(t *testing.T) {
+	withAuthClient(t, uauth.FakeFailureClient, func() {
+		unary := authInboundMiddleware{
+			Host: service.NullHost(),
+		}
+		err := unary.Handle(context.Background(), &transport.Request{}, nil, &fakeUnaryHandler{t: t})
+		assert.Equal(t, "Error authorizing the service", err.Error())
+	})
+}
+
+func TestOnewayInboundMiddleware_auth(t *testing.T) {
+	withAuthClient(t, nil, func() {
+		oneway := authOnewayInboundMiddleware{
+			Host: service.NullHost(),
+		}
+		err := oneway.HandleOneway(context.Background(), &transport.Request{}, &fakeOnewayHandler{t: t})
+		assert.Equal(t, "oneway handle", err.Error())
+	})
+}
+
+func TestOnewayInboundMiddleware_authFailure(t *testing.T) {
+	withAuthClient(t, uauth.FakeFailureClient, func() {
+		oneway := authOnewayInboundMiddleware{
+			Host: service.NullHost(),
+		}
+		err := oneway.HandleOneway(context.Background(), &transport.Request{}, &fakeOnewayHandler{t: t})
+		assert.Equal(t, "Error authorizing the service", err.Error())
+	})
+}
+
+func withAuthClient(t *testing.T, registerFunc uauth.RegisterFunc, fn func()) {
+	uauth.UnregisterClient()
+	uauth.RegisterClient(registerFunc)
+	uauth.SetupClient(service.NullHost())
+	fn()
+}
+
 type fakeUnaryHandler struct {
 	t *testing.T
 }
@@ -105,14 +161,6 @@ func (f fakeUnaryHandler) Handle(ctx context.Context, _param1 *transport.Request
 		Context: ctx,
 	})
 	return errors.New("handle")
-}
-
-func TestOnewayInboundMiddleware_fxContext(t *testing.T) {
-	oneway := fxContextOnewayInboundMiddleware{
-		Host: service.NullHost(),
-	}
-	err := oneway.HandleOneway(context.Background(), &transport.Request{}, &fakeOnewayHandler{t: t})
-	assert.Equal(t, "oneway handle", err.Error())
 }
 
 type fakeOnewayHandler struct {
