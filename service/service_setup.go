@@ -48,7 +48,7 @@ func (svc *serviceCore) setupLogging(cfg config.Provider) {
 }
 
 func (svc *serviceCore) setupStandardConfig(cfg config.Provider) error {
-	if err := cfg.Get("").PopulateStruct(&svc.standardConfig); err != nil {
+	if err := cfg.Get(config.Root).PopulateStruct(&svc.standardConfig); err != nil {
 		return errors.Wrap(err, "unable to load standard configuration")
 	}
 

@@ -32,8 +32,8 @@ func TestProviderGroup(t *testing.T) {
 	assert.Equal(t, "test-group", pg.Name())
 	assert.Equal(t, "test", pg.Get("id").AsString())
 	// TODO this should not require a cast GFM-74
-	assert.Empty(t, pg.(providerGroup).RegisterChangeCallback("", nil))
-	assert.Nil(t, pg.(providerGroup).UnregisterChangeCallback(""))
+	assert.Empty(t, pg.(providerGroup).RegisterChangeCallback(Root, nil))
+	assert.Nil(t, pg.(providerGroup).UnregisterChangeCallback(Root))
 }
 
 func TestProviderGroupScope(t *testing.T) {

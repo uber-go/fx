@@ -25,6 +25,9 @@ import "fmt"
 // ConfigurationChangeCallback is called for updates of configuration data
 type ConfigurationChangeCallback func(key string, provider string, configdata interface{})
 
+// Root marks the root node in a Provider
+const Root = ""
+
 // A Provider provides a unified interface to accessing
 // configuration systems.
 type Provider interface {

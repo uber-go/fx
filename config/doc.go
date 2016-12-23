@@ -146,6 +146,12 @@
 //   fmt.Println(foo)
 //   // Output: hello
 //
+// To get an access to the root element use config.Root:
+//
+//   root := provider.Get(config.Root).AsString()
+//   fmt.Println(root)
+//   // Output: map[one:map[two:hello]]
+//
 // • Populate a struct (PopulateStruct(&myStruct))
 //
 // The As* method has two variants: TryAs* and As*. The former is a

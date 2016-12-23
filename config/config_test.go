@@ -111,6 +111,16 @@ func TestGlobalConfig(t *testing.T) {
 	assert.Equal(t, "test", cfg.Name())
 }
 
+func TestRootNodeConfig(t *testing.T) {
+	txt := []byte(`
+one:
+  two: hello
+`)
+
+	cfg := NewYAMLProviderFromBytes(txt).Get(Root).AsString()
+	assert.Equal(t, "map[one:map[two:hello]]", cfg)
+}
+
 func TestDirectAccess(t *testing.T) {
 	provider := NewProviderGroup(
 		"test",
@@ -205,7 +215,7 @@ func TestNestedStructs(t *testing.T) {
 
 	str := &root{}
 
-	v := provider.Get("")
+	v := provider.Get(Root)
 
 	assert.True(t, v.HasValue())
 	v.PopulateStruct(str)
@@ -228,7 +238,7 @@ func TestArrayOfStructs(t *testing.T) {
 
 	target := &arrayOfStructs{}
 
-	v := provider.Get("")
+	v := provider.Get(Root)
 
 	assert.True(t, v.HasValue())
 	assert.NoError(t, v.PopulateStruct(target))
@@ -243,7 +253,7 @@ func TestDefault(t *testing.T) {
 		NewEnvProvider(defaultEnvPrefix, mapEnvironmentProvider{values: env}),
 	)
 	target := &nested{}
-	v := provider.Get("")
+	v := provider.Get(Root)
 	assert.True(t, v.HasValue())
 	assert.NoError(t, v.PopulateStruct(target))
 	assert.Equal(t, "default_name", target.Name)
