@@ -89,9 +89,16 @@ func newYarpcModule(
 	options = append([]modules.Option{WithInboundMiddleware(fxContextInboundMiddleware{
 		Host: mi.Host,
 	}),
+		WithInboundMiddleware(authInboundMiddleware{
+			Host: mi.Host,
+		}),
 		WithOnewayInboundMiddleware(fxContextOnewayInboundMiddleware{
 			Host: mi.Host,
-		})}, options...)
+		}),
+		WithOnewayInboundMiddleware(authOnewayInboundMiddleware{
+			Host: mi.Host,
+		}),
+	}, options...)
 
 	module.log = ulog.Logger().With("moduleName", name)
 	for _, opt := range options {
