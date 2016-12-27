@@ -24,9 +24,9 @@ import (
 	"context"
 
 	"go.uber.org/fx"
+	"go.uber.org/fx/auth"
 	"go.uber.org/fx/internal/fxcontext"
 	"go.uber.org/fx/service"
-	"go.uber.org/fx/uauth"
 	"go.uber.org/thriftrw/wire"
 	"go.uber.org/yarpc"
 	"go.uber.org/yarpc/encoding/thrift"
@@ -127,10 +127,10 @@ func authorize(ctx context.Context, host service.Host) (fx.Context, error) {
 	fxctx := &fxcontext.Context{
 		Context: ctx,
 	}
-	authClient := uauth.Instance()
+	authClient := auth.Instance()
 	if err := authClient.Authorize(fxctx); err != nil {
 		host.Metrics().SubScope("rpc").SubScope("auth").Counter("fail").Inc(1)
-		fxctx.Logger().Error(uauth.ErrAuthorization, "error", err)
+		fxctx.Logger().Error(auth.ErrAuthorization, "error", err)
 		// TODO(anup): GFM-255 update returned error to transport.BadRequestError (user error than server error)
 		return nil, err
 	}

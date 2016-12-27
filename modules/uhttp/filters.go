@@ -26,9 +26,9 @@ import (
 	"net/http"
 
 	"go.uber.org/fx"
+	"go.uber.org/fx/auth"
 	"go.uber.org/fx/internal/fxcontext"
 	"go.uber.org/fx/service"
-	"go.uber.org/fx/uauth"
 
 	"github.com/opentracing/opentracing-go"
 	"github.com/opentracing/opentracing-go/ext"
@@ -87,11 +87,11 @@ func authorizationFilter(host service.Host) FilterFunc {
 		fxctx := &fxcontext.Context{
 			Context: ctx,
 		}
-		authClient := uauth.Instance()
+		authClient := auth.Instance()
 		err := authClient.Authorize(fxctx)
 		if err != nil {
 			host.Metrics().SubScope("http").SubScope("auth").Counter("fail").Inc(1)
-			fxctx.Logger().Error(uauth.ErrAuthorization, "error", err)
+			fxctx.Logger().Error(auth.ErrAuthorization, "error", err)
 			w.WriteHeader(http.StatusUnauthorized)
 			fmt.Fprintf(w, "Unauthorized access: %+v", err)
 			return

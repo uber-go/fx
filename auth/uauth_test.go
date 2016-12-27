@@ -18,7 +18,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package uauth
+package auth
 
 import (
 	"context"
@@ -39,7 +39,7 @@ func withAuthClientSetup(t *testing.T, registerFunc RegisterFunc, info CreateAut
 
 func TestUauth_Stub(t *testing.T) {
 	authClient := Instance()
-	assert.Equal(t, "uauth", authClient.Name())
+	assert.Equal(t, "auth", authClient.Name())
 	assert.NotNil(t, authClient)
 	assert.Nil(t, authClient.Authorize(context.Background()))
 	ctx, err := authClient.Authenticate(context.Background())

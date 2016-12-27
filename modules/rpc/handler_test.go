@@ -28,9 +28,9 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"go.uber.org/fx"
+	"go.uber.org/fx/auth"
 	"go.uber.org/fx/internal/fxcontext"
 	"go.uber.org/fx/service"
-	"go.uber.org/fx/uauth"
 	"go.uber.org/thriftrw/wire"
 	"go.uber.org/yarpc"
 	"go.uber.org/yarpc/encoding/thrift"
@@ -116,7 +116,7 @@ func TestInboundMiddleware_auth(t *testing.T) {
 }
 
 func TestInboundMiddleware_authFailure(t *testing.T) {
-	withAuthClient(t, uauth.FakeFailureClient, func() {
+	withAuthClient(t, auth.FakeFailureClient, func() {
 		unary := authInboundMiddleware{
 			Host: service.NullHost(),
 		}
@@ -137,7 +137,7 @@ func TestOnewayInboundMiddleware_auth(t *testing.T) {
 }
 
 func TestOnewayInboundMiddleware_authFailure(t *testing.T) {
-	withAuthClient(t, uauth.FakeFailureClient, func() {
+	withAuthClient(t, auth.FakeFailureClient, func() {
 		oneway := authOnewayInboundMiddleware{
 			Host: service.NullHost(),
 		}
@@ -146,10 +146,10 @@ func TestOnewayInboundMiddleware_authFailure(t *testing.T) {
 	})
 }
 
-func withAuthClient(t *testing.T, registerFunc uauth.RegisterFunc, fn func()) {
-	uauth.UnregisterClient()
-	uauth.RegisterClient(registerFunc)
-	uauth.SetupClient(service.NullHost())
+func withAuthClient(t *testing.T, registerFunc auth.RegisterFunc, fn func()) {
+	auth.UnregisterClient()
+	auth.RegisterClient(registerFunc)
+	auth.SetupClient(service.NullHost())
 	fn()
 }
 

@@ -29,9 +29,9 @@ import (
 	"testing"
 
 	"go.uber.org/fx"
+	"go.uber.org/fx/auth"
 	"go.uber.org/fx/internal/fxcontext"
 	"go.uber.org/fx/service"
-	"go.uber.org/fx/uauth"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -57,11 +57,11 @@ func TestFilterChainFilters(t *testing.T) {
 
 func TestFilterChainFilters_AuthFailure(t *testing.T) {
 	host := service.NullHost()
-	uauth.UnregisterClient()
-	uauth.RegisterClient(uauth.FakeFailureClient)
-	uauth.SetupClient(host)
-	defer uauth.UnregisterClient()
-	defer uauth.SetupClient(host)
+	auth.UnregisterClient()
+	auth.RegisterClient(auth.FakeFailureClient)
+	auth.SetupClient(host)
+	defer auth.UnregisterClient()
+	defer auth.SetupClient(host)
 	chain := newFilterChain([]Filter{
 		contextFilter(host),
 		tracingServerFilter(host),

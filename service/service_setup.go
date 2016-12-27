@@ -23,10 +23,10 @@ package service
 import (
 	"time"
 
+	"go.uber.org/fx/auth"
 	"go.uber.org/fx/config"
 	"go.uber.org/fx/metrics"
 	"go.uber.org/fx/tracing"
-	"go.uber.org/fx/uauth"
 	"go.uber.org/fx/ulog"
 
 	"github.com/go-validator/validator"
@@ -117,6 +117,6 @@ func (svc *serviceCore) setupAuthClient(cfg config.Provider) {
 	if svc.authClient != nil {
 		return
 	}
-	uauth.SetupClient(svc)
-	svc.authClient = uauth.Instance()
+	auth.SetupClient(svc)
+	svc.authClient = auth.Instance()
 }
