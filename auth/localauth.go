@@ -18,28 +18,39 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package uauth
+package auth
 
-import (
-	"context"
-	"errors"
-)
+import "context"
 
-type failureClient struct {
+var _std = defaultAuth()
+
+var _ Client = &defaultClient{}
+
+type defaultClient struct {
+	authClient Client
 }
 
-// FakeFailureClient fails all auth request and must only be used for testing
-func FakeFailureClient(info CreateAuthInfo) Client {
-	return &failureClient{}
+// defaultAuth is a placeholder auth client when no auth client is registered
+// TODO(anup): add configurable authentication, whether a service needs one or not
+func defaultAuth() Client {
+	return &defaultClient{
+		authClient: noopClient(nil),
+	}
 }
 
-func (*failureClient) Name() string {
-	return "failure"
-}
-func (*failureClient) Authenticate(ctx context.Context) (context.Context, error) {
-	return ctx, errors.New(ErrAuthentication)
+// Instance returns initialized instance of auth client
+func Instance() Client {
+	return _std
 }
 
-func (*failureClient) Authorize(ctx context.Context) error {
-	return errors.New(ErrAuthorization)
+func (*defaultClient) Name() string {
+	return "auth"
+}
+
+func (d *defaultClient) Authenticate(ctx context.Context) (context.Context, error) {
+	return d.authClient.Authenticate(ctx)
+}
+
+func (d *defaultClient) Authorize(ctx context.Context) error {
+	return d.authClient.Authorize(ctx)
 }

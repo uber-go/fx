@@ -24,8 +24,8 @@ import (
 	"net/http"
 
 	"go.uber.org/fx"
+	"go.uber.org/fx/auth"
 	"go.uber.org/fx/internal/fxcontext"
-	"go.uber.org/fx/uauth"
 
 	"github.com/opentracing/opentracing-go"
 	"github.com/opentracing/opentracing-go/ext"
@@ -85,10 +85,10 @@ func tracingFilter(
 func authenticationFilter(
 	ctx fx.Context, req *http.Request, next BasicClient,
 ) (resp *http.Response, err error) {
-	authClient := uauth.Instance()
+	authClient := auth.Instance()
 	authctx, err := authClient.Authenticate(ctx)
 	if err != nil {
-		ctx.Logger().Error(uauth.ErrAuthentication, "error", err)
+		ctx.Logger().Error(auth.ErrAuthentication, "error", err)
 		return nil, err
 	}
 	return next.Do(&fxcontext.Context{Context: authctx}, req)

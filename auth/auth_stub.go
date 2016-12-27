@@ -18,39 +18,27 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package uauth
+package auth
 
 import "context"
 
-var _std = defaultAuth()
+var _ Client = &noop{}
 
-var _ Client = &defaultClient{}
-
-type defaultClient struct {
-	authClient Client
+type noop struct {
 }
 
-// defaultAuth is a placeholder auth client when no auth client is registered
-// TODO(anup): add configurable authentication, whether a service needs one or not
-func defaultAuth() Client {
-	return &defaultClient{
-		authClient: noopClient(nil),
-	}
+func noopClient(info CreateAuthInfo) Client {
+	return &noop{}
 }
 
-// Instance returns initialized instance of auth client
-func Instance() Client {
-	return _std
+func (*noop) Name() string {
+	return "noop"
 }
 
-func (*defaultClient) Name() string {
-	return "uauth"
+func (*noop) Authenticate(ctx context.Context) (context.Context, error) {
+	return ctx, nil
 }
 
-func (d *defaultClient) Authenticate(ctx context.Context) (context.Context, error) {
-	return d.authClient.Authenticate(ctx)
-}
-
-func (d *defaultClient) Authorize(ctx context.Context) error {
-	return d.authClient.Authorize(ctx)
+func (*noop) Authorize(ctx context.Context) error {
+	return nil
 }

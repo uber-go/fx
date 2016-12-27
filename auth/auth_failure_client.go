@@ -18,27 +18,28 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package uauth
+package auth
 
-import "context"
+import (
+	"context"
+	"errors"
+)
 
-var _ Client = &noop{}
-
-type noop struct {
+type failureClient struct {
 }
 
-func noopClient(info CreateAuthInfo) Client {
-	return &noop{}
+// FakeFailureClient fails all auth request and must only be used for testing
+func FakeFailureClient(info CreateAuthInfo) Client {
+	return &failureClient{}
 }
 
-func (*noop) Name() string {
-	return "noop"
+func (*failureClient) Name() string {
+	return "failure"
+}
+func (*failureClient) Authenticate(ctx context.Context) (context.Context, error) {
+	return ctx, errors.New(ErrAuthentication)
 }
 
-func (*noop) Authenticate(ctx context.Context) (context.Context, error) {
-	return ctx, nil
-}
-
-func (*noop) Authorize(ctx context.Context) error {
-	return nil
+func (*failureClient) Authorize(ctx context.Context) error {
+	return errors.New(ErrAuthorization)
 }

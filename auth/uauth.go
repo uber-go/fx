@@ -18,7 +18,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package uauth
+package auth
 
 import (
 	"context"
@@ -58,7 +58,7 @@ func RegisterClient(registerFunc RegisterFunc) {
 	_registerFunc = registerFunc
 }
 
-// UnregisterClient unregisters uauth RegisterFunc for testing and resets to noopClient
+// UnregisterClient unregisters auth RegisterFunc for testing and resets to noopClient
 func UnregisterClient() {
 	_setupMu.Lock()
 	defer _setupMu.Unlock()
