@@ -20,7 +20,10 @@
 
 package config
 
-import "time"
+import (
+	"errors"
+	"time"
+)
 
 type emptystruct struct {
 	Slice []string
@@ -142,3 +145,39 @@ typeStruct:
   testUInt: 456
   testFloat: 123.456
 `)
+
+var happyTextUnmarshallerYaml = []byte(`
+duckTales:
+  protagonist: Scrooge
+  pilot: LaunchpadMcQuack
+`)
+
+var grumpyTextUnmarshallerYaml = []byte(`
+darkwingDuck:
+  protagonist: DarkwingDuck
+`)
+
+type duckTaleCharacter int
+
+func (d *duckTaleCharacter) UnmarshalText(text []byte) error {
+	switch string(text) {
+	case "Scrooge":
+		*d = scrooge
+		return nil
+	case "LaunchpadMcQuack":
+		*d = launchpadMcQuack
+		return nil
+	}
+
+	return errors.New("Unknown character: " + string(text))
+}
+
+const (
+	scrooge duckTaleCharacter = iota
+	launchpadMcQuack
+)
+
+type duckTales struct {
+	Protagonist duckTaleCharacter
+	Pilot       duckTaleCharacter
+}

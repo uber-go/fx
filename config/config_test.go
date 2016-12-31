@@ -218,7 +218,8 @@ func TestNestedStructs(t *testing.T) {
 	v := provider.Get(Root)
 
 	assert.True(t, v.HasValue())
-	v.PopulateStruct(str)
+	err := v.PopulateStruct(str)
+	assert.Nil(t, err)
 
 	assert.Equal(t, 1234, str.ID)
 	assert.Equal(t, 999, str.NestedPtr.ID1)
