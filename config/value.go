@@ -339,13 +339,13 @@ func convertValue(value interface{}, targetType reflect.Type) (interface{}, erro
 	switch v := value.(type) {
 	case string:
 		target := reflect.New(targetType).Interface()
-		switch target.(type) {
+		switch t := target.(type) {
 		case *int:
 			return strconv.Atoi(v)
 		case *bool:
 			return strconv.ParseBool(v)
 		case encoding.TextUnmarshaler:
-			err := target.(encoding.TextUnmarshaler).UnmarshalText([]byte(v))
+			err := t.UnmarshalText([]byte(v))
 
 			// target should have a pointer receiver to be able to change itself based on text
 			return reflect.ValueOf(target).Elem().Interface(), err
