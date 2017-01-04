@@ -21,6 +21,7 @@
 package config
 
 import (
+	"encoding"
 	"fmt"
 	"reflect"
 	"strconv"
@@ -337,11 +338,17 @@ func convertValue(value interface{}, targetType reflect.Type) (interface{}, erro
 	}
 	switch v := value.(type) {
 	case string:
-		switch targetType.Name() {
-		case "int":
+		target := reflect.New(targetType).Interface()
+		switch t := target.(type) {
+		case *int:
 			return strconv.Atoi(v)
-		case "bool":
-			return v == "True" || v == "true", nil
+		case *bool:
+			return strconv.ParseBool(v)
+		case encoding.TextUnmarshaler:
+			err := t.UnmarshalText([]byte(v))
+
+			// target should have a pointer receiver to be able to change itself based on text
+			return reflect.ValueOf(target).Elem().Interface(), err
 		}
 	}
 

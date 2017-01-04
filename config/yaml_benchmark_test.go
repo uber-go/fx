@@ -20,7 +20,9 @@
 
 package config
 
-import "testing"
+import (
+	"testing"
+)
 
 func BenchmarkYAMLCreateSingleFile(b *testing.B) {
 	for n := 0; n < b.N; n++ {
@@ -126,6 +128,24 @@ func BenchmarkYAMLPopulateStructNestedMultipleFiles(b *testing.B) {
 
 	for n := 0; n < b.N; n++ {
 		p.Get("api").PopulateStruct(s)
+	}
+}
+
+func BenchmarkYAMLPopulateNestedTextUnmarshaler(b *testing.B) {
+	type protagonist struct {
+		Hero duckTaleCharacter
+	}
+
+	type series struct {
+		Episodes []protagonist
+	}
+
+	p := NewYAMLProviderFromFiles(true, NewRelativeResolver("./testdata"), "textUnmarshaller.yaml")
+	s := &series{}
+	b.ResetTimer()
+
+	for n := 0; n < b.N; n++ {
+		p.Get(Root).PopulateStruct(s)
 	}
 }
 

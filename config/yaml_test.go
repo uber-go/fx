@@ -216,7 +216,6 @@ func TestDurationParsing(t *testing.T) {
 		ds := durationStruct{}
 		err := provider.Get("durationStruct").PopulateStruct(&ds)
 		assert.NoError(t, err)
-		assert.NoError(t, err)
 		assert.Equal(t, 10*time.Second, ds.Seconds)
 		assert.Equal(t, 20*time.Minute, ds.Minutes)
 		assert.Equal(t, 30*time.Hour, ds.Hours)
@@ -239,5 +238,23 @@ func TestTypeOfTypes(t *testing.T) {
 		assert.Equal(t, userDefinedTypeInt(123), *tts.TypeStruct.TestInt)
 		assert.Equal(t, userDefinedTypeUInt(456), *tts.TypeStruct.TestUInt)
 		assert.Equal(t, userDefinedTypeFloat(123.456), *tts.TypeStruct.TestFloat)
+	})
+}
+
+func TestHappyTextUnMarshallerParsing(t *testing.T) {
+	withYamlBytes(t, happyTextUnmarshallerYaml, func(provider Provider) {
+		ds := duckTales{}
+		err := provider.Get("duckTales").PopulateStruct(&ds)
+		assert.NoError(t, err)
+		assert.Equal(t, scrooge, ds.Protagonist)
+		assert.Equal(t, launchpadMcQuack, ds.Pilot)
+	})
+}
+
+func TestGrumpyTextUnMarshallerParsing(t *testing.T) {
+	withYamlBytes(t, grumpyTextUnmarshallerYaml, func(provider Provider) {
+		ds := duckTales{}
+		err := provider.Get("darkwingDuck").PopulateStruct(&ds)
+		assert.EqualError(t, err, "Unknown character: DarkwingDuck")
 	})
 }

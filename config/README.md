@@ -174,3 +174,20 @@ fmt.Println(m.World)
 
 Note that any fields you wish to deserialize into must be exported, just like
 `json.Unmarshal` and friends.
+
+
+### Benchmarks
+
+Current performance benchmark data:
+
+```
+BenchmarkYAMLCreateSingleFile-8                       50000     31317 ns/op   10832 B/op     121 allocs/op
+BenchmarkYAMLCreateMultiFile-8                        30000     51650 ns/op   19840 B/op     207 allocs/op
+BenchmarkYAMLSimpleGetLevel1-8                     50000000      26.7 ns/op       0 B/op       0 allocs/op
+BenchmarkYAMLSimpleGetLevel3-8                     50000000      26.4 ns/op       0 B/op       0 allocs/op
+BenchmarkYAMLSimpleGetLevel7-8                     50000000      26.0 ns/op       0 B/op       0 allocs/op
+BenchmarkYAMLPopulateStruct-8                       2000000       860 ns/op     192 B/op      10 allocs/op
+BenchmarkYAMLPopulateStructNested-8                  500000      2615 ns/op     632 B/op      34 allocs/op
+BenchmarkYAMLPopulateStructNestedMultipleFiles-8     500000      3585 ns/op     816 B/op      45 allocs/op
+BenchmarkYAMLPopulateNestedTextUnmarshaler-8         100000     17016 ns/op    3217 B/op     209 allocs/op
+```
