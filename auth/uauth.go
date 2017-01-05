@@ -25,6 +25,7 @@ import (
 	"sync"
 
 	"go.uber.org/fx/config"
+	"go.uber.org/fx/ulog"
 )
 
 var (
@@ -43,6 +44,7 @@ var (
 // CreateAuthInfo interface provides necessary data
 type CreateAuthInfo interface {
 	Config() config.Provider
+	Logger() ulog.Log
 }
 
 // RegisterFunc is used during service init time to register the Auth client

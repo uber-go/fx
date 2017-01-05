@@ -25,6 +25,7 @@ import (
 	"testing"
 
 	"go.uber.org/fx/config"
+	"go.uber.org/fx/ulog"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -78,4 +79,8 @@ type fakeAuthInfo struct{}
 
 func (fakeAuthInfo) Config() config.Provider {
 	return nil
+}
+
+func (fakeAuthInfo) Logger() ulog.Log {
+	return ulog.NoopLogger
 }
