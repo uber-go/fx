@@ -55,6 +55,6 @@ func (d *defaultClient) Authorize(ctx context.Context) error {
 	return d.authClient.Authorize(ctx)
 }
 
-func (d *defaultClient) SetAttribute(ctx context.Context, key string, value string) context.Context {
+func (d *defaultClient) SetAttribute(ctx context.Context, key, value string) context.Context {
 	return d.authClient.SetAttribute(ctx, key, value)
 }

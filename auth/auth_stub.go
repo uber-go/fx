@@ -43,6 +43,6 @@ func (*noop) Authorize(ctx context.Context) error {
 	return nil
 }
 
-func (*noop) SetAttribute(ctx context.Context, key string, value string) context.Context {
+func (*noop) SetAttribute(ctx context.Context, key, value string) context.Context {
 	return ctx
 }

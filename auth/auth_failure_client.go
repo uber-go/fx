@@ -44,6 +44,6 @@ func (*failureClient) Authorize(ctx context.Context) error {
 	return errors.New(ErrAuthorization)
 }
 
-func (*failureClient) SetAttribute(ctx context.Context, key string, value string) context.Context {
+func (*failureClient) SetAttribute(ctx context.Context, key, value string) context.Context {
 	return ctx
 }

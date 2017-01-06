@@ -94,5 +94,5 @@ type Client interface {
 	Authorize(ctx context.Context) error
 
 	// SetAttribute sets attribute on the provided context for authorization
-	SetAttribute(ctx context.Context, key string, value string) context.Context
+	SetAttribute(ctx context.Context, key, value string) context.Context
 }
