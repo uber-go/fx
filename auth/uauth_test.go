@@ -25,6 +25,7 @@ import (
 	"testing"
 
 	"go.uber.org/fx/config"
+	"go.uber.org/fx/ulog"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -45,6 +46,8 @@ func TestUauth_Stub(t *testing.T) {
 	ctx, err := authClient.Authenticate(context.Background())
 	require.NoError(t, err)
 	assert.NotNil(t, ctx)
+	ctx = authClient.SetAttribute(ctx, "key", "value")
+	assert.NotNil(t, ctx)
 }
 
 func TestUauth_Register(t *testing.T) {
@@ -56,6 +59,8 @@ func TestUauth_Register(t *testing.T) {
 		assert.Error(t, err)
 		ctx, err := authClient.Authenticate(context.Background())
 		require.Error(t, err)
+		assert.NotNil(t, ctx)
+		ctx = authClient.SetAttribute(ctx, "key", "value")
 		assert.NotNil(t, ctx)
 	})
 }
@@ -78,4 +83,8 @@ type fakeAuthInfo struct{}
 
 func (fakeAuthInfo) Config() config.Provider {
 	return nil
+}
+
+func (fakeAuthInfo) Logger() ulog.Log {
+	return ulog.NoopLogger
 }
