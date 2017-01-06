@@ -92,4 +92,7 @@ type Client interface {
 
 	// Authorize is called by the server to authorize the request
 	Authorize(ctx context.Context) error
+
+	// SetAttribute sets attribute on the provided context for authorization
+	SetAttribute(ctx context.Context, key string, value string) context.Context
 }

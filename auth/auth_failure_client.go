@@ -43,3 +43,7 @@ func (*failureClient) Authenticate(ctx context.Context) (context.Context, error)
 func (*failureClient) Authorize(ctx context.Context) error {
 	return errors.New(ErrAuthorization)
 }
+
+func (*failureClient) SetAttribute(ctx context.Context, key string, value string) context.Context {
+	return ctx
+}

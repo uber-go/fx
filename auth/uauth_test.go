@@ -46,6 +46,8 @@ func TestUauth_Stub(t *testing.T) {
 	ctx, err := authClient.Authenticate(context.Background())
 	require.NoError(t, err)
 	assert.NotNil(t, ctx)
+	ctx = authClient.SetAttribute(ctx, "key", "value")
+	assert.NotNil(t, ctx)
 }
 
 func TestUauth_Register(t *testing.T) {
@@ -57,6 +59,8 @@ func TestUauth_Register(t *testing.T) {
 		assert.Error(t, err)
 		ctx, err := authClient.Authenticate(context.Background())
 		require.Error(t, err)
+		assert.NotNil(t, ctx)
+		ctx = authClient.SetAttribute(ctx, "key", "value")
 		assert.NotNil(t, ctx)
 	})
 }
