@@ -34,6 +34,7 @@ type ModuleConfig struct {
 
 // ModuleBase is an embeddable base for all UberFx modules
 type ModuleBase struct {
+	// TODO(madhu): moduleType does not seem to be used anywhere. Remove?
 	moduleType string
 	name       string
 	host       service.Host
