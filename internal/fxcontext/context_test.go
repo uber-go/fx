@@ -24,6 +24,8 @@ import (
 	gcontext "context"
 	"testing"
 
+	"golang.org/x/net/context"
+
 	"go.uber.org/fx/service"
 	"go.uber.org/fx/ulog"
 
@@ -48,6 +50,15 @@ func TestWithContext(t *testing.T) {
 	}
 	assert.Equal(t, nil, ctx.Value("key"))
 	assert.Equal(t, "val1", ctx.Value("key1"))
+}
+
+func TestWithLogger(t *testing.T) {
+	ctx := &Context{
+		Context: context.Background(),
+	}
+	assert.Equal(t, ulog.Logger(), ctx.Logger())
+	loggerCtx := ctx.WithLogger(ulog.NoopLogger)
+	assert.Equal(t, ulog.NoopLogger, loggerCtx.Logger())
 }
 
 func TestWithContext_NilHost(t *testing.T) {

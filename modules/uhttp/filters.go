@@ -75,12 +75,13 @@ func tracingServerFilter(host service.Host) FilterFunc {
 
 		jSpanCtx, ok := span.Context().(jaeger.SpanContext)
 		if ok {
-			fxctx.Logger().Info(
-				"Tracing data", "trace id", jSpanCtx.TraceID(), "span id", jSpanCtx.SpanID(),
+			traceLogger := fxctx.Logger().With(
+				"trace id", jSpanCtx.TraceID(), "span id", jSpanCtx.SpanID(),
 			)
+			fxctx = fxctx.WithLogger(traceLogger)
 		}
 		fxctx = &fxcontext.Context{
-			Context: opentracing.ContextWithSpan(ctx, span),
+			Context: opentracing.ContextWithSpan(fxctx, span),
 		}
 		r = r.WithContext(fxctx)
 		next.ServeHTTP(fxctx, w, r)
