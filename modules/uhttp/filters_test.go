@@ -74,6 +74,7 @@ func TestFilterChainFilters_AuthFailure(t *testing.T) {
 }
 
 func testServeHTTP(chain filterChain) *httptest.ResponseRecorder {
+	auth.SetupClient(nil)
 	request := httptest.NewRequest("", "http://filters", nil)
 	response := httptest.NewRecorder()
 	ctx := fxcontext.New(context.Background(), service.NullHost())

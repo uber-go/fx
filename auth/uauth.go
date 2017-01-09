@@ -34,6 +34,9 @@ var (
 )
 
 var (
+	// ServiceAuth is the attribute for the name of the service to be authenticated
+	ServiceAuth = "service-auth"
+
 	// ErrAuthentication is returned on authentication failure
 	ErrAuthentication = "Error authenticating the request"
 

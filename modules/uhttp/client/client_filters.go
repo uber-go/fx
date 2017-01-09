@@ -86,6 +86,10 @@ func authenticationFilter(
 	ctx fx.Context, req *http.Request, next BasicClient,
 ) (resp *http.Response, err error) {
 	authClient := auth.Instance()
+
+	// Client needs to know what service it is to authenticate
+	authClient.SetAttribute(ctx, auth.ServiceAuth, _serviceName)
+
 	authctx, err := authClient.Authenticate(ctx)
 	if err != nil {
 		ctx.Logger().Error(auth.ErrAuthentication, "error", err)
