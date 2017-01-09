@@ -73,8 +73,7 @@ func tracingServerFilter(host service.Host) FilterFunc {
 		ext.HTTPUrl.Set(span, r.URL.String())
 		defer span.Finish()
 
-		jSpanCtx, ok := span.Context().(jaeger.SpanContext)
-		if ok {
+		if jSpanCtx, ok := span.Context().(jaeger.SpanContext); ok {
 			traceLogger := fxctx.Logger().With(
 				"trace id", jSpanCtx.TraceID(), "span id", jSpanCtx.SpanID(),
 			)
