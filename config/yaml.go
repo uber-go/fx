@@ -141,7 +141,7 @@ func (y yamlConfigProvider) Scope(prefix string) Provider {
 	return NewScopedProvider(prefix, y)
 }
 
-func (y yamlConfigProvider) RegisterChangeCallback(key string, callback ConfigurationChangeCallback) error {
+func (y yamlConfigProvider) RegisterChangeCallback(key string, callback ChangeCallback) error {
 	// Yaml configuration don't receive callback events
 	return nil
 }
