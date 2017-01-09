@@ -71,7 +71,7 @@ func (s *staticProvider) Scope(prefix string) Provider {
 	return newScopedStaticProvider(s, prefix)
 }
 
-func (s *staticProvider) RegisterChangeCallback(key string, callback ChangeCallback) error {
+func (s *staticProvider) RegisterChangeCallback(key string, callback ConfigurationChangeCallback) error {
 	// Static provider don't receive callback events
 	return nil
 }
