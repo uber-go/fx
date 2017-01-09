@@ -84,7 +84,7 @@ func (s *mockDynamicProvider) Scope(prefix string) Provider {
 	return NewScopedProvider(prefix, s)
 }
 
-func (s *mockDynamicProvider) RegisterChangeCallback(key string, callback ConfigurationChangeCallback) error {
+func (s *mockDynamicProvider) RegisterChangeCallback(key string, callback ChangeCallback) error {
 	return fmt.Errorf("registration error")
 }
 

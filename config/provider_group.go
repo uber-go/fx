@@ -65,7 +65,7 @@ func (p providerGroup) Name() string {
 	return p.name
 }
 
-func (p providerGroup) RegisterChangeCallback(key string, callback ConfigurationChangeCallback) error {
+func (p providerGroup) RegisterChangeCallback(key string, callback ChangeCallback) error {
 	for _, provider := range p.providers {
 		if err := provider.RegisterChangeCallback(key, callback); err != nil {
 			return err
