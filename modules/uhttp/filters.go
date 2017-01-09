@@ -32,6 +32,7 @@ import (
 
 	"github.com/opentracing/opentracing-go"
 	"github.com/opentracing/opentracing-go/ext"
+	"github.com/uber/jaeger-client-go"
 )
 
 // Filter applies filters on requests, request contexts or responses such as
@@ -68,11 +69,16 @@ func tracingServerFilter(host service.Host) FilterFunc {
 		if err != nil && err != opentracing.ErrSpanContextNotFound {
 			fxctx.Logger().Info("Malformed inbound tracing context: ", "error", err.Error())
 		}
-
 		span := opentracing.GlobalTracer().StartSpan(operationName, ext.RPCServerOption(spanCtx))
 		ext.HTTPUrl.Set(span, r.URL.String())
 		defer span.Finish()
 
+		jSpanCtx, ok := span.Context().(jaeger.SpanContext)
+		if ok {
+			fxctx.Logger().Info(
+				"Tracing data", "trace id", jSpanCtx.TraceID(), "span id", jSpanCtx.SpanID(),
+			)
+		}
 		fxctx = &fxcontext.Context{
 			Context: opentracing.ContextWithSpan(ctx, span),
 		}
