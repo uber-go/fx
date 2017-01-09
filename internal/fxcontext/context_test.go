@@ -24,8 +24,6 @@ import (
 	gcontext "context"
 	"testing"
 
-	"golang.org/x/net/context"
-
 	"go.uber.org/fx/service"
 	"go.uber.org/fx/ulog"
 
@@ -54,7 +52,7 @@ func TestWithContext(t *testing.T) {
 
 func TestWithLogger(t *testing.T) {
 	ctx := &Context{
-		Context: context.Background(),
+		Context: gcontext.Background(),
 	}
 	assert.Equal(t, ulog.Logger(), ctx.Logger())
 	loggerCtx := ctx.WithLogger(ulog.NoopLogger)
