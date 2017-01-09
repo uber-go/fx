@@ -22,7 +22,7 @@ package auth
 
 import "context"
 
-var _std = defaultAuth()
+var _std Client
 
 var _ Client = &defaultClient{}
 
@@ -40,6 +40,9 @@ func defaultAuth() Client {
 
 // Instance returns initialized instance of auth client
 func Instance() Client {
+	if _std == nil {
+		_std = defaultAuth()
+	}
 	return _std
 }
 
