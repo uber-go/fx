@@ -23,7 +23,6 @@ package utask
 import (
 	"fmt"
 	"reflect"
-	"runtime"
 )
 
 type fnArgs struct {
@@ -99,8 +98,4 @@ func castToError(value reflect.Value) error {
 func isError(inType reflect.Type) bool {
 	errorInterface := reflect.TypeOf((*error)(nil)).Elem()
 	return inType.Implements(errorInterface)
-}
-
-func getFunctionName(i interface{}) string {
-	return runtime.FuncForPC(reflect.ValueOf(i).Pointer()).Name()
 }

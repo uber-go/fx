@@ -29,13 +29,15 @@ import (
 	"go.uber.org/fx/service"
 )
 
-// TaskModuleType represents the utask module type
-const TaskModuleType = "utask"
+// ModuleType represents the utask module type
+const ModuleType = "utask"
 
-// TaskModule creates an async task queue module
-func TaskModule() service.ModuleCreateFunc {
+var _backendRegisterFn backendRegisterFn
+
+// NewModule creates an async task queue module
+func NewModule() service.ModuleCreateFunc {
 	return func(mi service.ModuleCreateInfo) ([]service.Module, error) {
-		mod, err := newAsyncTaskModule(mi)
+		mod, err := newAsyncModule(mi)
 		if err != nil {
 			return nil, errors.Wrap(err, "unable to instantiate async task module")
 		}
@@ -43,46 +45,55 @@ func TaskModule() service.ModuleCreateFunc {
 	}
 }
 
-func newAsyncTaskModule(mi service.ModuleCreateInfo) (*AsyncTaskModule, error) {
-	return &AsyncTaskModule{
-		ModuleBase: *modules.NewModuleBase(TaskModuleType, "task", mi.Host, []string{}),
+func newAsyncModule(mi service.ModuleCreateInfo) (*AsyncModule, error) {
+	backendMod, err := _backendRegisterFn(mi.Host, Config{})
+	if err != nil {
+		return nil, err
+	}
+	return &AsyncModule{
+		ModuleBase:    *modules.NewModuleBase(ModuleType, "task", mi.Host, []string{}),
+		backendModule: backendMod,
 	}, nil
 }
 
-// AsyncTaskModule denotes the asynchronous task queue module
-type AsyncTaskModule struct {
+// AsyncModule denotes the asynchronous task queue module
+type AsyncModule struct {
 	modules.ModuleBase
-	stateMu sync.RWMutex
-	config  taskConfig
+	stateMu       sync.RWMutex
+	config        Config
+	backendModule service.Module
 }
 
-type taskConfig struct {
+// Config contains config for task backends
+type Config struct {
 	broker  string `yaml:"broker"`
 	timeout string `yaml:"timeout"`
 }
 
-// Initialize sets up the module
-func (m *AsyncTaskModule) Initialize(service service.Host) error {
-	return nil
-}
-
 // Start begins serving requests over the module
-func (m *AsyncTaskModule) Start(readyCh chan<- struct{}) <-chan error {
+func (m *AsyncModule) Start(readyCh chan<- struct{}) <-chan error {
 	m.stateMu.Lock()
 	defer m.stateMu.Unlock()
 	return nil
 }
 
 // Stop shuts down the module
-func (m *AsyncTaskModule) Stop() error {
+func (m *AsyncModule) Stop() error {
 	m.stateMu.Lock()
 	defer m.stateMu.Unlock()
 	return nil
 }
 
 // IsRunning returns whether the module is running
-func (m *AsyncTaskModule) IsRunning() bool {
+func (m *AsyncModule) IsRunning() bool {
 	m.stateMu.RLock()
 	defer m.stateMu.RUnlock()
 	return false
+}
+
+type backendRegisterFn func(service.Host, Config) (service.Module, error)
+
+// RegisterAsyncBackend registers the backend for the async task module
+func RegisterAsyncBackend(backendRegisterFn backendRegisterFn) {
+	_backendRegisterFn = backendRegisterFn
 }

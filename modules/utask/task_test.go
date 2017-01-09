@@ -27,6 +27,6 @@ import (
 )
 
 func TestModule(t *testing.T) {
-	fn := TaskModule()
+	fn := NewModule()
 	assert.NotNil(t, fn)
 }

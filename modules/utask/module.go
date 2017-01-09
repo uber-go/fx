@@ -21,51 +21,9 @@
 package utask
 
 import (
-	"fmt"
-	"testing"
-
-	"github.com/stretchr/testify/assert"
+	"go.uber.org/fx/service"
 )
 
-func TestNoArgsFn(t *testing.T) {
-	err := Register(NoArgs)
-	assert.NoError(t, err)
-	err = RunNext()
-	assert.NoError(t, err)
-}
-
-func TestSimpleFn(t *testing.T) {
-	err := Register(Simple, "hello")
-	assert.NoError(t, err)
-	err = RunNext()
-	assert.NoError(t, err)
-}
-
-func TestComplexFn(t *testing.T) {
-	err := Register(Complex, Car{brand: "infinity", model: "g37", year: 2017})
-	assert.NoError(t, err)
-	err = RunNext()
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "Complex error")
-}
-
-func NoArgs() error {
-	fmt.Printf("Inside NoArgs")
-	return nil
-}
-
-func Simple(a string) error {
-	fmt.Printf("Inside function: %s\n", a)
-	return nil
-}
-
-type Car struct {
-	brand string
-	model string
-	year  int
-}
-
-func Complex(car Car) error {
-	fmt.Printf("Car: %v\n", car)
-	return fmt.Errorf("Complex error")
+type Module interface {
+	service.Module
 }
