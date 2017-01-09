@@ -32,15 +32,46 @@ import (
 	"go.uber.org/fx/auth"
 	"go.uber.org/fx/internal/fxcontext"
 	"go.uber.org/fx/service"
+	"go.uber.org/fx/testutils"
+	"go.uber.org/fx/ulog"
 
+	"github.com/opentracing/opentracing-go"
 	"github.com/stretchr/testify/assert"
+	"github.com/uber-go/zap"
+	"github.com/uber/jaeger-client-go"
 )
 
 func TestFilterChain(t *testing.T) {
 	host := service.NullHost()
 	chain := newFilterChain([]Filter{}, getNoopHandler(host))
-	response := testServeHTTP(chain)
+	response := testServeHTTP(chain, host)
 	assert.True(t, strings.Contains(response.Body.String(), "filters ok"))
+}
+
+func TestTracingFilterWithLogs(t *testing.T) {
+	testutils.WithInMemoryLogger(t, nil, func(zapLogger zap.Logger, buf *testutils.TestBuffer) {
+		// Create in-memory logger and jaeger tracer
+		loggerWithZap := ulog.Builder().SetLogger(zapLogger).Build()
+		tracer, closer := jaeger.NewTracer(
+			"serviceName", jaeger.NewConstSampler(true), jaeger.NewNullReporter(),
+		)
+		defer closer.Close()
+		opentracing.InitGlobalTracer(tracer)
+		defer opentracing.InitGlobalTracer(opentracing.NoopTracer{})
+
+		host := service.NullHostConfigured(loggerWithZap, tracer)
+		chain := newFilterChain(
+			[]Filter{tracingServerFilter(host)},
+			getNoopHandler(host),
+		)
+		response := testServeHTTP(chain, host)
+		assert.Contains(t, response.Body.String(), "filters ok")
+		assert.True(t, len(buf.Lines()) > 0)
+		for _, line := range buf.Lines() {
+			assert.Contains(t, line, "trace id")
+			assert.Contains(t, line, "span id")
+		}
+	})
 }
 
 func TestFilterChainFilters(t *testing.T) {
@@ -51,7 +82,7 @@ func TestFilterChainFilters(t *testing.T) {
 		authorizationFilter(host),
 		panicFilter(host)},
 		getNoopHandler(host))
-	response := testServeHTTP(chain)
+	response := testServeHTTP(chain, host)
 	assert.Contains(t, response.Body.String(), "filters ok")
 }
 
@@ -68,22 +99,23 @@ func TestFilterChainFilters_AuthFailure(t *testing.T) {
 		authorizationFilter(host),
 		panicFilter(host)},
 		getNoopHandler(host))
-	response := testServeHTTP(chain)
+	response := testServeHTTP(chain, host)
 	assert.Contains(t, "Unauthorized access: Error authorizing the service", response.Body.String())
 	assert.Equal(t, 401, response.Code)
 }
 
-func testServeHTTP(chain filterChain) *httptest.ResponseRecorder {
+func testServeHTTP(chain filterChain, host service.Host) *httptest.ResponseRecorder {
 	auth.SetupClient(nil)
 	request := httptest.NewRequest("", "http://filters", nil)
 	response := httptest.NewRecorder()
-	ctx := fxcontext.New(context.Background(), service.NullHost())
+	ctx := fxcontext.New(context.Background(), host)
 	chain.ServeHTTP(ctx, response, request)
 	return response
 }
 
 func getNoopHandler(host service.Host) HandlerFunc {
 	return func(ctx fx.Context, w http.ResponseWriter, r *http.Request) {
+		ctx.Logger().Info("Inside Noop Handler")
 		io.WriteString(w, "filters ok")
 	}
 }

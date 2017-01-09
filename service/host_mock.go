@@ -30,6 +30,11 @@ import (
 
 // NullHost is to be used in tests
 func NullHost() Host {
+	return NullHostConfigured(ulog.NoopLogger, opentracing.NoopTracer{})
+}
+
+// NullHostConfigured is a noop host with set logger and tracer for tests
+func NullHostConfigured(logger ulog.Log, tracer opentracing.Tracer) Host {
 	return &serviceCore{
 		configProvider: config.NewStaticProvider(nil),
 		standardConfig: serviceConfig{
@@ -38,14 +43,14 @@ func NullHost() Host {
 			ServiceDescription: "does cool stuff",
 		},
 		loggingCore: loggingCore{
-			log: ulog.NoopLogger,
+			log: logger,
 		},
 		metricsCore: metricsCore{
 			metrics:       tally.NoopScope,
 			statsReporter: tally.NullStatsReporter,
 		},
 		tracerCore: tracerCore{
-			tracer: opentracing.NoopTracer{},
+			tracer: tracer,
 		},
 	}
 }
