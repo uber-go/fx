@@ -22,12 +22,8 @@ package config
 
 import "fmt"
 
-// ChangeCallback is a temporary step to un-stutter config.ConfigurationChangeCallback
-// TODO(glib): remove this after direct usage of ConfigurationChangeCallback has been removed
-type ChangeCallback ConfigurationChangeCallback
-
 // ConfigurationChangeCallback is called for updates of configuration data
-type ConfigurationChangeCallback func(key string, provider string, configData interface{})
+type ConfigurationChangeCallback func(key string, provider string, configdata interface{})
 
 // Root marks the root node in a Provider
 const Root = ""
@@ -43,7 +39,7 @@ type Provider interface {
 
 	// A RegisterChangeCallback provides callback registration for config providers.
 	// These callbacks are noop if a dynamic provider is not configured for the service.
-	RegisterChangeCallback(key string, callback ChangeCallback) error
+	RegisterChangeCallback(key string, callback ConfigurationChangeCallback) error
 	UnregisterChangeCallback(token string) error
 }
 
