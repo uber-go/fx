@@ -39,6 +39,8 @@ func withAuthClientSetup(t *testing.T, registerFunc RegisterFunc, info CreateAut
 }
 
 func TestUauth_Stub(t *testing.T) {
+	RegisterClient(defaultAuth)
+	SetupClient(nil)
 	authClient := Instance()
 	assert.Equal(t, "auth", authClient.Name())
 	assert.NotNil(t, authClient)

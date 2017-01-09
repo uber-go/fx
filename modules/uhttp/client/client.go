@@ -32,7 +32,7 @@ import (
 	"golang.org/x/net/context/ctxhttp"
 )
 
-var serviceName string
+var _serviceName string
 
 // Client wraps around a http client
 type Client struct {
@@ -42,7 +42,7 @@ type Client struct {
 
 // New creates a new instance of uhttp Client
 func New(cfg config.Provider, client *http.Client, filters ...Filter) *Client {
-	serviceName = cfg.Get(config.ApplicationIDKey).AsString()
+	_serviceName = cfg.Get(config.ApplicationIDKey).AsString()
 	filters = append(filters, FilterFunc(tracingFilter), FilterFunc(authenticationFilter))
 	return &Client{Client: client, filters: filters}
 }

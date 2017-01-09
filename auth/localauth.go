@@ -32,7 +32,7 @@ type defaultClient struct {
 
 // defaultAuth is a placeholder auth client when no auth client is registered
 // TODO(anup): add configurable authentication, whether a service needs one or not
-func defaultAuth() Client {
+func defaultAuth(info CreateAuthInfo) Client {
 	return &defaultClient{
 		authClient: noopClient(nil),
 	}
@@ -40,9 +40,6 @@ func defaultAuth() Client {
 
 // Instance returns initialized instance of auth client
 func Instance() Client {
-	if _std == nil {
-		_std = defaultAuth()
-	}
 	return _std
 }
 

@@ -88,7 +88,7 @@ func authenticationFilter(
 	authClient := auth.Instance()
 
 	// Client needs to know what service it is to authenticate
-	authClient.SetAttribute(ctx, auth.ServiceAuth, serviceName)
+	authClient.SetAttribute(ctx, auth.ServiceAuth, _serviceName)
 
 	authctx, err := authClient.Authenticate(ctx)
 	if err != nil {

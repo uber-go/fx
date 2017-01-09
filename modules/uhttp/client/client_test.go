@@ -27,6 +27,7 @@ import (
 	"time"
 
 	"go.uber.org/fx"
+	"go.uber.org/fx/auth"
 	"go.uber.org/fx/config"
 
 	"github.com/stretchr/testify/assert"
@@ -43,6 +44,12 @@ func TestNew(t *testing.T) {
 	uhttpClient := New(config.NewYAMLProviderFromBytes(testYaml), _defaultHTTPClient)
 	assert.Equal(t, _defaultHTTPClient, uhttpClient.Client)
 	assert.Equal(t, 2, len(uhttpClient.filters))
+}
+
+func TestNew_Panic(t *testing.T) {
+	assert.Panics(t, func() {
+		New(config.NewYAMLProviderFromBytes([]byte(``)), _defaultHTTPClient)
+	})
 }
 
 func TestClientDo(t *testing.T) {
@@ -113,6 +120,7 @@ func checkOKResponse(t *testing.T, resp *http.Response, err error) {
 }
 
 func startServer() *httptest.Server {
+	auth.SetupClient(nil)
 	return httptest.NewServer(http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}))
 }
 
