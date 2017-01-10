@@ -118,11 +118,6 @@ func newYarpcModule(
 	return module, err
 }
 
-// Initialize sets up a YARPC-backed module
-func (m *YarpcModule) Initialize(service service.Host) error {
-	return nil
-}
-
 // Start begins serving requests over YARPC
 func (m *YarpcModule) Start(readyCh chan<- struct{}) <-chan error {
 	m.stateMu.Lock()

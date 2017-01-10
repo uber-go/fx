@@ -163,7 +163,6 @@ func withModule(
 
 	// us an ephemeral port on tests
 	mod.config.Port = 0
-	require.NoError(t, mod.Initialize(mi.Host), "Expected initialize to succeed")
 
 	errs := make(chan error, 1)
 	readyChan := make(chan struct{}, 1)

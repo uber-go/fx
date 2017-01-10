@@ -59,7 +59,6 @@ func TestThrfitModule_Error(t *testing.T) {
 
 func testInitRunModule(t *testing.T, mod service.Module, mci service.ModuleCreateInfo) {
 	readyCh := make(chan struct{}, 1)
-	assert.NoError(t, mod.Initialize(mci.Host))
 	assert.NoError(t, mod.Stop())
 	errs := mod.Start(readyCh)
 	defer func() {

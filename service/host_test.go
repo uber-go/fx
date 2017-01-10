@@ -266,8 +266,8 @@ func TestAddModule_Locked(t *testing.T) {
 }
 
 func TestAddModule_NotLocked(t *testing.T) {
-	mod := NewStubModule()
 	sh := &host{}
+	mod := NewStubModule(sh)
 	assert.NoError(t, sh.addModule(mod))
 	assert.Equal(t, sh, mod.Host)
 }
@@ -285,7 +285,7 @@ func TestStartStopRegressionDeadlock(t *testing.T) {
 
 func TestStartModule_NoErrors(t *testing.T) {
 	s := makeHost()
-	mod := NewStubModule()
+	mod := NewStubModule(s)
 	require.NoError(t, s.addModule(mod))
 
 	control := s.StartAsync()
@@ -304,7 +304,7 @@ func TestStartModule_NoErrors(t *testing.T) {
 
 func TestStartHost_WithErrors(t *testing.T) {
 	s := makeHost()
-	mod := NewStubModule()
+	mod := NewStubModule(s)
 	mod.StartError = errors.New("can't start this")
 	require.NoError(t, s.addModule(mod))
 
