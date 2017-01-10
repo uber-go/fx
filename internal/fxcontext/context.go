@@ -23,12 +23,12 @@ package fxcontext
 import (
 	gcontext "context"
 
-	"github.com/opentracing/opentracing-go"
-	"github.com/uber/jaeger-client-go"
-
 	"go.uber.org/fx"
 	"go.uber.org/fx/service"
 	"go.uber.org/fx/ulog"
+
+	"github.com/opentracing/opentracing-go"
+	"github.com/uber/jaeger-client-go"
 )
 
 type contextKey int
