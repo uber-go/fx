@@ -30,7 +30,6 @@
 //     "io"
 //     "net/http"
 //
-//     "go.uber.org/fx"
 //     "go.uber.org/fx/modules/uhttp"
 //     "go.uber.org/fx/service"
 //   )
@@ -48,8 +47,7 @@
 //   }
 //
 //   func registerHTTP(service service.Host) []uhttp.RouteHandler {
-//     handleHome := http.HandlerFunc(func(ctx fx.Context, w http.ResponseWriter, r *http.Request) {
-//       ctx.Logger().Info("Inside the handler")
+//     handleHome := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 //       io.WriteString(w, "Hello, world")
 //     })
 //
