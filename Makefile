@@ -22,9 +22,7 @@ ALL_SRC := $(shell find . -name "*.go" | grep -v -e vendor \
 TEST_TIMEOUT := "-timeout=3s"
 
 .PHONY: test
-test: examples
-	$(ECHO_V)go test $(RACE) $(TEST_TIMEOUT) $(PKGS)
-	$(ECHO_V)$(MAKE) $(COV_REPORT)
+test: examples $(COV_REPORT)
 
 TEST_IGNORES = vendor .git
 COVER_IGNORES = $(TEST_IGNORES) examples testutils
