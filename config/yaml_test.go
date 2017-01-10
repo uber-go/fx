@@ -103,7 +103,8 @@ func TestNewYamlProviderFromReader(t *testing.T) {
 
 func TestYamlNode(t *testing.T) {
 	buff := bytes.NewBuffer([]byte("a: b"))
-	node, err := newyamlNode(ioutil.NopCloser(buff))
+	node := &yamlNode{value: make(map[interface{}]interface{})}
+	err := unmarshalYamlValue(ioutil.NopCloser(buff), node.value)
 	require.NoError(t, err)
 	assert.Equal(t, "map[a:b]", node.String())
 	assert.Equal(t, "map[interface {}]interface {}", node.Type().String())
@@ -113,7 +114,7 @@ func TestYamlNodeWithNil(t *testing.T) {
 	provider := NewYAMLProviderFromFiles(false, nil)
 	assert.NotNil(t, provider)
 	assert.Panics(t, func() {
-		_, _ = newyamlNode(nil)
+		_ = unmarshalYamlValue(nil, &yamlNode{})
 	}, "Expected panic with nil inpout.")
 }
 
@@ -257,4 +258,34 @@ func TestGrumpyTextUnMarshallerParsing(t *testing.T) {
 		err := provider.Get("darkwingDuck").PopulateStruct(&ds)
 		assert.EqualError(t, err, "Unknown character: DarkwingDuck")
 	})
+}
+
+func TestMergeUnmarshaller(t *testing.T) {
+	provider := NewYAMLProviderFromBytes(complexMapYaml, complexMapYamlV2)
+
+	ms := mapStruct{}
+	assert.NoError(t, provider.Get("mapStruct").PopulateStruct(&ms))
+
+	assert.NotNil(t, ms.MyMap)
+	assert.NotZero(t, len(ms.MyMap))
+
+	found := false
+	switch p := ms.MyMap["policy"].(type) {
+	case map[interface{}]interface{}:
+		for key, val := range p {
+			switch key := key.(type) {
+			case string:
+				assert.Equal(t, "makeway", key)
+				assert.Equal(t, "notanoption", val)
+				found = true
+			}
+		}
+	}
+	assert.True(t, found)
+
+	p, ok := ms.MyMap["pools"].([]interface{})
+	assert.True(t, ok)
+	assert.Equal(t, []interface{}{"very", "funny"}, p)
+
+	assert.Equal(t, "", ms.NestedStruct.AdditionalData)
 }

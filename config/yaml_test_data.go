@@ -118,6 +118,17 @@ mapStruct:
     additionalData: nesteddata
 `)
 
+var complexMapYamlV2 = []byte(`
+mapStruct:
+  oneTrueMap:
+    name: poem
+    pools:
+    - very
+    - funny
+  nestedStruct:
+    additionalData:
+`)
+
 type userDefinedTypeInt nestedTypeInt
 type nestedTypeInt int64
 
