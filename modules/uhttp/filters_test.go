@@ -68,8 +68,8 @@ func TestTracingFilterWithLogs(t *testing.T) {
 		assert.Contains(t, response.Body.String(), "filters ok")
 		assert.True(t, len(buf.Lines()) > 0)
 		for _, line := range buf.Lines() {
-			assert.Contains(t, line, "trace id")
-			assert.Contains(t, line, "span id")
+			assert.Contains(t, line, "traceID")
+			assert.Contains(t, line, "spanID")
 		}
 	})
 }

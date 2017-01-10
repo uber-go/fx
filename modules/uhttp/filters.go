@@ -32,7 +32,6 @@ import (
 
 	"github.com/opentracing/opentracing-go"
 	"github.com/opentracing/opentracing-go/ext"
-	"github.com/uber/jaeger-client-go"
 )
 
 // Filter applies filters on requests, request contexts or responses such as
@@ -73,12 +72,7 @@ func tracingServerFilter(host service.Host) FilterFunc {
 		ext.HTTPUrl.Set(span, r.URL.String())
 		defer span.Finish()
 
-		if jSpanCtx, ok := span.Context().(jaeger.SpanContext); ok {
-			traceLogger := fxctx.Logger().With(
-				"trace id", jSpanCtx.TraceID(), "span id", jSpanCtx.SpanID(),
-			)
-			fxctx = fxctx.WithLogger(traceLogger)
-		}
+		fxctx = fxctx.WithContextAwareLogger(span)
 		fxctx = &fxcontext.Context{
 			Context: opentracing.ContextWithSpan(fxctx, span),
 		}

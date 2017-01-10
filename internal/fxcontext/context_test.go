@@ -25,9 +25,12 @@ import (
 	"testing"
 
 	"go.uber.org/fx/service"
+	"go.uber.org/fx/testutils"
 	"go.uber.org/fx/ulog"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/uber-go/zap"
+	"github.com/uber/jaeger-client-go"
 )
 
 func TestContext_HostAccess(t *testing.T) {
@@ -50,13 +53,28 @@ func TestWithContext(t *testing.T) {
 	assert.Equal(t, "val1", ctx.Value("key1"))
 }
 
-func TestWithLogger(t *testing.T) {
-	ctx := &Context{
-		Context: gcontext.Background(),
-	}
-	assert.Equal(t, ulog.Logger(), ctx.Logger())
-	loggerCtx := ctx.WithLogger(ulog.NoopLogger)
-	assert.Equal(t, ulog.NoopLogger, loggerCtx.Logger())
+func TestWithContextAwareLogger(t *testing.T) {
+	testutils.WithInMemoryLogger(t, nil, func(zapLogger zap.Logger, buf *testutils.TestBuffer) {
+		// Create in-memory logger and jaeger tracer
+		loggerWithZap := ulog.Builder().SetLogger(zapLogger).Build()
+		tracer, closer := jaeger.NewTracer(
+			"serviceName", jaeger.NewConstSampler(true), jaeger.NewNullReporter(),
+		)
+		defer closer.Close()
+		span := tracer.StartSpan("opName")
+		ctx := &Context{
+			gcontext.WithValue(gcontext.Background(), _fxContextStore, store{
+				log: loggerWithZap,
+			}),
+		}
+		loggerCtx := ctx.WithContextAwareLogger(span)
+		loggerCtx.Logger().Info("Testing context aware logger")
+		assert.True(t, len(buf.Lines()) > 0)
+		for _, line := range buf.Lines() {
+			assert.Contains(t, line, "traceID")
+			assert.Contains(t, line, "spanID")
+		}
+	})
 }
 
 func TestWithContext_NilHost(t *testing.T) {

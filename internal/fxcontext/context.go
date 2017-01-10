@@ -26,6 +26,9 @@ import (
 	"go.uber.org/fx"
 	"go.uber.org/fx/service"
 	"go.uber.org/fx/ulog"
+
+	"github.com/opentracing/opentracing-go"
+	"github.com/uber/jaeger-client-go"
 )
 
 type contextKey int
@@ -65,10 +68,17 @@ func (c *Context) Logger() ulog.Log {
 	return store.log
 }
 
-// WithLogger returns a new context with the input logger
-func (c *Context) WithLogger(logger ulog.Log) *Context {
+// WithContextAwareLogger returns a new context with a context-aware logger
+func (c *Context) WithContextAwareLogger(span opentracing.Span) *Context {
 	store := c.getStore()
-	store.log = logger
+	// Note that opentracing.Tracer does not expose the tracer id
+	// We only inject tracing information for jaeger.Tracer
+	if jSpanCtx, ok := span.Context().(jaeger.SpanContext); ok {
+		traceLogger := c.Logger().With(
+			"traceID", jSpanCtx.TraceID(), "spanID", jSpanCtx.SpanID(),
+		)
+		store.log = traceLogger
+	}
 	ctx := gcontext.WithValue(c, _fxContextStore, store)
 	return &Context{
 		Context: ctx,
