@@ -10,6 +10,7 @@ import (
   "io"
   "net/http"
 
+  "go.uber.org/fx"
   "go.uber.org/fx/modules/uhttp"
   "go.uber.org/fx/service"
 )
@@ -27,7 +28,8 @@ func main() {
 }
 
 func registerHTTP(service service.Host) []uhttp.RouteHandler {
-  handleHome := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+  handleHome := http.HandlerFunc(func(ctx fx.Context, w http.ResponseWriter, r *http.Request) {
+    ctx.Logger().Info("Inside the handler")
     io.WriteString(w, "Hello, world")
   })
 
@@ -35,9 +37,10 @@ func registerHTTP(service service.Host) []uhttp.RouteHandler {
     uhttp.NewRouteHandler("/", handleHome)
   }
 }
-HTTP handlers are set up with filter chains to inject tracing, authentication information etc.
-into the request context. This is abstracted away from the client. This also sets up the request
-with a context-aware logger. So all service log statements include trace information such as
-traceID and spanID. This helps service owners with debugging a request and further corelating
-logs across services.
+
+HTTP handlers are set up with filters that inject tracing, authentication information etc. into the
+request context. Request tracing, authentication and context-aware logging are set up by default.
+With context-aware logging, all log statements include trace information such as traceID and spanID.
+Debugging is much easier by allowing service owners to easily find logs corresponding to a request
+even across services.
 ```
