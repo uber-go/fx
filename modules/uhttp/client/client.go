@@ -34,14 +34,13 @@ import (
 
 var (
 	_serviceName string
-	_defaultTrue = true
 )
 
 // Client wraps around a http client
 type Client struct {
 	*http.Client
-	filters           []Filter
-	setDefaultFilters *bool
+	filters             []Filter
+	defaultFiltersAdded bool
 }
 
 // New creates a new instance of uhttp Client
@@ -49,18 +48,18 @@ func New(cfg config.Provider, client *http.Client, filters ...Filter) *Client {
 	_serviceName = cfg.Get(config.ApplicationIDKey).AsString()
 	filters = append(filters, FilterFunc(tracingFilter), FilterFunc(authenticationFilter))
 	return &Client{
-		Client:            client,
-		filters:           filters,
-		setDefaultFilters: &_defaultTrue,
+		Client:              client,
+		filters:             filters,
+		defaultFiltersAdded: true,
 	}
 }
 
 // Do is a context-aware, filter-enabled extension of Do() in http.Client
 func (c *Client) Do(ctx fx.Context, req *http.Request) (resp *http.Response, err error) {
 	filters := c.filters
-	if c.setDefaultFilters == nil || *c.setDefaultFilters == false {
+	if c.defaultFiltersAdded == false {
 		filters = append(filters, FilterFunc(tracingFilter), FilterFunc(authenticationFilter))
-		c.setDefaultFilters = &_defaultTrue
+		c.defaultFiltersAdded = true
 	}
 	execChain := newExecutionChain(filters, BasicClientFunc(c.do))
 	return execChain.Do(ctx, req)
