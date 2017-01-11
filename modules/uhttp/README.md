@@ -41,6 +41,5 @@ func registerHTTP(service service.Host) []uhttp.RouteHandler {
 HTTP handlers are set up with filters that inject tracing, authentication information etc. into the
 request context. Request tracing, authentication and context-aware logging are set up by default.
 With context-aware logging, all log statements include trace information such as traceID and spanID.
-Debugging is much easier by allowing service owners to easily find logs corresponding to a request
-even across services.
+This allows service owners to easily find logs corresponding to a request within and even across services.
 ```
