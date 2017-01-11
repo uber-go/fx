@@ -58,10 +58,11 @@
 //     }
 //   }
 //
-//   HTTP handlers are set up with filters that inject tracing, authentication information etc. into the
-//   request context. Request tracing, authentication and context-aware logging are set up by default.
-//   With context-aware logging, all log statements include trace information such as traceID and spanID.
-//   This allows service owners to easily find logs corresponding to a request within and even across services.
+// HTTP handlers are set up with filters that inject tracing, authentication information etc. into the
+// request context. Request tracing, authentication and context-aware logging are set up by default.
+// With context-aware logging, all log statements include trace information such as traceID and spanID.
+// This allows service owners to easily find logs corresponding to a request within and even across services.
+//
 //
 //
 package uhttp
