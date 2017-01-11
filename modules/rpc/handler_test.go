@@ -32,8 +32,8 @@ import (
 	"go.uber.org/fx/internal/fxcontext"
 	"go.uber.org/fx/service"
 	"go.uber.org/thriftrw/wire"
-	"go.uber.org/yarpc/encoding/thrift"
 	"go.uber.org/yarpc/api/transport"
+	"go.uber.org/yarpc/encoding/thrift"
 )
 
 type fakeEnveloper struct {

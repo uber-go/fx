@@ -29,8 +29,8 @@ import (
 
 	"go.uber.org/fx/modules"
 	"go.uber.org/fx/service"
-	"go.uber.org/yarpc/encoding/thrift"
 	"go.uber.org/yarpc/api/transport"
+	"go.uber.org/yarpc/encoding/thrift"
 )
 
 func TestThriftModule_OK(t *testing.T) {
