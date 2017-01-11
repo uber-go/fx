@@ -35,4 +35,9 @@ func registerHTTP(service service.Host) []uhttp.RouteHandler {
     uhttp.NewRouteHandler("/", handleHome)
   }
 }
+HTTP handlers are set up with filter chains to inject tracing, authentication information etc.
+into the request context. This is abstracted away from the client. This also sets up the request
+with a context-aware logger. So all service log statements include trace information such as
+traceID and spanID. This helps service owners with debugging a request and further corelating
+logs across services.
 ```
