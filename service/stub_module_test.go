@@ -27,8 +27,8 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestStubodule_StartError(t *testing.T) {
-	s := NewStubModule()
+func TestStubModule_StartError(t *testing.T) {
+	s := NewStubModule(NullHost())
 	s.StartError = errors.New("blargh")
 	readyCh := make(chan struct{}, 1)
 
@@ -36,7 +36,7 @@ func TestStubodule_StartError(t *testing.T) {
 }
 
 func TestStubModule_Accessors(t *testing.T) {
-	s := NewStubModule()
+	s := NewStubModule(NullHost())
 	assert := assert.New(t)
 
 	assert.Empty(s.Type())

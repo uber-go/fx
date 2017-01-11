@@ -25,7 +25,6 @@ type ModuleType string
 
 // A Module is the basic building block of an UberFx service
 type Module interface {
-	Initialize(host Host) error
 	Type() string
 	Name() string
 	Start(ready chan<- struct{}) <-chan error

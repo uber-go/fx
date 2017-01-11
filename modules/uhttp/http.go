@@ -154,12 +154,6 @@ func newModule(
 	return module, nil
 }
 
-// Initialize sets up an HTTP-backed module
-// TODO(madhu): Do we need this? newModule seems to be taking care of initialization
-func (m *Module) Initialize(host service.Host) error {
-	return nil
-}
-
 // Start begins serving requests over HTTP
 func (m *Module) Start(ready chan<- struct{}) <-chan error {
 	m.mux = http.NewServeMux()

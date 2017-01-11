@@ -33,14 +33,8 @@ type StubModule struct {
 var _ Module = &StubModule{}
 
 // NewStubModule generates a Module for use in testing
-func NewStubModule() *StubModule {
-	return &StubModule{}
-}
-
-// Initialize fakes an init call on the module
-func (s *StubModule) Initialize(host Host) error {
-	s.Host = host
-	return s.InitError
+func NewStubModule(host Host) *StubModule {
+	return &StubModule{Host: host}
 }
 
 // Start mimics startup
