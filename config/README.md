@@ -181,13 +181,13 @@ Note that any fields you wish to deserialize into must be exported, just like
 Current performance benchmark data:
 
 ```
-BenchmarkYAMLCreateSingleFile-8                       50000     31317 ns/op   10832 B/op     121 allocs/op
-BenchmarkYAMLCreateMultiFile-8                        30000     51650 ns/op   19840 B/op     207 allocs/op
-BenchmarkYAMLSimpleGetLevel1-8                     50000000      26.7 ns/op       0 B/op       0 allocs/op
-BenchmarkYAMLSimpleGetLevel3-8                     50000000      26.4 ns/op       0 B/op       0 allocs/op
-BenchmarkYAMLSimpleGetLevel7-8                     50000000      26.0 ns/op       0 B/op       0 allocs/op
-BenchmarkYAMLPopulateStruct-8                       2000000       860 ns/op     192 B/op      10 allocs/op
-BenchmarkYAMLPopulateStructNested-8                  500000      2615 ns/op     632 B/op      34 allocs/op
-BenchmarkYAMLPopulateStructNestedMultipleFiles-8     500000      3585 ns/op     816 B/op      45 allocs/op
-BenchmarkYAMLPopulateNestedTextUnmarshaler-8         100000     17016 ns/op    3217 B/op     209 allocs/op
+BenchmarkYAMLCreateSingleFile-8                       50000     31269 ns/op   11136 B/op     121 allocs/op
+BenchmarkYAMLCreateMultiFile-8                        30000     52378 ns/op   20064 B/op     205 allocs/op
+BenchmarkYAMLSimpleGetLevel1-8                     50000000      27.1 ns/op       0 B/op       0 allocs/op
+BenchmarkYAMLSimpleGetLevel3-8                     50000000      26.8 ns/op       0 B/op       0 allocs/op
+BenchmarkYAMLSimpleGetLevel7-8                     50000000      26.3 ns/op       0 B/op       0 allocs/op
+BenchmarkYAMLPopulateStruct-8                       2000000       861 ns/op     192 B/op      10 allocs/op
+BenchmarkYAMLPopulateStructNested-8                  500000      2616 ns/op     616 B/op      34 allocs/op
+BenchmarkYAMLPopulateStructNestedMultipleFiles-8     500000      3330 ns/op     744 B/op      42 allocs/op
+BenchmarkYAMLPopulateNestedTextUnmarshaler-8         100000     16775 ns/op    3201 B/op     209 allocs/op
 ```

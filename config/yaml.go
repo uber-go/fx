@@ -29,34 +29,72 @@ import (
 	"strings"
 
 	"gopkg.in/yaml.v2"
+	"strconv"
 )
 
 type yamlConfigProvider struct {
-	roots  []*yamlNode
+	root   *yamlNode
 	vCache map[string]Value
 }
 
 var _ Provider = &yamlConfigProvider{}
 
 func newYAMLProviderCore(files ...io.ReadCloser) Provider {
-	roots := make([]*yamlNode, len(files))
-
-	for n, v := range files {
-		if root, err := newyamlNode(v); err != nil {
+	var root interface{} = make(map[interface{}]interface{})
+	for _, v := range files {
+		curr := make(map[interface{}]interface{})
+		if err := unmarshalYamlValue(v, &curr); err != nil {
 			panic(err)
-		} else {
-			roots[n] = root
 		}
+
+		root = mergeMaps(root, curr)
 	}
 
 	return &yamlConfigProvider{
-		roots:  roots,
+		root: &yamlNode{
+			nodeType: objectNode,
+			key:      Root,
+			value:    root,
+		},
 		vCache: make(map[string]Value),
 	}
 }
 
-// NewYAMLProviderFromFiles creates a configration provider from a set of YAML file
-// names
+// We need to have a custom merge map because yamlV2 doesn't unmarshal `map[interface{}]map[interface{}]interface{}`
+// as we expect: it will replace second level maps with new maps on each unmarshal call, instead of merging them.
+func mergeMaps(dst interface{}, src interface{}) interface{} {
+	if dst == nil {
+		panic("Destination node is nil")
+	}
+
+	if src == nil {
+		return src
+	}
+
+	switch s := src.(type) {
+	case map[interface{}]interface{}:
+		dstMap, ok := dst.(map[interface{}]interface{})
+		if !ok {
+			panic(fmt.Sprintf("Expected map[interface{}]interface{}, actual: %T", dstMap))
+		}
+
+		for k, v := range s {
+			oldVal := dstMap[k]
+			if oldVal == nil {
+				dstMap[k] = v
+			} else {
+				dstMap[k] = mergeMaps(oldVal, v)
+			}
+		}
+	default:
+		dst = src
+	}
+
+	return dst
+}
+
+// NewYAMLProviderFromFiles creates a configuration provider from a set of YAML file names.
+// All the objects are going to be merged and arrays/values overridden in the order of the files.
 func NewYAMLProviderFromFiles(mustExist bool, resolver FileResolver, files ...string) Provider {
 	if resolver == nil {
 		resolver = NewRelativeResolver()
@@ -76,40 +114,29 @@ func NewYAMLProviderFromFiles(mustExist bool, resolver FileResolver, files ...st
 	return newYAMLProviderCore(readers...)
 }
 
-// NewYamlProviderFromReader creates a configuration provider from an
-// io.ReadCloser
-func NewYamlProviderFromReader(reader io.ReadCloser) Provider {
-	return newYAMLProviderCore(reader)
+// NewYamlProviderFromReader creates a configuration provider from a list of `io.ReadClosers`.
+// As above, all the objects are going to be merged and arrays/values overridden in the order of the files.
+func NewYamlProviderFromReader(readers ...io.ReadCloser) Provider {
+	return newYAMLProviderCore(readers...)
 }
 
-// NewYAMLProviderFromBytes creates a config provider from a byte-backed YAML
-// blob.
-func NewYAMLProviderFromBytes(yaml []byte) Provider {
-	reader := bytes.NewReader(yaml)
-	node, err := newyamlNode(ioutil.NopCloser(reader))
-	if err != nil {
-		panic(err)
+// NewYAMLProviderFromBytes creates a config provider from a byte-backed YAML blobs.
+// As above, all the objects are going to be merged and arrays/values overridden in the order of the yamls.
+func NewYAMLProviderFromBytes(yamls ...[]byte) Provider {
+	closers := make([]io.ReadCloser, len(yamls))
+	for i, yml := range yamls {
+		closers[i] = ioutil.NopCloser(bytes.NewReader(yml))
 	}
 
-	return &yamlConfigProvider{
-		roots:  []*yamlNode{node},
-		vCache: make(map[string]Value),
-	}
+	return newYAMLProviderCore(closers...)
 }
 
 func (y yamlConfigProvider) getNode(key string) *yamlNode {
-	var found *yamlNode
-
-	for _, node := range y.roots {
-		if key == "" {
-			return node
-		}
-		if nv := node.Find(key); nv != nil {
-			found = nv
-		}
+	if key == Root {
+		return y.root
 	}
 
-	return found
+	return y.root.Find(key)
 }
 
 // Name returns the config provider name
@@ -151,10 +178,6 @@ func (y yamlConfigProvider) UnregisterChangeCallback(token string) error {
 	return nil
 }
 
-func deref(value reflect.Value) reflect.Value {
-	return reflect.Indirect(value)
-}
-
 // Simple YAML reader
 
 type nodeType int
@@ -182,27 +205,6 @@ func (n yamlNode) String() string {
 
 func (n yamlNode) Type() reflect.Type {
 	return reflect.TypeOf(n.value)
-}
-
-func newyamlNode(reader io.ReadCloser) (*yamlNode, error) {
-	m := make(map[interface{}]interface{})
-
-	if data, err := ioutil.ReadAll(reader); err != nil {
-		return nil, err
-	} else if err = yaml.Unmarshal(data, &m); err != nil {
-		return nil, err
-	}
-	if err := reader.Close(); err != nil {
-		return nil, err
-	}
-
-	root := &yamlNode{
-		nodeType: objectNode,
-		key:      "",
-		value:    m,
-		children: nil,
-	}
-	return root, nil
 }
 
 func (n *yamlNode) Find(dottedPath string) *yamlNode {
@@ -239,17 +241,6 @@ func (n *yamlNode) Find(dottedPath string) *yamlNode {
 	return nil
 }
 
-func (n yamlNode) getNodeType(val interface{}) nodeType {
-	switch val.(type) {
-	case map[interface{}]interface{}:
-		return objectNode
-	case []interface{}:
-		return arrayNode
-	default:
-		return valueNode
-	}
-}
-
 func (n *yamlNode) Children() []*yamlNode {
 	if n.children == nil {
 		n.children = []*yamlNode{}
@@ -258,7 +249,7 @@ func (n *yamlNode) Children() []*yamlNode {
 		case objectNode:
 			for k, v := range n.value.(map[interface{}]interface{}) {
 				n2 := &yamlNode{
-					nodeType: n.getNodeType(v),
+					nodeType: getNodeType(v),
 					key:      fmt.Sprintf("%s", k),
 					value:    v,
 				}
@@ -268,8 +259,8 @@ func (n *yamlNode) Children() []*yamlNode {
 		case arrayNode:
 			for k, v := range n.value.([]interface{}) {
 				n2 := &yamlNode{
-					nodeType: n.getNodeType(v),
-					key:      fmt.Sprintf("%d", k),
+					nodeType: getNodeType(v),
+					key:      strconv.Itoa(k),
 					value:    v,
 				}
 
@@ -279,9 +270,27 @@ func (n *yamlNode) Children() []*yamlNode {
 	}
 
 	nodes := make([]*yamlNode, len(n.children))
-	for n, v := range n.children {
-		nodes[n] = v
+	copy(nodes, n.children)
+	return nodes
+}
+
+func unmarshalYamlValue(reader io.ReadCloser, value interface{}) error {
+	if data, err := ioutil.ReadAll(reader); err != nil {
+		return err
+	} else if err = yaml.Unmarshal(data, value); err != nil {
+		return err
 	}
 
-	return nodes
+	return reader.Close()
+}
+
+func getNodeType(val interface{}) nodeType {
+	switch val.(type) {
+	case map[interface{}]interface{}:
+		return objectNode
+	case []interface{}:
+		return arrayNode
+	default:
+		return valueNode
+	}
 }

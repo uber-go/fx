@@ -118,6 +118,17 @@ mapStruct:
     additionalData: nesteddata
 `)
 
+var complexMapYamlV2 = []byte(`
+mapStruct:
+  oneTrueMap:
+    name: poem
+    pools:
+    - very
+    - funny
+  nestedStruct:
+    additionalData:
+`)
+
 type userDefinedTypeInt nestedTypeInt
 type nestedTypeInt int64
 
@@ -180,4 +191,140 @@ const (
 type duckTales struct {
 	Protagonist duckTaleCharacter
 	Pilot       duckTaleCharacter
+}
+
+type mergeTestData struct {
+	description string
+	yaml        [][]byte
+	expected    map[string]interface{}
+}
+
+type firstLevelMerge struct {
+	Slice     []string
+	Map       map[string]string
+	Base      string
+	Overwrite string
+}
+
+type secondLevelMerge struct {
+	Slice     []firstLevelMerge
+	Base      firstLevelMerge
+	Overwrite firstLevelMerge
+}
+
+var baseFirstLevel = firstLevelMerge{
+	Map:       map[string]string{"keep": "ok", "override": "updated"},
+	Slice:     []string{"Wonder Woman", "Batman"},
+	Base:      "MSDOS",
+	Overwrite: "Windows 10",
+}
+
+var overwriteFirstLevel = firstLevelMerge{
+	Map:       map[string]string{"keep": "ok", "override": "updated"},
+	Slice:     []string{"Wonder Woman", "Batman"},
+	Base:      "UNIX",
+	Overwrite: "FreeBSD",
+}
+
+var mergeTest = []mergeTestData{
+
+	{
+		"First level maps",
+		[][]byte{[]byte(`
+slice:
+- DuckTales
+- Darkwingduck
+map:
+  keep: ok
+  override: oldValue
+base: UNIX
+overwrite: Linux
+
+`),
+			[]byte(`
+slice:
+- Wonder Woman
+- Batman
+map:
+  override: updated
+overwrite: FreeBSD
+`)},
+		map[string]interface{}{
+			"": overwriteFirstLevel,
+		},
+	},
+	{
+		"Second level structs",
+		[][]byte{[]byte(`
+slice:
+- slice:
+  - DuckTales
+  - Darkwingduck
+  map:
+    keep: no
+base:
+  slice:
+  - Wonder Woman
+  - Batman
+  map:
+    keep: ok
+    override: updated
+  base: MSDOS
+  overwrite: Windows 8
+overwrite:
+  slice:
+  - Spider-Man
+  - Deadpool
+  map:
+    keep: ok
+    override: oldValue
+  overwrite: Linux
+`),
+			[]byte(`
+slice:
+- slice:
+  - Wonder Woman
+  - Batman
+  map:
+    keep: ok
+    override: updated
+  base: UNIX
+  overwrite: FreeBSD
+base:
+  map:
+    override: updated
+  overwrite: Windows 10
+overwrite:
+  slice:
+  - Wonder Woman
+  - Batman
+  map:
+    keep: ok
+    override: updated
+  base: UNIX
+  overwrite: FreeBSD
+`)},
+		map[string]interface{}{
+			"": secondLevelMerge{
+				Base:      baseFirstLevel,
+				Overwrite: overwriteFirstLevel,
+				Slice:     []firstLevelMerge{overwriteFirstLevel}},
+			"Base":      baseFirstLevel,
+			"Overwrite": overwriteFirstLevel,
+		},
+	},
+	{
+		"Empty yamls",
+		[][]byte{[]byte(``), []byte(``)},
+		map[string]interface{}{
+			"": struct{ Field string }{},
+		},
+	},
+	{
+		"No overwrite for empty yamls",
+		[][]byte{[]byte(`Keep: true`), []byte(``)},
+		map[string]interface{}{
+			"": struct{ Keep bool }{true},
+		},
+	},
 }
