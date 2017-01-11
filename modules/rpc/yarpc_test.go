@@ -26,7 +26,7 @@ import (
 	"testing"
 
 	"go.uber.org/yarpc/encoding/raw"
-	"go.uber.org/yarpc/transport"
+	"go.uber.org/yarpc/api/transport"
 )
 
 func TestRegisterDispatcher_OK(t *testing.T) {

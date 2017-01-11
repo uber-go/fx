@@ -11,7 +11,7 @@ import:
 - package: github.com/gorilla/context
   version: ^1.1.0
 - package: go.uber.org/yarpc
-  version: v1.0.0-rc1
+  version: ^v1.0.0
 - package: go.uber.org/thriftrw
   version: ^1
 - package: github.com/go-validator/validator
