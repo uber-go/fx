@@ -20,4 +20,4 @@
 
 package keyvalue
 
-//go:generate thriftrw --plugin=fx kv.thrift
+//go:generate thriftrw "--plugin=yarpc --context-import-path=go.uber.org/fx --unary-handler-wrapper=go.uber.org/fx/modules/rpc.WrapUnary --oneway-handler-wrapper=go.uber.org/fx/modules/rpc.WrapOneway" kv.thrift
