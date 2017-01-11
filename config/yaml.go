@@ -54,7 +54,8 @@ func newYAMLProviderCore(files ...io.ReadCloser) Provider {
 		root: &yamlNode{
 			nodeType: objectNode,
 			key:      Root,
-			value:    root},
+			value:    root,
+		},
 		vCache: make(map[string]Value),
 	}
 }
@@ -74,7 +75,7 @@ func mergeMaps(dst interface{}, src interface{}) interface{} {
 	case map[interface{}]interface{}:
 		dstMap, ok := dst.(map[interface{}]interface{})
 		if !ok {
-			panic(fmt.Sprintf("Expected map[interface{}]interface{}, actual: %+v", dstMap))
+			panic(fmt.Sprintf("Expected map[interface{}]interface{}, actual: %T", dstMap))
 		}
 
 		for k, v := range s {
@@ -123,8 +124,8 @@ func NewYamlProviderFromReader(readers ...io.ReadCloser) Provider {
 // As above, all the objects are going to be merged and arrays/values overridden in the order of the yamls.
 func NewYAMLProviderFromBytes(yamls ...[]byte) Provider {
 	closers := make([]io.ReadCloser, len(yamls))
-	for i := range yamls {
-		closers[i] = ioutil.NopCloser(bytes.NewReader(yamls[i]))
+	for i, yml := range yamls {
+		closers[i] = ioutil.NopCloser(bytes.NewReader(yml))
 	}
 
 	return newYAMLProviderCore(closers...)
