@@ -179,11 +179,8 @@ func TestMapParsing(t *testing.T) {
 		assert.True(t, ok)
 
 		for key, val := range p {
-			switch key := key.(type) {
-			case string:
-				assert.Equal(t, "makeway", key)
-				assert.Equal(t, "notanoption", val)
-			}
+			assert.Equal(t, "makeway", key)
+			assert.Equal(t, "notanoption", val)
 		}
 
 		assert.Equal(t, "nesteddata", ms.NestedStruct.AdditionalData)
@@ -264,7 +261,6 @@ func TestMergeUnmarshaller(t *testing.T) {
 
 	ms := mapStruct{}
 	assert.NoError(t, provider.Get("mapStruct").PopulateStruct(&ms))
-
 	assert.NotNil(t, ms.MyMap)
 	assert.NotZero(t, len(ms.MyMap))
 
@@ -278,7 +274,6 @@ func TestMergeUnmarshaller(t *testing.T) {
 	s, ok := ms.MyMap["pools"].([]interface{})
 	assert.True(t, ok)
 	assert.Equal(t, []interface{}{"very", "funny"}, s)
-
 	assert.Equal(t, "", ms.NestedStruct.AdditionalData)
 }
 
