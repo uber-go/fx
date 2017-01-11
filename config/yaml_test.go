@@ -104,7 +104,7 @@ func TestNewYamlProviderFromReader(t *testing.T) {
 func TestYamlNode(t *testing.T) {
 	buff := bytes.NewBuffer([]byte("a: b"))
 	node := &yamlNode{value: make(map[interface{}]interface{})}
-	err := unmarshalYamlValue(ioutil.NopCloser(buff), node.value)
+	err := unmarshalYamlValue(ioutil.NopCloser(buff), &node.value)
 	require.NoError(t, err)
 	assert.Equal(t, "map[a:b]", node.String())
 	assert.Equal(t, "map[interface {}]interface {}", node.Type().String())
@@ -114,7 +114,7 @@ func TestYamlNodeWithNil(t *testing.T) {
 	provider := NewYAMLProviderFromFiles(false, nil)
 	assert.NotNil(t, provider)
 	assert.Panics(t, func() {
-		_ = unmarshalYamlValue(nil, &yamlNode{})
+		_ = unmarshalYamlValue(nil, nil)
 	}, "Expected panic with nil inpout.")
 }
 
@@ -175,19 +175,17 @@ func TestMapParsing(t *testing.T) {
 		assert.NotNil(t, ms.MyMap)
 		assert.NotZero(t, len(ms.MyMap))
 
-		found := false
-		switch p := ms.MyMap["policy"].(type) {
-		case map[interface{}]interface{}:
-			for key, val := range p {
-				switch key := key.(type) {
-				case string:
-					assert.Equal(t, "makeway", key)
-					assert.Equal(t, "notanoption", val)
-					found = true
-				}
+		p, ok := ms.MyMap["policy"].(map[interface{}]interface{})
+		assert.True(t, ok)
+
+		for key, val := range p {
+			switch key := key.(type) {
+			case string:
+				assert.Equal(t, "makeway", key)
+				assert.Equal(t, "notanoption", val)
 			}
 		}
-		assert.True(t, found)
+
 		assert.Equal(t, "nesteddata", ms.NestedStruct.AdditionalData)
 	})
 }
@@ -261,6 +259,7 @@ func TestGrumpyTextUnMarshallerParsing(t *testing.T) {
 }
 
 func TestMergeUnmarshaller(t *testing.T) {
+	t.Parallel()
 	provider := NewYAMLProviderFromBytes(complexMapYaml, complexMapYamlV2)
 
 	ms := mapStruct{}
@@ -269,23 +268,30 @@ func TestMergeUnmarshaller(t *testing.T) {
 	assert.NotNil(t, ms.MyMap)
 	assert.NotZero(t, len(ms.MyMap))
 
-	found := false
-	switch p := ms.MyMap["policy"].(type) {
-	case map[interface{}]interface{}:
-		for key, val := range p {
-			switch key := key.(type) {
-			case string:
-				assert.Equal(t, "makeway", key)
-				assert.Equal(t, "notanoption", val)
-				found = true
-			}
-		}
-	}
-	assert.True(t, found)
-
-	p, ok := ms.MyMap["pools"].([]interface{})
+	p, ok := ms.MyMap["policy"].(map[interface{}]interface{})
 	assert.True(t, ok)
-	assert.Equal(t, []interface{}{"very", "funny"}, p)
+	for key, val := range p {
+		assert.Equal(t, "makeway", key)
+		assert.Equal(t, "notanoption", val)
+	}
+
+	s, ok := ms.MyMap["pools"].([]interface{})
+	assert.True(t, ok)
+	assert.Equal(t, []interface{}{"very", "funny"}, s)
 
 	assert.Equal(t, "", ms.NestedStruct.AdditionalData)
+}
+
+func TestMerge(t *testing.T) {
+	t.Parallel()
+	for _, v := range mergeTest {
+		t.Run(v.description, func(t *testing.T) {
+			prov := NewYAMLProviderFromBytes(v.yaml...)
+			for path, exp := range v.expected {
+				res := reflect.New(reflect.ValueOf(exp).Type()).Interface()
+				assert.NoError(t, prov.Get(path).PopulateStruct(res))
+				assert.Equal(t, exp, reflect.ValueOf(res).Elem().Interface(), "For path: %s", path)
+			}
+		})
+	}
 }

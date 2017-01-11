@@ -29,6 +29,7 @@ import (
 	"strings"
 
 	"gopkg.in/yaml.v2"
+	"strconv"
 )
 
 type yamlConfigProvider struct {
@@ -39,28 +40,27 @@ type yamlConfigProvider struct {
 var _ Provider = &yamlConfigProvider{}
 
 func newYAMLProviderCore(files ...io.ReadCloser) Provider {
-	root := &yamlNode{
-		nodeType: objectNode,
-		key:      Root,
-		value:    make(map[interface{}]interface{}),
-		children: nil,
-	}
-
+	var root interface{} = make(map[interface{}]interface{})
 	for _, v := range files {
-		tmp := make(map[interface{}]interface{})
-		if err := unmarshalYamlValue(v, tmp); err != nil {
+		curr := make(map[interface{}]interface{})
+		if err := unmarshalYamlValue(v, &curr); err != nil {
 			panic(err)
 		}
 
-		root.value = mergeMaps(root.value, tmp)
+		root = mergeMaps(root, curr)
 	}
 
 	return &yamlConfigProvider{
-		root:   root,
+		root: &yamlNode{
+			nodeType: objectNode,
+			key:      Root,
+			value:    root},
 		vCache: make(map[string]Value),
 	}
 }
 
+// We need to have a custom merge map because yamlV2 doesn't unmarshal `map[interface{}]map[interface{}]interface{}`
+// as we expect: it will replace second level maps with new maps on each unmarshal call, instead of merging them.
 func mergeMaps(dst interface{}, src interface{}) interface{} {
 	if dst == nil {
 		panic("Destination node is nil")
@@ -72,16 +72,17 @@ func mergeMaps(dst interface{}, src interface{}) interface{} {
 
 	switch s := src.(type) {
 	case map[interface{}]interface{}:
-		d, ok := dst.(map[interface{}]interface{})
+		dstMap, ok := dst.(map[interface{}]interface{})
 		if !ok {
-			panic(fmt.Sprintf("Expected map[interface{}]interface{}, actual: %+v", d))
+			panic(fmt.Sprintf("Expected map[interface{}]interface{}, actual: %+v", dstMap))
 		}
 
 		for k, v := range s {
-			if d[k] == nil {
-				d[k] = v
+			oldVal := dstMap[k]
+			if oldVal == nil {
+				dstMap[k] = v
 			} else {
-				d[k] = mergeMaps(d[k], v)
+				dstMap[k] = mergeMaps(oldVal, v)
 			}
 		}
 	default:
@@ -112,14 +113,14 @@ func NewYAMLProviderFromFiles(mustExist bool, resolver FileResolver, files ...st
 	return newYAMLProviderCore(readers...)
 }
 
-// NewYamlProviderFromReader creates a configuration provider from an io.ReadClosers.
-// Same as above all the objects are going to be merged and arrays/values overridden in the order of the files.
-func NewYamlProviderFromReader(reader ...io.ReadCloser) Provider {
-	return newYAMLProviderCore(reader...)
+// NewYamlProviderFromReader creates a configuration provider from a list of `io.ReadClosers`.
+// As above, all the objects are going to be merged and arrays/values overridden in the order of the files.
+func NewYamlProviderFromReader(readers ...io.ReadCloser) Provider {
+	return newYAMLProviderCore(readers...)
 }
 
 // NewYAMLProviderFromBytes creates a config provider from a byte-backed YAML blobs.
-// Same as above all the objects are going to be merged and arrays/values overridden in the order of the files.
+// As above, all the objects are going to be merged and arrays/values overridden in the order of the yamls.
 func NewYAMLProviderFromBytes(yamls ...[]byte) Provider {
 	closers := make([]io.ReadCloser, len(yamls))
 	for i := range yamls {
@@ -258,7 +259,7 @@ func (n *yamlNode) Children() []*yamlNode {
 			for k, v := range n.value.([]interface{}) {
 				n2 := &yamlNode{
 					nodeType: getNodeType(v),
-					key:      fmt.Sprintf("%d", k),
+					key:      strconv.Itoa(k),
 					value:    v,
 				}
 
@@ -268,10 +269,7 @@ func (n *yamlNode) Children() []*yamlNode {
 	}
 
 	nodes := make([]*yamlNode, len(n.children))
-	for n, v := range n.children {
-		nodes[n] = v
-	}
-
+	copy(nodes, n.children)
 	return nodes
 }
 
@@ -281,11 +279,8 @@ func unmarshalYamlValue(reader io.ReadCloser, value interface{}) error {
 	} else if err = yaml.Unmarshal(data, value); err != nil {
 		return err
 	}
-	if err := reader.Close(); err != nil {
-		return err
-	}
 
-	return nil
+	return reader.Close()
 }
 
 func getNodeType(val interface{}) nodeType {
