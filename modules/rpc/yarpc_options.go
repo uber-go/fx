@@ -42,7 +42,7 @@ func WithInboundMiddleware(i ...middleware.UnaryInbound) modules.Option {
 	}
 }
 
-// WithOnewayInboundMiddleware adds custom YARPC inboundMid dlewares to the module
+// WithOnewayInboundMiddleware adds custom YARPC inboundMiddlewares to the module
 func WithOnewayInboundMiddleware(i ...middleware.OnewayInbound) modules.Option {
 	return func(mci *service.ModuleCreateInfo) error {
 		inboundMiddlewares := onewayInboundMiddlewaresFromCreateInfo(*mci)
@@ -58,7 +58,7 @@ func inboundMiddlewaresFromCreateInfo(mci service.ModuleCreateInfo) []middleware
 		return nil
 	}
 
-	// Intentionally panic if programmer adds non-interceptor slice to the data
+	// Intentionally panic if programmer adds non-middleware slice to the data
 	return items.([]middleware.UnaryInbound)
 }
 
@@ -68,6 +68,6 @@ func onewayInboundMiddlewaresFromCreateInfo(mci service.ModuleCreateInfo) []midd
 		return nil
 	}
 
-	// Intentionally panic if programmer adds non-interceptor slice to the data
+	// Intentionally panic if programmer adds non-middleware slice to the data
 	return items.([]middleware.OnewayInbound)
 }

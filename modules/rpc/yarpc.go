@@ -131,11 +131,11 @@ func (m *YarpcModule) Start(readyCh chan<- struct{}) <-chan error {
 	interceptor := yarpc.UnaryInboundMiddleware(m.inboundMiddlewares...)
 	onewayInterceptor := yarpc.OnewayInboundMiddleware(m.onewayInboundMiddlewares...)
 
+	ret := make(chan error, 1)
 	tchTransport, err := tch.NewChannelTransport(
 		tch.ServiceName(m.config.AdvertiseName),
 		tch.ListenAddr(m.config.Bind),
 	)
-	ret := make(chan error, 1)
 	if err != nil {
 		ret <- errors.New("Unable to create TChannel transport " + err.Error())
 		return ret
