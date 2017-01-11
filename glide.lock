@@ -1,8 +1,8 @@
-hash: be3c167ee35ffbe3e836762c10c1ac48fb45b62ee178ac2e74bfe5453f5637ab
-updated: 2017-01-10T19:43:22.331309685-08:00
+hash: 7e90707d8c16f68bd53951dc1653f367e1138a91446bc8c63c67998127b66b02
+updated: 2017-01-11T12:55:41.143717873-08:00
 imports:
 - name: github.com/apache/thrift
-  version: 4f710aa4f47e051d41c863aa7aa9239dab5b9636
+  version: 5f723cd53980f395a92c438790a127cbd5699d90
   subpackages:
   - lib/go/thrift
 - name: github.com/certifi/gocertifi
@@ -38,7 +38,7 @@ imports:
   - assert
   - require
 - name: github.com/uber-go/atomic
-  version: 0c9e689d64f004564b79d9a663634756df322902
+  version: 3b8db5e93c4c02efbc313e17b2e796b0914a01fb
 - name: github.com/uber-go/tally
   version: 2750b4ae690cbeb294016efe18ceaeb80c4ce17c
 - name: github.com/uber-go/zap
@@ -81,22 +81,24 @@ imports:
   - version
   - wire
 - name: go.uber.org/yarpc
-  version: 6048dff5656e15859918b9d40fdf12199d0c6e3d
+  version: 4edea50a16bf88fbbb9efb769764ea2b253aeff7
   subpackages:
+  - api/encoding
+  - api/middleware
+  - api/transport
   - encoding/raw
   - encoding/thrift
   - encoding/thrift/internal
   - internal
-  - internal/channel
+  - internal/clientconfig
   - internal/encoding
   - internal/errors
   - internal/inboundmiddleware
-  - internal/meta
+  - internal/introspection
   - internal/outboundmiddleware
   - internal/request
   - internal/sync
   - transport
-  - transport/internal
   - transport/tchannel
   - transport/tchannel/internal
 - name: golang.org/x/net
@@ -105,11 +107,11 @@ imports:
   - context
   - context/ctxhttp
 - name: golang.org/x/tools
-  version: 1529f889eb4b594d1f047f2fb8d5b3cc85c8f006
+  version: de557280a1356eaf02f30918562e425b6c7a5ca8
   subpackages:
   - go/ast/astutil
 - name: gopkg.in/yaml.v2
-  version: a83829b6f1293c91addabc89d0571c246397bbf4
+  version: a5b47d31c556af34a302ce5d659e6fea44d90de0
 testImports:
 - name: github.com/anmitsu/go-shlex
   version: 648efa622239a2f6ff949fed78ee37b48d499ba4
@@ -124,7 +126,7 @@ testImports:
   subpackages:
   - golint
 - name: github.com/jessevdk/go-flags
-  version: 0648c820cd4e564706597268ae2d2c7d9e6900c6
+  version: 4e64e4a4e2552194cf594243e23aa9baf3b4297e
 - name: github.com/kisielk/errcheck
   version: db0ca22445717d1b2c51ac1034440e0a2a2de645
 - name: github.com/kisielk/gotool

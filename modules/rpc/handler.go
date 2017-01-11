@@ -28,56 +28,55 @@ import (
 	"go.uber.org/fx/internal/fxcontext"
 	"go.uber.org/fx/service"
 	"go.uber.org/thriftrw/wire"
-	"go.uber.org/yarpc"
+	"go.uber.org/yarpc/api/transport"
 	"go.uber.org/yarpc/encoding/thrift"
-	"go.uber.org/yarpc/transport"
 )
 
 // UnaryHandler is a wrapper for YARPC thrift.UnaryHandler
 type UnaryHandler interface {
-	Handle(ctx fx.Context, reqMeta yarpc.ReqMeta, body wire.Value) (thrift.Response, error)
+	Handle(ctx fx.Context, body wire.Value) (thrift.Response, error)
 }
 
 // UnaryHandlerFunc calls the YARPC Handle with fx.Context
-type UnaryHandlerFunc func(fx.Context, yarpc.ReqMeta, wire.Value) (thrift.Response, error)
+type UnaryHandlerFunc func(fx.Context, wire.Value) (thrift.Response, error)
 
 // Handle calls the caller HandlerFunc.
-func (f UnaryHandlerFunc) Handle(ctx fx.Context, reqMeta yarpc.ReqMeta, body wire.Value) (thrift.Response, error) {
-	return f(ctx, reqMeta, body)
+func (f UnaryHandlerFunc) Handle(ctx fx.Context, body wire.Value) (thrift.Response, error) {
+	return f(ctx, body)
 }
 
 // WrapUnary wraps the unary handler and returns a thrift.UnaryHandlerFunc for yarpc calls
 // TODO(anup): GFM-255 Remove host parameter once updated yarpc plugin is imported in the repo
-func WrapUnary(h UnaryHandlerFunc) thrift.UnaryHandlerFunc {
-	return func(ctx context.Context, reqMeta yarpc.ReqMeta, body wire.Value) (thrift.Response, error) {
+func WrapUnary(h UnaryHandlerFunc) thrift.UnaryHandler {
+	return func(ctx context.Context, body wire.Value) (thrift.Response, error) {
 		fxctx := &fxcontext.Context{
 			Context: ctx,
 		}
-		return h.Handle(fxctx, reqMeta, body)
+		return h.Handle(fxctx, body)
 	}
 }
 
 // OnewayHandler is a wrapper for YARPC thrift.OnewayHandler
 type OnewayHandler interface {
-	HandleOneway(ctx fx.Context, reqMeta yarpc.ReqMeta, body wire.Value) error
+	HandleOneway(ctx fx.Context, body wire.Value) error
 }
 
 // OnewayHandlerFunc calls the YARPC Handle with fx.Context
-type OnewayHandlerFunc func(fx.Context, yarpc.ReqMeta, wire.Value) error
+type OnewayHandlerFunc func(fx.Context, wire.Value) error
 
 // HandleOneway calls the caller OnewayHandlerFunc.
-func (f OnewayHandlerFunc) HandleOneway(ctx fx.Context, reqMeta yarpc.ReqMeta, body wire.Value) error {
-	return f(ctx, reqMeta, body)
+func (f OnewayHandlerFunc) HandleOneway(ctx fx.Context, body wire.Value) error {
+	return f(ctx, body)
 }
 
 // WrapOneway wraps the oneway handler and returns a thrift.OnewayHandlerFunc for yarpc calls
 // TODO(anup): GFM-255 Remove host parameter once updated yarpc plugin is imported in the repo
-func WrapOneway(h OnewayHandlerFunc) thrift.OnewayHandlerFunc {
-	return func(ctx context.Context, reqMeta yarpc.ReqMeta, body wire.Value) error {
+func WrapOneway(h OnewayHandlerFunc) thrift.OnewayHandler {
+	return func(ctx context.Context, body wire.Value) error {
 		fxctx := &fxcontext.Context{
 			Context: ctx,
 		}
-		return h.HandleOneway(fxctx, reqMeta, body)
+		return h.HandleOneway(fxctx, body)
 	}
 }
 

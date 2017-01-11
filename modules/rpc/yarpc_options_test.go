@@ -27,11 +27,11 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.uber.org/yarpc/transport"
+	"go.uber.org/yarpc/api/middleware"
 )
 
 func TestWithInboundMiddleware_OK(t *testing.T) {
-	opt := WithInboundMiddleware(transport.NopUnaryInboundMiddleware)
+	opt := WithInboundMiddleware(middleware.NopUnaryInbound)
 	mc := &service.ModuleCreateInfo{
 		Items: make(map[string]interface{}),
 	}
@@ -41,7 +41,7 @@ func TestWithInboundMiddleware_OK(t *testing.T) {
 }
 
 func TestWithOnewayInboundMiddleware_OK(t *testing.T) {
-	opt := WithOnewayInboundMiddleware(transport.NopOnewayInboundMiddleware)
+	opt := WithOnewayInboundMiddleware(middleware.NopOnewayInbound)
 	mc := &service.ModuleCreateInfo{
 		Items: make(map[string]interface{}),
 	}
@@ -50,7 +50,7 @@ func TestWithOnewayInboundMiddleware_OK(t *testing.T) {
 }
 
 func TestWithInboundMiddleware_PanicsBadData(t *testing.T) {
-	opt := WithInboundMiddleware(transport.NopUnaryInboundMiddleware)
+	opt := WithInboundMiddleware(middleware.NopUnaryInbound)
 	mc := &service.ModuleCreateInfo{
 		Items: map[string]interface{}{
 			_interceptorKey: "foo",
@@ -62,7 +62,7 @@ func TestWithInboundMiddleware_PanicsBadData(t *testing.T) {
 }
 
 func TestWithOnewayInboundMiddleware_PanicsBadData(t *testing.T) {
-	opt := WithOnewayInboundMiddleware(transport.NopOnewayInboundMiddleware)
+	opt := WithOnewayInboundMiddleware(middleware.NopOnewayInbound)
 	mc := &service.ModuleCreateInfo{
 		Items: map[string]interface{}{
 			_onewayInterceptorKey: "foo",

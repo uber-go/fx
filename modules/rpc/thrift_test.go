@@ -29,8 +29,8 @@ import (
 
 	"go.uber.org/fx/modules"
 	"go.uber.org/fx/service"
+	"go.uber.org/yarpc/api/transport"
 	"go.uber.org/yarpc/encoding/thrift"
-	"go.uber.org/yarpc/transport"
 )
 
 func TestThriftModule_OK(t *testing.T) {
@@ -80,13 +80,13 @@ func errorOption(_ *service.ModuleCreateInfo) error {
 	return errors.New("bad option")
 }
 
-func okCreate(_ service.Host) ([]transport.Registrant, error) {
-	reg := thrift.BuildRegistrants(thrift.Service{
+func okCreate(_ service.Host) ([]transport.Procedure, error) {
+	reg := thrift.BuildProcedures(thrift.Service{
 		Name: "foo",
 	})
 	return reg, nil
 }
 
-func badCreateService(_ service.Host) ([]transport.Registrant, error) {
+func badCreateService(_ service.Host) ([]transport.Procedure, error) {
 	return nil, errors.New("can't create service")
 }

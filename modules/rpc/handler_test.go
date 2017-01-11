@@ -32,9 +32,8 @@ import (
 	"go.uber.org/fx/internal/fxcontext"
 	"go.uber.org/fx/service"
 	"go.uber.org/thriftrw/wire"
-	"go.uber.org/yarpc"
+	"go.uber.org/yarpc/api/transport"
 	"go.uber.org/yarpc/encoding/thrift"
-	"go.uber.org/yarpc/transport"
 )
 
 type fakeEnveloper struct {
@@ -53,24 +52,24 @@ func (f fakeEnveloper) ToWire() (wire.Value, error) {
 	return wire.NewValueStruct(wire.Struct{}), nil
 }
 
-func UnaryFakeHandlerFunc(ctx fx.Context, meta yarpc.ReqMeta, val wire.Value) (thrift.Response, error) {
+func UnaryFakeHandlerFunc(ctx fx.Context, val wire.Value) (thrift.Response, error) {
 	return thrift.Response{
 		Body: fakeEnveloper{},
 	}, nil
 }
 
-func OnewayFakeHandlerFunc(ctx fx.Context, meta yarpc.ReqMeta, val wire.Value) error {
+func OnewayFakeHandlerFunc(ctx fx.Context, val wire.Value) error {
 	return nil
 }
 
-func OnewayFakeHandlerFuncWithError(ctx fx.Context, meta yarpc.ReqMeta, val wire.Value) error {
+func OnewayFakeHandlerFuncWithError(ctx fx.Context, val wire.Value) error {
 	return errors.New("mocking error")
 }
 
 func TestWrapUnary(t *testing.T) {
 	handlerFunc := WrapUnary(UnaryFakeHandlerFunc)
 	assert.NotNil(t, handlerFunc)
-	resp, err := handlerFunc.Handle(context.Background(), nil, wire.Value{})
+	resp, err := handlerFunc(context.Background(), wire.Value{})
 	assert.NoError(t, err)
 	assert.NotNil(t, resp)
 }
@@ -78,14 +77,14 @@ func TestWrapUnary(t *testing.T) {
 func TestWrapOneway(t *testing.T) {
 	handlerFunc := WrapOneway(OnewayFakeHandlerFunc)
 	assert.NotNil(t, handlerFunc)
-	err := handlerFunc.HandleOneway(context.Background(), nil, wire.Value{})
+	err := handlerFunc(context.Background(), wire.Value{})
 	assert.NoError(t, err)
 }
 
 func TestWrapOneway_error(t *testing.T) {
 	handlerFunc := WrapOneway(OnewayFakeHandlerFuncWithError)
 	assert.NotNil(t, handlerFunc)
-	err := handlerFunc.HandleOneway(context.Background(), nil, wire.Value{})
+	err := handlerFunc(context.Background(), wire.Value{})
 	assert.Error(t, err)
 }
 

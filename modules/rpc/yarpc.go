@@ -30,22 +30,22 @@ import (
 	"go.uber.org/fx/ulog"
 
 	errs "github.com/pkg/errors"
-	"github.com/uber/tchannel-go"
 	"go.uber.org/yarpc"
-	"go.uber.org/yarpc/transport"
+	"go.uber.org/yarpc/api/middleware"
+	"go.uber.org/yarpc/api/transport"
 	tch "go.uber.org/yarpc/transport/tchannel"
 )
 
 // YarpcModule is an implementation of a core module using YARPC
 type YarpcModule struct {
 	modules.ModuleBase
-	rpc                      yarpc.Dispatcher
+	rpc                      *yarpc.Dispatcher
 	register                 registerServiceFunc
 	config                   yarpcConfig
 	log                      ulog.Log
 	stateMu                  sync.RWMutex
-	inboundMiddlewares       []transport.UnaryInboundMiddleware
-	onewayInboundMiddlewares []transport.OnewayInboundMiddleware
+	inboundMiddlewares       []middleware.UnaryInbound
+	onewayInboundMiddlewares []middleware.OnewayInbound
 }
 
 var (
@@ -128,20 +128,23 @@ func (m *YarpcModule) Start(readyCh chan<- struct{}) <-chan error {
 	m.stateMu.Lock()
 	defer m.stateMu.Unlock()
 
-	channel, err := tchannel.NewChannel(m.config.AdvertiseName, nil)
-	ret := make(chan error, 1)
-	if err != nil {
-		ret <- errors.New("Unable to create TChannel " + err.Error())
-		return ret
-	}
-
 	interceptor := yarpc.UnaryInboundMiddleware(m.inboundMiddlewares...)
 	onewayInterceptor := yarpc.OnewayInboundMiddleware(m.onewayInboundMiddlewares...)
+
+	ret := make(chan error, 1)
+	tchTransport, err := tch.NewChannelTransport(
+		tch.ServiceName(m.config.AdvertiseName),
+		tch.ListenAddr(m.config.Bind),
+	)
+	if err != nil {
+		ret <- errors.New("Unable to create TChannel transport " + err.Error())
+		return ret
+	}
 
 	m.rpc, err = _dispatcherFn(m.Host(), yarpc.Config{
 		Name: m.config.AdvertiseName,
 		Inbounds: []transport.Inbound{
-			tch.NewInbound(channel, tch.ListenAddr(m.config.Bind)),
+			tchTransport.NewInbound(),
 		},
 		InboundMiddleware: yarpc.InboundMiddleware{
 			Unary:  interceptor,
@@ -184,13 +187,13 @@ func (m *YarpcModule) IsRunning() bool {
 	return m.rpc != nil
 }
 
-type yarpcDispatcherFn func(service.Host, yarpc.Config) (yarpc.Dispatcher, error)
+type yarpcDispatcherFn func(service.Host, yarpc.Config) (*yarpc.Dispatcher, error)
 
 // RegisterDispatcher allows you to override the YARPC dispatcher registration
 func RegisterDispatcher(dispatchFn yarpcDispatcherFn) {
 	_dispatcherFn = dispatchFn
 }
 
-func defaultYarpcDispatcher(_ service.Host, cfg yarpc.Config) (yarpc.Dispatcher, error) {
+func defaultYarpcDispatcher(_ service.Host, cfg yarpc.Config) (*yarpc.Dispatcher, error) {
 	return yarpc.NewDispatcher(cfg), nil
 }
