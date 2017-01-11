@@ -88,13 +88,21 @@ func authenticationFilter(
 	authClient := auth.Instance()
 
 	// Client needs to know what service it is to authenticate
-	authClient.SetAttribute(ctx, auth.ServiceAuth, _serviceName)
+	authctx := authClient.SetAttribute(ctx, auth.ServiceAuth, _serviceName)
 
-	authctx, err := authClient.Authenticate(ctx)
+	authctx, err = authClient.Authenticate(authctx)
 	if err != nil {
 		ctx.Logger().Error(auth.ErrAuthentication, "error", err)
 		return nil, err
 	}
+
+	span := opentracing.SpanFromContext(authctx)
+	carrier := opentracing.HTTPHeadersCarrier(req.Header)
+	if err := span.Tracer().Inject(span.Context(), opentracing.HTTPHeaders, carrier); err != nil {
+		ctx.Logger().Error("Error injecting auth context", "error", err)
+		return nil, err
+	}
+
 	return next.Do(&fxcontext.Context{Context: authctx}, req)
 }
 

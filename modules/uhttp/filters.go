@@ -87,8 +87,8 @@ func authorizationFilter(host service.Host) FilterFunc {
 		fxctx := &fxcontext.Context{
 			Context: ctx,
 		}
-		authClient := auth.Instance()
-		err := authClient.Authorize(fxctx)
+
+		err := auth.Instance().Authorize(fxctx)
 		if err != nil {
 			host.Metrics().SubScope("http").SubScope("auth").Counter("fail").Inc(1)
 			fxctx.Logger().Error(auth.ErrAuthorization, "error", err)
