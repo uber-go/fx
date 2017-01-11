@@ -32,28 +32,34 @@ import (
 	"golang.org/x/net/context/ctxhttp"
 )
 
-var _serviceName string
+var (
+	_serviceName string
+)
 
 // Client wraps around a http client
 type Client struct {
 	*http.Client
-	filters []Filter
+	filters             []Filter
+	defaultFiltersAdded bool
 }
 
 // New creates a new instance of uhttp Client
 func New(cfg config.Provider, client *http.Client, filters ...Filter) *Client {
 	_serviceName = cfg.Get(config.ApplicationIDKey).AsString()
 	filters = append(filters, FilterFunc(tracingFilter), FilterFunc(authenticationFilter))
-	return &Client{Client: client, filters: filters}
+	return &Client{
+		Client:              client,
+		filters:             filters,
+		defaultFiltersAdded: true,
+	}
 }
 
 // Do is a context-aware, filter-enabled extension of Do() in http.Client
 func (c *Client) Do(ctx fx.Context, req *http.Request) (resp *http.Response, err error) {
 	filters := c.filters
-	// TODO: Need a way to handle the case where Client is initialized without the NewClient method
-	// and some filters are set. Need to always include the tracing filter
-	if len(filters) == 0 {
+	if c.defaultFiltersAdded == false {
 		filters = append(filters, FilterFunc(tracingFilter), FilterFunc(authenticationFilter))
+		c.defaultFiltersAdded = true
 	}
 	execChain := newExecutionChain(filters, BasicClientFunc(c.do))
 	return execChain.Do(ctx, req)
