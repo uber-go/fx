@@ -74,7 +74,7 @@ func TestExecutionChainFiltersError(t *testing.T) {
 	assert.Nil(t, resp)
 }
 
-func withOpentracingSetup(t *testing.T, fn func(tracer opentracing.Tracer)) {
+func withOpentracingSetup(t *testing.T, registerFunc auth.RegisterFunc, fn func(tracer opentracing.Tracer)) {
 	tracer, closer, err := tracing.InitGlobalTracer(&jconfig.Configuration{}, "Test", ulog.NoopLogger, tally.NullStatsReporter)
 	defer closer.Close()
 	assert.NotNil(t, closer)
@@ -82,12 +82,15 @@ func withOpentracingSetup(t *testing.T, fn func(tracer opentracing.Tracer)) {
 
 	_serviceName = "test_service"
 	auth.UnregisterClient()
+	defer auth.UnregisterClient()
+	auth.RegisterClient(registerFunc)
 	auth.SetupClient(nil)
+	defer auth.SetupClient(nil)
 	fn(tracer)
 }
 
 func TestExecutionChainFilters_AuthContextPropagation(t *testing.T) {
-	withOpentracingSetup(t, func(tracer opentracing.Tracer) {
+	withOpentracingSetup(t, nil, func(tracer opentracing.Tracer) {
 		execChain := newExecutionChain(
 			[]Filter{FilterFunc(authenticationFilter)}, getContextPropogationClient(t),
 		)
@@ -99,6 +102,22 @@ func TestExecutionChainFilters_AuthContextPropagation(t *testing.T) {
 		resp, err := execChain.Do(ctx, _req)
 		assert.NoError(t, err)
 		assert.Equal(t, _respOK, resp)
+	})
+}
+
+func TestExecutionChainFilters_AuthContextPropagationFailure(t *testing.T) {
+	withOpentracingSetup(t, auth.FakeFailureClient, func(tracer opentracing.Tracer) {
+		execChain := newExecutionChain(
+			[]Filter{FilterFunc(authenticationFilter)}, getContextPropogationClient(t),
+		)
+		span := tracer.StartSpan("test_method")
+		span.SetBaggageItem(auth.ServiceAuth, _serviceName)
+		ctx := &fxcontext.Context{
+			Context: opentracing.ContextWithSpan(context.Background(), span),
+		}
+		resp, err := execChain.Do(ctx, _req)
+		assert.Error(t, err)
+		assert.Nil(t, resp)
 	})
 }
 
