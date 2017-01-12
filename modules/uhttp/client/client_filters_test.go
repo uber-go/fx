@@ -48,17 +48,17 @@ var (
 )
 
 func TestExecutionChain(t *testing.T) {
-	execChain := newExecutionChain([]Filter{}, getNoopClient())
-	resp, err := execChain.Do(fxcontext.New(context.Background(), service.NullHost()), _req)
+	execChain := newExecutionChain([]Filter{}, getNopClient())
+	resp, err := execChain.Do(fxcontext.New(context.Background(), service.NopHost()), _req)
 	assert.NoError(t, err)
 	assert.Equal(t, _respOK, resp)
 }
 
 func TestExecutionChainFilters(t *testing.T) {
 	execChain := newExecutionChain(
-		[]Filter{FilterFunc(tracingFilter)}, getNoopClient(),
+		[]Filter{FilterFunc(tracingFilter)}, getNopClient(),
 	)
-	ctx := fx.NoopContext
+	ctx := fx.NopContext
 	resp, err := execChain.Do(ctx, _req)
 	assert.NoError(t, err)
 	assert.Equal(t, _respOK, resp)
@@ -68,14 +68,14 @@ func TestExecutionChainFiltersError(t *testing.T) {
 	execChain := newExecutionChain(
 		[]Filter{FilterFunc(tracingFilter)}, getErrorClient(),
 	)
-	resp, err := execChain.Do(fx.NoopContext, _req)
+	resp, err := execChain.Do(fx.NopContext, _req)
 	assert.Error(t, err)
 	assert.Equal(t, errClient, err)
 	assert.Nil(t, resp)
 }
 
 func withOpentracingSetup(t *testing.T, registerFunc auth.RegisterFunc, fn func(tracer opentracing.Tracer)) {
-	tracer, closer, err := tracing.InitGlobalTracer(&jconfig.Configuration{}, "Test", ulog.NoopLogger, tally.NullStatsReporter)
+	tracer, closer, err := tracing.InitGlobalTracer(&jconfig.Configuration{}, "Test", ulog.NopLogger, tally.NullStatsReporter)
 	defer closer.Close()
 	assert.NotNil(t, closer)
 	require.NoError(t, err)
@@ -132,7 +132,7 @@ func getContextPropogationClient(t *testing.T) BasicClient {
 	)
 }
 
-func getNoopClient() BasicClient {
+func getNopClient() BasicClient {
 	return BasicClientFunc(
 		func(ctx fx.Context, req *http.Request) (resp *http.Response, err error) {
 			return _respOK, nil

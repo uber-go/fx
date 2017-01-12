@@ -150,7 +150,7 @@ func withModule(
 	fn func(*Module),
 ) {
 	mi := service.ModuleCreateInfo{
-		Host: service.NullHost(),
+		Host: service.NopHost(),
 	}
 	mod, err := newModule(mi, hookup, options...)
 	if expectError {

@@ -55,7 +55,7 @@ func TestNew_Panic(t *testing.T) {
 func TestClientDo(t *testing.T) {
 	svr := startServer()
 	req := createHTTPClientRequest(svr.URL)
-	resp, err := _defaultUHTTPClient.Do(fx.NoopContext, req)
+	resp, err := _defaultUHTTPClient.Do(fx.NopContext, req)
 	checkOKResponse(t, resp, err)
 }
 
@@ -63,49 +63,49 @@ func TestClientDoWithoutFilters(t *testing.T) {
 	uhttpClient := &Client{Client: _defaultHTTPClient}
 	svr := startServer()
 	req := createHTTPClientRequest(svr.URL)
-	resp, err := uhttpClient.Do(fx.NoopContext, req)
+	resp, err := uhttpClient.Do(fx.NopContext, req)
 	checkOKResponse(t, resp, err)
 }
 
 func TestClientGet(t *testing.T) {
 	svr := startServer()
-	resp, err := _defaultUHTTPClient.Get(fx.NoopContext, svr.URL)
+	resp, err := _defaultUHTTPClient.Get(fx.NopContext, svr.URL)
 	checkOKResponse(t, resp, err)
 }
 
 func TestClientGetError(t *testing.T) {
 	// Causing newRequest to fail, % does not parse as URL
-	resp, err := _defaultUHTTPClient.Get(fx.NoopContext, "%")
+	resp, err := _defaultUHTTPClient.Get(fx.NopContext, "%")
 	checkErrResponse(t, resp, err)
 }
 
 func TestClientHead(t *testing.T) {
 	svr := startServer()
-	resp, err := _defaultUHTTPClient.Head(fx.NoopContext, svr.URL)
+	resp, err := _defaultUHTTPClient.Head(fx.NopContext, svr.URL)
 	checkOKResponse(t, resp, err)
 }
 
 func TestClientHeadError(t *testing.T) {
 	// Causing newRequest to fail, % does not parse as URL
-	resp, err := _defaultUHTTPClient.Head(fx.NoopContext, "%")
+	resp, err := _defaultUHTTPClient.Head(fx.NopContext, "%")
 	checkErrResponse(t, resp, err)
 }
 
 func TestClientPost(t *testing.T) {
 	svr := startServer()
-	resp, err := _defaultUHTTPClient.Post(fx.NoopContext, svr.URL, "", nil)
+	resp, err := _defaultUHTTPClient.Post(fx.NopContext, svr.URL, "", nil)
 	checkOKResponse(t, resp, err)
 }
 
 func TestClientPostError(t *testing.T) {
-	resp, err := _defaultUHTTPClient.Post(fx.NoopContext, "%", "", nil)
+	resp, err := _defaultUHTTPClient.Post(fx.NopContext, "%", "", nil)
 	checkErrResponse(t, resp, err)
 }
 
 func TestClientPostForm(t *testing.T) {
 	svr := startServer()
 	var urlValues map[string][]string
-	resp, err := _defaultUHTTPClient.PostForm(fx.NoopContext, svr.URL, urlValues)
+	resp, err := _defaultUHTTPClient.PostForm(fx.NopContext, svr.URL, urlValues)
 	checkOKResponse(t, resp, err)
 }
 

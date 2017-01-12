@@ -123,8 +123,8 @@ func New(options ...Option) (Owner, error) {
 		return nil, err
 	}
 
-	// Initialize metrics. If no metrics reporters were Registered, do noop
-	// TODO(glib): add a logging reporter and use it by default, rather than noop
+	// Initialize metrics. If no metrics reporters were Registered, do nop
+	// TODO(glib): add a logging reporter and use it by default, rather than nop
 	svc.setupMetrics()
 
 	if err := svc.setupRuntimeMetricsCollector(svc.Config()); err != nil {

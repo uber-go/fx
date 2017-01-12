@@ -23,31 +23,31 @@ package auth
 import "context"
 
 var (
-	// NoopClient is used for testing and no-op integration
-	NoopClient = noopClient(nil)
+	// NopClient is used for testing and no-op integration
+	NopClient = nopClient(nil)
 
-	_ Client = &noop{}
+	_ Client = &nop{}
 )
 
-type noop struct {
+type nop struct {
 }
 
-func noopClient(info CreateAuthInfo) Client {
-	return &noop{}
+func nopClient(info CreateAuthInfo) Client {
+	return &nop{}
 }
 
-func (*noop) Name() string {
-	return "noop"
+func (*nop) Name() string {
+	return "nop"
 }
 
-func (*noop) Authenticate(ctx context.Context) (context.Context, error) {
+func (*nop) Authenticate(ctx context.Context) (context.Context, error) {
 	return ctx, nil
 }
 
-func (*noop) Authorize(ctx context.Context) error {
+func (*nop) Authorize(ctx context.Context) error {
 	return nil
 }
 
-func (*noop) SetAttribute(ctx context.Context, key, value string) context.Context {
+func (*nop) SetAttribute(ctx context.Context, key, value string) context.Context {
 	return ctx
 }

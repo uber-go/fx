@@ -28,13 +28,13 @@ import (
 	"github.com/uber-go/tally"
 )
 
-// NullHost is to be used in tests
-func NullHost() Host {
-	return NullHostConfigured(ulog.NoopLogger, opentracing.NoopTracer{})
+// NopHost is to be used in tests
+func NopHost() Host {
+	return NopHostConfigured(ulog.NopLogger, opentracing.NoopTracer{})
 }
 
-// NullHostConfigured is a noop host with set logger and tracer for tests
-func NullHostConfigured(logger ulog.Log, tracer opentracing.Tracer) Host {
+// NopHostConfigured is a nop host with set logger and tracer for tests
+func NopHostConfigured(logger ulog.Log, tracer opentracing.Tracer) Host {
 	return &serviceCore{
 		configProvider: config.NewStaticProvider(nil),
 		standardConfig: serviceConfig{

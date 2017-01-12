@@ -59,7 +59,7 @@ func TestNewModuleBase_Tracer(t *testing.T) {
 }
 
 func nmb(moduleType, name string, roles []string) *ModuleBase {
-	host := service.NullHost()
+	host := service.NopHost()
 
 	return NewModuleBase(
 		moduleType,

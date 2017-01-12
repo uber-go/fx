@@ -26,7 +26,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestNullHost_OK(t *testing.T) {
-	sh := NullHost()
+func TestNopHost_OK(t *testing.T) {
+	sh := NopHost()
 	assert.Equal(t, "dummy", sh.Name())
 }

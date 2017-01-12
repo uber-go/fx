@@ -90,7 +90,7 @@ func TestWrapOneway_error(t *testing.T) {
 
 func TestInboundMiddleware_fxContext(t *testing.T) {
 	unary := fxContextInboundMiddleware{
-		Host: service.NullHost(),
+		Host: service.NopHost(),
 	}
 	err := unary.Handle(context.Background(), &transport.Request{}, nil, &fakeUnaryHandler{t: t})
 	assert.Equal(t, "handle", err.Error())
@@ -98,7 +98,7 @@ func TestInboundMiddleware_fxContext(t *testing.T) {
 
 func TestOnewayInboundMiddleware_fxContext(t *testing.T) {
 	oneway := fxContextOnewayInboundMiddleware{
-		Host: service.NullHost(),
+		Host: service.NopHost(),
 	}
 	err := oneway.HandleOneway(context.Background(), &transport.Request{}, &fakeOnewayHandler{t: t})
 	assert.Equal(t, "oneway handle", err.Error())
@@ -107,7 +107,7 @@ func TestOnewayInboundMiddleware_fxContext(t *testing.T) {
 func TestInboundMiddleware_auth(t *testing.T) {
 	withAuthClient(t, nil, func() {
 		unary := authInboundMiddleware{
-			Host: service.NullHost(),
+			Host: service.NopHost(),
 		}
 		err := unary.Handle(context.Background(), &transport.Request{}, nil, &fakeUnaryHandler{t: t})
 		assert.EqualError(t, err, "handle")
@@ -117,7 +117,7 @@ func TestInboundMiddleware_auth(t *testing.T) {
 func TestInboundMiddleware_authFailure(t *testing.T) {
 	withAuthClient(t, auth.FakeFailureClient, func() {
 		unary := authInboundMiddleware{
-			Host: service.NullHost(),
+			Host: service.NopHost(),
 		}
 		err := unary.Handle(context.Background(), &transport.Request{}, nil, &fakeUnaryHandler{t: t})
 		assert.EqualError(t, err, "Error authorizing the service")
@@ -127,7 +127,7 @@ func TestInboundMiddleware_authFailure(t *testing.T) {
 func TestOnewayInboundMiddleware_auth(t *testing.T) {
 	withAuthClient(t, nil, func() {
 		oneway := authOnewayInboundMiddleware{
-			Host: service.NullHost(),
+			Host: service.NopHost(),
 		}
 		err := oneway.HandleOneway(context.Background(), &transport.Request{}, &fakeOnewayHandler{t: t})
 		assert.EqualError(t, err, "oneway handle")
@@ -138,7 +138,7 @@ func TestOnewayInboundMiddleware_auth(t *testing.T) {
 func TestOnewayInboundMiddleware_authFailure(t *testing.T) {
 	withAuthClient(t, auth.FakeFailureClient, func() {
 		oneway := authOnewayInboundMiddleware{
-			Host: service.NullHost(),
+			Host: service.NopHost(),
 		}
 		err := oneway.HandleOneway(context.Background(), &transport.Request{}, &fakeOnewayHandler{t: t})
 		assert.EqualError(t, err, "Error authorizing the service")
@@ -148,7 +148,7 @@ func TestOnewayInboundMiddleware_authFailure(t *testing.T) {
 func withAuthClient(t *testing.T, registerFunc auth.RegisterFunc, fn func()) {
 	auth.UnregisterClient()
 	auth.RegisterClient(registerFunc)
-	auth.SetupClient(service.NullHost())
+	auth.SetupClient(service.NopHost())
 	fn()
 }
 
