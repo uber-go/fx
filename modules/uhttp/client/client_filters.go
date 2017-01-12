@@ -65,7 +65,7 @@ func tracingFilter(
 	ctx = &fxcontext.Context{
 		Context: opentracing.ContextWithSpan(ctx, span),
 	}
-	if err := injectHeadersIntoSpanContext(req.Header, span); err != nil {
+	if err := injectSpanIntoHeaders(req.Header, span); err != nil {
 		return nil, err
 	}
 
@@ -94,7 +94,7 @@ func authenticationFilter(
 	}
 
 	span := opentracing.SpanFromContext(authctx)
-	if err := injectHeadersIntoSpanContext(req.Header, span); err != nil {
+	if err := injectSpanIntoHeaders(req.Header, span); err != nil {
 		ctx.Logger().Error("Error injecting auth context", "error", err)
 		return nil, err
 	}
@@ -102,7 +102,7 @@ func authenticationFilter(
 	return next.Do(&fxcontext.Context{Context: authctx}, req)
 }
 
-func injectHeadersIntoSpanContext(header http.Header, span opentracing.Span) error {
+func injectSpanIntoHeaders(header http.Header, span opentracing.Span) error {
 	carrier := opentracing.HTTPHeadersCarrier(header)
 	if err := span.Tracer().Inject(span.Context(), opentracing.HTTPHeaders, carrier); err != nil {
 		span.SetTag("error", err.Error())
