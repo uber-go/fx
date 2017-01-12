@@ -117,6 +117,5 @@ func (svc *serviceCore) setupAuthClient(cfg config.Provider) {
 	if svc.authClient != nil {
 		return
 	}
-	auth.SetupClient(svc)
-	svc.authClient = auth.Instance()
+	svc.authClient = auth.Load(svc)
 }

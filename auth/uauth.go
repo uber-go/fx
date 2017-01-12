@@ -63,26 +63,21 @@ func RegisterClient(registerFunc RegisterFunc) {
 	_registerFunc = registerFunc
 }
 
-// UnregisterClient unregisters auth RegisterFunc for testing and resets to nopClient
+// UnregisterClient unregisters auth RegisterFunc for testing
 func UnregisterClient() {
 	_setupMu.Lock()
 	defer _setupMu.Unlock()
 	_registerFunc = nil
-	_std = nil
 }
 
-// SetupClient creates a Client instance based on registered auth client implementation
-func SetupClient(info CreateAuthInfo) {
+// Load returns a Client instance based on registered auth client implementation
+func Load(info CreateAuthInfo) Client {
 	_setupMu.Lock()
 	defer _setupMu.Unlock()
-	if _std != nil {
-		return
-	}
 	if _registerFunc != nil {
-		_std = _registerFunc(info)
-	} else {
-		_std = NopClient
+		return _registerFunc(info)
 	}
+	return NopClient
 }
 
 // Client is an interface to perform authorization and authentication

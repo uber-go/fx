@@ -29,6 +29,7 @@ import (
 
 	"go.uber.org/fx"
 	"go.uber.org/fx/auth"
+	"go.uber.org/fx/config"
 	"go.uber.org/fx/internal/fxcontext"
 	"go.uber.org/fx/service"
 	"go.uber.org/fx/tracing"
@@ -56,7 +57,7 @@ func TestExecutionChain(t *testing.T) {
 
 func TestExecutionChainFilters(t *testing.T) {
 	execChain := newExecutionChain(
-		[]Filter{FilterFunc(tracingFilter)}, getNopClient(),
+		[]Filter{tracingFilter()}, getNopClient(),
 	)
 	ctx := fx.NopContext
 	resp, err := execChain.Do(ctx, _req)
@@ -66,7 +67,7 @@ func TestExecutionChainFilters(t *testing.T) {
 
 func TestExecutionChainFiltersError(t *testing.T) {
 	execChain := newExecutionChain(
-		[]Filter{FilterFunc(tracingFilter)}, getErrorClient(),
+		[]Filter{tracingFilter()}, getErrorClient(),
 	)
 	resp, err := execChain.Do(fx.NopContext, _req)
 	assert.Error(t, err)
@@ -84,15 +85,13 @@ func withOpentracingSetup(t *testing.T, registerFunc auth.RegisterFunc, fn func(
 	auth.UnregisterClient()
 	defer auth.UnregisterClient()
 	auth.RegisterClient(registerFunc)
-	auth.SetupClient(nil)
-	defer auth.SetupClient(nil)
 	fn(tracer)
 }
 
 func TestExecutionChainFilters_AuthContextPropagation(t *testing.T) {
 	withOpentracingSetup(t, nil, func(tracer opentracing.Tracer) {
 		execChain := newExecutionChain(
-			[]Filter{FilterFunc(authenticationFilter)}, getContextPropogationClient(t),
+			[]Filter{authenticationFilter(fakeAuthInfo{})}, getContextPropogationClient(t),
 		)
 		span := tracer.StartSpan("test_method")
 		span.SetBaggageItem(auth.ServiceAuth, _serviceName)
@@ -108,7 +107,7 @@ func TestExecutionChainFilters_AuthContextPropagation(t *testing.T) {
 func TestExecutionChainFilters_AuthContextPropagationFailure(t *testing.T) {
 	withOpentracingSetup(t, auth.FakeFailureClient, func(tracer opentracing.Tracer) {
 		execChain := newExecutionChain(
-			[]Filter{FilterFunc(authenticationFilter)}, getContextPropogationClient(t),
+			[]Filter{authenticationFilter(fakeAuthInfo{})}, getContextPropogationClient(t),
 		)
 		span := tracer.StartSpan("test_method")
 		span.SetBaggageItem(auth.ServiceAuth, _serviceName)
@@ -119,6 +118,18 @@ func TestExecutionChainFilters_AuthContextPropagationFailure(t *testing.T) {
 		assert.Error(t, err)
 		assert.Nil(t, resp)
 	})
+}
+
+type fakeAuthInfo struct {
+	yaml []byte
+}
+
+func (f fakeAuthInfo) Config() config.Provider {
+	return config.NewYAMLProviderFromBytes(f.yaml)
+}
+
+func (f fakeAuthInfo) Logger() ulog.Log {
+	return ulog.NopLogger
 }
 
 func getContextPropogationClient(t *testing.T) BasicClient {

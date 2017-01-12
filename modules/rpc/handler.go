@@ -126,8 +126,7 @@ func authorize(ctx context.Context, host service.Host) (fx.Context, error) {
 	fxctx := &fxcontext.Context{
 		Context: ctx,
 	}
-	authClient := auth.Instance()
-	if err := authClient.Authorize(fxctx); err != nil {
+	if err := host.AuthClient().Authorize(fxctx); err != nil {
 		host.Metrics().SubScope("rpc").SubScope("auth").Counter("fail").Inc(1)
 		fxctx.Logger().Error(auth.ErrAuthorization, "error", err)
 		// TODO(anup): GFM-255 update returned error to transport.BadRequestError (user error than server error)
