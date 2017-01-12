@@ -81,7 +81,7 @@ func SetupClient(info CreateAuthInfo) {
 	if _registerFunc != nil {
 		_std = _registerFunc(info)
 	} else {
-		_std = noopClient(nil)
+		_std = NoopClient
 	}
 }
 

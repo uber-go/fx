@@ -34,7 +34,7 @@ type defaultClient struct {
 // TODO(anup): add configurable authentication, whether a service needs one or not
 func defaultAuth(info CreateAuthInfo) Client {
 	return &defaultClient{
-		authClient: noopClient(nil),
+		authClient: NoopClient,
 	}
 }
 
