@@ -42,7 +42,7 @@ func serve(t *testing.T, h http.Handler) net.Listener {
 }
 
 func withRouter(t *testing.T, f func(r *Router, l net.Listener)) {
-	r := NewRouter(service.NullHost())
+	r := NewRouter(service.NopHost())
 	l := serve(t, r)
 	defer l.Close()
 	r.Handle("/foo/baz/quokka",

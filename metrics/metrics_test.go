@@ -76,7 +76,7 @@ func TestRegisterBadReporterPanics(t *testing.T) {
 }
 
 func goodScope(i ScopeInit) (tally.Scope, tally.StatsReporter, io.Closer, error) {
-	return tally.NoopScope, tally.NullStatsReporter, testutils.NoopCloser{}, nil
+	return tally.NoopScope, tally.NullStatsReporter, testutils.NopCloser{}, nil
 }
 
 func badScope(i ScopeInit) (tally.Scope, tally.StatsReporter, io.Closer, error) {

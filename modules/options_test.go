@@ -49,6 +49,6 @@ func TestWithRoles_OK(t *testing.T) {
 
 func mci() *service.ModuleCreateInfo {
 	return &service.ModuleCreateInfo{
-		Host: service.NullHost(),
+		Host: service.NopHost(),
 	}
 }

@@ -48,7 +48,7 @@ func TestNewBuilder_WithConfig(t *testing.T) {
 func TestBuilder_WithModules(t *testing.T) {
 	_, err := NewBuilder(
 		WithConfiguration(StaticAppData(nil)),
-	).WithModules(noopModule).Build()
+	).WithModules(nopModule).Build()
 	assert.NoError(t, err)
 }
 
@@ -63,18 +63,18 @@ func TestBuilder_SkipsModulesBadInit(t *testing.T) {
 	empty := ""
 	_, err := NewBuilder(
 		WithConfiguration(StaticAppData(&empty)),
-	).WithModules(noopModule).Build()
+	).WithModules(nopModule).Build()
 	assert.Error(t, err, "Expected service name to be provided")
 }
 
 func TestWithModules_OK(t *testing.T) {
-	_, err := WithModules(noopModule).WithOptions(
+	_, err := WithModules(nopModule).WithOptions(
 		WithConfiguration(StaticAppData(nil)),
 	).Build()
 	assert.NoError(t, err)
 }
 
-func noopModule(_ ModuleCreateInfo) ([]Module, error) {
+func nopModule(_ ModuleCreateInfo) ([]Module, error) {
 	return nil, nil
 }
 

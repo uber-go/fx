@@ -38,13 +38,13 @@ func TestHostContainer_SetContainer(t *testing.T) {
 }
 
 func TestCoreDescription(t *testing.T) {
-	sh := NullHost().(*serviceCore)
+	sh := NopHost().(*serviceCore)
 
 	assert.Equal(t, sh.standardConfig.ServiceDescription, sh.Description())
 }
 
 func TestCoreOwner(t *testing.T) {
-	sh := NullHost().(*serviceCore)
+	sh := NopHost().(*serviceCore)
 
 	assert.Equal(t, sh.standardConfig.ServiceOwner, sh.Owner())
 }
@@ -68,7 +68,7 @@ func TestCoreRoles(t *testing.T) {
 }
 
 func TestCoreConfig(t *testing.T) {
-	sh := NullHost()
+	sh := NopHost()
 	cfg := sh.Config()
 
 	assert.Equal(t, "static", cfg.Name())

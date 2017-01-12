@@ -42,8 +42,8 @@ import (
 )
 
 func TestFilterChain(t *testing.T) {
-	host := service.NullHost()
-	chain := newFilterChain([]Filter{}, getNoopHandler(host))
+	host := service.NopHost()
+	chain := newFilterChain([]Filter{}, getNopHandler(host))
 	response := testServeHTTP(chain, host)
 	assert.True(t, strings.Contains(response.Body.String(), "filters ok"))
 }
@@ -59,10 +59,10 @@ func TestTracingFilterWithLogs(t *testing.T) {
 		opentracing.InitGlobalTracer(tracer)
 		defer opentracing.InitGlobalTracer(opentracing.NoopTracer{})
 
-		host := service.NullHostConfigured(loggerWithZap, tracer)
+		host := service.NopHostConfigured(loggerWithZap, tracer)
 		chain := newFilterChain(
 			[]Filter{tracingServerFilter(host)},
-			getNoopHandler(host),
+			getNopHandler(host),
 		)
 		response := testServeHTTP(chain, host)
 		assert.Contains(t, response.Body.String(), "filters ok")
@@ -75,19 +75,19 @@ func TestTracingFilterWithLogs(t *testing.T) {
 }
 
 func TestFilterChainFilters(t *testing.T) {
-	host := service.NullHost()
+	host := service.NopHost()
 	chain := newFilterChain([]Filter{
 		contextFilter(host),
 		tracingServerFilter(host),
 		authorizationFilter(host),
 		panicFilter(host)},
-		getNoopHandler(host))
+		getNopHandler(host))
 	response := testServeHTTP(chain, host)
 	assert.Contains(t, response.Body.String(), "filters ok")
 }
 
 func TestFilterChainFilters_AuthFailure(t *testing.T) {
-	host := service.NullHost()
+	host := service.NopHost()
 	auth.UnregisterClient()
 	auth.RegisterClient(auth.FakeFailureClient)
 	auth.SetupClient(host)
@@ -98,7 +98,7 @@ func TestFilterChainFilters_AuthFailure(t *testing.T) {
 		tracingServerFilter(host),
 		authorizationFilter(host),
 		panicFilter(host)},
-		getNoopHandler(host))
+		getNopHandler(host))
 	response := testServeHTTP(chain, host)
 	assert.Contains(t, "Unauthorized access: Error authorizing the service", response.Body.String())
 	assert.Equal(t, 401, response.Code)
@@ -113,7 +113,7 @@ func testServeHTTP(chain filterChain, host service.Host) *httptest.ResponseRecor
 	return response
 }
 
-func getNoopHandler(host service.Host) HandlerFunc {
+func getNopHandler(host service.Host) HandlerFunc {
 	return func(ctx fx.Context, w http.ResponseWriter, r *http.Request) {
 		ctx.Logger().Info("Inside Noop Handler")
 		io.WriteString(w, "filters ok")

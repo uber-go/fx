@@ -30,7 +30,7 @@ import (
 )
 
 func withContext(t *testing.B, f func(fxctx fx.Context)) {
-	f(New(context.Background(), service.NullHost()))
+	f(New(context.Background(), service.NopHost()))
 }
 
 func BenchmarkContext_TypeConversion(b *testing.B) {

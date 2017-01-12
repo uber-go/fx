@@ -24,15 +24,15 @@ import (
 	"github.com/pkg/errors"
 )
 
-// NoopCloser is a noop implementation of io.Closer
-type NoopCloser struct{}
+// NopCloser is a nop implementation of io.Closer
+type NopCloser struct{}
 
 // Close implements io.Closer
-func (nc NoopCloser) Close() error {
+func (nc NopCloser) Close() error {
 	return nil
 }
 
-// ErrorCloser is a noop implementation of io.Closer
+// ErrorCloser is a nop implementation of io.Closer
 type ErrorCloser struct{}
 
 // Close implements io.Closer

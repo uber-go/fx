@@ -22,11 +22,11 @@ package ulog
 
 import "github.com/uber-go/zap"
 
-func noopLogger() Log {
+func nopLogger() Log {
 	return &baseLogger{
 		log: zap.New(zap.NullEncoder()),
 	}
 }
 
-// NoopLogger should be used in tests if you wish to discard the output
-var NoopLogger = noopLogger()
+// NopLogger should be used in tests if you wish to discard the output
+var NopLogger = nopLogger()

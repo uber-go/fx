@@ -77,7 +77,7 @@ func TestUauth_RegisterPanic(t *testing.T) {
 
 func TestUauth_Default(t *testing.T) {
 	withAuthClientSetup(t, nil, fakeAuthInfo{}, func() {
-		assert.Equal(t, "noop", Instance().Name())
+		assert.Equal(t, "nop", Instance().Name())
 	})
 }
 
@@ -88,5 +88,5 @@ func (fakeAuthInfo) Config() config.Provider {
 }
 
 func (fakeAuthInfo) Logger() ulog.Log {
-	return ulog.NoopLogger
+	return ulog.NopLogger
 }

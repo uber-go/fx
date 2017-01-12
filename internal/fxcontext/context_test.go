@@ -34,7 +34,7 @@ import (
 )
 
 func TestContext_HostAccess(t *testing.T) {
-	ctx := New(gcontext.Background(), service.NullHost())
+	ctx := New(gcontext.Background(), service.NopHost())
 	assert.NotNil(t, ctx)
 	assert.NotNil(t, ctx.Logger())
 	assert.NotNil(t, ctx.Value(_fxContextStore))
@@ -42,7 +42,7 @@ func TestContext_HostAccess(t *testing.T) {
 
 func TestWithContext(t *testing.T) {
 	gctx := gcontext.WithValue(gcontext.Background(), "key", "val")
-	ctx := New(gctx, service.NullHost())
+	ctx := New(gctx, service.NopHost())
 	assert.Equal(t, "val", ctx.Value("key"))
 
 	gctx1 := gcontext.WithValue(gcontext.Background(), "key1", "val1")
@@ -83,7 +83,7 @@ func TestWithContext_NilHost(t *testing.T) {
 }
 
 func TestContext_Convert(t *testing.T) {
-	host := service.NullHost()
+	host := service.NopHost()
 	ctx := New(gcontext.Background(), host)
 	logger := ctx.Logger()
 	assert.Equal(t, host.Logger(), logger)

@@ -33,13 +33,13 @@ type Context interface {
 	Logger() ulog.Log
 }
 
-// NoopContext is defined for testing purpose
-var NoopContext = noopContext{gcontext.Background()}
+// NopContext is defined for testing purpose
+var NopContext = nopContext{gcontext.Background()}
 
-type noopContext struct {
+type nopContext struct {
 	gcontext.Context
 }
 
-func (noopContext) Logger() ulog.Log {
-	return ulog.NoopLogger
+func (nopContext) Logger() ulog.Log {
+	return ulog.NopLogger
 }

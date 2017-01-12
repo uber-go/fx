@@ -170,7 +170,7 @@ func TestOnCriticalError_ObserverShutdown(t *testing.T) {
 		observer: o,
 		serviceCore: serviceCore{
 			loggingCore: loggingCore{
-				log: ulog.NoopLogger,
+				log: ulog.NopLogger,
 			},
 		},
 	}
@@ -196,11 +196,11 @@ func TestHostShutdown_CloseSuccessful(t *testing.T) {
 	sh := makeRunningHost()
 	sh.serviceCore.metricsCore = metricsCore{
 		metrics:          tally.NoopScope,
-		metricsCloser:    testutils.NoopCloser{},
+		metricsCloser:    testutils.NopCloser{},
 		runtimeCollector: metrics.NewRuntimeCollector(tally.NoopScope, time.Millisecond),
 	}
 	sh.serviceCore.tracerCore = tracerCore{
-		tracerCloser: testutils.NoopCloser{},
+		tracerCloser: testutils.NopCloser{},
 	}
 	checkShutdown(t, sh, false)
 }
@@ -325,7 +325,7 @@ func makeHost() *host {
 	return &host{
 		serviceCore: serviceCore{
 			loggingCore: loggingCore{
-				log: ulog.NoopLogger,
+				log: ulog.NopLogger,
 			},
 		},
 	}

@@ -63,7 +63,7 @@ func RegisterClient(registerFunc RegisterFunc) {
 	_registerFunc = registerFunc
 }
 
-// UnregisterClient unregisters auth RegisterFunc for testing and resets to noopClient
+// UnregisterClient unregisters auth RegisterFunc for testing and resets to nopClient
 func UnregisterClient() {
 	_setupMu.Lock()
 	defer _setupMu.Unlock()
@@ -81,7 +81,7 @@ func SetupClient(info CreateAuthInfo) {
 	if _registerFunc != nil {
 		_std = _registerFunc(info)
 	} else {
-		_std = NoopClient
+		_std = NopClient
 	}
 }
 

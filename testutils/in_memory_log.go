@@ -33,7 +33,7 @@ type TestBuffer struct {
 	bytes.Buffer
 }
 
-// Sync is a noop to conform to zap.WriteSyncer interface
+// Sync is a nop to conform to zap.WriteSyncer interface
 func (b *TestBuffer) Sync() error {
 	return nil
 }
