@@ -22,7 +22,12 @@ package auth
 
 import "context"
 
-var _ Client = &noop{}
+var (
+	// NoopClient is used for testing and no-op integration
+	NoopClient = noopClient(nil)
+
+	_ Client = &noop{}
+)
 
 type noop struct {
 }
