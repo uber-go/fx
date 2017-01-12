@@ -28,10 +28,17 @@ import (
 	"testing"
 
 	"go.uber.org/fx"
+	"go.uber.org/fx/auth"
 	"go.uber.org/fx/internal/fxcontext"
 	"go.uber.org/fx/service"
+	"go.uber.org/fx/tracing"
+	"go.uber.org/fx/ulog"
 
+	"github.com/opentracing/opentracing-go"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"github.com/uber-go/tally"
+	jconfig "github.com/uber/jaeger-client-go/config"
 )
 
 var (
@@ -65,6 +72,47 @@ func TestExecutionChainFiltersError(t *testing.T) {
 	assert.Error(t, err)
 	assert.Equal(t, errClient, err)
 	assert.Nil(t, resp)
+}
+
+func withOpentracingSetup(t *testing.T, fn func(tracer opentracing.Tracer)) {
+	tracer, closer, err := tracing.InitGlobalTracer(&jconfig.Configuration{}, "Test", ulog.NoopLogger, tally.NullStatsReporter)
+	defer closer.Close()
+	assert.NotNil(t, closer)
+	require.NoError(t, err)
+
+	_serviceName = "test_service"
+	auth.UnregisterClient()
+	defer auth.UnregisterClient()
+	auth.SetupClient(nil)
+	defer auth.SetupClient(nil)
+	fn(tracer)
+}
+
+func TestExecutionChainFilters_AuthContextPropagation(t *testing.T) {
+	withOpentracingSetup(t, func(tracer opentracing.Tracer) {
+		execChain := newExecutionChain(
+			[]Filter{FilterFunc(authenticationFilter)}, getContextPropogationClient(t),
+		)
+		span := tracer.StartSpan("test_method")
+		span.SetBaggageItem(auth.ServiceAuth, _serviceName)
+		ctx := &fxcontext.Context{
+			Context: opentracing.ContextWithSpan(context.Background(), span),
+		}
+		resp, err := execChain.Do(ctx, _req)
+		assert.NoError(t, err)
+		assert.Equal(t, _respOK, resp)
+	})
+}
+
+func getContextPropogationClient(t *testing.T) BasicClient {
+	return BasicClientFunc(
+		func(ctx fx.Context, req *http.Request) (resp *http.Response, err error) {
+			span := opentracing.SpanFromContext(ctx)
+			assert.NotNil(t, span)
+			assert.Equal(t, _serviceName, span.BaggageItem(auth.ServiceAuth))
+			return _respOK, nil
+		},
+	)
 }
 
 func getNoopClient() BasicClient {
