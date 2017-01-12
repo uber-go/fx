@@ -51,7 +51,8 @@ var (
 )
 
 var (
-	_devEnv = "development"
+	_devEnv  = "development"
+	_testEnv = "test"
 )
 
 func getConfigFiles() []string {
@@ -101,9 +102,17 @@ func Environment() string {
 	return env
 }
 
-// IsDevelopment returns true if the current environment is set to development
-func IsDevelopment() bool {
+// IsDevelopmentEnv returns true if the current environment is set to development
+func IsDevelopmentEnv() bool {
 	return strings.Contains(Environment(), _devEnv)
+}
+
+// IsTestEnv returns true if the current environment is set to test
+//
+// Useful, for example, to enable alternate functionality of some components
+// during testing that might normally require network connectivity or a database
+func IsTestEnv() bool {
+	return strings.Contains(Environment(), _testEnv)
 }
 
 // Path returns path to the yaml configurations

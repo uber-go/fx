@@ -9,7 +9,7 @@ If you'd like to verify that log messages are logged properly, use the
 `WithInMemoryLogger()` helper which will provider you with a `zap.Logger` you
 can pass into a service and capture recorded messages.
 
-## EnvOverride
+## Overriding environment variables
 
-If you'd like to override environment variables, use the `EnvOverride()` helper
+If you'd like to override environment variables, use the `env.Override()` helper
 and defer the reset to ensure the old value us returned at the end of the test.

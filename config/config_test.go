@@ -24,10 +24,12 @@ import (
 	"fmt"
 	"testing"
 
+	"go.uber.org/fx/testutils/env"
+
 	"github.com/stretchr/testify/assert"
 )
 
-var env = map[string]string{
+var envValues = map[string]string{
 	toEnvString(defaultEnvPrefix, "modules.rpc.bind"): ":8888",
 	toEnvString(defaultEnvPrefix, "n1.name"):          "struct_name",
 	toEnvString(defaultEnvPrefix, "nptr.name"):        "ptr_name",
@@ -125,7 +127,7 @@ func TestDirectAccess(t *testing.T) {
 	provider := NewProviderGroup(
 		"test",
 		NewYAMLProviderFromBytes(nestedYaml),
-		NewEnvProvider(defaultEnvPrefix, mapEnvironmentProvider{values: env}),
+		NewEnvProvider(defaultEnvPrefix, mapEnvironmentProvider{values: envValues}),
 	)
 
 	v := provider.Get("n1.id1").WithDefault("xxx")
@@ -143,7 +145,7 @@ func TestScopedAccess(t *testing.T) {
 	provider := NewProviderGroup(
 		"test",
 		NewYAMLProviderFromBytes(nestedYaml),
-		NewEnvProvider(defaultEnvPrefix, mapEnvironmentProvider{values: env}),
+		NewEnvProvider(defaultEnvPrefix, mapEnvironmentProvider{values: envValues}),
 	)
 
 	provider = provider.Scope("n1")
@@ -163,7 +165,7 @@ func TestOverrideSimple(t *testing.T) {
 	provider := NewProviderGroup(
 		"test",
 		NewYAMLProviderFromBytes(yamlConfig2),
-		NewEnvProvider(defaultEnvPrefix, mapEnvironmentProvider{values: env}),
+		NewEnvProvider(defaultEnvPrefix, mapEnvironmentProvider{values: envValues}),
 	)
 
 	rpc := &rpcStruct{}
@@ -210,7 +212,7 @@ func TestNestedStructs(t *testing.T) {
 	provider := NewProviderGroup(
 		"test",
 		NewYAMLProviderFromBytes(nestedYaml),
-		NewEnvProvider(defaultEnvPrefix, mapEnvironmentProvider{values: env}),
+		NewEnvProvider(defaultEnvPrefix, mapEnvironmentProvider{values: envValues}),
 	)
 
 	str := &root{}
@@ -234,7 +236,7 @@ func TestArrayOfStructs(t *testing.T) {
 	provider := NewProviderGroup(
 		"test",
 		NewYAMLProviderFromBytes(structArrayYaml),
-		NewEnvProvider(defaultEnvPrefix, mapEnvironmentProvider{values: env}),
+		NewEnvProvider(defaultEnvPrefix, mapEnvironmentProvider{values: envValues}),
 	)
 
 	target := &arrayOfStructs{}
@@ -251,7 +253,7 @@ func TestDefault(t *testing.T) {
 	provider := NewProviderGroup(
 		"test",
 		NewYAMLProviderFromBytes(nest1),
-		NewEnvProvider(defaultEnvPrefix, mapEnvironmentProvider{values: env}),
+		NewEnvProvider(defaultEnvPrefix, mapEnvironmentProvider{values: envValues}),
 	)
 	target := &nested{}
 	v := provider.Get(Root)
@@ -263,7 +265,7 @@ func TestDefault(t *testing.T) {
 func TestDefaultValue(t *testing.T) {
 	provider := NewProviderGroup(
 		"test",
-		NewEnvProvider(defaultEnvPrefix, mapEnvironmentProvider{values: env}),
+		NewEnvProvider(defaultEnvPrefix, mapEnvironmentProvider{values: envValues}),
 	)
 	v := provider.Get("stuff")
 	assert.False(t, v.HasValue())
@@ -334,4 +336,9 @@ func TestEnvProvider_Callbacks(t *testing.T) {
 	p := NewEnvProvider("", nil)
 	assert.NoError(t, p.RegisterChangeCallback("test", nil))
 	assert.NoError(t, p.UnregisterChangeCallback("token"))
+}
+
+func TestIsTestEnv(t *testing.T) {
+	defer env.Override(t, EnvironmentKey(), "test")()
+	assert.True(t, IsTestEnv())
 }
