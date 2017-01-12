@@ -82,9 +82,7 @@ func withOpentracingSetup(t *testing.T, fn func(tracer opentracing.Tracer)) {
 
 	_serviceName = "test_service"
 	auth.UnregisterClient()
-	defer auth.UnregisterClient()
 	auth.SetupClient(nil)
-	defer auth.SetupClient(nil)
 	fn(tracer)
 }
 
