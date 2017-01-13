@@ -24,8 +24,6 @@ import (
 	"fmt"
 	"testing"
 
-	"go.uber.org/fx/testutils/env"
-
 	"github.com/stretchr/testify/assert"
 )
 
@@ -336,9 +334,4 @@ func TestEnvProvider_Callbacks(t *testing.T) {
 	p := NewEnvProvider("", nil)
 	assert.NoError(t, p.RegisterChangeCallback("test", nil))
 	assert.NoError(t, p.UnregisterChangeCallback("token"))
-}
-
-func TestIsTestEnv(t *testing.T) {
-	defer env.Override(t, EnvironmentKey(), "test")()
-	assert.True(t, IsTestEnv())
 }

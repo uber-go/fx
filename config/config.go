@@ -103,16 +103,9 @@ func Environment() string {
 }
 
 // IsDevelopmentEnv returns true if the current environment is set to development
+// TODO(glib): Remove usage of this function
 func IsDevelopmentEnv() bool {
 	return strings.Contains(Environment(), _devEnv)
-}
-
-// IsTestEnv returns true if the current environment is set to test
-//
-// Useful, for example, to enable alternate functionality of some components
-// during testing that might normally require network connectivity or a database
-func IsTestEnv() bool {
-	return strings.Contains(Environment(), _testEnv)
 }
 
 // Path returns path to the yaml configurations
