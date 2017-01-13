@@ -51,8 +51,7 @@ var (
 )
 
 var (
-	_devEnv  = "development"
-	_testEnv = "test"
+	_devEnv = "development"
 )
 
 func getConfigFiles() []string {
