@@ -21,6 +21,7 @@
 package utask
 
 import (
+	"encoding/gob"
 	"fmt"
 	"testing"
 
@@ -28,44 +29,45 @@ import (
 )
 
 func TestNoArgsFn(t *testing.T) {
-	err := Register(NoArgs)
+	err := Enqueue(NoArgs)
 	assert.NoError(t, err)
-	err = RunNext()
+	err = RunNextByte()
 	assert.NoError(t, err)
 }
 
 func TestSimpleFn(t *testing.T) {
-	err := Register(Simple, "hello")
+	err := Enqueue(Simple, "hello")
 	assert.NoError(t, err)
-	err = RunNext()
+	err = RunNextByte()
 	assert.NoError(t, err)
 }
 
 func TestComplexFn(t *testing.T) {
-	err := Register(Complex, Car{brand: "infinity", model: "g37", year: 2017})
+	gob.Register(Car{})
+	err := Enqueue(Complex, Car{Brand: "infinity", Model: "g37", Year: 2017})
 	assert.NoError(t, err)
-	err = RunNext()
+	err = RunNextByte()
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "Complex error")
 }
 
 func NoArgs() error {
-	fmt.Printf("Inside NoArgs")
+	fmt.Printf("Inside NoArgs\n")
 	return nil
 }
 
 func Simple(a string) error {
-	fmt.Printf("Inside function: %s\n", a)
+	fmt.Printf("Inside Simple: %s\n", a)
 	return nil
 }
 
 type Car struct {
-	brand string
-	model string
-	year  int
+	Brand string
+	Model string
+	Year  int
 }
 
 func Complex(car Car) error {
-	fmt.Printf("Car: %v\n", car)
+	fmt.Printf("Inside Complex: %v\n", car)
 	return fmt.Errorf("Complex error")
 }

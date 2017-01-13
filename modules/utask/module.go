@@ -24,6 +24,9 @@ import (
 	"go.uber.org/fx/service"
 )
 
-type Module interface {
+// Backend represents a task backend
+type Backend interface {
 	service.Module
+	Publish(message []byte, userContext map[string]string) error
+	Consume() ([]byte, error)
 }

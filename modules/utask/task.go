@@ -32,7 +32,15 @@ import (
 // ModuleType represents the utask module type
 const ModuleType = "utask"
 
-var _backendRegisterFn backendRegisterFn
+var (
+	_backendRegisterFn backendRegisterFn
+	_backend           Backend
+)
+
+// GlobalBackend returns global instance of the backend
+func GlobalBackend() Backend {
+	return _backend
+}
 
 // NewModule creates an async task queue module
 func NewModule() service.ModuleCreateFunc {
@@ -45,23 +53,24 @@ func NewModule() service.ModuleCreateFunc {
 	}
 }
 
-func newAsyncModule(mi service.ModuleCreateInfo) (*AsyncModule, error) {
-	backendMod, err := _backendRegisterFn(mi.Host, Config{})
+func newAsyncModule(mi service.ModuleCreateInfo) (service.Module, error) {
+	backend, err := _backendRegisterFn(mi.Host, Config{})
 	if err != nil {
 		return nil, err
 	}
+	_backend = backend
 	return &AsyncModule{
-		ModuleBase:    *modules.NewModuleBase(ModuleType, "task", mi.Host, []string{}),
-		backendModule: backendMod,
+		Backend: backend,
+		modBase: *modules.NewModuleBase(ModuleType, "task", mi.Host, []string{}),
 	}, nil
 }
 
 // AsyncModule denotes the asynchronous task queue module
 type AsyncModule struct {
-	modules.ModuleBase
-	stateMu       sync.RWMutex
-	config        Config
-	backendModule service.Module
+	Backend
+	modBase modules.ModuleBase
+	stateMu sync.RWMutex
+	config  Config
 }
 
 // Config contains config for task backends
@@ -70,28 +79,7 @@ type Config struct {
 	timeout string `yaml:"timeout"`
 }
 
-// Start begins serving requests over the module
-func (m *AsyncModule) Start(readyCh chan<- struct{}) <-chan error {
-	m.stateMu.Lock()
-	defer m.stateMu.Unlock()
-	return nil
-}
-
-// Stop shuts down the module
-func (m *AsyncModule) Stop() error {
-	m.stateMu.Lock()
-	defer m.stateMu.Unlock()
-	return nil
-}
-
-// IsRunning returns whether the module is running
-func (m *AsyncModule) IsRunning() bool {
-	m.stateMu.RLock()
-	defer m.stateMu.RUnlock()
-	return false
-}
-
-type backendRegisterFn func(service.Host, Config) (service.Module, error)
+type backendRegisterFn func(service.Host, Config) (Backend, error)
 
 // RegisterAsyncBackend registers the backend for the async task module
 func RegisterAsyncBackend(backendRegisterFn backendRegisterFn) {

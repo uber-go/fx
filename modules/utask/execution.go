@@ -21,24 +21,36 @@
 package utask
 
 import (
+	"bytes"
+	"encoding/gob"
 	"fmt"
 	"reflect"
+	"runtime"
+
+	"go.uber.org/fx/ulog"
 )
 
-type fnArgs struct {
-	fn   reflect.Value
-	args []reflect.Value
+// FnArgs represents a function and its arguments
+type FnArgs struct {
+	FnName string
+	Args   []interface{}
 }
 
-func (f *fnArgs) Execute() []reflect.Value {
-	return f.fn.Call(f.args)
+// Execute executes the function
+func (f *FnArgs) Execute() []reflect.Value {
+	var targetArgs []reflect.Value
+	for _, arg := range f.Args {
+		targetArgs = append(targetArgs, reflect.ValueOf(arg))
+	}
+	fnValue := reflect.ValueOf(fnNameMap[f.FnName])
+	return fnValue.Call(targetArgs)
 }
 
-var fnQueue []fnArgs
+var bufQueue bytes.Buffer
+var fnNameMap = make(map[string]interface{})
 
-// Register registers a func before sending to the task queue
-func Register(fn interface{}, args ...interface{}) error {
-	fnValue := reflect.ValueOf(fn)
+// Enqueue sends a func before sending to the task queue
+func Enqueue(fn interface{}, args ...interface{}) error {
 	fnType := reflect.TypeOf(fn)
 	if err := validateAsyncFn(fnType); err != nil {
 		return err
@@ -56,16 +68,33 @@ func Register(fn interface{}, args ...interface{}) error {
 				i, argType, fnType.In(i),
 			)
 		}
+		fmt.Println("Register", argType, arg)
+		gob.Register(arg)
 		argValues = append(argValues, arg)
 	}
-	fnQueue = append(fnQueue, fnArgs{fn: fnValue, args: argValues})
+	fnName := getFunctionName(fn)
+	fnNameMap[fnName] = fn
+	fnArgs := FnArgs{FnName: fnName, Args: args}
+
+	enc := gob.NewEncoder(&bufQueue)
+	err := enc.Encode(fnArgs)
+
+	if err != nil {
+		ulog.Logger().Error("Encode error:", "error", err)
+		return err
+	}
 	return nil
 }
 
-// RunNext runs next function from queue
-func RunNext() error {
-	fnArgs := fnQueue[0]
-	fnQueue = fnQueue[1:]
+// RunNextByte runs next function from queue
+func RunNextByte() error {
+	dec := gob.NewDecoder(&bufQueue)
+	var fnArgs FnArgs
+	err := dec.Decode(&fnArgs)
+	if err != nil {
+		ulog.Logger().Error("Decode error:", err)
+		return err
+	}
 	retValues := fnArgs.Execute()
 	return castToError(retValues[0])
 }
@@ -98,4 +127,8 @@ func castToError(value reflect.Value) error {
 func isError(inType reflect.Type) bool {
 	errorInterface := reflect.TypeOf((*error)(nil)).Elem()
 	return inType.Implements(errorInterface)
+}
+
+func getFunctionName(i interface{}) string {
+	return runtime.FuncForPC(reflect.ValueOf(i).Pointer()).Name()
 }
