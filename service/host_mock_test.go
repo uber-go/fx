@@ -30,3 +30,9 @@ func TestNopHost_OK(t *testing.T) {
 	sh := NopHost()
 	assert.Equal(t, "dummy", sh.Name())
 }
+
+func TestNopHost_AuthFailures(t *testing.T) {
+	sh := NopHostAuthFailure()
+	assert.Equal(t, "dummy", sh.Name())
+	assert.Equal(t, "failure", sh.AuthClient().Name())
+}

@@ -27,6 +27,7 @@ import (
 	"strings"
 
 	"go.uber.org/fx"
+	"go.uber.org/fx/auth"
 	"go.uber.org/fx/config"
 
 	"golang.org/x/net/context/ctxhttp"
@@ -39,16 +40,18 @@ var (
 // Client wraps around a http client
 type Client struct {
 	*http.Client
+	info                auth.CreateAuthInfo
 	filters             []Filter
 	defaultFiltersAdded bool
 }
 
 // New creates a new instance of uhttp Client
-func New(cfg config.Provider, client *http.Client, filters ...Filter) *Client {
-	_serviceName = cfg.Get(config.ApplicationIDKey).AsString()
-	filters = append(filters, FilterFunc(tracingFilter), FilterFunc(authenticationFilter))
+func New(info auth.CreateAuthInfo, client *http.Client, filters ...Filter) *Client {
+	_serviceName = info.Config().Get(config.ApplicationIDKey).AsString()
+	filters = append(filters, tracingFilter(), authenticationFilter(info))
 	return &Client{
 		Client:              client,
+		info:                info,
 		filters:             filters,
 		defaultFiltersAdded: true,
 	}
@@ -58,7 +61,8 @@ func New(cfg config.Provider, client *http.Client, filters ...Filter) *Client {
 func (c *Client) Do(ctx fx.Context, req *http.Request) (resp *http.Response, err error) {
 	filters := c.filters
 	if c.defaultFiltersAdded == false {
-		filters = append(filters, FilterFunc(tracingFilter), FilterFunc(authenticationFilter))
+		// TODO(anup): GFM-289 Update uhttp client to not return exported struct
+		filters = append(filters, tracingFilter(), authenticationFilter(c.info))
 		c.defaultFiltersAdded = true
 	}
 	execChain := newExecutionChain(filters, BasicClientFunc(c.do))

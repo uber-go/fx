@@ -22,8 +22,6 @@ package auth
 
 import "context"
 
-var _std Client
-
 var _ Client = &defaultClient{}
 
 type defaultClient struct {
@@ -36,11 +34,6 @@ func defaultAuth(info CreateAuthInfo) Client {
 	return &defaultClient{
 		authClient: NopClient,
 	}
-}
-
-// Instance returns initialized instance of auth client
-func Instance() Client {
-	return _std
 }
 
 func (*defaultClient) Name() string {

@@ -21,6 +21,7 @@
 package service
 
 import (
+	"go.uber.org/fx/auth"
 	"go.uber.org/fx/config"
 	"go.uber.org/fx/ulog"
 
@@ -30,12 +31,21 @@ import (
 
 // NopHost is to be used in tests
 func NopHost() Host {
-	return NopHostConfigured(ulog.NopLogger, opentracing.NoopTracer{})
+	return NopHostConfigured(auth.NopClient, ulog.NopLogger, opentracing.NoopTracer{})
+}
+
+// NopHostAuthFailure is nop host with failure auth client
+func NopHostAuthFailure() Host {
+	auth.UnregisterClient()
+	defer auth.UnregisterClient()
+	auth.RegisterClient(auth.FakeFailureClient)
+	return NopHostConfigured(auth.Load(nil), ulog.NopLogger, opentracing.NoopTracer{})
 }
 
 // NopHostConfigured is a nop host with set logger and tracer for tests
-func NopHostConfigured(logger ulog.Log, tracer opentracing.Tracer) Host {
+func NopHostConfigured(client auth.Client, logger ulog.Log, tracer opentracing.Tracer) Host {
 	return &serviceCore{
+		authClient:     client,
 		configProvider: config.NewStaticProvider(nil),
 		standardConfig: serviceConfig{
 			ServiceName:        "dummy",

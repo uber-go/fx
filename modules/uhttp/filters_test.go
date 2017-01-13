@@ -59,7 +59,7 @@ func TestTracingFilterWithLogs(t *testing.T) {
 		opentracing.InitGlobalTracer(tracer)
 		defer opentracing.InitGlobalTracer(opentracing.NoopTracer{})
 
-		host := service.NopHostConfigured(loggerWithZap, tracer)
+		host := service.NopHostConfigured(auth.NopClient, loggerWithZap, tracer)
 		chain := newFilterChain(
 			[]Filter{tracingServerFilter(host)},
 			getNopHandler(host),
@@ -87,12 +87,7 @@ func TestFilterChainFilters(t *testing.T) {
 }
 
 func TestFilterChainFilters_AuthFailure(t *testing.T) {
-	host := service.NopHost()
-	auth.UnregisterClient()
-	auth.RegisterClient(auth.FakeFailureClient)
-	auth.SetupClient(host)
-	defer auth.UnregisterClient()
-	defer auth.SetupClient(host)
+	host := service.NopHostAuthFailure()
 	chain := newFilterChain([]Filter{
 		contextFilter(host),
 		tracingServerFilter(host),
@@ -105,7 +100,6 @@ func TestFilterChainFilters_AuthFailure(t *testing.T) {
 }
 
 func testServeHTTP(chain filterChain, host service.Host) *httptest.ResponseRecorder {
-	auth.SetupClient(nil)
 	request := httptest.NewRequest("", "http://filters", nil)
 	response := httptest.NewRecorder()
 	ctx := fxcontext.New(context.Background(), host)

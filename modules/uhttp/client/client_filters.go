@@ -49,59 +49,59 @@ func (f FilterFunc) Apply(
 	return f(ctx, r, next)
 }
 
-func tracingFilter(
-	ctx fx.Context, req *http.Request, next BasicClient,
-) (resp *http.Response, err error) {
-	opName := req.Method
-	var parent opentracing.SpanContext
-	if s := opentracing.SpanFromContext(ctx); s != nil {
-		parent = s.Context()
-	}
-	span := opentracing.GlobalTracer().StartSpan(opName, opentracing.ChildOf(parent))
-	ext.SpanKindRPCClient.Set(span)
-	ext.HTTPUrl.Set(span, req.URL.String())
-	defer span.Finish()
+func tracingFilter() FilterFunc {
+	return func(ctx fx.Context, req *http.Request, next BasicClient,
+	) (resp *http.Response, err error) {
+		opName := req.Method
+		var parent opentracing.SpanContext
+		if s := opentracing.SpanFromContext(ctx); s != nil {
+			parent = s.Context()
+		}
+		span := opentracing.GlobalTracer().StartSpan(opName, opentracing.ChildOf(parent))
+		ext.SpanKindRPCClient.Set(span)
+		ext.HTTPUrl.Set(span, req.URL.String())
+		defer span.Finish()
 
-	ctx = &fxcontext.Context{
-		Context: opentracing.ContextWithSpan(ctx, span),
-	}
-	if err := injectSpanIntoHeaders(req.Header, span); err != nil {
-		return nil, err
-	}
+		ctx = &fxcontext.Context{
+			Context: opentracing.ContextWithSpan(ctx, span),
+		}
+		if err := injectSpanIntoHeaders(req.Header, span); err != nil {
+			return nil, err
+		}
 
-	resp, err = next.Do(ctx, req)
-	if resp != nil {
-		span.SetTag("http.status_code", resp.StatusCode)
+		resp, err = next.Do(ctx, req)
+		if resp != nil {
+			span.SetTag("http.status_code", resp.StatusCode)
+		}
+		if err != nil {
+			span.SetTag("error", err.Error())
+		}
+		return resp, err
 	}
-	if err != nil {
-		span.SetTag("error", err.Error())
-	}
-	return resp, err
 }
 
-func authenticationFilter(
-	ctx fx.Context, req *http.Request, next BasicClient,
-) (resp *http.Response, err error) {
-	authClient := auth.Instance()
+func authenticationFilter(info auth.CreateAuthInfo) FilterFunc {
+	authClient := auth.Load(info)
+	return func(ctx fx.Context, req *http.Request, next BasicClient,
+	) (resp *http.Response, err error) {
+		// Client needs to know what service it is to authenticate
+		authctx := authClient.SetAttribute(ctx, auth.ServiceAuth, _serviceName)
 
-	// Client needs to know what service it is to authenticate
-	authctx := authClient.SetAttribute(ctx, auth.ServiceAuth, _serviceName)
+		authctx, err = authClient.Authenticate(authctx)
+		if err != nil {
+			ctx.Logger().Error(auth.ErrAuthentication, "error", err)
+			return nil, err
+		}
 
-	authctx, err = authClient.Authenticate(authctx)
-	if err != nil {
-		ctx.Logger().Error(auth.ErrAuthentication, "error", err)
-		return nil, err
+		span := opentracing.SpanFromContext(authctx)
+		if err := injectSpanIntoHeaders(req.Header, span); err != nil {
+			ctx.Logger().Error("Error injecting auth context", "error", err)
+			return nil, err
+		}
+
+		return next.Do(&fxcontext.Context{Context: authctx}, req)
 	}
-
-	span := opentracing.SpanFromContext(authctx)
-	if err := injectSpanIntoHeaders(req.Header, span); err != nil {
-		ctx.Logger().Error("Error injecting auth context", "error", err)
-		return nil, err
-	}
-
-	return next.Do(&fxcontext.Context{Context: authctx}, req)
 }
-
 func injectSpanIntoHeaders(header http.Header, span opentracing.Span) error {
 	carrier := opentracing.HTTPHeadersCarrier(header)
 	if err := span.Tracer().Inject(span.Context(), opentracing.HTTPHeaders, carrier); err != nil {

@@ -34,14 +34,12 @@ import (
 func withAuthClientSetup(t *testing.T, registerFunc RegisterFunc, info CreateAuthInfo, fn func()) {
 	UnregisterClient()
 	RegisterClient(registerFunc)
-	SetupClient(info)
 	fn()
 }
 
 func TestUauth_Stub(t *testing.T) {
 	RegisterClient(defaultAuth)
-	SetupClient(nil)
-	authClient := Instance()
+	authClient := Load(fakeAuthInfo{})
 	assert.Equal(t, "auth", authClient.Name())
 	assert.NotNil(t, authClient)
 	assert.Nil(t, authClient.Authorize(context.Background()))
@@ -54,7 +52,7 @@ func TestUauth_Stub(t *testing.T) {
 
 func TestUauth_Register(t *testing.T) {
 	withAuthClientSetup(t, FakeFailureClient, fakeAuthInfo{}, func() {
-		authClient := Instance()
+		authClient := Load(fakeAuthInfo{})
 		assert.Equal(t, "failure", authClient.Name())
 		assert.NotNil(t, authClient)
 		err := authClient.Authorize(context.Background())
@@ -77,7 +75,7 @@ func TestUauth_RegisterPanic(t *testing.T) {
 
 func TestUauth_Default(t *testing.T) {
 	withAuthClientSetup(t, nil, fakeAuthInfo{}, func() {
-		assert.Equal(t, "nop", Instance().Name())
+		assert.Equal(t, "nop", Load(fakeAuthInfo{}).Name())
 	})
 }
 
