@@ -97,7 +97,7 @@ func (lb *LogBuilder) Build() Log {
 		}
 	}
 
-	if config.IsDevelopment() {
+	if config.IsDevelopmentEnv() {
 		log = lb.devLogger()
 	} else {
 		log = lb.Configure()

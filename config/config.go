@@ -101,8 +101,9 @@ func Environment() string {
 	return env
 }
 
-// IsDevelopment returns true if the current environment is set to development
-func IsDevelopment() bool {
+// IsDevelopmentEnv returns true if the current environment is set to development
+// TODO(glib): Remove usage of this function
+func IsDevelopmentEnv() bool {
 	return strings.Contains(Environment(), _devEnv)
 }
 

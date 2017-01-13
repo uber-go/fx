@@ -27,7 +27,7 @@ import (
 	"testing"
 
 	"go.uber.org/fx/config"
-	"go.uber.org/fx/testutils"
+	"go.uber.org/fx/testutils/env"
 	"go.uber.org/fx/ulog/sentry"
 
 	"github.com/stretchr/testify/assert"
@@ -102,7 +102,7 @@ func TestConfiguredLoggerWithStdout(t *testing.T) {
 }
 
 func withLogger(t *testing.T, f func(*LogBuilder, string, string)) {
-	defer testutils.EnvOverride(t, config.EnvironmentKey(), "madeup")()
+	defer env.Override(t, config.EnvironmentKey(), "madeup")()
 	tmpDir, err := ioutil.TempDir("", "default_log")
 	defer func() {
 		assert.NoError(t, os.RemoveAll(tmpDir), "should be able to delete tempdir")
@@ -131,7 +131,7 @@ func withLogger(t *testing.T, f func(*LogBuilder, string, string)) {
 
 func TestDefaultPackageLogger(t *testing.T) {
 	withLogger(t, func(builder *LogBuilder, tmpDir string, logFile string) {
-		defer testutils.EnvOverride(t, config.EnvironmentKey(), "development")()
+		defer env.Override(t, config.EnvironmentKey(), "development")()
 		log := New()
 		zapLogger := log.Typed()
 		assert.True(t, zapLogger.Check(zap.DebugLevel, "").OK())

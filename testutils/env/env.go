@@ -18,7 +18,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package testutils
+package env
 
 import (
 	"os"
@@ -27,8 +27,9 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// EnvOverride overrides the environment variable for testing purpose
-func EnvOverride(t *testing.T, key, value string) func() {
+// Override temporary changes an environment variable
+// Execute the returned function to restore the original value
+func Override(t *testing.T, key, value string) func() {
 	old := os.Getenv(key)
 	err := os.Setenv(key, value)
 	require.NoError(t, err)
