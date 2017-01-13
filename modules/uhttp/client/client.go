@@ -61,6 +61,7 @@ func New(info auth.CreateAuthInfo, client *http.Client, filters ...Filter) *Clie
 func (c *Client) Do(ctx fx.Context, req *http.Request) (resp *http.Response, err error) {
 	filters := c.filters
 	if c.defaultFiltersAdded == false {
+		// TODO(anup): GFM-289 Update uhttp client to not return exported struct
 		filters = append(filters, tracingFilter(), authenticationFilter(c.info))
 		c.defaultFiltersAdded = true
 	}
