@@ -77,6 +77,7 @@ type Module struct {
 	config   Config
 	log      ulog.Log
 	mux      *http.ServeMux
+	srv      *http.Server
 	router   *Router
 	listener net.Listener
 	handlers []RouteHandler
@@ -189,14 +190,19 @@ func (m *Module) Start(ready chan<- struct{}) <-chan error {
 	}
 	m.listenMu.Lock()
 	m.listener = listener
+	m.srv = &http.Server{
+		Handler: m.mux,
+	}
 	m.listenMu.Unlock()
 
 	go func() {
 		listener := m.accessListener()
 		ready <- struct{}{}
-		ret <- nil
-		if err := http.Serve(listener, m.mux); err != nil {
+		if err := m.srv.Serve(listener); err != nil {
 			m.log.Error("HTTP Serve error", "error", err)
+			ret <- err
+		} else {
+			ret <- nil
 		}
 	}()
 	return ret
@@ -209,6 +215,9 @@ func (m *Module) Stop() error {
 
 	var err error
 	if m.listener != nil {
+		// TODO: Change to use https://tip.golang.org/pkg/net/http/#Server.Shutdown
+		// once we upgrade to Go 1.8
+		// GFM-258
 		err = m.listener.Close()
 		m.listener = nil
 	}
