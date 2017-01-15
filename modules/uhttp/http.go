@@ -73,12 +73,9 @@ type Response struct {
 // A Module is a module to handle HTTP requests
 type Module struct {
 	modules.ModuleBase
-	title    string
 	config   Config
 	log      ulog.Log
-	mux      *http.ServeMux
 	srv      *http.Server
-	router   *Router
 	listener net.Listener
 	handlers []RouteHandler
 	listenMu sync.RWMutex
@@ -157,18 +154,18 @@ func newModule(
 
 // Start begins serving requests over HTTP
 func (m *Module) Start(ready chan<- struct{}) <-chan error {
-	m.mux = http.NewServeMux()
+	mux := http.NewServeMux()
 	// Do something unrelated to annotations
-	m.router = NewRouter(m.Host())
+	router := NewRouter(m.Host())
 
-	m.mux.Handle("/", m.router)
+	mux.Handle("/", router)
 
 	for _, h := range m.handlers {
-		m.router.Handle(h.Path, newFilterChain(m.filters, h.Handler))
+		router.Handle(h.Path, newFilterChain(m.filters, h.Handler))
 	}
 
 	if m.config.Debug == nil || *m.config.Debug {
-		m.router.PathPrefix("/debug/pprof").Handler(http.DefaultServeMux)
+		router.PathPrefix("/debug/pprof").Handler(http.DefaultServeMux)
 	}
 
 	ret := make(chan error, 1)
@@ -191,7 +188,7 @@ func (m *Module) Start(ready chan<- struct{}) <-chan error {
 	m.listenMu.Lock()
 	m.listener = listener
 	m.srv = &http.Server{
-		Handler: m.mux,
+		Handler: mux,
 	}
 	m.listenMu.Unlock()
 
