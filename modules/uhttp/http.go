@@ -198,11 +198,10 @@ func (m *Module) Start(ready chan<- struct{}) <-chan error {
 	go func() {
 		listener := m.accessListener()
 		ready <- struct{}{}
-		if err := m.srv.Serve(listener); err != nil {
+		err := m.srv.Serve(listener)
+		ret <- err
+		if err != nil {
 			m.log.Error("HTTP Serve error", "error", err)
-			ret <- err
-		} else {
-			ret <- nil
 		}
 	}()
 	return ret
