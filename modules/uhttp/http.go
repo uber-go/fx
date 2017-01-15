@@ -73,11 +73,9 @@ type Response struct {
 // A Module is a module to handle HTTP requests
 type Module struct {
 	modules.ModuleBase
-	title    string
 	config   Config
 	log      ulog.Log
-	mux      *http.ServeMux
-	router   *Router
+	srv      *http.Server
 	listener net.Listener
 	handlers []RouteHandler
 	listenMu sync.RWMutex
@@ -156,18 +154,18 @@ func newModule(
 
 // Start begins serving requests over HTTP
 func (m *Module) Start(ready chan<- struct{}) <-chan error {
-	m.mux = http.NewServeMux()
+	mux := http.NewServeMux()
 	// Do something unrelated to annotations
-	m.router = NewRouter(m.Host())
+	router := NewRouter(m.Host())
 
-	m.mux.Handle("/", m.router)
+	mux.Handle("/", router)
 
 	for _, h := range m.handlers {
-		m.router.Handle(h.Path, newFilterChain(m.filters, h.Handler))
+		router.Handle(h.Path, newFilterChain(m.filters, h.Handler))
 	}
 
 	if m.config.Debug == nil || *m.config.Debug {
-		m.router.PathPrefix("/debug/pprof").Handler(http.DefaultServeMux)
+		router.PathPrefix("/debug/pprof").Handler(http.DefaultServeMux)
 	}
 
 	ret := make(chan error, 1)
@@ -189,13 +187,17 @@ func (m *Module) Start(ready chan<- struct{}) <-chan error {
 	}
 	m.listenMu.Lock()
 	m.listener = listener
+	m.srv = &http.Server{
+		Handler: mux,
+	}
 	m.listenMu.Unlock()
 
 	go func() {
 		listener := m.accessListener()
 		ready <- struct{}{}
-		ret <- nil
-		if err := http.Serve(listener, m.mux); err != nil {
+		err := m.srv.Serve(listener)
+		ret <- err
+		if err != nil {
 			m.log.Error("HTTP Serve error", "error", err)
 		}
 	}()
@@ -209,6 +211,9 @@ func (m *Module) Stop() error {
 
 	var err error
 	if m.listener != nil {
+		// TODO: Change to use https://tip.golang.org/pkg/net/http/#Server.Shutdown
+		// once we upgrade to Go 1.8
+		// GFM-258
 		err = m.listener.Close()
 		m.listener = nil
 	}
