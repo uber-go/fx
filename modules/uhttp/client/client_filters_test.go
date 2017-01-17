@@ -31,7 +31,6 @@ import (
 	"go.uber.org/fx/auth"
 	"go.uber.org/fx/config"
 	"go.uber.org/fx/internal/fxcontext"
-	"go.uber.org/fx/service"
 	"go.uber.org/fx/tracing"
 	"go.uber.org/fx/ulog"
 
@@ -50,7 +49,7 @@ var (
 
 func TestExecutionChain(t *testing.T) {
 	execChain := newExecutionChain([]Filter{}, getNopClient())
-	resp, err := execChain.Do(fxcontext.New(context.Background(), service.NopHost()), _req)
+	resp, err := execChain.RoundTrip(_req.WithContext(fx.NopContext))
 	assert.NoError(t, err)
 	assert.Equal(t, _respOK, resp)
 }
@@ -60,7 +59,7 @@ func TestExecutionChainFilters(t *testing.T) {
 		[]Filter{tracingFilter()}, getNopClient(),
 	)
 	ctx := fx.NopContext
-	resp, err := execChain.Do(ctx, _req)
+	resp, err := execChain.RoundTrip(_req.WithContext(ctx))
 	assert.NoError(t, err)
 	assert.Equal(t, _respOK, resp)
 }
@@ -69,7 +68,7 @@ func TestExecutionChainFiltersError(t *testing.T) {
 	execChain := newExecutionChain(
 		[]Filter{tracingFilter()}, getErrorClient(),
 	)
-	resp, err := execChain.Do(fx.NopContext, _req)
+	resp, err := execChain.RoundTrip(_req.WithContext(fx.NopContext))
 	assert.Error(t, err)
 	assert.Equal(t, errClient, err)
 	assert.Nil(t, resp)
@@ -98,7 +97,7 @@ func TestExecutionChainFilters_AuthContextPropagation(t *testing.T) {
 		ctx := &fxcontext.Context{
 			Context: opentracing.ContextWithSpan(context.Background(), span),
 		}
-		resp, err := execChain.Do(ctx, _req)
+		resp, err := execChain.RoundTrip(_req.WithContext(ctx))
 		assert.NoError(t, err)
 		assert.Equal(t, _respOK, resp)
 	})
@@ -114,7 +113,7 @@ func TestExecutionChainFilters_AuthContextPropagationFailure(t *testing.T) {
 		ctx := &fxcontext.Context{
 			Context: opentracing.ContextWithSpan(context.Background(), span),
 		}
-		resp, err := execChain.Do(ctx, _req)
+		resp, err := execChain.RoundTrip(_req.WithContext(ctx))
 		assert.Error(t, err)
 		assert.Nil(t, resp)
 	})
@@ -136,7 +135,7 @@ func (f fakeAuthInfo) Metrics() tally.Scope {
 	return tally.NoopScope
 }
 
-func getContextPropogationClient(t *testing.T) BasicClient {
+func getContextPropogationClient(t *testing.T) http.RoundTripper {
 	return BasicClientFunc(
 		func(ctx fx.Context, req *http.Request) (resp *http.Response, err error) {
 			span := opentracing.SpanFromContext(ctx)
@@ -147,7 +146,7 @@ func getContextPropogationClient(t *testing.T) BasicClient {
 	)
 }
 
-func getNopClient() BasicClient {
+func getNopClient() http.RoundTripper {
 	return BasicClientFunc(
 		func(ctx fx.Context, req *http.Request) (resp *http.Response, err error) {
 			return _respOK, nil
@@ -155,7 +154,7 @@ func getNopClient() BasicClient {
 	)
 }
 
-func getErrorClient() BasicClient {
+func getErrorClient() http.RoundTripper {
 	return BasicClientFunc(
 		func(ctx fx.Context, req *http.Request) (resp *http.Response, err error) {
 			return nil, errClient

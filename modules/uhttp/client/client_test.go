@@ -26,8 +26,6 @@ import (
 	"testing"
 	"time"
 
-	"go.uber.org/fx"
-
 	"github.com/stretchr/testify/assert"
 )
 
@@ -36,7 +34,6 @@ applicationID: test
 `)
 
 var _defaultHTTPClient = &http.Client{Timeout: 2 * time.Second}
-var _defaultUHTTPClient = New(fakeAuthInfo{yaml: testYaml}, _defaultHTTPClient)
 
 func TestNew(t *testing.T) {
 	uhttpClient := New(fakeAuthInfo{yaml: testYaml}, _defaultHTTPClient)
@@ -53,58 +50,41 @@ func TestNew_Panic(t *testing.T) {
 func TestClientDo(t *testing.T) {
 	svr := startServer()
 	req := createHTTPClientRequest(svr.URL)
-	resp, err := _defaultUHTTPClient.Do(fx.NopContext, req)
+	cl := http.Client{Timeout: 2 * time.Second}
+	resp, err := cl.Do(req)
 	checkOKResponse(t, resp, err)
 }
 
 func TestClientDoWithoutFilters(t *testing.T) {
-	uhttpClient := &Client{Client: _defaultHTTPClient}
+	uhttpClient := http.Client{Timeout: 2 * time.Second}
 	svr := startServer()
 	req := createHTTPClientRequest(svr.URL)
-	resp, err := uhttpClient.Do(fx.NopContext, req)
+	resp, err := uhttpClient.Do(req)
 	checkOKResponse(t, resp, err)
 }
 
 func TestClientGet(t *testing.T) {
 	svr := startServer()
-	resp, err := _defaultUHTTPClient.Get(fx.NopContext, svr.URL)
+	resp, err := _defaultHTTPClient.Get(svr.URL)
 	checkOKResponse(t, resp, err)
 }
 
 func TestClientGetError(t *testing.T) {
 	// Causing newRequest to fail, % does not parse as URL
-	resp, err := _defaultUHTTPClient.Get(fx.NopContext, "%")
+	resp, err := _defaultHTTPClient.Get("%")
 	checkErrResponse(t, resp, err)
 }
 
 func TestClientHead(t *testing.T) {
 	svr := startServer()
-	resp, err := _defaultUHTTPClient.Head(fx.NopContext, svr.URL)
+	resp, err := _defaultHTTPClient.Head(svr.URL)
 	checkOKResponse(t, resp, err)
 }
 
 func TestClientHeadError(t *testing.T) {
 	// Causing newRequest to fail, % does not parse as URL
-	resp, err := _defaultUHTTPClient.Head(fx.NopContext, "%")
+	resp, err := _defaultHTTPClient.Head("%")
 	checkErrResponse(t, resp, err)
-}
-
-func TestClientPost(t *testing.T) {
-	svr := startServer()
-	resp, err := _defaultUHTTPClient.Post(fx.NopContext, svr.URL, "", nil)
-	checkOKResponse(t, resp, err)
-}
-
-func TestClientPostError(t *testing.T) {
-	resp, err := _defaultUHTTPClient.Post(fx.NopContext, "%", "", nil)
-	checkErrResponse(t, resp, err)
-}
-
-func TestClientPostForm(t *testing.T) {
-	svr := startServer()
-	var urlValues map[string][]string
-	resp, err := _defaultUHTTPClient.PostForm(fx.NopContext, svr.URL, urlValues)
-	checkOKResponse(t, resp, err)
 }
 
 func checkErrResponse(t *testing.T, resp *http.Response, err error) {
