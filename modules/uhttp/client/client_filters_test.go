@@ -80,7 +80,6 @@ func withOpentracingSetup(t *testing.T, registerFunc auth.RegisterFunc, fn func(
 	assert.NotNil(t, closer)
 	require.NoError(t, err)
 
-	_serviceName = "test_service"
 	auth.UnregisterClient()
 	defer auth.UnregisterClient()
 	auth.RegisterClient(registerFunc)
@@ -93,7 +92,7 @@ func TestExecutionChainFilters_AuthContextPropagation(t *testing.T) {
 			[]Filter{authenticationFilter(fakeAuthInfo{})}, getContextPropogationClient(t),
 		)
 		span := tracer.StartSpan("test_method")
-		span.SetBaggageItem(auth.ServiceAuth, _serviceName)
+		span.SetBaggageItem(auth.ServiceAuth, "test_service")
 		ctx := &fxcontext.Context{
 			Context: opentracing.ContextWithSpan(context.Background(), span),
 		}

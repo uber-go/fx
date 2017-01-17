@@ -22,28 +22,15 @@ package client
 
 import (
 	"net/http"
+	"sync"
 
 	"go.uber.org/fx"
-	"go.uber.org/fx/auth"
-	"go.uber.org/fx/config"
-
-	"golang.org/x/net/context/ctxhttp"
-	"sync"
 )
 
 var (
-	_serviceName   string
 	_uFilters      sync.Mutex
 	_filterTripper filterTripper
 )
-
-// Client wraps around a http client
-type Client struct {
-	*http.Client
-	info                auth.CreateAuthInfo
-	filters             []Filter
-	defaultFiltersAdded bool
-}
 
 type filterTripper struct {
 	oldTripper http.RoundTripper
@@ -64,22 +51,6 @@ func (t *filterTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 
 func init() {
 	http.DefaultTransport = &filterTripper{oldTripper: http.DefaultTransport}
-}
-
-// New creates a new instance of uhttp Client
-func New(info auth.CreateAuthInfo, client *http.Client, filters ...Filter) *Client {
-	_serviceName = info.Config().Get(config.ApplicationIDKey).AsString()
-	filters = append(filters, tracingFilter(), authenticationFilter(info))
-	return &Client{
-		Client:              client,
-		info:                info,
-		filters:             filters,
-		defaultFiltersAdded: true,
-	}
-}
-
-func (c *Client) do(ctx fx.Context, req *http.Request) (resp *http.Response, err error) {
-	return ctxhttp.Do(ctx, c.Client, req)
 }
 
 // The BasicClientFunc type is an adapter to allow the use of ordinary functions as BasicClient.

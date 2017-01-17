@@ -25,6 +25,7 @@ import (
 
 	"go.uber.org/fx"
 	"go.uber.org/fx/auth"
+	"go.uber.org/fx/config"
 	"go.uber.org/fx/internal/fxcontext"
 
 	"fmt"
@@ -86,7 +87,7 @@ func authenticationFilter(info auth.CreateAuthInfo) FilterFunc {
 	return func(ctx fx.Context, req *http.Request, next http.RoundTripper,
 	) (resp *http.Response, err error) {
 		// Client needs to know what service it is to authenticate
-		authctx := authClient.SetAttribute(ctx, auth.ServiceAuth, _serviceName)
+		authctx := authClient.SetAttribute(ctx, auth.ServiceAuth, ctx.Value(config.ApplicationIDKey).(string))
 
 		authctx, err = authClient.Authenticate(authctx)
 		if err != nil {
