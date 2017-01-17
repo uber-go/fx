@@ -25,6 +25,7 @@ import (
 	"sync"
 
 	"go.uber.org/fx"
+	"go.uber.org/fx/internal/fxcontext"
 )
 
 var (
@@ -58,5 +59,5 @@ type BasicClientFunc func(ctx fx.Context, req *http.Request) (resp *http.Respons
 
 // RoundTrip implements RoundTrip from the http.RoundTripper interface
 func (f BasicClientFunc) RoundTrip(req *http.Request) (resp *http.Response, err error) {
-	return f(req.Context().(fx.Context), req)
+	return f(fxcontext.Context{Context:req.Context()}, req)
 }
