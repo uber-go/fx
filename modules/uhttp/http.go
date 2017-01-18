@@ -131,9 +131,7 @@ func newModule(
 		fcb:        defaultFilterChainBuilder(mi.Host),
 	}
 
-	for _, filter := range filters {
-		module.fcb = module.fcb.AddFilter(filter)
-	}
+	module.fcb = module.fcb.AddFilters(filters...)
 
 	err := module.Host().Config().Get(getConfigKey(mi.Name)).PopulateStruct(cfg)
 	if err != nil {

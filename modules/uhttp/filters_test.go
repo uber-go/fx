@@ -76,24 +76,23 @@ func TestTracingFilterWithLogs(t *testing.T) {
 
 func TestFilterChainFilters(t *testing.T) {
 	host := service.NopHost()
-	chain := newFilterChain([]Filter{
+	chain := NewFilterChainBuilder(host).AddFilters(
 		contextFilter(host),
 		tracingServerFilter(host),
 		authorizationFilter(host),
-		panicFilter(host)},
-		getNopHandler(host))
+		panicFilter(host)).Build(getNopHandler(host))
+
 	response := testServeHTTP(chain, host)
 	assert.Contains(t, response.Body.String(), "filters ok")
 }
 
 func TestFilterChainFilters_AuthFailure(t *testing.T) {
 	host := service.NopHostAuthFailure()
-	chain := newFilterChain([]Filter{
+	chain := NewFilterChainBuilder(host).AddFilters(
 		contextFilter(host),
 		tracingServerFilter(host),
 		authorizationFilter(host),
-		panicFilter(host)},
-		getNopHandler(host))
+		panicFilter(host)).Build(getNopHandler(host))
 	response := testServeHTTP(chain, host)
 	assert.Contains(t, "Unauthorized access: Error authorizing the service", response.Body.String())
 	assert.Equal(t, 401, response.Code)
