@@ -70,7 +70,10 @@ func tracingServerFilter(host service.Host) FilterFunc {
 		}
 		span := opentracing.GlobalTracer().StartSpan(operationName, ext.RPCServerOption(spanCtx))
 		ext.HTTPUrl.Set(span, r.URL.String())
-		defer span.Finish()
+		defer func() {
+			span.Finish()
+			fxctx.Logger().Debug("Span finished")
+		}()
 
 		fxctx = fxctx.WithContextAwareLogger(span)
 		fxctx = &fxcontext.Context{
