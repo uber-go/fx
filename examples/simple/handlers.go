@@ -21,7 +21,6 @@
 package main
 
 import (
-	"context"
 	"fmt"
 	"io"
 	"net/http"
@@ -49,13 +48,10 @@ func registerHTTPers(service service.Host) []uhttp.RouteHandler {
 	}
 }
 
-func simpleFilter() uhttp.FilterFunc {
-	return func(ctx context.Context, w http.ResponseWriter, r *http.Request, next uhttp.Handler) {
-		fxctx, ok := ctx.(fx.Context)
-		if ok {
-			next.ServeHTTP(fxctx, w, r)
-		} else {
-			uhttp.Wrap(service.NopHost(), next).ServeHTTP(w, r)
-		}
-	}
+type simpleFilter struct {
+}
+
+func (simpleFilter) Apply(ctx fx.Context, w http.ResponseWriter, r *http.Request, next uhttp.Handler) {
+	io.WriteString(w, "Going through simpleFilter")
+	next.ServeHTTP(ctx, w, r)
 }

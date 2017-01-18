@@ -100,6 +100,7 @@ func authorizationFilter(host service.Host) FilterFunc {
 }
 
 // panicFilter handles any panics and return an error
+// panic filter should be added at the end of filter chain to catch panics
 func panicFilter(host service.Host) FilterFunc {
 	return func(ctx context.Context, w http.ResponseWriter, r *http.Request, next Handler) {
 		fxctx := &fxcontext.Context{

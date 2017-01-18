@@ -28,7 +28,7 @@ import (
 
 func main() {
 	svc, err := service.WithModules(
-		uhttp.New(registerHTTPers, []uhttp.Filter{simpleFilter()}),
+		uhttp.New(registerHTTPers, []uhttp.Filter{simpleFilter{}}),
 	).Build()
 
 	if err != nil {

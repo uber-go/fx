@@ -72,6 +72,15 @@ func TestHTTPModule_WithFilter(t *testing.T) {
 	})
 }
 
+func TestHTTPModule_WithUserPanicFilter(t *testing.T) {
+	withModule(t, registerPanic, []Filter{userPanicFilter()}, nil, false, func(m *Module) {
+		assert.NotNil(t, m)
+		makeRequest(m, "GET", "/", nil, func(r *http.Response) {
+			assert.Equal(t, http.StatusInternalServerError, r.StatusCode, "Expected 500 with panic wrapper")
+		})
+	})
+}
+
 func TestHTTPModule_Panic_OK(t *testing.T) {
 	withModule(t, registerPanic, nil, nil, false, func(m *Module) {
 		assert.NotNil(t, m)
@@ -270,5 +279,11 @@ func fakeFilter() FilterFunc {
 	return func(ctx context.Context, w http.ResponseWriter, r *http.Request, next Handler) {
 		io.WriteString(w, "filter is executed")
 		Wrap(service.NopHost(), next).ServeHTTP(w, r)
+	}
+}
+
+func userPanicFilter() FilterFunc {
+	return func(ctx context.Context, w http.ResponseWriter, r *http.Request, next Handler) {
+		panic("Intentional panic for:" + r.URL.Path)
 	}
 }
