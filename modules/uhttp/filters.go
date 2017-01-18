@@ -37,14 +37,14 @@ import (
 // Filter applies filters on requests, request contexts or responses such as
 // adding tracing to the context
 type Filter interface {
-	Apply(ctx context.Context, w http.ResponseWriter, r *http.Request, next Handler)
+	Apply(ctx fx.Context, w http.ResponseWriter, r *http.Request, next Handler)
 }
 
 // FilterFunc is an adaptor to call normal functions to apply filters
 type FilterFunc func(ctx context.Context, w http.ResponseWriter, r *http.Request, next Handler)
 
 // Apply implements Apply from the Filter interface and simply delegates to the function
-func (f FilterFunc) Apply(ctx context.Context, w http.ResponseWriter, r *http.Request, next Handler) {
+func (f FilterFunc) Apply(ctx fx.Context, w http.ResponseWriter, r *http.Request, next Handler) {
 	f(ctx, w, r, next)
 }
 
@@ -103,6 +103,7 @@ func authorizationFilter(host service.Host) FilterFunc {
 }
 
 // panicFilter handles any panics and return an error
+// panic filter should be added at the end of filter chain to catch panics
 func panicFilter(host service.Host) FilterFunc {
 	return func(ctx context.Context, w http.ResponseWriter, r *http.Request, next Handler) {
 		fxctx := &fxcontext.Context{
@@ -118,28 +119,5 @@ func panicFilter(host service.Host) FilterFunc {
 			}
 		}()
 		next.ServeHTTP(fxctx, w, r)
-	}
-}
-
-func newFilterChain(filters []Filter, finalHandler Handler) filterChain {
-	return filterChain{
-		filters:      filters,
-		finalHandler: finalHandler,
-	}
-}
-
-type filterChain struct {
-	currentFilter int
-	filters       []Filter
-	finalHandler  Handler
-}
-
-func (ec filterChain) ServeHTTP(ctx fx.Context, w http.ResponseWriter, req *http.Request) {
-	if ec.currentFilter < len(ec.filters) {
-		filter := ec.filters[ec.currentFilter]
-		ec.currentFilter++
-		filter.Apply(ctx, w, req, ec)
-	} else {
-		ec.finalHandler.ServeHTTP(ctx, w, req)
 	}
 }

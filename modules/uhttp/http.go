@@ -79,7 +79,7 @@ type Module struct {
 	listener net.Listener
 	handlers []RouteHandler
 	listenMu sync.RWMutex
-	filters  []Filter
+	fcb      filterChainBuilder
 }
 
 var _ service.Module = &Module{}
@@ -96,9 +96,9 @@ type Config struct {
 type GetHandlersFunc func(service service.Host) []RouteHandler
 
 // New returns a new HTTP module
-func New(hookup GetHandlersFunc, options ...modules.Option) service.ModuleCreateFunc {
+func New(hookup GetHandlersFunc, filters []Filter, options ...modules.Option) service.ModuleCreateFunc {
 	return func(mi service.ModuleCreateInfo) ([]service.Module, error) {
-		mod, err := newModule(mi, hookup, options...)
+		mod, err := newModule(mi, hookup, filters, options...)
 		if err != nil {
 			return nil, errors.Wrap(err, "unable to instantiate HTTP module")
 		}
@@ -109,6 +109,7 @@ func New(hookup GetHandlersFunc, options ...modules.Option) service.ModuleCreate
 func newModule(
 	mi service.ModuleCreateInfo,
 	getHandlers GetHandlersFunc,
+	filters []Filter,
 	options ...modules.Option,
 ) (*Module, error) {
 	// setup config defaults
@@ -122,17 +123,15 @@ func newModule(
 	}
 
 	handlers := addHealth(getHandlers(mi.Host))
+
 	// TODO (madhu): Add other middleware - logging, metrics.
 	module := &Module{
 		ModuleBase: *modules.NewModuleBase(ModuleType, mi.Name, mi.Host, []string{}),
 		handlers:   handlers,
-		filters: []Filter{
-			contextFilter(mi.Host),
-			tracingServerFilter(mi.Host),
-			authorizationFilter(mi.Host),
-			panicFilter(mi.Host),
-		},
+		fcb:        defaultFilterChainBuilder(mi.Host),
 	}
+
+	module.fcb = module.fcb.AddFilters(filters...)
 
 	err := module.Host().Config().Get(getConfigKey(mi.Name)).PopulateStruct(cfg)
 	if err != nil {
@@ -161,7 +160,7 @@ func (m *Module) Start(ready chan<- struct{}) <-chan error {
 	mux.Handle("/", router)
 
 	for _, h := range m.handlers {
-		router.Handle(h.Path, newFilterChain(m.filters, h.Handler))
+		router.Handle(h.Path, m.fcb.Build(h.Handler))
 	}
 
 	if m.config.Debug == nil || *m.config.Debug {

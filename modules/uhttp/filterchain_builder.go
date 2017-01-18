@@ -18,40 +18,60 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package main
+package uhttp
 
 import (
-	"fmt"
-	"io"
 	"net/http"
 
 	"go.uber.org/fx"
-	"go.uber.org/fx/modules/uhttp"
 	"go.uber.org/fx/service"
 )
 
-type exampleHandler struct{}
-
-func (exampleHandler) ServeHTTP(ctx fx.Context, w http.ResponseWriter, r *http.Request) {
-	io.WriteString(w, fmt.Sprintf("Headers: %+v", r.Header))
+type filterChain struct {
+	currentFilter int
+	finalHandler  Handler
+	filters       []Filter
 }
 
-func enforceHeader(r uhttp.Route) uhttp.Route {
-	// require some weird headers
-	return r.Headers("X-Uber-FX", "yass")
-}
-
-func registerHTTPers(service service.Host) []uhttp.RouteHandler {
-	handler := &exampleHandler{}
-	return []uhttp.RouteHandler{
-		uhttp.NewRouteHandler("/", handler),
+func (fc filterChain) ServeHTTP(ctx fx.Context, w http.ResponseWriter, r *http.Request) {
+	if fc.currentFilter == len(fc.filters) {
+		fc.finalHandler.ServeHTTP(ctx, w, r)
+	} else {
+		filter := fc.filters[fc.currentFilter]
+		fc.currentFilter++
+		filter.Apply(ctx, w, r, fc)
 	}
 }
 
-type simpleFilter struct {
+type filterChainBuilder struct {
+	service.Host
+
+	finalHandler Handler
+	filters      []Filter
 }
 
-func (simpleFilter) Apply(ctx fx.Context, w http.ResponseWriter, r *http.Request, next uhttp.Handler) {
-	io.WriteString(w, "Going through simpleFilter")
-	next.ServeHTTP(ctx, w, r)
+func defaultFilterChainBuilder(host service.Host) filterChainBuilder {
+	fcb := newFilterChainBuilder(host)
+	return fcb.AddFilters(contextFilter(host), panicFilter(host), tracingServerFilter(host), authorizationFilter(host))
+}
+
+// NewFilterChainBuilder creates an empty filterChainBuilder for setup
+func newFilterChainBuilder(host service.Host) filterChainBuilder {
+	return filterChainBuilder{
+		Host: host,
+	}
+}
+
+func (f filterChainBuilder) AddFilters(filters ...Filter) filterChainBuilder {
+	for _, filter := range filters {
+		f.filters = append(f.filters, filter)
+	}
+	return f
+}
+
+func (f filterChainBuilder) Build(finalHandler Handler) filterChain {
+	return filterChain{
+		filters:      f.filters,
+		finalHandler: finalHandler,
+	}
 }
