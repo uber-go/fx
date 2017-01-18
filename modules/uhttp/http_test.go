@@ -73,7 +73,7 @@ func TestHTTPModule_WithFilter(t *testing.T) {
 }
 
 func TestHTTPModule_WithUserPanicFilter(t *testing.T) {
-	withModule(t, registerPanic, []Filter{userPanicFilter()}, nil, false, func(m *Module) {
+	withModule(t, registerTracerCheckHandler, []Filter{userPanicFilter()}, nil, false, func(m *Module) {
 		assert.NotNil(t, m)
 		makeRequest(m, "GET", "/", nil, func(r *http.Response) {
 			assert.Equal(t, http.StatusInternalServerError, r.StatusCode, "Expected 500 with panic wrapper")
