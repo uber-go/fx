@@ -71,7 +71,7 @@ func TestTracingFilterWithLogs(t *testing.T) {
 		for _, line := range buf.Lines() {
 			assert.Contains(t, line, "traceID")
 			assert.Contains(t, line, "spanID")
-			spanFinished = strings.Contains(line, "Span finished")
+			spanFinished = spanFinished || strings.Contains(line, "Span finished")
 		}
 		assert.True(t, spanFinished)
 	})
