@@ -36,7 +36,7 @@ access standard values such as the service name or basic configuration.
 
 The top-level packages contain the nuts and bolts useful for a fully-fledged
 service. That said, none (except for `service`) requires an instance or even
-the idea of a service. You can use the packages independently their logic.
+the idea of a service. You can use the packages independently.
 
 If, for example, you only want use the configuration logic from UberFx, you
 can import `go.uber.org/fx/config` and use it in a standalone CLI app.
