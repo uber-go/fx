@@ -28,31 +28,45 @@ import (
 	"go.uber.org/fx/config"
 	"go.uber.org/fx/internal/fxcontext"
 
-	"fmt"
 	"github.com/opentracing/opentracing-go"
 	"github.com/opentracing/opentracing-go/ext"
 )
 
-// Filter applies filters on client requests, request contexts such as
-// adding tracing to the context
+// Sender sends the http request. It is a simple wrapper around http.RoundTripper, so
+// Send must be safe to use by multiple go routines
+type Sender interface {
+	Send(ctx fx.Context, r *http.Request) (resp *http.Response, err error)
+}
+
+// The SenderFunc type is an adapter to allow the use of ordinary functions as Sender
+type SenderFunc func(ctx fx.Context, req *http.Request) (resp *http.Response, err error)
+
+// Send implements Sender interface for the SenderFunc
+func (f SenderFunc) Send(ctx fx.Context, req *http.Request) (resp *http.Response, err error) {
+	return f(ctx, req)
+}
+
+// Filter applies filters on client requests and request's context such as
+// adding tracing to the context. Filters must call next.Send() at most once, calling it twice and more
+// will lead to an undefined behavior
 type Filter interface {
-	Apply(ctx fx.Context, r *http.Request, next http.RoundTripper) (resp *http.Response, err error)
+	Apply(ctx fx.Context, r *http.Request, next Sender) (resp *http.Response, err error)
 }
 
 // FilterFunc is an adaptor to call normal functions to apply filters
 type FilterFunc func(
-	ctx fx.Context, r *http.Request, next http.RoundTripper,
+	ctx fx.Context, r *http.Request, next Sender,
 ) (resp *http.Response, err error)
 
 // Apply implements Apply from the Filter interface and simply delegates to the function
 func (f FilterFunc) Apply(
-	ctx fx.Context, r *http.Request, next http.RoundTripper,
+	ctx fx.Context, r *http.Request, next Sender,
 ) (resp *http.Response, err error) {
 	return f(ctx, r, next)
 }
 
 func tracingFilter() FilterFunc {
-	return func(ctx fx.Context, req *http.Request, next http.RoundTripper,
+	return func(ctx fx.Context, req *http.Request, next Sender,
 	) (resp *http.Response, err error) {
 		opName := req.Method
 		var parent opentracing.SpanContext
@@ -71,7 +85,7 @@ func tracingFilter() FilterFunc {
 			return nil, err
 		}
 
-		resp, err = next.RoundTrip(req)
+		resp, err = next.Send(ctx, req)
 		if resp != nil {
 			span.SetTag("http.status_code", resp.StatusCode)
 		}
@@ -82,28 +96,32 @@ func tracingFilter() FilterFunc {
 	}
 }
 
+// authenticationFilter on client side calls authenticate, and gets a claim that client is who they say they are
+// We only authorize with the claim on server side
 func authenticationFilter(info auth.CreateAuthInfo) FilterFunc {
 	authClient := auth.Load(info)
-	return func(ctx fx.Context, req *http.Request, next http.RoundTripper,
+	serviceName := info.Config().Get(config.ApplicationIDKey).AsString()
+	return func(ctx fx.Context, req *http.Request, next Sender,
 	) (resp *http.Response, err error) {
 		// Client needs to know what service it is to authenticate
-		authctx := authClient.SetAttribute(ctx, auth.ServiceAuth, ctx.Value(config.ApplicationIDKey).(string))
+		authCtx := authClient.SetAttribute(ctx, auth.ServiceAuth, serviceName)
 
-		authctx, err = authClient.Authenticate(authctx)
+		authCtx, err = authClient.Authenticate(authCtx)
 		if err != nil {
 			ctx.Logger().Error(auth.ErrAuthentication, "error", err)
 			return nil, err
 		}
 
-		span := opentracing.SpanFromContext(authctx)
+		span := opentracing.SpanFromContext(authCtx)
 		if err := injectSpanIntoHeaders(req.Header, span); err != nil {
 			ctx.Logger().Error("Error injecting auth context", "error", err)
 			return nil, err
 		}
 
-		return next.RoundTrip(req.WithContext(authctx))
+		return next.Send(&fxcontext.Context{Context: authCtx}, req)
 	}
 }
+
 func injectSpanIntoHeaders(header http.Header, span opentracing.Span) error {
 	carrier := opentracing.HTTPHeadersCarrier(header)
 	if err := span.Tracer().Inject(span.Context(), opentracing.HTTPHeaders, carrier); err != nil {
@@ -111,34 +129,4 @@ func injectSpanIntoHeaders(header http.Header, span opentracing.Span) error {
 		return err
 	}
 	return nil
-}
-
-func newExecutionChain(
-	filters []Filter, finalClient http.RoundTripper,
-) executionChain {
-	return executionChain{
-		filters:     filters,
-		finalClient: finalClient,
-	}
-}
-
-type executionChain struct {
-	currentFilter int
-	filters       []Filter
-	finalClient   http.RoundTripper
-}
-
-func (ec *executionChain) RoundTrip(req *http.Request) (resp *http.Response, err error) {
-	if ec.currentFilter < len(ec.filters) {
-		filter := ec.filters[ec.currentFilter]
-		ec.currentFilter++
-
-		if ctx, ok := req.Context().(fx.Context); ok {
-			return filter.Apply(ctx, req, ec)
-		}
-
-		return nil, fmt.Errorf("Expected fx.Context, but received: %T", req.Context())
-	}
-
-	return ec.finalClient.RoundTrip(req)
 }

@@ -24,67 +24,95 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
-var testYaml = []byte(`
+var (
+	_testYaml = []byte(`
 applicationID: test
 `)
-
-var _defaultHTTPClient = &http.Client{Timeout: 2 * time.Second}
+	_testClient = New(fakeAuthInfo{yaml: _testYaml})
+)
 
 func TestNew(t *testing.T) {
-	uhttpClient := New(fakeAuthInfo{yaml: testYaml}, _defaultHTTPClient)
-	assert.Equal(t, _defaultHTTPClient, uhttpClient.Client)
-	assert.Equal(t, 2, len(uhttpClient.filters))
+	t.Parallel()
+	chain, ok := _testClient.Transport.(executionChain)
+	require.True(t, ok)
+	assert.Equal(t, 2, len(chain.filters))
 }
 
 func TestNew_Panic(t *testing.T) {
+	t.Parallel()
 	assert.Panics(t, func() {
-		New(fakeAuthInfo{yaml: []byte(``)}, _defaultHTTPClient)
+		New(fakeAuthInfo{yaml: []byte(``)})
 	})
 }
 
 func TestClientDo(t *testing.T) {
+	t.Parallel()
 	svr := startServer()
 	req := createHTTPClientRequest(svr.URL)
-	cl := http.Client{Timeout: 2 * time.Second}
-	resp, err := cl.Do(req)
+	resp, err := _testClient.Do(req)
 	checkOKResponse(t, resp, err)
 }
 
 func TestClientDoWithoutFilters(t *testing.T) {
-	uhttpClient := http.Client{Timeout: 2 * time.Second}
+	t.Parallel()
 	svr := startServer()
 	req := createHTTPClientRequest(svr.URL)
-	resp, err := uhttpClient.Do(req)
+	resp, err := _testClient.Do(req)
 	checkOKResponse(t, resp, err)
 }
 
 func TestClientGet(t *testing.T) {
+	t.Parallel()
 	svr := startServer()
-	resp, err := _defaultHTTPClient.Get(svr.URL)
+	resp, err := _testClient.Get(svr.URL)
 	checkOKResponse(t, resp, err)
 }
 
 func TestClientGetError(t *testing.T) {
+	t.Parallel()
 	// Causing newRequest to fail, % does not parse as URL
-	resp, err := _defaultHTTPClient.Get("%")
+	resp, err := _testClient.Get("%")
 	checkErrResponse(t, resp, err)
 }
 
 func TestClientHead(t *testing.T) {
+	t.Parallel()
 	svr := startServer()
-	resp, err := _defaultHTTPClient.Head(svr.URL)
+	resp, err := _testClient.Head(svr.URL)
 	checkOKResponse(t, resp, err)
 }
 
 func TestClientHeadError(t *testing.T) {
+	t.Parallel()
 	// Causing newRequest to fail, % does not parse as URL
-	resp, err := _defaultHTTPClient.Head("%")
+	resp, err := _testClient.Head("%")
 	checkErrResponse(t, resp, err)
+}
+
+func TestClientPost(t *testing.T) {
+	t.Parallel()
+	svr := startServer()
+	resp, err := _testClient.Post(svr.URL, "", nil)
+	checkOKResponse(t, resp, err)
+}
+
+func TestClientPostError(t *testing.T) {
+	t.Parallel()
+	resp, err := _testClient.Post("%", "", nil)
+	checkErrResponse(t, resp, err)
+}
+
+func TestClientPostForm(t *testing.T) {
+	t.Parallel()
+	svr := startServer()
+	var urlValues map[string][]string
+	resp, err := _testClient.PostForm(svr.URL, urlValues)
+	checkOKResponse(t, resp, err)
 }
 
 func checkErrResponse(t *testing.T, resp *http.Response, err error) {

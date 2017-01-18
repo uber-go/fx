@@ -48,15 +48,17 @@ var (
 )
 
 func TestExecutionChain(t *testing.T) {
-	execChain := newExecutionChain([]Filter{}, getNopClient())
+	t.Parallel()
+	execChain := newExecutionChain([]Filter{}, nopTransport{})
 	resp, err := execChain.RoundTrip(_req.WithContext(fx.NopContext))
 	assert.NoError(t, err)
 	assert.Equal(t, _respOK, resp)
 }
 
 func TestExecutionChainFilters(t *testing.T) {
+	t.Parallel()
 	execChain := newExecutionChain(
-		[]Filter{tracingFilter()}, getNopClient(),
+		[]Filter{tracingFilter()}, nopTransport{},
 	)
 	ctx := fx.NopContext
 	resp, err := execChain.RoundTrip(_req.WithContext(ctx))
@@ -65,8 +67,9 @@ func TestExecutionChainFilters(t *testing.T) {
 }
 
 func TestExecutionChainFiltersError(t *testing.T) {
+	t.Parallel()
 	execChain := newExecutionChain(
-		[]Filter{tracingFilter()}, getErrorClient(),
+		[]Filter{tracingFilter()}, errTransport{},
 	)
 	resp, err := execChain.RoundTrip(_req.WithContext(fx.NopContext))
 	assert.Error(t, err)
@@ -89,7 +92,7 @@ func withOpentracingSetup(t *testing.T, registerFunc auth.RegisterFunc, fn func(
 func TestExecutionChainFilters_AuthContextPropagation(t *testing.T) {
 	withOpentracingSetup(t, nil, func(tracer opentracing.Tracer) {
 		execChain := newExecutionChain(
-			[]Filter{authenticationFilter(fakeAuthInfo{})}, getContextPropogationClient(t),
+			[]Filter{authenticationFilter(fakeAuthInfo{_testYaml})}, contextPropagationTransport{t},
 		)
 		span := tracer.StartSpan("test_method")
 		span.SetBaggageItem(auth.ServiceAuth, "test_service")
@@ -105,10 +108,10 @@ func TestExecutionChainFilters_AuthContextPropagation(t *testing.T) {
 func TestExecutionChainFilters_AuthContextPropagationFailure(t *testing.T) {
 	withOpentracingSetup(t, auth.FakeFailureClient, func(tracer opentracing.Tracer) {
 		execChain := newExecutionChain(
-			[]Filter{authenticationFilter(fakeAuthInfo{})}, getContextPropogationClient(t),
+			[]Filter{authenticationFilter(fakeAuthInfo{_testYaml})}, contextPropagationTransport{t},
 		)
 		span := tracer.StartSpan("test_method")
-		span.SetBaggageItem(auth.ServiceAuth, _serviceName)
+		span.SetBaggageItem(auth.ServiceAuth, "testService")
 		ctx := &fxcontext.Context{
 			Context: opentracing.ContextWithSpan(context.Background(), span),
 		}
@@ -134,29 +137,28 @@ func (f fakeAuthInfo) Metrics() tally.Scope {
 	return tally.NoopScope
 }
 
-func getContextPropogationClient(t *testing.T) http.RoundTripper {
-	return BasicClientFunc(
-		func(ctx fx.Context, req *http.Request) (resp *http.Response, err error) {
-			span := opentracing.SpanFromContext(ctx)
-			assert.NotNil(t, span)
-			assert.Equal(t, _serviceName, span.BaggageItem(auth.ServiceAuth))
-			return _respOK, nil
-		},
-	)
+type contextPropagationTransport struct {
+	*testing.T
 }
 
-func getNopClient() http.RoundTripper {
-	return BasicClientFunc(
-		func(ctx fx.Context, req *http.Request) (resp *http.Response, err error) {
-			return _respOK, nil
-		},
-	)
+func (tr contextPropagationTransport) RoundTrip(req *http.Request) (resp *http.Response, err error) {
+	ctx, ok := req.Context().(fx.Context)
+	require.True(tr.T, ok)
+
+	span := opentracing.SpanFromContext(ctx)
+	assert.NotNil(tr.T, span)
+	assert.Equal(tr.T, "test_service", span.BaggageItem(auth.ServiceAuth))
+	return _respOK, nil
 }
 
-func getErrorClient() http.RoundTripper {
-	return BasicClientFunc(
-		func(ctx fx.Context, req *http.Request) (resp *http.Response, err error) {
-			return nil, errClient
-		},
-	)
+type nopTransport struct{}
+
+func (tr nopTransport) RoundTrip(req *http.Request) (resp *http.Response, err error) {
+	return _respOK, nil
+}
+
+type errTransport struct{}
+
+func (tr errTransport) RoundTrip(req *http.Request) (resp *http.Response, err error) {
+	return nil, errClient
 }

@@ -22,42 +22,52 @@ package client
 
 import (
 	"net/http"
-	"sync"
 
 	"go.uber.org/fx"
+	"go.uber.org/fx/auth"
 	"go.uber.org/fx/internal/fxcontext"
 )
 
-var (
-	_uFilters      sync.Mutex
-	_filterTripper filterTripper
-)
+// New creates an http.Client that includes 2 extra filters: tracing and auth
+// they are going to be applied in following order: tracing, auth, remaining filters
+// and only if all of them passed the request is going to be send.
+func New(info auth.CreateAuthInfo, filters ...Filter) *http.Client {
+	extra := make([]Filter, len(filters)+2)
+	extra[0] = tracingFilter()
+	extra[1] = authenticationFilter(info)
+	copy(extra[2:], filters)
 
-type filterTripper struct {
-	oldTripper http.RoundTripper
-	chain      executionChain
+	return &http.Client{
+		Transport: newExecutionChain(extra, http.DefaultTransport),
+	}
 }
 
-// UpdateDefaultFilters updates filters for the default RoundTripper
-func UpdateDefaultFilters(filters ...Filter) {
-	_uFilters.Lock()
-	_filterTripper.chain = newExecutionChain(filters, _filterTripper.oldTripper)
-	_uFilters.Unlock()
+func newExecutionChain(
+	filters []Filter, finalTransport http.RoundTripper,
+) executionChain {
+	return executionChain{
+		filters:        filters,
+		finalTransport: finalTransport,
+	}
 }
 
-func (t *filterTripper) RoundTrip(req *http.Request) (*http.Response, error) {
-
-	return t.oldTripper.RoundTrip(req)
+type executionChain struct {
+	currentFilter  int
+	filters        []Filter
+	finalTransport http.RoundTripper
 }
 
-func init() {
-	http.DefaultTransport = &filterTripper{oldTripper: http.DefaultTransport}
+func (ec executionChain) Send(ctx fx.Context, r *http.Request) (resp *http.Response, err error) {
+	if ec.currentFilter < len(ec.filters) {
+		filter := ec.filters[ec.currentFilter]
+		ec.currentFilter++
+
+		return filter.Apply(ctx, r, ec)
+	}
+
+	return ec.finalTransport.RoundTrip(r.WithContext(ctx))
 }
 
-// The BasicClientFunc type is an adapter to allow the use of ordinary functions as BasicClient.
-type BasicClientFunc func(ctx fx.Context, req *http.Request) (resp *http.Response, err error)
-
-// RoundTrip implements RoundTrip from the http.RoundTripper interface
-func (f BasicClientFunc) RoundTrip(req *http.Request) (resp *http.Response, err error) {
-	return f(fxcontext.Context{Context:req.Context()}, req)
+func (ec executionChain) RoundTrip(r *http.Request) (resp *http.Response, err error) {
+	return ec.Send(&fxcontext.Context{Context: r.Context()}, r)
 }
