@@ -89,8 +89,8 @@ func (f filterChainBuilder) AddFilter(filter Filter) FilterChainBuilder {
 
 func (f filterChainBuilder) Build(finalHandler Handler) filterChain {
 	fc := filterChain{}
-	for _, ff := range f.filters {
-		fc.filters = append(fc.filters, ff)
+	for _, filter := range f.filters {
+		fc.filters = append(fc.filters, filter)
 	}
 	fc.finalHandler = finalHandler
 	return fc
