@@ -72,7 +72,7 @@ func tracingServerFilter(host service.Host) FilterFunc {
 		ext.HTTPUrl.Set(span, r.URL.String())
 		defer func() {
 			span.Finish()
-			fxctx.Logger().Info("Span finished")
+			fxctx.Logger().Debug("Span finished")
 		}()
 
 		fxctx = fxctx.WithContextAwareLogger(span)
