@@ -21,6 +21,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"net/http"
@@ -45,5 +46,16 @@ func registerHTTPers(service service.Host) []uhttp.RouteHandler {
 	handler := &exampleHandler{}
 	return []uhttp.RouteHandler{
 		uhttp.NewRouteHandler("/", handler),
+	}
+}
+
+func simpleFilter() uhttp.FilterFunc {
+	return func(ctx context.Context, w http.ResponseWriter, r *http.Request, next uhttp.Handler) {
+		fxctx, ok := ctx.(fx.Context)
+		if ok {
+			next.ServeHTTP(fxctx, w, r)
+		} else {
+			uhttp.Wrap(service.NopHost(), next).ServeHTTP(w, r)
+		}
 	}
 }
