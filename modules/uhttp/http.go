@@ -79,7 +79,7 @@ type Module struct {
 	listener net.Listener
 	handlers []RouteHandler
 	listenMu sync.RWMutex
-	fcb      FilterChainBuilder
+	fcb      filterChainBuilder
 }
 
 var _ service.Module = &Module{}

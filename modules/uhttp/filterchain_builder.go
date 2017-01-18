@@ -33,13 +33,6 @@ type filterChain struct {
 	filters       []Filter
 }
 
-func newFilterChain(filters []Filter, finalHandler Handler) filterChain {
-	return filterChain{
-		finalHandler: finalHandler,
-		filters:      filters,
-	}
-}
-
 func (fc filterChain) ServeHTTP(ctx fx.Context, w http.ResponseWriter, r *http.Request) {
 	if fc.currentFilter == len(fc.filters) {
 		fc.finalHandler.ServeHTTP(ctx, w, r)
@@ -50,16 +43,6 @@ func (fc filterChain) ServeHTTP(ctx fx.Context, w http.ResponseWriter, r *http.R
 	}
 }
 
-// FilterChainBuilder builds a filterChain object with added filters
-type FilterChainBuilder interface {
-	// AddFilter is used to add the next filter to the chain during construction time.
-	// The calls to AddFilter can be chained.
-	AddFilters(filter ...Filter) FilterChainBuilder
-
-	// Build creates an immutable FilterChain.
-	Build(finalHandler Handler) filterChain
-}
-
 type filterChainBuilder struct {
 	service.Host
 
@@ -67,19 +50,19 @@ type filterChainBuilder struct {
 	filters      []Filter
 }
 
-func defaultFilterChainBuilder(host service.Host) FilterChainBuilder {
-	fcb := NewFilterChainBuilder(host)
+func defaultFilterChainBuilder(host service.Host) filterChainBuilder {
+	fcb := newFilterChainBuilder(host)
 	return fcb.AddFilters(contextFilter(host), tracingServerFilter(host), authorizationFilter(host), panicFilter(host))
 }
 
 // NewFilterChainBuilder creates an empty filterChainBuilder for setup
-func NewFilterChainBuilder(host service.Host) FilterChainBuilder {
-	return &filterChainBuilder{
+func newFilterChainBuilder(host service.Host) filterChainBuilder {
+	return filterChainBuilder{
 		Host: host,
 	}
 }
 
-func (f filterChainBuilder) AddFilters(filters ...Filter) FilterChainBuilder {
+func (f filterChainBuilder) AddFilters(filters ...Filter) filterChainBuilder {
 	for _, filter := range filters {
 		f.filters = append(f.filters, filter)
 	}
