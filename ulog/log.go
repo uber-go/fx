@@ -156,7 +156,7 @@ func (l *baseLogger) Log(lvl zap.Level, message string, keyVals ...interface{}) 
 func (l *baseLogger) fieldsConversion(keyVals ...interface{}) []zap.Field {
 	fields := make([]zap.Field, 0, len(keyVals)/2)
 	if len(keyVals)%2 != 0 {
-		fields = append(fields, zap.Error(fmt.Errorf("invalid number of arguments")))
+		fields = append(fields, zap.Error(fmt.Errorf("expected even number of arguments")))
 		return fields
 	}
 	for idx := 0; idx < len(keyVals); idx += 2 {

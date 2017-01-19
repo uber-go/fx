@@ -33,12 +33,14 @@ import (
 	"go.uber.org/fx/internal/fxcontext"
 	"go.uber.org/fx/service"
 	"go.uber.org/fx/testutils"
+	"go.uber.org/fx/tracing"
 	"go.uber.org/fx/ulog"
 
 	"github.com/opentracing/opentracing-go"
 	"github.com/stretchr/testify/assert"
+	"github.com/uber-go/tally"
 	"github.com/uber-go/zap"
-	"github.com/uber/jaeger-client-go"
+	"github.com/uber/jaeger-client-go/config"
 )
 
 func TestFilterChain(t *testing.T) {
@@ -52,9 +54,14 @@ func TestTracingFilterWithLogs(t *testing.T) {
 	testutils.WithInMemoryLogger(t, nil, func(zapLogger zap.Logger, buf *testutils.TestBuffer) {
 		// Create in-memory logger and jaeger tracer
 		loggerWithZap := ulog.Builder().SetLogger(zapLogger).Build()
-		tracer, closer := jaeger.NewTracer(
-			"serviceName", jaeger.NewConstSampler(true), jaeger.NewNullReporter(),
+		jConfig := &config.Configuration{
+			Sampler:  &config.SamplerConfig{Type: "const", Param: 1.0},
+			Reporter: &config.ReporterConfig{LogSpans: true},
+		}
+		tracer, closer, err := tracing.InitGlobalTracer(
+			jConfig, "serviceName", loggerWithZap, tally.NullStatsReporter,
 		)
+		assert.NoError(t, err)
 		defer closer.Close()
 		opentracing.InitGlobalTracer(tracer)
 		defer opentracing.InitGlobalTracer(opentracing.NoopTracer{})
@@ -66,9 +73,11 @@ func TestTracingFilterWithLogs(t *testing.T) {
 		assert.True(t, len(buf.Lines()) > 0)
 		var spanFinished bool
 		for _, line := range buf.Lines() {
-			assert.Contains(t, line, "traceID")
-			assert.Contains(t, line, "spanID")
-			spanFinished = spanFinished || strings.Contains(line, "Span finished")
+			if strings.Contains(line, "Span finished") {
+				assert.Contains(t, line, "traceID")
+				assert.Contains(t, line, "spanID")
+				spanFinished = true
+			}
 		}
 		assert.True(t, spanFinished)
 	})

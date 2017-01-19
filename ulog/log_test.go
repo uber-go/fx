@@ -73,8 +73,8 @@ func TestLoggerWithInvalidFields(t *testing.T) {
 		log.Info("info message", "c", "d", "e")
 		log.DPanic("debug message")
 		assert.Equal(t, []string{
-			`{"level":"info","msg":"info message","error":"invalid number of arguments"}`,
-			`{"level":"info","msg":"info message","error":"invalid number of arguments"}`,
+			`{"level":"info","msg":"info message","error":"expected even number of arguments"}`,
+			`{"level":"info","msg":"info message","error":"expected even number of arguments"}`,
 			`{"level":"dpanic","msg":"debug message"}`,
 		}, buf.Lines(), "Incorrect output from logger")
 	})
