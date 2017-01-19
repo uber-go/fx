@@ -24,6 +24,8 @@ import (
 	"context"
 	"sync"
 
+	"github.com/uber-go/tally"
+
 	"go.uber.org/fx/config"
 	"go.uber.org/fx/ulog"
 )
@@ -48,6 +50,7 @@ var (
 type CreateAuthInfo interface {
 	Config() config.Provider
 	Logger() ulog.Log
+	Metrics() tally.Scope
 }
 
 // RegisterFunc is used during service init time to register the Auth client
