@@ -132,6 +132,10 @@ func (f fakeAuthInfo) Logger() ulog.Log {
 	return ulog.NopLogger
 }
 
+func (f fakeAuthInfo) Metrics() tally.Scope {
+	return tally.NoopScope
+}
+
 func getContextPropogationClient(t *testing.T) BasicClient {
 	return BasicClientFunc(
 		func(ctx fx.Context, req *http.Request) (resp *http.Response, err error) {

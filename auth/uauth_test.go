@@ -29,6 +29,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/uber-go/tally"
 )
 
 func withAuthClientSetup(t *testing.T, registerFunc RegisterFunc, info CreateAuthInfo, fn func()) {
@@ -87,4 +88,8 @@ func (fakeAuthInfo) Config() config.Provider {
 
 func (fakeAuthInfo) Logger() ulog.Log {
 	return ulog.NopLogger
+}
+
+func (fakeAuthInfo) Metrics() tally.Scope {
+	return tally.NoopScope
 }
