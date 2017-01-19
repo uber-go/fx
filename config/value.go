@@ -49,6 +49,8 @@ const (
 	Slice
 	// Dictionary contains words and their definitions
 	Dictionary
+	// Zero constants
+	_float64Zero = float64(0)
 )
 
 var _typeTimeDuration = reflect.TypeOf(time.Duration(0))
@@ -201,12 +203,22 @@ func (cv Value) TryAsBool() (bool, bool) {
 
 // TryAsFloat attempts to return the configuration value as a float
 func (cv Value) TryAsFloat() (float64, bool) {
-	f := float64(0)
 	v := cv.Value()
-	if val, err := convertValue(v, reflect.TypeOf(f)); v != nil && err == nil {
+	if val, err := convertValue(v, reflect.TypeOf(_float64Zero)); v != nil && err == nil {
 		return val.(float64), true
 	}
-	return f, false
+	switch val := v.(type) {
+	case int:
+		return float64(val), true
+	case int32:
+		return float64(val), true
+	case int64:
+		return float64(val), true
+	case float32:
+		return float64(val), true
+	default:
+		return _float64Zero, false
+	}
 }
 
 // AsString returns the configuration value as a string, or panics if not
