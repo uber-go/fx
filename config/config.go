@@ -35,16 +35,15 @@ const (
 	ApplicationDescriptionKey = "applicationDesc"
 	// ApplicationOwnerKey is the configuration key for an application's owner
 	ApplicationOwnerKey = "applicationOwner"
-
-	environment = "_ENVIRONMENT"
-	datacenter  = "_DATACENTER"
-	configDir   = "_CONFIG_DIR"
-	config      = "config"
 )
 
 const (
-	baseFile    = "base"
-	secretsFile = "secrets"
+	_environment = "_ENVIRONMENT"
+	_datacenter  = "_DATACENTER"
+	_configDir   = "_CONFIG_DIR"
+	_config      = "config"
+	_baseFile    = "base"
+	_secretsFile = "secrets"
 )
 
 var (
@@ -61,16 +60,16 @@ var (
 
 func getConfigFiles() []string {
 	env := Environment()
-	dc := os.Getenv(EnvironmentPrefix() + datacenter)
+	dc := os.Getenv(EnvironmentPrefix() + _datacenter)
 
 	var files []string
 	if dc != "" && env != "" {
-		files = append(files, fmt.Sprintf("./%s/%s-%s.yaml", config, env, dc))
+		files = append(files, fmt.Sprintf("./%s/%s-%s.yaml", _config, env, dc))
 	}
 	files = append(files,
-		fmt.Sprintf("./%s/%s.yaml", config, baseFile),
-		fmt.Sprintf("./%s/%s.yaml", config, env),
-		fmt.Sprintf("./%s/%s.yaml", config, secretsFile))
+		fmt.Sprintf("./%s/%s.yaml", _config, _baseFile),
+		fmt.Sprintf("./%s/%s.yaml", _config, env),
+		fmt.Sprintf("./%s/%s.yaml", _config, _secretsFile))
 
 	return files
 }
@@ -115,9 +114,9 @@ func IsDevelopmentEnv() bool {
 
 // Path returns path to the yaml configurations
 func Path() string {
-	configPath := os.Getenv(EnvironmentPrefix() + configDir)
+	configPath := os.Getenv(EnvironmentPrefix() + _configDir)
 	if configPath == "" {
-		configPath = config
+		configPath = _config
 	}
 	return configPath
 }
@@ -134,7 +133,7 @@ func EnvironmentPrefix() string {
 
 // EnvironmentKey returns environment variable key name
 func EnvironmentKey() string {
-	return _envPrefix + environment
+	return _envPrefix + _environment
 }
 
 // ProviderFunc is used to create config providers on configuration initialization
