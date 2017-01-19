@@ -49,9 +49,13 @@ const (
 	Slice
 	// Dictionary contains words and their definitions
 	Dictionary
+	// Zero constants
+	_float64Zero = float64(0)
 )
 
-var _typeTimeDuration = reflect.TypeOf(time.Duration(0))
+var (
+	_typeTimeDuration = reflect.TypeOf(time.Duration(0))
+)
 
 // GetType returns GO type of the provided object
 func GetType(value interface{}) ValueType {
@@ -201,9 +205,8 @@ func (cv Value) TryAsBool() (bool, bool) {
 
 // TryAsFloat attempts to return the configuration value as a float
 func (cv Value) TryAsFloat() (float64, bool) {
-	f := float64(0)
 	v := cv.Value()
-	if val, err := convertValue(v, reflect.TypeOf(f)); v != nil && err == nil {
+	if val, err := convertValue(v, reflect.TypeOf(_float64Zero)); v != nil && err == nil {
 		return val.(float64), true
 	}
 	switch val := v.(type) {
@@ -216,7 +219,7 @@ func (cv Value) TryAsFloat() (float64, bool) {
 	case float32:
 		return float64(val), true
 	default:
-		return f, false
+		return _float64Zero, false
 	}
 }
 
