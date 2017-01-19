@@ -79,11 +79,12 @@ func (jl *jaegerLogger) Error(msg string) {
 func (jl *jaegerLogger) Infof(msg string, args ...interface{}) {
 	// TODO (madhu) Zap logger requires even number of arguments, add a key to each arg
 	// This is a hack in place till jaeger directly takes a zap logger
-	var logArgs []interface{}
+	targetLen := len(args) * 2
+	var targetArgs = make([]interface{}, targetLen)
 	for _, arg := range args {
-		logArgs = append(logArgs, "arg", arg)
+		targetArgs = append(targetArgs, "arg", arg)
 	}
-	jl.log.Info(msg, logArgs...)
+	jl.log.Info(msg, targetArgs...)
 }
 
 type jaegerReporter struct {
