@@ -81,7 +81,7 @@ func RegisterRootScope(scopeFunc ScopeFunc) {
 
 	if _scopeFunc != nil {
 		// TODO(glib): consider a "force" flag, or some way to clear out and replace the reporter
-		panic("There can be only one metrics reporter")
+		panic("There can be only one metrics root scope")
 	}
 
 	_scopeFunc = scopeFunc
