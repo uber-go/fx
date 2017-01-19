@@ -53,9 +53,7 @@ const (
 	_float64Zero = float64(0)
 )
 
-var (
-	_typeTimeDuration = reflect.TypeOf(time.Duration(0))
-)
+var _typeTimeDuration = reflect.TypeOf(time.Duration(0))
 
 // GetType returns GO type of the provided object
 func GetType(value interface{}) ValueType {
