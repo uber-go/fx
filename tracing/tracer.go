@@ -21,7 +21,6 @@
 package tracing
 
 import (
-	"fmt"
 	"io"
 	"time"
 
@@ -82,7 +81,6 @@ func (jl *jaegerLogger) Infof(msg string, args ...interface{}) {
 	// This is a hack in place till jaeger directly takes a zap logger
 	var logArgs []interface{}
 	for _, arg := range args {
-		fmt.Println(arg)
 		logArgs = append(logArgs, "arg", arg)
 	}
 	jl.log.Info(msg, logArgs...)
