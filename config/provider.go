@@ -73,7 +73,7 @@ func (sp ScopedProvider) Scope(prefix string) Provider {
 	return NewScopedProvider(prefix, sp)
 }
 
-// Register callback in the underling provider
+// RegisterChangeCallback registers the callback in the underling provider
 func (sp ScopedProvider) RegisterChangeCallback(key string, callback ConfigurationChangeCallback) error {
 	if sp.prefix != "" {
 		key = sp.prefix + "." + key
@@ -82,7 +82,7 @@ func (sp ScopedProvider) RegisterChangeCallback(key string, callback Configurati
 	return sp.Provider.RegisterChangeCallback(key, callback)
 }
 
-// Unregister callback in the underling provider
+// UnregisterChangeCallback un registers a callback in the underling provider
 func (sp ScopedProvider) UnregisterChangeCallback(key string) error {
 	if sp.prefix != "" {
 		key = sp.prefix + "." + key
