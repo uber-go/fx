@@ -82,13 +82,16 @@ func TestYamlStructChild(t *testing.T) {
 }
 
 func TestExtends(t *testing.T) {
-	provider := NewYAMLProviderFromFiles(false, NewRelativeResolver("./testdata"), "base.yaml", "dev.yaml")
+	provider := NewYAMLProviderFromFiles(false, NewRelativeResolver("./testdata"), "base.yaml", "dev.yaml", "secrets.yaml")
 
 	baseValue := provider.Get("value").AsString()
 	assert.Equal(t, "base_only", baseValue)
 
 	devValue := provider.Get("value_override").AsString()
 	assert.Equal(t, "dev_setting", devValue)
+
+	secretValue := provider.Get("secret").AsString()
+	assert.Equal(t, "my_secret", secretValue)
 }
 
 func TestNewYamlProviderFromReader(t *testing.T) {

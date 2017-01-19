@@ -42,6 +42,11 @@ const (
 	config      = "config"
 )
 
+const (
+	baseFile    = "base"
+	secretsFile = "secrets"
+)
+
 var (
 	_setupMux sync.Mutex
 
@@ -63,8 +68,9 @@ func getConfigFiles() []string {
 		files = append(files, fmt.Sprintf("./%s/%s-%s.yaml", config, env, dc))
 	}
 	files = append(files,
+		fmt.Sprintf("./%s/%s.yaml", config, baseFile),
 		fmt.Sprintf("./%s/%s.yaml", config, env),
-		fmt.Sprintf("./%s/base.yaml", config))
+		fmt.Sprintf("./%s/%s.yaml", config, secretsFile))
 
 	return files
 }
