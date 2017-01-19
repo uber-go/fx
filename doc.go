@@ -37,38 +37,38 @@
 //
 // Service Model
 //
-// A service is a container for a set of **modules**, controlling their lifecycle.
-// Service can have any number of modules that are responsible for a specific type
-// of functionality, such as a Kafka message ingestion, exposing an HTTP server, or
-// a set of RPC service endpoints.
+// A service is a container for a set of **modules** and controls their lifecycle.
+// A service can have any number of modules, each responsible for a specific type
+// of functionality, such as a Kafka message ingestion, exposing an HTTP server,
+// or a set of RPC service endpoints.
 //
 //
-// The core service is responsible for loading basic configuration and starting and
-// stopping a set of these modules.  Each module gets a reference to the service to
-// access standard values such as the Service name or basic configuration.
+// The core service is responsible for loading basic configuration and startingand stopping a set of these modules. Each module gets a reference to the
+// service to
+// access standard values such as the service name or basic configuration.
 //
 //
 // Read more about the service model (service/README.md)
 //
-// Core packages
+// Core Packages
 //
-// The top-level packages (except for service) contain the nuts and bolts useful
-// to have in a fully-fledged service, but are not specific to an instance of a
-// service or even the idea of a service.
+// The top-level packages contain the nuts and bolts useful for a fully-fledged
+// service. That said, none (except for
+// service) requires an instance or even
+// the idea of a service. You can use the packages independently.
 //
 //
-// If, for example, you just want use the configuration logic from UberFx, you
-// could import
-// go.uber.org/config and use it in a stand-alone CLI app.
+// If, for example, you only want use the configuration logic from UberFx, you
+// can import
+// go.uber.org/fx/config and use it in a standalone CLI app.
 //
-// It is separate from the service package, which contains logic specific to
-// a running service.
-//
+// The service package contains logic specific to a running service. configis separate from
+// service.
 //
 // Modules
 //
-// Modules are pluggable components that provide an encapsulated set of
-// functionality that is managed by the service.
+// A modules is a pluggable component that provides an encapsulated set of
+// functionality, and all modules are managed by the service.
 //
 //
 // Implemented modules:
@@ -85,9 +85,9 @@
 //
 // Module Configuration
 //
-// Modules are given named keys by the developer for the purpose of looking up
-// their configuration. This naming is arbitrary and only needs to be unique
-// across modules and exists because it's possible that a service may have multiple
+// You give your modules named keys for the purpose of looking up their
+// configuration. This naming is arbitrary and only needs to be unique across
+// modules. We do this because it's possible for a service to have multiple
 // modules of the same type, such as multiple Kafka ingesters.
 //
 //
@@ -99,7 +99,7 @@
 //       port: 8080
 //       timeout: 60s
 //
-// In this example, a module named: "rpc" would lookup it's advertise name as
+// In this example, a module named: "rpc" would look up its advertise name as
 // modules.rpc.advertiseName.
 //
 // Metrics
@@ -109,8 +109,8 @@
 //
 // Internally, this uses a pluggable mechanism for reporting these values, so they
 // can be reported to M3, logging, etc., at the service owner's discretion.
-// By default the metrics are not reported (using a
-// tally.NoopScope)
+// By default, the metrics are not reported (using a
+// tally.NoopScope).
 //
 // Configuration
 //
@@ -120,7 +120,7 @@
 // typed structs.
 //
 //
-// Read more about configuration (config/README.md)
+// Read more about configuration. (config/README.md)
 //
 // Compatibility
 //
