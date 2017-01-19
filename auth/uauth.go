@@ -25,7 +25,6 @@ import (
 	"sync"
 
 	"github.com/uber-go/tally"
-
 	"go.uber.org/fx/config"
 	"go.uber.org/fx/ulog"
 )
