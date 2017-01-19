@@ -80,7 +80,7 @@ func (jl *jaegerLogger) Infof(msg string, args ...interface{}) {
 	// TODO (madhu) Zap logger requires even number of arguments, add a key to each arg
 	// This is a hack in place till jaeger directly takes a zap logger
 	targetLen := len(args) * 2
-	var targetArgs = make([]interface{}, targetLen)
+	targetArgs := make([]interface{}, targetLen)
 	for _, arg := range args {
 		targetArgs = append(targetArgs, "arg", arg)
 	}
