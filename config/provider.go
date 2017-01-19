@@ -20,8 +20,6 @@
 
 package config
 
-import "fmt"
-
 // ConfigurationChangeCallback is called for updates of configuration data
 type ConfigurationChangeCallback func(key string, provider string, configdata interface{})
 
@@ -43,10 +41,6 @@ type Provider interface {
 	UnregisterChangeCallback(token string) error
 }
 
-func keyNotFound(key string) error {
-	return fmt.Errorf("couldn't find key %q", key)
-}
-
 // ScopedProvider defines recursive interface of providers based on the prefix
 type ScopedProvider struct {
 	Provider
@@ -55,38 +49,42 @@ type ScopedProvider struct {
 }
 
 // NewScopedProvider creates a child provider given a prefix
-func NewScopedProvider(prefix string, provider Provider) Provider {
+func NewScopedProvider(prefix string, provider Provider) *ScopedProvider {
 	return &ScopedProvider{provider, prefix}
+}
+
+func addPrefix(prefix, key string) string {
+	if prefix == "" {
+		return key
+	}
+
+	if key == "" {
+		return prefix
+	}
+
+	return prefix + "." + key
 }
 
 // Get returns configuration value
 func (sp ScopedProvider) Get(key string) Value {
-	if sp.prefix != "" {
-		key = sp.prefix + "." + key
-	}
-
-	return sp.Provider.Get(key)
+	return sp.Provider.Get(addPrefix(sp.prefix, key))
 }
 
 // Scope returns new scoped provider, given a prefix
 func (sp ScopedProvider) Scope(prefix string) Provider {
-	return NewScopedProvider(prefix, sp)
+	if prefix == "" {
+		return sp
+	}
+
+	return NewScopedProvider(addPrefix(sp.prefix, prefix), sp.Provider)
 }
 
-// RegisterChangeCallback registers the callback in the underling provider
+// RegisterChangeCallback registers the callback in the underlying provider
 func (sp ScopedProvider) RegisterChangeCallback(key string, callback ConfigurationChangeCallback) error {
-	if sp.prefix != "" {
-		key = sp.prefix + "." + key
-	}
-
-	return sp.Provider.RegisterChangeCallback(key, callback)
+	return sp.Provider.RegisterChangeCallback(addPrefix(sp.prefix, key), callback)
 }
 
-// UnregisterChangeCallback un registers a callback in the underling provider
+// UnregisterChangeCallback un registers a callback in the underlying provider
 func (sp ScopedProvider) UnregisterChangeCallback(key string) error {
-	if sp.prefix != "" {
-		key = sp.prefix + "." + key
-	}
-
-	return sp.Provider.UnregisterChangeCallback(key)
+	return sp.Provider.UnregisterChangeCallback(addPrefix(sp.prefix, key))
 }

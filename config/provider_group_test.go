@@ -29,6 +29,7 @@ import (
 )
 
 func TestProviderGroup(t *testing.T) {
+	t.Parallel()
 	pg := NewProviderGroup("test-group", NewYAMLProviderFromBytes([]byte(`id: test`)))
 	assert.Equal(t, "test-group", pg.Name())
 	assert.Equal(t, "test", pg.Get("id").AsString())
@@ -38,12 +39,14 @@ func TestProviderGroup(t *testing.T) {
 }
 
 func TestProviderGroupScope(t *testing.T) {
+	t.Parallel()
 	data := map[string]interface{}{"hello.world": 42}
 	pg := NewProviderGroup("test-group", NewStaticProvider(data))
 	assert.Equal(t, 42, pg.Scope("hello").Get("world").AsInt())
 }
 
 func TestCallbacks_WithDynamicProvider(t *testing.T) {
+	t.Parallel()
 	data := map[string]interface{}{"hello.world": 42}
 	mock := NewProviderGroup("with-dynamic", NewStaticProvider(data))
 	mock = mock.(providerGroup).WithProvider(newMockDynamicProvider(data))
@@ -60,6 +63,7 @@ func TestCallbacks_WithDynamicProvider(t *testing.T) {
 }
 
 func TestCallbacks_WithoutDynamicProvider(t *testing.T) {
+	t.Parallel()
 	data := map[string]interface{}{"hello.world": 42}
 	mock := NewProviderGroup("with-dynamic", NewStaticProvider(data))
 	mock = mock.(providerGroup).WithProvider(NewStaticProvider(data))
@@ -69,6 +73,7 @@ func TestCallbacks_WithoutDynamicProvider(t *testing.T) {
 }
 
 func TestCallbacks_WithScopedProvider(t *testing.T) {
+	t.Parallel()
 	mock := &mockDynamicProvider{}
 	mock.Set("uber.fx", "go-lang")
 	scope := NewScopedProvider("uber", mock)
@@ -91,7 +96,27 @@ func TestCallbacks_WithScopedProvider(t *testing.T) {
 	val = scope.Get("fx").AsString()
 	require.Equal(t, "unregister works too!", val)
 	assert.Equal(t, 1, callCount)
+}
 
+func TestScope_WithScopedProvider(t *testing.T) {
+	t.Parallel()
+	mock := &mockDynamicProvider{}
+	mock.Set("uber.fx", "go-lang")
+	scope := NewScopedProvider("", mock)
+	require.Equal(t, "go-lang", scope.Get("uber.fx").AsString())
+	require.False(t, scope.Get("uber").HasValue())
+
+	base := scope.Scope("uber")
+	require.Equal(t, "go-lang", base.Get("fx").AsString())
+	require.False(t, base.Get("").HasValue())
+
+	uber := base.Scope("")
+	require.Equal(t, "go-lang", uber.Get("fx").AsString())
+	require.False(t, uber.Get("").HasValue())
+
+	fx := uber.Scope("fx")
+	require.Equal(t, "go-lang", fx.Get("").AsString())
+	require.False(t, fx.Get("fx").HasValue())
 }
 
 type mockDynamicProvider struct {
