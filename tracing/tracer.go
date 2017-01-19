@@ -21,6 +21,7 @@
 package tracing
 
 import (
+	"fmt"
 	"io"
 	"time"
 
@@ -77,7 +78,13 @@ func (jl *jaegerLogger) Error(msg string) {
 
 // Infof logs an info message with args as key value pairs
 func (jl *jaegerLogger) Infof(msg string, args ...interface{}) {
-	jl.log.Info(msg, args...)
+	// Zap logger requires even number of arguments, add a key to each arg
+	var logArgs []interface{}
+	for _, arg := range args {
+		fmt.Println(arg)
+		logArgs = append(logArgs, "arg", arg)
+	}
+	jl.log.Info(msg, logArgs...)
 }
 
 type jaegerReporter struct {
