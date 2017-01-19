@@ -206,6 +206,22 @@ func TestGetAsIntegerValue(t *testing.T) {
 	}
 }
 
+func TestGetAsFloatValue(t *testing.T) {
+	testCases := []struct {
+		value interface{}
+	}{
+		{float32(2)},
+		{float64(2)},
+		{int(2)},
+		{int32(2)},
+		{int64(2)},
+	}
+	for _, tc := range testCases {
+		cv := NewValue(NewStaticProvider(nil), "key", tc.value, true, Float, nil)
+		assert.Equal(t, float64(2), cv.AsFloat())
+	}
+}
+
 func TestNestedStructs(t *testing.T) {
 	provider := NewProviderGroup(
 		"test",

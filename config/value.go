@@ -206,7 +206,18 @@ func (cv Value) TryAsFloat() (float64, bool) {
 	if val, err := convertValue(v, reflect.TypeOf(f)); v != nil && err == nil {
 		return val.(float64), true
 	}
-	return f, false
+	switch val := v.(type) {
+	case int:
+		return float64(val), true
+	case int32:
+		return float64(val), true
+	case int64:
+		return float64(val), true
+	case float32:
+		return float64(val), true
+	default:
+		return f, false
+	}
 }
 
 // AsString returns the configuration value as a string, or panics if not
