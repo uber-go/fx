@@ -21,10 +21,11 @@
 package config
 
 import (
-	"fmt"
+	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestProviderGroup(t *testing.T) {
@@ -47,8 +48,15 @@ func TestCallbacks_WithDynamicProvider(t *testing.T) {
 	mock := NewProviderGroup("with-dynamic", NewStaticProvider(data))
 	mock = mock.(providerGroup).WithProvider(newMockDynamicProvider(data))
 	assert.Equal(t, "with-dynamic", mock.Name())
-	assert.Equal(t, fmt.Errorf("registration error"), mock.RegisterChangeCallback("mockcall", nil))
-	assert.Equal(t, fmt.Errorf("unregiser error"), mock.UnregisterChangeCallback("mock"))
+
+	require.NoError(t, mock.RegisterChangeCallback("mockcall", nil))
+	assert.EqualError(t,
+		mock.RegisterChangeCallback("mockcall", nil),
+		"Callback already registered for the key: mockcall")
+
+	assert.EqualError(t,
+		mock.UnregisterChangeCallback("mock"),
+		"There is no registered callback for token: mock")
 }
 
 func TestCallbacks_WithoutDynamicProvider(t *testing.T) {
@@ -60,8 +68,35 @@ func TestCallbacks_WithoutDynamicProvider(t *testing.T) {
 	assert.NoError(t, mock.UnregisterChangeCallback("mock"))
 }
 
+func TestCallbacks_WithScopedProvider(t *testing.T) {
+	mock := &mockDynamicProvider{}
+	mock.Set("uber.fx", "go-lang")
+	scope := NewScopedProvider("uber", mock)
+
+	callCount := 0
+	cb := func(key string, provider string, configdata interface{}) {
+		callCount++
+	}
+
+	require.NoError(t, scope.RegisterChangeCallback("fx", cb))
+	mock.Set("uber.fx", "register works!")
+
+	val := scope.Get("fx").AsString()
+	require.Equal(t, "register works!", val)
+	assert.Equal(t, 1, callCount)
+
+	require.NoError(t, scope.UnregisterChangeCallback("fx"))
+	mock.Set("uber.fx", "unregister works too!")
+
+	val = scope.Get("fx").AsString()
+	require.Equal(t, "unregister works too!", val)
+	assert.Equal(t, 1, callCount)
+
+}
+
 type mockDynamicProvider struct {
-	data map[string]interface{}
+	data      map[string]interface{}
+	callBacks map[string]ConfigurationChangeCallback
 }
 
 // StaticProvider should only be used in tests to isolate config from your environment
@@ -80,14 +115,43 @@ func (s *mockDynamicProvider) Get(key string) Value {
 	return NewValue(s, key, val, found, GetType(val), nil)
 }
 
+func (s *mockDynamicProvider) Set(key string, value interface{}) {
+	if s.data == nil {
+		s.data = make(map[string]interface{})
+	}
+
+	s.data[key] = value
+	if cb, ok := s.callBacks[key]; ok {
+		cb(key, s.Name(), "randomConfig")
+	}
+}
+
 func (s *mockDynamicProvider) Scope(prefix string) Provider {
 	return NewScopedProvider(prefix, s)
 }
 
 func (s *mockDynamicProvider) RegisterChangeCallback(key string, callback ConfigurationChangeCallback) error {
-	return fmt.Errorf("registration error")
+	if s.callBacks == nil {
+		s.callBacks = make(map[string]ConfigurationChangeCallback)
+	}
+
+	if _, ok := s.callBacks[key]; ok {
+		return errors.New("Callback already registered for the key: " + key)
+	}
+
+	s.callBacks[key] = callback
+	return nil
 }
 
 func (s *mockDynamicProvider) UnregisterChangeCallback(token string) error {
-	return fmt.Errorf("unregiser error")
+	if s.callBacks == nil {
+		s.callBacks = make(map[string]ConfigurationChangeCallback)
+	}
+
+	if _, ok := s.callBacks[token]; !ok {
+		return errors.New("There is no registered callback for token: " + token)
+	}
+
+	delete(s.callBacks, token)
+	return nil
 }

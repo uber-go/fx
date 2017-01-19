@@ -62,12 +62,31 @@ func NewScopedProvider(prefix string, provider Provider) Provider {
 // Get returns configuration value
 func (sp ScopedProvider) Get(key string) Value {
 	if sp.prefix != "" {
-		key = fmt.Sprintf("%s.%s", sp.prefix, key)
+		key = sp.prefix + "." + key
 	}
+
 	return sp.Provider.Get(key)
 }
 
 // Scope returns new scoped provider, given a prefix
 func (sp ScopedProvider) Scope(prefix string) Provider {
 	return NewScopedProvider(prefix, sp)
+}
+
+// Register callback in the underling provider
+func (sp ScopedProvider) RegisterChangeCallback(key string, callback ConfigurationChangeCallback) error {
+	if sp.prefix != "" {
+		key = sp.prefix + "." + key
+	}
+
+	return sp.Provider.RegisterChangeCallback(key, callback)
+}
+
+// Unregister callback in the underling provider
+func (sp ScopedProvider) UnregisterChangeCallback(key string) error {
+	if sp.prefix != "" {
+		key = sp.prefix + "." + key
+	}
+
+	return sp.Provider.UnregisterChangeCallback(key)
 }
