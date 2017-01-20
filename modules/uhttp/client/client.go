@@ -22,6 +22,7 @@ package client
 
 import (
 	"net/http"
+	"time"
 
 	"go.uber.org/fx"
 	"go.uber.org/fx/auth"
@@ -32,14 +33,21 @@ import (
 // they are going to be applied in following order: tracing, auth, remaining filters
 // and only if all of them passed the request is going to be send.
 func New(info auth.CreateAuthInfo, filters ...Filter) *http.Client {
-	extra := make([]Filter, len(filters)+2)
-	extra[0] = tracingFilter()
-	extra[1] = authenticationFilter(info)
-	copy(extra[2:], filters)
-
+	defaultFilters := []Filter{tracingFilter(), authenticationFilter(info)}
+	defaultFilters = append(defaultFilters, filters...)
 	return &http.Client{
-		Transport: newExecutionChain(extra, http.DefaultTransport),
+		Transport: newExecutionChain(defaultFilters, http.DefaultTransport),
+		Timeout:   2 * time.Minute,
 	}
+}
+
+// executionChain represents a chain of filters that are being executed recursively
+// in the increasing order filters[0], filters[1], ... The final transport is called
+// to make RoundTrip after the last filter is completed.
+type executionChain struct {
+	currentFilter  int
+	filters        []Filter
+	finalTransport http.RoundTripper
 }
 
 func newExecutionChain(
@@ -51,13 +59,7 @@ func newExecutionChain(
 	}
 }
 
-type executionChain struct {
-	currentFilter  int
-	filters        []Filter
-	finalTransport http.RoundTripper
-}
-
-func (ec executionChain) Send(ctx fx.Context, r *http.Request) (resp *http.Response, err error) {
+func (ec executionChain) Execute(ctx fx.Context, r *http.Request) (resp *http.Response, err error) {
 	if ec.currentFilter < len(ec.filters) {
 		filter := ec.filters[ec.currentFilter]
 		ec.currentFilter++
@@ -68,6 +70,7 @@ func (ec executionChain) Send(ctx fx.Context, r *http.Request) (resp *http.Respo
 	return ec.finalTransport.RoundTrip(r.WithContext(ctx))
 }
 
+// Implement http.RoundTripper interface to use as a Transport in http.Client
 func (ec executionChain) RoundTrip(r *http.Request) (resp *http.Response, err error) {
-	return ec.Send(&fxcontext.Context{Context: r.Context()}, r)
+	return ec.Execute(&fxcontext.Context{Context: r.Context()}, r)
 }

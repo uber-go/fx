@@ -32,17 +32,16 @@ import (
 	"github.com/opentracing/opentracing-go/ext"
 )
 
-// Sender sends the http request. It is a simple wrapper around http.RoundTripper, so
-// Send must be safe to use by multiple go routines
-type Sender interface {
-	Send(ctx fx.Context, r *http.Request) (resp *http.Response, err error)
+// Executor executes the http request. Execute must be safe to use by multiple go routines
+type Executor interface {
+	Execute(ctx fx.Context, r *http.Request) (resp *http.Response, err error)
 }
 
-// The SenderFunc type is an adapter to allow the use of ordinary functions as Sender
-type SenderFunc func(ctx fx.Context, req *http.Request) (resp *http.Response, err error)
+// The SenderFunc type is an adapter to allow the use of ordinary functions as Executor
+type ExecutorFunc func(ctx fx.Context, req *http.Request) (resp *http.Response, err error)
 
-// Send implements Sender interface for the SenderFunc
-func (f SenderFunc) Send(ctx fx.Context, req *http.Request) (resp *http.Response, err error) {
+// Execute implements Executor interface for the SenderFunc
+func (f ExecutorFunc) Execute(ctx fx.Context, req *http.Request) (resp *http.Response, err error) {
 	return f(ctx, req)
 }
 
@@ -50,23 +49,23 @@ func (f SenderFunc) Send(ctx fx.Context, req *http.Request) (resp *http.Response
 // adding tracing to the context. Filters must call next.Send() at most once, calling it twice and more
 // will lead to an undefined behavior
 type Filter interface {
-	Apply(ctx fx.Context, r *http.Request, next Sender) (resp *http.Response, err error)
+	Apply(ctx fx.Context, r *http.Request, next Executor) (resp *http.Response, err error)
 }
 
 // FilterFunc is an adaptor to call normal functions to apply filters
 type FilterFunc func(
-	ctx fx.Context, r *http.Request, next Sender,
+	ctx fx.Context, r *http.Request, next Executor,
 ) (resp *http.Response, err error)
 
 // Apply implements Apply from the Filter interface and simply delegates to the function
 func (f FilterFunc) Apply(
-	ctx fx.Context, r *http.Request, next Sender,
+	ctx fx.Context, r *http.Request, next Executor,
 ) (resp *http.Response, err error) {
 	return f(ctx, r, next)
 }
 
 func tracingFilter() FilterFunc {
-	return func(ctx fx.Context, req *http.Request, next Sender,
+	return func(ctx fx.Context, req *http.Request, next Executor,
 	) (resp *http.Response, err error) {
 		opName := req.Method
 		var parent opentracing.SpanContext
@@ -85,7 +84,7 @@ func tracingFilter() FilterFunc {
 			return nil, err
 		}
 
-		resp, err = next.Send(ctx, req)
+		resp, err = next.Execute(ctx, req)
 		if resp != nil {
 			span.SetTag("http.status_code", resp.StatusCode)
 		}
@@ -101,7 +100,7 @@ func tracingFilter() FilterFunc {
 func authenticationFilter(info auth.CreateAuthInfo) FilterFunc {
 	authClient := auth.Load(info)
 	serviceName := info.Config().Get(config.ApplicationIDKey).AsString()
-	return func(ctx fx.Context, req *http.Request, next Sender,
+	return func(ctx fx.Context, req *http.Request, next Executor,
 	) (resp *http.Response, err error) {
 		// Client needs to know what service it is to authenticate
 		authCtx := authClient.SetAttribute(ctx, auth.ServiceAuth, serviceName)
@@ -118,7 +117,7 @@ func authenticationFilter(info auth.CreateAuthInfo) FilterFunc {
 			return nil, err
 		}
 
-		return next.Send(&fxcontext.Context{Context: authCtx}, req)
+		return next.Execute(&fxcontext.Context{Context: authCtx}, req)
 	}
 }
 
