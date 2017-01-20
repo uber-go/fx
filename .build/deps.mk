@@ -1,8 +1,15 @@
 .PHONY: libdeps
 libdeps:
 	@$(call label,Installing Glide and locked dependencies...)
-	$(ECHO_V)glide --version 2>/dev/null || go get -u -f github.com/Masterminds/glide
+	$(ECHO_V)glide --version 2>/dev/null ||	$(MAKE) getglide
 	$(ECHO_V)glide install
+
+# Temporarily work around glide master issues to installing specific tag
+.PHONY: getglide
+getglide:
+	go get -v github.com/Masterminds/glide
+	cd $(GOPATH)/src/github.com/Masterminds/glide && git checkout tags/v0.12.3 && go install && cd -
+
 
 .PHONY: dependencies
 dependencies: libdeps
