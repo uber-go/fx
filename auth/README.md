@@ -16,7 +16,7 @@ identify the service/user and grant certificate for further access.
 
 Authentication:
 Authentication API is called by calling entity to authenticate itself. The Authenticate call
-returns context, which must be populated by the backend service with signed certificate that is valid for a timeframe.
+returns context, which must be populated by the back-end service with signed certificate that is valid for a time frame.
 
 Authorization:
 Authorization API is called by a service entity to authorize its callers. context provided by a
@@ -24,7 +24,7 @@ request must have a signed certificate which caller received on authentication.
 
 ## Integrating custom auth service
 `Auth package` just provides an interface and API integration with existing modules. Users can define
-their own backend security framework and integrate its clients with the service framework by following simple steps:
+their own back-end security framework and integrate its clients with the service framework by following simple steps:
 
 ### Implement `auth.Client` interface for custom security service
 Example implementation of userAuthClient:
@@ -44,7 +44,7 @@ func (*userAuthClient) Name() string {
 }
 ```
 
-### Impleemt custom auth APIs with `auth.Client` by delegating calls to your service's client.
+### Implement custom auth APIs with `auth.Client` by delegating calls to your service's client.
 
 ### Register custom implementation construct with `fx`,
 The last step is to integrate the user auth client with the framework. This can be done by implementing init
