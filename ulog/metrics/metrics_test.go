@@ -26,6 +26,7 @@ import (
 	"go.uber.org/fx/testutils/metrics"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/uber-go/tally"
 	"github.com/uber-go/zap"
 )
 
@@ -47,4 +48,9 @@ func TestSomething(t *testing.T) {
 	assert.Equal(t, 2, len(r.Counters))
 	assert.Equal(t, int64(1), r.Counters["info"])
 	assert.Equal(t, int64(2), r.Counters["error"])
+}
+
+func TestNilEntryHook(t *testing.T) {
+	h := Hook(tally.NoopScope)
+	assert.Error(t, errHookNilEntry, h(nil))
 }

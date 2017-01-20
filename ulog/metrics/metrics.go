@@ -21,13 +21,23 @@
 package metrics
 
 import (
+	"errors"
+
 	"github.com/uber-go/tally"
 	"github.com/uber-go/zap"
+)
+
+var (
+	errHookNilEntry = errors.New("can't call a hook on a nil *Entry")
 )
 
 // Hook counts the number of logging messages per level
 func Hook(s tally.Scope) zap.Hook {
 	return zap.Hook(func(e *zap.Entry) error {
+		if e == nil {
+			return errHookNilEntry
+		}
+
 		// TODO: `.Counter()` method is not necessary here and can be optimized
 		// There is a finite number of counters here: one for each logging level.
 		// If performance per log needs to be optimized this is one of the places
