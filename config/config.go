@@ -25,6 +25,8 @@ import (
 	"os"
 	"strings"
 	"sync"
+
+	"github.com/uber-go/tally"
 )
 
 const (

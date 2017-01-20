@@ -114,30 +114,30 @@ func New(options ...Option) (Owner, error) {
 		svc.configProvider = config.Load()
 	}
 
-	svc.setupLogging(svc.configProvider)
-
-	svc.setupAuthClient(svc.configProvider)
-
-	// load standard config
-	if err := svc.setupStandardConfig(svc.Config()); err != nil {
-		return nil, err
-	}
-
 	// Initialize metrics. If no metrics reporters were Registered, do nop
 	// TODO(glib): add a logging reporter and use it by default, rather than nop
 	svc.setupMetrics()
 
-	if err := svc.setupRuntimeMetricsCollector(svc.Config()); err != nil {
+	svc.setupLogging()
+
+	svc.setupAuthClient()
+
+	// load standard config
+	if err := svc.setupStandardConfig(); err != nil {
 		return nil, err
 	}
 
-	if err := svc.setupTracer(svc.Config()); err != nil {
+	if err := svc.setupRuntimeMetricsCollector(); err != nil {
+		return nil, err
+	}
+
+	if err := svc.setupTracer(); err != nil {
 		return nil, err
 	}
 
 	// if we have an observer, look for a property called "config" and load the service
 	// node into that config.
-	svc.setupObserver(svc.Config())
+	svc.setupObserver()
 
 	// Put service into Initialized state
 	svc.transitionState(Initialized)
