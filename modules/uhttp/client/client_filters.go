@@ -37,7 +37,7 @@ type Executor interface {
 	Execute(ctx fx.Context, r *http.Request) (resp *http.Response, err error)
 }
 
-// The SenderFunc type is an adapter to allow the use of ordinary functions as Executor
+// The ExecutorFunc type is an adapter to allow the use of ordinary functions as Executor
 type ExecutorFunc func(ctx fx.Context, req *http.Request) (resp *http.Response, err error)
 
 // Execute implements Executor interface for the SenderFunc
