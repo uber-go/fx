@@ -38,7 +38,7 @@ type Executor interface {
 }
 
 // Filter applies filters on client requests and request's context such as
-// adding tracing to the context. Filters must call next.Send() at most once, calling it twice and more
+// adding tracing to the context. Filters must call next.Execute() at most once, calling it twice and more
 // will lead to an undefined behavior
 type Filter interface {
 	Apply(ctx fx.Context, r *http.Request, next Executor) (resp *http.Response, err error)
