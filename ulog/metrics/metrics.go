@@ -21,8 +21,8 @@
 package metrics
 
 import (
-	"github.com/uber-go/zap"
 	"github.com/uber-go/tally"
+	"github.com/uber-go/zap"
 )
 
 // Hook counts the number of logging messages per level

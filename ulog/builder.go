@@ -26,11 +26,11 @@ import (
 	"path"
 
 	"go.uber.org/fx/config"
-	"go.uber.org/fx/ulog/sentry"
 	"go.uber.org/fx/ulog/metrics"
+	"go.uber.org/fx/ulog/sentry"
 
-	"github.com/uber-go/zap"
 	"github.com/uber-go/tally"
+	"github.com/uber-go/zap"
 )
 
 // Configuration for logging with UberFx
@@ -58,7 +58,7 @@ type LogBuilder struct {
 	log        zap.Logger
 	logConfig  Configuration
 	sentryHook *sentry.Hook
-	scope 		 tally.Scope
+	scope      tally.Scope
 }
 
 // Builder creates an empty builder for building ulog.Log object
@@ -77,7 +77,7 @@ func (lb *LogBuilder) WithConfiguration(logConfig Configuration) *LogBuilder {
 	return lb
 }
 
-// WithConfiguration sets up configuration for the log builder
+// WithScope sets up configuration for the log builder
 func (lb *LogBuilder) WithScope(s tally.Scope) *LogBuilder {
 	lb.scope = s
 	return lb

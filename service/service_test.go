@@ -33,7 +33,6 @@ import (
 	"github.com/uber-go/tally"
 )
 
-
 func TestServiceCreation(t *testing.T) {
 	r := metrics.NewTestStatsReporter()
 	r.Cw.Add(1)

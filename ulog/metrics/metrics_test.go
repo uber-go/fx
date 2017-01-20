@@ -25,8 +25,8 @@ import (
 
 	"go.uber.org/fx/testutils/metrics"
 
-	"github.com/uber-go/zap"
 	"github.com/stretchr/testify/assert"
+	"github.com/uber-go/zap"
 )
 
 func hookedLogger() (zap.Logger, *metrics.TestStatsReporter) {
