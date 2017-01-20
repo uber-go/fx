@@ -60,12 +60,12 @@
 //
 //   _ Client = &userAuthClient{}
 //
-//   ype userAuthClient struct {
-//     // embed user auth client
+//   type userAuthClient struct {
+//     // embed back-end security service client here
 //   }
 //
 //   func userAuthClient(info CreateAuthInfo) auth.Client {
-//   	return &nouserAuthClientp{}
+//   	return &userAuthClient{}
 //   }
 //
 //   func (*userAuthClient) Name() string {
@@ -73,6 +73,18 @@
 //   }
 //
 // Implement custom auth APIs with auth.Client by delegating calls to your service's client.
+//
+//   func (u *userAuthClient) Authenticate(ctx context.Context) (context.Context, error) {
+//     // authenticate with back-end security server
+//     ctx, err := u.Client.Authenticate(ctx)
+//   	return ctx, err
+//   }
+//
+//   func (u *userAuthClient) Authorize(ctx context.Context) error {
+//     // authorize with back-end security server
+//     err := u.Client.Authorize(ctx)
+//   	return err
+//   }
 //
 // Register custom implementation construct with fx,
 //
