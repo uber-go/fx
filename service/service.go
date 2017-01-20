@@ -114,6 +114,11 @@ func New(options ...Option) (Owner, error) {
 		svc.configProvider = config.Load()
 	}
 
+	// load standard config
+	if err := svc.setupStandardConfig(); err != nil {
+		return nil, err
+	}
+
 	// Initialize metrics. If no metrics reporters were Registered, do nop
 	// TODO(glib): add a logging reporter and use it by default, rather than nop
 	svc.setupMetrics()
@@ -121,11 +126,6 @@ func New(options ...Option) (Owner, error) {
 	svc.setupLogging()
 
 	svc.setupAuthClient()
-
-	// load standard config
-	if err := svc.setupStandardConfig(); err != nil {
-		return nil, err
-	}
 
 	if err := svc.setupRuntimeMetricsCollector(); err != nil {
 		return nil, err
