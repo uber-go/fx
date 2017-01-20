@@ -157,9 +157,9 @@ func TestMetricsHook(t *testing.T) {
 	s, r := metrics.NewTestScope()
 	l := Builder().WithScope(s).Build()
 
-	r.Cw.Add(1)
+	r.CountersWG.Add(1)
 	l.Warn("Warning log!")
-	r.Cw.Wait()
+	r.CountersWG.Wait()
 
 	assert.Equal(t, 1, len(r.Counters))
 }

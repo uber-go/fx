@@ -31,9 +31,9 @@ import (
 type TestStatsReporter struct {
 	m sync.Mutex
 
-	Cw sync.WaitGroup
-	Gw sync.WaitGroup
-	Tw sync.WaitGroup
+	CountersWG sync.WaitGroup
+	GaugesWG   sync.WaitGroup
+	TimersWG   sync.WaitGroup
 
 	Counters map[string]int64
 	Gauges   map[string]float64
@@ -44,7 +44,7 @@ type TestStatsReporter struct {
 func (r *TestStatsReporter) ReportCounter(name string, tags map[string]string, value int64) {
 	r.m.Lock()
 	r.Counters[name] += value
-	r.Cw.Done()
+	r.CountersWG.Done()
 	r.m.Unlock()
 }
 
@@ -52,16 +52,15 @@ func (r *TestStatsReporter) ReportCounter(name string, tags map[string]string, v
 func (r *TestStatsReporter) ReportGauge(name string, tags map[string]string, value float64) {
 	r.m.Lock()
 	r.Gauges[name] = value
-	r.Gw.Done()
+	r.GaugesWG.Done()
 	r.m.Unlock()
 }
-
 
 // ReportTimer collects all the timers into a map
 func (r *TestStatsReporter) ReportTimer(name string, tags map[string]string, interval time.Duration) {
 	r.m.Lock()
 	r.Timers[name] = interval
-	r.Tw.Done()
+	r.TimersWG.Done()
 	r.m.Unlock()
 }
 

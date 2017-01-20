@@ -38,12 +38,12 @@ func hookedLogger() (zap.Logger, *metrics.TestStatsReporter) {
 func TestSomething(t *testing.T) {
 	l, r := hookedLogger()
 
-	r.Cw.Add(2)
+	r.CountersWG.Add(2)
 	l.Info("Info message.")
 
 	l.Error("Error message 1.")
 	l.Error("Error message 2.")
-	r.Cw.Wait()
+	r.CountersWG.Wait()
 
 	assert.Equal(t, 2, len(r.Counters))
 	assert.Equal(t, int64(1), r.Counters["info"])

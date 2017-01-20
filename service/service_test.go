@@ -35,7 +35,7 @@ import (
 
 func TestServiceCreation(t *testing.T) {
 	r := metrics.NewTestStatsReporter()
-	r.Cw.Add(1)
+	r.CountersWG.Add(1)
 	scope, closer := tally.NewRootScope("", nil, r, 50*time.Millisecond)
 	defer closer.Close()
 	svc, err := New(
@@ -44,7 +44,7 @@ func TestServiceCreation(t *testing.T) {
 	)
 	require.NoError(t, err)
 	assert.NotNil(t, svc, "Service should be created")
-	r.Cw.Wait()
+	r.CountersWG.Wait()
 
 	assert.Equal(t, r.Counters["boot"], int64(1))
 }
