@@ -21,115 +21,56 @@
 package client
 
 import (
-	"io"
 	"net/http"
-	"net/url"
-	"strings"
+	"time"
 
 	"go.uber.org/fx"
 	"go.uber.org/fx/auth"
-	"go.uber.org/fx/config"
-
-	"golang.org/x/net/context/ctxhttp"
+	"go.uber.org/fx/internal/fxcontext"
 )
 
-var (
-	_serviceName string
-)
-
-// Client wraps around a http client
-type Client struct {
-	*http.Client
-	info                auth.CreateAuthInfo
-	filters             []Filter
-	defaultFiltersAdded bool
-}
-
-// New creates a new instance of uhttp Client
-func New(info auth.CreateAuthInfo, client *http.Client, filters ...Filter) *Client {
-	_serviceName = info.Config().Get(config.ApplicationIDKey).AsString()
-	filters = append(filters, tracingFilter(), authenticationFilter(info))
-	return &Client{
-		Client:              client,
-		info:                info,
-		filters:             filters,
-		defaultFiltersAdded: true,
+// New creates an http.Client that includes 2 extra filters: tracing and auth
+// they are going to be applied in following order: tracing, auth, remaining filters
+// and only if all of them passed the request is going to be send.
+func New(info auth.CreateAuthInfo, filters ...Filter) *http.Client {
+	defaultFilters := []Filter{tracingFilter(), authenticationFilter(info)}
+	defaultFilters = append(defaultFilters, filters...)
+	return &http.Client{
+		Transport: newExecutionChain(defaultFilters, http.DefaultTransport),
+		Timeout:   2 * time.Minute,
 	}
 }
 
-// Do is a context-aware, filter-enabled extension of Do() in http.Client
-func (c *Client) Do(ctx fx.Context, req *http.Request) (resp *http.Response, err error) {
-	filters := c.filters
-	if c.defaultFiltersAdded == false {
-		// TODO(anup): GFM-289 Update uhttp client to not return exported struct
-		filters = append(filters, tracingFilter(), authenticationFilter(c.info))
-		c.defaultFiltersAdded = true
+// executionChain represents a chain of filters that are being executed recursively
+// in the increasing order filters[0], filters[1], ... The final transport is called
+// to make RoundTrip after the last filter is completed.
+type executionChain struct {
+	currentFilter  int
+	filters        []Filter
+	finalTransport http.RoundTripper
+}
+
+func newExecutionChain(
+	filters []Filter, finalTransport http.RoundTripper,
+) executionChain {
+	return executionChain{
+		filters:        filters,
+		finalTransport: finalTransport,
 	}
-	execChain := newExecutionChain(filters, BasicClientFunc(c.do))
-	return execChain.Do(ctx, req)
 }
 
-func (c *Client) do(ctx fx.Context, req *http.Request) (resp *http.Response, err error) {
-	return ctxhttp.Do(ctx, c.Client, req)
-}
+func (ec executionChain) Execute(ctx fx.Context, r *http.Request) (resp *http.Response, err error) {
+	if ec.currentFilter < len(ec.filters) {
+		filter := ec.filters[ec.currentFilter]
+		ec.currentFilter++
 
-// Get is a context-aware, filter-enabled extension of Get() in http.Client
-func (c *Client) Get(ctx fx.Context, url string) (resp *http.Response, err error) {
-	req, err := http.NewRequest("GET", url, nil)
-	if err != nil {
-		return nil, err
+		return filter.Apply(ctx, r, ec)
 	}
 
-	return c.Do(ctx, req)
+	return ec.finalTransport.RoundTrip(r.WithContext(ctx))
 }
 
-// Post is a context-aware, filter-enabled extension of Post() in http.Client
-func (c *Client) Post(
-	ctx fx.Context,
-	url string,
-	bodyType string,
-	body io.Reader,
-) (resp *http.Response, err error) {
-	req, err := http.NewRequest("POST", url, body)
-	if err != nil {
-		return nil, err
-	}
-	req.Header.Set("Content-Type", bodyType)
-	return c.Do(ctx, req)
-}
-
-// PostForm is a context-aware, filter-enabled extension of PostForm() in http.Client
-func (c *Client) PostForm(
-	ctx fx.Context,
-	url string,
-	data url.Values,
-) (resp *http.Response, err error) {
-	return c.Post(ctx, url, "application/x-www-form-urlencoded",
-		strings.NewReader(data.Encode()))
-}
-
-// Head is a context-aware, filter-enabled extension of Head() in http.Client
-func (c *Client) Head(ctx fx.Context, url string) (resp *http.Response, err error) {
-	req, err := http.NewRequest("HEAD", url, nil)
-	if err != nil {
-		return nil, err
-	}
-	return c.Do(ctx, req)
-}
-
-// BasicClient is the simplest, context-aware HTTP client with a single method Do.
-type BasicClient interface {
-	// Do sends an HTTP request and returns an HTTP response, following
-	// policy (e.g. redirects, cookies, auth) as configured on the client.
-	Do(ctx fx.Context, req *http.Request) (resp *http.Response, err error)
-}
-
-// The BasicClientFunc type is an adapter to allow the use of ordinary functions as BasicClient.
-type BasicClientFunc func(ctx fx.Context, req *http.Request) (resp *http.Response, err error)
-
-// Do implements Do from the BasicClient interface
-func (f BasicClientFunc) Do(
-	ctx fx.Context, req *http.Request,
-) (resp *http.Response, err error) {
-	return f(ctx, req)
+// Implement http.RoundTripper interface to use as a Transport in http.Client
+func (ec executionChain) RoundTrip(r *http.Request) (resp *http.Response, err error) {
+	return ec.Execute(&fxcontext.Context{Context: r.Context()}, r)
 }
