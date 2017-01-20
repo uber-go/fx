@@ -28,8 +28,10 @@ import (
 // Hook counts the number of logging messages per level
 func Hook(s tally.Scope) zap.Hook {
 	return zap.Hook(func(e *zap.Entry) error {
-		// TODO: consider not using .Counter method which does a map lookup
-		// and just create objects for a counter of each type and retain in a struct
+		// TODO: `.Counter()` method is not necessary here and can be optimized
+		// There is a finite number of counters here: one for each logging level.
+		// If performance per log needs to be optimized this is one of the places
+		// to look. Though it won't save much (estimated ~10ns/call)
 		s.Counter(e.Level.String()).Inc(1)
 		return nil
 	})
