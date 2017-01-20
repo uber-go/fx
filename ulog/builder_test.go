@@ -33,6 +33,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/uber-go/zap"
+	"go.uber.org/fx/testutils/metrics"
 )
 
 func TestConfiguredLogger(t *testing.T) {
@@ -145,6 +146,22 @@ func TestConfiguredLoggerWithSentrySuccessful(t *testing.T) {
 func TestConfiguredLoggerWithSentryError(t *testing.T) {
 	testSentry(t, "", false)
 	testSentry(t, "invalid_dsn", false)
+}
+
+func TestMetricsHook(t *testing.T) {
+	// TODO(glib): logging init needs to be fixed
+	// Any tests that run in development environment can't configure the logger,
+	// it just creates the default one...
+	defer env.Override(t, config.EnvironmentKey(), "wat?")()
+
+	s, r := metrics.NewTestScope()
+	l := Builder().WithScope(s).Build()
+
+	r.Cw.Add(1)
+	l.Warn("Warning log!")
+	r.Cw.Wait()
+
+	assert.Equal(t, 1, len(r.Counters))
 }
 
 func testSentry(t *testing.T, dsn string, isValid bool) {

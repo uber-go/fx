@@ -27,8 +27,10 @@ import (
 
 	"go.uber.org/fx/config"
 	"go.uber.org/fx/ulog/sentry"
+	"go.uber.org/fx/ulog/metrics"
 
 	"github.com/uber-go/zap"
+	"github.com/uber-go/tally"
 )
 
 // Configuration for logging with UberFx
@@ -56,6 +58,7 @@ type LogBuilder struct {
 	log        zap.Logger
 	logConfig  Configuration
 	sentryHook *sentry.Hook
+	scope 		 tally.Scope
 }
 
 // Builder creates an empty builder for building ulog.Log object
@@ -74,6 +77,12 @@ func (lb *LogBuilder) WithConfiguration(logConfig Configuration) *LogBuilder {
 	return lb
 }
 
+// WithConfiguration sets up configuration for the log builder
+func (lb *LogBuilder) WithScope(s tally.Scope) *LogBuilder {
+	lb.scope = s
+	return lb
+}
+
 // SetLogger allows users to set their own initialized logger to work with ulog APIs
 func (lb *LogBuilder) SetLogger(zap zap.Logger) *LogBuilder {
 	lb.log = zap
@@ -87,6 +96,7 @@ func (lb *LogBuilder) WithSentryHook(hook *sentry.Hook) *LogBuilder {
 }
 
 // Build the ulog logger for use
+// TODO: build should return `(Log, error)` in case we can't properly instantiate
 func (lb *LogBuilder) Build() Log {
 	var log zap.Logger
 
@@ -149,6 +159,11 @@ func (lb *LogBuilder) Configure() zap.Logger {
 		} else {
 			options = append(options, lv)
 		}
+	}
+
+	if lb.scope != nil {
+		sub := lb.scope.SubScope("logging")
+		options = append(options, metrics.Hook(sub))
 	}
 
 	if lb.logConfig.File == nil || !lb.logConfig.File.Enabled {
