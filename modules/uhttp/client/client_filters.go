@@ -37,14 +37,6 @@ type Executor interface {
 	Execute(ctx fx.Context, r *http.Request) (resp *http.Response, err error)
 }
 
-// The ExecutorFunc type is an adapter to allow the use of ordinary functions as Executor
-type ExecutorFunc func(ctx fx.Context, req *http.Request) (resp *http.Response, err error)
-
-// Execute implements Executor interface for the SenderFunc
-func (f ExecutorFunc) Execute(ctx fx.Context, req *http.Request) (resp *http.Response, err error) {
-	return f(ctx, req)
-}
-
 // Filter applies filters on client requests and request's context such as
 // adding tracing to the context. Filters must call next.Send() at most once, calling it twice and more
 // will lead to an undefined behavior
