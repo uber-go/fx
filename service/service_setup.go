@@ -35,13 +35,12 @@ import (
 
 func (svc *serviceCore) setupLogging() {
 	if svc.log == nil {
-		logBuilder := ulog.Builder().WithScope(svc.metrics)
-
 		err := svc.configProvider.Get("logging").PopulateStruct(&svc.logConfig)
 		if err != nil {
 			ulog.Logger().Info("Logging configuration is not provided, setting to default logger", "error", err)
 		}
 
+		logBuilder := ulog.Builder().WithScope(svc.metrics)
 		svc.log = logBuilder.WithConfiguration(svc.logConfig).Build()
 	} else {
 		svc.log.Debug("Using custom log provider due to service.WithLogger option")
