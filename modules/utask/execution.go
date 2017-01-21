@@ -30,23 +30,26 @@ import (
 	"go.uber.org/fx/ulog"
 )
 
-// FnArgs represents a function and its arguments
-type FnArgs struct {
+// Signature represents a function and its arguments
+type Signature struct {
 	FnName string
 	Args   []interface{}
 }
 
 // Execute executes the function
-func (f *FnArgs) Execute() []reflect.Value {
+func (s *Signature) Execute() ([]reflect.Value, error) {
 	var targetArgs []reflect.Value
-	for _, arg := range f.Args {
+	for _, arg := range s.Args {
 		targetArgs = append(targetArgs, reflect.ValueOf(arg))
 	}
-	fnValue := reflect.ValueOf(fnNameMap[f.FnName])
-	return fnValue.Call(targetArgs)
+	if fn, ok := fnNameMap[s.FnName]; ok {
+		fnValue := reflect.ValueOf(fn)
+		return fnValue.Call(targetArgs), nil
+	}
+	return nil, fmt.Errorf("Function: %s not found. Did you forget to register?", s.FnName)
 }
 
-var bufQueue bytes.Buffer
+var bufQueue [][]byte
 var fnNameMap = make(map[string]interface{})
 
 // Enqueue sends a func before sending to the task queue
@@ -74,29 +77,36 @@ func Enqueue(fn interface{}, args ...interface{}) error {
 	}
 	fnName := getFunctionName(fn)
 	fnNameMap[fnName] = fn
-	fnArgs := FnArgs{FnName: fnName, Args: args}
+	s := Signature{FnName: fnName, Args: args}
 
-	enc := gob.NewEncoder(&bufQueue)
-	err := enc.Encode(fnArgs)
-
-	if err != nil {
+	var buf bytes.Buffer
+	enc := gob.NewEncoder(&buf)
+	if err := enc.Encode(s); err != nil {
 		ulog.Logger().Error("Encode error:", "error", err)
 		return err
 	}
-	return nil
+	sBytes := buf.Bytes()
+	bufQueue = append(bufQueue, sBytes)
+	return GlobalBackend().Publish(sBytes, nil)
 }
 
 // RunNextByte runs next function from queue
 func RunNextByte() error {
-	dec := gob.NewDecoder(&bufQueue)
-	var fnArgs FnArgs
-	err := dec.Decode(&fnArgs)
-	if err != nil {
-		ulog.Logger().Error("Decode error:", err)
-		return err
+	if len(bufQueue) > 0 {
+		dec := gob.NewDecoder(bytes.NewBuffer(bufQueue[0]))
+		bufQueue = bufQueue[1:]
+		var s Signature
+		if err := dec.Decode(&s); err != nil {
+			ulog.Logger().Error("Decode error:", err)
+			return err
+		}
+		retValues, err := s.Execute()
+		if err != nil {
+			return err
+		}
+		return castToError(retValues[0])
 	}
-	retValues := fnArgs.Execute()
-	return castToError(retValues[0])
+	return nil
 }
 
 // validateAsyncFn verifies that the type is a function type that returns only an error

@@ -30,3 +30,41 @@ type Backend interface {
 	Publish(message []byte, userContext map[string]string) error
 	Consume() ([]byte, error)
 }
+
+// NopBackend is a noop implementation of the Backend interface
+type NopBackend struct{}
+
+// Publish implements the Backend interface
+func (b *NopBackend) Publish(message []byte, userContext map[string]string) error {
+	return nil
+}
+
+// Consume  implements the Backend interface
+func (b *NopBackend) Consume() ([]byte, error) {
+	return nil, nil
+}
+
+// Type implements the Backend interface
+func (b *NopBackend) Type() string {
+	return ""
+}
+
+// Name implements the Backend interface
+func (b *NopBackend) Name() string {
+	return ""
+}
+
+// Start implements the Backend interface
+func (b *NopBackend) Start(ready chan<- struct{}) <-chan error {
+	return make(chan error)
+}
+
+// Stop implements the Backend interface
+func (b *NopBackend) Stop() error {
+	return nil
+}
+
+// IsRunning implements the Backend interface
+func (b *NopBackend) IsRunning() bool {
+	return true
+}

@@ -34,7 +34,7 @@ const ModuleType = "utask"
 
 var (
 	_backendRegisterFn backendRegisterFn
-	_backend           Backend
+	_backend           Backend = &NopBackend{}
 )
 
 // GlobalBackend returns global instance of the backend
