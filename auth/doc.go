@@ -20,48 +20,48 @@
 
 // Package auth is the Auth Package.
 //
-// Auth package is used for request authentication and authorization for user to service
-// and service to service communication. Auth is used for scenarios that require stricter
-// validations, and usage restrictions.
-// auth.Client provided by the package provides seamless
+// Use package auth for request authentication and authorization for user-to-service
+// and service-to-service communication. Use auth for scenarios that require stricter
+// validations and usage restrictions.
+// auth.Client, included in the package provides seamless
 // integration with presently written modules in the service framework. As a middleware, Auth
 // provides additional restrictions on who can access a service, and who can be
 // authenticated to access the service.
-// The Auth package doesn't dictate how authentication and authorization should work, or which
-// algorithm the security service should use, but only allows client integration with the service framework.
+// The Auth package doesn't dictate how authentication and authorization should work, nor which
+// algorithm the security service should use. It allows client integration with the service framework.
 //
 //
 // Auth calls
 //
 // SetAttribute:
 // SetAttribute sets necessary request attributes for authentication. By setting attributes, security service can
-// identify the service/user and grant certificate for further access.
+// identify the service and user as well as grant certificate for further access.
 //
 //
 // Authentication:
-// Authentication API is called by calling entity to authenticate itself. The Authenticate call
-// returns context, which must be populated by the back-end service with signed certificate that is valid for a time frame.
+// Access the authentication API by calling an entity to authenticate itself. The authenticate call
+// returns context, which must be populated by the backend service with signed certificate that is valid for a time frame.
 //
 //
 // Authorization:
-// Authorization API is called by a service entity to authorize its callers. context provided by a
-// request must have a signed certificate which caller received on authentication.
+// Access the authorization API by the service entity to authorize its callers. Context provided by a
+// request must have a signed certificate, which the caller received on authentication.
 //
 //
 // Integrating custom auth service
 //
 // Auth package just provides an interface and API integration with existing modules. Users can define
-// their own back-end security framework and integrate its clients with the service framework by following simple steps:
+// their own backend security framework and integrate its clients with the service framework by following simple steps:
 //
 //
-// Implement auth.Client interface for custom security service
+// • Implement auth.Client interface for custom security service
 //
 // Example implementation of userAuthClient:
 //
 //   _ Client = &userAuthClient{}
 //
 //   type userAuthClient struct {
-//     // embed back-end security service client here
+//     // embed backend security service client here
 //   }
 //
 //   func userAuthClient(info CreateAuthInfo) auth.Client {
@@ -72,24 +72,24 @@
 //   	return "userAuthClient"
 //   }
 //
-// Implement custom auth APIs with auth.Client by delegating calls to your service's client.
+// • Implement custom auth APIs with auth.Client by delegating calls to your service's client
 //
 //   func (u *userAuthClient) Authenticate(ctx context.Context) (context.Context, error) {
-//     // authenticate with back-end security server
+//     // authenticate with backend security server
 //     ctx, err := u.Client.Authenticate(ctx)
 //   	return ctx, err
 //   }
 //
 //   func (u *userAuthClient) Authorize(ctx context.Context) error {
-//     // authorize with back-end security server
+//     // authorize with backend security server
 //     err := u.Client.Authorize(ctx)
 //   	return err
 //   }
 //
-// Register custom implementation construct with fx,
+// • Register custom implementation construct with fx
 //
 // The last step is to integrate the user auth client with the framework. This can be done by implementing init
-// function and registering client with
+// function and registering the client with
 // fx.
 //
 //   func init() {
