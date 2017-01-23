@@ -21,57 +21,53 @@
 package utask
 
 import (
+	"bytes"
 	"encoding/gob"
-	"fmt"
-	"testing"
 
-	"github.com/stretchr/testify/assert"
+	"go.uber.org/fx/ulog"
 )
 
-func init() {
-	_backend = &InMemBackend{}
+// Encoding is capable of encoding and decoding objects
+type Encoding interface {
+	Marshal(interface{}) ([]byte, error)
+	Unmarshal([]byte, interface{}) error
 }
 
-func TestNoArgsFn(t *testing.T) {
-	err := Enqueue(NoArgs)
-	assert.NoError(t, err)
-	err = GlobalBackend().Consume()
-	assert.NoError(t, err)
+// NopEncoding is a noop encoder
+type NopEncoding struct {
 }
 
-func TestSimpleFn(t *testing.T) {
-	err := Enqueue(Simple, "hello")
-	assert.NoError(t, err)
-	err = GlobalBackend().Consume()
-	assert.NoError(t, err)
+// Marshal implements the Encoding interface
+func (g *NopEncoding) Marshal(obj interface{}) ([]byte, error) {
+	return []byte{}, nil
 }
 
-func TestComplexFn(t *testing.T) {
-	gob.Register(Car{})
-	err := Enqueue(Complex, Car{Brand: "infinity", Model: "g37", Year: 2017})
-	assert.NoError(t, err)
-	err = GlobalBackend().Consume()
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "Complex error")
-}
-
-func NoArgs() error {
-	fmt.Printf("Inside NoArgs\n")
+// Unmarshal implements the Encoding interface
+func (g *NopEncoding) Unmarshal(data []byte, obj interface{}) error {
 	return nil
 }
 
-func Simple(a string) error {
-	fmt.Printf("Inside Simple: %s\n", a)
+// GobEncoding encapsulates gob encoding and decoding
+type GobEncoding struct {
+}
+
+// Marshal encodes an object into bytes
+func (g *GobEncoding) Marshal(obj interface{}) ([]byte, error) {
+	var buf bytes.Buffer
+	enc := gob.NewEncoder(&buf)
+	if err := enc.Encode(obj); err != nil {
+		ulog.Logger().Error("Encode error:", "error", err)
+		return nil, err
+	}
+	return buf.Bytes(), nil
+}
+
+// Unmarshal decodes a byte array into the passed in object
+func (g *GobEncoding) Unmarshal(data []byte, obj interface{}) error {
+	dec := gob.NewDecoder(bytes.NewBuffer(data))
+	if err := dec.Decode(obj); err != nil {
+		ulog.Logger().Error("Decode error:", err)
+		return err
+	}
 	return nil
-}
-
-type Car struct {
-	Brand string
-	Model string
-	Year  int
-}
-
-func Complex(car Car) error {
-	fmt.Printf("Inside Complex: %v\n", car)
-	return fmt.Errorf("Complex error")
 }

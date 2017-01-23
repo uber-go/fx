@@ -21,13 +21,9 @@
 package utask
 
 import (
-	"bytes"
-	"encoding/gob"
 	"fmt"
 	"reflect"
 	"runtime"
-
-	"go.uber.org/fx/ulog"
 )
 
 // Signature represents a function and its arguments
@@ -49,7 +45,6 @@ func (s *Signature) Execute() ([]reflect.Value, error) {
 	return nil, fmt.Errorf("Function: %s not found. Did you forget to register?", s.FnName)
 }
 
-var bufQueue [][]byte
 var fnNameMap = make(map[string]interface{})
 
 // Enqueue sends a func before sending to the task queue
@@ -71,42 +66,30 @@ func Enqueue(fn interface{}, args ...interface{}) error {
 				i, argType, fnType.In(i),
 			)
 		}
-		fmt.Println("Register", argType, arg)
-		gob.Register(arg)
 		argValues = append(argValues, arg)
 	}
 	fnName := getFunctionName(fn)
 	fnNameMap[fnName] = fn
 	s := Signature{FnName: fnName, Args: args}
 
-	var buf bytes.Buffer
-	enc := gob.NewEncoder(&buf)
-	if err := enc.Encode(s); err != nil {
-		ulog.Logger().Error("Encode error:", "error", err)
-		return err
+	sBytes, err := GlobalBackend().Encoder().Marshal(s)
+	if err != nil {
+		return nil
 	}
-	sBytes := buf.Bytes()
-	bufQueue = append(bufQueue, sBytes)
 	return GlobalBackend().Publish(sBytes, nil)
 }
 
-// RunNextByte runs next function from queue
-func RunNextByte() error {
-	if len(bufQueue) > 0 {
-		dec := gob.NewDecoder(bytes.NewBuffer(bufQueue[0]))
-		bufQueue = bufQueue[1:]
-		var s Signature
-		if err := dec.Decode(&s); err != nil {
-			ulog.Logger().Error("Decode error:", err)
-			return err
-		}
-		retValues, err := s.Execute()
-		if err != nil {
-			return err
-		}
-		return castToError(retValues[0])
+// Run decodes the message and executes as a task
+func Run(message []byte) error {
+	var s Signature
+	if err := GlobalBackend().Encoder().Unmarshal(message, &s); err != nil {
+		return err
 	}
-	return nil
+	retValues, err := s.Execute()
+	if err != nil {
+		return err
+	}
+	return castToError(retValues[0])
 }
 
 // validateAsyncFn verifies that the type is a function type that returns only an error

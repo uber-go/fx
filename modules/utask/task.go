@@ -38,6 +38,7 @@ var (
 )
 
 // GlobalBackend returns global instance of the backend
+// TODO (madhu): Make work with multiple backends
 func GlobalBackend() Backend {
 	return _backend
 }

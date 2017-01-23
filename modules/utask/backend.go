@@ -20,15 +20,14 @@
 
 package utask
 
-import (
-	"go.uber.org/fx/service"
-)
+import "go.uber.org/fx/service"
 
 // Backend represents a task backend
 type Backend interface {
 	service.Module
+	Encoder() Encoding
 	Publish(message []byte, userContext map[string]string) error
-	Consume() ([]byte, error)
+	Consume() error
 }
 
 // NopBackend is a noop implementation of the Backend interface
@@ -40,8 +39,13 @@ func (b *NopBackend) Publish(message []byte, userContext map[string]string) erro
 }
 
 // Consume  implements the Backend interface
-func (b *NopBackend) Consume() ([]byte, error) {
-	return nil, nil
+func (b *NopBackend) Consume() error {
+	return nil
+}
+
+// Encoder implements the Backend interface
+func (b *NopBackend) Encoder() Encoding {
+	return &NopEncoding{}
 }
 
 // Type implements the Backend interface
@@ -66,5 +70,56 @@ func (b *NopBackend) Stop() error {
 
 // IsRunning implements the Backend interface
 func (b *NopBackend) IsRunning() bool {
+	return true
+}
+
+// InMemBackend is a noop implementation of the Backend interface
+type InMemBackend struct {
+	bufQueue [][]byte
+}
+
+// Publish implements the Backend interface
+func (b *InMemBackend) Publish(message []byte, userContext map[string]string) error {
+	b.bufQueue = append(b.bufQueue, message)
+	return nil
+}
+
+// Consume  implements the Backend interface
+func (b *InMemBackend) Consume() error {
+	if len(b.bufQueue) > 0 {
+		err := Run(b.bufQueue[0])
+		b.bufQueue = b.bufQueue[1:]
+		return err
+	}
+	return nil
+}
+
+// Encoder implements the Backend interface
+func (b *InMemBackend) Encoder() Encoding {
+	return &GobEncoding{}
+}
+
+// Type implements the Backend interface
+func (b *InMemBackend) Type() string {
+	return ""
+}
+
+// Name implements the Backend interface
+func (b *InMemBackend) Name() string {
+	return ""
+}
+
+// Start implements the Backend interface
+func (b *InMemBackend) Start(ready chan<- struct{}) <-chan error {
+	return make(chan error)
+}
+
+// Stop implements the Backend interface
+func (b *InMemBackend) Stop() error {
+	return nil
+}
+
+// IsRunning implements the Backend interface
+func (b *InMemBackend) IsRunning() bool {
 	return true
 }
