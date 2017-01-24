@@ -134,6 +134,10 @@ func TestEnqueueComplexFnWithError(t *testing.T) {
 	err = GlobalBackend().Consume()
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "Complex error")
+	err = Enqueue(Complex, Car{Brand: "honda", Year: 2017})
+	assert.NoError(t, err)
+	err = GlobalBackend().Consume()
+	assert.NoError(t, err)
 }
 
 func NoArgs() error {
@@ -150,5 +154,8 @@ type Car struct {
 }
 
 func Complex(car Car) error {
-	return fmt.Errorf("Complex error")
+	if car.Brand == "infinity" {
+		return fmt.Errorf("Complex error")
+	}
+	return nil
 }
