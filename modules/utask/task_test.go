@@ -23,10 +23,44 @@ package utask
 import (
 	"testing"
 
+	"go.uber.org/fx/service"
+
+	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 )
 
+var (
+	_nopBackend = &NopBackend{}
+)
+
 func TestModule(t *testing.T) {
-	fn := NewModule()
-	assert.NotNil(t, fn)
+	backendRegisterFn := func(service.Host, Config) (Backend, error) {
+		return _nopBackend, nil
+	}
+	mods, err := createModules(t, backendRegisterFn)
+	assert.NoError(t, err)
+	assert.NotNil(t, mods)
+	assert.Equal(t, 1, len(mods))
+	assert.Equal(t, _nopBackend, mods[0].(*AsyncModule).Backend)
+}
+
+func TestModuleError(t *testing.T) {
+	backendRegisterFn := func(service.Host, Config) (Backend, error) {
+		return nil, errors.New("backend register error")
+	}
+	mods, err := createModules(t, backendRegisterFn)
+	assert.Nil(t, mods)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "backend register error")
+}
+
+func createModules(t *testing.T, fn backendRegisterFn) ([]service.Module, error) {
+	createFn := NewModule()
+	assert.NotNil(t, createFn)
+
+	mi := service.ModuleCreateInfo{
+		Host: service.NopHost(),
+	}
+	RegisterAsyncBackend(fn)
+	return createFn(mi)
 }

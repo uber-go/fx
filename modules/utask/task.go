@@ -21,6 +21,7 @@
 package utask
 
 import (
+	"fmt"
 	"sync"
 
 	"github.com/pkg/errors"
@@ -55,6 +56,7 @@ func NewModule() service.ModuleCreateFunc {
 }
 
 func newAsyncModule(mi service.ModuleCreateInfo) (service.Module, error) {
+	fmt.Println("Backend fn", _backendRegisterFn)
 	backend, err := _backendRegisterFn(mi.Host, Config{})
 	if err != nil {
 		return nil, err
