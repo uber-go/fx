@@ -18,7 +18,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package utask
+package task
 
 import (
 	"encoding/gob"
@@ -38,14 +38,14 @@ type fnRegister struct {
 
 var fnLookup = fnRegister{fnNameMap: make(map[string]interface{})}
 
-// Signature represents a function and its arguments
-type Signature struct {
+// fnSignature represents a function and its arguments
+type fnSignature struct {
 	FnName string
 	Args   []interface{}
 }
 
 // Execute executes the function
-func (s *Signature) Execute() ([]reflect.Value, error) {
+func (s *fnSignature) Execute() ([]reflect.Value, error) {
 	var targetArgs []reflect.Value
 	for _, arg := range s.Args {
 		targetArgs = append(targetArgs, reflect.ValueOf(arg))
@@ -62,7 +62,7 @@ func (s *Signature) Execute() ([]reflect.Value, error) {
 // Register registers a function for async tasks
 func Register(fn interface{}) error {
 	fnType := reflect.TypeOf(fn)
-	if err := validateAsyncFn(fnType); err != nil {
+	if err := validateFnFormat(fnType); err != nil {
 		return err
 	}
 	for i := 0; i < fnType.NumIn(); i++ {
@@ -81,9 +81,7 @@ func Enqueue(fn interface{}, args ...interface{}) error {
 	if fnType.NumIn() != len(args) {
 		return fmt.Errorf("expected %d function arg(s) but found %d\n", fnType.NumIn(), len(args))
 	}
-	var argValues []reflect.Value
 	for i := 0; i < fnType.NumIn(); i++ {
-		arg := reflect.ValueOf(args[i])
 		argType := reflect.TypeOf(args[i])
 		if !argType.AssignableTo(fnType.In(i)) {
 			// TODO(madhu): Is it useful to show the arg index or the arg value in the error msg?
@@ -92,10 +90,9 @@ func Enqueue(fn interface{}, args ...interface{}) error {
 				i+1, argType, fnType.In(i),
 			)
 		}
-		argValues = append(argValues, arg)
 	}
 	fnName := getFunctionName(fn)
-	s := Signature{FnName: fnName, Args: args}
+	s := fnSignature{FnName: fnName, Args: args}
 
 	sBytes, err := GlobalBackend().Encoder().Marshal(s)
 	if err != nil {
@@ -106,7 +103,7 @@ func Enqueue(fn interface{}, args ...interface{}) error {
 
 // Run decodes the message and executes as a task
 func Run(message []byte) error {
-	var s Signature
+	var s fnSignature
 	if err := GlobalBackend().Encoder().Unmarshal(message, &s); err != nil {
 		return errors.Wrap(err, "unable to decode the message")
 	}
@@ -117,8 +114,8 @@ func Run(message []byte) error {
 	return castToError(retValues[0])
 }
 
-// validateAsyncFn verifies that the type is a function type that returns only an error
-func validateAsyncFn(fnType reflect.Type) error {
+// validateFnFormat verifies that the type is a function type that returns only an error
+func validateFnFormat(fnType reflect.Type) error {
 	if fnType.Kind() != reflect.Func {
 		return fmt.Errorf("expected a func as input but was %s\n", fnType.Kind())
 	}

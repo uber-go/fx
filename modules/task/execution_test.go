@@ -18,7 +18,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package utask
+package task
 
 import (
 	"fmt"
@@ -78,7 +78,7 @@ func TestEnqueueAndConsumeWithoutRegister(t *testing.T) {
 	err = GlobalBackend().Consume()
 	assert.Error(t, err)
 	assert.Contains(
-		t, err.Error(), "\"go.uber.org/fx/modules/utask.TestEnqueueAndConsumeWithoutRegister.func1\""+
+		t, err.Error(), "\"go.uber.org/fx/modules/task.TestEnqueueAndConsumeWithoutRegister.func1\""+
 			" not found",
 	)
 }

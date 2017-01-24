@@ -18,19 +18,19 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package utask
+package task
 
 import (
 	"sync"
 
-	"github.com/pkg/errors"
-
 	"go.uber.org/fx/modules"
 	"go.uber.org/fx/service"
+
+	"github.com/pkg/errors"
 )
 
-// ModuleType represents the utask module type
-const ModuleType = "utask"
+// ModuleType represents the task module type
+const ModuleType = "task"
 
 var (
 	_backendRegisterFn backendRegisterFn
