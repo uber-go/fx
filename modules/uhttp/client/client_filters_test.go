@@ -123,8 +123,8 @@ func TestExecutionChainFilters_AuthContextPropagationFailure(t *testing.T) {
 
 func TestFiltersWithTracerErrors(t *testing.T) {
 	testCases := map[string]Filter{
-		"auth":authenticationFilter(fakeAuthInfo{_testYaml}),
-		"tracing":tracingFilter(),
+		"auth":    authenticationFilter(fakeAuthInfo{_testYaml}),
+		"tracing": tracingFilter(),
 	}
 
 	for name, filter := range testCases {
@@ -155,7 +155,7 @@ func TestFiltersWithTracerErrors(t *testing.T) {
 			opentracing.InitGlobalTracer(tracer)
 		}
 
-		t.Run(name, func(t *testing.T) {withOpentracingSetup(t, nil, op)})
+		t.Run(name, func(t *testing.T) { withOpentracingSetup(t, nil, op) })
 	}
 }
 
@@ -204,7 +204,7 @@ func (tr errTransport) RoundTrip(req *http.Request) (resp *http.Response, err er
 type shadowTracer struct {
 	opentracing.Tracer
 	inject func(sm opentracing.SpanContext, format interface{}, carrier interface{}) error
-	span opentracing.Span
+	span   opentracing.Span
 }
 
 func (s *shadowTracer) Inject(sm opentracing.SpanContext, format interface{}, carrier interface{}) error {

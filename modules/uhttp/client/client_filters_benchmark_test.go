@@ -22,18 +22,17 @@ package client
 
 import (
 	"context"
+	"net/http/httptest"
 	"testing"
 
+	"go.uber.org/fx/auth"
+	"go.uber.org/fx/internal/fxcontext"
 	"go.uber.org/fx/tracing"
 	"go.uber.org/fx/ulog"
 
-	"github.com/uber-go/tally"
-
-	jconfig "github.com/uber/jaeger-client-go/config"
-	"net/http/httptest"
-	"go.uber.org/fx/auth"
-	"go.uber.org/fx/internal/fxcontext"
 	"github.com/opentracing/opentracing-go"
+	"github.com/uber-go/tally"
+	jconfig "github.com/uber/jaeger-client-go/config"
 )
 
 // BenchmarkClientFilters/empty-8         	  500000	      3517 ns/op	     256 B/op	       2 allocs/op
@@ -48,9 +47,9 @@ func BenchmarkClientFilters(b *testing.B) {
 
 	defer closer.Close()
 	bm := map[string][]Filter{
-		"empty": {},
+		"empty":   {},
 		"tracing": {tracingFilter()},
-		"auth": {authenticationFilter(fakeAuthInfo{_testYaml})},
+		"auth":    {authenticationFilter(fakeAuthInfo{_testYaml})},
 		"default": {tracingFilter(), authenticationFilter(fakeAuthInfo{_testYaml})},
 	}
 
@@ -66,7 +65,7 @@ func BenchmarkClientFilters(b *testing.B) {
 		req := httptest.NewRequest("", "http://localhost", nil).WithContext(ctx)
 
 		b.ResetTimer()
-		b.Run(name, func (b *testing.B) {
+		b.Run(name, func(b *testing.B) {
 			for i := 0; i < b.N; i++ {
 				if _, err := chain.RoundTrip(req); err != nil {
 					b.Error(err)

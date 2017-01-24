@@ -81,7 +81,7 @@ func TestClientGetTwiceExecutesAllFilters(t *testing.T) {
 	count := 0
 	var f FilterFunc = func(
 		ctx fx.Context, r *http.Request, next Executor,
-	) (resp *http.Response, err error){
+	) (resp *http.Response, err error) {
 		count++
 		return next.Execute(ctx, r)
 	}
