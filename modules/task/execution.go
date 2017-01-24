@@ -79,14 +79,14 @@ func Register(fn interface{}) error {
 func Enqueue(fn interface{}, args ...interface{}) error {
 	fnType := reflect.TypeOf(fn)
 	if fnType.NumIn() != len(args) {
-		return fmt.Errorf("expected %d function arg(s) but found %d\n", fnType.NumIn(), len(args))
+		return fmt.Errorf("expected %d function arg(s) but found %d", fnType.NumIn(), len(args))
 	}
 	for i := 0; i < fnType.NumIn(); i++ {
 		argType := reflect.TypeOf(args[i])
 		if !argType.AssignableTo(fnType.In(i)) {
 			// TODO(madhu): Is it useful to show the arg index or the arg value in the error msg?
 			return fmt.Errorf(
-				"cannot assign function argument: %d from type: %s to type: %s\n",
+				"cannot assign function argument: %d from type: %s to type: %s",
 				i+1, argType, fnType.In(i),
 			)
 		}
@@ -117,16 +117,16 @@ func Run(message []byte) error {
 // validateFnFormat verifies that the type is a function type that returns only an error
 func validateFnFormat(fnType reflect.Type) error {
 	if fnType.Kind() != reflect.Func {
-		return fmt.Errorf("expected a func as input but was %s\n", fnType.Kind())
+		return fmt.Errorf("expected a func as input but was %s", fnType.Kind())
 	}
 	if fnType.NumOut() != 1 {
 		return fmt.Errorf(
-			"expected function to return only error but found %d return values\n", fnType.NumOut(),
+			"expected function to return only error but found %d return values", fnType.NumOut(),
 		)
 	}
 	if !isError(fnType.Out(0)) {
 		return fmt.Errorf(
-			"expected function to return error but found %d\n", fnType.Out(0).Kind(),
+			"expected function to return error but found %d", fnType.Out(0).Kind(),
 		)
 	}
 	return nil
