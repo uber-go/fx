@@ -56,7 +56,7 @@ func (s *Signature) Execute() ([]reflect.Value, error) {
 		fnValue := reflect.ValueOf(fn)
 		return fnValue.Call(targetArgs), nil
 	}
-	return nil, fmt.Errorf("Function: %s not found. Did you forget to register?", s.FnName)
+	return nil, fmt.Errorf("function: %q not found. Did you forget to register?", s.FnName)
 }
 
 // Register registers a function for async tasks
@@ -79,7 +79,7 @@ func Register(fn interface{}) error {
 func Enqueue(fn interface{}, args ...interface{}) error {
 	fnType := reflect.TypeOf(fn)
 	if fnType.NumIn() != len(args) {
-		return fmt.Errorf("Expected %d function arg(s) but found %d\n", fnType.NumIn(), len(args))
+		return fmt.Errorf("expected %d function arg(s) but found %d\n", fnType.NumIn(), len(args))
 	}
 	var argValues []reflect.Value
 	for i := 0; i < fnType.NumIn(); i++ {
@@ -88,7 +88,7 @@ func Enqueue(fn interface{}, args ...interface{}) error {
 		if !argType.AssignableTo(fnType.In(i)) {
 			// TODO(madhu): Is it useful to show the arg index or the arg value in the error msg?
 			return fmt.Errorf(
-				"Cannot assign function argument: %d from type: %s to type: %s\n",
+				"cannot assign function argument: %d from type: %s to type: %s\n",
 				i+1, argType, fnType.In(i),
 			)
 		}
@@ -99,7 +99,7 @@ func Enqueue(fn interface{}, args ...interface{}) error {
 
 	sBytes, err := GlobalBackend().Encoder().Marshal(s)
 	if err != nil {
-		return errors.Wrap(err, "unable to encode the function")
+		return errors.Wrap(err, "unable to encode the function or args")
 	}
 	return GlobalBackend().Publish(sBytes, nil)
 }
@@ -120,16 +120,16 @@ func Run(message []byte) error {
 // validateAsyncFn verifies that the type is a function type that returns only an error
 func validateAsyncFn(fnType reflect.Type) error {
 	if fnType.Kind() != reflect.Func {
-		return fmt.Errorf("Expected a func as input but was %s\n", fnType.Kind())
+		return fmt.Errorf("expected a func as input but was %s\n", fnType.Kind())
 	}
 	if fnType.NumOut() != 1 {
 		return fmt.Errorf(
-			"Expected function to return only error but found %d return values\n", fnType.NumOut(),
+			"expected function to return only error but found %d return values\n", fnType.NumOut(),
 		)
 	}
 	if !isError(fnType.Out(0)) {
 		return fmt.Errorf(
-			"Expected function to return error but found %d\n", fnType.Out(0).Kind(),
+			"expected function to return error but found %d\n", fnType.Out(0).Kind(),
 		)
 	}
 	return nil

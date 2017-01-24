@@ -34,21 +34,21 @@ func init() {
 func TestEnqueueNonFunction(t *testing.T) {
 	err := Register("I am not a function")
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "Expected a func as input but was")
+	assert.Contains(t, err.Error(), "a func as input but was")
 }
 
 func TestEnqueueWithMultipleReturnValues(t *testing.T) {
 	fn := func() (string, error) { return "", nil }
 	err := Register(fn)
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "Expected function to return only error but found")
+	assert.Contains(t, err.Error(), "return only error but found")
 }
 
 func TestEnqueueFnDoesNotReturnError(t *testing.T) {
 	fn := func() string { return "" }
 	err := Register(fn)
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "Expected function to return error but found")
+	assert.Contains(t, err.Error(), "return error but found")
 }
 
 func TestEnqueueFnWithMismatchedArgCount(t *testing.T) {
@@ -57,7 +57,7 @@ func TestEnqueueFnWithMismatchedArgCount(t *testing.T) {
 	assert.NoError(t, err)
 	err = Enqueue(fn)
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "Expected 1 function arg(s) but found 0")
+	assert.Contains(t, err.Error(), "1 function arg(s) but found 0")
 }
 
 func TestEnqueueFnWithMismatchedArgType(t *testing.T) {
@@ -67,7 +67,7 @@ func TestEnqueueFnWithMismatchedArgType(t *testing.T) {
 	err = Enqueue(fn, 1)
 	assert.Error(t, err)
 	assert.Contains(
-		t, err.Error(), "Cannot assign function argument: 1 from type: int to type: string",
+		t, err.Error(), "argument: 1 from type: int to type: string",
 	)
 }
 
@@ -78,8 +78,8 @@ func TestEnqueueAndConsumeWithoutRegister(t *testing.T) {
 	err = GlobalBackend().Consume()
 	assert.Error(t, err)
 	assert.Contains(
-		t, err.Error(), "Function: go.uber.org/fx/modules/utask.TestEnqueueAndConsumeWithoutRegister"+
-			".func1 not found. Did you forget to register?",
+		t, err.Error(), "\"go.uber.org/fx/modules/utask.TestEnqueueAndConsumeWithoutRegister.func1\""+
+			" not found",
 	)
 }
 
