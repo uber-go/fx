@@ -32,15 +32,22 @@ import (
 // ModuleType represents the task module type
 const ModuleType = "task"
 
+type globalBackend struct {
+	backend Backend
+	sync.RWMutex
+}
+
 var (
 	_backendRegisterFn backendRegisterFn
-	_backend           Backend = &NopBackend{}
+	_globalBackend     = globalBackend{backend: &NopBackend{}}
 )
 
 // GlobalBackend returns global instance of the backend
 // TODO (madhu): Make work with multiple backends
 func GlobalBackend() Backend {
-	return _backend
+	_globalBackend.RLock()
+	defer _globalBackend.RUnlock()
+	return _globalBackend.backend
 }
 
 // NewModule creates an async task queue module
@@ -59,7 +66,9 @@ func newAsyncModule(mi service.ModuleCreateInfo) (service.Module, error) {
 	if err != nil {
 		return nil, err
 	}
-	_backend = backend
+	_globalBackend.Lock()
+	_globalBackend = globalBackend{backend: backend}
+	_globalBackend.Unlock()
 	return &AsyncModule{
 		Backend: backend,
 		modBase: *modules.NewModuleBase(ModuleType, "task", mi.Host, []string{}),
@@ -70,7 +79,6 @@ func newAsyncModule(mi service.ModuleCreateInfo) (service.Module, error) {
 type AsyncModule struct {
 	Backend
 	modBase modules.ModuleBase
-	stateMu sync.RWMutex
 	config  Config
 }
 
