@@ -28,7 +28,7 @@ import (
 )
 
 func init() {
-	_backend = &InMemBackend{}
+	_backend = &InMemBackend{make(chan []byte, 2)}
 }
 
 func TestEnqueueNonFunction(t *testing.T) {

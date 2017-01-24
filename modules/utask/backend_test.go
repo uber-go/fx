@@ -23,12 +23,14 @@ package utask
 import "testing"
 import "github.com/stretchr/testify/assert"
 
-func TestNopBackend(t *testing.T) {
-	testBackendMethods(t, &NopBackend{})
+var backends = []Backend{
+	&NopBackend{}, &InMemBackend{make(chan []byte, 2)},
 }
 
-func TestInMemBackend(t *testing.T) {
-	testBackendMethods(t, &InMemBackend{})
+func TestBackends(t *testing.T) {
+	for _, b := range backends {
+		testBackendMethods(t, b)
+	}
 }
 
 func testBackendMethods(t *testing.T, backend Backend) {

@@ -27,17 +27,26 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestNopEncoding(t *testing.T) {
-	testEncodingMethods(t, &NopEncoding{}, false)
+type encodingTest struct {
+	encoding       Encoding
+	inputObj       interface{}
+	verifyEncoding bool
 }
 
-func TestGobEncoding(t *testing.T) {
-	testEncodingMethods(t, &GobEncoding{}, true)
+var kvMap = map[string]string{"key": "value"}
+
+var encodingTests = []encodingTest{
+	{&NopEncoding{}, kvMap, false},
+	{&GobEncoding{}, kvMap, true},
 }
 
-func testEncodingMethods(t *testing.T, encoding Encoding, deepChecks bool) {
-	obj := make(map[string]string)
-	obj["key"] = "value"
+func TestEncoding(t *testing.T) {
+	for _, test := range encodingTests {
+		testEncMethods(t, test.encoding, test.inputObj, test.verifyEncoding)
+	}
+}
+
+func testEncMethods(t *testing.T, encoding Encoding, obj interface{}, deepChecks bool) {
 	assert.NoError(t, encoding.Register(obj))
 	msg, err := encoding.Marshal(obj)
 	assert.NoError(t, err)

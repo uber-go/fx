@@ -22,6 +22,8 @@ package utask
 
 import "go.uber.org/fx/service"
 
+var gobEncoding = &GobEncoding{}
+
 // Backend represents a task backend
 type Backend interface {
 	service.Module
@@ -75,28 +77,31 @@ func (b *NopBackend) IsRunning() bool {
 
 // InMemBackend is a noop implementation of the Backend interface
 type InMemBackend struct {
-	bufQueue [][]byte
+	bufQueue chan []byte
 }
 
 // Publish implements the Backend interface
 func (b *InMemBackend) Publish(message []byte, userContext map[string]string) error {
-	b.bufQueue = append(b.bufQueue, message)
+	b.bufQueue <- message
 	return nil
 }
 
 // Consume  implements the Backend interface
 func (b *InMemBackend) Consume() error {
-	if len(b.bufQueue) > 0 {
-		err := Run(b.bufQueue[0])
-		b.bufQueue = b.bufQueue[1:]
-		return err
+	select {
+	case v, ok := <-b.bufQueue:
+		if ok {
+			return Run(v)
+		}
+	default:
+		// No value ready in channel, moving on
 	}
 	return nil
 }
 
 // Encoder implements the Backend interface
 func (b *InMemBackend) Encoder() Encoding {
-	return &GobEncoding{}
+	return gobEncoding
 }
 
 // Type implements the Backend interface
