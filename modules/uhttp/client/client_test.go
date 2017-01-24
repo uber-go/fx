@@ -25,6 +25,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"go.uber.org/fx"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -71,6 +73,26 @@ func TestClientGet(t *testing.T) {
 	svr := startServer()
 	resp, err := _testClient.Get(svr.URL)
 	checkOKResponse(t, resp, err)
+}
+
+func TestClientGetTwiceExecutesAllFilters(t *testing.T) {
+	t.Parallel()
+	svr := startServer()
+	count := 0
+	var f FilterFunc = func(
+		ctx fx.Context, r *http.Request, next Executor,
+	) (resp *http.Response, err error){
+		count++
+		return next.Execute(ctx, r)
+	}
+
+	cl := New(fakeAuthInfo{yaml: _testYaml}, f)
+	resp, err := cl.Get(svr.URL)
+	checkOKResponse(t, resp, err)
+	require.Equal(t, 1, count)
+	resp, err = cl.Get(svr.URL)
+	checkOKResponse(t, resp, err)
+	require.Equal(t, 2, count)
 }
 
 func TestClientGetError(t *testing.T) {
