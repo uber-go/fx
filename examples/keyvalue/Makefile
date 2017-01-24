@@ -1,3 +1,5 @@
+.DEFAULT_GOAL := all
+
 kv/types.go: kv.thrift
 	$(ECHO_V)go generate
 
@@ -6,5 +8,3 @@ server/server: $(wildcard server/*.go) kv/types.go
 
 .PHONY: all
 all: server/server
-
-.DEFAULT_GOAL: all
