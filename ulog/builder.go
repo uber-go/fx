@@ -146,7 +146,16 @@ func (lb *LogBuilder) defaultLogger() zap.Logger {
 // Configure Log object with the provided log.Configuration
 func (lb *LogBuilder) Configure() zap.Logger {
 	lb.log = lb.defaultLogger()
+	options := lb.zapOptions()
 
+	if lb.logConfig.TextFormatter != nil && *lb.logConfig.TextFormatter {
+		return zap.New(zap.NewTextEncoder(), options...)
+	}
+	return zap.New(zap.NewJSONEncoder(), options...)
+}
+
+// Return the list of zap options based on the logger configuration
+func (lb *LogBuilder) zapOptions() []zap.Option {
 	var options []zap.Option
 	if lb.logConfig.Verbose {
 		options = append(options, zap.DebugLevel)
@@ -175,10 +184,7 @@ func (lb *LogBuilder) Configure() zap.Logger {
 		options = append(options, zap.Output(lb.fileOutput(lb.logConfig.File, lb.logConfig.Stdout, lb.logConfig.Verbose)))
 	}
 
-	if lb.logConfig.TextFormatter != nil && *lb.logConfig.TextFormatter {
-		return zap.New(zap.NewTextEncoder(), options...)
-	}
-	return zap.New(zap.NewJSONEncoder(), options...)
+	return options
 }
 
 func (lb *LogBuilder) fileOutput(cfg *FileConfiguration, stdout bool, verbose bool) zap.WriteSyncer {

@@ -32,6 +32,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/uber-go/tally"
 	"github.com/uber-go/zap"
 	"go.uber.org/fx/testutils/metrics"
 )
@@ -164,30 +165,24 @@ func TestMetricsHook(t *testing.T) {
 	assert.Equal(t, 1, len(r.Counters))
 }
 
-func TestLoggingDisabled(t *testing.T) {
-	tests := []struct {
-		res  bool
-		data []byte
+func TestLoggingMetricsDisabled(t *testing.T) {
+	testCases := []struct {
+		name           string
+		disableMetrics bool
+		optsLen        int
 	}{
-		{
-			false,
-			[]byte("logging:\n  lalala: foo"),
-		},
-		{
-			false,
-			[]byte("logging:\n  disableMetrics: false"),
-		},
-		{
-			true,
-			[]byte("logging:\n  disableMetrics: true"),
-		},
+		{"Disabled", true, 1},
+		{"Enabled", false, 2},
 	}
 
-	for _, tt := range tests {
-		logCfg := Configuration{}
-		logYamlCfg := config.NewYAMLProviderFromBytes(tt.data)
-		logYamlCfg.Get("logging").PopulateStruct(&logCfg)
-		assert.Equal(t, tt.res, logCfg.DisableMetrics)
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			logCfg := Configuration{DisableMetrics: tc.disableMetrics}
+			builder := Builder().WithConfiguration(logCfg).WithScope(tally.NoopScope)
+			builder.log = builder.defaultLogger()
+			opts := builder.zapOptions()
+			assert.Equal(t, tc.optsLen, len(opts))
+		})
 	}
 }
 
