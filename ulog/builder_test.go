@@ -32,7 +32,9 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/uber-go/tally"
 	"github.com/uber-go/zap"
+	"go.uber.org/fx/testutils/metrics"
 )
 
 func TestConfiguredLogger(t *testing.T) {
@@ -145,6 +147,43 @@ func TestConfiguredLoggerWithSentrySuccessful(t *testing.T) {
 func TestConfiguredLoggerWithSentryError(t *testing.T) {
 	testSentry(t, "", false)
 	testSentry(t, "invalid_dsn", false)
+}
+
+func TestMetricsHook(t *testing.T) {
+	// TODO(glib): logging init needs to be fixed
+	// Any tests that run in development environment can't configure the logger,
+	// it just creates the default one...
+	defer env.Override(t, config.EnvironmentKey(), "wat?")()
+
+	s, r := metrics.NewTestScope()
+	l := Builder().WithScope(s).Build()
+
+	r.CountersWG.Add(1)
+	l.Warn("Warning log!")
+	r.CountersWG.Wait()
+
+	assert.Equal(t, 1, len(r.Counters))
+}
+
+func TestLoggingMetricsDisabled(t *testing.T) {
+	testCases := []struct {
+		name           string
+		disableMetrics bool
+		optsLen        int
+	}{
+		{"Disabled", true, 1},
+		{"Enabled", false, 2},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			logCfg := Configuration{DisableMetrics: tc.disableMetrics}
+			builder := Builder().WithConfiguration(logCfg).WithScope(tally.NoopScope)
+			builder.log = builder.defaultLogger()
+			opts := builder.zapOptions()
+			assert.Equal(t, tc.optsLen, len(opts))
+		})
+	}
 }
 
 func testSentry(t *testing.T, dsn string, isValid bool) {

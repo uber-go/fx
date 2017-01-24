@@ -33,22 +33,22 @@ import (
 	"github.com/pkg/errors"
 )
 
-func (svc *serviceCore) setupLogging(cfg config.Provider) {
+func (svc *serviceCore) setupLogging() {
 	if svc.log == nil {
-		logBuilder := ulog.Builder()
-		// load and configure logging
 		err := svc.configProvider.Get("logging").PopulateStruct(&svc.logConfig)
 		if err != nil {
 			ulog.Logger().Info("Logging configuration is not provided, setting to default logger", "error", err)
 		}
+
+		logBuilder := ulog.Builder().WithScope(svc.metrics)
 		svc.log = logBuilder.WithConfiguration(svc.logConfig).Build()
 	} else {
 		svc.log.Debug("Using custom log provider due to service.WithLogger option")
 	}
 }
 
-func (svc *serviceCore) setupStandardConfig(cfg config.Provider) error {
-	if err := cfg.Get(config.Root).PopulateStruct(&svc.standardConfig); err != nil {
+func (svc *serviceCore) setupStandardConfig() error {
+	if err := svc.configProvider.Get(config.Root).PopulateStruct(&svc.standardConfig); err != nil {
 		return errors.Wrap(err, "unable to load standard configuration")
 	}
 
@@ -66,13 +66,13 @@ func (svc *serviceCore) setupMetrics() {
 	}
 }
 
-func (svc *serviceCore) setupRuntimeMetricsCollector(cfg config.Provider) error {
+func (svc *serviceCore) setupRuntimeMetricsCollector() error {
 	if svc.RuntimeMetricsCollector() != nil {
 		return nil
 	}
 
 	var runtimeMetricsConfig metrics.RuntimeConfig
-	err := cfg.Get("metrics.runtime").PopulateStruct(&runtimeMetricsConfig)
+	err := svc.configProvider.Get("metrics.runtime").PopulateStruct(&runtimeMetricsConfig)
 	if err != nil {
 		return errors.Wrap(err, "unable to load runtime metrics configuration")
 	}
@@ -82,11 +82,11 @@ func (svc *serviceCore) setupRuntimeMetricsCollector(cfg config.Provider) error 
 	return nil
 }
 
-func (svc *serviceCore) setupTracer(cfg config.Provider) error {
+func (svc *serviceCore) setupTracer() error {
 	if svc.Tracer() != nil {
 		return nil
 	}
-	if err := cfg.Get("tracing").PopulateStruct(&svc.tracerConfig); err != nil {
+	if err := svc.configProvider.Get("tracing").PopulateStruct(&svc.tracerConfig); err != nil {
 		return errors.Wrap(err, "unable to load tracing configuration")
 	}
 	tracer, closer, err := tracing.InitGlobalTracer(
@@ -103,7 +103,7 @@ func (svc *serviceCore) setupTracer(cfg config.Provider) error {
 	return nil
 }
 
-func (svc *serviceCore) setupObserver(cfg config.Provider) {
+func (svc *serviceCore) setupObserver() {
 	if svc.observer != nil {
 		loadInstanceConfig(svc.configProvider, "service", svc.observer)
 
@@ -113,7 +113,7 @@ func (svc *serviceCore) setupObserver(cfg config.Provider) {
 	}
 }
 
-func (svc *serviceCore) setupAuthClient(cfg config.Provider) {
+func (svc *serviceCore) setupAuthClient() {
 	if svc.authClient != nil {
 		return
 	}

@@ -26,8 +26,10 @@ import (
 	"path"
 
 	"go.uber.org/fx/config"
+	"go.uber.org/fx/ulog/metrics"
 	"go.uber.org/fx/ulog/sentry"
 
+	"github.com/uber-go/tally"
 	"github.com/uber-go/zap"
 )
 
@@ -37,6 +39,9 @@ type Configuration struct {
 	File    *FileConfiguration
 	Stdout  bool
 	Verbose bool
+
+	// Do not automatically emit metrics for logging counts
+	DisableMetrics bool
 
 	Sentry *sentry.Configuration
 
@@ -56,6 +61,7 @@ type LogBuilder struct {
 	log        zap.Logger
 	logConfig  Configuration
 	sentryHook *sentry.Hook
+	scope      tally.Scope
 }
 
 // Builder creates an empty builder for building ulog.Log object
@@ -74,6 +80,12 @@ func (lb *LogBuilder) WithConfiguration(logConfig Configuration) *LogBuilder {
 	return lb
 }
 
+// WithScope sets up configuration for the log builder
+func (lb *LogBuilder) WithScope(s tally.Scope) *LogBuilder {
+	lb.scope = s
+	return lb
+}
+
 // SetLogger allows users to set their own initialized logger to work with ulog APIs
 func (lb *LogBuilder) SetLogger(zap zap.Logger) *LogBuilder {
 	lb.log = zap
@@ -87,6 +99,7 @@ func (lb *LogBuilder) WithSentryHook(hook *sentry.Hook) *LogBuilder {
 }
 
 // Build the ulog logger for use
+// TODO: build should return `(Log, error)` in case we can't properly instantiate
 func (lb *LogBuilder) Build() Log {
 	var log zap.Logger
 
@@ -133,7 +146,16 @@ func (lb *LogBuilder) defaultLogger() zap.Logger {
 // Configure Log object with the provided log.Configuration
 func (lb *LogBuilder) Configure() zap.Logger {
 	lb.log = lb.defaultLogger()
+	options := lb.zapOptions()
 
+	if lb.logConfig.TextFormatter != nil && *lb.logConfig.TextFormatter {
+		return zap.New(zap.NewTextEncoder(), options...)
+	}
+	return zap.New(zap.NewJSONEncoder(), options...)
+}
+
+// Return the list of zap options based on the logger configuration
+func (lb *LogBuilder) zapOptions() []zap.Option {
 	var options []zap.Option
 	if lb.logConfig.Verbose {
 		options = append(options, zap.DebugLevel)
@@ -151,16 +173,18 @@ func (lb *LogBuilder) Configure() zap.Logger {
 		}
 	}
 
+	if lb.scope != nil && !lb.logConfig.DisableMetrics {
+		sub := lb.scope.SubScope("logging")
+		options = append(options, metrics.Hook(sub))
+	}
+
 	if lb.logConfig.File == nil || !lb.logConfig.File.Enabled {
 		options = append(options, zap.Output(zap.AddSync(os.Stdout)))
 	} else {
 		options = append(options, zap.Output(lb.fileOutput(lb.logConfig.File, lb.logConfig.Stdout, lb.logConfig.Verbose)))
 	}
 
-	if lb.logConfig.TextFormatter != nil && *lb.logConfig.TextFormatter {
-		return zap.New(zap.NewTextEncoder(), options...)
-	}
-	return zap.New(zap.NewJSONEncoder(), options...)
+	return options
 }
 
 func (lb *LogBuilder) fileOutput(cfg *FileConfiguration, stdout bool, verbose bool) zap.WriteSyncer {

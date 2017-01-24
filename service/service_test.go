@@ -22,67 +22,20 @@ package service
 
 import (
 	"errors"
-	"sync"
 	"testing"
 	"time"
 
 	"go.uber.org/fx/config"
+	"go.uber.org/fx/testutils/metrics"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/uber-go/tally"
 )
 
-type testStatsReporter struct {
-	m sync.Mutex
-
-	cw sync.WaitGroup
-	gw sync.WaitGroup
-	tw sync.WaitGroup
-
-	counters map[string]int64
-	gauges   map[string]float64
-	timers   map[string]time.Duration
-}
-
-func (r *testStatsReporter) ReportCounter(name string, tags map[string]string, value int64) {
-	r.m.Lock()
-	r.counters[name] += value
-	r.cw.Done()
-	r.m.Unlock()
-}
-
-func (r *testStatsReporter) ReportGauge(name string, tags map[string]string, value float64) {
-	r.m.Lock()
-	r.gauges[name] = value
-	r.gw.Done()
-	r.m.Unlock()
-}
-
-func (r *testStatsReporter) ReportTimer(name string, tags map[string]string, interval time.Duration) {
-	r.m.Lock()
-	r.timers[name] = interval
-	r.tw.Done()
-	r.m.Unlock()
-}
-
-func (r *testStatsReporter) Capabilities() tally.Capabilities {
-	return nil
-}
-
-func (r *testStatsReporter) Flush() {}
-
-func newTestStatsReporter() *testStatsReporter {
-	return &testStatsReporter{
-		counters: make(map[string]int64),
-		gauges:   make(map[string]float64),
-		timers:   make(map[string]time.Duration),
-	}
-}
-
 func TestServiceCreation(t *testing.T) {
-	r := newTestStatsReporter()
-	r.cw.Add(1)
+	r := metrics.NewTestStatsReporter()
+	r.CountersWG.Add(1)
 	scope, closer := tally.NewRootScope("", nil, r, 50*time.Millisecond)
 	defer closer.Close()
 	svc, err := New(
@@ -91,9 +44,9 @@ func TestServiceCreation(t *testing.T) {
 	)
 	require.NoError(t, err)
 	assert.NotNil(t, svc, "Service should be created")
-	r.cw.Wait()
+	r.CountersWG.Wait()
 
-	assert.Equal(t, r.counters["boot"], int64(1))
+	assert.Equal(t, r.Counters["boot"], int64(1))
 }
 
 func TestWithObserver_Nil(t *testing.T) {
