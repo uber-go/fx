@@ -1,4 +1,4 @@
-// Copyright (c) 2016 Uber Technologies, Inc.
+// Copyright (c) 2017 Uber Technologies, Inc.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -24,7 +24,7 @@ import (
 	"bytes"
 	"encoding/gob"
 
-	"go.uber.org/fx/ulog"
+	"github.com/pkg/errors"
 )
 
 // Encoding is capable of encoding and decoding objects
@@ -68,8 +68,7 @@ func (g *GobEncoding) Marshal(obj interface{}) ([]byte, error) {
 	var buf bytes.Buffer
 	enc := gob.NewEncoder(&buf)
 	if err := enc.Encode(obj); err != nil {
-		ulog.Logger().Error("Encode error:", "error", err)
-		return nil, err
+		return nil, errors.Wrap(err, "unable to encode with gob")
 	}
 	return buf.Bytes(), nil
 }
@@ -78,8 +77,7 @@ func (g *GobEncoding) Marshal(obj interface{}) ([]byte, error) {
 func (g *GobEncoding) Unmarshal(data []byte, obj interface{}) error {
 	dec := gob.NewDecoder(bytes.NewBuffer(data))
 	if err := dec.Decode(obj); err != nil {
-		ulog.Logger().Error("Decode error:", err)
-		return err
+		return errors.Wrap(err, "unable to decode with gob")
 	}
 	return nil
 }

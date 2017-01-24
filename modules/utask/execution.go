@@ -1,4 +1,4 @@
-// Copyright (c) 2016 Uber Technologies, Inc.
+// Copyright (c) 2017 Uber Technologies, Inc.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -25,11 +25,18 @@ import (
 	"fmt"
 	"reflect"
 	"runtime"
+	"sync"
 
 	"github.com/pkg/errors"
 )
 
-var fnNameMap = make(map[string]interface{})
+// fnRegister allows looking up a function by name
+type fnRegister struct {
+	fnNameMap map[string]interface{}
+	sync.RWMutex
+}
+
+var fnLookup = fnRegister{fnNameMap: make(map[string]interface{})}
 
 // Signature represents a function and its arguments
 type Signature struct {
@@ -43,7 +50,9 @@ func (s *Signature) Execute() ([]reflect.Value, error) {
 	for _, arg := range s.Args {
 		targetArgs = append(targetArgs, reflect.ValueOf(arg))
 	}
-	if fn, ok := fnNameMap[s.FnName]; ok {
+	fnLookup.RLock()
+	defer fnLookup.RUnlock()
+	if fn, ok := fnLookup.fnNameMap[s.FnName]; ok {
 		fnValue := reflect.ValueOf(fn)
 		return fnValue.Call(targetArgs), nil
 	}
@@ -60,7 +69,9 @@ func Register(fn interface{}) error {
 		gob.Register(reflect.Zero(fnType.In(i)).Interface())
 	}
 	fnName := getFunctionName(fn)
-	fnNameMap[fnName] = fn
+	fnLookup.Lock()
+	defer fnLookup.Unlock()
+	fnLookup.fnNameMap[fnName] = fn
 	return nil
 }
 

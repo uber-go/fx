@@ -1,4 +1,4 @@
-// Copyright (c) 2016 Uber Technologies, Inc.
+// Copyright (c) 2017 Uber Technologies, Inc.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -85,7 +85,7 @@ func TestEnqueueAndConsumeWithoutRegister(t *testing.T) {
 
 func TestEnqueueEncodingError(t *testing.T) {
 	fn := func(car Car) error { return nil }
-	fnNameMap[getFunctionName(fn)] = fn
+	fnLookup.fnNameMap[getFunctionName(fn)] = fn
 	err := Enqueue(fn, Car{})
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "unable to encode the function")
