@@ -164,6 +164,33 @@ func TestMetricsHook(t *testing.T) {
 	assert.Equal(t, 1, len(r.Counters))
 }
 
+func TestLoggingDisabled(t *testing.T) {
+	tests := []struct {
+		res  bool
+		data []byte
+	}{
+		{
+			false,
+			[]byte("logging:\n  lalala: foo"),
+		},
+		{
+			false,
+			[]byte("logging:\n  disableMetrics: false"),
+		},
+		{
+			true,
+			[]byte("logging:\n  disableMetrics: true"),
+		},
+	}
+
+	for _, tt := range tests {
+		logCfg := Configuration{}
+		logYamlCfg := config.NewYAMLProviderFromBytes(tt.data)
+		logYamlCfg.Get("logging").PopulateStruct(&logCfg)
+		assert.Equal(t, tt.res, logCfg.DisableMetrics)
+	}
+}
+
 func testSentry(t *testing.T, dsn string, isValid bool) {
 	withLogger(t, func(builder *LogBuilder, tmpDir string, logFile string) {
 		txt := false

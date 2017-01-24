@@ -40,6 +40,9 @@ type Configuration struct {
 	Stdout  bool
 	Verbose bool
 
+	// Do not automatically emit metrics for logging counts
+	DisableMetrics bool
+
 	Sentry *sentry.Configuration
 
 	prefixWithFileLine *bool `yaml:"prefix_with_fileline"`
@@ -161,7 +164,7 @@ func (lb *LogBuilder) Configure() zap.Logger {
 		}
 	}
 
-	if lb.scope != nil {
+	if lb.scope != nil && !lb.logConfig.DisableMetrics {
 		sub := lb.scope.SubScope("logging")
 		options = append(options, metrics.Hook(sub))
 	}
