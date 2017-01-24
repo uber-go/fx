@@ -21,7 +21,6 @@
 package utask
 
 import (
-	"encoding/gob"
 	"fmt"
 	"testing"
 
@@ -86,9 +85,8 @@ func TestEnqueueAndConsumeWithoutRegister(t *testing.T) {
 
 func TestEnqueueEncodingError(t *testing.T) {
 	fn := func(car Car) error { return nil }
-	err := Register(fn)
-	assert.NoError(t, err)
-	err = Enqueue(fn, Car{})
+	fnNameMap[getFunctionName(fn)] = fn
+	err := Enqueue(fn, Car{})
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "unable to encode the function")
 }
@@ -109,19 +107,29 @@ func TestEnqueueNoArgsFn(t *testing.T) {
 }
 
 func TestEnqueueSimpleFn(t *testing.T) {
-	err := Register(Simple)
+	err := Register(SimpleWithError)
 	assert.NoError(t, err)
-	err = Enqueue(Simple, "hello")
+	err = Enqueue(SimpleWithError, "hello")
+	assert.NoError(t, err)
+	err = GlobalBackend().Consume()
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "Simple error")
+}
+
+func TestEnqueueMapFn(t *testing.T) {
+	fn := func(map[string]string) error { return nil }
+	err := Register(fn)
+	assert.NoError(t, err)
+	err = Enqueue(fn, make(map[string]string))
 	assert.NoError(t, err)
 	err = GlobalBackend().Consume()
 	assert.NoError(t, err)
 }
 
 func TestEnqueueComplexFnWithError(t *testing.T) {
-	gob.Register(Car{})
 	err := Register(Complex)
 	assert.NoError(t, err)
-	err = Enqueue(Complex, Car{Brand: "infinity", Model: "g37", Year: 2017})
+	err = Enqueue(Complex, Car{Brand: "infinity", Year: 2017})
 	assert.NoError(t, err)
 	err = GlobalBackend().Consume()
 	assert.Error(t, err)
@@ -129,22 +137,18 @@ func TestEnqueueComplexFnWithError(t *testing.T) {
 }
 
 func NoArgs() error {
-	fmt.Printf("Inside NoArgs\n")
 	return nil
 }
 
-func Simple(a string) error {
-	fmt.Printf("Inside Simple: %s\n", a)
-	return nil
+func SimpleWithError(a string) error {
+	return fmt.Errorf("Simple error")
 }
 
 type Car struct {
 	Brand string
-	Model string
 	Year  int
 }
 
 func Complex(car Car) error {
-	fmt.Printf("Inside Complex: %v\n", car)
 	return fmt.Errorf("Complex error")
 }

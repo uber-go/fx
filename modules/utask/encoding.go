@@ -29,12 +29,18 @@ import (
 
 // Encoding is capable of encoding and decoding objects
 type Encoding interface {
+	Register(interface{}) error
 	Marshal(interface{}) ([]byte, error)
 	Unmarshal([]byte, interface{}) error
 }
 
 // NopEncoding is a noop encoder
 type NopEncoding struct {
+}
+
+// Register implements the Encoding interface
+func (g *NopEncoding) Register(obj interface{}) error {
+	return nil
 }
 
 // Marshal implements the Encoding interface
@@ -49,6 +55,12 @@ func (g *NopEncoding) Unmarshal(data []byte, obj interface{}) error {
 
 // GobEncoding encapsulates gob encoding and decoding
 type GobEncoding struct {
+}
+
+// Register implements the Encoding interface
+func (g *GobEncoding) Register(obj interface{}) error {
+	gob.Register(obj)
+	return nil
 }
 
 // Marshal encodes an object into bytes

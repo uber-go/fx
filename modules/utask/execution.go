@@ -21,6 +21,7 @@
 package utask
 
 import (
+	"encoding/gob"
 	"fmt"
 	"reflect"
 	"runtime"
@@ -54,6 +55,9 @@ func Register(fn interface{}) error {
 	fnType := reflect.TypeOf(fn)
 	if err := validateAsyncFn(fnType); err != nil {
 		return err
+	}
+	for i := 0; i < fnType.NumIn(); i++ {
+		gob.Register(reflect.Zero(fnType.In(i)).Interface())
 	}
 	fnName := getFunctionName(fn)
 	fnNameMap[fnName] = fn
