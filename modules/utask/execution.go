@@ -24,7 +24,11 @@ import (
 	"fmt"
 	"reflect"
 	"runtime"
+
+	"github.com/pkg/errors"
 )
+
+var fnNameMap = make(map[string]interface{})
 
 // Signature represents a function and its arguments
 type Signature struct {
@@ -45,36 +49,42 @@ func (s *Signature) Execute() ([]reflect.Value, error) {
 	return nil, fmt.Errorf("Function: %s not found. Did you forget to register?", s.FnName)
 }
 
-var fnNameMap = make(map[string]interface{})
-
-// Enqueue sends a func before sending to the task queue
-func Enqueue(fn interface{}, args ...interface{}) error {
+// Register registers a function for async tasks
+func Register(fn interface{}) error {
 	fnType := reflect.TypeOf(fn)
 	if err := validateAsyncFn(fnType); err != nil {
 		return err
 	}
+	fnName := getFunctionName(fn)
+	fnNameMap[fnName] = fn
+	return nil
+}
+
+// Enqueue sends a func before sending to the task queue
+func Enqueue(fn interface{}, args ...interface{}) error {
+	fnType := reflect.TypeOf(fn)
 	if fnType.NumIn() != len(args) {
-		return fmt.Errorf("Expected %d function args but found %d\n", fnType.NumIn(), len(args))
+		return fmt.Errorf("Expected %d function arg(s) but found %d\n", fnType.NumIn(), len(args))
 	}
 	var argValues []reflect.Value
 	for i := 0; i < fnType.NumIn(); i++ {
 		arg := reflect.ValueOf(args[i])
 		argType := reflect.TypeOf(args[i])
 		if !argType.AssignableTo(fnType.In(i)) {
+			// TODO(madhu): Is it useful to show the arg index or the arg value in the error msg?
 			return fmt.Errorf(
 				"Cannot assign function argument: %d from type: %s to type: %s\n",
-				i, argType, fnType.In(i),
+				i+1, argType, fnType.In(i),
 			)
 		}
 		argValues = append(argValues, arg)
 	}
 	fnName := getFunctionName(fn)
-	fnNameMap[fnName] = fn
 	s := Signature{FnName: fnName, Args: args}
 
 	sBytes, err := GlobalBackend().Encoder().Marshal(s)
 	if err != nil {
-		return nil
+		return errors.Wrap(err, "unable to encode the function")
 	}
 	return GlobalBackend().Publish(sBytes, nil)
 }
@@ -83,7 +93,7 @@ func Enqueue(fn interface{}, args ...interface{}) error {
 func Run(message []byte) error {
 	var s Signature
 	if err := GlobalBackend().Encoder().Unmarshal(message, &s); err != nil {
-		return err
+		return errors.Wrap(err, "unable to decode the message")
 	}
 	retValues, err := s.Execute()
 	if err != nil {
