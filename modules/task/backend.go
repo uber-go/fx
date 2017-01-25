@@ -81,13 +81,13 @@ type InMemBackend struct {
 }
 
 // Publish implements the Backend interface
-func (b InMemBackend) Publish(message []byte, userContext map[string]string) error {
+func (b *InMemBackend) Publish(message []byte, userContext map[string]string) error {
 	b.bufQueue <- message
 	return nil
 }
 
 // Consume  implements the Backend interface
-func (b InMemBackend) Consume() error {
+func (b *InMemBackend) Consume() error {
 	select {
 	case v, ok := <-b.bufQueue:
 		if ok {
@@ -100,31 +100,31 @@ func (b InMemBackend) Consume() error {
 }
 
 // Encoder implements the Backend interface
-func (b InMemBackend) Encoder() Encoding {
+func (b *InMemBackend) Encoder() Encoding {
 	return gobEncoding
 }
 
 // Type implements the Backend interface
-func (b InMemBackend) Type() string {
+func (b *InMemBackend) Type() string {
 	return ""
 }
 
 // Name implements the Backend interface
-func (b InMemBackend) Name() string {
+func (b *InMemBackend) Name() string {
 	return ""
 }
 
 // Start implements the Backend interface
-func (b InMemBackend) Start(ready chan<- struct{}) <-chan error {
+func (b *InMemBackend) Start(ready chan<- struct{}) <-chan error {
 	return make(chan error)
 }
 
 // Stop implements the Backend interface
-func (b InMemBackend) Stop() error {
+func (b *InMemBackend) Stop() error {
 	return nil
 }
 
 // IsRunning implements the Backend interface
-func (b InMemBackend) IsRunning() bool {
+func (b *InMemBackend) IsRunning() bool {
 	return true
 }

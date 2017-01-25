@@ -39,15 +39,16 @@ type globalBackend struct {
 
 var (
 	_backendRegisterFn backendRegisterFn
-	_globalBackend     = globalBackend{backend: &NopBackend{}}
+	_globalBackendMu   sync.RWMutex
+	_globalBackend     Backend = &NopBackend{}
 )
 
 // GlobalBackend returns global instance of the backend
 // TODO (madhu): Make work with multiple backends
 func GlobalBackend() Backend {
-	_globalBackend.RLock()
-	defer _globalBackend.RUnlock()
-	return _globalBackend.backend
+	_globalBackendMu.RLock()
+	defer _globalBackendMu.RUnlock()
+	return _globalBackend
 }
 
 // NewModule creates an async task queue module
@@ -66,9 +67,9 @@ func newAsyncModule(mi service.ModuleCreateInfo) (service.Module, error) {
 	if err != nil {
 		return nil, err
 	}
-	_globalBackend.Lock()
-	_globalBackend = globalBackend{backend: backend}
-	_globalBackend.Unlock()
+	_globalBackendMu.Lock()
+	_globalBackend = backend
+	_globalBackendMu.Unlock()
 	return &AsyncModule{
 		Backend: backend,
 		modBase: *modules.NewModuleBase(ModuleType, "task", mi.Host, []string{}),
