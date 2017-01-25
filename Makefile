@@ -121,22 +121,10 @@ clean:
 	$(ECHO_V)rm -rf examples/keyvalue/kv/ .bin
 
 .PHONY: examples
-examples: .bin/thriftrw .bin/thriftrw-plugin-yarpc
-	@$(call label,Generating example RPC bindings)
+examples:
+	@$(call label,Building examples)
 	@echo
-	$(ECHO_V)PATH=$(shell pwd)/.bin:$$PATH $(MAKE) -C examples/keyvalue kv/types.go ECHO_V=$(ECHO_V)
-
-.bin/thriftrw: vendor ./vendor/go.uber.org/thriftrw/*.go
-	@$(call label,Building ThriftRW)
-	@echo
-	$(ECHO_V)mkdir -p .bin
-	$(ECHO_V)./.build/build_vendored.sh .bin go.uber.org/thriftrw
-
-.bin/thriftrw-plugin-yarpc: vendor ./vendor/go.uber.org/yarpc/encoding/thrift/thriftrw-plugin-yarpc/*.go
-	@$(call label,Building ThriftRW YARPC plugin)
-	@echo
-	$(ECHO_V)mkdir -p .bin
-	$(ECHO_V)./.build/build_vendored.sh .bin go.uber.org/yarpc/encoding/thrift/thriftrw-plugin-yarpc
+	$(ECHO_V)$(MAKE) -C examples/keyvalue ECHO_V=$(ECHO_V)
 
 .PHONY: vendor
 vendor:
