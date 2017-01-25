@@ -27,7 +27,6 @@ import (
 	"go.uber.org/fx/examples/keyvalue/kv"
 	kvs "go.uber.org/fx/examples/keyvalue/kv/keyvalueserver"
 	"go.uber.org/fx/service"
-	"go.uber.org/yarpc"
 	"go.uber.org/yarpc/api/transport"
 )
 
@@ -53,10 +52,10 @@ func (h *YarpcHandler) GetValue(ctx fx.Context, key *string) (string, error) {
 	return "", &kv.ResourceDoesNotExist{Key: *key}
 }
 
-func (h *YarpcHandler) SetValue(ctx fx.Context, key *string, value *string) (yarpc.ResMeta, error) {
+func (h *YarpcHandler) SetValue(ctx fx.Context, key *string, value *string) error {
 	h.Lock()
 
 	h.items[*key] = *value
 	h.Unlock()
-	return nil, nil
+	return nil
 }

@@ -8,3 +8,8 @@ server/server: $(wildcard server/*.go) kv/types.go
 
 .PHONY: all
 all: server/server
+
+.PHONY: deps
+deps:
+	$(ECHO_V)go get -v go.uber.org/thriftrw
+	$(ECHO_V)go get -v go.uber.org/yarpc/encoding/thrift/thriftrw-plugin-yarpc
