@@ -39,17 +39,17 @@ type NopEncoding struct {
 }
 
 // Register implements the Encoding interface
-func (g *NopEncoding) Register(obj interface{}) error {
+func (g NopEncoding) Register(obj interface{}) error {
 	return nil
 }
 
 // Marshal implements the Encoding interface
-func (g *NopEncoding) Marshal(obj interface{}) ([]byte, error) {
+func (g NopEncoding) Marshal(obj interface{}) ([]byte, error) {
 	return []byte{}, nil
 }
 
 // Unmarshal implements the Encoding interface
-func (g *NopEncoding) Unmarshal(data []byte, obj interface{}) error {
+func (g NopEncoding) Unmarshal(data []byte, obj interface{}) error {
 	return nil
 }
 
@@ -58,13 +58,13 @@ type GobEncoding struct {
 }
 
 // Register implements the Encoding interface
-func (g *GobEncoding) Register(obj interface{}) error {
+func (g GobEncoding) Register(obj interface{}) error {
 	gob.Register(obj)
 	return nil
 }
 
 // Marshal encodes an object into bytes
-func (g *GobEncoding) Marshal(obj interface{}) ([]byte, error) {
+func (g GobEncoding) Marshal(obj interface{}) ([]byte, error) {
 	var buf bytes.Buffer
 	enc := gob.NewEncoder(&buf)
 	if err := enc.Encode(obj); err != nil {
@@ -74,7 +74,7 @@ func (g *GobEncoding) Marshal(obj interface{}) ([]byte, error) {
 }
 
 // Unmarshal decodes a byte array into the passed in object
-func (g *GobEncoding) Unmarshal(data []byte, obj interface{}) error {
+func (g GobEncoding) Unmarshal(data []byte, obj interface{}) error {
 	dec := gob.NewDecoder(bytes.NewBuffer(data))
 	if err := dec.Decode(obj); err != nil {
 		return errors.Wrap(err, "unable to decode with gob")

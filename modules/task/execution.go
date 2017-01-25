@@ -46,7 +46,7 @@ type fnSignature struct {
 
 // Execute executes the function
 func (s *fnSignature) Execute() ([]reflect.Value, error) {
-	var targetArgs []reflect.Value
+	targetArgs := make([]reflect.Value, 0, len(s.Args))
 	for _, arg := range s.Args {
 		targetArgs = append(targetArgs, reflect.ValueOf(arg))
 	}
