@@ -21,7 +21,6 @@
 package task
 
 import (
-	"encoding/gob"
 	"fmt"
 	"reflect"
 	"runtime"
@@ -59,39 +58,23 @@ func (s *fnSignature) Execute() ([]reflect.Value, error) {
 	return nil, fmt.Errorf("function: %q not found. Did you forget to register?", s.FnName)
 }
 
-// Register registers a function for async tasks
-func Register(fn interface{}) error {
+// Enqueue sends a func before sending to the task queue
+func Enqueue(fn interface{}, args ...interface{}) error {
+	// Validate function
 	fnType := reflect.TypeOf(fn)
 	if err := validateFnFormat(fnType); err != nil {
 		return err
 	}
-	for i := 0; i < fnType.NumIn(); i++ {
-		gob.Register(reflect.Zero(fnType.In(i)).Interface())
-	}
 	fnName := getFunctionName(fn)
-	fnLookup.Lock()
-	defer fnLookup.Unlock()
-	fnLookup.fnNameMap[fnName] = fn
-	return nil
-}
-
-// Enqueue sends a func before sending to the task queue
-func Enqueue(fn interface{}, args ...interface{}) error {
-	fnType := reflect.TypeOf(fn)
-	if fnType.NumIn() != len(args) {
-		return fmt.Errorf("expected %d function arg(s) but found %d", fnType.NumIn(), len(args))
+	// Register
+	if err := register(fn, fnType, fnName); err != nil {
+		return err
 	}
-	for i := 0; i < fnType.NumIn(); i++ {
-		argType := reflect.TypeOf(args[i])
-		if !argType.AssignableTo(fnType.In(i)) {
-			// TODO(madhu): Is it useful to show the arg index or the arg value in the error msg?
-			return fmt.Errorf(
-				"cannot assign function argument: %d from type: %s to type: %s",
-				i+1, argType, fnType.In(i),
-			)
-		}
+	// Validate function against arguments
+	if err := validateFnAgainstArgs(fnType, args); err != nil {
+		return err
 	}
-	fnName := getFunctionName(fn)
+	// Publish function to the backend
 	s := fnSignature{FnName: fnName, Args: args}
 
 	sBytes, err := GlobalBackend().Encoder().Marshal(s)
@@ -99,6 +82,25 @@ func Enqueue(fn interface{}, args ...interface{}) error {
 		return errors.Wrap(err, "unable to encode the function or args")
 	}
 	return GlobalBackend().Publish(sBytes, nil)
+}
+
+// register registers a function for async tasks
+func register(fn interface{}, fnType reflect.Type, fnName string) error {
+	// Check if already registered
+	fnLookup.RLock()
+	_, ok := fnLookup.fnNameMap[fnName]
+	fnLookup.RUnlock()
+	if ok {
+		return nil
+	}
+	// Register function types for encoding
+	for i := 0; i < fnType.NumIn(); i++ {
+		GlobalBackend().Encoder().Register(reflect.Zero(fnType.In(i)).Interface())
+	}
+	fnLookup.Lock()
+	defer fnLookup.Unlock()
+	fnLookup.fnNameMap[fnName] = fn
+	return nil
 }
 
 // Run decodes the message and executes as a task
@@ -112,6 +114,23 @@ func Run(message []byte) error {
 		return err
 	}
 	return castToError(retValues[0])
+}
+
+func validateFnAgainstArgs(fnType reflect.Type, args []interface{}) error {
+	if fnType.NumIn() != len(args) {
+		return fmt.Errorf("expected %d function arg(s) but found %d", fnType.NumIn(), len(args))
+	}
+	for i := 0; i < fnType.NumIn(); i++ {
+		argType := reflect.TypeOf(args[i])
+		if !argType.AssignableTo(fnType.In(i)) {
+			// TODO(madhu): Is it useful to show the arg index or the arg value in the error msg?
+			return fmt.Errorf(
+				"cannot assign function argument: %d from type: %s to type: %s",
+				i+1, argType, fnType.In(i),
+			)
+		}
+	}
+	return nil
 }
 
 // validateFnFormat verifies that the type is a function type that returns only an error

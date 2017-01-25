@@ -32,39 +32,35 @@ func init() {
 }
 
 func TestEnqueueNonFunction(t *testing.T) {
-	err := Register("I am not a function")
+	err := Enqueue("I am not a function")
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "a func as input but was")
 }
 
 func TestEnqueueWithMultipleReturnValues(t *testing.T) {
 	fn := func() (string, error) { return "", nil }
-	err := Register(fn)
+	err := Enqueue(fn)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "return only error but found")
 }
 
 func TestEnqueueFnDoesNotReturnError(t *testing.T) {
 	fn := func() string { return "" }
-	err := Register(fn)
+	err := Enqueue(fn)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "return error but found")
 }
 
 func TestEnqueueFnWithMismatchedArgCount(t *testing.T) {
 	fn := func(s string) error { return nil }
-	err := Register(fn)
-	assert.NoError(t, err)
-	err = Enqueue(fn)
+	err := Enqueue(fn)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "1 function arg(s) but found 0")
 }
 
 func TestEnqueueFnWithMismatchedArgType(t *testing.T) {
 	fn := func(s string) error { return nil }
-	err := Register(fn)
-	assert.NoError(t, err)
-	err = Enqueue(fn, 1)
+	err := Enqueue(fn, 1)
 	assert.Error(t, err)
 	assert.Contains(
 		t, err.Error(), "argument: 1 from type: int to type: string",
@@ -75,6 +71,7 @@ func TestEnqueueAndConsumeWithoutRegister(t *testing.T) {
 	fn := func(num float64) error { return nil }
 	err := Enqueue(fn, float64(1.0))
 	assert.NoError(t, err)
+	fnLookup.fnNameMap = make(map[string]interface{})
 	err = GlobalBackend().Consume()
 	assert.Error(t, err)
 	assert.Contains(
@@ -98,18 +95,14 @@ func TestRunDecodeError(t *testing.T) {
 }
 
 func TestEnqueueNoArgsFn(t *testing.T) {
-	err := Register(NoArgs)
-	assert.NoError(t, err)
-	err = Enqueue(NoArgs)
+	err := Enqueue(NoArgs)
 	assert.NoError(t, err)
 	err = GlobalBackend().Consume()
 	assert.NoError(t, err)
 }
 
 func TestEnqueueSimpleFn(t *testing.T) {
-	err := Register(SimpleWithError)
-	assert.NoError(t, err)
-	err = Enqueue(SimpleWithError, "hello")
+	err := Enqueue(SimpleWithError, "hello")
 	assert.NoError(t, err)
 	err = GlobalBackend().Consume()
 	assert.Error(t, err)
@@ -118,18 +111,14 @@ func TestEnqueueSimpleFn(t *testing.T) {
 
 func TestEnqueueMapFn(t *testing.T) {
 	fn := func(map[string]string) error { return nil }
-	err := Register(fn)
-	assert.NoError(t, err)
-	err = Enqueue(fn, make(map[string]string))
+	err := Enqueue(fn, make(map[string]string))
 	assert.NoError(t, err)
 	err = GlobalBackend().Consume()
 	assert.NoError(t, err)
 }
 
 func TestEnqueueComplexFnWithError(t *testing.T) {
-	err := Register(Complex)
-	assert.NoError(t, err)
-	err = Enqueue(Complex, Car{Brand: "infinity", Year: 2017})
+	err := Enqueue(Complex, Car{Brand: "infinity", Year: 2017})
 	assert.NoError(t, err)
 	err = GlobalBackend().Consume()
 	assert.Error(t, err)
