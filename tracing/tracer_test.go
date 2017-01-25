@@ -94,10 +94,12 @@ func TestJaegerLogger(t *testing.T) {
 	testutils.WithInMemoryLogger(t, nil, func(zapLogger zap.Logger, buf *testutils.TestBuffer) {
 		loggerWithZap := ulog.Builder().SetLogger(zapLogger).Build()
 		jLogger := jaegerLogger{log: loggerWithZap}
+		jLogger.Infof("info message")
 		jLogger.Infof("info message: %s", "oddArg")
 		jLogger.Infof("info message: %s %s", "value1", "value2")
 		jLogger.Error("error message")
 		assert.Equal(t, []string{
+			`{"level":"info","msg":"info message"}`,
 			`{"level":"info","msg":"info message: oddArg"}`,
 			`{"level":"info","msg":"info message: value1 value2"}`,
 			`{"level":"error","msg":"error message"}`,
