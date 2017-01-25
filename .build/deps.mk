@@ -4,8 +4,8 @@ libdeps:
 	$(ECHO_V)glide --version 2>/dev/null ||	go get -v github.com/Masterminds/glide
 	$(ECHO_V)glide install
 
-.PHONY: dependencies
-dependencies: libdeps
+.PHONY: deps
+deps: libdeps
 	@$(call label,Installing test dependencies...)
 	$(ECHO_V)go install ./vendor/github.com/axw/gocov/gocov
 	$(ECHO_V)go install ./vendor/github.com/mattn/goveralls

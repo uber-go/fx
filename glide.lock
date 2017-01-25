@@ -1,14 +1,14 @@
-hash: 7e90707d8c16f68bd53951dc1653f367e1138a91446bc8c63c67998127b66b02
-updated: 2017-01-11T12:55:41.143717873-08:00
+hash: bd3ea912da7a907bfb0de3a92f15e9ab45c7f1263dd0d867f0295045dc43697b
+updated: 2017-01-25T13:31:44.320616166-08:00
 imports:
 - name: github.com/apache/thrift
-  version: 5f723cd53980f395a92c438790a127cbd5699d90
+  version: 6fe7fa1b7ed72215a59e93c680a209a99530fada
   subpackages:
   - lib/go/thrift
 - name: github.com/certifi/gocertifi
   version: a61bf5eafa3aee233ec8043e9da052447e5463dd
 - name: github.com/davecgh/go-spew
-  version: 346938d642f2ec3594ed81d874461961cd0faa76
+  version: 04cdfd42973bb9c8589fd6a731800cf222fde1a9
   subpackages:
   - spew
 - name: github.com/facebookgo/clock
@@ -17,10 +17,14 @@ imports:
   version: 3f7439d3e74d88e21d196ba20eb61a5a958bc118
 - name: github.com/go-validator/validator
   version: 0a9835d809fb647a62611d30cb792e0b5dd65b11
+- name: github.com/golang/mock
+  version: bd3c8e81be01eef76d4b503f5e687d2d1354d2d9
+  subpackages:
+  - gomock
 - name: github.com/gorilla/context
   version: 1ea25387ff6f684839d82767c1733ff4d4d15d0a
 - name: github.com/gorilla/mux
-  version: 0eeaf8392f5b04950925b8a69fe70f110fa7cbfc
+  version: 392c28fe23e1c45ddba891b0320b3b5df220beea
 - name: github.com/opentracing/opentracing-go
   version: 0c3154a3c2ce79d3271985848659870599dfb77c
   subpackages:
@@ -29,7 +33,7 @@ imports:
 - name: github.com/pkg/errors
   version: 645ef00459ed84a119197bfb8d8205042c6df63d
 - name: github.com/pmezard/go-difflib
-  version: 792786c7400a136282c1664665ae0a8db921c6c2
+  version: d8ed2627bdf02c080bf22230dbb337003b7aba2d
   subpackages:
   - difflib
 - name: github.com/stretchr/testify
@@ -38,7 +42,7 @@ imports:
   - assert
   - require
 - name: github.com/uber-go/atomic
-  version: 3b8db5e93c4c02efbc313e17b2e796b0914a01fb
+  version: 0c9e689d64f004564b79d9a663634756df322902
 - name: github.com/uber-go/tally
   version: 2750b4ae690cbeb294016efe18ceaeb80c4ce17c
 - name: github.com/uber-go/zap
@@ -55,8 +59,9 @@ imports:
   - transport/udp
   - utils
 - name: github.com/uber/tchannel-go
-  version: 2caa315516e1836b7b2eff70d2fcbd23538d1b22
+  version: aeda4836756434b4077ca7ef4b6a8c0d6b382101
   subpackages:
+  - internal/argreader
   - relay
   - tnet
   - trand
@@ -67,21 +72,14 @@ imports:
   version: c98a13058faa5dd41584a77221a268d2c72d832d
   subpackages:
   - envelope
-  - internal/envelope
   - internal/envelope/exception
-  - internal/frame
-  - internal/goast
-  - internal/multiplex
   - internal/semver
-  - plugin
-  - plugin/api
   - protocol
   - protocol/binary
-  - ptr
   - version
   - wire
 - name: go.uber.org/yarpc
-  version: 4edea50a16bf88fbbb9efb769764ea2b253aeff7
+  version: baf7b5524ecff45dad7aa6ff70c1fe422ea4aada
   subpackages:
   - api/encoding
   - api/middleware
@@ -98,20 +96,15 @@ imports:
   - internal/outboundmiddleware
   - internal/request
   - internal/sync
-  - transport
   - transport/tchannel
   - transport/tchannel/internal
 - name: golang.org/x/net
-  version: 60c41d1de8da134c05b7b40154a9a82bf5b7edb9
+  version: f2499483f923065a842d38eb4c7f1927e6fc6e6d
   subpackages:
   - context
   - context/ctxhttp
-- name: golang.org/x/tools
-  version: de557280a1356eaf02f30918562e425b6c7a5ca8
-  subpackages:
-  - go/ast/astutil
 - name: gopkg.in/yaml.v2
-  version: a5b47d31c556af34a302ce5d659e6fea44d90de0
+  version: a83829b6f1293c91addabc89d0571c246397bbf4
 testImports:
 - name: github.com/anmitsu/go-shlex
   version: 648efa622239a2f6ff949fed78ee37b48d499ba4
@@ -126,7 +119,7 @@ testImports:
   subpackages:
   - golint
 - name: github.com/jessevdk/go-flags
-  version: 4e64e4a4e2552194cf594243e23aa9baf3b4297e
+  version: 0648c820cd4e564706597268ae2d2c7d9e6900c6
 - name: github.com/kisielk/errcheck
   version: db0ca22445717d1b2c51ac1034440e0a2a2de645
 - name: github.com/kisielk/gotool
@@ -145,3 +138,7 @@ testImports:
   version: f274e5a4257c85a9eaf60ac820ee813b78cac6ab
 - name: github.com/shurcooL/sanitized_anchor_name
   version: 1dba4b3954bc059efc3991ec364f9f9a35f597d2
+- name: golang.org/x/tools
+  version: 1529f889eb4b594d1f047f2fb8d5b3cc85c8f006
+  subpackages:
+  - cover
