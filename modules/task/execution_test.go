@@ -141,6 +141,21 @@ func TestEnqueueMapFn(t *testing.T) {
 	assert.NoError(t, err)
 }
 
+func TestEnqueueFnClosure(t *testing.T) {
+	i := 1
+	fn := func() error {
+		i = i + 1
+		fmt.Println(i)
+		return nil
+	}
+	err := Register(fn)
+	assert.NoError(t, err)
+	err = Enqueue(fn)
+	assert.NoError(t, err)
+	err = GlobalBackend().Consume()
+	assert.NoError(t, err)
+}
+
 func TestEnqueueComplexFnWithError(t *testing.T) {
 	err := Register(Complex)
 	assert.NoError(t, err)
