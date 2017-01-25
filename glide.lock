@@ -1,14 +1,14 @@
 hash: bd3ea912da7a907bfb0de3a92f15e9ab45c7f1263dd0d867f0295045dc43697b
-updated: 2017-01-24T17:11:17.310738936-08:00
+updated: 2017-01-25T13:31:44.320616166-08:00
 imports:
 - name: github.com/apache/thrift
-  version: 7edc8faefd391ce11eca3023a35cc54bcb2eb1af
+  version: 6fe7fa1b7ed72215a59e93c680a209a99530fada
   subpackages:
   - lib/go/thrift
 - name: github.com/certifi/gocertifi
   version: a61bf5eafa3aee233ec8043e9da052447e5463dd
 - name: github.com/davecgh/go-spew
-  version: 6d212800a42e8ab5c146b8ace3490ee17e5225f9
+  version: 04cdfd42973bb9c8589fd6a731800cf222fde1a9
   subpackages:
   - spew
 - name: github.com/facebookgo/clock
@@ -17,6 +17,10 @@ imports:
   version: 3f7439d3e74d88e21d196ba20eb61a5a958bc118
 - name: github.com/go-validator/validator
   version: 0a9835d809fb647a62611d30cb792e0b5dd65b11
+- name: github.com/golang/mock
+  version: bd3c8e81be01eef76d4b503f5e687d2d1354d2d9
+  subpackages:
+  - gomock
 - name: github.com/gorilla/context
   version: 1ea25387ff6f684839d82767c1733ff4d4d15d0a
 - name: github.com/gorilla/mux
