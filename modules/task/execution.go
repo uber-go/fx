@@ -95,7 +95,10 @@ func register(fn interface{}, fnType reflect.Type, fnName string) error {
 	}
 	// Register function types for encoding
 	for i := 0; i < fnType.NumIn(); i++ {
-		GlobalBackend().Encoder().Register(reflect.Zero(fnType.In(i)).Interface())
+		arg := reflect.Zero(fnType.In(i)).Interface()
+		if err := GlobalBackend().Encoder().Register(arg); err != nil {
+			return err
+		}
 	}
 	fnLookup.Lock()
 	defer fnLookup.Unlock()
