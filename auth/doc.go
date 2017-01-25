@@ -1,4 +1,4 @@
-// Copyright (c) 2016 Uber Technologies, Inc.
+// Copyright (c) 2017 Uber Technologies, Inc.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -21,13 +21,15 @@
 // Package auth is the Auth Package.
 //
 // Use package auth for request authentication and authorization for user-to-service
-// and service-to-service communication. Use auth for scenarios that require stricter
+// and service-to-service communication. Use
+// package auth for scenarios that require stricter
 // validations and usage restrictions.
-// auth.Client, included in the package provides seamless
-// integration with presently written modules in the service framework. As a middleware, Auth
-// provides additional restrictions on who can access a service, and who can be
+// auth.Client included in the package, provides seamless
+// integration with presently written modules in the service framework. As a middleware,
+// package authprovides additional restrictions on who can access a service, and who can be
 // authenticated to access the service.
-// The Auth package doesn't dictate how authentication and authorization should work, nor which
+// The
+// package auth doesn't dictate how authentication and authorization should work, nor which
 // algorithm the security service should use. It allows client integration with the service framework.
 //
 //
@@ -50,7 +52,7 @@
 //
 // Integrating custom auth service
 //
-// Auth package just provides an interface and API integration with existing modules. Users can define
+// package auth just provides an interface and API integration with existing modules. Users can define
 // their own backend security framework and integrate its clients with the service framework by following simple steps:
 //
 //
