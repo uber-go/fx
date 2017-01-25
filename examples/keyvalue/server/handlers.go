@@ -23,9 +23,10 @@ package main
 import (
 	"sync"
 
+	kvs "go.uber.org/fx/examples/keyvalue/kv/keyvalueserver"
+
 	"go.uber.org/fx"
 	"go.uber.org/fx/examples/keyvalue/kv"
-	kvs "go.uber.org/fx/examples/keyvalue/kv/keyvalueserver"
 	"go.uber.org/fx/service"
 	"go.uber.org/yarpc/api/transport"
 )
@@ -48,7 +49,6 @@ func (h *YarpcHandler) GetValue(ctx fx.Context, key *string) (string, error) {
 	if value, ok := h.items[*key]; ok {
 		return value, nil
 	}
-
 	return "", &kv.ResourceDoesNotExist{Key: *key}
 }
 
