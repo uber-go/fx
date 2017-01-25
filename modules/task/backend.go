@@ -52,12 +52,12 @@ func (b NopBackend) Encoder() Encoding {
 
 // Type implements the Backend interface
 func (b NopBackend) Type() string {
-	return ""
+	return "nop"
 }
 
 // Name implements the Backend interface
 func (b NopBackend) Name() string {
-	return ""
+	return "nop"
 }
 
 // Start implements the Backend interface
@@ -75,19 +75,24 @@ func (b NopBackend) IsRunning() bool {
 	return true
 }
 
-// InMemBackend is a noop implementation of the Backend interface
-type InMemBackend struct {
+// inMemBackend is an in-memory implementation of the Backend interface
+type inMemBackend struct {
 	bufQueue chan []byte
 }
 
+// NewInMemBackend creates a new in memory backend, designed for use in tests
+func NewInMemBackend() Backend {
+	return &inMemBackend{make(chan []byte, 2)}
+}
+
 // Publish implements the Backend interface
-func (b *InMemBackend) Publish(message []byte, userContext map[string]string) error {
+func (b *inMemBackend) Publish(message []byte, userContext map[string]string) error {
 	b.bufQueue <- message
 	return nil
 }
 
 // Consume  implements the Backend interface
-func (b *InMemBackend) Consume() error {
+func (b *inMemBackend) Consume() error {
 	select {
 	case v, ok := <-b.bufQueue:
 		if ok {
@@ -100,31 +105,31 @@ func (b *InMemBackend) Consume() error {
 }
 
 // Encoder implements the Backend interface
-func (b *InMemBackend) Encoder() Encoding {
+func (b *inMemBackend) Encoder() Encoding {
 	return gobEncoding
 }
 
 // Type implements the Backend interface
-func (b *InMemBackend) Type() string {
-	return ""
+func (b *inMemBackend) Type() string {
+	return "inMem"
 }
 
 // Name implements the Backend interface
-func (b *InMemBackend) Name() string {
-	return ""
+func (b *inMemBackend) Name() string {
+	return "inMem"
 }
 
 // Start implements the Backend interface
-func (b *InMemBackend) Start(ready chan<- struct{}) <-chan error {
+func (b *inMemBackend) Start(ready chan<- struct{}) <-chan error {
 	return make(chan error)
 }
 
 // Stop implements the Backend interface
-func (b *InMemBackend) Stop() error {
+func (b *inMemBackend) Stop() error {
 	return nil
 }
 
 // IsRunning implements the Backend interface
-func (b *InMemBackend) IsRunning() bool {
+func (b *inMemBackend) IsRunning() bool {
 	return true
 }

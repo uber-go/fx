@@ -28,54 +28,70 @@ import (
 )
 
 func init() {
-	_globalBackend = &InMemBackend{make(chan []byte, 2)}
+	_globalBackend = NewInMemBackend()
 }
 
-func TestEnqueueNonFunction(t *testing.T) {
-	err := Enqueue("I am not a function")
+func TestRegisterNonFunction(t *testing.T) {
+	err := Register("I am not a function")
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "a func as input but was")
 }
 
-func TestEnqueueWithMultipleReturnValues(t *testing.T) {
+func TestRegisterWithMultipleReturnValues(t *testing.T) {
 	fn := func() (string, error) { return "", nil }
-	err := Enqueue(fn)
+	err := Register(fn)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "return only error but found")
 }
 
-func TestEnqueueFnDoesNotReturnError(t *testing.T) {
+func TestRegisterFnDoesNotReturnError(t *testing.T) {
 	fn := func() string { return "" }
-	err := Enqueue(fn)
+	err := Register(fn)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "return error but found")
 }
 
-func TestEnqueueFnWithMismatchedArgCount(t *testing.T) {
+func TestRegisterFnWithMismatchedArgCount(t *testing.T) {
 	fn := func(s string) error { return nil }
-	err := Enqueue(fn)
+	err := Register(fn)
+	assert.NoError(t, err)
+	err = Enqueue(fn)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "1 function arg(s) but found 0")
 }
 
 func TestEnqueueFnWithMismatchedArgType(t *testing.T) {
 	fn := func(s string) error { return nil }
-	err := Enqueue(fn, 1)
+	err := Register(fn)
+	assert.NoError(t, err)
+	err = Enqueue(fn, 1)
 	assert.Error(t, err)
 	assert.Contains(
 		t, err.Error(), "argument: 1 from type: int to type: string",
 	)
 }
 
-func TestEnqueueAndConsumeWithoutRegister(t *testing.T) {
+func TestEnqueueWithoutRegister(t *testing.T) {
 	fn := func(num float64) error { return nil }
 	err := Enqueue(fn, float64(1.0))
+	assert.Error(t, err)
+	assert.Contains(
+		t, err.Error(), "\"go.uber.org/fx/modules/task.TestEnqueueWithoutRegister.func1\""+
+			" not found",
+	)
+}
+
+func TestConsumeWithoutRegister(t *testing.T) {
+	fn := func(num float64) error { return nil }
+	err := Register(fn)
+	assert.NoError(t, err)
+	err = Enqueue(fn, float64(1.0))
 	assert.NoError(t, err)
 	fnLookup.fnNameMap = make(map[string]interface{})
 	err = GlobalBackend().Consume()
 	assert.Error(t, err)
 	assert.Contains(
-		t, err.Error(), "\"go.uber.org/fx/modules/task.TestEnqueueAndConsumeWithoutRegister.func1\""+
+		t, err.Error(), "\"go.uber.org/fx/modules/task.TestConsumeWithoutRegister.func1\""+
 			" not found",
 	)
 }
@@ -83,7 +99,9 @@ func TestEnqueueAndConsumeWithoutRegister(t *testing.T) {
 func TestEnqueueEncodingError(t *testing.T) {
 	fn := func(car Car) error { return nil }
 	fnLookup.fnNameMap[getFunctionName(fn)] = fn
-	err := Enqueue(fn, Car{})
+	err := Register(fn)
+	assert.NoError(t, err)
+	err = Enqueue(fn, Car{})
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "unable to encode the function")
 }
@@ -95,14 +113,18 @@ func TestRunDecodeError(t *testing.T) {
 }
 
 func TestEnqueueNoArgsFn(t *testing.T) {
-	err := Enqueue(NoArgs)
+	err := Register(NoArgs)
+	assert.NoError(t, err)
+	err = Enqueue(NoArgs)
 	assert.NoError(t, err)
 	err = GlobalBackend().Consume()
 	assert.NoError(t, err)
 }
 
 func TestEnqueueSimpleFn(t *testing.T) {
-	err := Enqueue(SimpleWithError, "hello")
+	err := Register(SimpleWithError)
+	assert.NoError(t, err)
+	err = Enqueue(SimpleWithError, "hello")
 	assert.NoError(t, err)
 	err = GlobalBackend().Consume()
 	assert.Error(t, err)
@@ -111,14 +133,18 @@ func TestEnqueueSimpleFn(t *testing.T) {
 
 func TestEnqueueMapFn(t *testing.T) {
 	fn := func(map[string]string) error { return nil }
-	err := Enqueue(fn, make(map[string]string))
+	err := Register(fn)
+	assert.NoError(t, err)
+	err = Enqueue(fn, make(map[string]string))
 	assert.NoError(t, err)
 	err = GlobalBackend().Consume()
 	assert.NoError(t, err)
 }
 
 func TestEnqueueComplexFnWithError(t *testing.T) {
-	err := Enqueue(Complex, Car{Brand: "infinity", Year: 2017})
+	err := Register(Complex)
+	assert.NoError(t, err)
+	err = Enqueue(Complex, Car{Brand: "infinity", Year: 2017})
 	assert.NoError(t, err)
 	err = GlobalBackend().Consume()
 	assert.Error(t, err)

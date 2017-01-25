@@ -60,16 +60,15 @@ func (s *fnSignature) Execute() ([]reflect.Value, error) {
 
 // Enqueue sends a func before sending to the task queue
 func Enqueue(fn interface{}, args ...interface{}) error {
-	// Validate function
-	fnType := reflect.TypeOf(fn)
-	if err := validateFnFormat(fnType); err != nil {
-		return err
-	}
+	// Is function registered
 	fnName := getFunctionName(fn)
-	// Register
-	if err := register(fn, fnType, fnName); err != nil {
-		return err
+	fnLookup.RLock()
+	_, ok := fnLookup.fnNameMap[fnName]
+	fnLookup.RUnlock()
+	if !ok {
+		return fmt.Errorf("function: %q not found. Did you forget to register?", fnName)
 	}
+	fnType := reflect.TypeOf(fn)
 	// Validate function against arguments
 	if err := validateFnAgainstArgs(fnType, args); err != nil {
 		return err
@@ -84,9 +83,15 @@ func Enqueue(fn interface{}, args ...interface{}) error {
 	return GlobalBackend().Publish(sBytes, nil)
 }
 
-// register registers a function for async tasks
-func register(fn interface{}, fnType reflect.Type, fnName string) error {
+// Register registers a function for async tasks
+func Register(fn interface{}) error {
+	// Validate that its a function
+	fnType := reflect.TypeOf(fn)
+	if err := validateFnFormat(fnType); err != nil {
+		return err
+	}
 	// Check if already registered
+	fnName := getFunctionName(fn)
 	fnLookup.RLock()
 	_, ok := fnLookup.fnNameMap[fnName]
 	fnLookup.RUnlock()
@@ -97,7 +102,7 @@ func register(fn interface{}, fnType reflect.Type, fnName string) error {
 	for i := 0; i < fnType.NumIn(); i++ {
 		arg := reflect.Zero(fnType.In(i)).Interface()
 		if err := GlobalBackend().Encoder().Register(arg); err != nil {
-			return err
+			return errors.Wrap(err, "unable to register the message for encoding")
 		}
 	}
 	fnLookup.Lock()

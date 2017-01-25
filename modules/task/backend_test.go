@@ -24,7 +24,7 @@ import "testing"
 import "github.com/stretchr/testify/assert"
 
 var backends = []Backend{
-	&NopBackend{}, &InMemBackend{make(chan []byte, 2)},
+	&NopBackend{}, NewInMemBackend(),
 }
 
 func TestBackends(t *testing.T) {
@@ -34,8 +34,8 @@ func TestBackends(t *testing.T) {
 }
 
 func testBackendMethods(t *testing.T, backend Backend) {
-	assert.NotNil(t, backend.Name())
-	assert.NotNil(t, backend.Type())
+	assert.NotEmpty(t, backend.Name())
+	assert.NotEmpty(t, backend.Type())
 	assert.NotNil(t, backend.Encoder())
 	assert.NotNil(t, backend.Start(make(chan struct{})))
 	assert.True(t, backend.IsRunning())
