@@ -1,6 +1,6 @@
 .DEFAULT_GOAL := all
 
-kv/types.go: kv.thrift
+kv/types.go: deps kv.thrift
 	$(ECHO_V)go generate
 
 server/server: $(wildcard server/*.go) kv/types.go
@@ -11,5 +11,8 @@ all: server/server
 
 .PHONY: deps
 deps:
-	$(ECHO_V)go get -v go.uber.org/thriftrw
-	$(ECHO_V)go get -v go.uber.org/yarpc/encoding/thrift/thriftrw-plugin-yarpc
+	@echo "Installing thriftrw..."
+	$(ECHO_V)go install ../../vendor/go.uber.org/thriftrw
+
+	@echo "Installing thriftrw-plugin-yarpc..."
+	$(ECHO_V)go install ../../vendor/go.uber.org/yarpc/encoding/thrift/thriftrw-plugin-yarpc
