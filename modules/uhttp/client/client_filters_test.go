@@ -121,6 +121,44 @@ func TestExecutionChainFilters_AuthContextPropagationFailure(t *testing.T) {
 	})
 }
 
+func TestFiltersWithTracerErrors(t *testing.T) {
+	testCases := map[string]Filter{
+		"auth":    authenticationFilter(fakeAuthInfo{_testYaml}),
+		"tracing": tracingFilter(),
+	}
+
+	for name, filter := range testCases {
+		op := func(tracer opentracing.Tracer) {
+			tr := &shadowTracer{
+				tracer,
+				func(sm opentracing.SpanContext, format interface{}, carrier interface{}) error {
+					return errors.New("Very bad tracer")
+				},
+				nil,
+			}
+			opentracing.InitGlobalTracer(tr)
+
+			execChain := newExecutionChain(
+				[]Filter{filter}, nopTransport{})
+			span := tracer.StartSpan("test_method")
+			span.SetBaggageItem(auth.ServiceAuth, "testService")
+			sp := &shadowSpan{span, tr}
+			tr.span = sp
+
+			ctx := &fxcontext.Context{
+				Context: opentracing.ContextWithSpan(context.Background(), sp),
+			}
+
+			_, err := execChain.RoundTrip(_req.WithContext(ctx))
+			assert.EqualError(t, err, "Very bad tracer")
+
+			opentracing.InitGlobalTracer(tracer)
+		}
+
+		t.Run(name, func(t *testing.T) { withOpentracingSetup(t, nil, op) })
+	}
+}
+
 type fakeAuthInfo struct {
 	yaml []byte
 }
@@ -161,4 +199,27 @@ type errTransport struct{}
 
 func (tr errTransport) RoundTrip(req *http.Request) (resp *http.Response, err error) {
 	return nil, errClient
+}
+
+type shadowTracer struct {
+	opentracing.Tracer
+	inject func(sm opentracing.SpanContext, format interface{}, carrier interface{}) error
+	span   opentracing.Span
+}
+
+func (s *shadowTracer) Inject(sm opentracing.SpanContext, format interface{}, carrier interface{}) error {
+	return s.inject(sm, format, carrier)
+}
+
+func (s *shadowTracer) StartSpan(operationName string, opts ...opentracing.StartSpanOption) opentracing.Span {
+	return s.span
+}
+
+type shadowSpan struct {
+	opentracing.Span
+	tracer opentracing.Tracer
+}
+
+func (s *shadowSpan) Tracer() opentracing.Tracer {
+	return s.tracer
 }
