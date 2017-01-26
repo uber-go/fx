@@ -25,51 +25,28 @@ import (
 
 	"go.uber.org/fx/service"
 
-	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 )
 
 var (
 	_nopBackend = &NopBackend{}
+	_memBackend = NewInMemBackend()
 	_mi         = service.ModuleCreateInfo{
 		Host: service.NopHost(),
-	}
-	_goodBkndFn = func(service.Host, Config) (Backend, error) {
-		return _nopBackend, nil
-	}
-	_errorBkndFn = func(service.Host, Config) (Backend, error) {
-		return nil, errors.New("backend register error")
 	}
 )
 
 func TestNewModule(t *testing.T) {
-	createModule(t, _goodBkndFn)  // Singleton modules get saved
-	createModule(t, _errorBkndFn) // Even though backend causes error, module saved earlier will return
+	createModule(t, _nopBackend) // Singleton modules get saved
+	createModule(t, _memBackend) // Even though backend causes error, module saved earlier will return
 }
 
-func createModule(t *testing.T, fn backendRegisterFn) {
-	RegisterAsyncBackend(fn)
-	createFn := NewModule()
+func createModule(t *testing.T, b Backend) {
+	createFn := NewModule(b)
 	assert.NotNil(t, createFn)
 	mods, err := createFn(_mi)
 	assert.NotNil(t, mods)
 	assert.NoError(t, err)
 	assert.Equal(t, 1, len(mods))
 	assert.Equal(t, _nopBackend, mods[0].(*AsyncModule).Backend)
-}
-
-func TestNewAsyncModule(t *testing.T) {
-	RegisterAsyncBackend(_goodBkndFn)
-	mod, err := newAsyncModule(_mi)
-	assert.NoError(t, err)
-	assert.NotNil(t, mod)
-	assert.Equal(t, _nopBackend, mod.(*AsyncModule).Backend)
-}
-
-func TestNewAsyncModuleError(t *testing.T) {
-	RegisterAsyncBackend(_errorBkndFn)
-	mod, err := newAsyncModule(_mi)
-	assert.Nil(t, mod)
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "backend register error")
 }

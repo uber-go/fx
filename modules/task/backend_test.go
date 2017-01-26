@@ -33,15 +33,23 @@ func TestBackends(t *testing.T) {
 	}
 }
 
-func testBackendMethods(t *testing.T, backend Backend) {
-	assert.NotEmpty(t, backend.Name())
-	assert.NotEmpty(t, backend.Type())
-	assert.NotNil(t, backend.Encoder())
-	assert.NotNil(t, backend.Start(make(chan struct{})))
-	assert.True(t, backend.IsRunning())
+func TestInMemBackendConsumeAfterClose(t *testing.T) {
+	b := NewInMemBackend()
+	assert.NoError(t, b.Stop())
+	err := b.Consume()
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "channel has been closed")
+}
+
+func testBackendMethods(t *testing.T, b Backend) {
+	assert.NotEmpty(t, b.Name())
+	assert.NotEmpty(t, b.Type())
+	assert.NotNil(t, b.Encoder())
+	assert.NotNil(t, b.Start(make(chan struct{})))
+	assert.True(t, b.IsRunning())
 	// Testing that consume before publish does not throw an error. Not testing Consume after publish
 	// since that is tested in execution and requires function setup etc.
-	assert.NoError(t, backend.Consume())
-	assert.NoError(t, backend.Publish([]byte{}, make(map[string]string)))
-	assert.NoError(t, backend.Stop())
+	assert.NoError(t, b.Consume())
+	assert.NoError(t, b.Publish([]byte{}, make(map[string]string)))
+	assert.NoError(t, b.Stop())
 }

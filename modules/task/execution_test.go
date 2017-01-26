@@ -22,10 +22,12 @@ package task
 
 import (
 	"errors"
+	"reflect"
 	"sync"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func init() {
@@ -34,39 +36,39 @@ func init() {
 
 func TestRegisterNonFunction(t *testing.T) {
 	err := Register("I am not a function")
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Contains(t, err.Error(), "a func as input but was")
 }
 
 func TestRegisterWithMultipleReturnValues(t *testing.T) {
 	fn := func() (string, error) { return "", nil }
 	err := Register(fn)
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Contains(t, err.Error(), "return only error but found")
 }
 
 func TestRegisterFnDoesNotReturnError(t *testing.T) {
 	fn := func() string { return "" }
 	err := Register(fn)
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Contains(t, err.Error(), "return error but found")
 }
 
 func TestRegisterFnWithMismatchedArgCount(t *testing.T) {
 	fn := func(s string) error { return nil }
 	err := Register(fn)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	err = Enqueue(fn)
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Contains(t, err.Error(), "1 function arg(s) but found 0")
 }
 
 func TestEnqueueFnWithMismatchedArgType(t *testing.T) {
 	fn := func(s string) error { return nil }
 	err := Register(fn)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	err = Enqueue(fn, 1)
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Contains(
 		t, err.Error(), "argument: 1 from type: int to type: string",
 	)
@@ -75,7 +77,7 @@ func TestEnqueueFnWithMismatchedArgType(t *testing.T) {
 func TestEnqueueWithoutRegister(t *testing.T) {
 	fn := func(num float64) error { return nil }
 	err := Enqueue(fn, float64(1.0))
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Contains(
 		t, err.Error(), "\"go.uber.org/fx/modules/task.TestEnqueueWithoutRegister.func1\""+
 			" not found",
@@ -85,12 +87,12 @@ func TestEnqueueWithoutRegister(t *testing.T) {
 func TestConsumeWithoutRegister(t *testing.T) {
 	fn := func(num float64) error { return nil }
 	err := Register(fn)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	err = Enqueue(fn, float64(1.0))
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	fnLookup.fnNameMap = make(map[string]interface{})
 	err = GlobalBackend().Consume()
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Contains(
 		t, err.Error(), "\"go.uber.org/fx/modules/task.TestConsumeWithoutRegister.func1\""+
 			" not found",
@@ -101,45 +103,45 @@ func TestEnqueueEncodingError(t *testing.T) {
 	fn := func(car Car) error { return nil }
 	fnLookup.fnNameMap[getFunctionName(fn)] = fn
 	err := Register(fn)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	err = Enqueue(fn, Car{})
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Contains(t, err.Error(), "unable to encode the function")
 }
 
 func TestRunDecodeError(t *testing.T) {
 	err := Run([]byte{})
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Contains(t, err.Error(), "unable to decode the message")
 }
 
 func TestEnqueueNoArgsFn(t *testing.T) {
 	err := Register(NoArgs)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	err = Enqueue(NoArgs)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	err = GlobalBackend().Consume()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 }
 
 func TestEnqueueSimpleFn(t *testing.T) {
 	err := Register(SimpleWithError)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	err = Enqueue(SimpleWithError, "hello")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	err = GlobalBackend().Consume()
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Contains(t, err.Error(), "Simple error")
 }
 
 func TestEnqueueMapFn(t *testing.T) {
 	fn := func(map[string]string) error { return nil }
 	err := Register(fn)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	err = Enqueue(fn, make(map[string]string))
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	err = GlobalBackend().Consume()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 }
 
 func TestEnqueueFnClosure(t *testing.T) {
@@ -159,25 +161,25 @@ func TestEnqueueFnClosure(t *testing.T) {
 	}()
 	wg.Wait()
 	err := Register(fn)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	err = Enqueue(fn)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	err = GlobalBackend().Consume()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 }
 
 func TestEnqueueComplexFnWithError(t *testing.T) {
 	err := Register(Complex)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	err = Enqueue(Complex, Car{Brand: "infinity", Year: 2017})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	err = GlobalBackend().Consume()
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Contains(t, err.Error(), "Complex error")
 	err = Enqueue(Complex, Car{Brand: "honda", Year: 2017})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	err = GlobalBackend().Consume()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 }
 
 func NoArgs() error {
@@ -198,4 +200,11 @@ func Complex(car Car) error {
 		return errors.New("Complex error")
 	}
 	return nil
+}
+
+func TestCastToError(t *testing.T) {
+	s := make(map[string]string)
+	err := castToError(reflect.ValueOf(s))
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "be error but found")
 }
