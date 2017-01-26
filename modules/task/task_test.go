@@ -31,36 +31,45 @@ import (
 
 var (
 	_nopBackend = &NopBackend{}
-)
-
-func TestModule(t *testing.T) {
-	backendRegisterFn := func(service.Host, Config) (Backend, error) {
+	_mi         = service.ModuleCreateInfo{
+		Host: service.NopHost(),
+	}
+	_goodBkndFn = func(service.Host, Config) (Backend, error) {
 		return _nopBackend, nil
 	}
-	mods, err := createModules(t, backendRegisterFn)
-	assert.NoError(t, err)
+	_errorBkndFn = func(service.Host, Config) (Backend, error) {
+		return nil, errors.New("backend register error")
+	}
+)
+
+func TestNewModule(t *testing.T) {
+	createModule(t, _goodBkndFn)  // Singleton modules get saved
+	createModule(t, _errorBkndFn) // Even though backend causes error, module saved earlier will return
+}
+
+func createModule(t *testing.T, fn backendRegisterFn) {
+	RegisterAsyncBackend(fn)
+	createFn := NewModule()
+	assert.NotNil(t, createFn)
+	mods, err := createFn(_mi)
 	assert.NotNil(t, mods)
+	assert.NoError(t, err)
 	assert.Equal(t, 1, len(mods))
 	assert.Equal(t, _nopBackend, mods[0].(*AsyncModule).Backend)
 }
 
-func TestModuleError(t *testing.T) {
-	backendRegisterFn := func(service.Host, Config) (Backend, error) {
-		return nil, errors.New("backend register error")
-	}
-	mods, err := createModules(t, backendRegisterFn)
-	assert.Nil(t, mods)
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "backend register error")
+func TestNewAsyncModule(t *testing.T) {
+	RegisterAsyncBackend(_goodBkndFn)
+	mod, err := newAsyncModule(_mi)
+	assert.NoError(t, err)
+	assert.NotNil(t, mod)
+	assert.Equal(t, _nopBackend, mod.(*AsyncModule).Backend)
 }
 
-func createModules(t *testing.T, fn backendRegisterFn) ([]service.Module, error) {
-	createFn := NewModule()
-	assert.NotNil(t, createFn)
-
-	mi := service.ModuleCreateInfo{
-		Host: service.NopHost(),
-	}
-	RegisterAsyncBackend(fn)
-	return createFn(mi)
+func TestNewAsyncModuleError(t *testing.T) {
+	RegisterAsyncBackend(_errorBkndFn)
+	mod, err := newAsyncModule(_mi)
+	assert.Nil(t, mod)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "backend register error")
 }

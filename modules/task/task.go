@@ -41,6 +41,9 @@ var (
 	_backendRegisterFn backendRegisterFn
 	_globalBackendMu   sync.RWMutex
 	_globalBackend     Backend = &NopBackend{}
+	_asyncMod          service.Module
+	_asyncModErr       error
+	_once              sync.Once
 )
 
 // GlobalBackend returns global instance of the backend
@@ -54,12 +57,19 @@ func GlobalBackend() Backend {
 // NewModule creates an async task queue module
 func NewModule() service.ModuleCreateFunc {
 	return func(mi service.ModuleCreateInfo) ([]service.Module, error) {
-		mod, err := newAsyncModule(mi)
+		mod, err := newAsyncModuleSingleton(mi)
 		if err != nil {
 			return nil, errors.Wrap(err, "unable to instantiate async task module")
 		}
 		return []service.Module{mod}, nil
 	}
+}
+
+func newAsyncModuleSingleton(mi service.ModuleCreateInfo) (service.Module, error) {
+	_once.Do(func() {
+		_asyncMod, _asyncModErr = newAsyncModule(mi)
+	})
+	return _asyncMod, _asyncModErr
 }
 
 func newAsyncModule(mi service.ModuleCreateInfo) (service.Module, error) {
