@@ -105,7 +105,7 @@ func (f panicFilter) Apply(ctx fx.Context, w http.ResponseWriter, r *http.Reques
 	defer func() {
 		if err := recover(); err != nil {
 			ctx.Logger().Error("Panic recovered serving request", "error", err, "url", r.URL)
-			f.Host.Metrics().Counter("http.panic").Inc(1)
+			f.Host.Metrics().SubScope("http").Counter("panic").Inc(1)
 			w.Header().Add(ContentType, ContentTypeText)
 			w.WriteHeader(http.StatusInternalServerError)
 			fmt.Fprintf(w, "Server error: %+v", err)
