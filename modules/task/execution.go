@@ -121,11 +121,8 @@ func Run(message []byte) error {
 	retValues, err := s.Execute()
 	if err != nil {
 		return err
-	} else if len(retValues) != 1 {
-		return fmt.Errorf(
-			"expected function to return only error but found %d return values", len(retValues),
-		)
 	}
+	// Assume only an error will be returned since that is verified before adding to fnRegister
 	return castToError(retValues[0])
 }
 

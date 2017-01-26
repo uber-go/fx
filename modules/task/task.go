@@ -25,8 +25,6 @@ import (
 
 	"go.uber.org/fx/modules"
 	"go.uber.org/fx/service"
-
-	"github.com/pkg/errors"
 )
 
 // ModuleType represents the task module type
@@ -38,12 +36,10 @@ type globalBackend struct {
 }
 
 var (
-	_backendRegisterFn backendRegisterFn
-	_globalBackendMu   sync.RWMutex
-	_globalBackend     Backend = &NopBackend{}
-	_asyncMod          service.Module
-	_asyncModErr       error
-	_once              sync.Once
+	_globalBackendMu sync.RWMutex
+	_globalBackend   Backend = &NopBackend{}
+	_asyncMod        service.Module
+	_once            sync.Once
 )
 
 // GlobalBackend returns global instance of the backend
@@ -55,35 +51,28 @@ func GlobalBackend() Backend {
 }
 
 // NewModule creates an async task queue module
-func NewModule() service.ModuleCreateFunc {
+func NewModule(backend Backend) service.ModuleCreateFunc {
 	return func(mi service.ModuleCreateInfo) ([]service.Module, error) {
-		mod, err := newAsyncModuleSingleton(mi)
-		if err != nil {
-			return nil, errors.Wrap(err, "unable to instantiate async task module")
-		}
+		mod := newAsyncModuleSingleton(mi, backend)
 		return []service.Module{mod}, nil
 	}
 }
 
-func newAsyncModuleSingleton(mi service.ModuleCreateInfo) (service.Module, error) {
+func newAsyncModuleSingleton(mi service.ModuleCreateInfo, backend Backend) service.Module {
 	_once.Do(func() {
-		_asyncMod, _asyncModErr = newAsyncModule(mi)
+		_asyncMod = newAsyncModule(mi, backend)
 	})
-	return _asyncMod, _asyncModErr
+	return _asyncMod
 }
 
-func newAsyncModule(mi service.ModuleCreateInfo) (service.Module, error) {
-	backend, err := _backendRegisterFn(mi.Host, Config{})
-	if err != nil {
-		return nil, err
-	}
+func newAsyncModule(mi service.ModuleCreateInfo, backend Backend) service.Module {
 	_globalBackendMu.Lock()
 	_globalBackend = backend
 	_globalBackendMu.Unlock()
 	return &AsyncModule{
 		Backend: backend,
 		modBase: *modules.NewModuleBase(ModuleType, "task", mi.Host, []string{}),
-	}, nil
+	}
 }
 
 // AsyncModule denotes the asynchronous task queue module
@@ -97,11 +86,4 @@ type AsyncModule struct {
 type Config struct {
 	broker  string `yaml:"broker"`
 	timeout string `yaml:"timeout"`
-}
-
-type backendRegisterFn func(service.Host, Config) (Backend, error)
-
-// RegisterAsyncBackend registers the backend for the async task module
-func RegisterAsyncBackend(backendRegisterFn backendRegisterFn) {
-	_backendRegisterFn = backendRegisterFn
 }

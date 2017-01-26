@@ -22,6 +22,7 @@ package task
 
 import (
 	"errors"
+	"reflect"
 	"sync"
 	"testing"
 
@@ -198,4 +199,11 @@ func Complex(car Car) error {
 		return errors.New("Complex error")
 	}
 	return nil
+}
+
+func TestCastToError(t *testing.T) {
+	s := make(map[string]string)
+	err := castToError(reflect.ValueOf(s))
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "be error but found")
 }
