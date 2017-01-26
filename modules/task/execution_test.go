@@ -21,7 +21,7 @@
 package task
 
 import (
-	"fmt"
+	"errors"
 	"sync"
 	"testing"
 
@@ -154,7 +154,7 @@ func TestEnqueueFnClosure(t *testing.T) {
 			if i == 2 {
 				return nil
 			}
-			return fmt.Errorf("Unexpected i")
+			return errors.New("Unexpected i")
 		}
 	}()
 	wg.Wait()
@@ -185,7 +185,7 @@ func NoArgs() error {
 }
 
 func SimpleWithError(a string) error {
-	return fmt.Errorf("Simple error")
+	return errors.New("Simple error")
 }
 
 type Car struct {
@@ -195,7 +195,7 @@ type Car struct {
 
 func Complex(car Car) error {
 	if car.Brand == "infinity" {
-		return fmt.Errorf("Complex error")
+		return errors.New("Complex error")
 	}
 	return nil
 }

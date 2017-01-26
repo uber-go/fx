@@ -21,7 +21,7 @@
 package task
 
 import (
-	"fmt"
+	"errors"
 
 	"go.uber.org/fx/service"
 )
@@ -81,12 +81,13 @@ func (b NopBackend) IsRunning() bool {
 
 // inMemBackend is an in-memory implementation of the Backend interface
 type inMemBackend struct {
-	bufQueue chan []byte
+	bufQueue  chan []byte
+	isRunning bool
 }
 
 // NewInMemBackend creates a new in memory backend, designed for use in tests
 func NewInMemBackend() Backend {
-	return &inMemBackend{make(chan []byte, 2)}
+	return &inMemBackend{bufQueue: make(chan []byte, 2)}
 }
 
 // Publish implements the Backend interface
@@ -102,7 +103,7 @@ func (b *inMemBackend) Consume() error {
 		if ok {
 			return Run(v)
 		}
-		return fmt.Errorf("The bufQueue channel has been closed")
+		return errors.New("The bufQueue channel has been closed")
 	default:
 		// No value ready in channel, moving on
 	}
@@ -126,16 +127,18 @@ func (b *inMemBackend) Name() string {
 
 // Start implements the Module interface
 func (b *inMemBackend) Start(ready chan<- struct{}) <-chan error {
+	b.isRunning = true
 	return make(chan error)
 }
 
 // Stop implements the Module interface
 func (b *inMemBackend) Stop() error {
+	b.isRunning = false
 	close(b.bufQueue)
 	return nil
 }
 
 // IsRunning implements the Module interface
 func (b *inMemBackend) IsRunning() bool {
-	return true
+	return b.isRunning
 }

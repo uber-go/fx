@@ -117,6 +117,7 @@ func Run(message []byte) error {
 	if err := GlobalBackend().Encoder().Unmarshal(message, &s); err != nil {
 		return errors.Wrap(err, "unable to decode the message")
 	}
+	// TODO (madhu): Do we need a timeout here?
 	retValues, err := s.Execute()
 	if err != nil {
 		return err
@@ -170,7 +171,7 @@ func castToError(value reflect.Value) error {
 	if v, ok := value.Interface().(error); ok {
 		return v
 	}
-	return fmt.Errorf("Expected return value to be error but found: %s", value.Interface())
+	return fmt.Errorf("expected return value to be error but found: %s", value.Interface())
 }
 
 func isError(inType reflect.Type) bool {
