@@ -20,7 +20,11 @@
 
 package task
 
-import "go.uber.org/fx/service"
+import (
+	"fmt"
+
+	"go.uber.org/fx/service"
+)
 
 var gobEncoding = &GobEncoding{}
 
@@ -50,27 +54,27 @@ func (b NopBackend) Encoder() Encoding {
 	return &NopEncoding{}
 }
 
-// Type implements the Backend interface
+// Type implements the Module interface
 func (b NopBackend) Type() string {
 	return "nop"
 }
 
-// Name implements the Backend interface
+// Name implements the Module interface
 func (b NopBackend) Name() string {
 	return "nop"
 }
 
-// Start implements the Backend interface
+// Start implements the Module interface
 func (b NopBackend) Start(ready chan<- struct{}) <-chan error {
 	return make(chan error)
 }
 
-// Stop implements the Backend interface
+// Stop implements the Module interface
 func (b NopBackend) Stop() error {
 	return nil
 }
 
-// IsRunning implements the Backend interface
+// IsRunning implements the Module interface
 func (b NopBackend) IsRunning() bool {
 	return true
 }
@@ -98,6 +102,7 @@ func (b *inMemBackend) Consume() error {
 		if ok {
 			return Run(v)
 		}
+		return fmt.Errorf("The bufQueue channel has been closed")
 	default:
 		// No value ready in channel, moving on
 	}
@@ -109,27 +114,28 @@ func (b *inMemBackend) Encoder() Encoding {
 	return gobEncoding
 }
 
-// Type implements the Backend interface
+// Type implements the Module interface
 func (b *inMemBackend) Type() string {
 	return "inMem"
 }
 
-// Name implements the Backend interface
+// Name implements the Module interface
 func (b *inMemBackend) Name() string {
 	return "inMem"
 }
 
-// Start implements the Backend interface
+// Start implements the Module interface
 func (b *inMemBackend) Start(ready chan<- struct{}) <-chan error {
 	return make(chan error)
 }
 
-// Stop implements the Backend interface
+// Stop implements the Module interface
 func (b *inMemBackend) Stop() error {
+	close(b.bufQueue)
 	return nil
 }
 
-// IsRunning implements the Backend interface
+// IsRunning implements the Module interface
 func (b *inMemBackend) IsRunning() bool {
 	return true
 }

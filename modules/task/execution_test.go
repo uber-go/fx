@@ -22,6 +22,7 @@ package task
 
 import (
 	"fmt"
+	"sync"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -142,12 +143,21 @@ func TestEnqueueMapFn(t *testing.T) {
 }
 
 func TestEnqueueFnClosure(t *testing.T) {
-	i := 1
-	fn := func() error {
-		i = i + 1
-		fmt.Println(i)
-		return nil
-	}
+	var wg sync.WaitGroup
+	fn := func() error { return nil }
+	wg.Add(1)
+	go func() {
+		i := 1
+		defer wg.Done()
+		fn = func() error {
+			i = i + 1
+			if i == 2 {
+				return nil
+			}
+			return fmt.Errorf("Unexpected i")
+		}
+	}()
+	wg.Wait()
 	err := Register(fn)
 	assert.NoError(t, err)
 	err = Enqueue(fn)

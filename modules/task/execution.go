@@ -120,6 +120,10 @@ func Run(message []byte) error {
 	retValues, err := s.Execute()
 	if err != nil {
 		return err
+	} else if len(retValues) != 1 {
+		return fmt.Errorf(
+			"expected function to return only error but found %d return values", len(retValues),
+		)
 	}
 	return castToError(retValues[0])
 }
@@ -163,7 +167,10 @@ func castToError(value reflect.Value) error {
 	if value.IsNil() {
 		return nil
 	}
-	return value.Interface().(error)
+	if v, ok := value.Interface().(error); ok {
+		return v
+	}
+	return fmt.Errorf("Expected return value to be error but found: %s", value.Interface())
 }
 
 func isError(inType reflect.Type) bool {
