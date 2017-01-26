@@ -298,5 +298,4 @@ func verifyMetrics(t *testing.T, scope tally.Scope) {
 	assert.NotNil(t, timers["http.GET.sla"].Values())
 	assert.NotNil(t, timers["http.request.tracing"].Values())
 	assert.NotNil(t, timers["http.request.auth"].Values())
-	fmt.Println(timers)
 }
