@@ -22,12 +22,12 @@ package service
 
 // A StubModule implements the Module interface for testing
 type StubModule struct {
-	Host             Host
-	InitError        error
-	TypeVal, NameVal string
-	StartError       error
-	StopError        error
-	Running          bool
+	Host       Host
+	InitError  error
+	NameVal    string
+	StartError error
+	StopError  error
+	Running    bool
 }
 
 var _ Module = &StubModule{}

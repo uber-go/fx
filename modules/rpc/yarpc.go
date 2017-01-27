@@ -56,9 +56,6 @@ var (
 
 type registerServiceFunc func(module *YarpcModule)
 
-// RPCModuleType represents the type of an RPC module
-const RPCModuleType = "rpc"
-
 type yarpcConfig struct {
 	modules.ModuleConfig
 	Bind          string `yaml:"bind"`
@@ -81,7 +78,7 @@ func newYarpcModule(
 	}
 
 	module := &YarpcModule{
-		ModuleBase: *modules.NewModuleBase(RPCModuleType, name, mi.Host, []string{}),
+		ModuleBase: *modules.NewModuleBase(name, mi.Host, []string{}),
 		register:   reg,
 		config:     *cfg,
 	}

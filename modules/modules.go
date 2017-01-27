@@ -44,7 +44,6 @@ type ModuleBase struct {
 
 // NewModuleBase configures a new ModuleBase
 func NewModuleBase(
-	moduleType string,
 	name string,
 	service service.Host,
 	roles []string,

@@ -27,9 +27,6 @@ import (
 	"go.uber.org/fx/service"
 )
 
-// ModuleType represents the task module type
-const ModuleType = "task"
-
 type globalBackend struct {
 	backend Backend
 	sync.RWMutex
@@ -71,7 +68,7 @@ func newAsyncModule(mi service.ModuleCreateInfo, backend Backend) service.Module
 	_globalBackendMu.Unlock()
 	return &AsyncModule{
 		Backend: backend,
-		modBase: *modules.NewModuleBase(ModuleType, "task", mi.Host, []string{}),
+		modBase: *modules.NewModuleBase("task", mi.Host, []string{}),
 	}
 }
 

@@ -35,9 +35,6 @@ import (
 	"github.com/pkg/errors"
 )
 
-// ModuleType is a human-friendly representation of the module
-const ModuleType = "HTTP"
-
 const (
 	// ContentType is the header key that contains the body type
 	ContentType = "Content-Type"
@@ -126,7 +123,7 @@ func newModule(
 
 	// TODO (madhu): Add other middleware - logging, metrics.
 	module := &Module{
-		ModuleBase: *modules.NewModuleBase(ModuleType, mi.Name, mi.Host, []string{}),
+		ModuleBase: *modules.NewModuleBase(mi.Name, mi.Host, []string{}),
 		handlers:   handlers,
 		fcb:        defaultFilterChainBuilder(mi.Host),
 	}

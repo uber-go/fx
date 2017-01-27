@@ -29,35 +29,34 @@ import (
 )
 
 func TestNewModuleBase(t *testing.T) {
-	mb := nmb("test", "foo", nil)
+	mb := nmb("foo", nil)
 	assert.NotNil(t, mb)
 }
 
 func TestModuleBase_Roles(t *testing.T) {
-	mb := nmb("test", "foo", nil)
+	mb := nmb("foo", nil)
 	assert.Nil(t, mb.Roles())
 }
 
 func TestNewModuleBase_Name(t *testing.T) {
-	mb := nmb("test", "foo", nil)
+	mb := nmb("foo", nil)
 	assert.Equal(t, "foo", mb.Name())
 }
 
 func TestNewModuleBase_Host(t *testing.T) {
-	mb := nmb("test", "foo", nil)
+	mb := nmb("foo", nil)
 	assert.NotNil(t, mb.Host())
 }
 
 func TestNewModuleBase_Tracer(t *testing.T) {
-	mb := nmb("test", "foo", nil)
+	mb := nmb("foo", nil)
 	assert.NotNil(t, mb.Tracer())
 }
 
-func nmb(moduleType, name string, roles []string) *ModuleBase {
+func nmb(name string, roles []string) *ModuleBase {
 	host := service.NopHost()
 
 	return NewModuleBase(
-		moduleType,
 		name,
 		host,
 		roles,
