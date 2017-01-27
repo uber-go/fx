@@ -34,14 +34,12 @@ type ModuleConfig struct {
 
 // ModuleBase is an embeddable base for all UberFx modules
 type ModuleBase struct {
-	// TODO(madhu): moduleType does not seem to be used anywhere. Remove?
-	moduleType string
-	name       string
-	host       service.Host
-	isRunning  bool
-	roles      []string
-	scope      tally.Scope
-	tracer     opentracing.Tracer
+	name      string
+	host      service.Host
+	isRunning bool
+	roles     []string
+	scope     tally.Scope
+	tracer    opentracing.Tracer
 }
 
 // NewModuleBase configures a new ModuleBase
@@ -52,12 +50,11 @@ func NewModuleBase(
 	roles []string,
 ) *ModuleBase {
 	return &ModuleBase{
-		moduleType: moduleType,
-		name:       name,
-		host:       service,
-		roles:      roles,
-		scope:      service.Metrics().SubScope(name),
-		tracer:     service.Tracer(),
+		name:   name,
+		host:   service,
+		roles:  roles,
+		scope:  service.Metrics().SubScope(name),
+		tracer: service.Tracer(),
 	}
 }
 
@@ -69,11 +66,6 @@ func (mb ModuleBase) Host() service.Host {
 // Roles returns the module's roles
 func (mb ModuleBase) Roles() []string {
 	return mb.roles
-}
-
-// Type returns the module's type
-func (mb ModuleBase) Type() string {
-	return mb.moduleType
 }
 
 // Name returns the module's name

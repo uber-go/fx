@@ -38,11 +38,6 @@ func TestModuleBase_Roles(t *testing.T) {
 	assert.Nil(t, mb.Roles())
 }
 
-func TestNewModuleBase_Type(t *testing.T) {
-	mb := nmb("test", "foo", nil)
-	assert.Equal(t, "test", mb.Type())
-}
-
 func TestNewModuleBase_Name(t *testing.T) {
 	mb := nmb("test", "foo", nil)
 	assert.Equal(t, "foo", mb.Name())
