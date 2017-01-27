@@ -1,14 +1,14 @@
-hash: bd3ea912da7a907bfb0de3a92f15e9ab45c7f1263dd0d867f0295045dc43697b
-updated: 2017-01-25T13:31:44.320616166-08:00
+hash: 347e49238f6317e4a4c99b3f5ad9a46e524e04ac36c4870c0f4bf20665e92f47
+updated: 2017-01-26T17:19:15.380979837-08:00
 imports:
 - name: github.com/apache/thrift
-  version: 6fe7fa1b7ed72215a59e93c680a209a99530fada
+  version: 55f976e0decefb284b0f0a459745dd57f038ab4f
   subpackages:
   - lib/go/thrift
 - name: github.com/certifi/gocertifi
   version: a61bf5eafa3aee233ec8043e9da052447e5463dd
 - name: github.com/davecgh/go-spew
-  version: 04cdfd42973bb9c8589fd6a731800cf222fde1a9
+  version: 346938d642f2ec3594ed81d874461961cd0faa76
   subpackages:
   - spew
 - name: github.com/facebookgo/clock
@@ -17,10 +17,6 @@ imports:
   version: 3f7439d3e74d88e21d196ba20eb61a5a958bc118
 - name: github.com/go-validator/validator
   version: 0a9835d809fb647a62611d30cb792e0b5dd65b11
-- name: github.com/golang/mock
-  version: bd3c8e81be01eef76d4b503f5e687d2d1354d2d9
-  subpackages:
-  - gomock
 - name: github.com/gorilla/context
   version: 1ea25387ff6f684839d82767c1733ff4d4d15d0a
 - name: github.com/gorilla/mux
@@ -33,7 +29,7 @@ imports:
 - name: github.com/pkg/errors
   version: 645ef00459ed84a119197bfb8d8205042c6df63d
 - name: github.com/pmezard/go-difflib
-  version: d8ed2627bdf02c080bf22230dbb337003b7aba2d
+  version: 792786c7400a136282c1664665ae0a8db921c6c2
   subpackages:
   - difflib
 - name: github.com/stretchr/testify
@@ -44,7 +40,7 @@ imports:
 - name: github.com/uber-go/atomic
   version: 0c9e689d64f004564b79d9a663634756df322902
 - name: github.com/uber-go/tally
-  version: 2750b4ae690cbeb294016efe18ceaeb80c4ce17c
+  version: 08e86c3c1eb55364d563bd6beb982040225f4bb7
 - name: github.com/uber-go/zap
   version: a5783ee4b216a927da8f839c45cfbf9d694e1467
 - name: github.com/uber/jaeger-client-go
@@ -131,7 +127,7 @@ testImports:
   subpackages:
   - cmd/interfacer
 - name: github.com/pborman/uuid
-  version: 5007efa264d92316c43112bc573e754bc889b7b1
+  version: 1b00554d822231195d1babd97ff4a781231955c9
 - name: github.com/russross/blackfriday
   version: a4dd8ad4a6fda03e68be3eacb71efbf51565415e
 - name: github.com/sectioneight/md-to-godoc
