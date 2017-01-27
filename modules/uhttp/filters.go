@@ -28,10 +28,10 @@ import (
 	"go.uber.org/fx"
 	"go.uber.org/fx/auth"
 	"go.uber.org/fx/internal/fxcontext"
-	"go.uber.org/fx/service"
 
 	"github.com/opentracing/opentracing-go"
 	"github.com/opentracing/opentracing-go/ext"
+	"github.com/uber-go/tally"
 )
 
 // Filter applies filters on requests, request contexts or responses such as
@@ -49,11 +49,11 @@ func (f FilterFunc) Apply(ctx fx.Context, w http.ResponseWriter, r *http.Request
 }
 
 type tracingServerFilter struct {
-	service.Host
+	scope tally.Scope
 }
 
 func (f tracingServerFilter) Apply(ctx fx.Context, w http.ResponseWriter, r *http.Request, next Handler) {
-	stopWatch := f.Host.Metrics().SubScope("http").SubScope("request").Timer("tracing").Start()
+	stopWatch := f.scope.Timer("tracing").Start()
 	operationName := r.Method
 	carrier := opentracing.HTTPHeadersCarrier(r.Header)
 	spanCtx, err := opentracing.GlobalTracer().Extract(opentracing.HTTPHeaders, carrier)
@@ -78,13 +78,14 @@ func (f tracingServerFilter) Apply(ctx fx.Context, w http.ResponseWriter, r *htt
 
 // authorizationFilter authorizes services based on configuration
 type authorizationFilter struct {
-	service.Host
+	authClient auth.Client
+	scope      tally.Scope
 }
 
 func (f authorizationFilter) Apply(ctx fx.Context, w http.ResponseWriter, r *http.Request, next Handler) {
-	stopWatch := f.Host.Metrics().SubScope("http").SubScope("request").Timer("auth").Start()
-	if err := f.Host.AuthClient().Authorize(ctx); err != nil {
-		f.Host.Metrics().SubScope("http").SubScope("auth").Counter("fail").Inc(1)
+	stopWatch := f.scope.Timer("auth").Start()
+	if err := f.authClient.Authorize(ctx); err != nil {
+		f.scope.SubScope("auth").Counter("fail").Inc(1)
 		ctx.Logger().Error(auth.ErrAuthorization, "error", err)
 		w.WriteHeader(http.StatusUnauthorized)
 		fmt.Fprintf(w, "Unauthorized access: %+v", err)
@@ -98,14 +99,14 @@ func (f authorizationFilter) Apply(ctx fx.Context, w http.ResponseWriter, r *htt
 // panicFilter handles any panics and return an error
 // panic filter should be added at the end of filter chain to catch panics
 type panicFilter struct {
-	service.Host
+	scope tally.Scope
 }
 
 func (f panicFilter) Apply(ctx fx.Context, w http.ResponseWriter, r *http.Request, next Handler) {
 	defer func() {
 		if err := recover(); err != nil {
 			ctx.Logger().Error("Panic recovered serving request", "error", err, "url", r.URL)
-			f.Host.Metrics().SubScope("http").Counter("panic").Inc(1)
+			f.scope.Counter("panic").Inc(1)
 			w.Header().Add(ContentType, ContentTypeText)
 			w.WriteHeader(http.StatusInternalServerError)
 			fmt.Fprintf(w, "Server error: %+v", err)
@@ -116,13 +117,13 @@ func (f panicFilter) Apply(ctx fx.Context, w http.ResponseWriter, r *http.Reques
 
 // metricsFilter adds any default metrics related to HTTP
 type metricsFilter struct {
-	service.Host
+	scope tally.Scope
 }
 
 func (f metricsFilter) Apply(ctx fx.Context, w http.ResponseWriter, r *http.Request, next Handler) {
-	stopwatch := f.Host.Metrics().SubScope("http").SubScope(r.Method).Timer("sla").Start()
+	stopwatch := f.scope.SubScope(r.Method).Timer("sla").Start()
 	defer func() {
-		f.Host.Metrics().SubScope("http").SubScope("status").Counter(w.Header().Get("Status")).Inc(1)
+		f.scope.SubScope("status").Counter(w.Header().Get("Status")).Inc(1)
 		stopwatch.Stop()
 	}()
 	next.ServeHTTP(ctx, w, r)

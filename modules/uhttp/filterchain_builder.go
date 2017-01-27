@@ -24,6 +24,7 @@ import (
 	"net/http"
 
 	"go.uber.org/fx"
+	"go.uber.org/fx/modules"
 	"go.uber.org/fx/service"
 )
 
@@ -52,7 +53,14 @@ type filterChainBuilder struct {
 
 func defaultFilterChainBuilder(host service.Host) filterChainBuilder {
 	fcb := newFilterChainBuilder(host)
-	return fcb.AddFilters(panicFilter{host}, metricsFilter{host}, tracingServerFilter{host}, authorizationFilter{host})
+	scope := host.Metrics().Tagged(modules.HTTPTags)
+	return fcb.AddFilters(panicFilter{scope},
+		metricsFilter{scope},
+		tracingServerFilter{scope},
+		authorizationFilter{
+			scope:      scope,
+			authClient: host.AuthClient(),
+		})
 }
 
 // NewFilterChainBuilder creates an empty filterChainBuilder for setup
