@@ -1,16 +1,23 @@
-# Async task module
+# Asynchronous Task Execution Module
 
-The async task module presents an distributed task execution framework
-for services that want to execute a function asynchronously and in a durable
-fashion. It achieves durability with "backends" that are messaging transports.
+The async task module presents a distributed task execution framework
+for services to execute a function asynchronously and durably.
+
+## Backend
+Backends are messaging transports used by the framework to guarantee durability.
+
+## Usage
 To use the module, initialize it at service startup and register any functions
-that will be invoked async. Simply call task.Enqueue to call a function async
-and the execution framework will take care of running it at a later time.
+that will be invoked asynchronously. Call task.Enqueue on a function and the
+execution framework will send it to the backend implementation. Workers are
+running in parallel and listening to the backend. Once they receive a message
+from the backend, they will execute the function.
 
 ```go
 package main
 
 import (
+	"go.uber.org/fx/modules/task"
   "go.uber.org/fx/service"
 )
 
@@ -39,11 +46,9 @@ func updateCache(input string, results string) error {
 The async task module is a singleton and a service can intialize only one at this time.
 Users are free to define their own "backends" and "encodings" for message passing.
 
-## Async function restrictions
+## Async function requirements
 
-The function to be invoked asynchronously has the following restrictions:
-* The function has to return only one value which should be an error
-* There is no way for the caller to receive a return value from the called
-function
-* The function cannot have variadic arguments at this time. Support for this
-is coming soon
+The function to be invoked asynchronously needs to meet the following criteria:
+* The function must return only one value which should be an error
+* The caller does not receive a return value from the called function
+* The function cannot take variadic arguments as input. Support for this is coming soon
