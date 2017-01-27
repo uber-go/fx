@@ -38,7 +38,7 @@ var (
 
 	// DefaultReporter does not do anything
 	// TODO(glib): add a logging reporter and use it by default, rather than noop
-	DefaultReporter = tally.NullStatsReporter
+	DefaultReporter = NopCachedStatsReporter
 )
 
 // ScopeInit interface provides necessary data to properly initialize root metrics scope
@@ -49,7 +49,7 @@ type ScopeInit interface {
 }
 
 // ScopeFunc is used during service init time to register the reporter
-type ScopeFunc func(i ScopeInit) (tally.Scope, tally.StatsReporter, io.Closer, error)
+type ScopeFunc func(i ScopeInit) (tally.Scope, tally.CachedStatsReporter, io.Closer, error)
 
 // Freeze ensures that after service is started, no other metrics manipulations can be done
 //
@@ -88,7 +88,7 @@ func RegisterRootScope(scopeFunc ScopeFunc) {
 }
 
 // RootScope returns the provided metrics scope and stats reporter, or nil if not provided
-func RootScope(i ScopeInit) (tally.Scope, tally.StatsReporter, io.Closer) {
+func RootScope(i ScopeInit) (tally.Scope, tally.CachedStatsReporter, io.Closer) {
 	_mu.Lock()
 	defer _mu.Unlock()
 
@@ -100,5 +100,5 @@ func RootScope(i ScopeInit) (tally.Scope, tally.StatsReporter, io.Closer) {
 		return scope, reporter, closer
 	}
 	// Returning all no-op values if metrics has not been configured
-	return tally.NoopScope, tally.NullStatsReporter, ioutil.NopCloser(nil)
+	return tally.NoopScope, NopCachedStatsReporter, ioutil.NopCloser(nil)
 }

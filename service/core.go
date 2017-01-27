@@ -69,7 +69,7 @@ type SetContainerer interface {
 
 type metricsCore struct {
 	metrics          tally.Scope
-	statsReporter    tally.StatsReporter
+	statsReporter    tally.CachedStatsReporter
 	metricsCloser    io.Closer
 	runtimeCollector *metrics.RuntimeCollector
 }

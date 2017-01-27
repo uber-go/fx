@@ -37,7 +37,7 @@ func InitGlobalTracer(
 	cfg *config.Configuration,
 	serviceName string,
 	logger ulog.Log,
-	statsReporter tally.StatsReporter,
+	statsReporter tally.CachedStatsReporter,
 ) (opentracing.Tracer, io.Closer, error) {
 	var reporter *jaegerReporter
 	if cfg == nil || !cfg.Disabled {
@@ -83,20 +83,20 @@ func (jl *jaegerLogger) Infof(msg string, args ...interface{}) {
 }
 
 type jaegerReporter struct {
-	reporter tally.StatsReporter
+	reporter tally.CachedStatsReporter
 }
 
 // IncCounter increments metrics counter TODO: Change to use scope with tally functions to increment/update
 func (jr *jaegerReporter) IncCounter(name string, tags map[string]string, value int64) {
-	jr.reporter.ReportCounter(name, tags, value)
+	jr.reporter.AllocateCounter(name, tags).ReportCount(value)
 }
 
 // UpdateGauge updates metrics gauge
 func (jr *jaegerReporter) UpdateGauge(name string, tags map[string]string, value int64) {
-	jr.reporter.ReportGauge(name, tags, float64(value))
+	jr.reporter.AllocateGauge(name, tags).ReportGauge(float64(value))
 }
 
 // RecordTimer records the metrics timer
 func (jr *jaegerReporter) RecordTimer(name string, tags map[string]string, d time.Duration) {
-	jr.reporter.ReportTimer(name, tags, d)
+	jr.reporter.AllocateTimer(name, tags).ReportTimer(d)
 }

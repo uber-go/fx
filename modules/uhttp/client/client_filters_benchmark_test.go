@@ -27,11 +27,11 @@ import (
 
 	"go.uber.org/fx/auth"
 	"go.uber.org/fx/internal/fxcontext"
+	"go.uber.org/fx/metrics"
 	"go.uber.org/fx/tracing"
 	"go.uber.org/fx/ulog"
 
 	"github.com/opentracing/opentracing-go"
-	"github.com/uber-go/tally"
 	jconfig "github.com/uber/jaeger-client-go/config"
 )
 
@@ -40,7 +40,7 @@ import (
 // BenchmarkClientFilters/auth-8          	   50000	     36574 ns/op	     728 B/op	      16 allocs/op
 // BenchmarkClientFilters/default-8       	   10000	    104374 ns/op	    2275 B/op	      43 allocs/op
 func BenchmarkClientFilters(b *testing.B) {
-	tracer, closer, err := tracing.InitGlobalTracer(&jconfig.Configuration{}, "Test", ulog.NopLogger, tally.NullStatsReporter)
+	tracer, closer, err := tracing.InitGlobalTracer(&jconfig.Configuration{}, "Test", ulog.NopLogger, metrics.NopCachedStatsReporter)
 	if err != nil {
 		b.Error(err)
 	}
