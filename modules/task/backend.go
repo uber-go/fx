@@ -54,11 +54,6 @@ func (b NopBackend) Encoder() Encoding {
 	return &NopEncoding{}
 }
 
-// Type implements the Module interface
-func (b NopBackend) Type() string {
-	return "nop"
-}
-
 // Name implements the Module interface
 func (b NopBackend) Name() string {
 	return "nop"
@@ -113,11 +108,6 @@ func (b *inMemBackend) Consume() error {
 // Encoder implements the Backend interface
 func (b *inMemBackend) Encoder() Encoding {
 	return gobEncoding
-}
-
-// Type implements the Module interface
-func (b *inMemBackend) Type() string {
-	return "inMem"
 }
 
 // Name implements the Module interface

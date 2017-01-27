@@ -39,7 +39,6 @@ func TestStubModule_Accessors(t *testing.T) {
 	s := NewStubModule(NopHost())
 	assert := assert.New(t)
 
-	assert.Empty(s.Type())
 	assert.Empty(s.Name())
 	assert.False(s.IsRunning())
 	assert.NoError(s.Stop())

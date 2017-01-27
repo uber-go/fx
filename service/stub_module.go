@@ -22,12 +22,12 @@ package service
 
 // A StubModule implements the Module interface for testing
 type StubModule struct {
-	Host             Host
-	InitError        error
-	TypeVal, NameVal string
-	StartError       error
-	StopError        error
-	Running          bool
+	Host       Host
+	InitError  error
+	NameVal    string
+	StartError error
+	StopError  error
+	Running    bool
 }
 
 var _ Module = &StubModule{}
@@ -45,9 +45,6 @@ func (s *StubModule) Start(ready chan<- struct{}) <-chan error {
 	s.Running = true
 	return errs
 }
-
-// Type returns the type of the module
-func (s *StubModule) Type() string { return s.TypeVal }
 
 // Name returns the name of the module
 func (s *StubModule) Name() string { return s.NameVal }

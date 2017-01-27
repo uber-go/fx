@@ -43,7 +43,6 @@ func TestInMemBackendConsumeAfterClose(t *testing.T) {
 
 func testBackendMethods(t *testing.T, b Backend) {
 	assert.NotEmpty(t, b.Name())
-	assert.NotEmpty(t, b.Type())
 	assert.NotNil(t, b.Encoder())
 	assert.NotNil(t, b.Start(make(chan struct{})))
 	assert.True(t, b.IsRunning())
