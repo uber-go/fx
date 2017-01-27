@@ -48,7 +48,7 @@ Users are free to define their own backends and encodings for message passing.
 
 ## Async function requirements
 
-For he function to be invoked asynchronously, the following criteria must be met:
+For the function to be invoked asynchronously, the following criteria must be met:
 * The function should return only one value, which should be an error. The caller does not receive a
 return value from the called function.
-* The function should not take variadic arguments as input (Support for this is coming soon).
+* The function should not take variadic arguments as input (support for this is coming soon).
