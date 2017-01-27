@@ -3,9 +3,8 @@ import:
 - package: github.com/uber-go/zap
   # TODO(ai): Pin to semver range after 1.0 is released
   version: master
-# TODO(glib): Tally pinned for the time being until we've updated to the new API
 - package: github.com/uber-go/tally
-  version: 2750b4ae690cbeb294016efe18ceaeb80c4ce17c
+  version: ^1
 - package: github.com/gorilla/mux
   version: ^1.1.0
 - package: github.com/gorilla/context

@@ -1,14 +1,14 @@
-hash: bd3ea912da7a907bfb0de3a92f15e9ab45c7f1263dd0d867f0295045dc43697b
-updated: 2017-01-25T13:31:44.320616166-08:00
+hash: 7bb20f339469516288de7af1c3679bf6f448ec48552a1457f2ec2651609a3577
+updated: 2017-01-27T10:40:56.247602225-08:00
 imports:
 - name: github.com/apache/thrift
-  version: 6fe7fa1b7ed72215a59e93c680a209a99530fada
+  version: 96be8c8d9408548966b3fb2895a8b84ac1045a37
   subpackages:
   - lib/go/thrift
 - name: github.com/certifi/gocertifi
   version: a61bf5eafa3aee233ec8043e9da052447e5463dd
 - name: github.com/davecgh/go-spew
-  version: 04cdfd42973bb9c8589fd6a731800cf222fde1a9
+  version: 346938d642f2ec3594ed81d874461961cd0faa76
   subpackages:
   - spew
 - name: github.com/facebookgo/clock
@@ -33,7 +33,7 @@ imports:
 - name: github.com/pkg/errors
   version: 645ef00459ed84a119197bfb8d8205042c6df63d
 - name: github.com/pmezard/go-difflib
-  version: d8ed2627bdf02c080bf22230dbb337003b7aba2d
+  version: 792786c7400a136282c1664665ae0a8db921c6c2
   subpackages:
   - difflib
 - name: github.com/stretchr/testify
@@ -44,7 +44,7 @@ imports:
 - name: github.com/uber-go/atomic
   version: 0c9e689d64f004564b79d9a663634756df322902
 - name: github.com/uber-go/tally
-  version: 2750b4ae690cbeb294016efe18ceaeb80c4ce17c
+  version: 08e86c3c1eb55364d563bd6beb982040225f4bb7
 - name: github.com/uber-go/zap
   version: a5783ee4b216a927da8f839c45cfbf9d694e1467
 - name: github.com/uber/jaeger-client-go
@@ -131,7 +131,7 @@ testImports:
   subpackages:
   - cmd/interfacer
 - name: github.com/pborman/uuid
-  version: 5007efa264d92316c43112bc573e754bc889b7b1
+  version: 1b00554d822231195d1babd97ff4a781231955c9
 - name: github.com/russross/blackfriday
   version: a4dd8ad4a6fda03e68be3eacb71efbf51565415e
 - name: github.com/sectioneight/md-to-godoc
