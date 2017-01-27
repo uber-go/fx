@@ -31,6 +31,7 @@ import (
 	"go.uber.org/fx"
 	"go.uber.org/fx/auth"
 	"go.uber.org/fx/internal/fxcontext"
+	"go.uber.org/fx/metrics"
 	"go.uber.org/fx/service"
 	"go.uber.org/fx/testutils"
 	"go.uber.org/fx/tracing"
@@ -38,7 +39,6 @@ import (
 
 	"github.com/opentracing/opentracing-go"
 	"github.com/stretchr/testify/assert"
-	"github.com/uber-go/tally"
 	"github.com/uber-go/zap"
 	"github.com/uber/jaeger-client-go/config"
 )
@@ -59,7 +59,7 @@ func TestTracingFilterWithLogs(t *testing.T) {
 			Reporter: &config.ReporterConfig{LogSpans: true},
 		}
 		tracer, closer, err := tracing.InitGlobalTracer(
-			jConfig, "serviceName", loggerWithZap, tally.NullStatsReporter,
+			jConfig, "serviceName", loggerWithZap, metrics.NopCachedStatsReporter,
 		)
 		assert.NoError(t, err)
 		defer closer.Close()

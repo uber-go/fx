@@ -24,6 +24,7 @@ import (
 	"errors"
 	"testing"
 
+	"go.uber.org/fx/metrics"
 	"go.uber.org/fx/ulog"
 
 	"github.com/opentracing/opentracing-go"
@@ -52,7 +53,7 @@ func TestWithLogger_OK(t *testing.T) {
 
 func TestWithMetrics_OK(t *testing.T) {
 	assert.NotPanics(t, func() {
-		New(WithMetrics(tally.NoopScope, tally.NullStatsReporter))
+		New(WithMetrics(tally.NoopScope, metrics.NopCachedStatsReporter))
 	})
 }
 

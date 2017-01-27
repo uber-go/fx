@@ -23,11 +23,11 @@ package tracing
 import (
 	"testing"
 
+	"go.uber.org/fx/metrics"
 	"go.uber.org/fx/testutils"
 	"go.uber.org/fx/ulog"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/uber-go/tally"
 	"github.com/uber-go/zap"
 	jaeger "github.com/uber/jaeger-client-go"
 	"github.com/uber/jaeger-client-go/config"
@@ -35,7 +35,7 @@ import (
 
 var (
 	_serviceName            = "serviceName"
-	_statsReporter          = tally.NullStatsReporter
+	_statsReporter          = metrics.NopCachedStatsReporter
 	_emptyJaegerConfig      = &config.Configuration{}
 	_disabledJaegerConfig   = &config.Configuration{Disabled: true}
 	_jaegerConfigWithLogger = &config.Configuration{Logger: jaeger.NullLogger}

@@ -31,6 +31,7 @@ import (
 	"go.uber.org/fx/auth"
 	"go.uber.org/fx/config"
 	"go.uber.org/fx/internal/fxcontext"
+	"go.uber.org/fx/metrics"
 	"go.uber.org/fx/tracing"
 	"go.uber.org/fx/ulog"
 
@@ -78,7 +79,7 @@ func TestExecutionChainFiltersError(t *testing.T) {
 }
 
 func withOpentracingSetup(t *testing.T, registerFunc auth.RegisterFunc, fn func(tracer opentracing.Tracer)) {
-	tracer, closer, err := tracing.InitGlobalTracer(&jconfig.Configuration{}, "Test", ulog.NopLogger, tally.NullStatsReporter)
+	tracer, closer, err := tracing.InitGlobalTracer(&jconfig.Configuration{}, "Test", ulog.NopLogger, metrics.NopCachedStatsReporter)
 	defer closer.Close()
 	assert.NotNil(t, closer)
 	require.NoError(t, err)

@@ -37,7 +37,7 @@ func TestRegisterReporter_OK(t *testing.T) {
 
 	scope, reporter, closer := getScope()
 	assert.Equal(t, scope, tally.NoopScope)
-	assert.Equal(t, reporter, tally.NullStatsReporter)
+	assert.Equal(t, reporter, NopCachedStatsReporter)
 	assert.NoError(t, closer.Close())
 
 	RegisterRootScope(goodScope)
@@ -75,15 +75,15 @@ func TestRegisterBadReporterPanics(t *testing.T) {
 	})
 }
 
-func goodScope(i ScopeInit) (tally.Scope, tally.StatsReporter, io.Closer, error) {
-	return tally.NoopScope, tally.NullStatsReporter, testutils.NopCloser{}, nil
+func goodScope(i ScopeInit) (tally.Scope, tally.CachedStatsReporter, io.Closer, error) {
+	return tally.NoopScope, NopCachedStatsReporter, testutils.NopCloser{}, nil
 }
 
-func badScope(i ScopeInit) (tally.Scope, tally.StatsReporter, io.Closer, error) {
+func badScope(i ScopeInit) (tally.Scope, tally.CachedStatsReporter, io.Closer, error) {
 	return nil, nil, nil, errors.New("fake error")
 }
 
-func getScope() (tally.Scope, tally.StatsReporter, io.Closer) {
+func getScope() (tally.Scope, tally.CachedStatsReporter, io.Closer) {
 	return RootScope(scopeInit())
 }
 
