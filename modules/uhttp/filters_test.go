@@ -67,7 +67,7 @@ func TestTracingFilterWithLogs(t *testing.T) {
 		defer opentracing.InitGlobalTracer(opentracing.NoopTracer{})
 
 		host := service.NopHostConfigured(auth.NopClient, loggerWithZap, tracer)
-		chain := newFilterChainBuilder(host).AddFilters([]Filter{tracingServerFilter(host)}...).Build(getNopHandler(host))
+		chain := newFilterChainBuilder(host).AddFilters([]Filter{tracingServerFilter{host}}...).Build(getNopHandler(host))
 		response := testServeHTTP(chain, host)
 		assert.Contains(t, response.Body.String(), "filters ok")
 		assert.True(t, len(buf.Lines()) > 0)
@@ -86,9 +86,8 @@ func TestTracingFilterWithLogs(t *testing.T) {
 func TestFilterChainFilters(t *testing.T) {
 	host := service.NopHost()
 	chain := newFilterChainBuilder(host).AddFilters(
-		contextFilter(host),
-		tracingServerFilter(host),
-		authorizationFilter(host)).Build(getNopHandler(host))
+		tracingServerFilter{host},
+		authorizationFilter{host}).Build(getNopHandler(host))
 
 	response := testServeHTTP(chain, host)
 	assert.Contains(t, response.Body.String(), "filters ok")
@@ -97,9 +96,8 @@ func TestFilterChainFilters(t *testing.T) {
 func TestFilterChainFilters_AuthFailure(t *testing.T) {
 	host := service.NopHostAuthFailure()
 	chain := newFilterChainBuilder(host).AddFilters(
-		contextFilter(host),
-		tracingServerFilter(host),
-		authorizationFilter(host)).Build(getNopHandler(host))
+		tracingServerFilter{host},
+		authorizationFilter{host}).Build(getNopHandler(host))
 	response := testServeHTTP(chain, host)
 	assert.Contains(t, "Unauthorized access: Error authorizing the service", response.Body.String())
 	assert.Equal(t, 401, response.Code)

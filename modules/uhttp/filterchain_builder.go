@@ -52,7 +52,7 @@ type filterChainBuilder struct {
 
 func defaultFilterChainBuilder(host service.Host) filterChainBuilder {
 	fcb := newFilterChainBuilder(host)
-	return fcb.AddFilters(contextFilter(host), panicFilter(host), tracingServerFilter(host), authorizationFilter(host))
+	return fcb.AddFilters(panicFilter{host}, metricsFilter{host}, tracingServerFilter{host}, authorizationFilter{host})
 }
 
 // NewFilterChainBuilder creates an empty filterChainBuilder for setup
