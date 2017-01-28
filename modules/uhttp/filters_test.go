@@ -71,15 +71,18 @@ func TestTracingFilterWithLogs(t *testing.T) {
 		response := testServeHTTP(chain, host)
 		assert.Contains(t, response.Body.String(), "filters ok")
 		assert.True(t, len(buf.Lines()) > 0)
-		var spanFinished bool
+		var tracecount = 0
+		var spancount = 0
 		for _, line := range buf.Lines() {
-			if strings.Contains(line, "Span finished") {
-				assert.Contains(t, line, "traceID")
-				assert.Contains(t, line, "spanID")
-				spanFinished = true
+			if strings.Contains(line, "traceID") {
+				tracecount++
+			}
+			if strings.Contains(line, "spanID") {
+				spancount++
 			}
 		}
-		assert.True(t, spanFinished)
+		assert.Equal(t, tracecount, 1)
+		assert.Equal(t, spancount, 1)
 	})
 }
 

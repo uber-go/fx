@@ -21,12 +21,16 @@
 package modules
 
 var (
-	moduleTag = "Module"
-	typeTag   = "Type"
+	//TagModule is module tag for metrics
+	TagModule = "module"
+	// TagType is either request or response
+	TagType = "type"
+	// TagStatus is status of the request
+	TagStatus = "status"
 )
 
 // HTTPTags creates metrics scope with defined tags
 var HTTPTags = map[string]string{
-	moduleTag: "http",
-	typeTag:   "request",
+	TagModule: "http",
+	TagType:   "request",
 }

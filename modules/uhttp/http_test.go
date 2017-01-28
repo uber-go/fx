@@ -294,8 +294,8 @@ func userPanicFilter() FilterFunc {
 func verifyMetrics(t *testing.T, scope tally.Scope) {
 	snapshot := scope.(tally.TestScope).Snapshot()
 	timers := snapshot.Timers()
+	counters := snapshot.Counters()
 
-	assert.NotNil(t, timers["GET.sla"].Values())
-	assert.NotNil(t, timers["tracing"].Values())
-	assert.NotNil(t, timers["auth"].Values())
+	assert.NotNil(t, timers["http.GET.latency"].Values())
+	assert.NotNil(t, counters["auth.fail"].Value())
 }

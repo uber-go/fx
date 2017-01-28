@@ -54,7 +54,8 @@ type filterChainBuilder struct {
 func defaultFilterChainBuilder(host service.Host) filterChainBuilder {
 	fcb := newFilterChainBuilder(host)
 	scope := host.Metrics().Tagged(modules.HTTPTags)
-	return fcb.AddFilters(panicFilter{scope},
+	return fcb.AddFilters(
+		panicFilter{scope},
 		metricsFilter{scope},
 		tracingServerFilter{scope},
 		authorizationFilter{

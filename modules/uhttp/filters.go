@@ -28,6 +28,7 @@ import (
 	"go.uber.org/fx"
 	"go.uber.org/fx/auth"
 	"go.uber.org/fx/internal/fxcontext"
+	"go.uber.org/fx/modules"
 
 	"github.com/opentracing/opentracing-go"
 	"github.com/opentracing/opentracing-go/ext"
@@ -53,7 +54,6 @@ type tracingServerFilter struct {
 }
 
 func (f tracingServerFilter) Apply(ctx fx.Context, w http.ResponseWriter, r *http.Request, next Handler) {
-	stopWatch := f.scope.Timer("tracing").Start()
 	operationName := r.Method
 	carrier := opentracing.HTTPHeadersCarrier(r.Header)
 	spanCtx, err := opentracing.GlobalTracer().Extract(opentracing.HTTPHeaders, carrier)
@@ -62,17 +62,13 @@ func (f tracingServerFilter) Apply(ctx fx.Context, w http.ResponseWriter, r *htt
 	}
 	span := opentracing.GlobalTracer().StartSpan(operationName, ext.RPCServerOption(spanCtx))
 	ext.HTTPUrl.Set(span, r.URL.String())
-	defer func() {
-		span.Finish()
-		ctx.Logger().Debug("Span finished")
-	}()
+	defer span.Finish()
 
 	ctx = ctx.(*fxcontext.Context).WithContextAwareLogger(span)
 	ctx = &fxcontext.Context{
 		Context: opentracing.ContextWithSpan(ctx, span),
 	}
 	r = r.WithContext(ctx)
-	stopWatch.Stop()
 	next.ServeHTTP(ctx, w, r)
 }
 
@@ -83,16 +79,13 @@ type authorizationFilter struct {
 }
 
 func (f authorizationFilter) Apply(ctx fx.Context, w http.ResponseWriter, r *http.Request, next Handler) {
-	stopWatch := f.scope.Timer("auth").Start()
 	if err := f.authClient.Authorize(ctx); err != nil {
-		f.scope.SubScope("auth").Counter("fail").Inc(1)
+		f.scope.Counter("auth.fail").Inc(1)
 		ctx.Logger().Error(auth.ErrAuthorization, "error", err)
 		w.WriteHeader(http.StatusUnauthorized)
 		fmt.Fprintf(w, "Unauthorized access: %+v", err)
-		stopWatch.Stop()
 		return
 	}
-	stopWatch.Stop()
 	next.ServeHTTP(ctx, w, r)
 }
 
@@ -121,10 +114,6 @@ type metricsFilter struct {
 }
 
 func (f metricsFilter) Apply(ctx fx.Context, w http.ResponseWriter, r *http.Request, next Handler) {
-	stopwatch := f.scope.SubScope(r.Method).Timer("sla").Start()
-	defer func() {
-		f.scope.SubScope("status").Counter(w.Header().Get("Status")).Inc(1)
-		stopwatch.Stop()
-	}()
+	defer f.scope.Tagged(map[string]string{modules.TagStatus: w.Header().Get("Status")}).Counter("total").Inc(1)
 	next.ServeHTTP(ctx, w, r)
 }
