@@ -89,7 +89,7 @@
 //       log.Fatal("Could not initialize service: ", err)
 //     }
 //
-//     svc.Start(true)
+//     svc.Start()
 //   }
 //
 // Which then allows us to set the roles either via a command line variable:

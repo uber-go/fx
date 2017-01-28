@@ -67,7 +67,7 @@ func main() {
     log.Fatal("Could not initialize service: ", err)
   }
 
-  svc.Start(true)
+  svc.Start()
 }
 ```
 
