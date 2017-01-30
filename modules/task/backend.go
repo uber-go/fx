@@ -100,6 +100,8 @@ func (b *inMemBackend) Start(ready chan<- struct{}) <-chan error {
 			case msg, ok := <-b.bufQueue:
 				if ok {
 					errorCh <- Run(msg)
+				} else {
+					return
 				}
 			case <-time.After(time.Second):
 				ulog.Logger().Error("Timed out after 1 second")
