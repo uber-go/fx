@@ -97,8 +97,10 @@ func (b *inMemBackend) Start(ready chan<- struct{}) <-chan error {
 	go func(buf chan []byte) {
 		for {
 			select {
-			case msg := <-buf:
-				errorCh <- Run(msg)
+			case msg, ok := <-buf:
+				if ok {
+					errorCh <- Run(msg)
+				}
 			case <-time.After(time.Second):
 				fmt.Println("Timed out after 1 second")
 			}
