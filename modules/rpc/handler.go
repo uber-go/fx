@@ -128,7 +128,7 @@ func authorize(ctx context.Context, host service.Host) (fx.Context, error) {
 		host.Metrics().SubScope("rpc").SubScope("auth").Counter("fail").Inc(1)
 		fxctx.Logger().Error(auth.ErrAuthorization, "error", err)
 		// TODO(anup): GFM-255 update returned error to transport.BadRequestError (user error than server error)
-		// These ^ are internal YARPC errors, should we reference it?
+		// https://github.com/yarpc/yarpc-go/issues/687
 		return nil, err
 	}
 	return fxctx, nil

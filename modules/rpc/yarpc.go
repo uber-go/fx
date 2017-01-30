@@ -52,8 +52,10 @@ var (
 	_ service.Module = &YARPCModule{}
 
 	// Represents the global dispatcher used by all started modules.
+	// The YARPC team advised it to be a 'singleton' to control the lifecycle
+	// of all of the in/out bound traffic.
 	_dispatcher   *yarpc.Dispatcher
-	_muDispatcher sync.RWMutex
+	_dispatcherMu sync.RWMutex
 
 	_configsOnce sync.Once
 	_configs     configCollection
@@ -63,32 +65,43 @@ type registerServiceFunc func(module *YARPCModule)
 
 type yarpcConfig struct {
 	modules.ModuleConfig
-	Bind                    string `yaml:"bind"`
+	Bind                    string
 	AdvertiseName           string `yaml:"advertiseName"`
 	inboundMiddleware       []middleware.UnaryInbound
 	onewayInboundMiddleware []middleware.OnewayInbound
 	inbounds                []transport.Inbound
 }
 
-// Stores a collection of all modules configs and provides
-// operations that are safe to call from multiple go routines.
+// Stores a collection of all modules configs and provides operations that are safe to call from multiple go routines.
+// All the config must share the same AdvertiseName and represent a single service.
+// Configs are referenced and stored in the modules, we store only pointers to them to easily add/remove configs.
 type configCollection struct {
 	sync.RWMutex
 	configs []*yarpcConfig
 }
 
+// Adds the config to collection, the first config sets up the AdvertiseName requirement on consequent additions.
 func (c *configCollection) addConfig(config *yarpcConfig) error {
+	if config == nil {
+		return errors.New("passed a nil config")
+	}
+
 	c.Lock()
 	defer c.Unlock()
 
 	if len(c.configs) > 0 && config.AdvertiseName != c.configs[0].AdvertiseName {
-		return errors.New("Name mismatch")
+		return errs.Errorf("name mismatch, expected: %s; actual: %s",
+			c.configs[0].AdvertiseName,
+			config.AdvertiseName,
+		)
 	}
 
 	c.configs = append(c.configs, config)
 	return nil
 }
 
+// Removes the config from collection.
+// If the config is not found, returns an error, because it means that modules were not started properly.
 func (c *configCollection) removeConfig(config *yarpcConfig) error {
 	c.Lock()
 	defer c.Unlock()
@@ -103,16 +116,20 @@ func (c *configCollection) removeConfig(config *yarpcConfig) error {
 	return errors.New("config not found")
 }
 
+// Merge all the yarpc configs in the collection: transports and middleware are going to be shared.
+// The name comes from the first config in the collection and is the same among all configs.
 func (c *configCollection) mergeConfigs() (conf yarpc.Config, err error) {
 	c.RLock()
 	defer c.RUnlock()
 
 	if len(c.configs) <= 1 {
-		err = errors.New("empty configs")
-		return
+		// Config collection will always have an additional config storing the middleware.
+		return conf, errors.New("unable to merge empty configs")
 	}
 
 	conf.Name = c.configs[0].AdvertiseName
+
+	// Collect all Inbounds and middleware from all configs
 	var inboundMiddleware []middleware.UnaryInbound
 	var onewayInboundMiddleware []middleware.OnewayInbound
 	for _, cfg := range c.configs {
@@ -121,6 +138,7 @@ func (c *configCollection) mergeConfigs() (conf yarpc.Config, err error) {
 		onewayInboundMiddleware = append(onewayInboundMiddleware, cfg.onewayInboundMiddleware...)
 	}
 
+	// Build the inbound middleware
 	conf.InboundMiddleware = yarpc.InboundMiddleware{
 		Unary:  yarpc.UnaryInboundMiddleware(inboundMiddleware...),
 		Oneway: yarpc.OnewayInboundMiddleware(onewayInboundMiddleware...),
@@ -129,6 +147,8 @@ func (c *configCollection) mergeConfigs() (conf yarpc.Config, err error) {
 	return conf, nil
 }
 
+// Creates a new yarpc module and adds a common middleware to the global config collection.
+// The first created module defines the service name.
 func newYARPCModule(
 	mi service.ModuleCreateInfo,
 	reg registerServiceFunc,
@@ -206,24 +226,14 @@ func (m *YARPCModule) Start(readyCh chan<- struct{}) <-chan error {
 
 	ret := make(chan error, 1)
 	if err := _configs.addConfig(&m.config); err != nil {
-		ret <- errors.New("can't add module config " + err.Error())
+		ret <- errs.Wrap(err, "can't add module config")
 		return ret
 	}
 
-	config, err := _configs.mergeConfigs()
-
-	if err != nil {
-		ret <- errors.New("unable to merge configs from multiple modules " + err.Error())
+	if config, err := _configs.mergeConfigs(); err != nil {
+		ret <- errs.Wrap(err, "unable to merge configs from multiple modules")
 		return ret
-	}
-
-	dispatcher, err := _dispatcherFn(m.Host(), config)
-	if err != nil {
-		ret <- err
-		return ret
-	}
-
-	if err := resetDispatcher(dispatcher); err != nil {
+	} else if err := resetDispatcher(m.Host(), config); err != nil {
 		ret <- err
 		return ret
 	}
@@ -238,7 +248,8 @@ func (m *YARPCModule) Start(readyCh chan<- struct{}) <-chan error {
 	return ret
 }
 
-// Stop shuts down a YARPC module
+// Stop shuts down a YARPC module. It will stop the current dispatcher, remove the module config from the
+// config collection and start the new dispatcher with a new merged config.
 func (m *YARPCModule) Stop() error {
 	if !m.IsRunning() {
 		panic("module is not running")
@@ -249,20 +260,9 @@ func (m *YARPCModule) Stop() error {
 
 	if err := _configs.removeConfig(&m.config); err != nil {
 		return err
-	}
-
-	config, err := _configs.mergeConfigs()
-
-	if err != nil {
-		return errors.New("unable to merge configs from multiple modules " + err.Error())
-	}
-
-	dispatcher, err := _dispatcherFn(m.Host(), config)
-	if err != nil {
-		return err
-	}
-
-	if err := resetDispatcher(dispatcher); err != nil {
+	} else if config, err := _configs.mergeConfigs(); err != nil {
+		return errs.Wrap(err, "unable to merge configs from multiple modules")
+	} else if err = resetDispatcher(m.Host(), config); err != nil {
 		return err
 	}
 
@@ -292,15 +292,21 @@ func defaultYARPCDispatcher(_ service.Host, cfg yarpc.Config) (*yarpc.Dispatcher
 // It should be called after all modules have been started, because
 // the each module start creates a new dispatcher and stops previous.
 func Dispatcher() *yarpc.Dispatcher {
-	_muDispatcher.RLock()
-	defer _muDispatcher.RUnlock()
+	_dispatcherMu.RLock()
+	defer _dispatcherMu.RUnlock()
 	return _dispatcher
 }
 
-// Stops the current dispatcher, sets the new one and starts it.
-func resetDispatcher(d *yarpc.Dispatcher) error {
-	_muDispatcher.Lock()
-	defer _muDispatcher.Unlock()
+// Stops the current dispatcher, sets the new one with the host, config and _dispatcherFn, and then starts it.
+func resetDispatcher(host service.Host, config yarpc.Config) error {
+	d, err := _dispatcherFn(host, config)
+	if err != nil {
+		return err
+	}
+
+	_dispatcherMu.Lock()
+	defer _dispatcherMu.Unlock()
+
 	if _dispatcher == nil {
 		_dispatcher = d
 		return _dispatcher.Start()
