@@ -50,7 +50,6 @@ func TestNew_OK(t *testing.T) {
 	WithService(New(registerNothing, nil), nil, []service.Option{configOption()}, func(s service.Owner) {
 		assert.NotNil(t, s, "Should create a module")
 	})
-
 }
 
 func TestNew_WithOptions(t *testing.T) {
@@ -296,6 +295,6 @@ func verifyMetrics(t *testing.T, scope tally.Scope) {
 	timers := snapshot.Timers()
 	counters := snapshot.Counters()
 
-	assert.NotNil(t, timers["http.GET.latency"].Values())
+	assert.NotNil(t, timers["http.GET.time"].Values())
 	assert.NotNil(t, counters["auth.fail"].Value())
 }

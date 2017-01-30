@@ -58,7 +58,7 @@ func (f tracingServerFilter) Apply(ctx fx.Context, w http.ResponseWriter, r *htt
 	carrier := opentracing.HTTPHeadersCarrier(r.Header)
 	spanCtx, err := opentracing.GlobalTracer().Extract(opentracing.HTTPHeaders, carrier)
 	if err != nil && err != opentracing.ErrSpanContextNotFound {
-		ctx.Logger().Info("Malformed inbound tracing context: ", "error", err.Error())
+		ctx.Logger().Warn("Malformed inbound tracing context: ", "error", err.Error())
 	}
 	span := opentracing.GlobalTracer().StartSpan(operationName, ext.RPCServerOption(spanCtx))
 	ext.HTTPUrl.Set(span, r.URL.String())
@@ -74,13 +74,13 @@ func (f tracingServerFilter) Apply(ctx fx.Context, w http.ResponseWriter, r *htt
 
 // authorizationFilter authorizes services based on configuration
 type authorizationFilter struct {
-	authClient auth.Client
-	scope      tally.Scope
+	authClient  auth.Client
+	authCounter tally.Counter
 }
 
 func (f authorizationFilter) Apply(ctx fx.Context, w http.ResponseWriter, r *http.Request, next Handler) {
 	if err := f.authClient.Authorize(ctx); err != nil {
-		f.scope.Counter("auth.fail").Inc(1)
+		f.authCounter.Inc(1)
 		ctx.Logger().Error(auth.ErrAuthorization, "error", err)
 		w.WriteHeader(http.StatusUnauthorized)
 		fmt.Fprintf(w, "Unauthorized access: %+v", err)
@@ -92,14 +92,14 @@ func (f authorizationFilter) Apply(ctx fx.Context, w http.ResponseWriter, r *htt
 // panicFilter handles any panics and return an error
 // panic filter should be added at the end of filter chain to catch panics
 type panicFilter struct {
-	scope tally.Scope
+	panicCounter tally.Counter
 }
 
 func (f panicFilter) Apply(ctx fx.Context, w http.ResponseWriter, r *http.Request, next Handler) {
 	defer func() {
 		if err := recover(); err != nil {
 			ctx.Logger().Error("Panic recovered serving request", "error", err, "url", r.URL)
-			f.scope.Counter("panic").Inc(1)
+			f.panicCounter.Inc(1)
 			w.Header().Add(ContentType, ContentTypeText)
 			w.WriteHeader(http.StatusInternalServerError)
 			fmt.Fprintf(w, "Server error: %+v", err)

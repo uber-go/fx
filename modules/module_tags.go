@@ -20,7 +20,7 @@
 
 package modules
 
-var (
+const (
 	//TagModule is module tag for metrics
 	TagModule = "module"
 	// TagType is either request or response

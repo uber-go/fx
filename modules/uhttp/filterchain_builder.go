@@ -55,12 +55,12 @@ func defaultFilterChainBuilder(host service.Host) filterChainBuilder {
 	fcb := newFilterChainBuilder(host)
 	scope := host.Metrics().Tagged(modules.HTTPTags)
 	return fcb.AddFilters(
-		panicFilter{scope},
+		panicFilter{scope.Counter("panic")},
 		metricsFilter{scope},
 		tracingServerFilter{scope},
 		authorizationFilter{
-			scope:      scope,
-			authClient: host.AuthClient(),
+			authClient:  host.AuthClient(),
+			authCounter: scope.Counter("auth.fail"),
 		})
 }
 

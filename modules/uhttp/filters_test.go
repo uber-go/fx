@@ -91,8 +91,8 @@ func TestFilterChainFilters(t *testing.T) {
 	chain := newFilterChainBuilder(host).AddFilters(
 		tracingServerFilter{host.Metrics()},
 		authorizationFilter{
-			scope:      host.Metrics(),
-			authClient: host.AuthClient(),
+			authCounter: host.Metrics().Counter("auth.fail"),
+			authClient:  host.AuthClient(),
 		}).Build(getNopHandler(host))
 
 	response := testServeHTTP(chain, host)
@@ -104,8 +104,8 @@ func TestFilterChainFilters_AuthFailure(t *testing.T) {
 	chain := newFilterChainBuilder(host).AddFilters(
 		tracingServerFilter{host.Metrics()},
 		authorizationFilter{
-			scope:      host.Metrics(),
-			authClient: host.AuthClient(),
+			authCounter: host.Metrics().Counter("auth.fail"),
+			authClient:  host.AuthClient(),
 		}).Build(getNopHandler(host))
 	response := testServeHTTP(chain, host)
 	assert.Contains(t, "Unauthorized access: Error authorizing the service", response.Body.String())
