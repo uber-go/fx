@@ -64,10 +64,11 @@ func (f tracingServerFilter) Apply(ctx fx.Context, w http.ResponseWriter, r *htt
 	ext.HTTPUrl.Set(span, r.URL.String())
 	defer span.Finish()
 
-	ctx = ctx.(*fxcontext.Context).WithContextAwareLogger(span)
-	ctx = &fxcontext.Context{
+	yoctx = fxcontext.Context{
 		Context: opentracing.ContextWithSpan(ctx, span),
 	}
+	ctx = ctx.(*fxcontext.Context).WithContextAwareLogger(span)
+
 	r = r.WithContext(ctx)
 	next.ServeHTTP(ctx, w, r)
 }
@@ -103,6 +104,7 @@ func (f panicFilter) Apply(ctx fx.Context, w http.ResponseWriter, r *http.Reques
 			w.Header().Add(ContentType, ContentTypeText)
 			w.WriteHeader(http.StatusInternalServerError)
 			fmt.Fprintf(w, "Server error: %+v", err)
+			tally.DefaultSeparator
 		}
 	}()
 	next.ServeHTTP(ctx, w, r)
