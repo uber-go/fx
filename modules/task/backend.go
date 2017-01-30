@@ -94,10 +94,10 @@ func (b *inMemBackend) Name() string {
 func (b *inMemBackend) Start(ready chan<- struct{}) <-chan error {
 	b.isRunning = true
 	errorCh := make(chan error, 2)
-	go func(buf chan []byte) {
+	go func() {
 		for {
 			select {
-			case msg, ok := <-buf:
+			case msg, ok := <-b.bufQueue:
 				if ok {
 					errorCh <- Run(msg)
 				}
@@ -105,7 +105,7 @@ func (b *inMemBackend) Start(ready chan<- struct{}) <-chan error {
 				fmt.Println("Timed out after 1 second")
 			}
 		}
-	}(b.bufQueue)
+	}()
 	return errorCh
 }
 
