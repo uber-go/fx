@@ -20,35 +20,47 @@
 
 package task
 
-import "testing"
-import "github.com/stretchr/testify/assert"
+import (
+	"testing"
 
-var backends = []Backend{
-	&NopBackend{}, NewInMemBackend(),
-}
+	"github.com/stretchr/testify/assert"
+)
 
-func TestBackends(t *testing.T) {
-	for _, b := range backends {
-		testBackendMethods(t, b)
-	}
-}
-
-func TestInMemBackendConsumeAfterClose(t *testing.T) {
-	b := NewInMemBackend()
+func TestNopBackend(t *testing.T) {
+	b := &NopBackend{}
+	testBackendMethods(t, b)
+	assert.NoError(t, b.Publish(nil, nil))
 	assert.NoError(t, b.Stop())
-	err := b.Consume()
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "channel has been closed")
 }
 
-func testBackendMethods(t *testing.T, b Backend) {
+func TestInMemBackend(t *testing.T) {
+	b := NewInMemBackend()
+	errorCh := testBackendMethods(t, b)
+	publishEncodedVal(t, b, errorCh)
+	publishEncodedVal(t, b, errorCh)
+
+	assert.NoError(t, b.Stop())
+	assert.False(t, b.IsRunning())
+}
+
+func testBackendMethods(t *testing.T, b Backend) <-chan error {
 	assert.NotEmpty(t, b.Name())
 	assert.NotNil(t, b.Encoder())
-	assert.NotNil(t, b.Start(make(chan struct{})))
+
+	errorCh := b.Start(make(chan struct{}))
 	assert.True(t, b.IsRunning())
-	// Testing that consume before publish does not throw an error. Not testing Consume after publish
-	// since that is tested in execution and requires function setup etc.
-	assert.NoError(t, b.Consume())
-	assert.NoError(t, b.Publish([]byte{}, make(map[string]string)))
-	assert.NoError(t, b.Stop())
+	return errorCh
+}
+
+func publishEncodedVal(t *testing.T, b Backend, errorCh <-chan error) {
+	bytes, err := b.Encoder().Marshal("Hello")
+	assert.NoError(t, err)
+
+	// Publish a non FnSignature value that results in error
+	err = b.Publish(bytes, make(map[string]string))
+	assert.NoError(t, err)
+	if err, ok := <-errorCh; ok {
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "type mismatch")
+	}
 }
