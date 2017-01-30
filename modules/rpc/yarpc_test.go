@@ -30,7 +30,7 @@ import (
 )
 
 func TestRegisterDispatcher_OK(t *testing.T) {
-	RegisterDispatcher(defaultYarpcDispatcher)
+	RegisterDispatcher(defaultYARPCDispatcher)
 }
 
 func makeRequest() *transport.Request {

@@ -38,7 +38,7 @@ type CreateThriftServiceFunc func(svc service.Host) ([]transport.Procedure, erro
 // ThriftModule creates a Thrift Module from a service func
 func ThriftModule(hookup CreateThriftServiceFunc, options ...modules.Option) service.ModuleCreateFunc {
 	return func(mi service.ModuleCreateInfo) ([]service.Module, error) {
-		mod, err := newYarpcThriftModule(mi, hookup, options...)
+		mod, err := newYARPCThriftModule(mi, hookup, options...)
 		if err != nil {
 			return nil, errors.Wrap(err, "unable to instantiate Thrift module")
 		}
@@ -47,11 +47,11 @@ func ThriftModule(hookup CreateThriftServiceFunc, options ...modules.Option) ser
 	}
 }
 
-func newYarpcThriftModule(
+func newYARPCThriftModule(
 	mi service.ModuleCreateInfo,
 	createService CreateThriftServiceFunc,
 	options ...modules.Option,
-) (*YarpcModule, error) {
+) (*YARPCModule, error) {
 	registrants, err := createService(mi.Host)
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to create YARPC thrift handler")
@@ -60,7 +60,7 @@ func newYarpcThriftModule(
 	reg := func(mod *YarpcModule) {
 		_setupMu.Lock()
 		defer _setupMu.Unlock()
-		mod.rpc.Register(registrants)
+		_dispatcher.Register(registrants)
 	}
-	return newYarpcModule(mi, reg, options...)
+	return newYARPCModule(mi, reg, options...)
 }

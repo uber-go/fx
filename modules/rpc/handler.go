@@ -46,7 +46,6 @@ func (f UnaryHandlerFunc) Handle(ctx fx.Context, body wire.Value) (thrift.Respon
 }
 
 // WrapUnary wraps the unary handler and returns a thrift.UnaryHandlerFunc for yarpc calls
-// TODO(anup): GFM-255 Remove host parameter once updated yarpc plugin is imported in the repo
 func WrapUnary(h UnaryHandlerFunc) thrift.UnaryHandler {
 	return func(ctx context.Context, body wire.Value) (thrift.Response, error) {
 		fxctx := &fxcontext.Context{
@@ -70,7 +69,6 @@ func (f OnewayHandlerFunc) HandleOneway(ctx fx.Context, body wire.Value) error {
 }
 
 // WrapOneway wraps the oneway handler and returns a thrift.OnewayHandlerFunc for yarpc calls
-// TODO(anup): GFM-255 Remove host parameter once updated yarpc plugin is imported in the repo
 func WrapOneway(h OnewayHandlerFunc) thrift.OnewayHandler {
 	return func(ctx context.Context, body wire.Value) error {
 		fxctx := &fxcontext.Context{
@@ -130,6 +128,7 @@ func authorize(ctx context.Context, host service.Host) (fx.Context, error) {
 		host.Metrics().SubScope("rpc").SubScope("auth").Counter("fail").Inc(1)
 		fxctx.Logger().Error(auth.ErrAuthorization, "error", err)
 		// TODO(anup): GFM-255 update returned error to transport.BadRequestError (user error than server error)
+		// These ^ are internal YARPC errors, should we reference it?
 		return nil, err
 	}
 	return fxctx, nil
