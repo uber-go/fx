@@ -39,6 +39,7 @@ func TestInMemBackend(t *testing.T) {
 	publishEncodedVal(t, b, errorCh)
 	publishEncodedVal(t, b, errorCh)
 
+	assert.Equal(t, errorCh, b.Start(make(chan struct{})))
 	assert.NoError(t, b.Stop())
 	assert.False(t, b.IsRunning())
 }
