@@ -21,10 +21,10 @@
 package task
 
 import (
-	"fmt"
 	"time"
 
 	"go.uber.org/fx/service"
+	"go.uber.org/fx/ulog"
 )
 
 var gobEncoding = &GobEncoding{}
@@ -102,7 +102,7 @@ func (b *inMemBackend) Start(ready chan<- struct{}) <-chan error {
 					errorCh <- Run(msg)
 				}
 			case <-time.After(time.Second):
-				fmt.Println("Timed out after 1 second")
+				ulog.Logger().Error("Timed out after 1 second")
 			}
 		}
 	}()
