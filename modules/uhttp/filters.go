@@ -64,7 +64,7 @@ func (f tracingServerFilter) Apply(ctx fx.Context, w http.ResponseWriter, r *htt
 	ext.HTTPUrl.Set(span, r.URL.String())
 	defer span.Finish()
 
-	yoctx = fxcontext.Context{
+	ctx = &fxcontext.Context{
 		Context: opentracing.ContextWithSpan(ctx, span),
 	}
 	ctx = ctx.(*fxcontext.Context).WithContextAwareLogger(span)
