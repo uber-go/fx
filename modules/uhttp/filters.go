@@ -104,7 +104,6 @@ func (f panicFilter) Apply(ctx fx.Context, w http.ResponseWriter, r *http.Reques
 			w.Header().Add(ContentType, ContentTypeText)
 			w.WriteHeader(http.StatusInternalServerError)
 			fmt.Fprintf(w, "Server error: %+v", err)
-			tally.DefaultSeparator
 		}
 	}()
 	next.ServeHTTP(ctx, w, r)
