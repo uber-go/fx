@@ -73,11 +73,12 @@ func (b NopBackend) IsRunning() bool {
 type inMemBackend struct {
 	bufQueue  chan []byte
 	isRunning bool
+	errorCh   chan error
 }
 
 // NewInMemBackend creates a new in memory backend, designed for use in tests
 func NewInMemBackend() Backend {
-	return &inMemBackend{bufQueue: make(chan []byte, 2)}
+	return &inMemBackend{bufQueue: make(chan []byte, 2), errorCh: make(chan error, 2)}
 }
 
 // Encoder implements the Backend interface
@@ -92,23 +93,24 @@ func (b *inMemBackend) Name() string {
 
 // Start implements the Module interface
 func (b *inMemBackend) Start(ready chan<- struct{}) <-chan error {
-	b.isRunning = true
-	errorCh := make(chan error, 2)
-	go func() {
-		for {
-			select {
-			case msg, ok := <-b.bufQueue:
-				if ok {
-					errorCh <- Run(msg)
-				} else {
-					return
+	if !b.IsRunning() {
+		b.isRunning = true
+		go func() {
+			for {
+				select {
+				case msg, ok := <-b.bufQueue:
+					if ok {
+						b.errorCh <- Run(msg)
+					} else {
+						return
+					}
+				case <-time.After(time.Second):
+					ulog.Logger().Error("Timed out after 1 second")
 				}
-			case <-time.After(time.Second):
-				ulog.Logger().Error("Timed out after 1 second")
 			}
-		}
-	}()
-	return errorCh
+		}()
+	}
+	return b.errorCh
 }
 
 // Publish implements the Backend interface
@@ -123,6 +125,7 @@ func (b *inMemBackend) Publish(message []byte, userContext map[string]string) er
 func (b *inMemBackend) Stop() error {
 	b.isRunning = false
 	close(b.bufQueue)
+	close(b.errorCh)
 	return nil
 }
 
