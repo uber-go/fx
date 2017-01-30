@@ -40,6 +40,7 @@ import (
 	"github.com/opentracing/opentracing-go"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/uber-go/tally"
 )
 
 // Custom default client since http's defaultClient does not set timeout
@@ -69,6 +70,7 @@ func TestHTTPModule_WithFilter(t *testing.T) {
 			assert.NoError(t, err)
 			assert.Contains(t, string(body), "filter is executed")
 		})
+		verifyMetrics(t, m.Host().Metrics())
 	})
 }
 
@@ -286,4 +288,13 @@ func userPanicFilter() FilterFunc {
 	return func(ctx context.Context, w http.ResponseWriter, r *http.Request, next Handler) {
 		panic("Intentional panic for:" + r.URL.Path)
 	}
+}
+
+func verifyMetrics(t *testing.T, scope tally.Scope) {
+	snapshot := scope.(tally.TestScope).Snapshot()
+	timers := snapshot.Timers()
+	counters := snapshot.Counters()
+
+	assert.NotNil(t, timers["http.GET.time"].Values())
+	assert.NotNil(t, counters["auth.fail"].Value())
 }

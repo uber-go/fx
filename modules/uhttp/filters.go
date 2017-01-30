@@ -28,10 +28,11 @@ import (
 	"go.uber.org/fx"
 	"go.uber.org/fx/auth"
 	"go.uber.org/fx/internal/fxcontext"
-	"go.uber.org/fx/service"
+	"go.uber.org/fx/modules"
 
 	"github.com/opentracing/opentracing-go"
 	"github.com/opentracing/opentracing-go/ext"
+	"github.com/uber-go/tally"
 )
 
 // Filter applies filters on requests, request contexts or responses such as
@@ -48,76 +49,72 @@ func (f FilterFunc) Apply(ctx fx.Context, w http.ResponseWriter, r *http.Request
 	f(ctx, w, r, next)
 }
 
-// contextFilter updates context to fx.Context
-func contextFilter(host service.Host) FilterFunc {
-	return func(ctx context.Context, w http.ResponseWriter, r *http.Request, next Handler) {
-		fxctx := fxcontext.New(ctx, host)
-		next.ServeHTTP(fxctx, w, r)
-	}
+type tracingServerFilter struct {
+	scope tally.Scope
 }
 
-func tracingServerFilter(host service.Host) FilterFunc {
-	return func(ctx context.Context, w http.ResponseWriter, r *http.Request, next Handler) {
-		// TODO:(anup) GFM-257 benchmark performance comparing with using type assertion
-		fxctx := &fxcontext.Context{
-			Context: ctx,
-		}
-		operationName := r.Method
-		carrier := opentracing.HTTPHeadersCarrier(r.Header)
-		spanCtx, err := opentracing.GlobalTracer().Extract(opentracing.HTTPHeaders, carrier)
-		if err != nil && err != opentracing.ErrSpanContextNotFound {
-			fxctx.Logger().Info("Malformed inbound tracing context: ", "error", err.Error())
-		}
-		span := opentracing.GlobalTracer().StartSpan(operationName, ext.RPCServerOption(spanCtx))
-		ext.HTTPUrl.Set(span, r.URL.String())
-		defer func() {
-			span.Finish()
-			fxctx.Logger().Debug("Span finished")
-		}()
-
-		fxctx = fxctx.WithContextAwareLogger(span)
-		fxctx = &fxcontext.Context{
-			Context: opentracing.ContextWithSpan(fxctx, span),
-		}
-		r = r.WithContext(fxctx)
-		next.ServeHTTP(fxctx, w, r)
+func (f tracingServerFilter) Apply(ctx fx.Context, w http.ResponseWriter, r *http.Request, next Handler) {
+	operationName := r.Method
+	carrier := opentracing.HTTPHeadersCarrier(r.Header)
+	spanCtx, err := opentracing.GlobalTracer().Extract(opentracing.HTTPHeaders, carrier)
+	if err != nil && err != opentracing.ErrSpanContextNotFound {
+		ctx.Logger().Warn("Malformed inbound tracing context: ", "error", err.Error())
 	}
+	span := opentracing.GlobalTracer().StartSpan(operationName, ext.RPCServerOption(spanCtx))
+	ext.HTTPUrl.Set(span, r.URL.String())
+	defer span.Finish()
+
+	ctx = &fxcontext.Context{
+		Context: opentracing.ContextWithSpan(ctx, span),
+	}
+	ctx = ctx.(*fxcontext.Context).WithContextAwareLogger(span)
+
+	r = r.WithContext(ctx)
+	next.ServeHTTP(ctx, w, r)
 }
 
 // authorizationFilter authorizes services based on configuration
-func authorizationFilter(host service.Host) FilterFunc {
-	return func(ctx context.Context, w http.ResponseWriter, r *http.Request, next Handler) {
-		fxctx := &fxcontext.Context{
-			Context: ctx,
-		}
+type authorizationFilter struct {
+	authClient  auth.Client
+	authCounter tally.Counter
+}
 
-		if err := host.AuthClient().Authorize(fxctx); err != nil {
-			host.Metrics().SubScope("http").SubScope("auth").Counter("fail").Inc(1)
-			fxctx.Logger().Error(auth.ErrAuthorization, "error", err)
-			w.WriteHeader(http.StatusUnauthorized)
-			fmt.Fprintf(w, "Unauthorized access: %+v", err)
-			return
-		}
-		next.ServeHTTP(fxctx, w, r)
+func (f authorizationFilter) Apply(ctx fx.Context, w http.ResponseWriter, r *http.Request, next Handler) {
+	if err := f.authClient.Authorize(ctx); err != nil {
+		f.authCounter.Inc(1)
+		ctx.Logger().Error(auth.ErrAuthorization, "error", err)
+		w.WriteHeader(http.StatusUnauthorized)
+		fmt.Fprintf(w, "Unauthorized access: %+v", err)
+		return
 	}
+	next.ServeHTTP(ctx, w, r)
 }
 
 // panicFilter handles any panics and return an error
 // panic filter should be added at the end of filter chain to catch panics
-func panicFilter(host service.Host) FilterFunc {
-	return func(ctx context.Context, w http.ResponseWriter, r *http.Request, next Handler) {
-		fxctx := &fxcontext.Context{
-			Context: ctx,
+type panicFilter struct {
+	panicCounter tally.Counter
+}
+
+func (f panicFilter) Apply(ctx fx.Context, w http.ResponseWriter, r *http.Request, next Handler) {
+	defer func() {
+		if err := recover(); err != nil {
+			ctx.Logger().Error("Panic recovered serving request", "error", err, "url", r.URL)
+			f.panicCounter.Inc(1)
+			w.Header().Add(ContentType, ContentTypeText)
+			w.WriteHeader(http.StatusInternalServerError)
+			fmt.Fprintf(w, "Server error: %+v", err)
 		}
-		defer func() {
-			if err := recover(); err != nil {
-				fxctx.Logger().Error("Panic recovered serving request", "error", err, "url", r.URL)
-				host.Metrics().Counter("http.panic").Inc(1)
-				w.Header().Add(ContentType, ContentTypeText)
-				w.WriteHeader(http.StatusInternalServerError)
-				fmt.Fprintf(w, "Server error: %+v", err)
-			}
-		}()
-		next.ServeHTTP(fxctx, w, r)
-	}
+	}()
+	next.ServeHTTP(ctx, w, r)
+}
+
+// metricsFilter adds any default metrics related to HTTP
+type metricsFilter struct {
+	scope tally.Scope
+}
+
+func (f metricsFilter) Apply(ctx fx.Context, w http.ResponseWriter, r *http.Request, next Handler) {
+	defer f.scope.Tagged(map[string]string{modules.TagStatus: w.Header().Get("Status")}).Counter("total").Inc(1)
+	next.ServeHTTP(ctx, w, r)
 }

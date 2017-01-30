@@ -67,28 +67,33 @@ func TestTracingFilterWithLogs(t *testing.T) {
 		defer opentracing.InitGlobalTracer(opentracing.NoopTracer{})
 
 		host := service.NopHostConfigured(auth.NopClient, loggerWithZap, tracer)
-		chain := newFilterChainBuilder(host).AddFilters([]Filter{tracingServerFilter(host)}...).Build(getNopHandler(host))
+		chain := newFilterChainBuilder(host).AddFilters([]Filter{tracingServerFilter{host.Metrics()}}...).Build(getNopHandler(host))
 		response := testServeHTTP(chain, host)
 		assert.Contains(t, response.Body.String(), "filters ok")
 		assert.True(t, len(buf.Lines()) > 0)
-		var spanFinished bool
+		var tracecount = 0
+		var spancount = 0
 		for _, line := range buf.Lines() {
-			if strings.Contains(line, "Span finished") {
-				assert.Contains(t, line, "traceID")
-				assert.Contains(t, line, "spanID")
-				spanFinished = true
+			if strings.Contains(line, "traceID") {
+				tracecount++
+			}
+			if strings.Contains(line, "spanID") {
+				spancount++
 			}
 		}
-		assert.True(t, spanFinished)
+		assert.Equal(t, tracecount, 1)
+		assert.Equal(t, spancount, 1)
 	})
 }
 
 func TestFilterChainFilters(t *testing.T) {
 	host := service.NopHost()
 	chain := newFilterChainBuilder(host).AddFilters(
-		contextFilter(host),
-		tracingServerFilter(host),
-		authorizationFilter(host)).Build(getNopHandler(host))
+		tracingServerFilter{host.Metrics()},
+		authorizationFilter{
+			authCounter: host.Metrics().Counter("auth.fail"),
+			authClient:  host.AuthClient(),
+		}).Build(getNopHandler(host))
 
 	response := testServeHTTP(chain, host)
 	assert.Contains(t, response.Body.String(), "filters ok")
@@ -97,9 +102,11 @@ func TestFilterChainFilters(t *testing.T) {
 func TestFilterChainFilters_AuthFailure(t *testing.T) {
 	host := service.NopHostAuthFailure()
 	chain := newFilterChainBuilder(host).AddFilters(
-		contextFilter(host),
-		tracingServerFilter(host),
-		authorizationFilter(host)).Build(getNopHandler(host))
+		tracingServerFilter{host.Metrics()},
+		authorizationFilter{
+			authCounter: host.Metrics().Counter("auth.fail"),
+			authClient:  host.AuthClient(),
+		}).Build(getNopHandler(host))
 	response := testServeHTTP(chain, host)
 	assert.Contains(t, "Unauthorized access: Error authorizing the service", response.Body.String())
 	assert.Equal(t, 401, response.Code)
