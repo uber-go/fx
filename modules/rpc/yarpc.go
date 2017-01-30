@@ -140,7 +140,7 @@ func newYARPCModule(
 	}
 
 	module := &YARPCModule{
-		ModuleBase: *modules.NewModuleBase("", name, mi.Host, []string{}),
+		ModuleBase: *modules.NewModuleBase(name, mi.Host, []string{}),
 		register:   reg,
 		config: yarpcConfig{
 			AdvertiseName: mi.Host.Name(),
