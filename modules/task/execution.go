@@ -35,6 +35,25 @@ type fnRegister struct {
 	sync.RWMutex
 }
 
+func (f *fnRegister) setFnNameMap(fnNameMap map[string]interface{}) {
+	f.Lock()
+	defer f.Unlock()
+	f.fnNameMap = fnNameMap
+}
+
+func (f *fnRegister) addFn(fnName string, fn interface{}) {
+	f.Lock()
+	defer f.Unlock()
+	f.fnNameMap[fnName] = fn
+}
+
+func (f *fnRegister) getFn(fnName string) (interface{}, bool) {
+	f.RLock()
+	defer f.RUnlock()
+	v, ok := f.fnNameMap[fnName]
+	return v, ok
+}
+
 var fnLookup = fnRegister{fnNameMap: make(map[string]interface{})}
 
 // fnSignature represents a function and its arguments
@@ -49,9 +68,7 @@ func (s *fnSignature) Execute() ([]reflect.Value, error) {
 	for _, arg := range s.Args {
 		targetArgs = append(targetArgs, reflect.ValueOf(arg))
 	}
-	fnLookup.RLock()
-	defer fnLookup.RUnlock()
-	if fn, ok := fnLookup.fnNameMap[s.FnName]; ok {
+	if fn, ok := fnLookup.getFn(s.FnName); ok {
 		fnValue := reflect.ValueOf(fn)
 		return fnValue.Call(targetArgs), nil
 	}
@@ -62,9 +79,7 @@ func (s *fnSignature) Execute() ([]reflect.Value, error) {
 func Enqueue(fn interface{}, args ...interface{}) error {
 	// Is function registered
 	fnName := getFunctionName(fn)
-	fnLookup.RLock()
-	_, ok := fnLookup.fnNameMap[fnName]
-	fnLookup.RUnlock()
+	_, ok := fnLookup.getFn(fnName)
 	if !ok {
 		return fmt.Errorf("function: %q not found. Did you forget to register?", fnName)
 	}
@@ -92,9 +107,7 @@ func Register(fn interface{}) error {
 	}
 	// Check if already registered
 	fnName := getFunctionName(fn)
-	fnLookup.RLock()
-	_, ok := fnLookup.fnNameMap[fnName]
-	fnLookup.RUnlock()
+	_, ok := fnLookup.getFn(fnName)
 	if ok {
 		return nil
 	}
@@ -105,9 +118,7 @@ func Register(fn interface{}) error {
 			return errors.Wrap(err, "unable to register the message for encoding")
 		}
 	}
-	fnLookup.Lock()
-	defer fnLookup.Unlock()
-	fnLookup.fnNameMap[fnName] = fn
+	fnLookup.addFn(fnName, fn)
 	return nil
 }
 
