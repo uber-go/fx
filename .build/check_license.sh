@@ -9,7 +9,7 @@ run_uber_licence() {
   # Ok, somebody hasn't run `npm install -g uber-licence`, that's cool
   if ! which "$bin" >/dev/null ; then
     npm install "$bin" >/dev/null
-    bin="./node_modules/uber-licence/bin/licence"
+    bin="./node_modules/.bin/uber-licence"
   fi
 
   readonly local output=$("$bin" --file "*.go" | sed "s/^fix //")
