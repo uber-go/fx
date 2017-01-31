@@ -22,8 +22,9 @@ package config
 
 import (
 	"fmt"
-	"os"
 	"testing"
+
+	"go.uber.org/fx/testutils/env"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -357,11 +358,7 @@ func TestEnvProvider_Callbacks(t *testing.T) {
 
 func TestGetConfigFiles(t *testing.T) {
 	SetEnvironmentPrefix("TEST")
-	oldDC := os.Getenv(testDatacenter)
-	os.Setenv(testDatacenter, "dc")
-	defer func() {
-		os.Setenv(testDatacenter, oldDC)
-	}()
+	defer env.Override(t, testDatacenter, "dc")()
 
 	files := getConfigFiles()
 	assert.Contains(t, files, "./base.yaml")
