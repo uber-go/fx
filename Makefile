@@ -42,8 +42,10 @@ endif
 COVER_OUT := profile.coverprofile
 
 $(COV_REPORT): $(PKG_FILES) $(ALL_SRC)
+	@$(call label,Cleaning old profile)
+	$(ECHO_V)rm -f $(COV_REPORT)
+
 	@$(call label,Running tests)
-	@echo
 	$(ECHO_V)$(OVERALLS) -project=$(PROJECT_ROOT) \
 		-ignore "$(OVERALLS_IGNORE)" \
 		-covermode=atomic \
@@ -51,9 +53,14 @@ $(COV_REPORT): $(PKG_FILES) $(ALL_SRC)
 		$(TEST_FLAGS) $(RACE) $(TEST_TIMEOUT) $(TEST_VERBOSITY_FLAG) | \
 		grep -v "No Go Test files" | \
 		$(_FILTER_OVERALLS)
+
+	@$(call label,Generating coverage report)
 	$(ECHO_V)if [ -a $(COV_REPORT) ]; then \
-		$(GOCOV) convert $@ | $(GOCOV) report ; \
-	fi
+		$(call label, Tests succeeded); \
+		$(GOCOV) convert $@ | $(GOCOV) report; \
+	else \
+		$(call die,Tests failed); \
+	fi;
 
 COV_HTML := coverage.html
 
