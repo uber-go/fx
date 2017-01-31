@@ -41,7 +41,7 @@ const (
 	_environment = "_ENVIRONMENT"
 	_datacenter  = "_DATACENTER"
 	_configDir   = "_CONFIG_DIR"
-	_config      = "config"
+	_configRoot  = "./config"
 	_baseFile    = "base"
 	_secretsFile = "secrets"
 )
@@ -62,14 +62,18 @@ func getConfigFiles() []string {
 	env := Environment()
 	dc := os.Getenv(EnvironmentPrefix() + _datacenter)
 
-	var files []string
+	baseFiles := []string{_baseFile, env, _secretsFile}
 	if dc != "" && env != "" {
-		files = append(files, fmt.Sprintf("./%s/%s-%s.yaml", _config, env, dc))
+		baseFiles = append(baseFiles, fmt.Sprintf("%s-%s", env, dc))
 	}
-	files = append(files,
-		fmt.Sprintf("./%s/%s.yaml", _config, _baseFile),
-		fmt.Sprintf("./%s/%s.yaml", _config, env),
-		fmt.Sprintf("./%s/%s.yaml", _config, _secretsFile))
+
+	var files []string
+	dirs := []string{".", _configRoot}
+	for _, dir := range dirs {
+		for _, baseFile := range baseFiles {
+			files = append(files, fmt.Sprintf("%s/%s.yaml", dir, baseFile))
+		}
+	}
 
 	return files
 }
@@ -116,7 +120,7 @@ func IsDevelopmentEnv() bool {
 func Path() string {
 	configPath := os.Getenv(EnvironmentPrefix() + _configDir)
 	if configPath == "" {
-		configPath = _config
+		configPath = _configRoot
 	}
 	return configPath
 }
