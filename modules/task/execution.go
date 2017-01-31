@@ -37,14 +37,14 @@ type fnRegister struct {
 
 var fnLookup = fnRegister{fnNameMap: make(map[string]interface{})}
 
-// FnSignature represents a function and its arguments
-type FnSignature struct {
+// fnSignature represents a function and its arguments
+type fnSignature struct {
 	FnName string
 	Args   []interface{}
 }
 
 // Execute executes the function
-func (s *FnSignature) Execute() ([]reflect.Value, error) {
+func (s *fnSignature) Execute() ([]reflect.Value, error) {
 	targetArgs := make([]reflect.Value, 0, len(s.Args))
 	for _, arg := range s.Args {
 		targetArgs = append(targetArgs, reflect.ValueOf(arg))
@@ -74,7 +74,7 @@ func Enqueue(fn interface{}, args ...interface{}) error {
 		return err
 	}
 	// Publish function to the backend
-	s := FnSignature{FnName: fnName, Args: args}
+	s := fnSignature{FnName: fnName, Args: args}
 
 	sBytes, err := GlobalBackend().Encoder().Marshal(s)
 	if err != nil {
@@ -113,7 +113,7 @@ func Register(fn interface{}) error {
 
 // Run decodes the message and executes as a task
 func Run(message []byte) error {
-	var s FnSignature
+	var s fnSignature
 	if err := GlobalBackend().Encoder().Unmarshal(message, &s); err != nil {
 		return errors.Wrap(err, "unable to decode the message")
 	}
