@@ -2,6 +2,10 @@
 set -eu
 set -o pipefail
 
+# add node_modules/.bin to the $PATH so we don't have to install the uber-licence
+# every time we run this script.
+PATH=$PATH:node_modules/.bin
+
 # Try to use npm/uber-licence if node is available
 LICENCE_BIN="uber-licence"
 run_uber_licence() {
