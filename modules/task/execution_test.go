@@ -93,9 +93,7 @@ func TestConsumeWithoutRegister(t *testing.T) {
 	require.NoError(t, err)
 	err = Enqueue(fn, float64(1.0))
 	require.NoError(t, err)
-	fnLookup.Lock()
-	fnLookup.fnNameMap = make(map[string]interface{})
-	fnLookup.Unlock()
+	fnLookup.setFnNameMap(make(map[string]interface{}))
 	err = <-_errorCh
 	require.Error(t, err)
 	assert.Contains(
@@ -106,9 +104,7 @@ func TestConsumeWithoutRegister(t *testing.T) {
 
 func TestEnqueueEncodingError(t *testing.T) {
 	fn := func(car Car) error { return nil }
-	fnLookup.Lock()
-	fnLookup.fnNameMap[getFunctionName(fn)] = fn
-	fnLookup.Unlock()
+	fnLookup.addFn(getFunctionName(fn), fn)
 	err := Register(fn)
 	require.NoError(t, err)
 	err = Enqueue(fn, Car{})
