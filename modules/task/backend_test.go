@@ -22,6 +22,7 @@ package task
 
 import (
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -39,9 +40,33 @@ func TestInMemBackend(t *testing.T) {
 	publishEncodedVal(t, b, errorCh)
 	publishEncodedVal(t, b, errorCh)
 
-	assert.Equal(t, errorCh, b.Start(make(chan struct{})))
 	assert.NoError(t, b.Stop())
 	assert.False(t, b.IsRunning())
+}
+
+func TestInMemBackendStartAfterStart(t *testing.T) {
+	b := NewInMemBackend()
+	_ = b.Start(make(chan struct{}))
+	errorCh := b.Start(make(chan struct{}))
+	err := <-errorCh
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "already running")
+}
+
+func TestInMemBackendStartAfterStop(t *testing.T) {
+	b := NewInMemBackend()
+	_ = b.Stop()
+	errorCh := b.Start(make(chan struct{}))
+	err := <-errorCh
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "been stopped")
+}
+
+func TestInMemBackendStartTimeout(t *testing.T) {
+	b := NewInMemBackend()
+	_ = b.Start(make(chan struct{}))
+	defer b.Stop()
+	time.Sleep(time.Millisecond)
 }
 
 func testBackendMethods(t *testing.T, b Backend) <-chan error {

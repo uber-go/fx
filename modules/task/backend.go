@@ -21,6 +21,7 @@
 package task
 
 import (
+	"errors"
 	"time"
 
 	"go.uber.org/fx/service"
@@ -73,12 +74,14 @@ func (b NopBackend) IsRunning() bool {
 type inMemBackend struct {
 	bufQueue  chan []byte
 	isRunning bool
-	errorCh   chan error
+	isStopped bool
 }
 
 // NewInMemBackend creates a new in memory backend, designed for use in tests
 func NewInMemBackend() Backend {
-	return &inMemBackend{bufQueue: make(chan []byte, 2), errorCh: make(chan error, 2)}
+	return &inMemBackend{
+		bufQueue: make(chan []byte, 2),
+	}
 }
 
 // Encoder implements the Backend interface
@@ -93,24 +96,31 @@ func (b *inMemBackend) Name() string {
 
 // Start implements the Module interface
 func (b *inMemBackend) Start(ready chan<- struct{}) <-chan error {
-	if !b.IsRunning() {
+	errorCh := make(chan error, 2)
+	if b.IsRunning() {
+		errorCh <- errors.New("Cannot start when module is already running")
+	} else if b.isStopped {
+		errorCh <- errors.New("Cannot start when module has been stopped")
+	} else {
 		b.isRunning = true
-		go func() {
-			for {
-				select {
-				case msg, ok := <-b.bufQueue:
-					if ok {
-						b.errorCh <- Run(msg)
-					} else {
-						return
-					}
-				case <-time.After(time.Second):
-					ulog.Logger().Error("Timed out after 1 second")
-				}
-			}
-		}()
+		go b.consumeFromQueue(errorCh)
 	}
-	return b.errorCh
+	return errorCh
+}
+
+func (b *inMemBackend) consumeFromQueue(errorCh chan error) {
+	for {
+		select {
+		case msg, ok := <-b.bufQueue:
+			if ok {
+				errorCh <- Run(msg)
+			} else {
+				return
+			}
+		case <-time.After(time.Millisecond):
+			ulog.Logger().Error("Timed out after 1 ms")
+		}
+	}
 }
 
 // Publish implements the Backend interface
@@ -124,8 +134,8 @@ func (b *inMemBackend) Publish(message []byte, userContext map[string]string) er
 // Stop implements the Module interface
 func (b *inMemBackend) Stop() error {
 	b.isRunning = false
+	b.isStopped = true
 	close(b.bufQueue)
-	close(b.errorCh)
 	return nil
 }
 
