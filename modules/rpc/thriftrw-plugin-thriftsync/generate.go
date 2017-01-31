@@ -32,8 +32,8 @@ const newHandlerTemplate = `
 // Running thriftsync will only update method signatures, and new methods added to *.thrift
 
 <$pkgname   := .HandlerPackageName>
-
 package <$pkgname>
+
 <$core      := import "go.uber.org/fx">
 <$transport := import "go.uber.org/yarpc/api/transport">
 <$service   := import "go.uber.org/fx/service">

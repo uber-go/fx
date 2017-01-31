@@ -73,15 +73,15 @@ func (u *Updater) UpdateExistingHandlerFile(
 	goFilePath string,
 	handlerDir string) error {
 
-	newData, err := u.compare(service, goFilePath, handlerDir)
+	newFuncs, err := u.compare(service, goFilePath, handlerDir)
 	if err != nil {
 		return err
 	}
-	data, err := u.generate(goFilePath, newData)
+	appendBytes, err := u.generate(goFilePath, newFuncs)
 	if err != nil {
 		return err
 	}
-	return appendToExisting(goFilePath, bytes.Trim(data, "package discardme"))
+	return appendToExisting(goFilePath, bytes.Trim(appendBytes, "package discardme"))
 }
 
 func (u *Updater) compare(service *api.Service, filepath string, handlerDir string) (*updatedData, error) {
@@ -89,12 +89,11 @@ func (u *Updater) compare(service *api.Service, filepath string, handlerDir stri
 		return nil, err
 	}
 
-	fset := token.NewFileSet()
-	file, err := parser.ParseFile(fset, filepath, nil, 0)
+	file, err := parser.ParseFile(token.NewFileSet(), filepath, nil, 0)
 	if err != nil {
 		return nil, err
 	}
-	newDatas := &updatedData{
+	updated := &updatedData{
 		Service: service,
 	}
 
@@ -110,10 +109,10 @@ func (u *Updater) compare(service *api.Service, filepath string, handlerDir stri
 			return true
 		})
 		if contains == false {
-			newDatas.Functions = append(newDatas.Functions, function)
+			updated.Functions = append(updated.Functions, function)
 		}
 	}
-	return newDatas, err
+	return updated, err
 }
 
 // RefreshAll creates new funcs if they are missing from *.go file, and updates
