@@ -14,7 +14,7 @@ service TestService {
 }
 ```
 
-```lang=go
+```go
 package main
 
 import (
@@ -49,7 +49,7 @@ service TestService {
 }
 ```
 
-```lang=go
+```go
 package main
 
 import (
@@ -88,7 +88,7 @@ service TestService {
 }
 ```
 
-```lang=go
+```go
 package main
 
 import (
@@ -125,7 +125,7 @@ service TestService {
     string newtestFunction(1: string param, 2: string parameter2)
 }
 ```
-```lang=go
+```go
 package main
 
 import (

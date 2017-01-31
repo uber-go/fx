@@ -23,10 +23,9 @@ package main
 import (
 	"sync"
 
-	kvs "go.uber.org/fx/examples/keyvalue/kv/keyvalueserver"
-
 	"go.uber.org/fx"
 	"go.uber.org/fx/examples/keyvalue/kv"
+	kvs "go.uber.org/fx/examples/keyvalue/kv/keyvalueserver"
 	"go.uber.org/fx/service"
 	"go.uber.org/yarpc/api/transport"
 )
