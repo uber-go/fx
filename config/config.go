@@ -41,6 +41,7 @@ const (
 	_environment = "_ENVIRONMENT"
 	_datacenter  = "_DATACENTER"
 	_configDir   = "_CONFIG_DIR"
+	_root        = "_ROOT"
 	_configRoot  = "./config"
 	_baseFile    = "base"
 	_secretsFile = "secrets"

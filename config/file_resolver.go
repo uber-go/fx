@@ -42,8 +42,11 @@ func NewRelativeResolver(paths ...string) FileResolver {
 
 	copy(pathList, paths)
 
-	// add the current cwd
-	if cwd, err := os.Getwd(); err == nil {
+	if appRoot := os.Getenv(EnvironmentPrefix() + _root); appRoot != "" {
+		// add the app root
+		pathList = append(pathList, appRoot)
+	} else if cwd, err := os.Getwd(); err == nil {
+		// add the current cwd
 		pathList = append(pathList, cwd)
 	}
 
