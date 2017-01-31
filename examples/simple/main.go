@@ -32,7 +32,7 @@ func main() {
 	).Build()
 
 	if err != nil {
-		ulog.Logger().Fatal("Unable to initialize service: ", err)
+		ulog.Logger().Fatal("Unable to initialize service", "error", err)
 	}
 
 	svc.Start()
