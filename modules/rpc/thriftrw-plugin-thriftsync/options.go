@@ -20,26 +20,22 @@
 
 package main
 
-// import (
-// 	"go.uber.org/fx"
-// 	"go.uber.org/fx/ulog"
-// 	"go.uber.org/fx/modules/kafka"
-// 	"golang.org/x/net/context"
-// )
+import "go.uber.org/thriftrw/plugin"
 
-// // Create the handler instance for the given topic
-// func CreateMyTopicHandler(topic string, service *fx.Service) kafka.HandlerCreateFunc {
-// 	return func() (kakfa.Handler, error) {
-// 		instance := &MyTopicHandler{}
-// 		return instance.MyTopic, nil
-// 	}
-// }
+// Options for thriftsync
+type Options struct {
+	baseDir         string
+	packageName     string
+	templateOptions []plugin.TemplateOption
+	data            interface{}
+}
 
-// type MyTopicHandler struct {
-// }
-
-// // MyTopic handles messages from topic 'my_topic'
-// func (h *MyTopicHandler) MyTopic(ctx context.Context, message consumer.Message) error {
-// 	ulog.Logger().Info("I got a message", "topic", message.Topic())
-// 	return nil
-// }
+// NewOptions creates options for thriftsync generator and updater
+func NewOptions(baseDir string, packageName string, templateOptions []plugin.TemplateOption, data interface{}) Options {
+	return Options{
+		baseDir:         baseDir,
+		packageName:     packageName,
+		templateOptions: templateOptions,
+		data:            data,
+	}
+}

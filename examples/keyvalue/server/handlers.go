@@ -48,7 +48,6 @@ func (h *YarpcHandler) GetValue(ctx fx.Context, key *string) (string, error) {
 	if value, ok := h.items[*key]; ok {
 		return value, nil
 	}
-
 	return "", &kv.ResourceDoesNotExist{Key: *key}
 }
 
