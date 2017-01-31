@@ -30,6 +30,12 @@ import (
 
 var gobEncoding = &GobEncoding{}
 
+const (
+	_initialized = iota
+	_running
+	_stopped
+)
+
 // Backend represents a task backend
 type Backend interface {
 	service.Module
@@ -72,9 +78,8 @@ func (b NopBackend) IsRunning() bool {
 
 // inMemBackend is an in-memory implementation of the Backend interface
 type inMemBackend struct {
-	bufQueue  chan []byte
-	isRunning bool
-	isStopped bool
+	bufQueue chan []byte
+	state    int
 }
 
 // NewInMemBackend creates a new in memory backend, designed for use in tests
@@ -98,11 +103,11 @@ func (b *inMemBackend) Name() string {
 func (b *inMemBackend) Start(ready chan<- struct{}) <-chan error {
 	errorCh := make(chan error, 2)
 	if b.IsRunning() {
-		errorCh <- errors.New("Cannot start when module is already running")
-	} else if b.isStopped {
-		errorCh <- errors.New("Cannot start when module has been stopped")
+		errorCh <- errors.New("cannot start when module is already running")
+	} else if b.state == _stopped {
+		errorCh <- errors.New("cannot start when module has been stopped")
 	} else {
-		b.isRunning = true
+		b.state = _running
 		go b.consumeFromQueue(errorCh)
 	}
 	return errorCh
@@ -133,13 +138,12 @@ func (b *inMemBackend) Publish(message []byte, userContext map[string]string) er
 
 // Stop implements the Module interface
 func (b *inMemBackend) Stop() error {
-	b.isRunning = false
-	b.isStopped = true
+	b.state = _stopped
 	close(b.bufQueue)
 	return nil
 }
 
 // IsRunning implements the Module interface
 func (b *inMemBackend) IsRunning() bool {
-	return b.isRunning
+	return b.state == _running
 }
