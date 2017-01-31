@@ -30,8 +30,11 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+var _errorCh <-chan error
+
 func init() {
 	_globalBackend = NewInMemBackend()
+	_errorCh = _globalBackend.Start(make(chan struct{}))
 }
 
 func TestRegisterNonFunction(t *testing.T) {
@@ -91,7 +94,7 @@ func TestConsumeWithoutRegister(t *testing.T) {
 	err = Enqueue(fn, float64(1.0))
 	require.NoError(t, err)
 	fnLookup.fnNameMap = make(map[string]interface{})
-	err = GlobalBackend().Consume()
+	err = <-_errorCh
 	require.Error(t, err)
 	assert.Contains(
 		t, err.Error(), "\"go.uber.org/fx/modules/task.TestConsumeWithoutRegister.func1\""+
@@ -120,7 +123,7 @@ func TestEnqueueNoArgsFn(t *testing.T) {
 	require.NoError(t, err)
 	err = Enqueue(NoArgs)
 	require.NoError(t, err)
-	err = GlobalBackend().Consume()
+	err = <-_errorCh
 	require.NoError(t, err)
 }
 
@@ -129,7 +132,7 @@ func TestEnqueueSimpleFn(t *testing.T) {
 	require.NoError(t, err)
 	err = Enqueue(SimpleWithError, "hello")
 	require.NoError(t, err)
-	err = GlobalBackend().Consume()
+	err = <-_errorCh
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "Simple error")
 }
@@ -140,7 +143,7 @@ func TestEnqueueMapFn(t *testing.T) {
 	require.NoError(t, err)
 	err = Enqueue(fn, make(map[string]string))
 	require.NoError(t, err)
-	err = GlobalBackend().Consume()
+	err = <-_errorCh
 	require.NoError(t, err)
 }
 
@@ -164,7 +167,7 @@ func TestEnqueueFnClosure(t *testing.T) {
 	require.NoError(t, err)
 	err = Enqueue(fn)
 	require.NoError(t, err)
-	err = GlobalBackend().Consume()
+	err = <-_errorCh
 	require.NoError(t, err)
 }
 
@@ -173,12 +176,12 @@ func TestEnqueueComplexFnWithError(t *testing.T) {
 	require.NoError(t, err)
 	err = Enqueue(Complex, Car{Brand: "infinity", Year: 2017})
 	require.NoError(t, err)
-	err = GlobalBackend().Consume()
+	err = <-_errorCh
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "Complex error")
 	err = Enqueue(Complex, Car{Brand: "honda", Year: 2017})
 	require.NoError(t, err)
-	err = GlobalBackend().Consume()
+	err = <-_errorCh
 	require.NoError(t, err)
 }
 
