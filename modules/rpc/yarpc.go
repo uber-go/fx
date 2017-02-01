@@ -49,6 +49,7 @@ type YARPCModule struct {
 
 var (
 	_dispatcherFn = defaultYARPCDispatcher
+	_dispatcherMu sync.Mutex
 
 	_ service.Module = &YARPCModule{}
 
@@ -133,6 +134,8 @@ func (c *configCollection) Start(host service.Host) error {
 			return
 		}
 
+		_dispatcherMu.Lock()
+		defer _dispatcherMu.Unlock()
 		if c.dispatcher, err = _dispatcherFn(host, cfg); err != nil {
 			return
 		}
@@ -285,6 +288,8 @@ type yarpcDispatcherFn func(service.Host, yarpc.Config) (*yarpc.Dispatcher, erro
 
 // RegisterDispatcher allows you to override the YARPC dispatcher registration
 func RegisterDispatcher(dispatchFn yarpcDispatcherFn) {
+	_dispatcherMu.Lock()
+	defer _dispatcherMu.Unlock()
 	_dispatcherFn = dispatchFn
 }
 
