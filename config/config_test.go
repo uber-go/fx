@@ -22,6 +22,8 @@ package config
 
 import (
 	"fmt"
+	"os"
+	"path"
 	"testing"
 
 	"go.uber.org/fx/testutils/env"
@@ -369,4 +371,29 @@ func TestGetConfigFiles(t *testing.T) {
 	assert.Contains(t, files, "./config/development.yaml")
 	assert.Contains(t, files, "./config/secrets.yaml")
 	assert.Contains(t, files, "./config/development-dc.yaml")
+}
+
+func expectedResolvePath(t *testing.T) string {
+	cwd, err := os.Getwd()
+	assert.NoError(t, err)
+	return path.Join(cwd, "testdata")
+}
+
+func TestResolvePath(t *testing.T) {
+	res, err := ResolvePath("testdata")
+	assert.NoError(t, err)
+	assert.Equal(t, expectedResolvePath(t), res)
+}
+
+func TestResolvePathInvalid(t *testing.T) {
+	res, err := ResolvePath("invalid")
+	assert.Error(t, err)
+	assert.Equal(t, "", res)
+}
+
+func TestResolvePathAbs(t *testing.T) {
+	abs := expectedResolvePath(t)
+	res, err := ResolvePath(abs)
+	assert.NoError(t, err)
+	assert.Equal(t, abs, res)
 }
