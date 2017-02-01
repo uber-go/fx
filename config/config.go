@@ -38,6 +38,7 @@ const (
 )
 
 const (
+	_appRoot     = "APP_ROOT"
 	_environment = "_ENVIRONMENT"
 	_datacenter  = "_DATACENTER"
 	_configDir   = "_CONFIG_DIR"
@@ -57,6 +58,21 @@ var (
 var (
 	_devEnv = "development"
 )
+
+// AppRoot returns the root directory of your application. UberFx developers
+// can edit this via the APP_ROOT environment variable. If the environment
+// variable is not set then it will fallback to the current working directory.
+// This is often used for resolving relative paths in your service.
+func AppRoot() string {
+	if appRoot := os.Getenv(_appRoot); appRoot != "" {
+		return appRoot
+	}
+	if cwd, err := os.Getwd(); err != nil {
+		panic(fmt.Sprintf("Unable to get the current working directory: %s", err.Error()))
+	} else {
+		return cwd
+	}
+}
 
 func getConfigFiles() []string {
 	env := Environment()

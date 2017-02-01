@@ -23,9 +23,13 @@ package config
 import (
 	"bytes"
 	"io/ioutil"
+	"os"
+	"path"
 	"reflect"
 	"testing"
 	"time"
+
+	"go.uber.org/fx/testutils/env"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -83,6 +87,23 @@ func TestYamlStructChild(t *testing.T) {
 
 func TestExtends(t *testing.T) {
 	provider := NewYAMLProviderFromFiles(false, NewRelativeResolver("./testdata"), "base.yaml", "dev.yaml", "secrets.yaml")
+
+	baseValue := provider.Get("value").AsString()
+	assert.Equal(t, "base_only", baseValue)
+
+	devValue := provider.Get("value_override").AsString()
+	assert.Equal(t, "dev_setting", devValue)
+
+	secretValue := provider.Get("secret").AsString()
+	assert.Equal(t, "my_secret", secretValue)
+}
+
+func TestAppRoot(t *testing.T) {
+	cwd, err := os.Getwd()
+	assert.NoError(t, err)
+
+	defer env.Override(t, _appRoot, path.Join(cwd, "testdata"))()
+	provider := NewYAMLProviderFromFiles(false, NewRelativeResolver(), "base.yaml", "dev.yaml", "secrets.yaml")
 
 	baseValue := provider.Get("value").AsString()
 	assert.Equal(t, "base_only", baseValue)
