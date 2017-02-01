@@ -57,10 +57,11 @@ func newYARPCThriftModule(
 		return nil, errors.Wrap(err, "unable to create YARPC thrift handler")
 	}
 
-	reg := func(mod *YarpcModule) {
+	reg := func(mod *YARPCModule) {
 		_setupMu.Lock()
 		defer _setupMu.Unlock()
-		_dispatcher.Register(registrants)
+		Dispatcher().Register(registrants)
 	}
+
 	return newYARPCModule(mi, reg, options...)
 }

@@ -35,8 +35,9 @@ import (
 	tch "go.uber.org/yarpc/transport/tchannel"
 )
 
-// YARPCModule is an implementation of a core module using YARPC.
+// YARPCModule is an implementation of a core RPC module using YARPC.
 // All the YARPC modules share the same dispatcher and middleware.
+// Dispatcher will start when any created module calls Start().
 type YARPCModule struct {
 	modules.ModuleBase
 	register  registerServiceFunc
@@ -51,14 +52,10 @@ var (
 
 	_ service.Module = &YARPCModule{}
 
-	// Represents the global dispatcher used by all started modules.
-	// The YARPC team advised it to be a 'singleton' to control the lifecycle
-	// of all of the in/out bound traffic.
-	_dispatcher   *yarpc.Dispatcher
-	_dispatcherMu sync.RWMutex
-
-	_configsOnce sync.Once
-	_configs     configCollection
+	// A collection of all YARPC configs that are stored together to create
+	// a shared dispatcher. The YARPC team advised it to be a 'singleton'
+	// to control the lifecycle of all of the in/out bound traffic.
+	_configs configCollection
 )
 
 type registerServiceFunc func(module *YARPCModule)
@@ -72,20 +69,20 @@ type yarpcConfig struct {
 	inbounds                []transport.Inbound
 }
 
-// Stores a collection of all modules configs and provides operations that are safe to call from multiple go routines.
-// All the config must share the same AdvertiseName and represent a single service.
-// Configs are referenced and stored in the modules, we store only pointers to them to easily add/remove configs.
+// Stores a collection of all modules configs with a shared dispatcher
+// that are safe to call from multiple go routines. All the configs must
+// share the same AdvertiseName and represent a single service.
 type configCollection struct {
 	sync.RWMutex
-	configs []*yarpcConfig
+	start sync.Once
+	stop  sync.Once
+
+	configs    []*yarpcConfig
+	dispatcher *yarpc.Dispatcher
 }
 
-// Adds the config to collection, the first config sets up the AdvertiseName requirement on consequent additions.
-func (c *configCollection) addConfig(config *yarpcConfig) error {
-	if config == nil {
-		return errors.New("passed a nil config")
-	}
-
+// Adds the config to the collection, the first config sets up the AdvertiseName requirement on consequent additions.
+func (c *configCollection) addConfig(config yarpcConfig) error {
 	c.Lock()
 	defer c.Unlock()
 
@@ -96,34 +93,75 @@ func (c *configCollection) addConfig(config *yarpcConfig) error {
 		)
 	}
 
-	c.configs = append(c.configs, config)
+	c.configs = append(c.configs, &config)
 	return nil
 }
 
-// Removes the config from collection.
-// If the config is not found, returns an error, because it means that modules were not started properly.
-func (c *configCollection) removeConfig(config *yarpcConfig) error {
-	c.Lock()
-	defer c.Unlock()
-
-	for i := range c.configs {
-		if c.configs[i] == config {
-			c.configs = append(c.configs[:i], c.configs[i+1:]...)
-			return nil
-		}
+// Adds the default middleware: fx.context propagation and auth.
+func (c *configCollection) addDefaultMiddleware(host service.Host) error {
+	cfg := yarpcConfig{
+		AdvertiseName: host.Name(),
+		inboundMiddleware: []middleware.UnaryInbound{
+			fxContextInboundMiddleware{host},
+			authInboundMiddleware{host},
+		},
+		onewayInboundMiddleware: []middleware.OnewayInbound{
+			fxContextOnewayInboundMiddleware{host},
+			authOnewayInboundMiddleware{host},
+		},
 	}
 
-	return errors.New("config not found")
+	if err := c.addConfig(cfg); err != nil {
+		host.Logger().Error("Can't add the default middleware to configs", "error", err)
+		return err
+	}
+
+	return nil
 }
 
-// Merge all the yarpc configs in the collection: transports and middleware are going to be shared.
+// Starts the dispatcher: wait until all modules call start, create a single dispatcher and then start it.
+// Once started the collection will not start the dispatcher again.
+func (c *configCollection) Start(host service.Host) error {
+	var err error
+	c.start.Do(func() {
+		if err = c.addDefaultMiddleware(host); err != nil {
+			return
+		}
+
+		var cfg yarpc.Config
+		if cfg, err = c.mergeConfigs(); err != nil {
+			return
+		}
+
+		if c.dispatcher, err = _dispatcherFn(host, cfg); err != nil {
+			return
+		}
+
+		err = c.dispatcher.Start()
+	})
+
+	return err
+}
+
+// Return the result of the dispatcher Stop() on the first call.
+// No-op on subsequent calls.
+func (c *configCollection) Stop() error {
+	var err error
+	c.stop.Do(func() {
+		err = c.dispatcher.Stop()
+	})
+
+	return err
+}
+
+// Merge all the YARPC configs in the collection: transports and middleware are going to be shared.
 // The name comes from the first config in the collection and is the same among all configs.
 func (c *configCollection) mergeConfigs() (conf yarpc.Config, err error) {
 	c.RLock()
 	defer c.RUnlock()
 
 	if len(c.configs) <= 1 {
-		// Config collection will always have an additional config storing the middleware.
+		// Config collection should always have an additional config with the default middleware.
 		return conf, errors.New("unable to merge empty configs")
 	}
 
@@ -147,7 +185,7 @@ func (c *configCollection) mergeConfigs() (conf yarpc.Config, err error) {
 	return conf, nil
 }
 
-// Creates a new yarpc module and adds a common middleware to the global config collection.
+// Creates a new YARPC module and adds a common middleware to the global config collection.
 // The first created module defines the service name.
 func newYARPCModule(
 	mi service.ModuleCreateInfo,
@@ -162,30 +200,7 @@ func newYARPCModule(
 	module := &YARPCModule{
 		ModuleBase: *modules.NewModuleBase(name, mi.Host, []string{}),
 		register:   reg,
-		config: yarpcConfig{
-			AdvertiseName: mi.Host.Name(),
-		},
-	}
-
-	var err error
-	_configsOnce.Do(func() {
-		// All the modules are going to share the same middleware. This middleware is going to be the first:
-		err = _configs.addConfig(&yarpcConfig{
-			AdvertiseName: mi.Host.Name(),
-			inboundMiddleware: []middleware.UnaryInbound{
-				fxContextInboundMiddleware{mi.Host},
-				authInboundMiddleware{mi.Host},
-			},
-			onewayInboundMiddleware: []middleware.OnewayInbound{
-				fxContextOnewayInboundMiddleware{mi.Host},
-				authOnewayInboundMiddleware{mi.Host},
-			},
-		})
-	})
-
-	if err != nil {
-		module.log.Error("Unable to create a config for common middleware", "error", err)
-		return module, errs.Wrap(err, "unable to create config with the common middleware for YARPC module")
+		config:     yarpcConfig{AdvertiseName: mi.Host.Name()},
 	}
 
 	module.log = ulog.Logger().With("moduleName", name)
@@ -196,8 +211,8 @@ func newYARPCModule(
 		}
 	}
 
-	err = module.Host().Config().Scope("modules").Get(module.Name()).PopulateStruct(&module.config)
-	if err != nil {
+	config := module.Host().Config().Scope("modules").Get(module.Name())
+	if err := config.PopulateStruct(&module.config); err != nil {
 		return module, err
 	}
 
@@ -209,65 +224,54 @@ func newYARPCModule(
 		tch.ListenAddr(module.config.Bind),
 	)
 
+	if err != nil {
+		return nil, err
+	}
+
+	// TODO(alsam): add support for the http transport
 	module.config.inbounds = []transport.Inbound{tchTransport.NewInbound()}
 
+	err = _configs.addConfig(module.config)
 	return module, err
 }
 
-// Start begins serving requests over RPC. It first stops the current dispatcher, merges configs from the global
-// collection and then starts the new dispatcher.
+// Start begins serving requests with YARPC.
 func (m *YARPCModule) Start(readyCh chan<- struct{}) <-chan error {
+	ret := make(chan error, 1)
 	if m.IsRunning() {
-		panic("module is already running")
+		ret <- errors.New("module is already running")
+		return ret
 	}
 
 	m.stateMu.Lock()
 	defer m.stateMu.Unlock()
 
-	ret := make(chan error, 1)
-	if err := _configs.addConfig(&m.config); err != nil {
-		ret <- errs.Wrap(err, "can't add module config")
-		return ret
-	}
-
-	if config, err := _configs.mergeConfigs(); err != nil {
-		ret <- errs.Wrap(err, "unable to merge configs from multiple modules")
-		return ret
-	} else if err := resetDispatcher(m.Host(), config); err != nil {
-		ret <- err
+	if err := _configs.Start(m.Host()); err != nil {
+		ret <- errs.Wrap(err, "unable to start dispatcher")
 		return ret
 	}
 
 	m.register(m)
-	m.Host().Logger().Info("Module started",
+	m.log.Info("Module started",
 		"name", m.config.AdvertiseName,
 		"port", m.config.Bind)
 
 	m.isRunning = true
 	readyCh <- struct{}{}
+	ret <- nil
 	return ret
 }
 
-// Stop shuts down a YARPC module. It will stop the current dispatcher, remove the module config from the
-// config collection and start the new dispatcher with a new merged config.
+// Stop shuts down the YARPC module: stops the dispatcher.
 func (m *YARPCModule) Stop() error {
 	if !m.IsRunning() {
-		panic("module is not running")
+		return nil
 	}
 
 	m.stateMu.Lock()
 	defer m.stateMu.Unlock()
-
-	if err := _configs.removeConfig(&m.config); err != nil {
-		return err
-	} else if config, err := _configs.mergeConfigs(); err != nil {
-		return errs.Wrap(err, "unable to merge configs from multiple modules")
-	} else if err = resetDispatcher(m.Host(), config); err != nil {
-		return err
-	}
-
 	m.isRunning = false
-	return nil
+	return _configs.Stop()
 }
 
 // IsRunning returns whether a module is running
@@ -289,33 +293,7 @@ func defaultYARPCDispatcher(_ service.Host, cfg yarpc.Config) (*yarpc.Dispatcher
 }
 
 // Dispatcher returns a dispatcher that can be used to create clients.
-// It should be called after all modules have been started, because
-// the each module start creates a new dispatcher and stops previous.
+// It should be called after at least one module have been started, otherwise it will be nil.
 func Dispatcher() *yarpc.Dispatcher {
-	_dispatcherMu.RLock()
-	defer _dispatcherMu.RUnlock()
-	return _dispatcher
-}
-
-// Stops the current dispatcher, sets the new one with the host, config and _dispatcherFn, and then starts it.
-func resetDispatcher(host service.Host, config yarpc.Config) error {
-	d, err := _dispatcherFn(host, config)
-	if err != nil {
-		return err
-	}
-
-	_dispatcherMu.Lock()
-	defer _dispatcherMu.Unlock()
-
-	if _dispatcher == nil {
-		_dispatcher = d
-		return _dispatcher.Start()
-	}
-
-	if err := _dispatcher.Stop(); err != nil {
-		return err
-	}
-
-	_dispatcher = d
-	return _dispatcher.Start()
+	return _configs.dispatcher
 }

@@ -37,7 +37,7 @@ func TestWithInboundMiddleware_OK(t *testing.T) {
 	}
 
 	require.NoError(t, opt(mc))
-	assert.Equal(t, 1, len(inboundMiddlewaresFromCreateInfo(*mc)))
+	assert.Equal(t, 1, len(inboundMiddlewareFromCreateInfo(*mc)))
 }
 
 func TestWithOnewayInboundMiddleware_OK(t *testing.T) {
@@ -46,7 +46,7 @@ func TestWithOnewayInboundMiddleware_OK(t *testing.T) {
 		Items: make(map[string]interface{}),
 	}
 	require.NoError(t, opt(mc))
-	assert.Equal(t, 1, len(onewayInboundMiddlewaresFromCreateInfo(*mc)))
+	assert.Equal(t, 1, len(onewayInboundMiddlewareFromCreateInfo(*mc)))
 }
 
 func TestWithInboundMiddleware_PanicsBadData(t *testing.T) {
