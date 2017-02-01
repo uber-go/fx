@@ -23,6 +23,8 @@ package config
 import (
 	"fmt"
 	"os"
+	"path"
+	"path/filepath"
 	"strings"
 	"sync"
 )
@@ -62,7 +64,6 @@ var (
 // AppRoot returns the root directory of your application. UberFx developers
 // can edit this via the APP_ROOT environment variable. If the environment
 // variable is not set then it will fallback to the current working directory.
-// This is often used for resolving relative paths in your service.
 func AppRoot() string {
 	if appRoot := os.Getenv(_appRoot); appRoot != "" {
 		return appRoot
@@ -72,6 +73,19 @@ func AppRoot() string {
 	} else {
 		return cwd
 	}
+}
+
+// ResolvePath returns an absolute path derived from AppRoot and the relative path.
+// If the input parameter is is already an absolute path it will be returned immediately.
+func ResolvePath(relative string) (string, error) {
+	if filepath.IsAbs(relative) {
+		return relative, nil
+	}
+	abs := path.Join(AppRoot(), relative)
+	if _, err := os.Stat(abs); err != nil {
+		return "", err
+	}
+	return abs, nil
 }
 
 func getConfigFiles() []string {
