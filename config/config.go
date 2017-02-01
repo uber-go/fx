@@ -76,7 +76,7 @@ func AppRoot() string {
 }
 
 // ResolvePath returns an absolute path derived from AppRoot and the relative path.
-// If the input parameter is is already an absolute path it will be returned immediately.
+// If the input parameter is already an absolute path it will be returned immediately.
 func ResolvePath(relative string) (string, error) {
 	if filepath.IsAbs(relative) {
 		return relative, nil
