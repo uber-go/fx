@@ -42,13 +42,7 @@ func NewRelativeResolver(paths ...string) FileResolver {
 
 	copy(pathList, paths)
 
-	if appRoot := os.Getenv(EnvironmentPrefix() + _root); appRoot != "" {
-		// add the app root
-		pathList = append(pathList, appRoot)
-	} else if cwd, err := os.Getwd(); err == nil {
-		// add the current cwd
-		pathList = append(pathList, cwd)
-	}
+	pathList = append(pathList, AppRoot())
 
 	// add the exe dir
 	pathList = append(pathList, path.Dir(os.Args[0]))

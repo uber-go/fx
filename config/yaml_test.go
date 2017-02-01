@@ -102,7 +102,7 @@ func TestAppRoot(t *testing.T) {
 	cwd, err := os.Getwd()
 	assert.NoError(t, err)
 
-	defer env.Override(t, "TEST_ROOT", path.Join(cwd, "testdata"))()
+	defer env.Override(t, _appRoot, path.Join(cwd, "testdata"))()
 	provider := NewYAMLProviderFromFiles(false, NewRelativeResolver(), "base.yaml", "dev.yaml", "secrets.yaml")
 
 	baseValue := provider.Get("value").AsString()
