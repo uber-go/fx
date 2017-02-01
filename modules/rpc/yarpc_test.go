@@ -49,7 +49,7 @@ func TestDifferentAdvertiseNameReturnsError(t *testing.T) {
 	c := configCollection{}
 	cfg := yarpcConfig{
 		AdvertiseName: "fx",
-		inbounds: []transport.Inbound{http.NewTransport().NewInbound("")},
+		inbounds:      []transport.Inbound{http.NewTransport().NewInbound("")},
 	}
 
 	require.NoError(t, c.addConfig(cfg))
