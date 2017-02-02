@@ -21,6 +21,7 @@
 package task
 
 import (
+	"errors"
 	"testing"
 
 	"go.uber.org/fx/service"
@@ -29,19 +30,28 @@ import (
 )
 
 var (
-	_nopBackend = &NopBackend{}
-	_memBackend = NewInMemBackend()
-	_mi         = service.ModuleCreateInfo{
+	_nopBackend   = &NopBackend{}
+	_nopBackendFn = func(host service.Host) (Backend, error) { return _nopBackend, nil }
+	_memBackend   = NewInMemBackend()
+	_memBackendFn = func(host service.Host) (Backend, error) { return _memBackend, nil }
+	_errBackendFn = func(host service.Host) (Backend, error) { return nil, errors.New("bknd err") }
+	_mi           = service.ModuleCreateInfo{
 		Host: service.NopHost(),
 	}
 )
 
 func TestNewModule(t *testing.T) {
-	createModule(t, _nopBackend) // Singleton modules get saved
-	createModule(t, _memBackend) // Even though backend causes error, module saved earlier will return
+	createModule(t, _nopBackendFn) // Singleton modules get saved
+	createModule(t, _memBackendFn) // Even though backend causes error, module saved earlier will return
 }
 
-func createModule(t *testing.T, b Backend) {
+func TestNewModuleError(t *testing.T) {
+	mod, err := newAsyncModule(_mi, _errBackendFn)
+	assert.Error(t, err)
+	assert.Nil(t, mod)
+}
+
+func createModule(t *testing.T, b BackendCreateFunc) {
 	createFn := NewModule(b)
 	assert.NotNil(t, createFn)
 	mods, err := createFn(_mi)
