@@ -44,6 +44,9 @@ testImport:
   - gocov
 - package: github.com/axw/gocov
 - package: github.com/go-playground/overalls
+  # Force glide to get the latest version. Newer than this should be fine,
+  # but older than this doesn't support -go-binary flag I added
+  version: b52dfefba43cf6f75bb177ba45697ed12e0
 - package: github.com/sectioneight/md-to-godoc
   version: master
 # specified manually since we don't import md-to-godoc

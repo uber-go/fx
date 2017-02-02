@@ -38,6 +38,13 @@ else
 _FILTER_OVERALLS = grep -v "^Processing:"
 endif
 
+COV_TXT = coverage.txt
+ifeq ($(COVER),1)
+_OUTPUT_COVERAGE = cat -
+else
+_OUTPUT_COVERAGE = cat - > $(COV_TXT)
+endif
+
 # This is the default for overalls
 COVER_OUT := profile.coverprofile
 
@@ -47,6 +54,7 @@ $(COV_REPORT): $(PKG_FILES) $(ALL_SRC)
 
 	@$(call label,Running tests)
 	$(ECHO_V)$(OVERALLS) -project=$(PROJECT_ROOT) \
+		-go-binary=richgo \
 		-ignore "$(OVERALLS_IGNORE)" \
 		-covermode=atomic \
 		$(DEBUG_FLAG) -- \
@@ -55,9 +63,10 @@ $(COV_REPORT): $(PKG_FILES) $(ALL_SRC)
 		$(_FILTER_OVERALLS)
 
 	@$(call label,Generating coverage report)
+	$(ECHO_V)rm -f $(COV_TXT)
 	$(ECHO_V)if [ -a $(COV_REPORT) ]; then \
-		$(call label, Tests succeeded); \
-		$(GOCOV) convert $@ | $(GOCOV) report; \
+		$(call label,Tests succeeded) | $(_OUTPUT_COVERAGE) ; \
+		$(GOCOV) convert $@ | $(GOCOV) report | $(_OUTPUT_COVERAGE) ; \
 	else \
 		$(call die,Tests failed); \
 	fi;
@@ -77,7 +86,7 @@ BENCH_FILE ?= .bench/new.txt
 bench:
 	@$(call label,Running benchmarks)
 	$(ECHO_V)rm -f $(BENCH_FILE)
-	$(ECHO_V)$(foreach pkg,$(LIST_PKGS),go test -bench=. -run="^$$" $(BENCH_FLAGS) $(pkg) | \
+	$(ECHO_V)$(foreach pkg,$(LIST_PKGS),richgo test -bench=. -run="^$$" $(BENCH_FLAGS) $(pkg) | \
 		tee -a $(BENCH_FILE);)
 
 BASELINE_BENCH_FILE = .bench/old.txt
@@ -123,7 +132,7 @@ gendoc:
 
 .PHONY: clean
 clean:
-	$(ECHO_V)rm -f $(COV_REPORT) $(COV_HTML) $(LINT_LOG)
+	$(ECHO_V)rm -f $(COV_REPORT) $(COV_HTML) $(LINT_LOG) $(COV_TXT)
 	$(ECHO_V)find $(subst /...,,$(PKGS)) -name $(COVER_OUT) -delete
 	$(ECHO_V)rm -rf examples/keyvalue/kv/ .bin
 
