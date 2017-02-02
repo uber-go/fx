@@ -1,8 +1,8 @@
-hash: 7bb20f339469516288de7af1c3679bf6f448ec48552a1457f2ec2651609a3577
-updated: 2017-01-27T10:40:56.247602225-08:00
+hash: 379df26cbe8a7715f2b1926325de0a111ca5f2ea87e8a053457f99ba7025a108
+updated: 2017-02-02T07:28:04.397672278-08:00
 imports:
 - name: github.com/apache/thrift
-  version: 96be8c8d9408548966b3fb2895a8b84ac1045a37
+  version: de9c330b24c9190078eefb68c864d2a41a4dee07
   subpackages:
   - lib/go/thrift
 - name: github.com/certifi/gocertifi
@@ -37,7 +37,7 @@ imports:
   subpackages:
   - difflib
 - name: github.com/stretchr/testify
-  version: 2402e8e7a02fc811447d11f881aa9746cdc57983
+  version: 4d4bfba8f1d1027c4fdbe371823030df51419987
   subpackages:
   - assert
   - require
@@ -59,7 +59,7 @@ imports:
   - transport/udp
   - utils
 - name: github.com/uber/tchannel-go
-  version: aeda4836756434b4077ca7ef4b6a8c0d6b382101
+  version: 79387824978f91318be3bfb43ae12e04c38cfe97
   subpackages:
   - internal/argreader
   - relay
@@ -72,10 +72,17 @@ imports:
   version: c98a13058faa5dd41584a77221a268d2c72d832d
   subpackages:
   - envelope
+  - internal/envelope
   - internal/envelope/exception
+  - internal/frame
+  - internal/goast
+  - internal/multiplex
   - internal/semver
+  - plugin
+  - plugin/api
   - protocol
   - protocol/binary
+  - ptr
   - version
   - wire
 - name: go.uber.org/yarpc
@@ -99,10 +106,14 @@ imports:
   - transport/tchannel
   - transport/tchannel/internal
 - name: golang.org/x/net
-  version: f2499483f923065a842d38eb4c7f1927e6fc6e6d
+  version: 007e530097ad7f954752df63046b4036f98ba6a6
   subpackages:
   - context
   - context/ctxhttp
+- name: golang.org/x/tools
+  version: 1529f889eb4b594d1f047f2fb8d5b3cc85c8f006
+  subpackages:
+  - go/ast/astutil
 - name: gopkg.in/yaml.v2
   version: a83829b6f1293c91addabc89d0571c246397bbf4
 testImports:
@@ -113,7 +124,7 @@ testImports:
   subpackages:
   - gocov
 - name: github.com/go-playground/overalls
-  version: dab02cad1edafb5aa1d38729ba4bfd5618b836ce
+  version: b52dfefba43cf6f75bb177ba45697ed12e0d10a2
 - name: github.com/golang/lint
   version: 206c0f020eba0f7fbcfbc467a5eb808037df2ed6
   subpackages:
@@ -133,12 +144,10 @@ testImports:
 - name: github.com/pborman/uuid
   version: 1b00554d822231195d1babd97ff4a781231955c9
 - name: github.com/russross/blackfriday
-  version: a4dd8ad4a6fda03e68be3eacb71efbf51565415e
+  version: ad7f7c56d58a2c7f75a14cdcaa8b8acd5dc4f141
 - name: github.com/sectioneight/md-to-godoc
   version: f274e5a4257c85a9eaf60ac820ee813b78cac6ab
 - name: github.com/shurcooL/sanitized_anchor_name
   version: 1dba4b3954bc059efc3991ec364f9f9a35f597d2
-- name: golang.org/x/tools
-  version: 1529f889eb4b594d1f047f2fb8d5b3cc85c8f006
-  subpackages:
-  - cover
+- name: github.com/yookoala/realpath
+  version: c416d99ab5ed256fa30c1f3bab73152deb59bb69
