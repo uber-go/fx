@@ -75,8 +75,12 @@ type yarpcConfig struct {
 // share the same AdvertiseName and represent a single service.
 type configCollection struct {
 	sync.RWMutex
-	start sync.Once
-	stop  sync.Once
+
+	start      sync.Once
+	startError error
+
+	stop      sync.Once
+	stopError error
 
 	configs    []*yarpcConfig
 	dispatcher *yarpc.Dispatcher
@@ -123,8 +127,14 @@ func (c *configCollection) addDefaultMiddleware(host service.Host) error {
 // Starts the dispatcher: wait until all modules call start, create a single dispatcher and then start it.
 // Once started the collection will not start the dispatcher again.
 func (c *configCollection) Start(host service.Host) error {
-	var err error
 	c.start.Do(func() {
+		var err error
+		defer func() {
+			c.Lock()
+			c.startError = err
+			c.Unlock()
+		}()
+
 		if err = c.addDefaultMiddleware(host); err != nil {
 			return
 		}
@@ -143,18 +153,23 @@ func (c *configCollection) Start(host service.Host) error {
 		err = c.dispatcher.Start()
 	})
 
-	return err
+	c.RLock()
+	defer c.RUnlock()
+	return c.startError
 }
 
 // Return the result of the dispatcher Stop() on the first call.
 // No-op on subsequent calls.
 func (c *configCollection) Stop() error {
-	var err error
 	c.stop.Do(func() {
-		err = c.dispatcher.Stop()
+		c.Lock()
+		c.stopError = c.dispatcher.Stop()
+		c.Unlock()
 	})
 
-	return err
+	c.RLock()
+	defer c.RUnlock()
+	return c.stopError
 }
 
 // Merge all the YARPC configs in the collection: transports and middleware are going to be shared.
