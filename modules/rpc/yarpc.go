@@ -127,48 +127,44 @@ func (c *configCollection) addDefaultMiddleware(host service.Host) error {
 // Starts the dispatcher: wait until all modules call start, create a single dispatcher and then start it.
 // Once started the collection will not start the dispatcher again.
 func (c *configCollection) Start(host service.Host) error {
+	c.Lock()
+	defer c.Unlock()
+
 	c.start.Do(func() {
 		var err error
-		defer func() {
-			c.Lock()
-			c.startError = err
-			c.Unlock()
-		}()
-
 		if err = c.addDefaultMiddleware(host); err != nil {
+			c.startError = err
 			return
 		}
 
 		var cfg yarpc.Config
 		if cfg, err = c.mergeConfigs(); err != nil {
+			c.startError = err
 			return
 		}
 
 		_dispatcherMu.Lock()
 		defer _dispatcherMu.Unlock()
 		if c.dispatcher, err = _dispatcherFn(host, cfg); err != nil {
+			c.startError = err
 			return
 		}
 
-		err = c.dispatcher.Start()
+		c.startError = c.dispatcher.Start()
 	})
 
-	c.RLock()
-	defer c.RUnlock()
 	return c.startError
 }
 
 // Return the result of the dispatcher Stop() on the first call.
 // No-op on subsequent calls.
 func (c *configCollection) Stop() error {
+	c.Lock()
+	defer c.Unlock()
 	c.stop.Do(func() {
-		c.Lock()
 		c.stopError = c.dispatcher.Stop()
-		c.Unlock()
 	})
 
-	c.RLock()
-	defer c.RUnlock()
 	return c.stopError
 }
 
