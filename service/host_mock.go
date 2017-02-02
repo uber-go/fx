@@ -49,9 +49,9 @@ func NopHostConfigured(client auth.Client, logger ulog.Log, tracer opentracing.T
 		authClient:     client,
 		configProvider: config.NewStaticProvider(nil),
 		standardConfig: serviceConfig{
-			ServiceName:        "dummy",
-			ServiceOwner:       "root@example.com",
-			ServiceDescription: "does cool stuff",
+			ApplicationID:    "dummy",
+			ApplicationOwner: "root@example.com",
+			ApplicationDesc:  "does cool stuff",
 		},
 		loggingCore: loggingCore{
 			log: logger,

@@ -40,13 +40,13 @@ func TestHostContainer_SetContainer(t *testing.T) {
 func TestCoreDescription(t *testing.T) {
 	sh := NopHost().(*serviceCore)
 
-	assert.Equal(t, sh.standardConfig.ServiceDescription, sh.Description())
+	assert.Equal(t, sh.standardConfig.ApplicationDesc, sh.Description())
 }
 
 func TestCoreOwner(t *testing.T) {
 	sh := NopHost().(*serviceCore)
 
-	assert.Equal(t, sh.standardConfig.ServiceOwner, sh.Owner())
+	assert.Equal(t, sh.standardConfig.ApplicationOwner, sh.Owner())
 }
 
 func TestCoreState(t *testing.T) {
@@ -60,7 +60,7 @@ func TestCoreState(t *testing.T) {
 func TestCoreRoles(t *testing.T) {
 	sh := &serviceCore{
 		standardConfig: serviceConfig{
-			ServiceRoles: []string{"test-suite"},
+			Roles: []string{"test-suite"},
 		},
 	}
 
