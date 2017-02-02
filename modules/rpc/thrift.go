@@ -21,12 +21,16 @@
 package rpc
 
 import (
+	"sync"
+
 	"go.uber.org/fx/modules"
 	"go.uber.org/fx/service"
 
 	"github.com/pkg/errors"
 	"go.uber.org/yarpc/api/transport"
 )
+
+var _setupMu sync.Mutex
 
 // CreateThriftServiceFunc creates a Thrift service from a service host
 type CreateThriftServiceFunc func(svc service.Host) ([]transport.Procedure, error)
@@ -54,6 +58,8 @@ func newYarpcThriftModule(
 	}
 
 	reg := func(mod *YarpcModule) {
+		_setupMu.Lock()
+		defer _setupMu.Unlock()
 		mod.rpc.Register(registrants)
 	}
 	return newYarpcModule(mi, reg, options...)
