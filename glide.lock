@@ -1,5 +1,5 @@
-hash: cef0b0139c5289591e3eb35c47578f35f82b5b6b9bab694d81a55bc5dab7b852
-updated: 2017-02-02T05:45:45.584806318-08:00
+hash: 379df26cbe8a7715f2b1926325de0a111ca5f2ea87e8a053457f99ba7025a108
+updated: 2017-02-02T07:28:04.397672278-08:00
 imports:
 - name: github.com/apache/thrift
   version: de9c330b24c9190078eefb68c864d2a41a4dee07
@@ -144,8 +144,10 @@ testImports:
 - name: github.com/pborman/uuid
   version: 1b00554d822231195d1babd97ff4a781231955c9
 - name: github.com/russross/blackfriday
-  version: a4dd8ad4a6fda03e68be3eacb71efbf51565415e
+  version: ad7f7c56d58a2c7f75a14cdcaa8b8acd5dc4f141
 - name: github.com/sectioneight/md-to-godoc
   version: f274e5a4257c85a9eaf60ac820ee813b78cac6ab
 - name: github.com/shurcooL/sanitized_anchor_name
   version: 1dba4b3954bc059efc3991ec364f9f9a35f597d2
+- name: github.com/yookoala/realpath
+  version: c416d99ab5ed256fa30c1f3bab73152deb59bb69
