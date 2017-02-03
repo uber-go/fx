@@ -23,9 +23,17 @@ import (
 
 func main() {
   svc, err := service.WithModules(
-    task.NewModule()
+    task.NewModule(newBackend),
   ).Build()
-  task.Register(updateCache)
+  svc.Start()
+  if err := task.Register(updateCache); err != nil {
+    // handle error
+  }
+}
+
+func newBackend(host service.Host) (task.Backend, error) {
+  b := // create backend here
+  return b, nil
 }
 
 func runActivity(input string) error {
@@ -35,7 +43,6 @@ func runActivity(input string) error {
     return err
   }
 }
-
 
 func updateCache(input string, results string) error {
   // update cache with the name
