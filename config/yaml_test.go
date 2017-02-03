@@ -316,8 +316,8 @@ func TestMerge(t *testing.T) {
 }
 
 type TChannel struct {
-	ListenOn  string `yaml,"listenOn"`
-	Advertise bool   `yaml,"advertise"`
+	ListenOn  string `yaml:"listenOn"`
+	Advertise bool   `yaml:"advertise"`
 }
 
 type RPC struct {
@@ -326,7 +326,7 @@ type RPC struct {
 }
 
 type Modules struct {
-	RPC RPC `yaml,"rpc"`
+	RPC RPC `yaml:"rpc"`
 }
 
 func TestMergeDeepMerge(t *testing.T) {
