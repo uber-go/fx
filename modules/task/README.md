@@ -17,7 +17,7 @@ from the backend, they will execute the function.
 package main
 
 import (
-	"go.uber.org/fx/modules/task"
+  "go.uber.org/fx/modules/task"
   "go.uber.org/fx/service"
 )
 
@@ -38,10 +38,8 @@ func newBackend(host service.Host) (task.Backend, error) {
 
 func runActivity(input string) error {
   // do things
-  results := "results"
-  if err := task.Enqueue(updateCache, input, results); err != nil {
-    return err
-  }
+  results := // calculate results here
+  return task.Enqueue(updateCache, input, results)
 }
 
 func updateCache(input string, results string) error {
