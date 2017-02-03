@@ -90,7 +90,7 @@ func errorOption(_ *service.ModuleCreateInfo) error {
 
 func okCreate(_ service.Host) ([]transport.Procedure, error) {
 	reg := thrift.BuildProcedures(thrift.Service{
-		Name: "",
+		Name: "foo",
 	})
 	return reg, nil
 }

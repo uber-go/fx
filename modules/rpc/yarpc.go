@@ -78,9 +78,6 @@ type dispatcherController struct {
 	// sync configs
 	sync.RWMutex
 
-	// sync start/stop errors
-	errorMu sync.RWMutex
-
 	// idempotent start and stop
 	start      sync.Once
 	stop       sync.Once
@@ -132,9 +129,6 @@ func (c *dispatcherController) addDefaultMiddleware(host service.Host) error {
 // Starts the dispatcher: wait until all modules call start, create a single dispatcher and then start it.
 // Once started the collection will not start the dispatcher again.
 func (c *dispatcherController) Start(host service.Host) error {
-	c.errorMu.Lock()
-	defer c.errorMu.Unlock()
-
 	c.start.Do(func() {
 		var err error
 		if err = c.addDefaultMiddleware(host); err != nil {
@@ -165,8 +159,6 @@ func (c *dispatcherController) Start(host service.Host) error {
 // No-op on subsequent calls.
 // TODO: update readme/docs/examples GFM(339)
 func (c *dispatcherController) Stop() error {
-	c.errorMu.Lock()
-	defer c.errorMu.Unlock()
 	c.stop.Do(func() {
 		c.stopError = c.dispatcher.Stop()
 	})

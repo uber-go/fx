@@ -61,4 +61,5 @@ func TestMergeOfEmptyConfigCollectionReturnsError(t *testing.T) {
 	c := dispatcherController{}
 	_, err := c.mergeConfigs()
 	assert.Error(t, err)
+	assert.Error(t, c.Start(service.NopHost()))
 }
