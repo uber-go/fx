@@ -126,17 +126,17 @@ func (s *serviceCore) AuthClient() auth.Client {
 }
 
 func (s *serviceCore) Name() string {
-	return s.standardConfig.ApplicationID
+	return s.standardConfig.ServiceName
 }
 
 func (s *serviceCore) Description() string {
-	return s.standardConfig.ApplicationDesc
+	return s.standardConfig.ServiceDescription
 }
 
 // ServiceOwner is a string in config.
 // Owner is also a struct that embeds Host
 func (s *serviceCore) Owner() string {
-	return s.standardConfig.ApplicationOwner
+	return s.standardConfig.ServiceOwner
 }
 
 func (s *serviceCore) State() State {
@@ -144,7 +144,7 @@ func (s *serviceCore) State() State {
 }
 
 func (s *serviceCore) Roles() []string {
-	return s.standardConfig.Roles
+	return s.standardConfig.ServiceRoles
 }
 
 // What items?

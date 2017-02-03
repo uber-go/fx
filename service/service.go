@@ -77,10 +77,10 @@ type Exit struct {
 }
 
 type serviceConfig struct {
-	ApplicationID    string   `yaml:"applicationID" validate:"nonzero"`
-	ApplicationOwner string   `yaml:"applicationOwner"  validate:"nonzero"`
-	ApplicationDesc  string   `yaml:"applicationDesc"`
-	Roles            []string `yaml:"roles"`
+	ServiceName        string   `yaml:"applicationID" validate:"nonzero"`
+	ServiceOwner       string   `yaml:"applicationOwner"  validate:"nonzero"`
+	ServiceDescription string   `yaml:"applicationDesc"`
+	ServiceRoles       []string `yaml:"roles"`
 }
 
 // New creates a service owner from a set of service instances and options
@@ -96,7 +96,7 @@ func New(options ...Option) (Owner, error) {
 
 	// hash up the roles
 	svc.roles = map[string]bool{}
-	for _, r := range svc.standardConfig.Roles {
+	for _, r := range svc.standardConfig.ServiceRoles {
 		svc.roles[r] = true
 	}
 
