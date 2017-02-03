@@ -44,14 +44,14 @@ import (
 
 var (
 	_respOK   = &http.Response{StatusCode: http.StatusOK}
-	_req      = httptest.NewRequest("", "http://localhost", nil)
+	_req      = func() *http.Request { return httptest.NewRequest("", "http://localhost", nil) }
 	errClient = errors.New("client test error")
 )
 
 func TestExecutionChain(t *testing.T) {
 	t.Parallel()
 	execChain := newExecutionChain([]Filter{}, nopTransport{})
-	resp, err := execChain.RoundTrip(_req.WithContext(fx.NopContext))
+	resp, err := execChain.RoundTrip(_req().WithContext(fx.NopContext))
 	assert.NoError(t, err)
 	assert.Equal(t, _respOK, resp)
 }
@@ -62,7 +62,7 @@ func TestExecutionChainFilters(t *testing.T) {
 		[]Filter{tracingFilter()}, nopTransport{},
 	)
 	ctx := fx.NopContext
-	resp, err := execChain.RoundTrip(_req.WithContext(ctx))
+	resp, err := execChain.RoundTrip(_req().WithContext(ctx))
 	assert.NoError(t, err)
 	assert.Equal(t, _respOK, resp)
 }
@@ -72,7 +72,7 @@ func TestExecutionChainFiltersError(t *testing.T) {
 	execChain := newExecutionChain(
 		[]Filter{tracingFilter()}, errTransport{},
 	)
-	resp, err := execChain.RoundTrip(_req.WithContext(fx.NopContext))
+	resp, err := execChain.RoundTrip(_req().WithContext(fx.NopContext))
 	assert.Error(t, err)
 	assert.Equal(t, errClient, err)
 	assert.Nil(t, resp)
@@ -100,7 +100,7 @@ func TestExecutionChainFilters_AuthContextPropagation(t *testing.T) {
 		ctx := &fxcontext.Context{
 			Context: opentracing.ContextWithSpan(context.Background(), span),
 		}
-		resp, err := execChain.RoundTrip(_req.WithContext(ctx))
+		resp, err := execChain.RoundTrip(_req().WithContext(ctx))
 		assert.NoError(t, err)
 		assert.Equal(t, _respOK, resp)
 	})
@@ -116,7 +116,7 @@ func TestExecutionChainFilters_AuthContextPropagationFailure(t *testing.T) {
 		ctx := &fxcontext.Context{
 			Context: opentracing.ContextWithSpan(context.Background(), span),
 		}
-		resp, err := execChain.RoundTrip(_req.WithContext(ctx))
+		resp, err := execChain.RoundTrip(_req().WithContext(ctx))
 		assert.Error(t, err)
 		assert.Nil(t, resp)
 	})
@@ -150,7 +150,7 @@ func TestFiltersWithTracerErrors(t *testing.T) {
 				Context: opentracing.ContextWithSpan(context.Background(), sp),
 			}
 
-			_, err := execChain.RoundTrip(_req.WithContext(ctx))
+			_, err := execChain.RoundTrip(_req().WithContext(ctx))
 			assert.EqualError(t, err, "Very bad tracer")
 
 			opentracing.InitGlobalTracer(tracer)
