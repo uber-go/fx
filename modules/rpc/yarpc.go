@@ -53,10 +53,11 @@ var (
 
 	_ service.Module = &YARPCModule{}
 
-	// A collection of all YARPC configs that are stored together to create
-	// a shared dispatcher. The YARPC team advised it to be a 'singleton'
-	// to control the lifecycle of all of the in/out bound traffic.
-	_configs configCollection
+	// Controller represents a collection of all YARPC configs
+	// that are stored together to create a shared dispatcher.
+	// The YARPC team advised it to be a 'singleton' to control
+	// the lifecycle of all of the in/out bound traffic.
+	_controller dispatcherController
 )
 
 type registerServiceFunc func(module *YARPCModule)
@@ -73,7 +74,7 @@ type yarpcConfig struct {
 // Stores a collection of all modules configs with a shared dispatcher
 // that are safe to call from multiple go routines. All the configs must
 // share the same AdvertiseName and represent a single service.
-type configCollection struct {
+type dispatcherController struct {
 	// sync configs
 	sync.RWMutex
 
@@ -91,7 +92,7 @@ type configCollection struct {
 }
 
 // Adds the config to the collection, the first config sets up the AdvertiseName requirement on consequent additions.
-func (c *configCollection) addConfig(config yarpcConfig) error {
+func (c *dispatcherController) addConfig(config yarpcConfig) error {
 	c.Lock()
 	defer c.Unlock()
 
@@ -107,7 +108,7 @@ func (c *configCollection) addConfig(config yarpcConfig) error {
 }
 
 // Adds the default middleware: fx.context propagation and auth.
-func (c *configCollection) addDefaultMiddleware(host service.Host) error {
+func (c *dispatcherController) addDefaultMiddleware(host service.Host) error {
 	cfg := yarpcConfig{
 		AdvertiseName: host.Name(),
 		inboundMiddleware: []middleware.UnaryInbound{
@@ -130,7 +131,7 @@ func (c *configCollection) addDefaultMiddleware(host service.Host) error {
 
 // Starts the dispatcher: wait until all modules call start, create a single dispatcher and then start it.
 // Once started the collection will not start the dispatcher again.
-func (c *configCollection) Start(host service.Host) error {
+func (c *dispatcherController) Start(host service.Host) error {
 	c.errorMu.Lock()
 	defer c.errorMu.Unlock()
 
@@ -162,7 +163,8 @@ func (c *configCollection) Start(host service.Host) error {
 
 // Return the result of the dispatcher Stop() on the first call.
 // No-op on subsequent calls.
-func (c *configCollection) Stop() error {
+// TODO: update readme/docs/examples GFM(339)
+func (c *dispatcherController) Stop() error {
 	c.errorMu.Lock()
 	defer c.errorMu.Unlock()
 	c.stop.Do(func() {
@@ -174,12 +176,12 @@ func (c *configCollection) Stop() error {
 
 // Merge all the YARPC configs in the collection: transports and middleware are going to be shared.
 // The name comes from the first config in the collection and is the same among all configs.
-func (c *configCollection) mergeConfigs() (conf yarpc.Config, err error) {
+func (c *dispatcherController) mergeConfigs() (conf yarpc.Config, err error) {
 	c.RLock()
 	defer c.RUnlock()
 
+	// Config collection should always have an additional config with the default middleware.
 	if len(c.configs) <= 1 {
-		// Config collection should always have an additional config with the default middleware.
 		return conf, errors.New("unable to merge empty configs")
 	}
 
@@ -249,7 +251,7 @@ func newYARPCModule(
 	// TODO(alsam): add support for the http transport
 	module.config.inbounds = []transport.Inbound{tchTransport.NewInbound()}
 
-	err = _configs.addConfig(module.config)
+	err = _controller.addConfig(module.config)
 	return module, err
 }
 
@@ -264,7 +266,7 @@ func (m *YARPCModule) Start(readyCh chan<- struct{}) <-chan error {
 	m.stateMu.Lock()
 	defer m.stateMu.Unlock()
 
-	if err := _configs.Start(m.Host()); err != nil {
+	if err := _controller.Start(m.Host()); err != nil {
 		ret <- errs.Wrap(err, "unable to start dispatcher")
 		return ret
 	}
@@ -289,7 +291,7 @@ func (m *YARPCModule) Stop() error {
 	m.stateMu.Lock()
 	defer m.stateMu.Unlock()
 	m.isRunning = false
-	return _configs.Stop()
+	return _controller.Stop()
 }
 
 // IsRunning returns whether a module is running
@@ -315,5 +317,5 @@ func defaultYARPCDispatcher(_ service.Host, cfg yarpc.Config) (*yarpc.Dispatcher
 // Dispatcher returns a dispatcher that can be used to create clients.
 // It should be called after at least one module have been started, otherwise it will be nil.
 func Dispatcher() *yarpc.Dispatcher {
-	return _configs.dispatcher
+	return _controller.dispatcher
 }

@@ -38,7 +38,7 @@ func TestRegisterDispatcher_OK(t *testing.T) {
 
 func TestDispatcher(t *testing.T) {
 	t.Parallel()
-	c := configCollection{}
+	c := dispatcherController{}
 	host := service.NopHost()
 	require.NoError(t, c.addConfig(yarpcConfig{AdvertiseName: host.Name(), inbounds: []transport.Inbound{}}))
 	assert.NoError(t, c.Start(host))
@@ -46,7 +46,7 @@ func TestDispatcher(t *testing.T) {
 
 func TestDifferentAdvertiseNameReturnsError(t *testing.T) {
 	t.Parallel()
-	c := configCollection{}
+	c := dispatcherController{}
 	cfg := yarpcConfig{
 		AdvertiseName: "fx",
 		inbounds:      []transport.Inbound{http.NewTransport().NewInbound("")},
@@ -58,7 +58,7 @@ func TestDifferentAdvertiseNameReturnsError(t *testing.T) {
 
 func TestMergeOfEmptyConfigCollectionReturnsError(t *testing.T) {
 	t.Parallel()
-	c := configCollection{}
+	c := dispatcherController{}
 	_, err := c.mergeConfigs()
 	assert.Error(t, err)
 }
