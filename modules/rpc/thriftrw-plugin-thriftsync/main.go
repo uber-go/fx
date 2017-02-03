@@ -32,6 +32,9 @@ import (
 
 // Command line flags
 var (
+	_yarpcServer = flag.String("yarpc-server",
+		"",
+		"Package path for yarpc generated server")
 	_baseDir = flag.String("base-dir",
 		"server",
 		"Path from root where handlers should live")
@@ -45,6 +48,14 @@ var (
 
 var templateOptions = []plugin.TemplateOption{
 	plugin.TemplateFunc("lower", strings.ToLower),
+	plugin.TemplateFunc("isStringType", func(spec api.Type) bool {
+		simple := *spec.SimpleType
+		switch simple {
+		case api.SimpleTypeString:
+			return true
+		}
+		return false
+	}),
 }
 
 type generator struct{}
@@ -70,12 +81,14 @@ func (generator) Generate(req *api.GenerateServiceRequest) (*api.GenerateService
 			Parent             *api.Service
 			ParentModule       *api.Module
 			HandlerPackageName string
+			YARPCServer        string
 		}{
 			Module:             module,
 			Service:            service,
 			Parent:             parent,
 			ParentModule:       parentModule,
 			HandlerPackageName: *_handlerPackageName,
+			YARPCServer:        *_yarpcServer,
 		}
 
 		gofilePath := filepath.Join(*_baseDir, "handlers.go")

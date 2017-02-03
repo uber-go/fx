@@ -32,27 +32,32 @@ const newHandlerTemplate = `
 // Running thriftsync will only update method signatures, and new methods added to *.thrift
 
 <$pkgname   := .HandlerPackageName>
+<$yarpcServerPath   := .YARPCServer>
 package <$pkgname>
 
-<$core      := import "go.uber.org/fx">
+<$context   := import "go.uber.org/fx">
 <$transport := import "go.uber.org/yarpc/api/transport">
 <$service   := import "go.uber.org/fx/service">
 
 type YARPCHandler struct{
+	host <$service>.Host
   // TODO: modify the <.Service.Name> handler with your suitable structure
 }
 // NewYARPCThriftHandler for your service
-func NewYARPCThriftHandler(<$service>.Host) ([]<$transport>.Procedure, error) {
-  handler := &YARPCHandler{}
+func NewYARPCThriftHandler(host <$service>.Host) ([]<$transport>.Procedure, error) {
+  handler := &YARPCHandler{
+		host: host,
+	}
+	<$yarpcserver := import $yarpcServerPath>
   return <lower .Service.Name>server.New(handler), nil
 }
 
 <$name := lower .Service.Name>
 <range .Service.Functions>
 
-  func (h *YARPCHandler)<.Name>(ctx fx.Context, <range .Arguments> <lower .Name> <formatType .Type>, <end>)<if .ReturnType> (<formatType .ReturnType>, error) <else> error <end> {
+  func (h *YARPCHandler)<.Name>(ctx <$context>.Context, <range .Arguments> <lower .Name> <formatType .Type>, <end>)<if .ReturnType> (<formatType .ReturnType>, error) <else> error <end> {
     // TODO: write your code here
-    return nil
+    return <if .ReturnType> <if isStringType .ReturnType> "", <else> nil, <end> <end> nil
   }
 
 <end>

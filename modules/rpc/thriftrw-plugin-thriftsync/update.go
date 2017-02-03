@@ -43,7 +43,7 @@ package discardme
 
   func (h *YARPCHandler)<.Name>(ctx fx.Context, <range .Arguments> <lower .Name> <formatType .Type>, <end>)<if .ReturnType> (<formatType .ReturnType>, error) <else> error <end> {
     // TODO: write your code here
-    return nil
+    return <if .ReturnType> <if isStringType .ReturnType> "", <else> nil, <end> <end> nil
   }
 
 <end>
