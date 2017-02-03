@@ -36,6 +36,7 @@ var (
 	_globalBackendMu sync.RWMutex
 	_globalBackend   Backend = &NopBackend{}
 	_asyncMod        service.Module
+	_asyncModErr     error
 	_once            sync.Once
 )
 
@@ -48,39 +49,43 @@ func GlobalBackend() Backend {
 }
 
 // NewModule creates an async task queue module
-func NewModule(backend Backend) service.ModuleCreateFunc {
+func NewModule(createFunc BackendCreateFunc) service.ModuleCreateFunc {
 	return func(mi service.ModuleCreateInfo) ([]service.Module, error) {
-		mod := newAsyncModuleSingleton(mi, backend)
-		return []service.Module{mod}, nil
+		mod, err := newAsyncModuleSingleton(mi, createFunc)
+		return []service.Module{mod}, err
 	}
 }
 
-func newAsyncModuleSingleton(mi service.ModuleCreateInfo, backend Backend) service.Module {
+func newAsyncModuleSingleton(
+	mi service.ModuleCreateInfo, createFunc BackendCreateFunc,
+) (service.Module, error) {
 	_once.Do(func() {
-		_asyncMod = newAsyncModule(mi, backend)
+		_asyncMod, _asyncModErr = newAsyncModule(mi, createFunc)
 	})
-	return _asyncMod
+	return _asyncMod, _asyncModErr
 }
 
-func newAsyncModule(mi service.ModuleCreateInfo, backend Backend) service.Module {
+func newAsyncModule(
+	mi service.ModuleCreateInfo, createFunc BackendCreateFunc,
+) (service.Module, error) {
+	backend, err := createFunc(mi.Host)
+	if err != nil {
+		return nil, err
+	}
 	_globalBackendMu.Lock()
 	_globalBackend = backend
 	_globalBackendMu.Unlock()
 	return &AsyncModule{
 		Backend: backend,
 		modBase: *modules.NewModuleBase("task", mi.Host, []string{}),
-	}
+	}, nil
 }
+
+// BackendCreateFunc creates a backend implementation
+type BackendCreateFunc func(host service.Host) (Backend, error)
 
 // AsyncModule denotes the asynchronous task queue module
 type AsyncModule struct {
 	Backend
 	modBase modules.ModuleBase
-	config  Config
-}
-
-// Config contains config for task backends
-type Config struct {
-	broker  string `yaml:"broker"`
-	timeout string `yaml:"timeout"`
 }
