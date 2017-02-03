@@ -31,28 +31,28 @@ const (
 	_onewayInterceptorKey = "yarpcOnewayInboundMiddleware"
 )
 
-// WithInboundMiddleware adds custom YARPC inboundMiddlewares to the module
+// WithInboundMiddleware adds custom YARPC inboundMiddleware to the module
 func WithInboundMiddleware(i ...middleware.UnaryInbound) modules.Option {
 	return func(mci *service.ModuleCreateInfo) error {
-		inboundMiddlewares := inboundMiddlewaresFromCreateInfo(*mci)
-		inboundMiddlewares = append(inboundMiddlewares, i...)
-		mci.Items[_interceptorKey] = inboundMiddlewares
+		inboundMiddleware := inboundMiddlewareFromCreateInfo(*mci)
+		inboundMiddleware = append(inboundMiddleware, i...)
+		mci.Items[_interceptorKey] = inboundMiddleware
 
 		return nil
 	}
 }
 
-// WithOnewayInboundMiddleware adds custom YARPC inboundMiddlewares to the module
+// WithOnewayInboundMiddleware adds custom YARPC inboundMiddleware to the module
 func WithOnewayInboundMiddleware(i ...middleware.OnewayInbound) modules.Option {
 	return func(mci *service.ModuleCreateInfo) error {
-		inboundMiddlewares := onewayInboundMiddlewaresFromCreateInfo(*mci)
-		inboundMiddlewares = append(inboundMiddlewares, i...)
-		mci.Items[_onewayInterceptorKey] = inboundMiddlewares
+		inboundMiddleware := onewayInboundMiddlewareFromCreateInfo(*mci)
+		inboundMiddleware = append(inboundMiddleware, i...)
+		mci.Items[_onewayInterceptorKey] = inboundMiddleware
 		return nil
 	}
 }
 
-func inboundMiddlewaresFromCreateInfo(mci service.ModuleCreateInfo) []middleware.UnaryInbound {
+func inboundMiddlewareFromCreateInfo(mci service.ModuleCreateInfo) []middleware.UnaryInbound {
 	items, ok := mci.Items[_interceptorKey]
 	if !ok {
 		return nil
@@ -62,7 +62,7 @@ func inboundMiddlewaresFromCreateInfo(mci service.ModuleCreateInfo) []middleware
 	return items.([]middleware.UnaryInbound)
 }
 
-func onewayInboundMiddlewaresFromCreateInfo(mci service.ModuleCreateInfo) []middleware.OnewayInbound {
+func onewayInboundMiddlewareFromCreateInfo(mci service.ModuleCreateInfo) []middleware.OnewayInbound {
 	items, ok := mci.Items[_onewayInterceptorKey]
 	if !ok {
 		return nil

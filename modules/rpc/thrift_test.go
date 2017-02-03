@@ -34,14 +34,20 @@ import (
 )
 
 func TestThriftModule_OK(t *testing.T) {
-	modCreate := ThriftModule(okCreate, modules.WithRoles("test"))
-	mci := mch()
-	mods, err := modCreate(mch())
-	require.NoError(t, err)
-	assert.NotEmpty(t, mods)
+	chip := ThriftModule(okCreate, modules.WithRoles("rescue"))
+	dale := ThriftModule(okCreate, modules.WithRoles("ranges"))
 
-	mod := mods[0]
-	testInitRunModule(t, mod, mci)
+	mci := mch()
+	goofy, err := chip(mch())
+	require.NoError(t, err)
+	assert.NotEmpty(t, goofy)
+
+	gopher, err := dale(mch())
+	require.NoError(t, err)
+	assert.NotEmpty(t, gopher)
+
+	testInitRunModule(t, goofy[0], mci)
+	testInitRunModule(t, gopher[0], mci)
 }
 
 func TestThriftModule_BadOptions(t *testing.T) {
@@ -66,6 +72,9 @@ func testInitRunModule(t *testing.T, mod service.Module, mci service.ModuleCreat
 	}()
 	assert.True(t, mod.IsRunning())
 	assert.NoError(t, <-errs)
+
+	c := mod.Start(make(chan struct{}))
+	assert.Error(t, <-c)
 }
 
 func mch() service.ModuleCreateInfo {

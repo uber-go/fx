@@ -21,42 +21,45 @@
 package rpc
 
 import (
-	"bytes"
-	"context"
 	"testing"
 
+	"go.uber.org/fx/service"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.uber.org/yarpc/api/transport"
-	"go.uber.org/yarpc/encoding/raw"
+	"go.uber.org/yarpc/transport/http"
 )
 
 func TestRegisterDispatcher_OK(t *testing.T) {
-	RegisterDispatcher(defaultYarpcDispatcher)
+	t.Parallel()
+	RegisterDispatcher(defaultYARPCDispatcher)
 }
 
-func makeRequest() *transport.Request {
-	return &transport.Request{
-		Caller:    "the test suite",
-		Service:   "any service",
-		Encoding:  raw.Encoding,
-		Procedure: "hello",
-		Body:      bytes.NewReader([]byte{1, 2, 3}),
+func TestDispatcher(t *testing.T) {
+	t.Parallel()
+	c := dispatcherController{}
+	host := service.NopHost()
+	require.NoError(t, c.addConfig(yarpcConfig{AdvertiseName: host.Name(), inbounds: []transport.Inbound{}}))
+	assert.NoError(t, c.Start(host))
+}
+
+func TestDifferentAdvertiseNameReturnsError(t *testing.T) {
+	t.Parallel()
+	c := dispatcherController{}
+	cfg := yarpcConfig{
+		AdvertiseName: "fx",
+		inbounds:      []transport.Inbound{http.NewTransport().NewInbound("")},
 	}
+
+	require.NoError(t, c.addConfig(cfg))
+	assert.Error(t, c.Start(service.NopHost()))
 }
 
-func makeHandler(err error) transport.UnaryHandler {
-	return dummyHandler{
-		err: err,
-	}
-}
-
-type dummyHandler struct {
-	err error
-}
-
-func (d dummyHandler) Handle(
-	ctx context.Context,
-	r *transport.Request,
-	w transport.ResponseWriter,
-) error {
-	return d.err
+func TestMergeOfEmptyConfigCollectionReturnsError(t *testing.T) {
+	t.Parallel()
+	c := dispatcherController{}
+	_, err := c.mergeConfigs()
+	assert.Error(t, err)
+	assert.Error(t, c.Start(service.NopHost()))
 }
