@@ -35,7 +35,7 @@ const newHandlerTemplate = `
 <$yarpcServerPath   := .YARPCServer>
 package <$pkgname>
 
-<$context   := import "go.uber.org/fx">
+<$context   := import "context">
 <$transport := import "go.uber.org/yarpc/api/transport">
 <$service   := import "go.uber.org/fx/service">
 
