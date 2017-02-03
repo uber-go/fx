@@ -74,13 +74,17 @@ type yarpcConfig struct {
 // that are safe to call from multiple go routines. All the configs must
 // share the same AdvertiseName and represent a single service.
 type configCollection struct {
+	// sync configs
 	sync.RWMutex
 
-	start      sync.Once
-	startError error
+	// sync start/stop errors
+	errorMu sync.RWMutex
 
-	stop      sync.Once
-	stopError error
+	// idempotent start and stop
+	start      sync.Once
+	stop       sync.Once
+	stopError  error
+	startError error
 
 	configs    []*yarpcConfig
 	dispatcher *yarpc.Dispatcher
@@ -127,8 +131,8 @@ func (c *configCollection) addDefaultMiddleware(host service.Host) error {
 // Starts the dispatcher: wait until all modules call start, create a single dispatcher and then start it.
 // Once started the collection will not start the dispatcher again.
 func (c *configCollection) Start(host service.Host) error {
-	c.Lock()
-	defer c.Unlock()
+	c.errorMu.Lock()
+	defer c.errorMu.Unlock()
 
 	c.start.Do(func() {
 		var err error
@@ -159,8 +163,8 @@ func (c *configCollection) Start(host service.Host) error {
 // Return the result of the dispatcher Stop() on the first call.
 // No-op on subsequent calls.
 func (c *configCollection) Stop() error {
-	c.Lock()
-	defer c.Unlock()
+	c.errorMu.Lock()
+	defer c.errorMu.Unlock()
 	c.stop.Do(func() {
 		c.stopError = c.dispatcher.Stop()
 	})
