@@ -42,7 +42,7 @@
 //   import (
 //     "go.uber.org/fx/modules/task"
 //     "go.uber.org/fx/service"
-//   	"go.uber.org/fx/ulog"
+//     "go.uber.org/fx/ulog"
 //   )
 //
 //   func main() {
@@ -50,7 +50,7 @@
 //       task.NewModule(newBackend),
 //     ).Build()
 //     if err := task.Register(updateCache); err != nil {
-//       ulog.Logger().Fatal("Could not register task: ", err)
+//       ulog.Logger().Fatal("could not register task", "error", err)
 //     }
 //     svc.Start()
 //   }
