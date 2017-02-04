@@ -25,10 +25,10 @@ func main() {
   svc, err := service.WithModules(
     task.NewModule(newBackend),
   ).Build()
-  svc.Start()
   if err := task.Register(updateCache); err != nil {
     // handle error
   }
+  svc.Start()
 }
 
 func newBackend(host service.Host) (task.Backend, error) {
@@ -37,8 +37,8 @@ func newBackend(host service.Host) (task.Backend, error) {
 }
 
 func runActivity(input string) error {
-  // do things
-  results := // calculate results here
+  // do things and calculate results
+  results := "results"
   return task.Enqueue(updateCache, input, results)
 }
 
