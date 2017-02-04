@@ -19,6 +19,7 @@ package main
 import (
   "go.uber.org/fx/modules/task"
   "go.uber.org/fx/service"
+	"go.uber.org/fx/ulog"
 )
 
 func main() {
@@ -26,7 +27,7 @@ func main() {
     task.NewModule(newBackend),
   ).Build()
   if err := task.Register(updateCache); err != nil {
-    // handle error
+    ulog.Logger().Fatal("Could not register task: ", err)
   }
   svc.Start()
 }
