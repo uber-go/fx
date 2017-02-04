@@ -50,7 +50,7 @@ var (
 var templateOptions = []plugin.TemplateOption{
 	plugin.TemplateFunc("lower", strings.ToLower),
 	plugin.TemplateFunc("isStringType", func(spec api.Type) bool {
-		if *spec.SimpleType == nil {
+		if &spec.SimpleType == nil {
 			return false
 		}
 		switch *spec.SimpleType {
