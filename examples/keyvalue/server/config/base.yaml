@@ -1,6 +1,7 @@
-applicationID: keyvalue
-applicationDesc: A simple keyvalue service
-applicationOwner: owner@service.com
+name: keyvalue
+description: A simple keyvalue service
+owner: owner@service.com
+
 modules:
   yarpc:
     advertiseName: keyvalue
