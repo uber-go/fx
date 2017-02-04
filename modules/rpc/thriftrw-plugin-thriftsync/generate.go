@@ -49,13 +49,13 @@ func NewYARPCThriftHandler(host <$service>.Host) ([]<$transport>.Procedure, erro
 		host: host,
 	}
 	<$yarpcserver := import $yarpcServerPath>
-  return <lower .Service.Name>server.New(handler), nil
+  return <$yarpcserver>.New(handler), nil
 }
 
 <$name := lower .Service.Name>
 <range .Service.Functions>
 
-  func (h *YARPCHandler)<.Name>(ctx <$context>.Context, <range .Arguments> <lower .Name> <formatType .Type>, <end>)<if .ReturnType> (<formatType .ReturnType>, error) <else> error <end> {
+  func (h *YARPCHandler)<.Name>(ctx <$context>.Context, <range .Arguments> <lowerFirst .Name> <formatType .Type>, <end>)<if .ReturnType> (<formatType .ReturnType>, error) <else> error <end> {
     // TODO: write your code here
     return <if .ReturnType> <if isStringType .ReturnType> "", <else> nil, <end> <end> nil
   }
