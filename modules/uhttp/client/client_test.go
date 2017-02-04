@@ -33,7 +33,7 @@ import (
 
 var (
 	_testYaml = []byte(`
-applicationID: test
+name: test
 `)
 	_testClient = New(fakeAuthInfo{yaml: _testYaml})
 )

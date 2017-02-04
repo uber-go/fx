@@ -67,9 +67,9 @@ func TestServiceCreation_MissingRequiredParams(t *testing.T) {
 
 func TestServiceWithRoles(t *testing.T) {
 	data := map[string]interface{}{
-		"applicationID":    "name",
-		"applicationOwner": "owner",
-		"roles.0":          "foo",
+		"name":    "name",
+		"owner":   "owner",
+		"roles.0": "foo",
 	}
 	cfgOpt := withConfig(data)
 
@@ -81,8 +81,8 @@ func TestServiceWithRoles(t *testing.T) {
 
 func TestServiceWithMetricsRuntime(t *testing.T) {
 	data := []byte(`
-applicationID: name
-applicationOwner: owner
+name: name
+owner: owner
 metrics:
   runtime:
     disabled: true
@@ -97,8 +97,8 @@ metrics:
 
 func TestServiceWithSentryHook(t *testing.T) {
 	data := []byte(`
-applicationID: name
-applicationOwner: owner
+name: name
+owner: owner
 logging:
   sentry:
     dsn: http://user:secret@your.sentry.dsn/project
@@ -130,8 +130,8 @@ func TestNew_WithObserver(t *testing.T) {
 }
 
 var validServiceConfig = map[string]interface{}{
-	"applicationID":    "test-suite",
-	"applicationOwner": "go.uber.org/fx",
+	"name":  "test-suite",
+	"owner": "go.uber.org/fx",
 }
 
 func withConfig(data map[string]interface{}) Option {

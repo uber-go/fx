@@ -91,7 +91,7 @@ func (svc *serviceCore) setupTracer() error {
 	}
 	tracer, closer, err := tracing.InitGlobalTracer(
 		&svc.tracerConfig,
-		svc.standardConfig.ServiceName,
+		svc.standardConfig.Name,
 		svc.log,
 		svc.statsReporter,
 	)

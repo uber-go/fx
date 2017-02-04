@@ -30,13 +30,13 @@ import (
 )
 
 const (
-	// ApplicationIDKey is the identifier of an application ID
-	ApplicationIDKey = "applicationID"
-	// ApplicationDescriptionKey is the configuration key of the application's
+	// ServiceNameKey is the config key of the service name
+	ServiceNameKey = "name"
+	// ServiceDescriptionKey is the config key of the service
 	// description
-	ApplicationDescriptionKey = "applicationDesc"
-	// ApplicationOwnerKey is the configuration key for an application's owner
-	ApplicationOwnerKey = "applicationOwner"
+	ServiceDescriptionKey = "description"
+	// ServiceOwnerKey is the config key for a service owner
+	ServiceOwnerKey = "owner"
 )
 
 const (

@@ -91,7 +91,7 @@ func tracingFilter() FilterFunc {
 // We only authorize with the claim on server side
 func authenticationFilter(info auth.CreateAuthInfo) FilterFunc {
 	authClient := auth.Load(info)
-	serviceName := info.Config().Get(config.ApplicationIDKey).AsString()
+	serviceName := info.Config().Get(config.ServiceNameKey).AsString()
 	return func(ctx fx.Context, req *http.Request, next Executor,
 	) (resp *http.Response, err error) {
 		// Client needs to know what service it is to authenticate

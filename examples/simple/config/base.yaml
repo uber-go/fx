@@ -1,6 +1,6 @@
-applicationID: simple
-applicationDesc: A simple example service
-applicationOwner: owner@service.com
+name: simple
+description: A simple example service
+owner: owner@service.com
 
 modules:
   http:

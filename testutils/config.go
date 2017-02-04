@@ -27,21 +27,21 @@ import (
 )
 
 // StaticAppData creates a Provider for a valid appID/owner
-func StaticAppData(applicationID *string) config.Provider {
-	data := makeValidData(applicationID)
+func StaticAppData(serviceName *string) config.Provider {
+	data := makeValidData(serviceName)
 	return config.NewStaticProvider(data)
 }
 
-func makeValidData(applicationID *string) map[string]interface{} {
-	if applicationID == nil {
-		_appID := "test" + randStringBytes(10)
-		applicationID = &_appID
+func makeValidData(serviceName *string) map[string]interface{} {
+	if serviceName == nil {
+		_name := "test" + randStringBytes(10)
+		serviceName = &_name
 	}
-	applicationOwner := "test" + randStringBytes(10)
+	serviceOwner := "test" + randStringBytes(10)
 
 	data := map[string]interface{}{
-		"applicationID":    *applicationID,
-		"applicationOwner": applicationOwner,
+		"name":  *serviceName,
+		"owner": serviceOwner,
 	}
 	return data
 }
