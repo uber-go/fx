@@ -40,18 +40,19 @@
 //   package main
 //
 //   import (
-//   	"go.uber.org/fx/modules/task"
+//     "go.uber.org/fx/modules/task"
 //     "go.uber.org/fx/service"
+//     "go.uber.org/fx/ulog"
 //   )
 //
 //   func main() {
 //     svc, err := service.WithModules(
 //       task.NewModule(newBackend),
 //     ).Build()
-//     svc.Start()
 //     if err := task.Register(updateCache); err != nil {
-//       // handle error
+//       ulog.Logger().Fatal("could not register task", "error", err)
 //     }
+//     svc.Start()
 //   }
 //
 //   func newBackend(host service.Host) (task.Backend, error) {
@@ -60,11 +61,9 @@
 //   }
 //
 //   func runActivity(input string) error {
-//     // do things
+//     // do things and calculate results
 //     results := "results"
-//     if err := task.Enqueue(updateCache, input, results); err != nil {
-//       return err
-//     }
+//     return task.Enqueue(updateCache, input, results)
 //   }
 //
 //   func updateCache(input string, results string) error {
