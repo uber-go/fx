@@ -138,10 +138,22 @@ type nestedTypeUInt uint32
 type userDefinedTypeFloat nestedTypeFloat
 type nestedTypeFloat float32
 
-type nestedTypeStruct struct {
+type nestedTypeStructPtr struct {
 	TestInt   *userDefinedTypeInt   `yaml:"testInt"`
 	TestUInt  *userDefinedTypeUInt  `yaml:"testUInt"`
 	TestFloat *userDefinedTypeFloat `yaml:"testFloat"`
+}
+
+type typeStructPtr nestedTypeStructPtr
+
+type typeStructStructPtr struct {
+	TypeStruct typeStructPtr `yaml:"typeStruct"`
+}
+
+type nestedTypeStruct struct {
+	TestInt   userDefinedTypeInt   `yaml:"testInt"`
+	TestUInt  userDefinedTypeUInt  `yaml:"testUInt"`
+	TestFloat userDefinedTypeFloat `yaml:"testFloat"`
 }
 
 type typeStruct nestedTypeStruct

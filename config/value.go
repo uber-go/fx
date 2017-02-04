@@ -165,7 +165,7 @@ func (cv Value) ChildKeys() []string {
 // TryAsString attempts to return the configuration value as a string
 func (cv Value) TryAsString() (string, bool) {
 	v := cv.Value()
-	if val, err := convertValue(v, reflect.TypeOf("")); v != nil && err == nil {
+	if val, err := convertPrimitiveValue(v, reflect.TypeOf("")); v != nil && err == nil {
 		return val.(string), true
 	}
 	return "", false
@@ -174,7 +174,7 @@ func (cv Value) TryAsString() (string, bool) {
 // TryAsInt attempts to return the configuration value as an int
 func (cv Value) TryAsInt() (int, bool) {
 	v := cv.Value()
-	if val, err := convertValue(v, reflect.TypeOf(0)); v != nil && err == nil {
+	if val, err := convertPrimitiveValue(v, reflect.TypeOf(0)); v != nil && err == nil {
 		return val.(int), true
 	}
 	switch val := v.(type) {
@@ -194,7 +194,7 @@ func (cv Value) TryAsInt() (int, bool) {
 // TryAsBool attempts to return the configuration value as a bool
 func (cv Value) TryAsBool() (bool, bool) {
 	v := cv.Value()
-	if val, err := convertValue(v, reflect.TypeOf(true)); v != nil && err == nil {
+	if val, err := convertPrimitiveValue(v, reflect.TypeOf(true)); v != nil && err == nil {
 		return val.(bool), true
 	}
 	return false, false
@@ -204,7 +204,7 @@ func (cv Value) TryAsBool() (bool, bool) {
 // TryAsFloat attempts to return the configuration value as a float
 func (cv Value) TryAsFloat() (float64, bool) {
 	v := cv.Value()
-	if val, err := convertValue(v, reflect.TypeOf(_float64Zero)); v != nil && err == nil {
+	if val, err := convertPrimitiveValue(v, reflect.TypeOf(_float64Zero)); v != nil && err == nil {
 		return val.(float64), true
 	}
 	switch val := v.(type) {
@@ -333,10 +333,41 @@ func derefType(t reflect.Type) reflect.Type {
 	return t
 }
 
+func convertPrimitiveValue(value interface{}, targetType reflect.Type) (interface{}, error) {
+	ret, err := convertVal(value, targetType)
+	if ret == nil {
+		return nil, fmt.Errorf("can't convert %v to %v", reflect.TypeOf(value), targetType)
+	}
+	return ret, err
+}
+
+func convertStructValue(value interface{}, targetType reflect.Type, fieldType reflect.Type, fieldValue reflect.Value) (interface{}, error) {
+	if ret, err := convertVal(value, targetType); ret != nil {
+		return ret, err
+	}
+
+	// The fieldType is probably custom type here. We will try and set the fieldValue by
+	// the type of custom type
+	kind := fieldType.Kind()
+	switch kind {
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		fieldValue.SetInt(int64(value.(int)))
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr:
+		fieldValue.SetUint(uint64(value.(int)))
+	case reflect.Float32, reflect.Float64:
+		fieldValue.SetFloat(float64(value.(float64)))
+	case reflect.String:
+		fieldValue.SetString(string(value.(string)))
+	default:
+		return nil, fmt.Errorf("can't convert %v to %v", reflect.TypeOf(value), targetType)
+	}
+	return nil, nil
+}
+
 // this is a quick-and-dirty conversion method that only handles
 // a couple of cases and complains if it finds one it doesn't like.
 // needs a bunch more cases.
-func convertValue(value interface{}, targetType reflect.Type) (interface{}, error) {
+func convertVal(value interface{}, targetType reflect.Type) (interface{}, error) {
 	if value == nil {
 		return reflect.Zero(targetType).Interface(), nil
 	}
@@ -363,8 +394,7 @@ func convertValue(value interface{}, targetType reflect.Type) (interface{}, erro
 			return reflect.ValueOf(target).Elem().Interface(), err
 		}
 	}
-
-	return nil, fmt.Errorf("can't convert %v to %v", valueType, targetType)
+	return nil, nil
 }
 
 // PopulateStruct fills in a struct from configuration
@@ -476,13 +506,14 @@ func (cv Value) valueStruct(key string, target interface{}) (interface{}, error)
 				val = fieldInfo.DefaultValue
 			}
 			if val != nil {
-				v3, err := convertValue(val, fieldValue.Type())
+				v3, err := convertStructValue(val, fieldValue.Type(), fieldType, fieldValue)
 				if err != nil {
 					return nil, err
 				}
-
-				val = v3
-				fieldValue.Set(reflect.ValueOf(val))
+				if v3 != nil {
+					val = v3
+					fieldValue.Set(reflect.ValueOf(val))
+				}
 			}
 			continue
 		case bucketObject:
