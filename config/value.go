@@ -336,7 +336,7 @@ func derefType(t reflect.Type) reflect.Type {
 func convertPrimitiveValue(value interface{}, targetType reflect.Type) (interface{}, error) {
 	ret, err := convertVal(value, targetType)
 	if ret == nil {
-		return nil, fmt.Errorf("can't convert %v to %v", reflect.TypeOf(value), targetType)
+		return nil, fmt.Errorf("can't convert %v to %v", reflect.TypeOf(value).String(), targetType)
 	}
 	return ret, err
 }
@@ -355,9 +355,11 @@ func convertStructValue(value interface{}, targetType reflect.Type, fieldType re
 	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr:
 		fieldValue.SetUint(uint64(value.(int)))
 	case reflect.Float32, reflect.Float64:
-		fieldValue.SetFloat(float64(value.(float64)))
+		fieldValue.SetFloat(value.(float64))
+	case reflect.Bool:
+		fieldValue.SetBool(value.(bool))
 	case reflect.String:
-		fieldValue.SetString(string(value.(string)))
+		fieldValue.SetString(value.(string))
 	default:
 		return nil, fmt.Errorf("can't convert %v to %v", reflect.TypeOf(value), targetType)
 	}
@@ -477,9 +479,11 @@ func (cv Value) valueStruct(key string, target interface{}) (interface{}, error)
 						case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr:
 							fieldValue.Elem().SetUint(uint64(val.(int)))
 						case reflect.Float32, reflect.Float64:
-							fieldValue.Elem().SetFloat(float64(val.(float64)))
+							fieldValue.Elem().SetFloat(val.(float64))
+						case reflect.Bool:
+							fieldValue.Elem().SetBool(val.(bool))
 						case reflect.String:
-							fieldValue.Elem().SetString(string(val.(string)))
+							fieldValue.Elem().SetString(val.(string))
 						default:
 							fieldValue.Elem().Set(reflect.ValueOf(val))
 						}

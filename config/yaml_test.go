@@ -258,6 +258,11 @@ func TestTypeOfTypes(t *testing.T) {
 		assert.Equal(t, userDefinedTypeInt(123), tts.TypeStruct.TestInt)
 		assert.Equal(t, userDefinedTypeUInt(456), tts.TypeStruct.TestUInt)
 		assert.Equal(t, userDefinedTypeFloat(123.456), tts.TypeStruct.TestFloat)
+		assert.Equal(t, userDefinedTypeBool(true), tts.TypeStruct.TestBool)
+		assert.Equal(t, userDefinedTypeString("hello"), tts.TypeStruct.TestString)
+		assert.Equal(t, 10*time.Second, tts.TypeStruct.TestDuration.Seconds)
+		assert.Equal(t, 20*time.Minute, tts.TypeStruct.TestDuration.Minutes)
+		assert.Equal(t, 30*time.Hour, tts.TypeStruct.TestDuration.Hours)
 	})
 }
 
@@ -269,6 +274,27 @@ func TestTypeOfTypesPtr(t *testing.T) {
 		assert.Equal(t, userDefinedTypeInt(123), *tts.TypeStruct.TestInt)
 		assert.Equal(t, userDefinedTypeUInt(456), *tts.TypeStruct.TestUInt)
 		assert.Equal(t, userDefinedTypeFloat(123.456), *tts.TypeStruct.TestFloat)
+		assert.Equal(t, userDefinedTypeBool(true), *tts.TypeStruct.TestBool)
+		assert.Equal(t, userDefinedTypeString("hello"), *tts.TypeStruct.TestString)
+		assert.Equal(t, 10*time.Second, tts.TypeStruct.TestDuration.Seconds)
+		assert.Equal(t, 20*time.Minute, tts.TypeStruct.TestDuration.Minutes)
+		assert.Equal(t, 30*time.Hour, tts.TypeStruct.TestDuration.Hours)
+	})
+}
+
+func TestTypeOfTypesPtrPtr(t *testing.T) {
+	withYamlBytes(t, typeStructYaml, func(provider Provider) {
+		tts := typeStructStructPtrPtr{}
+		err := provider.Get(Root).PopulateStruct(&tts)
+		assert.NoError(t, err)
+		assert.Equal(t, userDefinedTypeInt(123), *tts.TypeStruct.TestInt)
+		assert.Equal(t, userDefinedTypeUInt(456), *tts.TypeStruct.TestUInt)
+		assert.Equal(t, userDefinedTypeFloat(123.456), *tts.TypeStruct.TestFloat)
+		assert.Equal(t, userDefinedTypeBool(true), *tts.TypeStruct.TestBool)
+		assert.Equal(t, userDefinedTypeString("hello"), *tts.TypeStruct.TestString)
+		assert.Equal(t, 10*time.Second, tts.TypeStruct.TestDuration.Seconds)
+		assert.Equal(t, 20*time.Minute, tts.TypeStruct.TestDuration.Minutes)
+		assert.Equal(t, 30*time.Hour, tts.TypeStruct.TestDuration.Hours)
 	})
 }
 
