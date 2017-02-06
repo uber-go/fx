@@ -197,9 +197,9 @@ func (l *baseLogger) fieldsConversion(keyVals ...interface{}) []zap.Field {
 				stack := value.StackTrace()
 				lines := make([]zap.Field, 0, len(stack))
 				for _, frame := range stack {
-					s := fmt.Sprintf("%s", frame)
-					l := fmt.Sprintf("line:%d", frame)
-					lines = append(lines, zap.String(s, l))
+					function := fmt.Sprintf("%n", frame)
+					source := fmt.Sprintf("%v", frame)
+					lines = append(lines, zap.String(function, source))
 				}
 
 				fields = append(fields, zap.Nest("stacktrace", lines...), zap.Error(value))

@@ -170,7 +170,7 @@ func TestStackTraceLogger(t *testing.T) {
 		err1 := errors.New("for sure")
 		err2 := errors.Wrap(err1, "it's a trap")
 		log.Error("error message", "error", err2)
-		trace := `{"level":"error","msg":"error message","stacktrace":{"log_test.go":"line:171","in_memory_log.go":"line:60","log_test.go":"line:178"`
+		trace := `{"level":"error","msg":"error message","stacktrace":{"TestStackTraceLogger.func1":"log_test.go:171","WithInMemoryLogger":"in_memory_log.go:60",`
 		line := buf.Lines()[0]
 		assert.Contains(t, line, trace, "No stack trace")
 		assert.Contains(t, line, "it's a trap: for sure")
