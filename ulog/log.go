@@ -197,7 +197,9 @@ func (l *baseLogger) fieldsConversion(keyVals ...interface{}) []zap.Field {
 				stack := value.StackTrace()
 				lines := make([]zap.Field, 0, len(stack))
 				for _, frame := range stack {
-					function := fmt.Sprintf("%n", frame)
+					// Trick go vet to allow use of %n as a formatter
+					format := "%n"
+					function := fmt.Sprintf(format, frame)
 					source := fmt.Sprintf("%v", frame)
 					lines = append(lines, zap.String(function, source))
 				}
