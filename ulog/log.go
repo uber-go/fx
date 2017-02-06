@@ -21,7 +21,7 @@
 package ulog
 
 import (
-	err "errors"
+	stdlibErr "errors"
 	"fmt"
 	"time"
 
@@ -162,7 +162,7 @@ type stackTracer interface {
 
 func (l *baseLogger) fieldsConversion(keyVals ...interface{}) []zap.Field {
 	if len(keyVals)%2 != 0 {
-		return []zap.Field{zap.Error(err.New("expected even number of arguments"))}
+		return []zap.Field{zap.Error(stdlibErr.New("expected even number of arguments"))}
 	}
 
 	fields := make([]zap.Field, 0, len(keyVals)/2)
