@@ -57,7 +57,7 @@ func NewYARPCThriftHandler(host <$service>.Host) ([]<$transport>.Procedure, erro
 
   func (h *YARPCHandler)<.Name>(ctx <$context>.Context, <range .Arguments> <lowerFirst .Name> <formatType .Type>, <end>)<if .ReturnType> (<formatType .ReturnType>, error) <else> error <end> {
     // TODO: write your code here
-    return <if .ReturnType> <if isStringType .ReturnType> "", <else> nil, <end> <end> nil
+    panic("Implement return values")
   }
 
 <end>
