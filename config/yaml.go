@@ -43,7 +43,7 @@ func newYAMLProviderCore(files ...io.ReadCloser) Provider {
 	var root interface{} = make(map[interface{}]interface{})
 	for _, v := range files {
 		curr := make(map[interface{}]interface{})
-		if err := unmarshalYamlValue(v, &curr); err != nil {
+		if err := unmarshalYAMLValue(v, &curr); err != nil {
 			panic(err)
 		}
 
@@ -114,9 +114,9 @@ func NewYAMLProviderFromFiles(mustExist bool, resolver FileResolver, files ...st
 	return newYAMLProviderCore(readers...)
 }
 
-// NewYamlProviderFromReader creates a configuration provider from a list of `io.ReadClosers`.
+// NewYAMLProviderFromReader creates a configuration provider from a list of `io.ReadClosers`.
 // As above, all the objects are going to be merged and arrays/values overridden in the order of the files.
-func NewYamlProviderFromReader(readers ...io.ReadCloser) Provider {
+func NewYAMLProviderFromReader(readers ...io.ReadCloser) Provider {
 	return newYAMLProviderCore(readers...)
 }
 
@@ -168,7 +168,7 @@ func (y yamlConfigProvider) Scope(prefix string) Provider {
 	return NewScopedProvider(prefix, y)
 }
 
-func (y yamlConfigProvider) RegisterChangeCallback(key string, callback ConfigurationChangeCallback) error {
+func (y yamlConfigProvider) RegisterChangeCallback(key string, callback ChangeCallback) error {
 	// Yaml configuration don't receive callback events
 	return nil
 }
@@ -274,7 +274,7 @@ func (n *yamlNode) Children() []*yamlNode {
 	return nodes
 }
 
-func unmarshalYamlValue(reader io.ReadCloser, value interface{}) error {
+func unmarshalYAMLValue(reader io.ReadCloser, value interface{}) error {
 	if data, err := ioutil.ReadAll(reader); err != nil {
 		return err
 	} else if err = yaml.Unmarshal(data, value); err != nil {

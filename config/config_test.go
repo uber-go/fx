@@ -397,3 +397,8 @@ func TestResolvePathAbs(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, abs, res)
 }
+
+func TestEnvProviderWithEmptyPrefix(t *testing.T) {
+	p := NewEnvProvider("", mapEnvironmentProvider{map[string]string{"key": "value"}})
+	assert.Equal(t, "value", p.Get("key").AsString())
+}
