@@ -29,6 +29,7 @@ import (
 	"go.uber.org/fx/testutils/env"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 var envValues = map[string]string{
@@ -400,5 +401,9 @@ func TestResolvePathAbs(t *testing.T) {
 
 func TestEnvProviderWithEmptyPrefix(t *testing.T) {
 	p := NewEnvProvider("", mapEnvironmentProvider{map[string]string{"key": "value"}})
-	assert.Equal(t, "value", p.Get("key").AsString())
+	require.Equal(t, "value", p.Get("key").AsString())
+	emptyScope := p.Scope("")
+	require.Equal(t, "value", emptyScope.Get("key").AsString())
+	scope := emptyScope.Scope("key")
+	require.Equal(t, "value", scope.Get("").AsString())
 }
