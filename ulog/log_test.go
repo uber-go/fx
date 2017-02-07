@@ -27,10 +27,11 @@ import (
 	"time"
 
 	"go.uber.org/fx/testutils"
+	"go.uber.org/fx/ulog/sentry"
 
+	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 	"github.com/uber-go/zap"
-	"go.uber.org/fx/ulog/sentry"
 )
 
 func TestSimpleLogger(t *testing.T) {
@@ -160,4 +161,19 @@ func TestSentryHookDoesNotMutatePrevious(t *testing.T) {
 	assert.NotNil(t, l2.sh)
 	assert.NotNil(t, l2.sh.Fields())
 	assert.Equal(t, map[string]interface{}{"key": "value"}, l2.sh.Fields())
+}
+
+func TestStackTraceLogger(t *testing.T) {
+	t.Parallel()
+	testutils.WithInMemoryLogger(t, nil, func(zapLogger zap.Logger, buf *testutils.TestBuffer) {
+		log := Builder().SetLogger(zapLogger).Build()
+		err1 := errors.New("for sure")
+		err2 := errors.Wrap(err1, "it's a trap")
+		log.Error("error message", "error", err2)
+		trace := `{"level":"error","msg":"error message","stacktrace":{"TestStackTraceLogger.func1":"log_test.go:171","WithInMemoryLogger":"in_memory_log.go:60",`
+		line := buf.Lines()[0]
+		assert.Contains(t, line, trace, "No stack trace")
+		assert.Contains(t, line, "it's a trap: for sure")
+		assert.Equal(t, 1, len(buf.Lines()))
+	})
 }

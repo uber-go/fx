@@ -21,11 +21,13 @@
 package ulog
 
 import (
+	stdlibErr "errors"
 	"fmt"
 	"time"
 
 	"go.uber.org/fx/ulog/sentry"
 
+	"github.com/pkg/errors"
 	"github.com/uber-go/zap"
 )
 
@@ -153,12 +155,17 @@ func (l *baseLogger) Log(lvl zap.Level, message string, keyVals ...interface{}) 
 	}
 }
 
+type stackTracer interface {
+	error
+	StackTrace() errors.StackTrace
+}
+
 func (l *baseLogger) fieldsConversion(keyVals ...interface{}) []zap.Field {
-	fields := make([]zap.Field, 0, len(keyVals)/2)
 	if len(keyVals)%2 != 0 {
-		fields = append(fields, zap.Error(fmt.Errorf("expected even number of arguments")))
-		return fields
+		return []zap.Field{zap.Error(stdlibErr.New("expected even number of arguments"))}
 	}
+
+	fields := make([]zap.Field, 0, len(keyVals)/2)
 	for idx := 0; idx < len(keyVals); idx += 2 {
 		if key, ok := keyVals[idx].(string); ok {
 			switch value := keyVals[idx+1].(type) {
@@ -186,6 +193,18 @@ func (l *baseLogger) fieldsConversion(keyVals ...interface{}) []zap.Field {
 				fields = append(fields, zap.Marshaler(key, value))
 			case fmt.Stringer:
 				fields = append(fields, zap.Stringer(key, value))
+			case stackTracer:
+				stack := value.StackTrace()
+				lines := make([]zap.Field, 0, len(stack))
+				for _, frame := range stack {
+					// Trick go vet to allow use of %n as a formatter
+					format := "%n"
+					function := fmt.Sprintf(format, frame)
+					source := fmt.Sprintf("%v", frame)
+					lines = append(lines, zap.String(function, source))
+				}
+
+				fields = append(fields, zap.Nest("stacktrace", lines...), zap.Error(value))
 			case error:
 				fields = append(fields, zap.Error(value))
 			default:
