@@ -54,7 +54,10 @@ func NewScopedProvider(prefix string, provider Provider) Provider {
 		return provider
 	}
 
-	return &scopedProvider{provider, prefix}
+	return &scopedProvider{
+		Provider: provider,
+		prefix:   prefix,
+	}
 }
 
 func (sp scopedProvider) addPrefix(key string) string {

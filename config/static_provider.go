@@ -24,13 +24,8 @@ type staticProvider struct {
 	data map[string]interface{}
 }
 
-type scopedStaticProvider struct {
-	Provider
-
-	prefix string
-}
-
 // NewStaticProvider should only be used in tests to isolate config from your environment
+// It is not race free, because underlying map can be accessed with Value().
 func NewStaticProvider(data map[string]interface{}) Provider {
 	return &staticProvider{
 		data: data,
