@@ -33,7 +33,7 @@ space := $(null) #
 OVERALLS_IGNORE = $(subst $(space),$(comma),$(strip $(COVER_IGNORES)))
 
 ifeq ($(V),0)
-_FILTER_OVERALLS = cat
+_FILTER_OVERALLS = grep -v "^Test args"
 else
 _FILTER_OVERALLS = grep -v "^Processing:"
 endif
