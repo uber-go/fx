@@ -115,9 +115,9 @@ func TestAppRoot(t *testing.T) {
 	assert.Equal(t, "my_secret", secretValue)
 }
 
-func TestNewYamlProviderFromReader(t *testing.T) {
+func TestNewYAMLProviderFromReader(t *testing.T) {
 	buff := bytes.NewBuffer([]byte(yamlConfig1))
-	provider := NewYamlProviderFromReader(ioutil.NopCloser(buff))
+	provider := NewYAMLProviderFromReader(ioutil.NopCloser(buff))
 	cs := &configStruct{}
 	assert.NoError(t, provider.Get(Root).PopulateStruct(cs))
 	assert.Equal(t, "yaml", provider.Scope(Root).Name())
@@ -125,10 +125,10 @@ func TestNewYamlProviderFromReader(t *testing.T) {
 	assert.Equal(t, "owner@service.com", cs.Owner)
 }
 
-func TestYamlNode(t *testing.T) {
+func TestYAMLNode(t *testing.T) {
 	buff := bytes.NewBuffer([]byte("a: b"))
 	node := &yamlNode{value: make(map[interface{}]interface{})}
-	err := unmarshalYamlValue(ioutil.NopCloser(buff), &node.value)
+	err := unmarshalYAMLValue(ioutil.NopCloser(buff), &node.value)
 	require.NoError(t, err)
 	assert.Equal(t, "map[a:b]", node.String())
 	assert.Equal(t, "map[interface {}]interface {}", node.Type().String())
@@ -138,7 +138,7 @@ func TestYamlNodeWithNil(t *testing.T) {
 	provider := NewYAMLProviderFromFiles(false, nil)
 	assert.NotNil(t, provider)
 	assert.Panics(t, func() {
-		_ = unmarshalYamlValue(nil, nil)
+		_ = unmarshalYAMLValue(nil, nil)
 	}, "Expected panic with nil inpout.")
 }
 

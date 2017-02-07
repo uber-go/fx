@@ -121,7 +121,7 @@ func TestScope_WithScopedProvider(t *testing.T) {
 
 type mockDynamicProvider struct {
 	data      map[string]interface{}
-	callBacks map[string]ConfigurationChangeCallback
+	callBacks map[string]ChangeCallback
 }
 
 // StaticProvider should only be used in tests to isolate config from your environment
@@ -155,9 +155,9 @@ func (s *mockDynamicProvider) Scope(prefix string) Provider {
 	return NewScopedProvider(prefix, s)
 }
 
-func (s *mockDynamicProvider) RegisterChangeCallback(key string, callback ConfigurationChangeCallback) error {
+func (s *mockDynamicProvider) RegisterChangeCallback(key string, callback ChangeCallback) error {
 	if s.callBacks == nil {
-		s.callBacks = make(map[string]ConfigurationChangeCallback)
+		s.callBacks = make(map[string]ChangeCallback)
 	}
 
 	if _, ok := s.callBacks[key]; ok {
@@ -170,7 +170,7 @@ func (s *mockDynamicProvider) RegisterChangeCallback(key string, callback Config
 
 func (s *mockDynamicProvider) UnregisterChangeCallback(token string) error {
 	if s.callBacks == nil {
-		s.callBacks = make(map[string]ConfigurationChangeCallback)
+		s.callBacks = make(map[string]ChangeCallback)
 	}
 
 	if _, ok := s.callBacks[token]; !ok {

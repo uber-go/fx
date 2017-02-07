@@ -20,23 +20,12 @@
 
 package config
 
-import (
-	"fmt"
-	"sync"
-)
-
 type staticProvider struct {
-	sync.RWMutex
 	data map[string]interface{}
 }
 
-type scopedStaticProvider struct {
-	Provider
-
-	prefix string
-}
-
 // NewStaticProvider should only be used in tests to isolate config from your environment
+// It is not race free, because underlying map can be accessed with Value().
 func NewStaticProvider(data map[string]interface{}) Provider {
 	return &staticProvider{
 		data: data,
@@ -55,23 +44,19 @@ func (*staticProvider) Name() string {
 }
 
 func (s *staticProvider) Get(key string) Value {
-	s.RLock()
-	defer s.RUnlock()
-
 	if key == "" {
-		// NOTE: This returns access to the underlying map, which does not guarantee
-		// thread-safety. This is only used in the test suite.
 		return NewValue(s, key, s.data, true, GetType(s.data), nil)
 	}
+
 	val, found := s.data[key]
 	return NewValue(s, key, val, found, GetType(val), nil)
 }
 
 func (s *staticProvider) Scope(prefix string) Provider {
-	return newScopedStaticProvider(s, prefix)
+	return NewScopedProvider(prefix, s)
 }
 
-func (s *staticProvider) RegisterChangeCallback(key string, callback ConfigurationChangeCallback) error {
+func (s *staticProvider) RegisterChangeCallback(key string, callback ChangeCallback) error {
 	// Static provider don't receive callback events
 	return nil
 }
@@ -81,19 +66,4 @@ func (s *staticProvider) UnregisterChangeCallback(token string) error {
 	return nil
 }
 
-func newScopedStaticProvider(s *staticProvider, prefix string) Provider {
-	return &scopedStaticProvider{
-		Provider: s,
-		prefix:   prefix,
-	}
-}
-
-func (s *scopedStaticProvider) Get(key string) Value {
-	if s.prefix != "" {
-		key = fmt.Sprintf("%s.%s", s.prefix, key)
-	}
-	return s.Provider.Get(key)
-}
-
 var _ Provider = &staticProvider{}
-var _ Provider = &scopedStaticProvider{}

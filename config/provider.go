@@ -20,8 +20,8 @@
 
 package config
 
-// ConfigurationChangeCallback is called for updates of configuration data
-type ConfigurationChangeCallback func(key string, provider string, configdata interface{})
+// ChangeCallback is called for updates of configuration data
+type ChangeCallback func(key string, provider string, data interface{})
 
 // Root marks the root node in a Provider
 const Root = ""
@@ -37,54 +37,57 @@ type Provider interface {
 
 	// A RegisterChangeCallback provides callback registration for config providers.
 	// These callbacks are nop if a dynamic provider is not configured for the service.
-	RegisterChangeCallback(key string, callback ConfigurationChangeCallback) error
+	RegisterChangeCallback(key string, callback ChangeCallback) error
 	UnregisterChangeCallback(token string) error
 }
 
-// ScopedProvider defines recursive interface of providers based on the prefix
-type ScopedProvider struct {
+// scopedProvider defines recursive interface of providers based on the prefix
+type scopedProvider struct {
 	Provider
 
 	prefix string
 }
 
 // NewScopedProvider creates a child provider given a prefix
-func NewScopedProvider(prefix string, provider Provider) *ScopedProvider {
-	return &ScopedProvider{provider, prefix}
+func NewScopedProvider(prefix string, provider Provider) Provider {
+	if prefix == "" {
+		return provider
+	}
+
+	return &scopedProvider{
+		Provider: provider,
+		prefix:   prefix,
+	}
 }
 
-func addPrefix(prefix, key string) string {
-	if prefix == "" {
-		return key
-	}
-
+func (sp scopedProvider) addPrefix(key string) string {
 	if key == "" {
-		return prefix
+		return sp.prefix
 	}
 
-	return prefix + "." + key
+	return sp.prefix + "." + key
 }
 
 // Get returns configuration value
-func (sp ScopedProvider) Get(key string) Value {
-	return sp.Provider.Get(addPrefix(sp.prefix, key))
+func (sp scopedProvider) Get(key string) Value {
+	return sp.Provider.Get(sp.addPrefix(key))
 }
 
 // Scope returns new scoped provider, given a prefix
-func (sp ScopedProvider) Scope(prefix string) Provider {
+func (sp scopedProvider) Scope(prefix string) Provider {
 	if prefix == "" {
 		return sp
 	}
 
-	return NewScopedProvider(addPrefix(sp.prefix, prefix), sp.Provider)
+	return NewScopedProvider(sp.addPrefix(prefix), sp.Provider)
 }
 
 // RegisterChangeCallback registers the callback in the underlying provider
-func (sp ScopedProvider) RegisterChangeCallback(key string, callback ConfigurationChangeCallback) error {
-	return sp.Provider.RegisterChangeCallback(addPrefix(sp.prefix, key), callback)
+func (sp scopedProvider) RegisterChangeCallback(key string, callback ChangeCallback) error {
+	return sp.Provider.RegisterChangeCallback(sp.addPrefix(key), callback)
 }
 
 // UnregisterChangeCallback un registers a callback in the underlying provider
-func (sp ScopedProvider) UnregisterChangeCallback(key string) error {
-	return sp.Provider.UnregisterChangeCallback(addPrefix(sp.prefix, key))
+func (sp scopedProvider) UnregisterChangeCallback(key string) error {
+	return sp.Provider.UnregisterChangeCallback(sp.addPrefix(key))
 }

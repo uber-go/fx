@@ -42,7 +42,12 @@ var _ Provider = &envConfigProvider{}
 
 // foo.bar -> [prefix]__foo__bar
 func toEnvString(prefix string, key string) string {
-	return fmt.Sprintf("%s__%s", prefix, strings.Replace(key, ".", "__", -1))
+	newKey := strings.Replace(key, ".", "__", -1)
+	if prefix == "" {
+		return newKey
+	}
+
+	return fmt.Sprintf("%s__%s", prefix, newKey)
 }
 
 // NewEnvProvider creates a configuration provider backed by an environment
@@ -75,7 +80,7 @@ func (p envConfigProvider) Scope(prefix string) Provider {
 	return NewScopedProvider(prefix, p)
 }
 
-func (p envConfigProvider) RegisterChangeCallback(key string, callback ConfigurationChangeCallback) error {
+func (p envConfigProvider) RegisterChangeCallback(key string, callback ChangeCallback) error {
 	// Environments don't receive callback events
 	return nil
 }
