@@ -26,7 +26,6 @@ import (
 	"testing"
 
 	"go.uber.org/fx/auth"
-	"go.uber.org/fx/internal/fxcontext"
 	"go.uber.org/fx/metrics"
 	"go.uber.org/fx/tracing"
 	"go.uber.org/fx/ulog"
@@ -58,9 +57,7 @@ func BenchmarkClientFilters(b *testing.B) {
 		span := tracer.StartSpan("test_method")
 		span.SetBaggageItem(auth.ServiceAuth, "testService")
 
-		ctx := &fxcontext.Context{
-			Context: opentracing.ContextWithSpan(context.Background(), span),
-		}
+		ctx := opentracing.ContextWithSpan(context.Background(), span)
 
 		req := httptest.NewRequest("", "http://localhost", nil).WithContext(ctx)
 

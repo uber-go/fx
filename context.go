@@ -21,25 +21,62 @@
 package fx
 
 import (
+	"context"
 	gcontext "context"
 
+	"github.com/opentracing/opentracing-go"
+	"github.com/uber/jaeger-client-go"
+	"go.uber.org/fx/service"
 	"go.uber.org/fx/ulog"
 )
 
-// Context embeds Host and Go stdlib context for use
-type Context interface {
-	gcontext.Context
+type contextKey int
 
-	Logger() ulog.Log
+const _contextStore contextKey = iota
+
+type ctxStore struct {
+	log ulog.Log
 }
 
-// NopContext is defined for testing purpose
-var NopContext = nopContext{gcontext.Background()}
-
-type nopContext struct {
-	gcontext.Context
+func contextStore(ctx context.Context) ctxStore {
+	c := ctx.Value(_contextStore)
+	if c == nil {
+		c = ctxStore{}
+		ctx = gcontext.WithValue(ctx, _contextStore, c)
+	}
+	return c.(ctxStore)
 }
 
-func (nopContext) Logger() ulog.Log {
-	return ulog.NopLogger
+// SetContextStore always returns Context for use in the service
+func SetContextStore(ctx context.Context, host service.Host) context.Context {
+	if host != nil {
+		ctx = context.WithValue(ctx, _contextStore, ctxStore{
+			log: host.Logger(),
+		})
+	}
+	return ctx
+}
+
+// WithContextAwareLogger returns a new context with a context-aware logger
+func WithContextAwareLogger(ctx context.Context, span opentracing.Span) context.Context {
+	store := contextStore(ctx)
+	// Note that opentracing.Tracer does not expose the tracer id
+	// We only inject tracing information for jaeger.Tracer
+	if jSpanCtx, ok := span.Context().(jaeger.SpanContext); ok {
+		traceLogger := Logger(ctx).With(
+			"traceID", jSpanCtx.TraceID(), "spanID", jSpanCtx.SpanID(),
+		)
+		store.log = traceLogger
+	}
+	return context.WithValue(ctx, _contextStore, store)
+}
+
+// Logger returns context based logger. If logger is absent from the context,
+// the function updates the context with a new context based logger
+func Logger(ctx context.Context) ulog.Log {
+	store := contextStore(ctx)
+	if store.log == nil {
+		store.log = ulog.Logger()
+	}
+	return store.log
 }

@@ -21,9 +21,9 @@
 package uhttp
 
 import (
+	"context"
 	"net/http"
 
-	"go.uber.org/fx"
 	"go.uber.org/fx/modules"
 	"go.uber.org/fx/service"
 )
@@ -34,7 +34,7 @@ type filterChain struct {
 	filters       []Filter
 }
 
-func (fc filterChain) ServeHTTP(ctx fx.Context, w http.ResponseWriter, r *http.Request) {
+func (fc filterChain) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	if fc.currentFilter == len(fc.filters) {
 		fc.finalHandler.ServeHTTP(ctx, w, r)
 	} else {
@@ -55,6 +55,7 @@ func defaultFilterChainBuilder(host service.Host) filterChainBuilder {
 	fcb := newFilterChainBuilder(host)
 	scope := host.Metrics().Tagged(modules.HTTPTags)
 	return fcb.AddFilters(
+		contextFilter{host},
 		panicFilter{scope.Counter("panic")},
 		metricsFilter{scope},
 		tracingServerFilter{scope},

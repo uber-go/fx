@@ -21,15 +21,14 @@
 package uhttp
 
 import (
+	"context"
 	"fmt"
 	"net/http"
-
-	"go.uber.org/fx"
 )
 
 type healthHandler struct{}
 
-func (h healthHandler) ServeHTTP(ctx fx.Context, w http.ResponseWriter, r *http.Request) {
+func (h healthHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	// TODO(ai) import more sophisticated health mechanism from internal libraries
 	fmt.Fprintf(w, "OK\n")
 }

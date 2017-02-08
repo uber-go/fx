@@ -21,12 +21,12 @@
 package client
 
 import (
+	"context"
 	"net/http"
 
 	"go.uber.org/fx"
 	"go.uber.org/fx/auth"
 	"go.uber.org/fx/config"
-	"go.uber.org/fx/internal/fxcontext"
 
 	"github.com/opentracing/opentracing-go"
 	"github.com/opentracing/opentracing-go/ext"
@@ -34,30 +34,30 @@ import (
 
 // Executor executes the http request. Execute must be safe to use by multiple go routines
 type Executor interface {
-	Execute(ctx fx.Context, r *http.Request) (resp *http.Response, err error)
+	Execute(ctx context.Context, r *http.Request) (resp *http.Response, err error)
 }
 
 // Filter applies filters on client requests and request's context such as
 // adding tracing to the context. Filters must call next.Execute() at most once, calling it twice and more
 // will lead to an undefined behavior
 type Filter interface {
-	Apply(ctx fx.Context, r *http.Request, next Executor) (resp *http.Response, err error)
+	Apply(ctx context.Context, r *http.Request, next Executor) (resp *http.Response, err error)
 }
 
 // FilterFunc is an adaptor to call normal functions to apply filters
 type FilterFunc func(
-	ctx fx.Context, r *http.Request, next Executor,
+	ctx context.Context, r *http.Request, next Executor,
 ) (resp *http.Response, err error)
 
 // Apply implements Apply from the Filter interface and simply delegates to the function
 func (f FilterFunc) Apply(
-	ctx fx.Context, r *http.Request, next Executor,
+	ctx context.Context, r *http.Request, next Executor,
 ) (resp *http.Response, err error) {
 	return f(ctx, r, next)
 }
 
 func tracingFilter() FilterFunc {
-	return func(ctx fx.Context, req *http.Request, next Executor,
+	return func(ctx context.Context, req *http.Request, next Executor,
 	) (resp *http.Response, err error) {
 		opName := req.Method
 		var parent opentracing.SpanContext
@@ -69,9 +69,8 @@ func tracingFilter() FilterFunc {
 		ext.HTTPUrl.Set(span, req.URL.String())
 		defer span.Finish()
 
-		ctx = &fxcontext.Context{
-			Context: opentracing.ContextWithSpan(ctx, span),
-		}
+		ctx = opentracing.ContextWithSpan(ctx, span)
+
 		if err := injectSpanIntoHeaders(req.Header, span); err != nil {
 			return nil, err
 		}
@@ -92,24 +91,24 @@ func tracingFilter() FilterFunc {
 func authenticationFilter(info auth.CreateAuthInfo) FilterFunc {
 	authClient := auth.Load(info)
 	serviceName := info.Config().Get(config.ServiceNameKey).AsString()
-	return func(ctx fx.Context, req *http.Request, next Executor,
+	return func(ctx context.Context, req *http.Request, next Executor,
 	) (resp *http.Response, err error) {
 		// Client needs to know what service it is to authenticate
 		authCtx := authClient.SetAttribute(ctx, auth.ServiceAuth, serviceName)
 
 		authCtx, err = authClient.Authenticate(authCtx)
 		if err != nil {
-			ctx.Logger().Error(auth.ErrAuthentication, "error", err)
+			fx.Logger(ctx).Error(auth.ErrAuthentication, "error", err)
 			return nil, err
 		}
 
 		span := opentracing.SpanFromContext(authCtx)
 		if err := injectSpanIntoHeaders(req.Header, span); err != nil {
-			ctx.Logger().Error("Error injecting auth context", "error", err)
+			fx.Logger(ctx).Error("Error injecting auth context", "error", err)
 			return nil, err
 		}
 
-		return next.Execute(&fxcontext.Context{Context: authCtx}, req)
+		return next.Execute(authCtx, req)
 	}
 }
 

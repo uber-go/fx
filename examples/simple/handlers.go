@@ -21,18 +21,18 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"net/http"
 
-	"go.uber.org/fx"
 	"go.uber.org/fx/modules/uhttp"
 	"go.uber.org/fx/service"
 )
 
 type exampleHandler struct{}
 
-func (exampleHandler) ServeHTTP(ctx fx.Context, w http.ResponseWriter, r *http.Request) {
+func (exampleHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	io.WriteString(w, fmt.Sprintf("Headers: %+v", r.Header))
 }
 
@@ -51,7 +51,7 @@ func registerHTTPers(service service.Host) []uhttp.RouteHandler {
 type simpleFilter struct {
 }
 
-func (simpleFilter) Apply(ctx fx.Context, w http.ResponseWriter, r *http.Request, next uhttp.Handler) {
+func (simpleFilter) Apply(ctx context.Context, w http.ResponseWriter, r *http.Request, next uhttp.Handler) {
 	io.WriteString(w, "Going through simpleFilter")
 	next.ServeHTTP(ctx, w, r)
 }

@@ -25,75 +25,26 @@ import (
 
 	"go.uber.org/fx"
 	"go.uber.org/fx/auth"
-	"go.uber.org/fx/internal/fxcontext"
 	"go.uber.org/fx/service"
-	"go.uber.org/thriftrw/wire"
 	"go.uber.org/yarpc/api/transport"
-	"go.uber.org/yarpc/encoding/thrift"
 )
 
-// UnaryHandler is a wrapper for YARPC thrift.UnaryHandler
-type UnaryHandler interface {
-	Handle(ctx fx.Context, body wire.Value) (thrift.Response, error)
-}
-
-// UnaryHandlerFunc calls the YARPC Handle with fx.Context
-type UnaryHandlerFunc func(fx.Context, wire.Value) (thrift.Response, error)
-
-// Handle calls the caller HandlerFunc.
-func (f UnaryHandlerFunc) Handle(ctx fx.Context, body wire.Value) (thrift.Response, error) {
-	return f(ctx, body)
-}
-
-// WrapUnary wraps the unary handler and returns a thrift.UnaryHandlerFunc for yarpc calls
-func WrapUnary(h UnaryHandlerFunc) thrift.UnaryHandler {
-	return func(ctx context.Context, body wire.Value) (thrift.Response, error) {
-		fxctx := &fxcontext.Context{
-			Context: ctx,
-		}
-		return h.Handle(fxctx, body)
-	}
-}
-
-// OnewayHandler is a wrapper for YARPC thrift.OnewayHandler
-type OnewayHandler interface {
-	HandleOneway(ctx fx.Context, body wire.Value) error
-}
-
-// OnewayHandlerFunc calls the YARPC Handle with fx.Context
-type OnewayHandlerFunc func(fx.Context, wire.Value) error
-
-// HandleOneway calls the caller OnewayHandlerFunc.
-func (f OnewayHandlerFunc) HandleOneway(ctx fx.Context, body wire.Value) error {
-	return f(ctx, body)
-}
-
-// WrapOneway wraps the oneway handler and returns a thrift.OnewayHandlerFunc for yarpc calls
-func WrapOneway(h OnewayHandlerFunc) thrift.OnewayHandler {
-	return func(ctx context.Context, body wire.Value) error {
-		fxctx := &fxcontext.Context{
-			Context: ctx,
-		}
-		return h.HandleOneway(fxctx, body)
-	}
-}
-
-type fxContextInboundMiddleware struct {
+type contextInboundMiddleware struct {
 	service.Host
 }
 
-func (f fxContextInboundMiddleware) Handle(ctx context.Context, req *transport.Request, resw transport.ResponseWriter, handler transport.UnaryHandler) error {
-	fxctx := fxcontext.New(ctx, f.Host)
-	return handler.Handle(fxctx, req, resw)
+func (f contextInboundMiddleware) Handle(ctx context.Context, req *transport.Request, resw transport.ResponseWriter, handler transport.UnaryHandler) error {
+	ctx = fx.SetContextStore(ctx, f.Host)
+	return handler.Handle(ctx, req, resw)
 }
 
-type fxContextOnewayInboundMiddleware struct {
+type contextOnewayInboundMiddleware struct {
 	service.Host
 }
 
-func (f fxContextOnewayInboundMiddleware) HandleOneway(ctx context.Context, req *transport.Request, handler transport.OnewayHandler) error {
-	fxctx := fxcontext.New(ctx, f.Host)
-	return handler.HandleOneway(fxctx, req)
+func (f contextOnewayInboundMiddleware) HandleOneway(ctx context.Context, req *transport.Request, handler transport.OnewayHandler) error {
+	ctx = fx.SetContextStore(ctx, f.Host)
+	return handler.HandleOneway(ctx, req)
 }
 
 type authInboundMiddleware struct {
@@ -120,16 +71,13 @@ func (a authOnewayInboundMiddleware) HandleOneway(ctx context.Context, req *tran
 	return handler.HandleOneway(fxctx, req)
 }
 
-func authorize(ctx context.Context, host service.Host) (fx.Context, error) {
-	fxctx := &fxcontext.Context{
-		Context: ctx,
-	}
-	if err := host.AuthClient().Authorize(fxctx); err != nil {
+func authorize(ctx context.Context, host service.Host) (context.Context, error) {
+	if err := host.AuthClient().Authorize(ctx); err != nil {
 		host.Metrics().SubScope("rpc").SubScope("auth").Counter("fail").Inc(1)
-		fxctx.Logger().Error(auth.ErrAuthorization, "error", err)
+		fx.Logger(ctx).Error(auth.ErrAuthorization, "error", err)
 		// TODO(anup): GFM-255 update returned error to transport.BadRequestError (user error than server error)
 		// https://github.com/yarpc/yarpc-go/issues/687
 		return nil, err
 	}
-	return fxctx, nil
+	return ctx, nil
 }
