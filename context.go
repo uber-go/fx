@@ -31,25 +31,25 @@ import (
 
 type contextKey int
 
-const _contextStore contextKey = iota
+const _contextHost contextKey = iota
 
-type ctxStore struct {
+type ctxHost struct {
 	log ulog.Log
 }
 
-func contextStore(ctx context.Context) ctxStore {
-	c := ctx.Value(_contextStore)
+func contextHost(ctx context.Context) ctxHost {
+	c := ctx.Value(_contextHost)
 	if c == nil {
-		c = ctxStore{}
-		ctx = context.WithValue(ctx, _contextStore, c)
+		c = ctxHost{}
+		ctx = context.WithValue(ctx, _contextHost, c)
 	}
-	return c.(ctxStore)
+	return c.(ctxHost)
 }
 
-// SetContextStore sets the context with context aware logger
-func SetContextStore(ctx context.Context, host service.Host) context.Context {
+// SetContextHost sets the context with context aware logger
+func SetContextHost(ctx context.Context, host service.Host) context.Context {
 	if host != nil {
-		ctx = context.WithValue(ctx, _contextStore, ctxStore{
+		ctx = context.WithValue(ctx, _contextHost, ctxHost{
 			log: host.Logger(),
 		})
 	}
@@ -58,22 +58,21 @@ func SetContextStore(ctx context.Context, host service.Host) context.Context {
 
 // WithContextAwareLogger returns a new context with a context-aware logger
 func WithContextAwareLogger(ctx context.Context, span opentracing.Span) context.Context {
-	store := contextStore(ctx)
+	store := contextHost(ctx)
 	// Note that opentracing.Tracer does not expose the tracer id
 	// We only inject tracing information for jaeger.Tracer
 	if jSpanCtx, ok := span.Context().(jaeger.SpanContext); ok {
-		traceLogger := store.log.With(
+		store.log = Logger(ctx).With(
 			"traceID", jSpanCtx.TraceID(), "spanID", jSpanCtx.SpanID(),
 		)
-		store.log = traceLogger
 	}
-	return context.WithValue(ctx, _contextStore, store)
+	return context.WithValue(ctx, _contextHost, store)
 }
 
 // Logger returns a context aware logger. If logger is absent from the context store,
 // the function updates the context with a new context based logger
 func Logger(ctx context.Context) ulog.Log {
-	store := contextStore(ctx)
+	store := contextHost(ctx)
 	if store.log == nil {
 		store.log = ulog.Logger()
 	}

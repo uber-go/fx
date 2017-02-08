@@ -41,20 +41,10 @@ const (
 )
 
 func TestContext_LoggerAccess(t *testing.T) {
-	ctx := SetContextStore(context.Background(), service.NopHost())
+	ctx := SetContextHost(context.Background(), service.NopHost())
 	assert.NotNil(t, ctx)
 	assert.NotNil(t, Logger(ctx))
-	assert.NotNil(t, ctx.Value(_contextStore))
-}
-
-func TestContext_WithLogger(t *testing.T) {
-	gctx := context.WithValue(context.Background(), _testContextKey, "val")
-	ctx := SetContextStore(gctx, service.NopHost())
-	assert.Equal(t, "val", ctx.Value(_testContextKey))
-
-	gctx1 := context.WithValue(context.Background(), _testContextKey2, "val1")
-	assert.Equal(t, nil, gctx1.Value(_testContextKey))
-	assert.Equal(t, "val1", gctx1.Value(_testContextKey2))
+	assert.NotNil(t, ctx.Value(_contextHost))
 }
 
 func TestWithContextAwareLogger(t *testing.T) {
@@ -66,7 +56,7 @@ func TestWithContextAwareLogger(t *testing.T) {
 		)
 		defer closer.Close()
 		span := tracer.StartSpan("opName")
-		ctx := context.WithValue(context.Background(), _contextStore, ctxStore{
+		ctx := context.WithValue(context.Background(), _contextHost, ctxHost{
 			log: loggerWithZap,
 		})
 		ctx = WithContextAwareLogger(ctx, span)
@@ -80,13 +70,13 @@ func TestWithContextAwareLogger(t *testing.T) {
 }
 
 func TestWithContext_NilHost(t *testing.T) {
-	ctx := SetContextStore(context.Background(), nil)
+	ctx := SetContextHost(context.Background(), nil)
 	assert.NotNil(t, Logger(ctx))
 }
 
 func TestContext_Convert(t *testing.T) {
 	host := service.NopHost()
-	ctx := SetContextStore(context.Background(), host)
+	ctx := SetContextHost(context.Background(), host)
 	logger := Logger(ctx)
 	assert.Equal(t, host.Logger(), logger)
 

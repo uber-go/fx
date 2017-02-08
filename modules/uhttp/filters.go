@@ -54,7 +54,7 @@ type contextFilter struct {
 }
 
 func (f contextFilter) Apply(ctx context.Context, w http.ResponseWriter, r *http.Request, next Handler) {
-	ctx = fx.SetContextStore(ctx, f.host)
+	ctx = fx.SetContextHost(ctx, f.host)
 	next.ServeHTTP(ctx, w, r)
 }
 

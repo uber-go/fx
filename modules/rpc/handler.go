@@ -34,7 +34,7 @@ type contextInboundMiddleware struct {
 }
 
 func (f contextInboundMiddleware) Handle(ctx context.Context, req *transport.Request, resw transport.ResponseWriter, handler transport.UnaryHandler) error {
-	ctx = fx.SetContextStore(ctx, f.Host)
+	ctx = fx.SetContextHost(ctx, f.Host)
 	return handler.Handle(ctx, req, resw)
 }
 
@@ -43,7 +43,7 @@ type contextOnewayInboundMiddleware struct {
 }
 
 func (f contextOnewayInboundMiddleware) HandleOneway(ctx context.Context, req *transport.Request, handler transport.OnewayHandler) error {
-	ctx = fx.SetContextStore(ctx, f.Host)
+	ctx = fx.SetContextHost(ctx, f.Host)
 	return handler.HandleOneway(ctx, req)
 }
 
