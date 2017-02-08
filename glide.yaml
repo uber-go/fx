@@ -4,7 +4,7 @@ import:
   # TODO(ai): Pin to semver range after 1.0 is released
   version: master
 - package: github.com/uber-go/tally
-  version: ^1
+  version: ^1.1.0
 - package: github.com/gorilla/mux
   version: ^1.1.0
 - package: github.com/gorilla/context
