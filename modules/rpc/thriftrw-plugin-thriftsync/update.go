@@ -41,9 +41,9 @@ package discardme
 
 <range .Functions>
 
-  func (h *YARPCHandler)<.Name>(ctx fx.Context, <range .Arguments> <lower .Name> <formatType .Type>, <end>)<if .ReturnType> (<formatType .ReturnType>, error) <else> error <end> {
+  func (h *YARPCHandler)<.Name>(ctx context.Context, <range .Arguments> <lowerFirst .Name> <formatType .Type>, <end>)<if .ReturnType> (<formatType .ReturnType>, error) <else> error <end> {
     // TODO: write your code here
-    return nil
+    panic("To be implemented")
   }
 
 <end>
