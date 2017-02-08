@@ -57,7 +57,7 @@ type handlerWrapper struct {
 
 // ServeHTTP calls Handler.ServeHTTP(ctx, w, r) and injects a new service context for use.
 func (h *handlerWrapper) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	ctx := fx.SetContextHost(context.Background(), h.host)
+	ctx := fx.NewContext(context.Background(), h.host)
 	stopwatch := h.host.Metrics().Timer("http." + r.Method + ".time").Start()
 	defer stopwatch.Stop()
 	h.handler.ServeHTTP(ctx, w, r)
