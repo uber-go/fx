@@ -21,6 +21,7 @@
 package uhttp
 
 import (
+	"context"
 	"fmt"
 	"io/ioutil"
 	"net"
@@ -29,7 +30,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.uber.org/fx"
 	"go.uber.org/fx/service"
 )
 
@@ -46,11 +46,11 @@ func withRouter(t *testing.T, f func(r *Router, l net.Listener)) {
 	l := serve(t, r)
 	defer l.Close()
 	r.Handle("/foo/baz/quokka",
-		HandlerFunc(func(ctx fx.Context, w http.ResponseWriter, r *http.Request) {
+		HandlerFunc(func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 			w.Write([]byte("hello"))
 		}))
 	r.Handle("/foo/bar/quokka",
-		HandlerFunc(func(ctx fx.Context, w http.ResponseWriter, r *http.Request) {
+		HandlerFunc(func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 			w.Write([]byte("world"))
 		}))
 	f(r, l)

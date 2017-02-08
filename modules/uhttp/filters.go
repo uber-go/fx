@@ -27,8 +27,8 @@ import (
 
 	"go.uber.org/fx"
 	"go.uber.org/fx/auth"
-	"go.uber.org/fx/internal/fxcontext"
 	"go.uber.org/fx/modules"
+	"go.uber.org/fx/service"
 
 	"github.com/opentracing/opentracing-go"
 	"github.com/opentracing/opentracing-go/ext"
@@ -38,36 +38,44 @@ import (
 // Filter applies filters on requests, request contexts or responses such as
 // adding tracing to the context
 type Filter interface {
-	Apply(ctx fx.Context, w http.ResponseWriter, r *http.Request, next Handler)
+	Apply(ctx context.Context, w http.ResponseWriter, r *http.Request, next Handler)
 }
 
 // FilterFunc is an adaptor to call normal functions to apply filters
 type FilterFunc func(ctx context.Context, w http.ResponseWriter, r *http.Request, next Handler)
 
 // Apply implements Apply from the Filter interface and simply delegates to the function
-func (f FilterFunc) Apply(ctx fx.Context, w http.ResponseWriter, r *http.Request, next Handler) {
+func (f FilterFunc) Apply(ctx context.Context, w http.ResponseWriter, r *http.Request, next Handler) {
 	f(ctx, w, r, next)
+}
+
+type contextFilter struct {
+	host service.Host
+}
+
+func (f contextFilter) Apply(ctx context.Context, w http.ResponseWriter, r *http.Request, next Handler) {
+	ctx = fx.SetContextHost(ctx, f.host)
+	next.ServeHTTP(ctx, w, r)
 }
 
 type tracingServerFilter struct {
 	scope tally.Scope
 }
 
-func (f tracingServerFilter) Apply(ctx fx.Context, w http.ResponseWriter, r *http.Request, next Handler) {
+func (f tracingServerFilter) Apply(ctx context.Context, w http.ResponseWriter, r *http.Request, next Handler) {
 	operationName := r.Method
 	carrier := opentracing.HTTPHeadersCarrier(r.Header)
 	spanCtx, err := opentracing.GlobalTracer().Extract(opentracing.HTTPHeaders, carrier)
 	if err != nil && err != opentracing.ErrSpanContextNotFound {
-		ctx.Logger().Warn("Malformed inbound tracing context: ", "error", err.Error())
+		fx.Logger(ctx).Warn("Malformed inbound tracing context: ", "error", err.Error())
 	}
 	span := opentracing.GlobalTracer().StartSpan(operationName, ext.RPCServerOption(spanCtx))
 	ext.HTTPUrl.Set(span, r.URL.String())
 	defer span.Finish()
 
-	ctx = &fxcontext.Context{
-		Context: opentracing.ContextWithSpan(ctx, span),
-	}
-	ctx = ctx.(*fxcontext.Context).WithContextAwareLogger(span)
+	ctx = opentracing.ContextWithSpan(ctx, span)
+
+	ctx = fx.WithContextAwareLogger(ctx, span)
 
 	r = r.WithContext(ctx)
 	next.ServeHTTP(ctx, w, r)
@@ -79,10 +87,10 @@ type authorizationFilter struct {
 	authCounter tally.Counter
 }
 
-func (f authorizationFilter) Apply(ctx fx.Context, w http.ResponseWriter, r *http.Request, next Handler) {
+func (f authorizationFilter) Apply(ctx context.Context, w http.ResponseWriter, r *http.Request, next Handler) {
 	if err := f.authClient.Authorize(ctx); err != nil {
 		f.authCounter.Inc(1)
-		ctx.Logger().Error(auth.ErrAuthorization, "error", err)
+		fx.Logger(ctx).Error(auth.ErrAuthorization, "error", err)
 		w.WriteHeader(http.StatusUnauthorized)
 		fmt.Fprintf(w, "Unauthorized access: %+v", err)
 		return
@@ -96,10 +104,10 @@ type panicFilter struct {
 	panicCounter tally.Counter
 }
 
-func (f panicFilter) Apply(ctx fx.Context, w http.ResponseWriter, r *http.Request, next Handler) {
+func (f panicFilter) Apply(ctx context.Context, w http.ResponseWriter, r *http.Request, next Handler) {
 	defer func() {
 		if err := recover(); err != nil {
-			ctx.Logger().Error("Panic recovered serving request", "error", err, "url", r.URL)
+			fx.Logger(ctx).Error("Panic recovered serving request", "error", err, "url", r.URL)
 			f.panicCounter.Inc(1)
 			w.Header().Add(ContentType, ContentTypeText)
 			w.WriteHeader(http.StatusInternalServerError)
@@ -114,7 +122,7 @@ type metricsFilter struct {
 	scope tally.Scope
 }
 
-func (f metricsFilter) Apply(ctx fx.Context, w http.ResponseWriter, r *http.Request, next Handler) {
+func (f metricsFilter) Apply(ctx context.Context, w http.ResponseWriter, r *http.Request, next Handler) {
 	defer f.scope.Tagged(map[string]string{modules.TagStatus: w.Header().Get("Status")}).Counter("total").Inc(1)
 	next.ServeHTTP(ctx, w, r)
 }

@@ -30,7 +30,6 @@ import (
 
 	"go.uber.org/fx"
 	"go.uber.org/fx/auth"
-	"go.uber.org/fx/internal/fxcontext"
 	"go.uber.org/fx/metrics"
 	"go.uber.org/fx/service"
 	"go.uber.org/fx/testutils"
@@ -67,7 +66,7 @@ func TestTracingFilterWithLogs(t *testing.T) {
 		defer opentracing.InitGlobalTracer(opentracing.NoopTracer{})
 
 		host := service.NopHostConfigured(auth.NopClient, loggerWithZap, tracer)
-		chain := newFilterChainBuilder(host).AddFilters([]Filter{tracingServerFilter{host.Metrics()}}...).Build(getNopHandler(host))
+		chain := newFilterChainBuilder(host).AddFilters([]Filter{contextFilter{host}, tracingServerFilter{host.Metrics()}}...).Build(getNopHandler(host))
 		response := testServeHTTP(chain, host)
 		assert.Contains(t, response.Body.String(), "filters ok")
 		assert.True(t, len(buf.Lines()) > 0)
@@ -115,14 +114,14 @@ func TestFilterChainFilters_AuthFailure(t *testing.T) {
 func testServeHTTP(chain filterChain, host service.Host) *httptest.ResponseRecorder {
 	request := httptest.NewRequest("", "http://filters", nil)
 	response := httptest.NewRecorder()
-	ctx := fxcontext.New(context.Background(), host)
+	ctx := context.Background()
 	chain.ServeHTTP(ctx, response, request)
 	return response
 }
 
 func getNopHandler(host service.Host) HandlerFunc {
-	return func(ctx fx.Context, w http.ResponseWriter, r *http.Request) {
-		ctx.Logger().Info("Inside Noop Handler")
+	return func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+		fx.Logger(ctx).Info("Inside Noop Handler")
 		io.WriteString(w, "filters ok")
 	}
 }

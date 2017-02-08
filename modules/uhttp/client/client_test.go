@@ -21,11 +21,10 @@
 package client
 
 import (
+	"context"
 	"net/http"
 	"net/http/httptest"
 	"testing"
-
-	"go.uber.org/fx"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -80,7 +79,7 @@ func TestClientGetTwiceExecutesAllFilters(t *testing.T) {
 	svr := startServer()
 	count := 0
 	var f FilterFunc = func(
-		ctx fx.Context, r *http.Request, next Executor,
+		ctx context.Context, r *http.Request, next Executor,
 	) (resp *http.Response, err error) {
 		count++
 		return next.Execute(ctx, r)

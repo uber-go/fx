@@ -27,10 +27,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"go.uber.org/fx"
 	"go.uber.org/fx/auth"
 	"go.uber.org/fx/config"
-	"go.uber.org/fx/internal/fxcontext"
 	"go.uber.org/fx/metrics"
 	"go.uber.org/fx/tracing"
 	"go.uber.org/fx/ulog"
@@ -51,7 +49,7 @@ var (
 func TestExecutionChain(t *testing.T) {
 	t.Parallel()
 	execChain := newExecutionChain([]Filter{}, nopTransport{})
-	resp, err := execChain.RoundTrip(_req().WithContext(fx.NopContext))
+	resp, err := execChain.RoundTrip(_req().WithContext(context.Background()))
 	assert.NoError(t, err)
 	assert.Equal(t, _respOK, resp)
 }
@@ -61,7 +59,7 @@ func TestExecutionChainFilters(t *testing.T) {
 	execChain := newExecutionChain(
 		[]Filter{tracingFilter()}, nopTransport{},
 	)
-	ctx := fx.NopContext
+	ctx := context.Background()
 	resp, err := execChain.RoundTrip(_req().WithContext(ctx))
 	assert.NoError(t, err)
 	assert.Equal(t, _respOK, resp)
@@ -72,7 +70,7 @@ func TestExecutionChainFiltersError(t *testing.T) {
 	execChain := newExecutionChain(
 		[]Filter{tracingFilter()}, errTransport{},
 	)
-	resp, err := execChain.RoundTrip(_req().WithContext(fx.NopContext))
+	resp, err := execChain.RoundTrip(_req().WithContext(context.Background()))
 	assert.Error(t, err)
 	assert.Equal(t, errClient, err)
 	assert.Nil(t, resp)
@@ -97,9 +95,8 @@ func TestExecutionChainFilters_AuthContextPropagation(t *testing.T) {
 		)
 		span := tracer.StartSpan("test_method")
 		span.SetBaggageItem(auth.ServiceAuth, "test_service")
-		ctx := &fxcontext.Context{
-			Context: opentracing.ContextWithSpan(context.Background(), span),
-		}
+		ctx := opentracing.ContextWithSpan(context.Background(), span)
+
 		resp, err := execChain.RoundTrip(_req().WithContext(ctx))
 		assert.NoError(t, err)
 		assert.Equal(t, _respOK, resp)
@@ -113,9 +110,7 @@ func TestExecutionChainFilters_AuthContextPropagationFailure(t *testing.T) {
 		)
 		span := tracer.StartSpan("test_method")
 		span.SetBaggageItem(auth.ServiceAuth, "testService")
-		ctx := &fxcontext.Context{
-			Context: opentracing.ContextWithSpan(context.Background(), span),
-		}
+		ctx := opentracing.ContextWithSpan(context.Background(), span)
 		resp, err := execChain.RoundTrip(_req().WithContext(ctx))
 		assert.Error(t, err)
 		assert.Nil(t, resp)
@@ -146,9 +141,7 @@ func TestFiltersWithTracerErrors(t *testing.T) {
 			sp := &shadowSpan{span, tr}
 			tr.span = sp
 
-			ctx := &fxcontext.Context{
-				Context: opentracing.ContextWithSpan(context.Background(), sp),
-			}
+			ctx := opentracing.ContextWithSpan(context.Background(), sp)
 
 			_, err := execChain.RoundTrip(_req().WithContext(ctx))
 			assert.EqualError(t, err, "Very bad tracer")
@@ -181,8 +174,7 @@ type contextPropagationTransport struct {
 }
 
 func (tr contextPropagationTransport) RoundTrip(req *http.Request) (resp *http.Response, err error) {
-	ctx, ok := req.Context().(fx.Context)
-	require.True(tr.T, ok)
+	ctx := req.Context()
 
 	span := opentracing.SpanFromContext(ctx)
 	assert.NotNil(tr.T, span)

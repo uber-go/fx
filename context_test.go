@@ -18,10 +18,10 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package fxcontext
+package fx
 
 import (
-	gcontext "context"
+	"context"
 	"testing"
 
 	"go.uber.org/fx/service"
@@ -33,24 +33,18 @@ import (
 	"github.com/uber/jaeger-client-go"
 )
 
-func TestContext_HostAccess(t *testing.T) {
-	ctx := New(gcontext.Background(), service.NopHost())
+type testKey int
+
+const (
+	_testContextKey testKey = iota
+	_testContextKey2
+)
+
+func TestContext_LoggerAccess(t *testing.T) {
+	ctx := SetContextHost(context.Background(), service.NopHost())
 	assert.NotNil(t, ctx)
-	assert.NotNil(t, ctx.Logger())
-	assert.NotNil(t, ctx.Value(_fxContextStore))
-}
-
-func TestWithContext(t *testing.T) {
-	gctx := gcontext.WithValue(gcontext.Background(), "key", "val")
-	ctx := New(gctx, service.NopHost())
-	assert.Equal(t, "val", ctx.Value("key"))
-
-	gctx1 := gcontext.WithValue(gcontext.Background(), "key1", "val1")
-	ctx = &Context{
-		Context: gctx1,
-	}
-	assert.Equal(t, nil, ctx.Value("key"))
-	assert.Equal(t, "val1", ctx.Value("key1"))
+	assert.NotNil(t, Logger(ctx))
+	assert.NotNil(t, ctx.Value(_contextHost))
 }
 
 func TestWithContextAwareLogger(t *testing.T) {
@@ -62,13 +56,11 @@ func TestWithContextAwareLogger(t *testing.T) {
 		)
 		defer closer.Close()
 		span := tracer.StartSpan("opName")
-		ctx := &Context{
-			gcontext.WithValue(gcontext.Background(), _fxContextStore, store{
-				log: loggerWithZap,
-			}),
-		}
-		loggerCtx := ctx.WithContextAwareLogger(span)
-		loggerCtx.Logger().Info("Testing context aware logger")
+		ctx := context.WithValue(context.Background(), _contextHost, ctxHost{
+			log: loggerWithZap,
+		})
+		ctx = WithContextAwareLogger(ctx, span)
+		Logger(ctx).Info("Testing context aware logger")
 		assert.True(t, len(buf.Lines()) > 0)
 		for _, line := range buf.Lines() {
 			assert.Contains(t, line, "traceID")
@@ -78,27 +70,25 @@ func TestWithContextAwareLogger(t *testing.T) {
 }
 
 func TestWithContext_NilHost(t *testing.T) {
-	ctx := New(gcontext.Background(), nil)
-	assert.NotNil(t, ctx.Logger())
+	ctx := SetContextHost(context.Background(), nil)
+	assert.NotNil(t, Logger(ctx))
 }
 
 func TestContext_Convert(t *testing.T) {
 	host := service.NopHost()
-	ctx := New(gcontext.Background(), host)
-	logger := ctx.Logger()
+	ctx := SetContextHost(context.Background(), host)
+	logger := Logger(ctx)
 	assert.Equal(t, host.Logger(), logger)
 
-	assertConvert(t, ctx, logger)
+	assertConvert(ctx, t, logger)
 }
 
-func assertConvert(t *testing.T, ctx gcontext.Context, logger ulog.Log) {
-	fxctx := Context{ctx}
-	assert.NotNil(t, fxctx.Logger())
-	assert.Equal(t, fxctx.Logger(), logger)
+func assertConvert(ctx context.Context, t *testing.T, logger ulog.Log) {
+	assert.NotNil(t, Logger(ctx))
+	assert.Equal(t, Logger(ctx), logger)
 
-	ctx = gcontext.WithValue(ctx, "key", nil)
+	ctx = context.WithValue(ctx, _testContextKey, nil)
 
-	fxctx = Context{ctx}
-	assert.NotNil(t, fxctx.Logger())
-	assert.Equal(t, fxctx.Logger(), logger)
+	assert.NotNil(t, Logger(ctx))
+	assert.Equal(t, Logger(ctx), logger)
 }

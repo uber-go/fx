@@ -27,12 +27,9 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"go.uber.org/fx"
-	"go.uber.org/fx/internal/fxcontext"
 	"go.uber.org/fx/service"
 	"go.uber.org/thriftrw/wire"
 	"go.uber.org/yarpc/api/transport"
-	"go.uber.org/yarpc/encoding/thrift"
 )
 
 type fakeEnveloper struct {
@@ -51,44 +48,8 @@ func (f fakeEnveloper) ToWire() (wire.Value, error) {
 	return wire.NewValueStruct(wire.Struct{}), nil
 }
 
-func UnaryFakeHandlerFunc(ctx fx.Context, val wire.Value) (thrift.Response, error) {
-	return thrift.Response{
-		Body: fakeEnveloper{},
-	}, nil
-}
-
-func OnewayFakeHandlerFunc(ctx fx.Context, val wire.Value) error {
-	return nil
-}
-
-func OnewayFakeHandlerFuncWithError(ctx fx.Context, val wire.Value) error {
-	return errors.New("mocking error")
-}
-
-func TestWrapUnary(t *testing.T) {
-	handlerFunc := WrapUnary(UnaryFakeHandlerFunc)
-	assert.NotNil(t, handlerFunc)
-	resp, err := handlerFunc(context.Background(), wire.Value{})
-	assert.NoError(t, err)
-	assert.NotNil(t, resp)
-}
-
-func TestWrapOneway(t *testing.T) {
-	handlerFunc := WrapOneway(OnewayFakeHandlerFunc)
-	assert.NotNil(t, handlerFunc)
-	err := handlerFunc(context.Background(), wire.Value{})
-	assert.NoError(t, err)
-}
-
-func TestWrapOneway_error(t *testing.T) {
-	handlerFunc := WrapOneway(OnewayFakeHandlerFuncWithError)
-	assert.NotNil(t, handlerFunc)
-	err := handlerFunc(context.Background(), wire.Value{})
-	assert.Error(t, err)
-}
-
 func TestInboundMiddleware_fxContext(t *testing.T) {
-	unary := fxContextInboundMiddleware{
+	unary := contextInboundMiddleware{
 		Host: service.NopHost(),
 	}
 	err := unary.Handle(context.Background(), &transport.Request{}, nil, &fakeUnaryHandler{t: t})
@@ -96,7 +57,7 @@ func TestInboundMiddleware_fxContext(t *testing.T) {
 }
 
 func TestOnewayInboundMiddleware_fxContext(t *testing.T) {
-	oneway := fxContextOnewayInboundMiddleware{
+	oneway := contextOnewayInboundMiddleware{
 		Host: service.NopHost(),
 	}
 	err := oneway.HandleOneway(context.Background(), &transport.Request{}, &fakeOnewayHandler{t: t})
@@ -141,9 +102,7 @@ type fakeUnaryHandler struct {
 }
 
 func (f fakeUnaryHandler) Handle(ctx context.Context, _param1 *transport.Request, _param2 transport.ResponseWriter) error {
-	assert.NotNil(f.t, fxcontext.Context{
-		Context: ctx,
-	})
+	assert.NotNil(f.t, ctx)
 	return errors.New("handle")
 }
 
@@ -152,8 +111,6 @@ type fakeOnewayHandler struct {
 }
 
 func (f fakeOnewayHandler) HandleOneway(ctx context.Context, p *transport.Request) error {
-	assert.NotNil(f.t, fxcontext.Context{
-		Context: ctx,
-	})
+	assert.NotNil(f.t, ctx)
 	return errors.New("oneway handle")
 }

@@ -21,12 +21,11 @@
 package client
 
 import (
+	"context"
 	"net/http"
 	"time"
 
-	"go.uber.org/fx"
 	"go.uber.org/fx/auth"
-	"go.uber.org/fx/internal/fxcontext"
 )
 
 // New creates an http.Client that includes 2 extra filters: tracing and auth
@@ -59,7 +58,7 @@ func newExecutionChain(
 	}
 }
 
-func (ec executionChain) Execute(ctx fx.Context, r *http.Request) (resp *http.Response, err error) {
+func (ec executionChain) Execute(ctx context.Context, r *http.Request) (resp *http.Response, err error) {
 	if ec.currentFilter < len(ec.filters) {
 		filter := ec.filters[ec.currentFilter]
 		ec.currentFilter++
@@ -72,5 +71,5 @@ func (ec executionChain) Execute(ctx fx.Context, r *http.Request) (resp *http.Re
 
 // Implement http.RoundTripper interface to use as a Transport in http.Client
 func (ec executionChain) RoundTrip(r *http.Request) (resp *http.Response, err error) {
-	return ec.Execute(&fxcontext.Context{Context: r.Context()}, r)
+	return ec.Execute(r.Context(), r)
 }

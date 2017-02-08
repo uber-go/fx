@@ -25,21 +25,20 @@ import (
 	"net/http"
 
 	"go.uber.org/fx"
-	"go.uber.org/fx/internal/fxcontext"
 	"go.uber.org/fx/service"
 )
 
 // Handler is a context-aware extension of http.Handler.
 type Handler interface {
-	ServeHTTP(ctx fx.Context, w http.ResponseWriter, r *http.Request)
+	ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request)
 }
 
 // The HandlerFunc type is an adapter to allow the use of
 // ordinary functions as HTTP handlers.
-type HandlerFunc func(ctx fx.Context, w http.ResponseWriter, r *http.Request)
+type HandlerFunc func(ctx context.Context, w http.ResponseWriter, r *http.Request)
 
 // ServeHTTP calls the caller HandlerFunc.
-func (f HandlerFunc) ServeHTTP(ctx fx.Context, w http.ResponseWriter, r *http.Request) {
+func (f HandlerFunc) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	f(ctx, w, r)
 }
 
@@ -58,7 +57,7 @@ type handlerWrapper struct {
 
 // ServeHTTP calls Handler.ServeHTTP(ctx, w, r) and injects a new service context for use.
 func (h *handlerWrapper) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	ctx := fxcontext.New(context.Background(), h.host)
+	ctx := fx.SetContextHost(context.Background(), h.host)
 	stopwatch := h.host.Metrics().Timer("http." + r.Method + ".time").Start()
 	defer stopwatch.Stop()
 	h.handler.ServeHTTP(ctx, w, r)

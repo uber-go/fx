@@ -109,11 +109,11 @@ func (c *dispatcherController) addDefaultMiddleware(host service.Host) error {
 	cfg := yarpcConfig{
 		AdvertiseName: host.Name(),
 		inboundMiddleware: []middleware.UnaryInbound{
-			fxContextInboundMiddleware{host},
+			contextInboundMiddleware{host},
 			authInboundMiddleware{host},
 		},
 		onewayInboundMiddleware: []middleware.OnewayInbound{
-			fxContextOnewayInboundMiddleware{host},
+			contextOnewayInboundMiddleware{host},
 			authOnewayInboundMiddleware{host},
 		},
 	}
