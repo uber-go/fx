@@ -62,7 +62,7 @@ func WithContextAwareLogger(ctx context.Context, span opentracing.Span) context.
 	// Note that opentracing.Tracer does not expose the tracer id
 	// We only inject tracing information for jaeger.Tracer
 	if jSpanCtx, ok := span.Context().(jaeger.SpanContext); ok {
-		traceLogger := Logger(ctx).With(
+		traceLogger := store.log.With(
 			"traceID", jSpanCtx.TraceID(), "spanID", jSpanCtx.SpanID(),
 		)
 		store.log = traceLogger
