@@ -39,15 +39,19 @@ type ctxHost struct {
 
 func contextHost(ctx context.Context) ctxHost {
 	c := ctx.Value(_contextHost)
-	if c == nil {
-		c = ctxHost{}
-		ctx = context.WithValue(ctx, _contextHost, c)
+	if c != nil {
+		return c.(ctxHost)
 	}
+
+	c = ctxHost{
+		log: ulog.Logger(),
+	}
+	ctx = context.WithValue(ctx, _contextHost, c)
 	return c.(ctxHost)
 }
 
-// SetContextHost sets the context with context aware logger
-func SetContextHost(ctx context.Context, host service.Host) context.Context {
+// NewContext sets the context with the context aware logger
+func NewContext(ctx context.Context, host service.Host) context.Context {
 	if host != nil {
 		ctx = context.WithValue(ctx, _contextHost, ctxHost{
 			log: host.Logger(),
@@ -69,12 +73,7 @@ func WithContextAwareLogger(ctx context.Context, span opentracing.Span) context.
 	return context.WithValue(ctx, _contextHost, store)
 }
 
-// Logger returns a context aware logger. If logger is absent from the context store,
-// the function updates the context with a new context based logger
+// Logger returns a context aware logger
 func Logger(ctx context.Context) ulog.Log {
-	store := contextHost(ctx)
-	if store.log == nil {
-		store.log = ulog.Logger()
-	}
-	return store.log
+	return contextHost(ctx).log
 }

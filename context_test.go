@@ -41,7 +41,7 @@ const (
 )
 
 func TestContext_LoggerAccess(t *testing.T) {
-	ctx := SetContextHost(context.Background(), service.NopHost())
+	ctx := NewContext(context.Background(), service.NopHost())
 	assert.NotNil(t, ctx)
 	assert.NotNil(t, Logger(ctx))
 	assert.NotNil(t, ctx.Value(_contextHost))
@@ -70,13 +70,13 @@ func TestWithContextAwareLogger(t *testing.T) {
 }
 
 func TestWithContext_NilHost(t *testing.T) {
-	ctx := SetContextHost(context.Background(), nil)
+	ctx := NewContext(context.Background(), nil)
 	assert.NotNil(t, Logger(ctx))
 }
 
 func TestContext_Convert(t *testing.T) {
 	host := service.NopHost()
-	ctx := SetContextHost(context.Background(), host)
+	ctx := NewContext(context.Background(), host)
 	logger := Logger(ctx)
 	assert.Equal(t, host.Logger(), logger)
 
