@@ -104,7 +104,7 @@ func (c *dispatcherController) addConfig(config yarpcConfig) error {
 	return nil
 }
 
-// Adds the default middleware: fx.context propagation and auth.
+// Adds the default middleware: context propagation and auth.
 func (c *dispatcherController) addDefaultMiddleware(host service.Host) error {
 	cfg := yarpcConfig{
 		AdvertiseName: host.Name(),

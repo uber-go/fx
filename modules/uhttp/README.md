@@ -7,6 +7,7 @@ but the details of that are abstracted away through `uhttp.RouteHandler`.
 package main
 
 import (
+  "context"
   "io"
   "net/http"
 
@@ -28,8 +29,8 @@ func main() {
 }
 
 func registerHTTP(service service.Host) []uhttp.RouteHandler {
-  handleHome := http.HandlerFunc(func(ctx fx.Context, w http.ResponseWriter, r *http.Request) {
-    ctx.Logger().Info("Inside the handler")
+  handleHome := http.HandlerFunc(func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+    fx.Logger(ctx).Info("Inside the handler")
     io.WriteString(w, "Hello, world")
   })
 
@@ -46,8 +47,8 @@ This allows service owners to easily find logs corresponding to a request within
 
 ## HTTP Client
 
-The http client serves similar purpose as http module, but for making requests. 
-It has a set of auth and tracing filters for http requests and a default timeout set to 2 minutes. 
+The http client serves similar purpose as http module, but for making requests.
+It has a set of auth and tracing filters for http requests and a default timeout set to 2 minutes.
 
 ```go
 package main
@@ -70,7 +71,7 @@ func main() {
   client := client.New(svc)
   client.Get("https://www.uber.com")
 }
-``` 
+```
 
 ### Benchmark results:
 ```

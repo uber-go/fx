@@ -27,6 +27,7 @@
 //   package main
 //
 //   import (
+//     "context"
 //     "io"
 //     "net/http"
 //
@@ -48,8 +49,8 @@
 //   }
 //
 //   func registerHTTP(service service.Host) []uhttp.RouteHandler {
-//     handleHome := http.HandlerFunc(func(ctx fx.Context, w http.ResponseWriter, r *http.Request) {
-//       ctx.Logger().Info("Inside the handler")
+//     handleHome := http.HandlerFunc(func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+//       fx.Logger(ctx).Info("Inside the handler")
 //       io.WriteString(w, "Hello, world")
 //     })
 //
@@ -66,7 +67,8 @@
 //
 // HTTP Client
 //
-// The http client serves similar purpose as http module, but for making requests.It has a set of auth and tracing filters for http requests and a default timeout set to 2 minutes.
+// The http client serves similar purpose as http module, but for making requests.
+// It has a set of auth and tracing filters for http requests and a default timeout set to 2 minutes.
 //
 //
 //   package main

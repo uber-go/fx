@@ -10,7 +10,7 @@ Following examples show how thriftsync syncs handler code with the updated thrif
 
 ```thrift
 service TestService {
-    string testFunction(1: string param)
+  string testFunction(1: string param)
 }
 ```
 
@@ -18,34 +18,35 @@ service TestService {
 package main
 
 import (
-	"go.uber.org/fx"
-	"testservice/testservice/testserviceserver"
-	"go.uber.org/fx/service"
-	"go.uber.org/yarpc/api/transport"
+  "context"
+
+  "testservice/testservice/testserviceserver"
+  "go.uber.org/fx/service"
+  "go.uber.org/yarpc/api/transport"
 )
 
 type YARPCHandler struct {
-	// TODO: modify the TestService handler with your suitable structure
+  // TODO: modify the TestService handler with your suitable structure
 }
 
 // NewYARPCThriftHandler for your service
 func NewYARPCThriftHandler(service.Host) ([]transport.Procedure, error) {
-	handler := &YARPCHandler{}
-	return testserviceserver.New(handler), nil
+  handler := &YARPCHandler{}
+  return testserviceserver.New(handler), nil
 }
 
-func (h *YARPCHandler) TestFunction(ctx fx.Context, param *string) (string, error) {
-	// TODO: write your code here
-	return "", nil
+func (h *YARPCHandler) TestFunction(ctx context.Context, param *string) (string, error) {
+  // TODO: write your code here
+  panic("To be implemented")
 }
 ```
 **New function added to thrift file**
 
 ```thrift
 service TestService {
-    string testFunction(1: string param)
+  string testFunction(1: string param)
 
-    string newtestFunction(1: string param)
+  string newtestFunction(1: string param)
 }
 ```
 
@@ -53,28 +54,29 @@ service TestService {
 package main
 
 import (
-	"go.uber.org/fx"
-	"testservice/testservice/testserviceserver"
-	"go.uber.org/fx/service"
-	"go.uber.org/yarpc/api/transport"
+  "context"
+
+  "testservice/testservice/testserviceserver"
+  "go.uber.org/fx/service"
+  "go.uber.org/yarpc/api/transport"
 )
 
 type YARPCHandler struct {
-	// TODO: modify the TestService handler with your suitable structure
+  // TODO: modify the TestService handler with your suitable structure
 }
 
 // NewYARPCThriftHandler for your service
 func NewYARPCThriftHandler(service.Host) ([]transport.Procedure, error) {
-	handler := &YARPCHandler{}
-	return testserviceserver.New(handler), nil
+  handler := &YARPCHandler{}
+  return testserviceserver.New(handler), nil
 }
 
-func (h *YARPCHandler) testFunction(ctx fx.Context, param string) (string, error) {
-    Return "", nil
+func (h *YARPCHandler) testFunction(ctx context.Context, param string) (string, error) {
+  panic("To be implemented")
 }
 
-func (h *YARPCHandler) newtestFunction(ctx fx.Context, param string) (string, error) {
-    Return "", nil
+func (h *YARPCHandler) newtestFunction(ctx context.Context, param string) (string, error) {
+  panic("To be implemented")
 }
 ```
 
@@ -82,9 +84,9 @@ func (h *YARPCHandler) newtestFunction(ctx fx.Context, param string) (string, er
 
 ```thrift
 service TestService {
-    string testFunction(1: string param)
+  string testFunction(1: string param)
 
-    string newtestFunction(1: string param, 2: string parameter2)
+  string newtestFunction(1: string param, 2: string parameter2)
 }
 ```
 
@@ -92,64 +94,66 @@ service TestService {
 package main
 
 import (
-	"go.uber.org/fx"
-	"testservice/testservice/testserviceserver"
-	"go.uber.org/fx/service"
-	"go.uber.org/yarpc/api/transport"
+  "context"
+
+  "testservice/testservice/testserviceserver"
+  "go.uber.org/fx/service"
+  "go.uber.org/yarpc/api/transport"
 )
 
 type YARPCHandler struct {
-	// TODO: modify the TestService handler with your suitable structure
+  // TODO: modify the TestService handler with your suitable structure
 }
 
 // NewYARPCThriftHandler for your service
 func NewYARPCThriftHandler(service.Host) ([]transport.Procedure, error) {
-	handler := &YARPCHandler{}
-	return testserviceserver.New(handler), nil
+  handler := &YARPCHandler{}
+  return testserviceserver.New(handler), nil
 }
 
-func (h *YARPCHandler) testFunction(ctx fx.Context, param string) (string, error) {
-    Return "", nil
+func (h *YARPCHandler) testFunction(ctx context.Context, param string) (string, error) {
+  panic("To be implemented")
 }
 
-func (h *YARPCHandler) newtestFunction(ctx fx.Context, param string, parameter2 string) (string, error) {
-    Return "", nil
+func (h *YARPCHandler) newtestFunction(ctx context.Context, param string, parameter2 string) (string, error) {
+  panic("To be implemented")
 }
 ```
 **Updated parameter names and return types**
 
 ```thrift
 service TestService {
-    i64 testFunction(1: string newparameterName)
+  i64 testFunction(1: string newparameterName)
 
-    string newtestFunction(1: string param, 2: string parameter2)
+  string newtestFunction(1: string param, 2: string parameter2)
 }
 ```
 ```go
 package main
 
 import (
-	"go.uber.org/fx"
-	"testservice/testservice/testserviceserver"
-	"go.uber.org/fx/service"
-	"go.uber.org/yarpc/api/transport"
+  "context"
+
+  "testservice/testservice/testserviceserver"
+  "go.uber.org/fx/service"
+  "go.uber.org/yarpc/api/transport"
 )
 
 type YARPCHandler struct {
-	// TODO: modify the TestService handler with your suitable structure
+  // TODO: modify the TestService handler with your suitable structure
 }
 
 // NewYARPCThriftHandler for your service
 func NewYARPCThriftHandler(service.Host) ([]transport.Procedure, error) {
-	handler := &YARPCHandler{}
-	return testserviceserver.New(handler), nil
+  handler := &YARPCHandler{}
+  return testserviceserver.New(handler), nil
 }
 
-func (h *YARPCHandler) testFunction(ctx fx.Context, newparameterName string) (int64, error) {
-    return nil, nil
+func (h *YARPCHandler) testFunction(ctx context.Context, newparameterName string) (int64, error) {
+  panic("To be implemented")
 }
 
-func (h *YARPCHandler) newtestFunction(ctx fx.Context, param string, parameter2 string) (string, error) {
-    return "", nil
+func (h *YARPCHandler) newtestFunction(ctx context.Context, param string, parameter2 string) (string, error) {
+  panic("To be implemented")
 }
 ```
