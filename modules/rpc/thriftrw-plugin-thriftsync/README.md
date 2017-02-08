@@ -21,6 +21,7 @@ import (
   "context"
 
   "testservice/testservice/testserviceserver"
+
   "go.uber.org/fx/service"
   "go.uber.org/yarpc/api/transport"
 )
@@ -57,6 +58,7 @@ import (
   "context"
 
   "testservice/testservice/testserviceserver"
+
   "go.uber.org/fx/service"
   "go.uber.org/yarpc/api/transport"
 )
@@ -97,6 +99,7 @@ import (
   "context"
 
   "testservice/testservice/testserviceserver"
+
   "go.uber.org/fx/service"
   "go.uber.org/yarpc/api/transport"
 )
@@ -135,6 +138,7 @@ import (
   "context"
 
   "testservice/testservice/testserviceserver"
+
   "go.uber.org/fx/service"
   "go.uber.org/yarpc/api/transport"
 )

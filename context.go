@@ -39,12 +39,14 @@ type ctxHost struct {
 
 func contextHost(ctx context.Context) ctxHost {
 	c := ctx.Value(_contextHost)
-	if c == nil {
-		c = ctxHost{
-			log: ulog.Logger(),
-		}
-		ctx = context.WithValue(ctx, _contextHost, c)
+	if c != nil {
+		return c.(ctxHost)
 	}
+
+	c = ctxHost{
+		log: ulog.Logger(),
+	}
+	ctx = context.WithValue(ctx, _contextHost, c)
 	return c.(ctxHost)
 }
 
