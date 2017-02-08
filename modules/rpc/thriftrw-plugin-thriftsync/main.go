@@ -49,16 +49,6 @@ var (
 
 var templateOptions = []plugin.TemplateOption{
 	plugin.TemplateFunc("lower", strings.ToLower),
-	plugin.TemplateFunc("isStringType", func(spec api.Type) bool {
-		if &spec.SimpleType == nil {
-			return false
-		}
-		switch *spec.SimpleType {
-		case api.SimpleTypeString:
-			return true
-		}
-		return false
-	}),
 	plugin.TemplateFunc("lowerFirst", func(str string) string {
 		for i, v := range str {
 			return string(unicode.ToLower(v)) + str[i+1:]

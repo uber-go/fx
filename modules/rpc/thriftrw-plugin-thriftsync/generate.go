@@ -40,25 +40,26 @@ package <$pkgname>
 <$service   := import "go.uber.org/fx/service">
 
 type YARPCHandler struct{
-	host <$service>.Host
+  host <$service>.Host
   // TODO: modify the <.Service.Name> handler with your suitable structure
 }
+
 // NewYARPCThriftHandler for your service
 func NewYARPCThriftHandler(host <$service>.Host) ([]<$transport>.Procedure, error) {
   handler := &YARPCHandler{
-		host: host,
-	}
-	<$yarpcserver := import $yarpcServerPath>
+    host: host,
+  }
+  <$yarpcserver := import $yarpcServerPath>
   return <$yarpcserver>.New(handler), nil
 }
 
 <$name := lower .Service.Name>
 <range .Service.Functions>
 
-  func (h *YARPCHandler)<.Name>(ctx <$context>.Context, <range .Arguments> <lowerFirst .Name> <formatType .Type>, <end>)<if .ReturnType> (<formatType .ReturnType>, error) <else> error <end> {
-    // TODO: write your code here
-    panic("Implement return values")
-  }
+func (h *YARPCHandler)<.Name>(ctx <$context>.Context, <range .Arguments> <lowerFirst .Name> <formatType .Type>, <end>)<if .ReturnType> (<formatType .ReturnType>, error) <else> error <end> {
+  // TODO: write your code here
+  panic("To be implemented")
+}
 
 <end>
 `
