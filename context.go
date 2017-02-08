@@ -22,7 +22,6 @@ package fx
 
 import (
 	"context"
-	gcontext "context"
 
 	"github.com/opentracing/opentracing-go"
 	"github.com/uber/jaeger-client-go"
@@ -42,12 +41,12 @@ func contextStore(ctx context.Context) ctxStore {
 	c := ctx.Value(_contextStore)
 	if c == nil {
 		c = ctxStore{}
-		ctx = gcontext.WithValue(ctx, _contextStore, c)
+		ctx = context.WithValue(ctx, _contextStore, c)
 	}
 	return c.(ctxStore)
 }
 
-// SetContextStore always returns Context for use in the service
+// SetContextStore sets the context with context aware logger
 func SetContextStore(ctx context.Context, host service.Host) context.Context {
 	if host != nil {
 		ctx = context.WithValue(ctx, _contextStore, ctxStore{
@@ -71,7 +70,7 @@ func WithContextAwareLogger(ctx context.Context, span opentracing.Span) context.
 	return context.WithValue(ctx, _contextStore, store)
 }
 
-// Logger returns context based logger. If logger is absent from the context,
+// Logger returns a context aware logger. If logger is absent from the context store,
 // the function updates the context with a new context based logger
 func Logger(ctx context.Context) ulog.Log {
 	store := contextStore(ctx)
