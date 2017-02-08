@@ -21,8 +21,9 @@
 package stats
 
 import (
-	"github.com/uber-go/tally"
 	"go.uber.org/fx/service"
+
+	"github.com/uber-go/tally"
 )
 
 const (
