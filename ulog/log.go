@@ -29,6 +29,7 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/uber-go/zap"
+	"github.com/uber-go/zap/spy"
 )
 
 type baseLogger struct {
@@ -86,6 +87,16 @@ func defaultLogger() Log {
 	return &baseLogger{
 		log: zap.New(zap.NewJSONEncoder()),
 	}
+}
+
+// TestingLogger returns basic logger and underlying sink for testing the messages
+// WithInMemoryLogger testing helper can also be used to test actual outputted
+// JSON bytes
+func TestingLogger() (Log, *spy.Sink) {
+	log, sink := spy.New()
+	return &baseLogger{
+		log: log,
+	}, sink
 }
 
 // Logger returns the package-level logger configured for the service
