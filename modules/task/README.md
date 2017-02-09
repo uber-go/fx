@@ -17,6 +17,8 @@ from the backend, they will execute the function.
 package main
 
 import (
+  "context"
+
   "go.uber.org/fx/modules/task"
   "go.uber.org/fx/service"
   "go.uber.org/fx/ulog"
@@ -37,13 +39,13 @@ func newBackend(host service.Host) (task.Backend, error) {
   return b, nil
 }
 
-func runActivity(input string) error {
+func runActivity(ctx context.Context, input string) error {
   // do things and calculate results
   results := "results"
-  return task.Enqueue(updateCache, input, results)
+  return task.Enqueue(updateCache, ctx, input, results)
 }
 
-func updateCache(input string, results string) error {
+func updateCache(ctx context.Context, input string, results string) error {
   // update cache with the name
   return nil
 }
@@ -55,6 +57,7 @@ Users are free to define their own backends and encodings for message passing.
 ## Async function requirements
 
 For the function to be invoked asynchronously, the following criteria must be met:
+* The first input argument should be of type [context.Context](https://golang.org/pkg/context/#Context)
 * The function should return only one value, which should be an error. The caller does not receive a
 return value from the called function.
 * The function should not take variadic arguments as input (support for this is coming soon).

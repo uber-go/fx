@@ -21,6 +21,7 @@
 package task
 
 import (
+	"context"
 	"fmt"
 	"reflect"
 	"runtime"
@@ -88,9 +89,14 @@ func Enqueue(fn interface{}, args ...interface{}) error {
 	if err := validateFnAgainstArgs(fnType, args); err != nil {
 		return err
 	}
+	// Register function types for encoding
+	for _, arg := range args {
+		if err := GlobalBackend().Encoder().Register(arg); err != nil {
+			return errors.Wrap(err, "unable to register the message for encoding")
+		}
+	}
 	// Publish function to the backend
 	s := fnSignature{FnName: fnName, Args: args}
-
 	sBytes, err := GlobalBackend().Encoder().Marshal(s)
 	if err != nil {
 		return errors.Wrap(err, "unable to encode the function or args")
@@ -110,13 +116,6 @@ func Register(fn interface{}) error {
 	_, ok := fnLookup.getFn(fnName)
 	if ok {
 		return nil
-	}
-	// Register function types for encoding
-	for i := 0; i < fnType.NumIn(); i++ {
-		arg := reflect.Zero(fnType.In(i)).Interface()
-		if err := GlobalBackend().Encoder().Register(arg); err != nil {
-			return errors.Wrap(err, "unable to register the message for encoding")
-		}
 	}
 	fnLookup.addFn(fnName, fn)
 	return nil
@@ -159,6 +158,15 @@ func validateFnFormat(fnType reflect.Type) error {
 	if fnType.Kind() != reflect.Func {
 		return fmt.Errorf("expected a func as input but was %s", fnType.Kind())
 	}
+	if fnType.NumIn() < 1 {
+		return fmt.Errorf(
+			"expected atleast one argument of type context.Context in function, found %d input arguments",
+			fnType.NumIn(),
+		)
+	}
+	if !isContext(fnType.In(0)) {
+		return fmt.Errorf("expected first argument to be context.Context but found %s", fnType.In(0))
+	}
 	if fnType.NumOut() != 1 {
 		return fmt.Errorf(
 			"expected function to return only error but found %d return values", fnType.NumOut(),
@@ -182,9 +190,14 @@ func castToError(value reflect.Value) error {
 	return fmt.Errorf("expected return value to be error but found: %s", value.Interface())
 }
 
+func isContext(inType reflect.Type) bool {
+	contextElem := reflect.TypeOf((*context.Context)(nil)).Elem()
+	return inType.Implements(contextElem)
+}
+
 func isError(inType reflect.Type) bool {
-	errorInterface := reflect.TypeOf((*error)(nil)).Elem()
-	return inType.Implements(errorInterface)
+	errorElem := reflect.TypeOf((*error)(nil)).Elem()
+	return inType.Implements(errorElem)
 }
 
 func getFunctionName(i interface{}) string {
