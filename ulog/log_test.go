@@ -23,6 +23,7 @@ package ulog
 import (
 	"fmt"
 	"net"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -183,9 +184,9 @@ func TestStackTraceLogger(t *testing.T) {
 		log.Error("error message", "error", err2)
 		line := buf.Lines()[0]
 		assert.Contains(t, line, "TestStackTraceLogger.func1", "Missing first function")
-		assert.Contains(t, line, "log_test.go:172", "Missing source")
+		assert.Contains(t, line, filepath.Join("ulog", "log_test.go:"), "Missing source")
 		assert.Contains(t, line, "testutils.WithInMemoryLogger", "Missing second function")
-		assert.Contains(t, line, "in_memory_log.go:60", "Missing source")
+		assert.Contains(t, line, filepath.Join("testutils", "in_memory_log.go:"), "Missing source")
 		assert.True(t, strings.Index(line, "log_test.go") < strings.Index(line, "in_memory_log.go"))
 
 		assert.Contains(t, line, "it's a trap: for sure")
