@@ -48,13 +48,11 @@ func TestThriftModule_OK(t *testing.T) {
 	dale := ThriftModule(okCreate, modules.WithRoles("ranges"))
 	cfg := []byte(`modules:
   rpc:
-    moduleconfig:
-      roles: []
     inbounds:
-    - tchannel:
-        port: 0
-    - http:
-        port: 0
+     - tchannel:
+       port: 0
+     - http:
+       port: 0
 `)
 
 	mci := service.ModuleCreateInfo{
