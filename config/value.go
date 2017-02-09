@@ -343,8 +343,8 @@ func convertValueFromStruct(value interface{}, targetType reflect.Type, fieldTyp
 	// The fieldType is probably a custom type here. We will try and set the fieldValue by
 	// the custom type
 	// TODO: refactor switch cases into isType functions
-	kind := fieldType.Kind()
-	switch kind {
+	// TODO: refactor this whole method
+	switch fieldType.Kind() {
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
 		fieldValue.SetInt(int64(value.(int)))
 	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr:
