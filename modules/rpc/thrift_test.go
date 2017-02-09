@@ -32,7 +32,6 @@ import (
 	"go.uber.org/fx/service"
 	"go.uber.org/yarpc/api/transport"
 	"go.uber.org/yarpc/encoding/thrift"
-	"gopkg.in/yaml.v2"
 )
 
 type testHost struct {
@@ -47,32 +46,20 @@ func (h testHost) Config() config.Provider {
 func TestThriftModule_OK(t *testing.T) {
 	chip := ThriftModule(okCreate, modules.WithRoles("rescue"))
 	dale := ThriftModule(okCreate, modules.WithRoles("ranges"))
-
-	type Modules struct {
-		RPC yarpcConfig
-	}
-	type Global struct {
-		Modules Modules
-	}
-
-	buf, err := yaml.Marshal(
-		Global{
-			Modules{
-				RPC: yarpcConfig{
-					Inbounds: []Inbound{
-						{TChannel: &Port{0}, HTTP: &Port{0}},
-					},
-				},
-			}})
-
-	require.NoError(t, err)
+	cfg := []byte(`modules:
+  rpc:
+    moduleconfig:
+      roles: []
+    inbounds:
+    - tchannel:
+        port: 0
+`)
 
 	mci := service.ModuleCreateInfo{
-		Items: make(map[string]interface{}),
-		Name:  "RPC",
+		Name: "RPC",
 		Host: testHost{
 			Host:   service.NopHost(),
-			config: config.NewYAMLProviderFromBytes(buf),
+			config: config.NewYAMLProviderFromBytes(cfg),
 		},
 	}
 
@@ -117,8 +104,7 @@ func testInitRunModule(t *testing.T, mod service.Module, mci service.ModuleCreat
 
 func mch() service.ModuleCreateInfo {
 	return service.ModuleCreateInfo{
-		Items: make(map[string]interface{}),
-		Host:  service.NopHost(),
+		Host: service.NopHost(),
 	}
 }
 

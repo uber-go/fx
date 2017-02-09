@@ -22,6 +22,7 @@ package rpc
 
 import (
 	"errors"
+	"fmt"
 	"sync"
 
 	"go.uber.org/fx/modules"
@@ -32,8 +33,6 @@ import (
 	"go.uber.org/yarpc"
 	"go.uber.org/yarpc/api/middleware"
 	"go.uber.org/yarpc/api/transport"
-
-	"fmt"
 
 	"go.uber.org/yarpc/transport/http"
 	tch "go.uber.org/yarpc/transport/tchannel"
@@ -53,8 +52,12 @@ type YARPCModule struct {
 
 var (
 	_dispatcherMu sync.Mutex
+
+	// Function to create a dispatcher
 	_dispatcherFn = defaultYARPCDispatcher
-	_starterFn    = defaultYARPCStarter
+
+	// Function to start a dispatcher
+	_starterFn = defaultYARPCStarter
 
 	_ service.Module = &YARPCModule{}
 
@@ -83,13 +86,13 @@ type yarpcConfig struct {
 
 // Inbound is a union that configures how to configure a single inbound.
 type Inbound struct {
-	TChannel *Port
-	HTTP     *Port
+	TChannel *Address
+	HTTP     *Address
 }
 
-// Port is a struct that have a required port for tchannel/http transports.
+// Address is a struct that have a required port for tchannel/http transports.
 // TODO(alsam) make it optional
-type Port struct {
+type Address struct {
 	Port int
 }
 
