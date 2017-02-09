@@ -34,6 +34,16 @@ import (
 	"github.com/uber-go/zap"
 )
 
+func TestZapSink(t *testing.T) {
+	l, s := TestingLogger()
+	l.Info("This is my message", "And this is", "My field")
+	assert.Equal(t, 1, len(s.Logs()))
+
+	e := s.Logs()[0]
+	assert.Equal(t, "This is my message", e.Msg)
+	assert.Contains(t, e.Fields, zap.String("And this is", "My field"))
+}
+
 func TestSimpleLogger(t *testing.T) {
 	testutils.WithInMemoryLogger(t, nil, func(zapLogger zap.Logger, buf *testutils.TestBuffer) {
 		log := Builder().SetLogger(zapLogger).Build()
@@ -170,9 +180,9 @@ func TestStackTraceLogger(t *testing.T) {
 		err1 := errors.New("for sure")
 		err2 := errors.Wrap(err1, "it's a trap")
 		log.Error("error message", "error", err2)
-		trace := `{"level":"error","msg":"error message","stacktrace":{"TestStackTraceLogger.func1":"log_test.go:171","WithInMemoryLogger":"in_memory_log.go:60",`
 		line := buf.Lines()[0]
-		assert.Contains(t, line, trace, "No stack trace")
+		assert.Contains(t, line, "WithInMemoryLogger", "Missing trace for memory logger function")
+		assert.Contains(t, line, "TestStackTraceLogger", "Missing trace for test function")
 		assert.Contains(t, line, "it's a trap: for sure")
 		assert.Equal(t, 1, len(buf.Lines()))
 	})
