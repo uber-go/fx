@@ -165,7 +165,7 @@ func validateFnFormat(fnType reflect.Type) error {
 	}
 	if fnType.NumIn() < 1 {
 		return fmt.Errorf(
-			"expected atleast one argument of type context.Context in function, found %d input arguments",
+			"expected at least one argument of type context.Context in function, found %d input arguments",
 			fnType.NumIn(),
 		)
 	}

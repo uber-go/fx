@@ -22,10 +22,8 @@ package task
 
 import (
 	"errors"
-	"time"
 
 	"go.uber.org/fx/service"
-	"go.uber.org/fx/ulog"
 )
 
 var gobEncoding = &GobEncoding{}
@@ -114,17 +112,8 @@ func (b *inMemBackend) Start(ready chan<- struct{}) <-chan error {
 }
 
 func (b *inMemBackend) consumeFromQueue(errorCh chan error) {
-	for {
-		select {
-		case msg, ok := <-b.bufQueue:
-			if ok {
-				errorCh <- Run(msg)
-			} else {
-				return
-			}
-		case <-time.After(time.Millisecond):
-			ulog.Logger().Error("Timed out after 1 ms")
-		}
+	for msg := range b.bufQueue {
+		errorCh <- Run(msg)
 	}
 }
 

@@ -80,6 +80,7 @@ func newAsyncModule(
 	_globalBackend = backend
 	_globalBackendMu.Unlock()
 	// Register context implementation with the encoder so it can be used in async functions
+	// TODO (madhu): Will be removed once moving context through the backend is figured out
 	if err := _globalBackend.Encoder().Register(context.Background()); err != nil {
 		return nil, errors.Wrap(err, "unable to register context with the backend encoder")
 	}
