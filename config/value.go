@@ -334,12 +334,14 @@ func derefType(t reflect.Type) reflect.Type {
 }
 
 func convertValueFromStruct(value interface{}, targetType reflect.Type, fieldType reflect.Type, fieldValue reflect.Value) (interface{}, error) {
-	if ret, err := convertValue(value, targetType); ret != nil {
+	ret, err := convertValue(value, targetType)
+	if ret != nil {
+		// convertValue was a success
 		return ret, err
 	}
 
-	// The fieldType is probably custom type here. We will try and set the fieldValue by
-	// the type of custom type
+	// The fieldType is probably a custom type here. We will try and set the fieldValue by
+	// the custom type
 	// TODO: refactor switch cases into isType functions
 	kind := fieldType.Kind()
 	switch kind {
@@ -356,7 +358,8 @@ func convertValueFromStruct(value interface{}, targetType reflect.Type, fieldTyp
 	default:
 		return nil, fmt.Errorf("can't convert %v to %v", reflect.TypeOf(value).String(), targetType)
 	}
-	return nil, nil
+
+	return ret, nil
 }
 
 // this is a quick-and-dirty conversion method that only handles
