@@ -27,18 +27,56 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"go.uber.org/fx/config"
 	"go.uber.org/fx/modules"
 	"go.uber.org/fx/service"
 	"go.uber.org/yarpc/api/transport"
 	"go.uber.org/yarpc/encoding/thrift"
+	"gopkg.in/yaml.v2"
 )
+
+type testHost struct {
+	service.Host
+	config config.Provider
+}
+
+func (h testHost) Config() config.Provider {
+	return h.config
+}
 
 func TestThriftModule_OK(t *testing.T) {
 	chip := ThriftModule(okCreate, modules.WithRoles("rescue"))
 	dale := ThriftModule(okCreate, modules.WithRoles("ranges"))
 
-	mci := mch()
-	goofy, err := chip(mch())
+	type Modules struct {
+		RPC yarpcConfig
+	}
+	type Global struct {
+		Modules Modules
+	}
+
+	buf, err := yaml.Marshal(
+		Global{
+			Modules{
+				RPC: yarpcConfig{
+					Inbounds: []Inbound{
+						{TChannel: &Port{0}, HTTP: &Port{0}},
+					},
+				},
+			}})
+
+	require.NoError(t, err)
+
+	mci := service.ModuleCreateInfo{
+		Items: make(map[string]interface{}),
+		Name:  "RPC",
+		Host: testHost{
+			Host:   service.NopHost(),
+			config: config.NewYAMLProviderFromBytes(buf),
+		},
+	}
+
+	goofy, err := chip(mci)
 	require.NoError(t, err)
 	assert.NotEmpty(t, goofy)
 
