@@ -34,6 +34,7 @@ import (
 	"go.uber.org/yarpc/api/transport"
 
 	"fmt"
+
 	"go.uber.org/yarpc/transport/http"
 	tch "go.uber.org/yarpc/transport/tchannel"
 )
@@ -82,8 +83,8 @@ type yarpcConfig struct {
 
 // Inbound is a union that configures how to configure a single inbound.
 type Inbound struct {
-	TChannel *Port `yaml:"tchannel"`
-	HTTP     *Port `yaml:"http"`
+	TChannel *Port
+	HTTP     *Port
 }
 
 // Port is a struct that have a required port for tchannel/http transports.
@@ -109,17 +110,16 @@ type dispatcherController struct {
 	dispatcher *yarpc.Dispatcher
 }
 
-// Adds the config to the collection
-func (c *dispatcherController) addConfig(config yarpcConfig) error {
+// Adds the config to the controller
+func (c *dispatcherController) addConfig(config yarpcConfig) {
 	c.Lock()
 	defer c.Unlock()
 
 	c.configs = append(c.configs, &config)
-	return nil
 }
 
 // Adds the default middleware: context propagation and auth.
-func (c *dispatcherController) addDefaultMiddleware(host service.Host) error {
+func (c *dispatcherController) addDefaultMiddleware(host service.Host) {
 	cfg := yarpcConfig{
 		inboundMiddleware: []middleware.UnaryInbound{
 			contextInboundMiddleware{host},
@@ -131,25 +131,17 @@ func (c *dispatcherController) addDefaultMiddleware(host service.Host) error {
 		},
 	}
 
-	if err := c.addConfig(cfg); err != nil {
-		host.Logger().Error("Can't add the default middleware to configs", "error", err)
-		return err
-	}
-
-	return nil
+	c.addConfig(cfg)
 }
 
 // Starts the dispatcher: wait until all modules call start, create a single dispatcher and then start it.
 // Once started the collection will not start the dispatcher again.
 func (c *dispatcherController) Start(host service.Host) error {
 	c.start.Do(func() {
-		var err error
-		if err = c.addDefaultMiddleware(host); err != nil {
-			c.startError = err
-			return
-		}
+		c.addDefaultMiddleware(host)
 
 		var cfg yarpc.Config
+		var err error
 		if cfg, err = c.mergeConfigs(host.Name()); err != nil {
 			c.startError = err
 			return
@@ -230,7 +222,6 @@ func newYARPCModule(
 	module.log = ulog.Logger().With("moduleName", name)
 	for _, opt := range options {
 		if err := opt(&mi); err != nil {
-			module.log.Error("Unable to apply option", "error", err, "option", opt)
 			return module, errs.Wrap(err, "unable to apply option to YARPC module")
 		}
 	}
@@ -250,7 +241,11 @@ func newYARPCModule(
 	module.config.inboundMiddleware = inboundMiddlewareFromCreateInfo(mi)
 	module.config.onewayInboundMiddleware = onewayInboundMiddlewareFromCreateInfo(mi)
 
-	return module, _controller.addConfig(module.config)
+	_controller.addConfig(module.config)
+
+	module.log.Info("Module successfuly created", "inbounds", module.config.Inbounds)
+
+	return module, nil
 }
 
 // Iterate over all inbounds and prepare corresponding transports
@@ -296,7 +291,6 @@ func (m *YARPCModule) Start(readyCh chan<- struct{}) <-chan error {
 	}
 
 	m.register(m)
-	// TODO log all endpoints
 	m.log.Info("Module started")
 
 	m.isRunning = true

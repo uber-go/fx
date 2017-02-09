@@ -26,7 +26,6 @@ import (
 	"go.uber.org/fx/service"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"go.uber.org/yarpc/api/transport"
 	"go.uber.org/yarpc/transport/http"
 )
@@ -45,7 +44,7 @@ func TestDispatcher(t *testing.T) {
 	t.Parallel()
 	c := dispatcherController{}
 	host := service.NopHost()
-	require.NoError(t, c.addConfig(yarpcConfig{transports: transports{inbounds: []transport.Inbound{}}}))
+	c.addConfig(yarpcConfig{transports: transports{inbounds: []transport.Inbound{}}})
 	assert.NoError(t, c.Start(host))
 }
 
@@ -58,7 +57,7 @@ func TestDifferentAdvertiseNameReturnsError(t *testing.T) {
 		},
 	}
 
-	require.NoError(t, c.addConfig(cfg))
+	c.addConfig(cfg)
 	assert.Error(t, c.Start(service.NopHost()))
 }
 
