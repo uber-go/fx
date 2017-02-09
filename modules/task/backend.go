@@ -21,6 +21,7 @@
 package task
 
 import (
+	"context"
 	"errors"
 
 	"go.uber.org/fx/service"
@@ -38,14 +39,14 @@ const (
 type Backend interface {
 	service.Module
 	Encoder() Encoding
-	Publish(message []byte, userContext map[string]string) error
+	Publish(ctx context.Context, message []byte) error
 }
 
 // NopBackend is a noop implementation of the Backend interface
 type NopBackend struct{}
 
 // Publish implements the Backend interface
-func (b NopBackend) Publish(message []byte, userContext map[string]string) error {
+func (b NopBackend) Publish(ctx context.Context, message []byte) error {
 	return nil
 }
 
@@ -113,12 +114,12 @@ func (b *inMemBackend) Start(ready chan<- struct{}) <-chan error {
 
 func (b *inMemBackend) consumeFromQueue(errorCh chan error) {
 	for msg := range b.bufQueue {
-		errorCh <- Run(msg)
+		errorCh <- Run(context.Background(), msg)
 	}
 }
 
 // Publish implements the Backend interface
-func (b *inMemBackend) Publish(message []byte, userContext map[string]string) error {
+func (b *inMemBackend) Publish(ctx context.Context, message []byte) error {
 	go func() {
 		b.bufQueue <- message
 	}()

@@ -136,7 +136,7 @@ func TestEnqueueEncodingError(t *testing.T) {
 }
 
 func TestRunDecodeError(t *testing.T) {
-	err := Run([]byte{})
+	err := Run(context.Background(), []byte{})
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "unable to decode the message")
 }

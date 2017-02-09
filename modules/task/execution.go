@@ -64,8 +64,9 @@ type fnSignature struct {
 }
 
 // Execute executes the function
-func (s *fnSignature) Execute() ([]reflect.Value, error) {
-	targetArgs := make([]reflect.Value, 0, len(s.Args))
+func (s *fnSignature) Execute(ctx context.Context) ([]reflect.Value, error) {
+	targetArgs := make([]reflect.Value, 0, len(s.Args)+1)
+	targetArgs = append(targetArgs, reflect.ValueOf(ctx))
 	for _, arg := range s.Args {
 		targetArgs = append(targetArgs, reflect.ValueOf(arg))
 	}
@@ -90,12 +91,13 @@ func Enqueue(fn interface{}, args ...interface{}) error {
 		return err
 	}
 	// Publish function to the backend
-	s := fnSignature{FnName: fnName, Args: args}
+	ctx := args[0].(context.Context)
+	s := fnSignature{FnName: fnName, Args: args[1:]}
 	sBytes, err := GlobalBackend().Encoder().Marshal(s)
 	if err != nil {
 		return errors.Wrap(err, "unable to encode the function or args")
 	}
-	return GlobalBackend().Publish(sBytes, nil)
+	return GlobalBackend().Publish(ctx, sBytes)
 }
 
 // Register registers a function for async tasks
@@ -127,13 +129,13 @@ func Register(fn interface{}) error {
 }
 
 // Run decodes the message and executes as a task
-func Run(message []byte) error {
+func Run(ctx context.Context, message []byte) error {
 	var s fnSignature
 	if err := GlobalBackend().Encoder().Unmarshal(message, &s); err != nil {
 		return errors.Wrap(err, "unable to decode the message")
 	}
 	// TODO (madhu): Do we need a timeout here?
-	retValues, err := s.Execute()
+	retValues, err := s.Execute(ctx)
 	if err != nil {
 		return err
 	}
