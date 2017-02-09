@@ -89,12 +89,6 @@ func Enqueue(fn interface{}, args ...interface{}) error {
 	if err := validateFnAgainstArgs(fnType, args); err != nil {
 		return err
 	}
-	// Register function types for encoding
-	for _, arg := range args {
-		if err := GlobalBackend().Encoder().Register(arg); err != nil {
-			return errors.Wrap(err, "unable to register the message for encoding")
-		}
-	}
 	// Publish function to the backend
 	s := fnSignature{FnName: fnName, Args: args}
 	sBytes, err := GlobalBackend().Encoder().Marshal(s)
@@ -116,6 +110,17 @@ func Register(fn interface{}) error {
 	_, ok := fnLookup.getFn(fnName)
 	if ok {
 		return nil
+	}
+	for i := 0; i < fnType.NumIn(); i++ {
+		argType := fnType.In(i)
+		// Interfaces cannot be registered, their implementations should be
+		// https://golang.org/pkg/encoding/gob/#Register
+		if argType.Kind() != reflect.Interface {
+			arg := reflect.Zero(argType).Interface()
+			if err := GlobalBackend().Encoder().Register(arg); err != nil {
+				return errors.Wrap(err, "unable to register the message for encoding")
+			}
+		}
 	}
 	fnLookup.addFn(fnName, fn)
 	return nil

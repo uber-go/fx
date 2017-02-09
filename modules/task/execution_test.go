@@ -39,6 +39,7 @@ var (
 func init() {
 	_globalBackend = NewInMemBackend()
 	_errorCh = _globalBackend.Start(make(chan struct{}))
+	_globalBackend.Encoder().Register(context.Background())
 }
 
 func TestRegisterNonFunction(t *testing.T) {
@@ -193,15 +194,14 @@ func TestEnqueueFnClosure(t *testing.T) {
 	require.NoError(t, err)
 }
 
-func TestEnqueueComplexFnWithError(t *testing.T) {
-	err := Register(Complex)
-	require.NoError(t, err)
-	err = Enqueue(Complex, _ctx, Car{Brand: "infinity", Year: 2017})
+func TestEnqueueWithStructFnWithError(t *testing.T) {
+	require.NoError(t, Register(WithStruct))
+	err := Enqueue(WithStruct, _ctx, Car{Brand: "infinity", Year: 2017})
 	require.NoError(t, err)
 	err = <-_errorCh
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "Complex error")
-	err = Enqueue(Complex, _ctx, Car{Brand: "honda", Year: 2017})
+	err = Enqueue(WithStruct, _ctx, Car{Brand: "honda", Year: 2017})
 	require.NoError(t, err)
 	err = <-_errorCh
 	require.NoError(t, err)
@@ -220,7 +220,7 @@ type Car struct {
 	Year  int
 }
 
-func Complex(ctx context.Context, car Car) error {
+func WithStruct(ctx context.Context, car Car) error {
 	if car.Brand == "infinity" {
 		return errors.New("Complex error")
 	}
