@@ -84,6 +84,7 @@
 // context.Context (https://golang.org/pkg/context/#Context)* The function should return only one value, which should be an error. The caller does not receive a
 // return value from the called function.
 // * The function should not take variadic arguments as input (support for this is coming soon).
+// * If functions take in an interface, the implementation must be registered on startup.
 //
 //
 //

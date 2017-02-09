@@ -23,6 +23,8 @@ package task
 import (
 	"sync"
 
+	"github.com/pkg/errors"
+
 	"golang.org/x/net/context"
 
 	"go.uber.org/fx/modules"
@@ -78,7 +80,9 @@ func newAsyncModule(
 	_globalBackend = backend
 	_globalBackendMu.Unlock()
 	// Register context implementation with the encoder so it can be used in async functions
-	_globalBackend.Encoder().Register(context.Background())
+	if err := _globalBackend.Encoder().Register(context.Background()); err != nil {
+		return nil, errors.Wrap(err, "unable to register context with the backend encoder")
+	}
 	return &AsyncModule{
 		Backend: backend,
 		modBase: *modules.NewModuleBase("task", mi.Host, []string{}),
