@@ -165,7 +165,7 @@ func (cv Value) ChildKeys() []string {
 // TryAsString attempts to return the configuration value as a string
 func (cv Value) TryAsString() (string, bool) {
 	v := cv.Value()
-	if val, err := convertPrimitiveValue(v, reflect.TypeOf("")); v != nil && err == nil {
+	if val, err := convertValue(v, reflect.TypeOf("")); v != nil && err == nil {
 		return val.(string), true
 	}
 	return "", false
@@ -174,7 +174,7 @@ func (cv Value) TryAsString() (string, bool) {
 // TryAsInt attempts to return the configuration value as an int
 func (cv Value) TryAsInt() (int, bool) {
 	v := cv.Value()
-	if val, err := convertPrimitiveValue(v, reflect.TypeOf(0)); v != nil && err == nil {
+	if val, err := convertValue(v, reflect.TypeOf(0)); v != nil && err == nil {
 		return val.(int), true
 	}
 	switch val := v.(type) {
@@ -194,7 +194,7 @@ func (cv Value) TryAsInt() (int, bool) {
 // TryAsBool attempts to return the configuration value as a bool
 func (cv Value) TryAsBool() (bool, bool) {
 	v := cv.Value()
-	if val, err := convertPrimitiveValue(v, reflect.TypeOf(true)); v != nil && err == nil {
+	if val, err := convertValue(v, reflect.TypeOf(true)); v != nil && err == nil {
 		return val.(bool), true
 	}
 	return false, false
@@ -204,7 +204,7 @@ func (cv Value) TryAsBool() (bool, bool) {
 // TryAsFloat attempts to return the configuration value as a float
 func (cv Value) TryAsFloat() (float64, bool) {
 	v := cv.Value()
-	if val, err := convertPrimitiveValue(v, reflect.TypeOf(_float64Zero)); v != nil && err == nil {
+	if val, err := convertValue(v, reflect.TypeOf(_float64Zero)); v != nil && err == nil {
 		return val.(float64), true
 	}
 	switch val := v.(type) {
@@ -333,16 +333,8 @@ func derefType(t reflect.Type) reflect.Type {
 	return t
 }
 
-func convertPrimitiveValue(value interface{}, targetType reflect.Type) (interface{}, error) {
-	ret, err := convertVal(value, targetType)
-	if ret == nil {
-		return nil, fmt.Errorf("can't convert %v to %v", reflect.TypeOf(value).String(), targetType)
-	}
-	return ret, err
-}
-
-func convertStructValue(value interface{}, targetType reflect.Type, fieldType reflect.Type, fieldValue reflect.Value) (interface{}, error) {
-	if ret, err := convertVal(value, targetType); ret != nil {
+func convertValueFromStruct(value interface{}, targetType reflect.Type, fieldType reflect.Type, fieldValue reflect.Value) (interface{}, error) {
+	if ret, err := convertValue(value, targetType); ret != nil {
 		return ret, err
 	}
 
@@ -370,7 +362,7 @@ func convertStructValue(value interface{}, targetType reflect.Type, fieldType re
 // this is a quick-and-dirty conversion method that only handles
 // a couple of cases and complains if it finds one it doesn't like.
 // needs a bunch more cases.
-func convertVal(value interface{}, targetType reflect.Type) (interface{}, error) {
+func convertValue(value interface{}, targetType reflect.Type) (interface{}, error) {
 	if value == nil {
 		return reflect.Zero(targetType).Interface(), nil
 	}
@@ -397,7 +389,7 @@ func convertVal(value interface{}, targetType reflect.Type) (interface{}, error)
 			return reflect.ValueOf(target).Elem().Interface(), err
 		}
 	}
-	return nil, nil
+	return nil, fmt.Errorf("can't convert %v to %v", reflect.TypeOf(value).String(), targetType)
 }
 
 // PopulateStruct fills in a struct from configuration
@@ -511,7 +503,7 @@ func (cv Value) valueStruct(key string, target interface{}) (interface{}, error)
 				val = fieldInfo.DefaultValue
 			}
 			if val != nil {
-				v3, err := convertStructValue(val, fieldValue.Type(), fieldType, fieldValue)
+				v3, err := convertValueFromStruct(val, fieldValue.Type(), fieldType, fieldValue)
 				if err != nil {
 					return nil, err
 				}
