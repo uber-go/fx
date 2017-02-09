@@ -31,25 +31,6 @@ const (
 	TagStatus = "status"
 	// TagMiddleware is the middleware tag
 	TagMiddleware = "middleware"
-
-	// MethodGet Get method
-	MethodGet = "GET"
-	// MethodHead Head method
-	MethodHead = "HEAD"
-	// MethodPost Post method
-	MethodPost = "POST"
-	// MethodPut Put method
-	MethodPut = "PUT"
-	// MethodPatch Patch method
-	MethodPatch = "PATCH" // RFC 5789
-	// MethodDelete Delete method
-	MethodDelete = "DELETE"
-	// MethodConnect Connect method
-	MethodConnect = "CONNECT"
-	// MethodOptions Options method
-	MethodOptions = "OPTIONS"
-	// MethodTrace Trace method
-	MethodTrace = "TRACE"
 )
 
 // HTTPTags creates metrics scope with defined tags
@@ -64,7 +45,7 @@ var (
 	// HTTPAuthFailCounter counts auth failures
 	HTTPAuthFailCounter tally.Counter
 	// HTTPMethodTimer is a turnaround time for http methods
-	HTTPMethodTimer map[string]tally.Timer
+	HTTPMethodTimer tally.Scope
 	// HTTPStatusCountScope is a scope for http status
 	HTTPStatusCountScope tally.Scope
 )
@@ -76,16 +57,7 @@ func SetupHTTPMetrics(scope tally.Scope) {
 
 	HTTPAuthFailCounter = httpScope.Tagged(map[string]string{TagMiddleware: "auth"}).Counter("http.auth.fail")
 
-	HTTPMethodTimer = make(map[string]tally.Timer)
-
-	HTTPMethodTimer[MethodGet] = httpScope.Timer("http." + MethodGet + ".time")
-	HTTPMethodTimer[MethodPost] = httpScope.Timer("http." + MethodPost + ".time")
-	HTTPMethodTimer[MethodPut] = httpScope.Timer("http." + MethodPut + ".time")
-	HTTPMethodTimer[MethodPatch] = httpScope.Timer("http." + MethodPatch + ".time")
-	HTTPMethodTimer[MethodDelete] = httpScope.Timer("http." + MethodDelete + ".time")
-	HTTPMethodTimer[MethodConnect] = httpScope.Timer("http." + MethodConnect + ".time")
-	HTTPMethodTimer[MethodOptions] = httpScope.Timer("http." + MethodOptions + ".time")
-	HTTPMethodTimer[MethodTrace] = httpScope.Timer("http." + MethodTrace + ".time")
+	HTTPMethodTimer = httpScope
 
 	HTTPStatusCountScope = httpScope
 }
