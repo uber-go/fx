@@ -333,17 +333,11 @@ func derefType(t reflect.Type) reflect.Type {
 	return t
 }
 
-func convertValueFromStruct(value interface{}, targetType reflect.Type, fieldType reflect.Type, fieldValue reflect.Value) (interface{}, error) {
-	ret, err := convertValue(value, targetType)
-	if ret != nil {
-		// convertValue was a success
-		return ret, err
-	}
+func convertValueFromStruct(value interface{}, targetType reflect.Type, fieldType reflect.Type, fieldValue reflect.Value) error {
 
 	// The fieldType is probably a custom type here. We will try and set the fieldValue by
 	// the custom type
 	// TODO: refactor switch cases into isType functions
-	// TODO: refactor this whole method
 	switch fieldType.Kind() {
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
 		fieldValue.SetInt(int64(value.(int)))
@@ -356,10 +350,9 @@ func convertValueFromStruct(value interface{}, targetType reflect.Type, fieldTyp
 	case reflect.String:
 		fieldValue.SetString(value.(string))
 	default:
-		return nil, fmt.Errorf("can't convert %v to %v", reflect.TypeOf(value).String(), targetType)
+		return fmt.Errorf("can't convert %v to %v", reflect.TypeOf(value).String(), targetType)
 	}
-
-	return ret, nil
+	return nil
 }
 
 // this is a quick-and-dirty conversion method that only handles
@@ -371,7 +364,6 @@ func convertValue(value interface{}, targetType reflect.Type) (interface{}, erro
 	}
 
 	valueType := reflect.TypeOf(value)
-
 	if valueType.AssignableTo(targetType) {
 		return value, nil
 	} else if targetType.Name() == "string" {
@@ -387,7 +379,6 @@ func convertValue(value interface{}, targetType reflect.Type) (interface{}, erro
 			return strconv.ParseBool(v)
 		case encoding.TextUnmarshaler:
 			err := t.UnmarshalText([]byte(v))
-
 			// target should have a pointer receiver to be able to change itself based on text
 			return reflect.ValueOf(target).Elem().Interface(), err
 		}
@@ -506,13 +497,18 @@ func (cv Value) valueStruct(key string, target interface{}) (interface{}, error)
 				val = fieldInfo.DefaultValue
 			}
 			if val != nil {
-				v3, err := convertValueFromStruct(val, fieldValue.Type(), fieldType, fieldValue)
-				if err != nil {
+				ret, err := convertValue(val, fieldType)
+				// For Unmarshalled text, if convertValue fails, and not returns
+				// non nil value, we fail populateStruct call by returning the error
+				if ret != nil && err != nil {
 					return nil, err
-				}
-				if v3 != nil {
-					val = v3
-					fieldValue.Set(reflect.ValueOf(val))
+				} else if ret != nil {
+					fieldValue.Set(reflect.ValueOf(ret))
+				} else {
+					err := convertValueFromStruct(val, fieldValue.Type(), fieldType, fieldValue)
+					if err != nil {
+						return nil, err
+					}
 				}
 			}
 			continue
