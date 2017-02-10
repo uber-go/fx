@@ -26,6 +26,8 @@ import (
 	"go.uber.org/fx/modules"
 	"go.uber.org/fx/modules/task/internal/stats"
 	"go.uber.org/fx/service"
+
+	"github.com/uber-go/tally"
 )
 
 type globalBackend struct {
@@ -40,6 +42,11 @@ var (
 	_asyncModErr     error
 	_once            sync.Once
 )
+
+// SetupTaskMetrics sets up default counters and timers for task execution
+func SetupTaskMetrics(scope tally.Scope) {
+	stats.SetupTaskMetrics(scope)
+}
 
 // GlobalBackend returns global instance of the backend
 // TODO (madhu): Make work with multiple backends
@@ -69,7 +76,7 @@ func newAsyncModuleSingleton(
 func newAsyncModule(
 	mi service.ModuleCreateInfo, createFunc BackendCreateFunc,
 ) (service.Module, error) {
-	stats.SetupTaskMetrics(mi.Host.Metrics())
+	SetupTaskMetrics(mi.Host.Metrics())
 	backend, err := createFunc(mi.Host)
 	if err != nil {
 		return nil, err
