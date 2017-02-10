@@ -296,6 +296,6 @@ func verifyMetrics(t *testing.T, scope tally.Scope) {
 	timers := snapshot.Timers()
 	counters := snapshot.Counters()
 
-	assert.NotNil(t, timers["http.GET.time"].Values())
+	assert.NotNil(t, timers["http.request.GET"].Values())
 	assert.NotNil(t, counters["http.auth.fail"].Value())
 }
