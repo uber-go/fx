@@ -53,7 +53,7 @@ func TestDifferentAdvertiseNameReturnsError(t *testing.T) {
 	c := dispatcherController{}
 	cfg := yarpcConfig{
 		transports: transports{
-			inbounds: []transport.Inbound{http.NewTransport().NewInbound("")},
+			inbounds: []transport.Inbound{http.NewTransport().NewInbound("-1")},
 		},
 	}
 

@@ -50,9 +50,9 @@ func TestThriftModule_OK(t *testing.T) {
   rpc:
     inbounds:
      - tchannel:
-       port: 0
+         port: 0
      - http:
-       port: 0
+         port: 0
 `)
 
 	mci := service.ModuleCreateInfo{
