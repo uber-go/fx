@@ -22,6 +22,7 @@ package rpc
 
 import (
 	"errors"
+	"fmt"
 	"sync"
 
 	"go.uber.org/fx/modules"
@@ -32,6 +33,7 @@ import (
 	"go.uber.org/yarpc"
 	"go.uber.org/yarpc/api/middleware"
 	"go.uber.org/yarpc/api/transport"
+	"go.uber.org/yarpc/transport/http"
 	tch "go.uber.org/yarpc/transport/tchannel"
 )
 
@@ -48,8 +50,13 @@ type YARPCModule struct {
 }
 
 var (
-	_dispatcherFn = defaultYARPCDispatcher
 	_dispatcherMu sync.Mutex
+
+	// Function to create a dispatcher
+	_dispatcherFn = defaultYARPCDispatcher
+
+	// Function to start a dispatcher
+	_starterFn = defaultYARPCStarter
 
 	_ service.Module = &YARPCModule{}
 
@@ -62,13 +69,30 @@ var (
 
 type registerServiceFunc func(module *YARPCModule)
 
+type transports struct {
+	inbounds []transport.Inbound
+}
+
 type yarpcConfig struct {
 	modules.ModuleConfig
-	Bind                    string
-	AdvertiseName           string `yaml:"advertiseName"`
+
 	inboundMiddleware       []middleware.UnaryInbound
 	onewayInboundMiddleware []middleware.OnewayInbound
-	inbounds                []transport.Inbound
+
+	transports transports
+	Inbounds   []Inbound
+}
+
+// Inbound is a union that configures how to configure a single inbound.
+type Inbound struct {
+	TChannel *Address
+	HTTP     *Address
+}
+
+// Address is a struct that have a required port for tchannel/http transports.
+// TODO(alsam) make it optional
+type Address struct {
+	Port int
 }
 
 // Stores a collection of all modules configs with a shared dispatcher
@@ -88,26 +112,17 @@ type dispatcherController struct {
 	dispatcher *yarpc.Dispatcher
 }
 
-// Adds the config to the collection, the first config sets up the AdvertiseName requirement on consequent additions.
-func (c *dispatcherController) addConfig(config yarpcConfig) error {
+// Adds the config to the controller
+func (c *dispatcherController) addConfig(config yarpcConfig) {
 	c.Lock()
 	defer c.Unlock()
 
-	if len(c.configs) > 0 && config.AdvertiseName != c.configs[0].AdvertiseName {
-		return errs.Errorf("name mismatch, expected: %s; actual: %s",
-			c.configs[0].AdvertiseName,
-			config.AdvertiseName,
-		)
-	}
-
 	c.configs = append(c.configs, &config)
-	return nil
 }
 
 // Adds the default middleware: context propagation and auth.
-func (c *dispatcherController) addDefaultMiddleware(host service.Host) error {
+func (c *dispatcherController) addDefaultMiddleware(host service.Host) {
 	cfg := yarpcConfig{
-		AdvertiseName: host.Name(),
 		inboundMiddleware: []middleware.UnaryInbound{
 			contextInboundMiddleware{host},
 			authInboundMiddleware{host},
@@ -118,26 +133,18 @@ func (c *dispatcherController) addDefaultMiddleware(host service.Host) error {
 		},
 	}
 
-	if err := c.addConfig(cfg); err != nil {
-		host.Logger().Error("Can't add the default middleware to configs", "error", err)
-		return err
-	}
-
-	return nil
+	c.addConfig(cfg)
 }
 
 // Starts the dispatcher: wait until all modules call start, create a single dispatcher and then start it.
 // Once started the collection will not start the dispatcher again.
 func (c *dispatcherController) Start(host service.Host) error {
 	c.start.Do(func() {
-		var err error
-		if err = c.addDefaultMiddleware(host); err != nil {
-			c.startError = err
-			return
-		}
+		c.addDefaultMiddleware(host)
 
 		var cfg yarpc.Config
-		if cfg, err = c.mergeConfigs(); err != nil {
+		var err error
+		if cfg, err = c.mergeConfigs(host.Name()); err != nil {
 			c.startError = err
 			return
 		}
@@ -149,7 +156,7 @@ func (c *dispatcherController) Start(host service.Host) error {
 			return
 		}
 
-		c.startError = c.dispatcher.Start()
+		c.startError = _starterFn(c.dispatcher)
 	})
 
 	return c.startError
@@ -168,7 +175,7 @@ func (c *dispatcherController) Stop() error {
 
 // Merge all the YARPC configs in the collection: transports and middleware are going to be shared.
 // The name comes from the first config in the collection and is the same among all configs.
-func (c *dispatcherController) mergeConfigs() (conf yarpc.Config, err error) {
+func (c *dispatcherController) mergeConfigs(name string) (conf yarpc.Config, err error) {
 	c.RLock()
 	defer c.RUnlock()
 
@@ -177,13 +184,13 @@ func (c *dispatcherController) mergeConfigs() (conf yarpc.Config, err error) {
 		return conf, errors.New("unable to merge empty configs")
 	}
 
-	conf.Name = c.configs[0].AdvertiseName
+	conf.Name = name
 
 	// Collect all Inbounds and middleware from all configs
 	var inboundMiddleware []middleware.UnaryInbound
 	var onewayInboundMiddleware []middleware.OnewayInbound
 	for _, cfg := range c.configs {
-		conf.Inbounds = append(conf.Inbounds, cfg.inbounds...)
+		conf.Inbounds = append(conf.Inbounds, cfg.transports.inbounds...)
 		inboundMiddleware = append(inboundMiddleware, cfg.inboundMiddleware...)
 		onewayInboundMiddleware = append(onewayInboundMiddleware, cfg.onewayInboundMiddleware...)
 	}
@@ -212,39 +219,61 @@ func newYARPCModule(
 	module := &YARPCModule{
 		ModuleBase: *modules.NewModuleBase(name, mi.Host, []string{}),
 		register:   reg,
-		config:     yarpcConfig{AdvertiseName: mi.Host.Name()},
 	}
 
 	module.log = ulog.Logger().With("moduleName", name)
 	for _, opt := range options {
 		if err := opt(&mi); err != nil {
-			module.log.Error("Unable to apply option", "error", err, "option", opt)
 			return module, errs.Wrap(err, "unable to apply option to YARPC module")
 		}
 	}
 
 	config := module.Host().Config().Scope("modules").Get(module.Name())
 	if err := config.PopulateStruct(&module.config); err != nil {
-		return module, err
+		return nil, errs.Wrap(err, "can't read inbounds")
 	}
 
+	// iterate over inbounds
+	transportsIn, err := prepareInbounds(module.config.Inbounds, mi.Host.Name())
+	if err != nil {
+		return nil, errs.Wrap(err, "can't process inbounds")
+	}
+
+	module.config.transports.inbounds = transportsIn
 	module.config.inboundMiddleware = inboundMiddlewareFromCreateInfo(mi)
 	module.config.onewayInboundMiddleware = onewayInboundMiddlewareFromCreateInfo(mi)
 
-	tchTransport, err := tch.NewChannelTransport(
-		tch.ServiceName(module.config.AdvertiseName),
-		tch.ListenAddr(module.config.Bind),
-	)
+	_controller.addConfig(module.config)
 
-	if err != nil {
-		return nil, err
+	module.log.Info("Module successfuly created", "inbounds", module.config.Inbounds)
+
+	return module, nil
+}
+
+// Iterate over all inbounds and prepare corresponding transports
+func prepareInbounds(inbounds []Inbound, serviceName string) (transportsIn []transport.Inbound, err error) {
+	transportsIn = make([]transport.Inbound, 0, 2*len(inbounds))
+	for _, in := range inbounds {
+		if h := in.HTTP; h != nil {
+			transportsIn = append(
+				transportsIn,
+				http.NewTransport().NewInbound(fmt.Sprintf(":%d", h.Port)))
+		}
+
+		if t := in.TChannel; t != nil {
+			chn, err := tch.NewChannelTransport(
+				tch.ServiceName(serviceName),
+				tch.ListenAddr(fmt.Sprintf(":%d", t.Port)))
+
+			if err != nil {
+				return nil, errs.Wrap(err, "can't create tchannel transport")
+			}
+
+			transportsIn = append(transportsIn, chn.NewInbound())
+		}
 	}
 
-	// TODO(alsam): add support for the http transport
-	module.config.inbounds = []transport.Inbound{tchTransport.NewInbound()}
-
-	err = _controller.addConfig(module.config)
-	return module, err
+	return transportsIn, nil
 }
 
 // Start begins serving requests with YARPC.
@@ -258,15 +287,14 @@ func (m *YARPCModule) Start(readyCh chan<- struct{}) <-chan error {
 	m.stateMu.Lock()
 	defer m.stateMu.Unlock()
 
+	// TODO(alsam) allow services to advertise with a name separate from the host name.
 	if err := _controller.Start(m.Host()); err != nil {
 		ret <- errs.Wrap(err, "unable to start dispatcher")
 		return ret
 	}
 
 	m.register(m)
-	m.log.Info("Module started",
-		"name", m.config.AdvertiseName,
-		"port", m.config.Bind)
+	m.log.Info("Module started")
 
 	m.isRunning = true
 	readyCh <- struct{}{}
@@ -304,6 +332,19 @@ func RegisterDispatcher(dispatchFn yarpcDispatcherFn) {
 
 func defaultYARPCDispatcher(_ service.Host, cfg yarpc.Config) (*yarpc.Dispatcher, error) {
 	return yarpc.NewDispatcher(cfg), nil
+}
+
+type yarpcStarterFn func(dispatcher *yarpc.Dispatcher) error
+
+// RegisterStarter allows you to override the YARPC dispatcher start, e.g. attach some metrics with start.
+func RegisterStarter(startFn yarpcStarterFn) {
+	_dispatcherMu.Lock()
+	defer _dispatcherMu.Unlock()
+	_starterFn = startFn
+}
+
+func defaultYARPCStarter(dispatcher *yarpc.Dispatcher) error {
+	return dispatcher.Start()
 }
 
 // Dispatcher returns a dispatcher that can be used to create clients.

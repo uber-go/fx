@@ -26,7 +26,6 @@ import (
 	"go.uber.org/fx/service"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"go.uber.org/yarpc/api/transport"
 	"go.uber.org/yarpc/transport/http"
 )
@@ -36,30 +35,36 @@ func TestRegisterDispatcher_OK(t *testing.T) {
 	RegisterDispatcher(defaultYARPCDispatcher)
 }
 
+func TestRegisterStarter_OK(t *testing.T) {
+	t.Parallel()
+	RegisterStarter(defaultYARPCStarter)
+}
+
 func TestDispatcher(t *testing.T) {
 	t.Parallel()
 	c := dispatcherController{}
 	host := service.NopHost()
-	require.NoError(t, c.addConfig(yarpcConfig{AdvertiseName: host.Name(), inbounds: []transport.Inbound{}}))
+	c.addConfig(yarpcConfig{transports: transports{inbounds: []transport.Inbound{}}})
 	assert.NoError(t, c.Start(host))
 }
 
-func TestDifferentAdvertiseNameReturnsError(t *testing.T) {
+func TestBindToBadPortReturnsError(t *testing.T) {
 	t.Parallel()
 	c := dispatcherController{}
 	cfg := yarpcConfig{
-		AdvertiseName: "fx",
-		inbounds:      []transport.Inbound{http.NewTransport().NewInbound("")},
+		transports: transports{
+			inbounds: []transport.Inbound{http.NewTransport().NewInbound("-1")},
+		},
 	}
 
-	require.NoError(t, c.addConfig(cfg))
+	c.addConfig(cfg)
 	assert.Error(t, c.Start(service.NopHost()))
 }
 
 func TestMergeOfEmptyConfigCollectionReturnsError(t *testing.T) {
 	t.Parallel()
 	c := dispatcherController{}
-	_, err := c.mergeConfigs()
-	assert.Error(t, err)
-	assert.Error(t, c.Start(service.NopHost()))
+	_, err := c.mergeConfigs("test")
+	assert.EqualError(t, err, "unable to merge empty configs")
+	assert.EqualError(t, c.Start(service.NopHost()), err.Error())
 }
