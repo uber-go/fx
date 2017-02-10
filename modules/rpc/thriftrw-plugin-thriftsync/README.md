@@ -3,16 +3,44 @@
  *.thrift file. With the use of thriftsync plugin, a user who needs to build a service should be able
  to auto generate the code and write service specific logic without worrying about underlying platform.
 
+## Usage
+Run thriftsync on any thrift file update to sync your handler code with the methods in the thrift file.
+To run thriftsync, you need to install thriftsync from vendor and run thriftrw code generation command.
+
+*Install thriftsync from vendor:*
+`go install ./vendor/go.uber.org/fx/modules/rpc/thriftrw-plugin-thriftsync`
+
+*Run thriftrw code genration with thriftsync*
+`thriftrw --plugin="thriftsync --yarpc-server=<Import path of the yarpc servicenameserver>" <thrift filepath>`
+
+Update your makefile with following lines and simply run `make thriftsync`
+*Update makefile*
+```
+deps:
+	@echo "Installing thriftrw..."
+	$(ECHO_V)go install ./vendor/go.uber.org/thriftrw
+
+	@echo "Installing thriftrw-plugin-thriftsync..."
+	$(ECHO_V)go install ./vendor/go.uber.org/fx/modules/rpc/thriftrw-plugin-thriftsync
+
+thriftsync:
+	$(ECHO_V)thriftrw --plugin="thriftsync --yarpc-server=<Import path of the yarpc servicenameserver>" <thrift filepath>
+```
+
 ## Example
 Following examples show how thriftsync syncs handler code with the updated thrift file:
 
 **New handler generation**
 
 ```thrift
+testservice.thrift
 service TestService {
   string testFunction(1: string param)
 }
 ```
+
+*Run thriftsync*
+`thriftrw --plugin="thriftsync --yarpc-server=testservice/testservice/testserviceserver" testservice.thrift`
 
 ```go
 package main
