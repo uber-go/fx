@@ -334,7 +334,6 @@ func derefType(t reflect.Type) reflect.Type {
 }
 
 func convertValueFromStruct(value interface{}, targetType reflect.Type, fieldType reflect.Type, fieldValue reflect.Value) error {
-
 	// The fieldType is probably a custom type here. We will try and set the fieldValue by
 	// the custom type
 	// TODO: refactor switch cases into isType functions
@@ -497,16 +496,15 @@ func (cv Value) valueStruct(key string, target interface{}) (interface{}, error)
 				val = fieldInfo.DefaultValue
 			}
 			if val != nil {
-				ret, err := convertValue(val, fieldType)
-				// For Unmarshalled text, if convertValue fails, and not returns
-				// non nil value, we fail populateStruct call by returning the error
-				if ret != nil && err != nil {
-					return nil, err
-				} else if ret != nil {
+				// First try to convert primitive type values, if convertValue wasn't able
+				// to convert to primitive,try converting the value asa struct value
+				if ret, err := convertValue(val, fieldType); ret != nil {
+					if err != nil {
+						return nil, err
+					}
 					fieldValue.Set(reflect.ValueOf(ret))
 				} else {
-					err := convertValueFromStruct(val, fieldValue.Type(), fieldType, fieldValue)
-					if err != nil {
+					if err := convertValueFromStruct(val, fieldValue.Type(), fieldType, fieldValue); err != nil {
 						return nil, err
 					}
 				}
