@@ -205,17 +205,9 @@ func (l *baseLogger) fieldsConversion(keyVals ...interface{}) []zap.Field {
 			case fmt.Stringer:
 				fields = append(fields, zap.Stringer(key, value))
 			case stackTracer:
-				stack := value.StackTrace()
-				lines := make([]zap.Field, 0, len(stack))
-				for _, frame := range stack {
-					// Trick go vet to allow use of %n as a formatter
-					format := "%n"
-					function := fmt.Sprintf(format, frame)
-					source := fmt.Sprintf("%v", frame)
-					lines = append(lines, zap.String(function, source))
-				}
-
-				fields = append(fields, zap.Nest("stacktrace", lines...), zap.Error(value))
+				fields = append(fields,
+					zap.String("stacktrace", fmt.Sprintf("%+v", value.StackTrace())),
+					zap.Error(value))
 			case error:
 				fields = append(fields, zap.Error(value))
 			default:
