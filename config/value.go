@@ -497,7 +497,7 @@ func (cv Value) valueStruct(key string, target interface{}) (interface{}, error)
 			}
 			if val != nil {
 				// First try to convert primitive type values, if convertValue wasn't able
-				// to convert to primitive,try converting the value asa struct value
+				// to convert to primitive,try converting the value as a struct value
 				if ret, err := convertValue(val, fieldType); ret != nil {
 					if err != nil {
 						return nil, err
