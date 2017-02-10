@@ -333,6 +333,27 @@ func derefType(t reflect.Type) reflect.Type {
 	return t
 }
 
+func convertValueFromStruct(value interface{}, targetType reflect.Type, fieldType reflect.Type, fieldValue reflect.Value) error {
+	// The fieldType is probably a custom type here. We will try and set the fieldValue by
+	// the custom type
+	// TODO: refactor switch cases into isType functions
+	switch fieldType.Kind() {
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		fieldValue.SetInt(int64(value.(int)))
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr:
+		fieldValue.SetUint(uint64(value.(int)))
+	case reflect.Float32, reflect.Float64:
+		fieldValue.SetFloat(value.(float64))
+	case reflect.Bool:
+		fieldValue.SetBool(value.(bool))
+	case reflect.String:
+		fieldValue.SetString(value.(string))
+	default:
+		return fmt.Errorf("can't convert %v to %v", reflect.TypeOf(value).String(), targetType)
+	}
+	return nil
+}
+
 // this is a quick-and-dirty conversion method that only handles
 // a couple of cases and complains if it finds one it doesn't like.
 // needs a bunch more cases.
@@ -342,7 +363,6 @@ func convertValue(value interface{}, targetType reflect.Type) (interface{}, erro
 	}
 
 	valueType := reflect.TypeOf(value)
-
 	if valueType.AssignableTo(targetType) {
 		return value, nil
 	} else if targetType.Name() == "string" {
@@ -358,13 +378,11 @@ func convertValue(value interface{}, targetType reflect.Type) (interface{}, erro
 			return strconv.ParseBool(v)
 		case encoding.TextUnmarshaler:
 			err := t.UnmarshalText([]byte(v))
-
 			// target should have a pointer receiver to be able to change itself based on text
 			return reflect.ValueOf(target).Elem().Interface(), err
 		}
 	}
-
-	return nil, fmt.Errorf("can't convert %v to %v", valueType, targetType)
+	return nil, fmt.Errorf("can't convert %v to %v", reflect.TypeOf(value).String(), targetType)
 }
 
 // PopulateStruct fills in a struct from configuration
@@ -447,9 +465,11 @@ func (cv Value) valueStruct(key string, target interface{}) (interface{}, error)
 						case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr:
 							fieldValue.Elem().SetUint(uint64(val.(int)))
 						case reflect.Float32, reflect.Float64:
-							fieldValue.Elem().SetFloat(float64(val.(float64)))
+							fieldValue.Elem().SetFloat(val.(float64))
+						case reflect.Bool:
+							fieldValue.Elem().SetBool(val.(bool))
 						case reflect.String:
-							fieldValue.Elem().SetString(string(val.(string)))
+							fieldValue.Elem().SetString(val.(string))
 						default:
 							fieldValue.Elem().Set(reflect.ValueOf(val))
 						}
@@ -476,13 +496,18 @@ func (cv Value) valueStruct(key string, target interface{}) (interface{}, error)
 				val = fieldInfo.DefaultValue
 			}
 			if val != nil {
-				v3, err := convertValue(val, fieldValue.Type())
-				if err != nil {
-					return nil, err
+				// First try to convert primitive type values, if convertValue wasn't able
+				// to convert to primitive,try converting the value as a struct value
+				if ret, err := convertValue(val, fieldType); ret != nil {
+					if err != nil {
+						return nil, err
+					}
+					fieldValue.Set(reflect.ValueOf(ret))
+				} else {
+					if err := convertValueFromStruct(val, fieldValue.Type(), fieldType, fieldValue); err != nil {
+						return nil, err
+					}
 				}
-
-				val = v3
-				fieldValue.Set(reflect.ValueOf(val))
 			}
 			continue
 		case bucketObject:

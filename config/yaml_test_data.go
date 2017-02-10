@@ -138,10 +138,40 @@ type nestedTypeUInt uint32
 type userDefinedTypeFloat nestedTypeFloat
 type nestedTypeFloat float32
 
+type userDefinedTypeBool nestedTypeBool
+type nestedTypeBool bool
+
+type userDefinedTypeString nestedTypeString
+type nestedTypeString string
+
+type userDefinedTypeDuration durationStruct
+
+type nestedTypeStructPtr struct {
+	TestInt      *userDefinedTypeInt      `yaml:"testInt"`
+	TestUInt     *userDefinedTypeUInt     `yaml:"testUInt"`
+	TestFloat    *userDefinedTypeFloat    `yaml:"testFloat"`
+	TestBool     *userDefinedTypeBool     `yaml:"testBool"`
+	TestString   *userDefinedTypeString   `yaml:"testString"`
+	TestDuration *userDefinedTypeDuration `yaml:"testDuration"`
+}
+
+type typeStructPtr nestedTypeStructPtr
+
+type typeStructStructPtr struct {
+	TypeStruct typeStructPtr `yaml:"typeStruct"`
+}
+
+type typeStructStructPtrPtr struct {
+	TypeStruct *typeStructPtr `yaml:"typeStruct"`
+}
+
 type nestedTypeStruct struct {
-	TestInt   *userDefinedTypeInt   `yaml:"testInt"`
-	TestUInt  *userDefinedTypeUInt  `yaml:"testUInt"`
-	TestFloat *userDefinedTypeFloat `yaml:"testFloat"`
+	TestInt      userDefinedTypeInt      `yaml:"testInt"`
+	TestUInt     userDefinedTypeUInt     `yaml:"testUInt"`
+	TestFloat    userDefinedTypeFloat    `yaml:"testFloat"`
+	TestBool     userDefinedTypeBool     `yaml:"testBool"`
+	TestString   userDefinedTypeString   `yaml:"testString"`
+	TestDuration userDefinedTypeDuration `yaml:"testDuration"`
 }
 
 type typeStruct nestedTypeStruct
@@ -155,6 +185,12 @@ typeStruct:
   testInt: 123
   testUInt: 456
   testFloat: 123.456
+  testBool: true
+  testString: hello
+  testDuration:
+    seconds: 10s
+    minutes: 20m
+    hours: 30h
 `)
 
 var happyTextUnmarshallerYaml = []byte(`
