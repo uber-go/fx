@@ -36,7 +36,7 @@ import (
 var (
 	_testScope tally.Scope
 	_errorCh   <-chan error
-	_ctx     = context.Background()
+	_ctx       = context.Background()
 )
 
 func init() {
