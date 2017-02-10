@@ -23,11 +23,11 @@ package task
 import (
 	"sync"
 
-	"github.com/uber-go/tally"
-
 	"go.uber.org/fx/modules"
 	"go.uber.org/fx/modules/task/internal/stats"
 	"go.uber.org/fx/service"
+
+	"github.com/uber-go/tally"
 )
 
 type globalBackend struct {
