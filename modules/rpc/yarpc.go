@@ -287,6 +287,7 @@ func (m *YARPCModule) Start(readyCh chan<- struct{}) <-chan error {
 	m.stateMu.Lock()
 	defer m.stateMu.Unlock()
 
+	// TODO(alsam) allow services to advertise with a name separate from the host name.
 	if err := _controller.Start(m.Host()); err != nil {
 		ret <- errs.Wrap(err, "unable to start dispatcher")
 		return ret
@@ -336,10 +337,10 @@ func defaultYARPCDispatcher(_ service.Host, cfg yarpc.Config) (*yarpc.Dispatcher
 type yarpcStarterFn func(dispatcher *yarpc.Dispatcher) error
 
 // RegisterStarter allows you to override the YARPC dispatcher start, e.g. attach some metrics with start.
-func RegisterStarter(startFN yarpcStarterFn) {
+func RegisterStarter(startFn yarpcStarterFn) {
 	_dispatcherMu.Lock()
 	defer _dispatcherMu.Unlock()
-	_starterFn = startFN
+	_starterFn = startFn
 }
 
 func defaultYARPCStarter(dispatcher *yarpc.Dispatcher) error {
