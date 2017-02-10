@@ -18,7 +18,9 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package modules
+package stats
+
+import "github.com/uber-go/tally"
 
 const (
 	//TagModule is module tag for metrics
@@ -27,10 +29,35 @@ const (
 	TagType = "type"
 	// TagStatus is status of the request
 	TagStatus = "status"
+	// TagMiddleware is the middleware tag
+	TagMiddleware = "middleware"
 )
 
 // HTTPTags creates metrics scope with defined tags
-var HTTPTags = map[string]string{
-	TagModule: "http",
-	TagType:   "request",
+var (
+	HTTPTags = map[string]string{
+		TagModule: "http",
+		TagType:   "request",
+	}
+
+	// HTTPPanicCounter counts panics occurred in http
+	HTTPPanicCounter tally.Counter
+	// HTTPAuthFailCounter counts auth failures
+	HTTPAuthFailCounter tally.Counter
+	// HTTPMethodTimer is a turnaround time for http methods
+	HTTPMethodTimer tally.Scope
+	// HTTPStatusCountScope is a scope for http status
+	HTTPStatusCountScope tally.Scope
+)
+
+// SetupHTTPMetrics allocates counters for necessary setup
+func SetupHTTPMetrics(scope tally.Scope) {
+	httpScope := scope.Tagged(HTTPTags)
+	HTTPPanicCounter = httpScope.Counter("panic")
+
+	HTTPAuthFailCounter = httpScope.Tagged(map[string]string{TagMiddleware: "auth"}).Counter("fail")
+
+	HTTPMethodTimer = httpScope.Tagged(HTTPTags)
+
+	HTTPStatusCountScope = httpScope
 }

@@ -25,6 +25,7 @@ import (
 	"net/http"
 
 	"go.uber.org/fx"
+	"go.uber.org/fx/modules/uhttp/internal/stats"
 	"go.uber.org/fx/service"
 )
 
@@ -58,7 +59,8 @@ type handlerWrapper struct {
 // ServeHTTP calls Handler.ServeHTTP(ctx, w, r) and injects a new service context for use.
 func (h *handlerWrapper) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	ctx := fx.NewContext(context.Background(), h.host)
-	stopwatch := h.host.Metrics().Timer("http." + r.Method + ".time").Start()
+	stopwatch := stats.HTTPMethodTimer.Timer(r.Method).Start()
 	defer stopwatch.Stop()
+
 	h.handler.ServeHTTP(ctx, w, r)
 }

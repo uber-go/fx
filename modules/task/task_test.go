@@ -36,7 +36,7 @@ import (
 var (
 	_nopBackend   = &NopBackend{}
 	_nopBackendFn = func(host service.Host) (Backend, error) { return _nopBackend, nil }
-	_memBackend   = NewInMemBackend()
+	_memBackend   = NewInMemBackend(service.NopHost())
 	_memBackendFn = func(host service.Host) (Backend, error) { return _memBackend, nil }
 	_errBackendFn = func(host service.Host) (Backend, error) { return nil, errors.New("bknd err") }
 	_mi           = service.ModuleCreateInfo{

@@ -29,15 +29,20 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/uber-go/tally"
+	"go.uber.org/fx/service"
 )
 
 var (
-	_errorCh <-chan error
-	_ctx     = context.Background()
+	_testScope tally.Scope
+	_errorCh   <-chan error
+	_ctx       = context.Background()
 )
 
 func init() {
-	_globalBackend = NewInMemBackend()
+	host := service.NopHost()
+	_testScope = host.Metrics()
+	_globalBackend = NewInMemBackend(host)
 	_errorCh = _globalBackend.Start(make(chan struct{}))
 	_globalBackend.Encoder().Register(context.Background())
 }
@@ -158,6 +163,14 @@ func TestEnqueueSimpleFn(t *testing.T) {
 	err = <-_errorCh
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "Simple error")
+
+	snapshot := _testScope.(tally.TestScope).Snapshot()
+	timers := snapshot.Timers()
+	counters := snapshot.Counters()
+
+	assert.True(t, counters["count"].Value() > 0)
+	assert.True(t, counters["fail"].Value() > 0)
+	assert.NotNil(t, timers["time"].Values())
 }
 
 func TestEnqueueMapFn(t *testing.T) {

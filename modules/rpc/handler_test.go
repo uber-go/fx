@@ -25,11 +25,12 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
-
+	"go.uber.org/fx/modules/rpc/internal/stats"
 	"go.uber.org/fx/service"
 	"go.uber.org/thriftrw/wire"
 	"go.uber.org/yarpc/api/transport"
+
+	"github.com/stretchr/testify/assert"
 )
 
 type fakeEnveloper struct {
@@ -52,6 +53,7 @@ func TestInboundMiddleware_fxContext(t *testing.T) {
 	unary := contextInboundMiddleware{
 		Host: service.NopHost(),
 	}
+	stats.SetupRPCMetrics(unary.Host.Metrics())
 	err := unary.Handle(context.Background(), &transport.Request{}, nil, &fakeUnaryHandler{t: t})
 	assert.Equal(t, "handle", err.Error())
 }

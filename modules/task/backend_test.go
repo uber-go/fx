@@ -21,10 +21,11 @@
 package task
 
 import (
+	"context"
 	"testing"
 	"time"
 
-	"golang.org/x/net/context"
+	"go.uber.org/fx/service"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -37,7 +38,7 @@ func TestNopBackend(t *testing.T) {
 }
 
 func TestInMemBackend(t *testing.T) {
-	b := NewInMemBackend()
+	b := NewInMemBackend(service.NopHost())
 	errorCh := testBackendMethods(t, b)
 	publishEncodedVal(t, b, errorCh)
 	publishEncodedVal(t, b, errorCh)
@@ -47,7 +48,7 @@ func TestInMemBackend(t *testing.T) {
 }
 
 func TestInMemBackendStartAfterStart(t *testing.T) {
-	b := NewInMemBackend()
+	b := NewInMemBackend(service.NopHost())
 	_ = b.Start(make(chan struct{}))
 	errorCh := b.Start(make(chan struct{}))
 	err := <-errorCh
@@ -56,7 +57,7 @@ func TestInMemBackendStartAfterStart(t *testing.T) {
 }
 
 func TestInMemBackendStartAfterStop(t *testing.T) {
-	b := NewInMemBackend()
+	b := NewInMemBackend(service.NopHost())
 	_ = b.Stop()
 	errorCh := b.Start(make(chan struct{}))
 	err := <-errorCh
@@ -65,7 +66,7 @@ func TestInMemBackendStartAfterStop(t *testing.T) {
 }
 
 func TestInMemBackendStartTimeout(t *testing.T) {
-	b := NewInMemBackend()
+	b := NewInMemBackend(service.NopHost())
 	_ = b.Start(make(chan struct{}))
 	defer b.Stop()
 	time.Sleep(time.Millisecond)
