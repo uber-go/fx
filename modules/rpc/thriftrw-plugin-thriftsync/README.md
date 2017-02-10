@@ -4,8 +4,7 @@
  to auto generate the code and write service specific logic without worrying about underlying platform.
 
 ## Usage
-Run thriftsync on any thrift file update to sync your handler code with the methods in the thrift file.
-To run thriftsync, you need to install thriftsync from vendor and run thriftrw code generation command.
+Run `thriftsync` on any thrift file update to sync your handler code with the methods in the thrift file.
 
 *Install thriftsync from vendor:*
 `go install ./vendor/go.uber.org/fx/modules/rpc/thriftrw-plugin-thriftsync`
@@ -17,18 +16,18 @@ Update your makefile with following lines and simply run `make thriftsync`
 *Update makefile*
 ```
 deps:
-	@echo "Installing thriftrw..."
-	$(ECHO_V)go install ./vendor/go.uber.org/thriftrw
+  @echo "Installing thriftrw..."
+  go install ./vendor/go.uber.org/thriftrw
 
-	@echo "Installing thriftrw-plugin-thriftsync..."
-	$(ECHO_V)go install ./vendor/go.uber.org/fx/modules/rpc/thriftrw-plugin-thriftsync
+  @echo "Installing thriftrw-plugin-thriftsync..."
+  go install ./vendor/go.uber.org/fx/modules/rpc/thriftrw-plugin-thriftsync
 
-thriftsync:
-	$(ECHO_V)thriftrw --plugin="thriftsync --yarpc-server=<Import path of the yarpc servicenameserver>" <thrift filepath>
+thriftsync: deps
+  thriftrw --plugin="thriftsync --yarpc-server=<Import path of the yarpc servicenameserver>" <thrift filepath>
 ```
 
 ## Example
-Following examples show how thriftsync syncs handler code with the updated thrift file:
+Following examples show how `thriftsync` syncs handler code with the updated thrift file:
 
 **New handler generation**
 

@@ -20,5 +20,6 @@ deps:
 	@echo "Installing thriftrw-plugin-thriftsync..."
 	$(ECHO_V)go install ../../modules/rpc/thriftrw-plugin-thriftsync
 
-thriftsync:
+.PHONY: thriftsync
+thriftsync: deps
 	$(ECHO_V)thriftrw --pkg-prefix=$(PROJECT_ROOT) --plugin="thriftsync --yarpc-server=go.uber.org/fx/examples/keyvalue/kv/keyvalueserver" kv.thrift
