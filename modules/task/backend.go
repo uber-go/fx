@@ -24,6 +24,7 @@ import (
 	"context"
 	"errors"
 
+	"go.uber.org/fx/modules/stats"
 	"go.uber.org/fx/service"
 )
 
@@ -83,6 +84,7 @@ type inMemBackend struct {
 
 // NewInMemBackend creates a new in memory backend, designed for use in tests
 func NewInMemBackend() Backend {
+	stats.SetupTaskMetrics(service.NopHost())
 	return &inMemBackend{
 		bufQueue: make(chan []byte, 2),
 	}

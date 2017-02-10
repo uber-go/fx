@@ -27,12 +27,11 @@ import (
 
 	"go.uber.org/fx"
 	"go.uber.org/fx/auth"
-	"go.uber.org/fx/modules"
+	"go.uber.org/fx/modules/stats"
 	"go.uber.org/fx/service"
 
 	"github.com/opentracing/opentracing-go"
 	"github.com/opentracing/opentracing-go/ext"
-	"github.com/uber-go/tally"
 )
 
 // Filter applies filters on requests, request contexts or responses such as
@@ -59,7 +58,6 @@ func (f contextFilter) Apply(ctx context.Context, w http.ResponseWriter, r *http
 }
 
 type tracingServerFilter struct {
-	scope tally.Scope
 }
 
 func (f tracingServerFilter) Apply(ctx context.Context, w http.ResponseWriter, r *http.Request, next Handler) {
@@ -83,13 +81,12 @@ func (f tracingServerFilter) Apply(ctx context.Context, w http.ResponseWriter, r
 
 // authorizationFilter authorizes services based on configuration
 type authorizationFilter struct {
-	authClient  auth.Client
-	authCounter tally.Counter
+	authClient auth.Client
 }
 
 func (f authorizationFilter) Apply(ctx context.Context, w http.ResponseWriter, r *http.Request, next Handler) {
 	if err := f.authClient.Authorize(ctx); err != nil {
-		f.authCounter.Inc(1)
+		stats.HTTPAuthFailCounter.Inc(1)
 		fx.Logger(ctx).Error(auth.ErrAuthorization, "error", err)
 		w.WriteHeader(http.StatusUnauthorized)
 		fmt.Fprintf(w, "Unauthorized access: %+v", err)
@@ -100,15 +97,13 @@ func (f authorizationFilter) Apply(ctx context.Context, w http.ResponseWriter, r
 
 // panicFilter handles any panics and return an error
 // panic filter should be added at the end of filter chain to catch panics
-type panicFilter struct {
-	panicCounter tally.Counter
-}
+type panicFilter struct{}
 
 func (f panicFilter) Apply(ctx context.Context, w http.ResponseWriter, r *http.Request, next Handler) {
 	defer func() {
 		if err := recover(); err != nil {
 			fx.Logger(ctx).Error("Panic recovered serving request", "error", err, "url", r.URL)
-			f.panicCounter.Inc(1)
+			stats.HTTPPanicCounter.Inc(1)
 			w.Header().Add(ContentType, ContentTypeText)
 			w.WriteHeader(http.StatusInternalServerError)
 			fmt.Fprintf(w, "Server error: %+v", err)
@@ -119,10 +114,9 @@ func (f panicFilter) Apply(ctx context.Context, w http.ResponseWriter, r *http.R
 
 // metricsFilter adds any default metrics related to HTTP
 type metricsFilter struct {
-	scope tally.Scope
 }
 
 func (f metricsFilter) Apply(ctx context.Context, w http.ResponseWriter, r *http.Request, next Handler) {
-	defer f.scope.Tagged(map[string]string{modules.TagStatus: w.Header().Get("Status")}).Counter("total").Inc(1)
+	defer stats.HTTPStatusCountScope.Tagged(map[string]string{stats.TagStatus: w.Header().Get("Status")}).Counter("total").Inc(1)
 	next.ServeHTTP(ctx, w, r)
 }

@@ -32,6 +32,7 @@ import (
 	"time"
 
 	"go.uber.org/fx/modules"
+	"go.uber.org/fx/modules/stats"
 	"go.uber.org/fx/service"
 	. "go.uber.org/fx/service/testutils"
 	. "go.uber.org/fx/testutils"
@@ -175,6 +176,7 @@ func withModule(
 	mi := service.ModuleCreateInfo{
 		Host: service.NopHost(),
 	}
+	stats.SetupHTTPMetrics(mi.Host)
 	mod, err := newModule(mi, hookup, filters, options...)
 	if expectError {
 		require.Error(t, err, "Expected error instantiating module")
@@ -295,5 +297,5 @@ func verifyMetrics(t *testing.T, scope tally.Scope) {
 	counters := snapshot.Counters()
 
 	assert.NotNil(t, timers["http.GET.time"].Values())
-	assert.NotNil(t, counters["auth.fail"].Value())
+	assert.NotNil(t, counters["http.auth.fail"].Value())
 }

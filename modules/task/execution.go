@@ -27,6 +27,8 @@ import (
 	"runtime"
 	"sync"
 
+	"go.uber.org/fx/modules/stats"
+
 	"github.com/pkg/errors"
 )
 
@@ -65,6 +67,7 @@ type fnSignature struct {
 
 // Execute executes the function
 func (s *fnSignature) Execute(ctx context.Context) ([]reflect.Value, error) {
+	stats.TaskExecutionCount.Inc(1)
 	targetArgs := make([]reflect.Value, 0, len(s.Args)+1)
 	targetArgs = append(targetArgs, reflect.ValueOf(ctx))
 	for _, arg := range s.Args {
@@ -83,11 +86,13 @@ func Enqueue(fn interface{}, args ...interface{}) error {
 	fnName := getFunctionName(fn)
 	_, ok := fnLookup.getFn(fnName)
 	if !ok {
+		stats.TaskPublishFail.Inc(1)
 		return fmt.Errorf("function: %q not found. Did you forget to register?", fnName)
 	}
 	fnType := reflect.TypeOf(fn)
 	// Validate function against arguments
 	if err := validateFnAgainstArgs(fnType, args); err != nil {
+		stats.TaskPublishFail.Inc(1)
 		return err
 	}
 	// Publish function to the backend
@@ -95,8 +100,10 @@ func Enqueue(fn interface{}, args ...interface{}) error {
 	s := fnSignature{FnName: fnName, Args: args[1:]}
 	sBytes, err := GlobalBackend().Encoder().Marshal(s)
 	if err != nil {
+		stats.TaskPublishFail.Inc(1)
 		return errors.Wrap(err, "unable to encode the function or args")
 	}
+	stats.TaskPublishCount.Inc(1)
 	return GlobalBackend().Publish(ctx, sBytes)
 }
 
@@ -130,6 +137,9 @@ func Register(fn interface{}) error {
 
 // Run decodes the message and executes as a task
 func Run(ctx context.Context, message []byte) error {
+	stopwatch := stats.TaskExecutionTime.Start()
+	defer stopwatch.Stop()
+
 	var s fnSignature
 	if err := GlobalBackend().Encoder().Unmarshal(message, &s); err != nil {
 		return errors.Wrap(err, "unable to decode the message")
@@ -137,6 +147,7 @@ func Run(ctx context.Context, message []byte) error {
 	// TODO (madhu): Do we need a timeout here?
 	retValues, err := s.Execute(ctx)
 	if err != nil {
+		stats.TaskExecuteFail.Inc(1)
 		return err
 	}
 	// Assume only an error will be returned since that is verified before adding to fnRegister

@@ -25,6 +25,7 @@ import (
 	"sync"
 
 	"go.uber.org/fx/modules"
+	"go.uber.org/fx/modules/stats"
 	"go.uber.org/fx/service"
 	"go.uber.org/fx/ulog"
 
@@ -214,6 +215,8 @@ func newYARPCModule(
 		register:   reg,
 		config:     yarpcConfig{AdvertiseName: mi.Host.Name()},
 	}
+
+	stats.SetupRPCMetrics(mi.Host)
 
 	module.log = ulog.Logger().With("moduleName", name)
 	for _, opt := range options {

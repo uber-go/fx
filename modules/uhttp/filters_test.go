@@ -31,6 +31,7 @@ import (
 	"go.uber.org/fx"
 	"go.uber.org/fx/auth"
 	"go.uber.org/fx/metrics"
+	"go.uber.org/fx/modules/stats"
 	"go.uber.org/fx/service"
 	"go.uber.org/fx/testutils"
 	"go.uber.org/fx/tracing"
@@ -66,7 +67,7 @@ func TestTracingFilterWithLogs(t *testing.T) {
 		defer opentracing.InitGlobalTracer(opentracing.NoopTracer{})
 
 		host := service.NopHostConfigured(auth.NopClient, loggerWithZap, tracer)
-		chain := newFilterChainBuilder(host).AddFilters([]Filter{contextFilter{host}, tracingServerFilter{host.Metrics()}}...).Build(getNopHandler(host))
+		chain := newFilterChainBuilder(host).AddFilters([]Filter{contextFilter{host}, tracingServerFilter{}}...).Build(getNopHandler(host))
 		response := testServeHTTP(chain, host)
 		assert.Contains(t, response.Body.String(), "filters ok")
 		assert.True(t, len(buf.Lines()) > 0)
@@ -88,10 +89,9 @@ func TestTracingFilterWithLogs(t *testing.T) {
 func TestFilterChainFilters(t *testing.T) {
 	host := service.NopHost()
 	chain := newFilterChainBuilder(host).AddFilters(
-		tracingServerFilter{host.Metrics()},
+		tracingServerFilter{},
 		authorizationFilter{
-			authCounter: host.Metrics().Counter("auth.fail"),
-			authClient:  host.AuthClient(),
+			authClient: host.AuthClient(),
 		}).Build(getNopHandler(host))
 
 	response := testServeHTTP(chain, host)
@@ -100,11 +100,11 @@ func TestFilterChainFilters(t *testing.T) {
 
 func TestFilterChainFilters_AuthFailure(t *testing.T) {
 	host := service.NopHostAuthFailure()
+	stats.SetupHTTPMetrics(host)
 	chain := newFilterChainBuilder(host).AddFilters(
-		tracingServerFilter{host.Metrics()},
+		tracingServerFilter{},
 		authorizationFilter{
-			authCounter: host.Metrics().Counter("auth.fail"),
-			authClient:  host.AuthClient(),
+			authClient: host.AuthClient(),
 		}).Build(getNopHandler(host))
 	response := testServeHTTP(chain, host)
 	assert.Contains(t, "Unauthorized access: Error authorizing the service", response.Body.String())
