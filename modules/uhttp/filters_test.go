@@ -31,7 +31,7 @@ import (
 	"go.uber.org/fx"
 	"go.uber.org/fx/auth"
 	"go.uber.org/fx/metrics"
-	"go.uber.org/fx/modules/stats"
+	"go.uber.org/fx/modules/uhttp/stats"
 	"go.uber.org/fx/service"
 	"go.uber.org/fx/testutils"
 	"go.uber.org/fx/tracing"
@@ -100,7 +100,7 @@ func TestFilterChainFilters(t *testing.T) {
 
 func TestFilterChainFilters_AuthFailure(t *testing.T) {
 	host := service.NopHostAuthFailure()
-	stats.SetupHTTPMetrics(host)
+	stats.SetupHTTPMetrics(host.Metrics())
 	chain := newFilterChainBuilder(host).AddFilters(
 		tracingServerFilter{},
 		authorizationFilter{

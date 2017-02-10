@@ -29,7 +29,7 @@ import (
 	"time"
 
 	"go.uber.org/fx/modules"
-	"go.uber.org/fx/modules/stats"
+	"go.uber.org/fx/modules/uhttp/stats"
 	"go.uber.org/fx/service"
 	"go.uber.org/fx/ulog"
 
@@ -120,7 +120,7 @@ func newModule(
 		mi.Name = "http"
 	}
 
-	stats.SetupHTTPMetrics(mi.Host)
+	stats.SetupHTTPMetrics(mi.Host.Metrics())
 
 	handlers := addHealth(getHandlers(mi.Host))
 

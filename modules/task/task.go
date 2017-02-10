@@ -24,7 +24,7 @@ import (
 	"sync"
 
 	"go.uber.org/fx/modules"
-	"go.uber.org/fx/modules/stats"
+	"go.uber.org/fx/modules/task/stats"
 	"go.uber.org/fx/service"
 )
 
@@ -69,7 +69,7 @@ func newAsyncModuleSingleton(
 func newAsyncModule(
 	mi service.ModuleCreateInfo, createFunc BackendCreateFunc,
 ) (service.Module, error) {
-	stats.SetupTaskMetrics(mi.Host)
+	stats.SetupTaskMetrics(mi.Host.Metrics())
 	backend, err := createFunc(mi.Host)
 	if err != nil {
 		return nil, err

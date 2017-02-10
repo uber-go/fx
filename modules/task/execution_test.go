@@ -29,15 +29,20 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/uber-go/tally"
+	"go.uber.org/fx/service"
 )
 
 var (
-	_errorCh <-chan error
+	_testScope tally.Scope
+	_errorCh   <-chan error
 	_ctx     = context.Background()
 )
 
 func init() {
-	_globalBackend = NewInMemBackend()
+	host := service.NopHost()
+	_testScope = host.Metrics()
+	_globalBackend = NewInMemBackend(host)
 	_errorCh = _globalBackend.Start(make(chan struct{}))
 	_globalBackend.Encoder().Register(context.Background())
 }
@@ -158,6 +163,7 @@ func TestEnqueueSimpleFn(t *testing.T) {
 	err = <-_errorCh
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "Simple error")
+	verifyMetrics(t, _testScope)
 }
 
 func TestEnqueueMapFn(t *testing.T) {
@@ -232,4 +238,17 @@ func TestCastToError(t *testing.T) {
 	err := castToError(reflect.ValueOf(s))
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "be error but found")
+}
+
+func verifyMetrics(t *testing.T, scope tally.Scope) {
+	snapshot := scope.(tally.TestScope).Snapshot()
+	timers := snapshot.Timers()
+	counters := snapshot.Counters()
+
+	assert.NotNil(t, timers["task.publish.time"].Values())
+	assert.NotNil(t, counters["task.publish.count"].Value())
+	assert.NotNil(t, counters["task.publish.fail"].Value())
+	assert.NotNil(t, timers["task.execution.time"].Values())
+	assert.NotNil(t, counters["task.execution.count"].Value())
+	assert.NotNil(t, counters["task.execution.fail"].Value())
 }

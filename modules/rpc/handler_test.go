@@ -25,7 +25,7 @@ import (
 	"errors"
 	"testing"
 
-	"go.uber.org/fx/modules/stats"
+	"go.uber.org/fx/modules/rpc/stats"
 	"go.uber.org/fx/service"
 	"go.uber.org/thriftrw/wire"
 	"go.uber.org/yarpc/api/transport"
@@ -53,7 +53,7 @@ func TestInboundMiddleware_fxContext(t *testing.T) {
 	unary := contextInboundMiddleware{
 		Host: service.NopHost(),
 	}
-	stats.SetupRPCMetrics(unary.Host)
+	stats.SetupRPCMetrics(unary.Host.Metrics())
 	err := unary.Handle(context.Background(), &transport.Request{}, nil, &fakeUnaryHandler{t: t})
 	assert.Equal(t, "handle", err.Error())
 }

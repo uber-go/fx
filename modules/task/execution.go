@@ -27,7 +27,7 @@ import (
 	"runtime"
 	"sync"
 
-	"go.uber.org/fx/modules/stats"
+	"go.uber.org/fx/modules/task/stats"
 
 	"github.com/pkg/errors"
 )

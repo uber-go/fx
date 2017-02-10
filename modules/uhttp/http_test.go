@@ -32,7 +32,7 @@ import (
 	"time"
 
 	"go.uber.org/fx/modules"
-	"go.uber.org/fx/modules/stats"
+	"go.uber.org/fx/modules/uhttp/stats"
 	"go.uber.org/fx/service"
 	. "go.uber.org/fx/service/testutils"
 	. "go.uber.org/fx/testutils"
@@ -176,7 +176,7 @@ func withModule(
 	mi := service.ModuleCreateInfo{
 		Host: service.NopHost(),
 	}
-	stats.SetupHTTPMetrics(mi.Host)
+	stats.SetupHTTPMetrics(mi.Host.Metrics())
 	mod, err := newModule(mi, hookup, filters, options...)
 	if expectError {
 		require.Error(t, err, "Expected error instantiating module")
