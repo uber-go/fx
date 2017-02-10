@@ -21,6 +21,7 @@
 package task
 
 import (
+	"context"
 	"fmt"
 	"reflect"
 	"runtime"
@@ -63,8 +64,9 @@ type fnSignature struct {
 }
 
 // Execute executes the function
-func (s *fnSignature) Execute() ([]reflect.Value, error) {
-	targetArgs := make([]reflect.Value, 0, len(s.Args))
+func (s *fnSignature) Execute(ctx context.Context) ([]reflect.Value, error) {
+	targetArgs := make([]reflect.Value, 0, len(s.Args)+1)
+	targetArgs = append(targetArgs, reflect.ValueOf(ctx))
 	for _, arg := range s.Args {
 		targetArgs = append(targetArgs, reflect.ValueOf(arg))
 	}
@@ -89,13 +91,13 @@ func Enqueue(fn interface{}, args ...interface{}) error {
 		return err
 	}
 	// Publish function to the backend
-	s := fnSignature{FnName: fnName, Args: args}
-
+	ctx := args[0].(context.Context)
+	s := fnSignature{FnName: fnName, Args: args[1:]}
 	sBytes, err := GlobalBackend().Encoder().Marshal(s)
 	if err != nil {
 		return errors.Wrap(err, "unable to encode the function or args")
 	}
-	return GlobalBackend().Publish(sBytes, nil)
+	return GlobalBackend().Publish(ctx, sBytes)
 }
 
 // Register registers a function for async tasks
@@ -111,11 +113,15 @@ func Register(fn interface{}) error {
 	if ok {
 		return nil
 	}
-	// Register function types for encoding
 	for i := 0; i < fnType.NumIn(); i++ {
-		arg := reflect.Zero(fnType.In(i)).Interface()
-		if err := GlobalBackend().Encoder().Register(arg); err != nil {
-			return errors.Wrap(err, "unable to register the message for encoding")
+		argType := fnType.In(i)
+		// Interfaces cannot be registered, their implementations should be
+		// https://golang.org/pkg/encoding/gob/#Register
+		if argType.Kind() != reflect.Interface {
+			arg := reflect.Zero(argType).Interface()
+			if err := GlobalBackend().Encoder().Register(arg); err != nil {
+				return errors.Wrap(err, "unable to register the message for encoding")
+			}
 		}
 	}
 	fnLookup.addFn(fnName, fn)
@@ -123,13 +129,13 @@ func Register(fn interface{}) error {
 }
 
 // Run decodes the message and executes as a task
-func Run(message []byte) error {
+func Run(ctx context.Context, message []byte) error {
 	var s fnSignature
 	if err := GlobalBackend().Encoder().Unmarshal(message, &s); err != nil {
 		return errors.Wrap(err, "unable to decode the message")
 	}
 	// TODO (madhu): Do we need a timeout here?
-	retValues, err := s.Execute()
+	retValues, err := s.Execute(ctx)
 	if err != nil {
 		return err
 	}
@@ -159,6 +165,15 @@ func validateFnFormat(fnType reflect.Type) error {
 	if fnType.Kind() != reflect.Func {
 		return fmt.Errorf("expected a func as input but was %s", fnType.Kind())
 	}
+	if fnType.NumIn() < 1 {
+		return fmt.Errorf(
+			"expected at least one argument of type context.Context in function, found %d input arguments",
+			fnType.NumIn(),
+		)
+	}
+	if !isContext(fnType.In(0)) {
+		return fmt.Errorf("expected first argument to be context.Context but found %s", fnType.In(0))
+	}
 	if fnType.NumOut() != 1 {
 		return fmt.Errorf(
 			"expected function to return only error but found %d return values", fnType.NumOut(),
@@ -182,9 +197,14 @@ func castToError(value reflect.Value) error {
 	return fmt.Errorf("expected return value to be error but found: %s", value.Interface())
 }
 
+func isContext(inType reflect.Type) bool {
+	contextElem := reflect.TypeOf((*context.Context)(nil)).Elem()
+	return inType.Implements(contextElem)
+}
+
 func isError(inType reflect.Type) bool {
-	errorInterface := reflect.TypeOf((*error)(nil)).Elem()
-	return inType.Implements(errorInterface)
+	errorElem := reflect.TypeOf((*error)(nil)).Elem()
+	return inType.Implements(errorElem)
 }
 
 func getFunctionName(i interface{}) string {

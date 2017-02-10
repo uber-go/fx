@@ -22,11 +22,15 @@ package task
 
 import (
 	"errors"
+	"fmt"
 	"testing"
+
+	"golang.org/x/net/context"
 
 	"go.uber.org/fx/service"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 var (
@@ -41,22 +45,36 @@ var (
 )
 
 func TestNewModule(t *testing.T) {
-	createModule(t, _nopBackendFn) // Singleton modules get saved
-	createModule(t, _memBackendFn) // Even though backend causes error, module saved earlier will return
+	b := createModule(t, _memBackendFn) // Singleton modules get saved
+	require.Equal(t, _memBackend, b)
+	b = createModule(t, _nopBackendFn) // Singleton returns nop even though mem backend is input
+	require.Equal(t, _memBackend, b)
 }
 
 func TestNewModuleError(t *testing.T) {
 	mod, err := newAsyncModule(_mi, _errBackendFn)
-	assert.Error(t, err)
-	assert.Nil(t, mod)
+	require.Error(t, err)
+	require.Nil(t, mod)
 }
 
-func createModule(t *testing.T, b BackendCreateFunc) {
+func TestMemBackendModuleWorkflowWithContext(t *testing.T) {
+	b := createModule(t, _memBackendFn) // we will just get the singleton in mem backend here
+	errChan := b.Start(make(chan struct{}))
+	fn := func(ctx context.Context) error {
+		fmt.Printf("Hello")
+		return errors.New("hello error")
+	}
+	require.NoError(t, Register(fn))
+	require.NoError(t, Enqueue(fn, context.Background()))
+	require.Error(t, <-errChan)
+}
+
+func createModule(t *testing.T, b BackendCreateFunc) Backend {
 	createFn := NewModule(b)
 	assert.NotNil(t, createFn)
 	mods, err := createFn(_mi)
 	assert.NotNil(t, mods)
 	assert.NoError(t, err)
 	assert.Equal(t, 1, len(mods))
-	assert.Equal(t, _nopBackend, mods[0].(*AsyncModule).Backend)
+	return mods[0].(*AsyncModule).Backend
 }

@@ -24,6 +24,8 @@ import (
 	"testing"
 	"time"
 
+	"golang.org/x/net/context"
+
 	"github.com/stretchr/testify/assert"
 )
 
@@ -83,7 +85,7 @@ func publishEncodedVal(t *testing.T, b Backend, errorCh <-chan error) {
 	assert.NoError(t, err)
 
 	// Publish a non FnSignature value that results in error
-	err = b.Publish(bytes, make(map[string]string))
+	err = b.Publish(context.Background(), bytes)
 	assert.NoError(t, err)
 	if err, ok := <-errorCh; ok {
 		assert.Error(t, err)
