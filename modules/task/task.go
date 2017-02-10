@@ -24,7 +24,7 @@ import (
 	"sync"
 
 	"go.uber.org/fx/modules"
-	"go.uber.org/fx/modules/task/stats"
+	"go.uber.org/fx/modules/task/internal/stats"
 	"go.uber.org/fx/service"
 )
 

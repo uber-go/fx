@@ -25,7 +25,7 @@ import (
 	"sync"
 
 	"go.uber.org/fx/modules"
-	"go.uber.org/fx/modules/rpc/stats"
+	"go.uber.org/fx/modules/rpc/internal/stats"
 	"go.uber.org/fx/service"
 	"go.uber.org/fx/ulog"
 

@@ -32,7 +32,7 @@ import (
 	"time"
 
 	"go.uber.org/fx/modules"
-	"go.uber.org/fx/modules/uhttp/stats"
+	"go.uber.org/fx/modules/uhttp/internal/stats"
 	"go.uber.org/fx/service"
 	. "go.uber.org/fx/service/testutils"
 	. "go.uber.org/fx/testutils"
@@ -296,6 +296,6 @@ func verifyMetrics(t *testing.T, scope tally.Scope) {
 	timers := snapshot.Timers()
 	counters := snapshot.Counters()
 
-	assert.NotNil(t, timers["http.request.GET"].Values())
-	assert.NotNil(t, counters["http.auth.fail"].Value())
+	assert.NotNil(t, timers["GET"].Values())
+	assert.NotNil(t, counters["fail"].Value())
 }

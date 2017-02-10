@@ -25,7 +25,7 @@ import (
 
 	"go.uber.org/fx"
 	"go.uber.org/fx/auth"
-	"go.uber.org/fx/modules/rpc/stats"
+	"go.uber.org/fx/modules/rpc/internal/stats"
 	"go.uber.org/fx/service"
 	"go.uber.org/yarpc/api/transport"
 )
@@ -37,7 +37,7 @@ type contextInboundMiddleware struct {
 func (f contextInboundMiddleware) Handle(ctx context.Context, req *transport.Request, resw transport.ResponseWriter, handler transport.UnaryHandler) error {
 	stopwatch := stats.RPCHandleTimer.
 		Tagged(map[string]string{stats.TagProcedure: req.Procedure}).
-		Timer("rpc.handler." + req.Procedure).
+		Timer(req.Procedure).
 		Start()
 	defer stopwatch.Stop()
 

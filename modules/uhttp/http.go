@@ -29,7 +29,7 @@ import (
 	"time"
 
 	"go.uber.org/fx/modules"
-	"go.uber.org/fx/modules/uhttp/stats"
+	"go.uber.org/fx/modules/uhttp/internal/stats"
 	"go.uber.org/fx/service"
 	"go.uber.org/fx/ulog"
 

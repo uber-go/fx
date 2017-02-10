@@ -27,37 +27,30 @@ const (
 	TagModule = "module"
 	// TagType is either request or response
 	TagType = "type"
-	// TagStatus is status of the request
-	TagStatus = "status"
-	// TagMiddleware is the middleware tag
+	// TagProcedure is the procedure name
+	TagProcedure = "procedure"
+	//TagMiddleware is middleware type
 	TagMiddleware = "middleware"
 )
 
 // HTTPTags creates metrics scope with defined tags
 var (
-	HTTPTags = map[string]string{
-		TagModule: "http",
+
+	// RPCTags creates metrics scope with defined tags
+	RPCTags = map[string]string{
+		TagModule: "rpc",
 		TagType:   "request",
 	}
 
-	// HTTPPanicCounter counts panics occurred in http
-	HTTPPanicCounter tally.Counter
-	// HTTPAuthFailCounter counts auth failures
-	HTTPAuthFailCounter tally.Counter
-	// HTTPMethodTimer is a turnaround time for http methods
-	HTTPMethodTimer tally.Scope
-	// HTTPStatusCountScope is a scope for http status
-	HTTPStatusCountScope tally.Scope
+	// RPCAuthFailCounter counts auth failures
+	RPCAuthFailCounter tally.Counter
+	// RPCHandleTimer is a turnaround time for rpc handler
+	RPCHandleTimer tally.Scope
 )
 
-// SetupHTTPMetrics allocates counters for necessary setup
-func SetupHTTPMetrics(scope tally.Scope) {
-	httpScope := scope.Tagged(HTTPTags)
-	HTTPPanicCounter = httpScope.Counter("panic")
-
-	HTTPAuthFailCounter = httpScope.Tagged(map[string]string{TagMiddleware: "auth"}).Counter("http.auth.fail")
-
-	HTTPMethodTimer = httpScope
-
-	HTTPStatusCountScope = httpScope
+// SetupRPCMetrics allocates counters for necessary setup
+func SetupRPCMetrics(scope tally.Scope) {
+	rpcTagsScope := scope.Tagged(RPCTags)
+	RPCAuthFailCounter = rpcTagsScope.Tagged(map[string]string{TagMiddleware: "auth"}).Counter("fail")
+	RPCHandleTimer = rpcTagsScope.Tagged(RPCTags)
 }

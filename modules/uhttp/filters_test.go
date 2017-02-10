@@ -31,7 +31,7 @@ import (
 	"go.uber.org/fx"
 	"go.uber.org/fx/auth"
 	"go.uber.org/fx/metrics"
-	"go.uber.org/fx/modules/uhttp/stats"
+	"go.uber.org/fx/modules/uhttp/internal/stats"
 	"go.uber.org/fx/service"
 	"go.uber.org/fx/testutils"
 	"go.uber.org/fx/tracing"

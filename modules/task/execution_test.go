@@ -168,12 +168,9 @@ func TestEnqueueSimpleFn(t *testing.T) {
 	timers := snapshot.Timers()
 	counters := snapshot.Counters()
 
-	assert.NotNil(t, timers["task.publish.time"].Values())
-	assert.NotNil(t, counters["task.publish.count"].Value())
-	assert.NotNil(t, counters["task.publish.fail"].Value())
-	assert.NotNil(t, timers["task.execution.time"].Values())
-	assert.NotNil(t, counters["task.execution.count"].Value())
-	assert.NotNil(t, counters["task.execution.fail"].Value())
+	assert.True(t, counters["count"].Value() > 0)
+	assert.True(t, counters["fail"].Value() > 0)
+	assert.NotNil(t, timers["time"].Values())
 }
 
 func TestEnqueueMapFn(t *testing.T) {

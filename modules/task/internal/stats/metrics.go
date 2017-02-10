@@ -23,7 +23,7 @@ package stats
 import "github.com/uber-go/tally"
 
 const (
-	//TagModule is module tag for metrics
+	// TagModule is module tag for metrics
 	TagModule = "module"
 	// TagType is either request or response
 	TagType = "type"
@@ -34,7 +34,6 @@ var (
 	// TaskTags creates metrics scope with defined tags
 	TaskTags = map[string]string{
 		TagModule: "task",
-		TagType:   "request",
 	}
 
 	// TaskExecutionCount counts number of executions
@@ -54,11 +53,11 @@ var (
 // SetupTaskMetrics allocates counters for necessary setup
 func SetupTaskMetrics(scope tally.Scope) {
 	taskTagsScope := scope.Tagged(TaskTags)
-	TaskExecutionCount = taskTagsScope.Counter("task.execution.count")
-	TaskPublishCount = taskTagsScope.Counter("task.publish.count")
-	TaskExecuteFail = taskTagsScope.Counter("task.execution.fail")
-	TaskPublishFail = taskTagsScope.Counter("task.publish.fail")
+	TaskExecutionCount = taskTagsScope.Tagged(map[string]string{TagType: "execution"}).Counter("count")
+	TaskPublishCount = taskTagsScope.Tagged(map[string]string{TagType: "publish"}).Counter("count")
+	TaskExecuteFail = taskTagsScope.Tagged(map[string]string{TagType: "execution"}).Counter("fail")
+	TaskPublishFail = taskTagsScope.Tagged(map[string]string{TagType: "publish"}).Counter("fail")
 
-	TaskExecutionTime = taskTagsScope.Timer("task.execution.time")
-	TaskPublishTime = taskTagsScope.Timer("task.publish.time")
+	TaskExecutionTime = taskTagsScope.Tagged(map[string]string{TagType: "execution"}).Timer("time")
+	TaskPublishTime = taskTagsScope.Tagged(map[string]string{TagType: "publish"}).Timer("time")
 }
