@@ -48,7 +48,7 @@ func TestDispatcher(t *testing.T) {
 	assert.NoError(t, c.Start(host))
 }
 
-func TestDifferentAdvertiseNameReturnsError(t *testing.T) {
+func TestBindToBadPortReturnsError(t *testing.T) {
 	t.Parallel()
 	c := dispatcherController{}
 	cfg := yarpcConfig{
@@ -65,6 +65,6 @@ func TestMergeOfEmptyConfigCollectionReturnsError(t *testing.T) {
 	t.Parallel()
 	c := dispatcherController{}
 	_, err := c.mergeConfigs("test")
-	assert.Error(t, err)
-	assert.Error(t, c.Start(service.NopHost()))
+	assert.EqualError(t, err, "unable to merge empty configs")
+	assert.EqualError(t, c.Start(service.NopHost()), err.Error())
 }

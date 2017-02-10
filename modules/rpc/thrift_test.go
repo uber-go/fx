@@ -24,12 +24,12 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-
 	"go.uber.org/fx/config"
 	"go.uber.org/fx/modules"
 	"go.uber.org/fx/service"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.uber.org/yarpc/api/transport"
 	"go.uber.org/yarpc/encoding/thrift"
 )
@@ -46,7 +46,8 @@ func (h testHost) Config() config.Provider {
 func TestThriftModule_OK(t *testing.T) {
 	chip := ThriftModule(okCreate, modules.WithRoles("rescue"))
 	dale := ThriftModule(okCreate, modules.WithRoles("ranges"))
-	cfg := []byte(`modules:
+	cfg := []byte(`
+modules:
   rpc:
     inbounds:
      - tchannel:

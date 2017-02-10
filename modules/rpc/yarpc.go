@@ -273,7 +273,7 @@ func prepareInbounds(inbounds []Inbound, serviceName string) (transportsIn []tra
 		}
 	}
 
-	return transportsIn, err
+	return transportsIn, nil
 }
 
 // Start begins serving requests with YARPC.
@@ -336,10 +336,10 @@ func defaultYARPCDispatcher(_ service.Host, cfg yarpc.Config) (*yarpc.Dispatcher
 type yarpcStarterFn func(dispatcher *yarpc.Dispatcher) error
 
 // RegisterStarter allows you to override the YARPC dispatcher start, e.g. attach some metrics with start.
-func RegisterStarter(starterFN yarpcStarterFn) {
+func RegisterStarter(startFN yarpcStarterFn) {
 	_dispatcherMu.Lock()
 	defer _dispatcherMu.Unlock()
-	_starterFn = starterFN
+	_starterFn = startFN
 }
 
 func defaultYARPCStarter(dispatcher *yarpc.Dispatcher) error {
