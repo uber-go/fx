@@ -59,8 +59,7 @@ func TestExecutionChainFilters(t *testing.T) {
 	execChain := newExecutionChain(
 		[]Filter{tracingFilter()}, nopTransport{},
 	)
-	ctx := context.Background()
-	resp, err := execChain.RoundTrip(_req().WithContext(ctx))
+	resp, err := execChain.RoundTrip(_req())
 	assert.NoError(t, err)
 	assert.Equal(t, _respOK, resp)
 }

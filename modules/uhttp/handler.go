@@ -21,7 +21,6 @@
 package uhttp
 
 import (
-	"context"
 	"net/http"
 
 	"go.uber.org/fx"
@@ -29,38 +28,25 @@ import (
 	"go.uber.org/fx/service"
 )
 
-// Handler is a context-aware extension of http.Handler.
-type Handler interface {
-	ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request)
-}
-
-// The HandlerFunc type is an adapter to allow the use of
-// ordinary functions as HTTP handlers.
-type HandlerFunc func(ctx context.Context, w http.ResponseWriter, r *http.Request)
-
-// ServeHTTP calls the caller HandlerFunc.
-func (f HandlerFunc) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-	f(ctx, w, r)
-}
-
-// Wrap the handler and host provided and return http.Handler for gorilla mux
-func Wrap(host service.Host, handler Handler) http.Handler {
-	return &handlerWrapper{
+// WithHost adds host to http.Handler and return http.Handler for gorilla mux.
+func WithHost(host service.Host, handler http.Handler) http.Handler {
+	return &handlerWithHost{
 		host:    host,
 		handler: handler,
 	}
 }
 
-type handlerWrapper struct {
+type handlerWithHost struct {
 	host    service.Host
-	handler Handler
+	handler http.Handler
 }
 
-// ServeHTTP calls Handler.ServeHTTP(ctx, w, r) and injects a new service context for use.
-func (h *handlerWrapper) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	ctx := fx.NewContext(context.Background(), h.host)
+// ServeHTTP calls Handler.ServeHTTP( w, r) and injects a new service context for use.
+func (h *handlerWithHost) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	ctx := fx.NewContext(r.Context(), h.host)
 	stopwatch := stats.HTTPMethodTimer.Timer(r.Method).Start()
 	defer stopwatch.Stop()
 
-	h.handler.ServeHTTP(ctx, w, r)
+	r = r.WithContext(ctx)
+	h.handler.ServeHTTP(w, r)
 }

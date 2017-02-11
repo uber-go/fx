@@ -21,7 +21,6 @@
 package uhttp
 
 import (
-	"context"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -114,14 +113,13 @@ func TestFilterChainFilters_AuthFailure(t *testing.T) {
 func testServeHTTP(chain filterChain, host service.Host) *httptest.ResponseRecorder {
 	request := httptest.NewRequest("", "http://filters", nil)
 	response := httptest.NewRecorder()
-	ctx := context.Background()
-	chain.ServeHTTP(ctx, response, request)
+	chain.ServeHTTP(response, request)
 	return response
 }
 
-func getNopHandler(host service.Host) HandlerFunc {
-	return func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-		fx.Logger(ctx).Info("Inside Noop Handler")
+func getNopHandler(host service.Host) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		fx.Logger(r.Context()).Info("Inside Noop Handler")
 		io.WriteString(w, "filters ok")
 	}
 }

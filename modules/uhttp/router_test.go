@@ -21,7 +21,6 @@
 package uhttp
 
 import (
-	"context"
 	"fmt"
 	"io/ioutil"
 	"net"
@@ -46,11 +45,11 @@ func withRouter(t *testing.T, f func(r *Router, l net.Listener)) {
 	l := serve(t, r)
 	defer l.Close()
 	r.Handle("/foo/baz/quokka",
-		HandlerFunc(func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+		http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 			w.Write([]byte("hello"))
 		}))
 	r.Handle("/foo/bar/quokka",
-		HandlerFunc(func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+		http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 			w.Write([]byte("world"))
 		}))
 	f(r, l)

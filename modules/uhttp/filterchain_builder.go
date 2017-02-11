@@ -21,7 +21,6 @@
 package uhttp
 
 import (
-	"context"
 	"net/http"
 
 	"go.uber.org/fx/service"
@@ -29,24 +28,24 @@ import (
 
 type filterChain struct {
 	currentFilter int
-	finalHandler  Handler
+	finalHandler  http.Handler
 	filters       []Filter
 }
 
-func (fc filterChain) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+func (fc filterChain) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if fc.currentFilter == len(fc.filters) {
-		fc.finalHandler.ServeHTTP(ctx, w, r)
+		fc.finalHandler.ServeHTTP(w, r)
 	} else {
 		filter := fc.filters[fc.currentFilter]
 		fc.currentFilter++
-		filter.Apply(ctx, w, r, fc)
+		filter.Apply(w, r, fc)
 	}
 }
 
 type filterChainBuilder struct {
 	service.Host
 
-	finalHandler Handler
+	finalHandler http.Handler
 	filters      []Filter
 }
 
@@ -76,7 +75,7 @@ func (f filterChainBuilder) AddFilters(filters ...Filter) filterChainBuilder {
 	return f
 }
 
-func (f filterChainBuilder) Build(finalHandler Handler) filterChain {
+func (f filterChainBuilder) Build(finalHandler http.Handler) filterChain {
 	return filterChain{
 		filters:      f.filters,
 		finalHandler: finalHandler,

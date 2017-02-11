@@ -21,7 +21,6 @@
 package main
 
 import (
-	"context"
 	"fmt"
 	"io"
 	"net/http"
@@ -32,7 +31,7 @@ import (
 
 type exampleHandler struct{}
 
-func (exampleHandler) ServeHTTP(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+func (exampleHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	io.WriteString(w, fmt.Sprintf("Headers: %+v", r.Header))
 }
 
@@ -48,10 +47,9 @@ func registerHTTPers(service service.Host) []uhttp.RouteHandler {
 	}
 }
 
-type simpleFilter struct {
-}
+type simpleFilter struct{}
 
-func (simpleFilter) Apply(ctx context.Context, w http.ResponseWriter, r *http.Request, next uhttp.Handler) {
+func (simpleFilter) Apply(w http.ResponseWriter, r *http.Request, next http.Handler) {
 	io.WriteString(w, "Going through simpleFilter")
-	next.ServeHTTP(ctx, w, r)
+	next.ServeHTTP(w, r)
 }

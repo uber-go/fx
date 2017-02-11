@@ -21,7 +21,6 @@
 package uhttp
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -243,18 +242,18 @@ func registerNothing(_ service.Host) []RouteHandler {
 	return nil
 }
 
-func makeSingleHandler(path string, fn func(context.Context, http.ResponseWriter, *http.Request)) []RouteHandler {
+func makeSingleHandler(path string, fn func(http.ResponseWriter, *http.Request)) []RouteHandler {
 	return []RouteHandler{
 		{
 			Path:    path,
-			Handler: HandlerFunc(fn),
+			Handler: http.HandlerFunc(fn),
 		},
 	}
 }
 
 func registerTracerCheckHandler(host service.Host) []RouteHandler {
-	return makeSingleHandler("/", func(ctx context.Context, _ http.ResponseWriter, r *http.Request) {
-		span := opentracing.SpanFromContext(ctx)
+	return makeSingleHandler("/", func(_ http.ResponseWriter, r *http.Request) {
+		span := opentracing.SpanFromContext(r.Context())
 		if span == nil {
 			panic(fmt.Sprintf("Intentional panic, invalid span: %v", span))
 		} else if span.Tracer() != opentracing.GlobalTracer() {
@@ -267,26 +266,26 @@ func registerTracerCheckHandler(host service.Host) []RouteHandler {
 }
 
 func registerCustomHealth(_ service.Host) []RouteHandler {
-	return makeSingleHandler("/health", func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	return makeSingleHandler("/health", func(w http.ResponseWriter, _ *http.Request) {
 		io.WriteString(w, "not ok")
 	})
 }
 
 func registerPanic(_ service.Host) []RouteHandler {
-	return makeSingleHandler("/", func(ctx context.Context, _ http.ResponseWriter, r *http.Request) {
+	return makeSingleHandler("/", func(_ http.ResponseWriter, r *http.Request) {
 		panic("Intentional panic for:" + r.URL.Path)
 	})
 }
 
 func fakeFilter() FilterFunc {
-	return func(ctx context.Context, w http.ResponseWriter, r *http.Request, next Handler) {
+	return func(w http.ResponseWriter, r *http.Request, next http.Handler) {
 		io.WriteString(w, "filter is executed")
-		Wrap(service.NopHost(), next).ServeHTTP(w, r)
+		WithHost(service.NopHost(), next).ServeHTTP(w, r)
 	}
 }
 
 func userPanicFilter() FilterFunc {
-	return func(ctx context.Context, w http.ResponseWriter, r *http.Request, next Handler) {
+	return func(_ http.ResponseWriter, r *http.Request, _ http.Handler) {
 		panic("Intentional panic for:" + r.URL.Path)
 	}
 }
