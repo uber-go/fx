@@ -47,6 +47,5 @@ func (h *handlerWithHost) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	stopwatch := stats.HTTPMethodTimer.Timer(r.Method).Start()
 	defer stopwatch.Stop()
 
-	r = r.WithContext(ctx)
-	h.handler.ServeHTTP(w, r)
+	h.handler.ServeHTTP(w, r.WithContext(ctx))
 }

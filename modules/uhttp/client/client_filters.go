@@ -52,8 +52,7 @@ func (f FilterFunc) Apply(r *http.Request, next Executor) (resp *http.Response, 
 }
 
 func tracingFilter() FilterFunc {
-	return func(req *http.Request, next Executor,
-	) (resp *http.Response, err error) {
+	return func(req *http.Request, next Executor) (resp *http.Response, err error) {
 		ctx := req.Context()
 		opName := req.Method
 		var parent opentracing.SpanContext
@@ -87,8 +86,7 @@ func tracingFilter() FilterFunc {
 func authenticationFilter(info auth.CreateAuthInfo) FilterFunc {
 	authClient := auth.Load(info)
 	serviceName := info.Config().Get(config.ServiceNameKey).AsString()
-	return func(req *http.Request, next Executor,
-	) (resp *http.Response, err error) {
+	return func(req *http.Request, next Executor) (resp *http.Response, err error) {
 		ctx := req.Context()
 		// Client needs to know what service it is to authenticate
 		authCtx := authClient.SetAttribute(ctx, auth.ServiceAuth, serviceName)
