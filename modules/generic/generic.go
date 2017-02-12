@@ -63,7 +63,7 @@ type Module interface {
 	Stop() error
 }
 
-// NewModule returns a ModuleCreateFunc for the given GenericModule.
+// NewModule returns a ModuleCreateFunc for the given Module.
 func NewModule(
 	moduleName string,
 	module Module,

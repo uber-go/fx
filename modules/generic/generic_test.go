@@ -21,6 +21,7 @@
 package generic
 
 import (
+	"errors"
 	"fmt"
 	"testing"
 
@@ -34,8 +35,38 @@ import (
 
 func TestConfig(t *testing.T) {
 	testConfig := &testConfig{Test: "foo"}
-	testModule, _ := setup(t, testConfig, "test")
-	assert.Equal(t, testConfig.Test, testModule.config.Test)
+	testModule, _ := setup(t, testConfig, "bar")
+	assert.Equal(t, "foo", testModule.config.Test)
+}
+
+func TestName(t *testing.T) {
+	_, module := setup(t, nil, "foo")
+	assert.Equal(t, "foo", module.Name())
+}
+
+func TestStartStop(t *testing.T) {
+	testModule, module := setup(t, nil, "foo")
+	errC := module.Start(make(chan struct{}, 1))
+	assert.NoError(t, <-errC)
+	assert.Equal(t, 1, testModule.startCount)
+	assert.True(t, module.IsRunning())
+	assert.NoError(t, module.Stop())
+	assert.Equal(t, 1, testModule.stopCount)
+	assert.False(t, module.IsRunning())
+}
+
+func TestStartError(t *testing.T) {
+	testModule, module := setup(t, nil, "foo")
+	testModule.err = errors.New("error")
+	errC := module.Start(make(chan struct{}, 1))
+	assert.Error(t, <-errC)
+}
+
+func TestNotifyStopped(t *testing.T) {
+	testModule, module := setup(t, nil, "foo")
+	_ = module.Start(make(chan struct{}, 1))
+	testModule.NotifyStopped()
+	assert.False(t, module.IsRunning())
 }
 
 func setup(
@@ -96,7 +127,10 @@ type testConfig struct {
 
 type testModule struct {
 	Controller
-	config *testConfig
+	config     *testConfig
+	startCount int
+	stopCount  int
+	err        error
 }
 
 func newTestModule() *testModule {
@@ -110,9 +144,11 @@ func (m *testModule) Initialize(controller Controller, config interface{}) error
 }
 
 func (m *testModule) Start() error {
-	return nil
+	m.startCount++
+	return m.err
 }
 
 func (m *testModule) Stop() error {
-	return nil
+	m.stopCount++
+	return m.err
 }
