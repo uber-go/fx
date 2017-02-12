@@ -39,6 +39,7 @@
 //   func (m *fooModule) Initialize(contoller Controller, config interface{}) error {
 //     m.Controller = controller
 //     m.config = config.(*fooConfig)
+//     return nil
 //   }
 //
 //   func (m *fooModule) Start() error {
