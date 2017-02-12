@@ -33,6 +33,8 @@ import (
 	"github.com/opentracing/opentracing-go/ext"
 )
 
+const panicRespnose = "Server Error"
+
 // Filter applies filters on requests or responses such as
 // adding tracing to the context
 type Filter interface {
@@ -102,9 +104,7 @@ func (f panicFilter) Apply(w http.ResponseWriter, r *http.Request, next http.Han
 		if err := recover(); err != nil {
 			ulog.Logger(ctx).Error("Panic recovered serving request", "error", err, "url", r.URL)
 			stats.HTTPPanicCounter.Inc(1)
-			w.Header().Add(ContentType, ContentTypeText)
-			w.WriteHeader(http.StatusInternalServerError)
-			fmt.Fprintf(w, "Server error: %+v", err)
+			http.Error(w, panicRespnose, http.StatusInternalServerError)
 		}
 	}()
 	next.ServeHTTP(w, r)
