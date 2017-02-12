@@ -46,6 +46,8 @@ var (
 	RPCAuthFailCounter tally.Counter
 	// RPCHandleTimer is a turnaround time for rpc handler
 	RPCHandleTimer tally.Scope
+	// RPCPanicCounter counts panics occurred for rpc handler
+	RPCPanicCounter tally.Counter
 )
 
 // SetupRPCMetrics allocates counters for necessary setup
@@ -53,4 +55,5 @@ func SetupRPCMetrics(scope tally.Scope) {
 	rpcTagsScope := scope.Tagged(RPCTags)
 	RPCAuthFailCounter = rpcTagsScope.Tagged(map[string]string{TagMiddleware: "auth"}).Counter("fail")
 	RPCHandleTimer = rpcTagsScope.Tagged(RPCTags)
+	RPCPanicCounter = rpcTagsScope.Counter("panic")
 }

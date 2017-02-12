@@ -116,3 +116,32 @@ func (f fakeOnewayHandler) HandleOneway(ctx context.Context, p *transport.Reques
 	assert.NotNil(f.t, ctx)
 	return errors.New("oneway handle")
 }
+
+func TestInboundMiddleware_panic(t *testing.T) {
+	defer testPanicHandler(t)
+	unary := panicInboundMiddleware{}
+	unary.Handle(context.Background(), &transport.Request{}, nil, &panicUnaryHandler{})
+}
+
+func TestOnewayInboundMiddleware_panic(t *testing.T) {
+	defer testPanicHandler(t)
+	oneway := panicOnewayInboundMiddleware{}
+	oneway.HandleOneway(context.Background(), &transport.Request{}, &panicOnewayHandler{})
+}
+
+func testPanicHandler(t *testing.T) {
+	r := recover()
+	assert.EqualValues(t, r, panicRespnose)
+}
+
+type panicUnaryHandler struct{}
+
+func (p panicUnaryHandler) Handle(_ context.Context, _ *transport.Request, _ transport.ResponseWriter) error {
+	panic("panic")
+}
+
+type panicOnewayHandler struct{}
+
+func (p panicOnewayHandler) HandleOneway(_ context.Context, _ *transport.Request) error {
+	panic("panic")
+}

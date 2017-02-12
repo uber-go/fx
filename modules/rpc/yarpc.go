@@ -126,10 +126,12 @@ func (c *dispatcherController) addDefaultMiddleware(host service.Host) {
 	cfg := yarpcConfig{
 		inboundMiddleware: []middleware.UnaryInbound{
 			contextInboundMiddleware{host},
+			panicInboundMiddleware{},
 			authInboundMiddleware{host},
 		},
 		onewayInboundMiddleware: []middleware.OnewayInbound{
 			contextOnewayInboundMiddleware{host},
+			panicOnewayInboundMiddleware{},
 			authOnewayInboundMiddleware{host},
 		},
 	}
