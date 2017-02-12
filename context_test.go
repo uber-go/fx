@@ -29,8 +29,10 @@ import (
 	"go.uber.org/fx/ulog"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/uber-go/zap"
+	"github.com/stretchr/testify/require"
 	"github.com/uber/jaeger-client-go"
+	"go.uber.org/zap"
+	ztestutils "go.uber.org/zap/testutils"
 )
 
 type testKey int
@@ -48,9 +50,10 @@ func TestContext_LoggerAccess(t *testing.T) {
 }
 
 func TestWithContextAwareLogger(t *testing.T) {
-	testutils.WithInMemoryLogger(t, nil, func(zapLogger zap.Logger, buf *testutils.TestBuffer) {
+	testutils.WithInMemoryLogger(t, nil, func(zapLogger *zap.Logger, buf *ztestutils.Buffer) {
 		// Create in-memory logger and jaeger tracer
-		loggerWithZap := ulog.Builder().SetLogger(zapLogger).Build()
+		loggerWithZap, err := ulog.Builder().SetLogger(zapLogger).Build()
+		require.NoError(t, err)
 		tracer, closer := jaeger.NewTracer(
 			"serviceName", jaeger.NewConstSampler(true), jaeger.NewNullReporter(),
 		)

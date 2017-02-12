@@ -123,7 +123,9 @@ func New(options ...Option) (Owner, error) {
 	// TODO(glib): add a logging reporter and use it by default, rather than nop
 	svc.setupMetrics()
 
-	svc.setupLogging()
+	if err := svc.setupLogging(); err != nil {
+		return nil, err
+	}
 
 	svc.setupAuthClient()
 

@@ -21,18 +21,30 @@
 package metrics
 
 import (
+	"io/ioutil"
 	"testing"
-
-	"go.uber.org/fx/testutils/metrics"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/uber-go/tally"
-	"github.com/uber-go/zap"
+	"go.uber.org/fx/testutils/metrics"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 )
 
-func hookedLogger() (zap.Logger, *metrics.TestStatsReporter) {
+func hookedLogger() (*zap.Logger, *metrics.TestStatsReporter) {
 	s, r := metrics.NewTestScope()
-	return zap.New(zap.NewJSONEncoder(), Hook(s)), r
+	return zap.New(
+		zapcore.Hooked(
+			zapcore.WriterFacility(
+				zapcore.NewJSONEncoder(
+					zapcore.EncoderConfig{},
+				),
+				zapcore.AddSync(ioutil.Discard),
+				zap.DebugLevel,
+			),
+			Hook(s),
+		),
+	), r
 }
 
 func TestSomething(t *testing.T) {
@@ -52,5 +64,5 @@ func TestSomething(t *testing.T) {
 
 func TestNilEntryHook(t *testing.T) {
 	h := Hook(tally.NoopScope)
-	assert.Error(t, errHookNilEntry, h(nil))
+	assert.Error(t, errHookNilEntry, h(zapcore.Entry{}))
 }

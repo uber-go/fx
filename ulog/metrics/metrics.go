@@ -23,8 +23,9 @@ package metrics
 import (
 	"errors"
 
+	"go.uber.org/zap/zapcore"
+
 	"github.com/uber-go/tally"
-	"github.com/uber-go/zap"
 )
 
 var (
@@ -32,9 +33,9 @@ var (
 )
 
 // Hook counts the number of logging messages per level
-func Hook(s tally.Scope) zap.Hook {
-	return zap.Hook(func(e *zap.Entry) error {
-		if e == nil {
+func Hook(s tally.Scope) func(zapcore.Entry) error {
+	return func(e zapcore.Entry) error {
+		if e == (zapcore.Entry{}) {
 			return errHookNilEntry
 		}
 
@@ -44,5 +45,5 @@ func Hook(s tally.Scope) zap.Hook {
 		// to look. Though it won't save much (estimated ~10ns/call)
 		s.Counter(e.Level.String()).Inc(1)
 		return nil
-	})
+	}
 }

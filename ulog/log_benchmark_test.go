@@ -26,18 +26,15 @@ import (
 
 	"go.uber.org/fx/ulog/sentry"
 
-	"github.com/uber-go/zap"
+	"go.uber.org/zap"
 )
 
-func discardedLogger() zap.Logger {
-	return zap.New(
-		zap.NewJSONEncoder(),
-		zap.DiscardOutput,
-	)
+func discardedLogger() *zap.Logger {
+	return zap.New(nil)
 }
 
 func withDiscardedLogger(t *testing.B, f func(log Log)) {
-	log := Builder().SetLogger(discardedLogger()).Build()
+	log, _ := Builder().SetLogger(discardedLogger()).Build()
 	f(log)
 }
 
@@ -124,7 +121,7 @@ func BenchmarkUlogLiteWithFields(b *testing.B) {
 
 func BenchmarkUlogSentry(b *testing.B) {
 	h, _ := sentry.New("")
-	l := Builder().SetLogger(discardedLogger()).WithSentryHook(h).Build()
+	l, _ := Builder().SetLogger(discardedLogger()).WithSentryHook(h).Build()
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
@@ -135,7 +132,7 @@ func BenchmarkUlogSentry(b *testing.B) {
 
 func BenchmarkUlogSentryWith(b *testing.B) {
 	h, _ := sentry.New("")
-	l := Builder().SetLogger(discardedLogger()).WithSentryHook(h).Build()
+	l, _ := Builder().SetLogger(discardedLogger()).WithSentryHook(h).Build()
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {

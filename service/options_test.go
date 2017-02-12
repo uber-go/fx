@@ -45,7 +45,8 @@ func TestAddModules_Errors(t *testing.T) {
 }
 
 func TestWithLogger_OK(t *testing.T) {
-	logger := ulog.New()
+	logger, err := ulog.New()
+	require.NoError(t, err)
 	assert.NotPanics(t, func() {
 		New(WithLogger(logger))
 	})

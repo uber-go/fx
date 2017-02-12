@@ -21,7 +21,7 @@
 // Package ulog is the Logging package.
 //
 // package ulog provides an API wrapper around the logging library
-// zap (https://github.com/uber-go/zap). package ulog uses the builder pattern
+// zap (https://go.uber.org/zap). package ulog uses the builder pattern
 // to instantiate the logger. With
 // LogBuilder you can perform pre-initialization
 // setup by injecting configuration, custom logger, and log level prior to building
@@ -149,7 +149,7 @@
 // To set up Sentry in code use sentry.Hook. For example:
 //
 //   import (
-//     "github.com/uber-go/zap"
+//     "go.uber.org/zap"
 //     "go.uber.org/fx/ulog/ulog"
 //     "go.uber.org/fx/ulog/sentry"
 //     "go.uber.org/fx/service"

@@ -33,18 +33,22 @@ import (
 	"github.com/pkg/errors"
 )
 
-func (svc *serviceCore) setupLogging() {
+func (svc *serviceCore) setupLogging() error {
 	if svc.log == nil {
-		err := svc.configProvider.Get("logging").PopulateStruct(&svc.logConfig)
-		if err != nil {
-			ulog.Logger().Info("Logging configuration is not provided, setting to default logger", "error", err)
+		if err := svc.configProvider.Get("logging").PopulateStruct(&svc.logConfig); err != nil {
+			return err
 		}
 
 		logBuilder := ulog.Builder().WithScope(svc.metrics)
-		svc.log = logBuilder.WithConfiguration(svc.logConfig).Build()
+		var err error
+		svc.log, err = logBuilder.WithConfiguration(svc.logConfig).Build()
+		if err != nil {
+			return err
+		}
 	} else {
 		svc.log.Debug("Using custom log provider due to service.WithLogger option")
 	}
+	return nil
 }
 
 func (svc *serviceCore) setupStandardConfig() error {

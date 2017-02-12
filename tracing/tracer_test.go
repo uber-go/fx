@@ -28,9 +28,11 @@ import (
 	"go.uber.org/fx/ulog"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/uber-go/zap"
+	"github.com/stretchr/testify/require"
 	jaeger "github.com/uber/jaeger-client-go"
 	"github.com/uber/jaeger-client-go/config"
+	"go.uber.org/zap"
+	ztestutils "go.uber.org/zap/testutils"
 )
 
 var (
@@ -91,8 +93,9 @@ func TestLoadAppConfig_NilJaegerConfig(t *testing.T) {
 }
 
 func TestJaegerLogger(t *testing.T) {
-	testutils.WithInMemoryLogger(t, nil, func(zapLogger zap.Logger, buf *testutils.TestBuffer) {
-		loggerWithZap := ulog.Builder().SetLogger(zapLogger).Build()
+	testutils.WithInMemoryLogger(t, nil, func(zapLogger *zap.Logger, buf *ztestutils.Buffer) {
+		loggerWithZap, err := ulog.Builder().SetLogger(zapLogger).Build()
+		require.NoError(t, err)
 		jLogger := jaegerLogger{log: loggerWithZap}
 		jLogger.Infof("info message")
 		jLogger.Infof("info message: %s", "oddArg")

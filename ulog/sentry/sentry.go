@@ -23,7 +23,8 @@ package sentry
 import (
 	"time"
 
-	"github.com/uber-go/zap"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 
 	raven "github.com/getsentry/raven-go"
 	"github.com/pkg/errors"
@@ -35,7 +36,7 @@ const (
 	_traceSkipFrames   = 2
 )
 
-var _zapToRavenMap = map[zap.Level]raven.Severity{
+var _zapToRavenMap = map[zapcore.Level]raven.Severity{
 	zap.DebugLevel: raven.INFO,
 	zap.InfoLevel:  raven.INFO,
 	zap.WarnLevel:  raven.WARNING,
@@ -68,7 +69,7 @@ type Hook struct {
 	fields map[string]interface{}
 
 	// Minimum level threshold for sending a Sentry event
-	minLevel zap.Level
+	minLevel zapcore.Level
 
 	// Controls if stack trace should be automatically generated, and how many frames to skip
 	traceEnabled      bool
@@ -148,7 +149,7 @@ func (sh *Hook) Fields() map[string]interface{} {
 
 // MinLevel provides a minimum level threshold.
 // All log messages above the set level are sent to Sentry.
-func MinLevel(level zap.Level) Option {
+func MinLevel(level zapcore.Level) Option {
 	return func(sh *Hook) {
 		sh.minLevel = level
 	}
@@ -227,7 +228,7 @@ func (sh *Hook) Copy() *Hook {
 
 // CheckAndFire check to see if logging level is above Sentry threshold
 // and if so, fires off a Sentry packet
-func (sh *Hook) CheckAndFire(lvl zap.Level, msg string, keyvals ...interface{}) {
+func (sh *Hook) CheckAndFire(lvl zapcore.Level, msg string, keyvals ...interface{}) {
 	if lvl < sh.minLevel {
 		return
 	}

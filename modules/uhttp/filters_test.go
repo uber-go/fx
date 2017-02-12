@@ -39,8 +39,10 @@ import (
 
 	"github.com/opentracing/opentracing-go"
 	"github.com/stretchr/testify/assert"
-	"github.com/uber-go/zap"
+	"github.com/stretchr/testify/require"
 	"github.com/uber/jaeger-client-go/config"
+	"go.uber.org/zap"
+	ztestutils "go.uber.org/zap/testutils"
 )
 
 func TestFilterChain(t *testing.T) {
@@ -51,9 +53,10 @@ func TestFilterChain(t *testing.T) {
 }
 
 func TestTracingFilterWithLogs(t *testing.T) {
-	testutils.WithInMemoryLogger(t, nil, func(zapLogger zap.Logger, buf *testutils.TestBuffer) {
+	testutils.WithInMemoryLogger(t, nil, func(zapLogger *zap.Logger, buf *ztestutils.Buffer) {
 		// Create in-memory logger and jaeger tracer
-		loggerWithZap := ulog.Builder().SetLogger(zapLogger).Build()
+		loggerWithZap, err := ulog.Builder().SetLogger(zapLogger).Build()
+		require.NoError(t, err)
 		jConfig := &config.Configuration{
 			Sampler:  &config.SamplerConfig{Type: "const", Param: 1.0},
 			Reporter: &config.ReporterConfig{LogSpans: true},
