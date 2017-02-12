@@ -36,7 +36,10 @@
 //     config *fooConfig
 //   }
 //
-//   func (m *fooModule) Initialize(contoller Controller, config interface{}) error {
+//   func (m *fooModule) Initialize(
+//     contoller generic.Controller,
+//     config interface{},
+//   ) error {
 //     m.Controller = controller
 //     m.config = config.(*fooConfig)
 //     return nil
