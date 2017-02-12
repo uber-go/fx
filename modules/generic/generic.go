@@ -23,36 +23,47 @@ package generic
 import (
 	"sync"
 
+	"github.com/opentracing/opentracing-go"
+
 	"go.uber.org/fx/modules"
 	"go.uber.org/fx/service"
 	"go.uber.org/fx/ulog"
 )
 
-// Module is a simpliciation of the Module interface
-// that can be wrapped with a Module for easier implemenation.
+// Controller holds data for a Module, and provides functionality
+// for the Module to notify the wrapping service.Module of state changes.
+// TODO(pedge): not the best name
+// TODO(pedge): split up into read-only and read-write interfaces?
+type Controller interface {
+	Host() service.Host
+	Roles() []string
+	Name() string
+	Tracer() opentracing.Tracer
+	Log() ulog.Log
+	// NotifyStopped will result in the wrapping service.Module's
+	// IsRunning() method to return false.
+	NotifyStopped()
+}
+
+// Module is a simpliciation of the service.Module interface
+// that can be wrapped with a service.Module for easier implemenation.
 type Module interface {
-	// This will be called after ModuleBase, log, and config are populated.
+	// This will be called after the Controller and config are populated.
 	// If the module wishes, these can be stored for use in the module.
-	// Start and stop should not be called before this is called.
-	Initialize(moduleBase modules.ModuleBase, log ulog.Log, config interface{}) error
-	// Start the module, on return the module is expected to be started
-	// If there is an error, the module is not expected to be started.
+	//
+	// This should only be called by the generic package, and unless there are
+	// other calls, it can be safely assumed that this will be called exactly once,
+	// and called before Start() and Stop() are ever called.
+	Initialize(controller Controller, config interface{}) error
+	// Start the module.
+	// On return,  the module is expected to be started, unless there is an error.
 	Start() error
-	// Stop the module, on return the module is expected to be stopped
-	// If there is an error, the module is still expected to be stopped.
+	// Stop the module.
+	// On return the module is expected to be stopped, regardless of if there is an error.
 	Stop() error
 }
 
 // NewModule returns a ModuleCreateFunc for the given GenericModule.
-//
-// config should be a struct pointer to a configuration struct.
-//
-//   type FooConfig struct {
-//       modules.ModuleConfig
-//       Foo string
-//   }
-//
-//   NewModule("foo", module, &FooConfig{})
 func NewModule(
 	moduleName string,
 	module Module,
@@ -69,6 +80,8 @@ func NewModule(
 }
 
 type wrapperModule struct {
+	modules.ModuleBase
+	log        ulog.Log
 	moduleName string
 	module     Module
 	lock       sync.RWMutex
@@ -98,14 +111,16 @@ func newWrapperModule(
 	if err := moduleBase.Host().Config().Scope("modules").Get(moduleName).PopulateStruct(config); err != nil {
 		return nil, err
 	}
-	if err := module.Initialize(
-		moduleBase,
-		ulog.Logger().With("moduleName", moduleName),
-		config,
-	); err != nil {
+	wrapperModule := &wrapperModule{
+		ModuleBase: moduleBase,
+		log:        ulog.Logger().With("moduleName", moduleName),
+		moduleName: moduleName,
+		module:     module,
+	}
+	if err := module.Initialize(wrapperModule, config); err != nil {
 		return nil, err
 	}
-	return &wrapperModule{moduleName: moduleName, module: module}, nil
+	return wrapperModule, nil
 }
 
 func (m *wrapperModule) Name() string {
@@ -137,4 +152,14 @@ func (m *wrapperModule) IsRunning() bool {
 	m.lock.RLock()
 	defer m.lock.RUnlock()
 	return m.running
+}
+
+func (m *wrapperModule) Log() ulog.Log {
+	return m.log
+}
+
+func (m *wrapperModule) NotifyStopped() {
+	m.lock.Lock()
+	defer m.lock.Unlock()
+	m.running = false
 }
