@@ -33,7 +33,7 @@ import (
 	"github.com/opentracing/opentracing-go/ext"
 )
 
-const panicRespnose = "Server Error"
+const panicResponse = "Server Error"
 
 // Filter applies filters on requests or responses such as
 // adding tracing to the context
