@@ -104,7 +104,7 @@ func (f panicFilter) Apply(w http.ResponseWriter, r *http.Request, next http.Han
 		if err := recover(); err != nil {
 			ulog.Logger(ctx).Error("Panic recovered serving request", "error", err, "url", r.URL)
 			stats.HTTPPanicCounter.Inc(1)
-			http.Error(w, panicRespnose, http.StatusInternalServerError)
+			http.Error(w, panicResponse, http.StatusInternalServerError)
 		}
 	}()
 	next.ServeHTTP(w, r)
