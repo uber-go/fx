@@ -131,7 +131,7 @@ func TestOnewayInboundMiddleware_panic(t *testing.T) {
 
 func testPanicHandler(t *testing.T) {
 	r := recover()
-	assert.EqualValues(t, r, panicRespnose)
+	assert.EqualValues(t, r, panicResponse)
 }
 
 type panicUnaryHandler struct{}
