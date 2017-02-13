@@ -324,10 +324,11 @@ func (m *YARPCModule) IsRunning() bool {
 	return m.isRunning
 }
 
-type yarpcDispatcherFn func(service.Host, yarpc.Config) (*yarpc.Dispatcher, error)
+// DispatcherFn allows override a dispatcher creation, e.g. if it is embedded in another struct.
+type DispatcherFn func(service.Host, yarpc.Config) (*yarpc.Dispatcher, error)
 
 // RegisterDispatcher allows you to override the YARPC dispatcher registration
-func RegisterDispatcher(dispatchFn yarpcDispatcherFn) {
+func RegisterDispatcher(dispatchFn DispatcherFn) {
 	_dispatcherMu.Lock()
 	defer _dispatcherMu.Unlock()
 	_dispatcherFn = dispatchFn
@@ -337,10 +338,11 @@ func defaultYARPCDispatcher(_ service.Host, cfg yarpc.Config) (*yarpc.Dispatcher
 	return yarpc.NewDispatcher(cfg), nil
 }
 
-type yarpcStarterFn func(dispatcher *yarpc.Dispatcher) error
+// StarterFn overrides start for dispatcher, e.g. attach some metrics with start.
+type StarterFn func(dispatcher *yarpc.Dispatcher) error
 
-// RegisterStarter allows you to override the YARPC dispatcher start, e.g. attach some metrics with start.
-func RegisterStarter(startFn yarpcStarterFn) {
+// RegisterStarter allows you to override function that starts a dispatcher.
+func RegisterStarter(startFn StarterFn) {
 	_dispatcherMu.Lock()
 	defer _dispatcherMu.Unlock()
 	_starterFn = startFn
