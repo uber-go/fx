@@ -30,7 +30,7 @@ import (
 	"go.uber.org/yarpc/api/transport"
 )
 
-const panicRespnose = "Server Error"
+const panicResponse = "Server Error"
 
 type contextInboundMiddleware struct {
 	service.Host
