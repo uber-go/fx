@@ -4,7 +4,7 @@ This provides functionality to implement new modules more easily.
 
 ```go
 func NewFooModule(options ...module.Option) service.ModuleCreateFunc {
-  return generic.NewModule("foo", &fooModule{}, &fooConfig{}, options...)
+  return generic.NewModule("foo", &fooModule{}, options...)
 }
 
 type fooConfig struct {
@@ -14,16 +14,12 @@ type fooConfig struct {
 
 type fooModule struct {
   generic.Controller
-  config *fooConfig
+  config fooConfig
 }
 
-func (m *fooModule) Initialize(
-  contoller generic.Controller,
-  config interface{},
-) error {
+func (m *fooModule) Initialize(contoller generic.Controller) error {
   m.Controller = controller
-  m.config = config.(*fooConfig)
-  return nil
+  return generic.PopulateStruct(controller, &m.config)
 }
 
 func (m *fooModule) Start() error {

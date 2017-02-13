@@ -103,7 +103,7 @@ func newModule(
 }
 
 func newModuleFunc(moduleName string, testModule *testModule, options ...modules.Option) service.ModuleCreateFunc {
-	return NewModule(moduleName, testModule, &testConfig{}, options...)
+	return NewModule(moduleName, testModule, options...)
 }
 
 func newConfigProvider(moduleName string, testConfig *testConfig) config.Provider {
@@ -127,7 +127,7 @@ type testConfig struct {
 
 type testModule struct {
 	Controller
-	config     *testConfig
+	config     testConfig
 	startCount int
 	stopCount  int
 	err        error
@@ -137,10 +137,9 @@ func newTestModule() *testModule {
 	return &testModule{}
 }
 
-func (m *testModule) Initialize(controller Controller, config interface{}) error {
+func (m *testModule) Initialize(controller Controller) error {
 	m.Controller = controller
-	m.config = config.(*testConfig)
-	return nil
+	return PopulateStruct(controller, &m.config)
 }
 
 func (m *testModule) Start() error {

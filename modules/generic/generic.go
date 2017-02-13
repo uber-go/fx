@@ -30,6 +30,11 @@ import (
 	"go.uber.org/fx/ulog"
 )
 
+// PopulateStruct populates the given configuration struct using the given Controller.
+func PopulateStruct(controller Controller, config interface{}) error {
+	return controller.Host().Config().Scope("modules").Get(controller.Name()).PopulateStruct(config)
+}
+
 // Controller holds data for a Module, and provides functionality
 // for the Module to notify the wrapping service.Module of state changes.
 // TODO(pedge): not the best name
@@ -48,13 +53,13 @@ type Controller interface {
 // Module is a simpliciation of the service.Module interface
 // that can be wrapped with a service.Module for easier implemenation.
 type Module interface {
-	// This will be called after the Controller and config are populated.
-	// If the module wishes, these can be stored for use in the module.
+	// This will be called after the Controller is populated.
+	// If the module wishes, this can be stored for use in the module.
 	//
 	// This should only be called by the generic package, and unless there are
 	// other calls, it can be safely assumed that this will be called exactly once,
 	// and called before Start() and Stop() are ever called.
-	Initialize(controller Controller, config interface{}) error
+	Initialize(controller Controller) error
 	// Start the module.
 	// On return,  the module is expected to be started, unless there is an error.
 	Start() error
@@ -67,11 +72,10 @@ type Module interface {
 func NewModule(
 	moduleName string,
 	module Module,
-	config interface{},
 	options ...modules.Option,
 ) service.ModuleCreateFunc {
 	return func(moduleCreateInfo service.ModuleCreateInfo) ([]service.Module, error) {
-		module, err := newWrapperModule(moduleCreateInfo, moduleName, module, config, options...)
+		module, err := newWrapperModule(moduleCreateInfo, moduleName, module, options...)
 		if err != nil {
 			return nil, err
 		}
@@ -92,7 +96,6 @@ func newWrapperModule(
 	moduleCreateInfo service.ModuleCreateInfo,
 	moduleName string,
 	module Module,
-	config interface{},
 	options ...modules.Option,
 ) (service.Module, error) {
 	for _, option := range options {
@@ -108,16 +111,13 @@ func newWrapperModule(
 		moduleCreateInfo.Host,
 		moduleCreateInfo.Roles,
 	)
-	if err := moduleBase.Host().Config().Scope("modules").Get(moduleName).PopulateStruct(config); err != nil {
-		return nil, err
-	}
 	wrapperModule := &wrapperModule{
 		ModuleBase: moduleBase,
 		log:        ulog.Logger().With("moduleName", moduleName),
 		moduleName: moduleName,
 		module:     module,
 	}
-	if err := module.Initialize(wrapperModule, config); err != nil {
+	if err := module.Initialize(wrapperModule); err != nil {
 		return nil, err
 	}
 	return wrapperModule, nil
