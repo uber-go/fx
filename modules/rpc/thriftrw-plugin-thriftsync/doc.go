@@ -21,16 +21,40 @@
 // Package main is the Overview.
 //
 // [thriftsync] is a thriftrw plugin to identify and generate handlers for the given input
-//  *.thrift file. With the use of thriftsync plugin, a user who needs to build a service should be able
-//  to auto generate the code and write service specific logic without worrying about underlying platform.
+//  *.thrift file. With the use of the thriftsync plugin, a user building a service should be able
+//  to autogenerate the code and write service-specific logic without worrying about the underlying platform.
 //
+//
+// Usage
+//
+// Run thriftsync to sync your handler code with the methods in the Thrift file.
+//
+// • Install thriftsync from vendor
+// go install ./vendor/go.uber.org/fx/modules/rpc/thriftrw-plugin-thriftsync
+//
+// • Run thriftrw code genration with thriftsync
+// thriftrw --plugin="thriftsync --yarpc-server=<Import path of the yarpc servicenameserver>" <thrift filepath>
+//
+// Update your makefile with the following lines, and run make thriftsync3. Update makefile
+//
+//
+//   deps:
+//     @echo "Installing thriftrw..."
+//     go install ./vendor/go.uber.org/thriftrw
+//
+//     @echo "Installing thriftrw-plugin-thriftsync..."
+//     go install ./vendor/go.uber.org/fx/modules/rpc/thriftrw-plugin-thriftsync
+//
+//   thriftsync: deps
+//     thriftrw --plugin="thriftsync --yarpc-server=<Import path of the yarpc servicenameserver>" <thrift filepath>
 //
 // Example
 //
-// Following examples show how thriftsync syncs handler code with the updated thrift file:
+// The following examples show how thriftsync syncs handler code with the updated Thrift file:
 //
 // **New handler generation**
 //
+//   testservice.thrift
 //   service TestService {
 //     string testFunction(1: string param)
 //   }
@@ -61,7 +85,7 @@
 //     panic("To be implemented")
 //   }
 //
-// **New function added to thrift file**
+// **New function added to Thrift file**
 //
 //   service TestService {
 //     string testFunction(1: string param)
