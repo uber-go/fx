@@ -43,8 +43,8 @@ import (
 
 func TestFilterChain(t *testing.T) {
 	host := service.NopHost()
-	chain := newFilterChainBuilder(host).AddFilters([]Filter{}...).Build(getNopHandler(host))
-	response := testServeHTTP(chain, host)
+	chain := newFilterChainBuilder(host).AddFilters([]Filter{}...).Build(getNopHandler())
+	response := testServeHTTP(chain)
 	assert.True(t, strings.Contains(response.Body.String(), "filters ok"))
 }
 
@@ -66,8 +66,8 @@ func TestTracingFilterWithLogs(t *testing.T) {
 
 		host := service.NopHostConfigured(auth.NopClient, loggerWithZap, tracer)
 		ulog.SetLogger(host.Logger())
-		chain := newFilterChainBuilder(host).AddFilters([]Filter{contextFilter{host}, tracingServerFilter{}}...).Build(getNopHandler(host))
-		response := testServeHTTP(chain, host)
+		chain := newFilterChainBuilder(host).AddFilters([]Filter{contextFilter{host}, tracingServerFilter{}}...).Build(getNopHandler())
+		response := testServeHTTP(chain)
 		assert.Contains(t, response.Body.String(), "filters ok")
 		assert.True(t, len(buf.Lines()) > 0)
 		var tracecount = 0
@@ -91,9 +91,9 @@ func TestFilterChainFilters(t *testing.T) {
 		tracingServerFilter{},
 		authorizationFilter{
 			authClient: host.AuthClient(),
-		}).Build(getNopHandler(host))
+		}).Build(getNopHandler())
 
-	response := testServeHTTP(chain, host)
+	response := testServeHTTP(chain)
 	assert.Contains(t, response.Body.String(), "filters ok")
 }
 
@@ -104,22 +104,37 @@ func TestFilterChainFilters_AuthFailure(t *testing.T) {
 		tracingServerFilter{},
 		authorizationFilter{
 			authClient: host.AuthClient(),
-		}).Build(getNopHandler(host))
-	response := testServeHTTP(chain, host)
+		}).Build(getNopHandler())
+	response := testServeHTTP(chain)
 	assert.Equal(t, response.Body.String(), "Unauthorized access: Error authorizing the service\n")
 	assert.Equal(t, 401, response.Code)
 }
 
-func testServeHTTP(chain filterChain, host service.Host) *httptest.ResponseRecorder {
+func TestPanicFilter(t *testing.T) {
+	chain := newFilterChainBuilder(service.NopHost()).AddFilters(
+		panicFilter{},
+	).Build(getPanicHandler())
+	response := testServeHTTP(chain)
+	assert.Contains(t, response.Body.String(), _panicResponse)
+	assert.Equal(t, http.StatusInternalServerError, response.Code)
+}
+
+func testServeHTTP(chain filterChain) *httptest.ResponseRecorder {
 	request := httptest.NewRequest("", "http://filters", nil)
 	response := httptest.NewRecorder()
 	chain.ServeHTTP(response, request)
 	return response
 }
 
-func getNopHandler(host service.Host) http.HandlerFunc {
+func getNopHandler() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ulog.Logger(r.Context()).Info("Inside Noop Handler")
 		io.WriteString(w, "filters ok")
+	}
+}
+
+func getPanicHandler() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		panic("panic")
 	}
 }
