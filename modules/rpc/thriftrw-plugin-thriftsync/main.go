@@ -22,6 +22,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -33,14 +34,11 @@ import (
 
 // Command line flags
 var (
-	_yarpcServer = flag.String("yarpc-server",
-		"",
-		"Package path for yarpc generated server")
 	_baseDir = flag.String("base-dir",
 		"server",
 		"Path from root where handlers should live")
 	_handlerPackageName = flag.String("handler-package",
-		"main",
+		"server",
 		"Handler package name, defaults to 'main'")
 	_handlerFileName = flag.String("handler-file",
 		"handlers.go",
@@ -87,10 +85,10 @@ func (generator) Generate(req *api.GenerateServiceRequest) (*api.GenerateService
 			Parent:             parent,
 			ParentModule:       parentModule,
 			HandlerPackageName: *_handlerPackageName,
-			YARPCServer:        *_yarpcServer,
+			YARPCServer:        fmt.Sprintf("%s/%sserver", module.ImportPath, strings.ToLower(service.Name)),
 		}
 
-		gofilePath := filepath.Join(*_baseDir, "handlers.go")
+		gofilePath := filepath.Join(*_baseDir, *_handlerFileName)
 		opts := NewOptions(*_baseDir, *_handlerPackageName, templateOptions, templateData)
 
 		if _, err := os.Stat(gofilePath); os.IsNotExist(err) {
