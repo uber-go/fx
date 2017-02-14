@@ -21,6 +21,7 @@
 package service
 
 import (
+	"context"
 	"time"
 
 	"go.uber.org/fx/auth"
@@ -37,11 +38,12 @@ func (svc *serviceCore) setupLogging() {
 	if svc.log == nil {
 		err := svc.configProvider.Get("logging").PopulateStruct(&svc.logConfig)
 		if err != nil {
-			ulog.Logger().Info("Logging configuration is not provided, setting to default logger", "error", err)
+			ulog.Logger(context.Background()).Info("Logging configuration is not provided, setting to default logger", "error", err)
 		}
 
 		logBuilder := ulog.Builder().WithScope(svc.metrics)
 		svc.log = logBuilder.WithConfiguration(svc.logConfig).Build()
+		ulog.SetLogger(svc.log)
 	} else {
 		svc.log.Debug("Using custom log provider due to service.WithLogger option")
 	}

@@ -23,9 +23,9 @@ package client
 import (
 	"net/http"
 
-	"go.uber.org/fx"
 	"go.uber.org/fx/auth"
 	"go.uber.org/fx/config"
+	"go.uber.org/fx/ulog"
 
 	"github.com/opentracing/opentracing-go"
 	"github.com/opentracing/opentracing-go/ext"
@@ -93,13 +93,13 @@ func authenticationFilter(info auth.CreateAuthInfo) FilterFunc {
 
 		authCtx, err = authClient.Authenticate(authCtx)
 		if err != nil {
-			fx.Logger(ctx).Error(auth.ErrAuthentication, "error", err)
+			ulog.Logger(ctx).Error(auth.ErrAuthentication, "error", err)
 			return nil, err
 		}
 
 		span := opentracing.SpanFromContext(authCtx)
 		if err := injectSpanIntoHeaders(req.Header, span); err != nil {
-			fx.Logger(ctx).Error("Error injecting auth context", "error", err)
+			ulog.Logger(ctx).Error("Error injecting auth context", "error", err)
 			return nil, err
 		}
 

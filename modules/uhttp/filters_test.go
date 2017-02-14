@@ -27,7 +27,6 @@ import (
 	"strings"
 	"testing"
 
-	"go.uber.org/fx"
 	"go.uber.org/fx/auth"
 	"go.uber.org/fx/metrics"
 	"go.uber.org/fx/modules/uhttp/internal/stats"
@@ -66,6 +65,7 @@ func TestTracingFilterWithLogs(t *testing.T) {
 		defer opentracing.InitGlobalTracer(opentracing.NoopTracer{})
 
 		host := service.NopHostConfigured(auth.NopClient, loggerWithZap, tracer)
+		ulog.SetLogger(host.Logger())
 		chain := newFilterChainBuilder(host).AddFilters([]Filter{contextFilter{host}, tracingServerFilter{}}...).Build(getNopHandler(host))
 		response := testServeHTTP(chain, host)
 		assert.Contains(t, response.Body.String(), "filters ok")
@@ -119,7 +119,7 @@ func testServeHTTP(chain filterChain, host service.Host) *httptest.ResponseRecor
 
 func getNopHandler(host service.Host) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		fx.Logger(r.Context()).Info("Inside Noop Handler")
+		ulog.Logger(r.Context()).Info("Inside Noop Handler")
 		io.WriteString(w, "filters ok")
 	}
 }

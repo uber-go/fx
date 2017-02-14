@@ -21,15 +21,20 @@
 package ulog
 
 import (
+	"context"
 	stderr "errors"
 	"fmt"
+	"sync"
 	"time"
 
+	"go.uber.org/fx/internal"
 	"go.uber.org/fx/ulog/sentry"
 
+	"github.com/opentracing/opentracing-go"
 	"github.com/pkg/errors"
 	"github.com/uber-go/zap"
 	"github.com/uber-go/zap/spy"
+	"github.com/uber/jaeger-client-go"
 )
 
 type baseLogger struct {
@@ -81,9 +86,12 @@ type Log interface {
 	DPanic(message string, keyVals ...interface{})
 }
 
-var _std = defaultLogger()
+var (
+	_setupMu sync.RWMutex
+	_std     = defaultLogger()
+)
 
-func defaultLogger() Log {
+func defaultLogger() *baseLogger {
 	return &baseLogger{
 		log: zap.New(zap.NewJSONEncoder()),
 	}
@@ -99,12 +107,58 @@ func TestingLogger() (Log, *spy.Sink) {
 	}, sink
 }
 
-// Logger returns the package-level logger configured for the service
-// TODO:(at) Remove Logger() call, _std and defaultLogger() access in ulog
-func Logger() Log {
+func logger() Log {
+	_setupMu.RLock()
+	defer _setupMu.RUnlock()
+
 	return &baseLogger{
-		log: _std.(*baseLogger).log,
+		log: _std.log,
 	}
+}
+
+// SetLogger sets configured logger at the start of the service
+func SetLogger(log Log) {
+	_setupMu.Lock()
+	defer _setupMu.Unlock()
+
+	// Log and _std log implements zap.Logger with set of predefined fields,
+	// so we require users to use the configured logger. The Zap implementation however
+	// can be overridden by log.SetLogger(zap.Logger)
+	_std = log.(*baseLogger)
+}
+
+// Logger is the context based logger
+func Logger(ctx context.Context) Log {
+	if ctx == nil {
+		panic("logger requires a context that cannot be nil")
+	}
+	log := ctx.Value(internal.ContextLogger)
+	if log != nil {
+		return log.(Log)
+	}
+	return logger()
+}
+
+// NewLogContext sets the context with the context aware logger
+func NewLogContext(ctx context.Context) context.Context {
+	if ctx == nil {
+		ctx = context.Background()
+	}
+
+	return context.WithValue(ctx, internal.ContextLogger, logger())
+}
+
+// WithTracingAware returns a new context with a context-aware logger
+func WithTracingAware(ctx context.Context, span opentracing.Span) context.Context {
+	// Note that opentracing.Tracer does not expose the tracer id
+	// We only inject tracing information for jaeger.Tracer
+	logger := Logger(ctx)
+	if jSpanCtx, ok := span.Context().(jaeger.SpanContext); ok {
+		logger = logger.With(
+			"traceID", jSpanCtx.TraceID(), "spanID", jSpanCtx.SpanID(),
+		)
+	}
+	return context.WithValue(ctx, internal.ContextLogger, logger)
 }
 
 // Typed returns underneath zap implementation for use
