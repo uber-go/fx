@@ -99,7 +99,7 @@ func authenticationFilter(info auth.CreateAuthInfo) FilterFunc {
 
 		span := opentracing.SpanFromContext(authCtx)
 		if err := injectSpanIntoHeaders(req.Header, span); err != nil {
-			ulog.Logger(ctx).Error("Error injecting auth context", "error", err)
+			ulog.Logger(authCtx).Error("Error injecting auth context", "error", err)
 			return nil, err
 		}
 
