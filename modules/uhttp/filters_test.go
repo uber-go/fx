@@ -37,6 +37,7 @@ import (
 
 	"github.com/opentracing/opentracing-go"
 	"github.com/stretchr/testify/assert"
+	"github.com/uber-go/tally"
 	"github.com/uber-go/zap"
 	"github.com/uber/jaeger-client-go/config"
 )
@@ -111,10 +112,18 @@ func TestFilterChainFilters_AuthFailure(t *testing.T) {
 }
 
 func TestPanicFilter(t *testing.T) {
-	chain := newFilterChainBuilder(service.NopHost()).AddFilters(
+	host := service.NopHost()
+	testScope := host.Metrics()
+
+	chain := newFilterChainBuilder(host).AddFilters(
 		panicFilter{},
 	).Build(getPanicHandler())
 	response := testServeHTTP(chain)
+
+	snapshot := testScope.(tally.TestScope).Snapshot()
+	counters := snapshot.Counters()
+
+	assert.True(t, counters["panic"].Value() > 0)
 	assert.Equal(t, response.Body.String(), _panicResponse+"\n")
 	assert.Equal(t, http.StatusInternalServerError, response.Code)
 }
