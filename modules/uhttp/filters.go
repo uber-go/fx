@@ -31,7 +31,10 @@ import (
 
 	"github.com/opentracing/opentracing-go"
 	"github.com/opentracing/opentracing-go/ext"
+	"github.com/pkg/errors"
 )
+
+const _panicResponse = "Server Error"
 
 // Filter applies filters on requests or responses such as
 // adding tracing to the context
@@ -100,11 +103,9 @@ func (f panicFilter) Apply(w http.ResponseWriter, r *http.Request, next http.Han
 	ctx := r.Context()
 	defer func() {
 		if err := recover(); err != nil {
-			ulog.Logger(ctx).Error("Panic recovered serving request", "error", err, "url", r.URL)
+			ulog.Logger(ctx).Error("Panic recovered serving request", "error", errors.Errorf("panic in handler: %+v", err), "url", r.URL)
 			stats.HTTPPanicCounter.Inc(1)
-			w.Header().Add(ContentType, ContentTypeText)
-			w.WriteHeader(http.StatusInternalServerError)
-			fmt.Fprintf(w, "Server error: %+v", err)
+			http.Error(w, _panicResponse, http.StatusInternalServerError)
 		}
 	}()
 	next.ServeHTTP(w, r)
