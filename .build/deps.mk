@@ -18,7 +18,8 @@ deps: libdeps
 	$(ECHO_V)go install ./vendor/github.com/sectioneight/md-to-godoc
 	@$(call label,Installing interfacer...)
 	$(ECHO_V)go install ./vendor/github.com/mvdan/interfacer/cmd/interfacer
-	$(ECHO_V)echo "--- PASS: TestSomething" | richgo testfilter > /dev/null 2>&1 || ($(call label,Installing richgo) && go get github.com/sectioneight/richgo)
+	@$(call label,Installing richgo...)
+	$(ECHO_V)go install ./vendor/github.com/kyoh86/richgo
 
 GOCOV := gocov
 OVERALLS := overalls

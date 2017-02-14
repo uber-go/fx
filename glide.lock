@@ -1,8 +1,8 @@
-hash: ea195918b27160f0f6f8b5f40f206c58bd457c18ae542484dd5b9a3d1f728184
-updated: 2017-02-07T21:22:55.533973167-08:00
+hash: 939acaa595b674eca722d0e7ce484e860c1813d7a32cca554b62954921e4d66f
+updated: 2017-02-14T04:13:41.636621755-08:00
 imports:
 - name: github.com/apache/thrift
-  version: 9549b25c77587b29be4e0b5c258221a4ed85d37a
+  version: 0a660ee285e4a4cbac8f702168c40fd4ef5495d1
   subpackages:
   - lib/go/thrift
 - name: github.com/certifi/gocertifi
@@ -37,7 +37,7 @@ imports:
   subpackages:
   - difflib
 - name: github.com/stretchr/testify
-  version: 4d4bfba8f1d1027c4fdbe371823030df51419987
+  version: 69483b4bd14f5845b5a1e55bca19e954e827f1d0
   subpackages:
   - assert
   - require
@@ -47,6 +47,8 @@ imports:
   version: 43c1379c0577ac1eb74f9f3869cea07191c9992b
 - name: github.com/uber-go/zap
   version: c064b5c44b285a7e2fd5c9b26e8c38228ce2bccb
+  subpackages:
+  - spy
 - name: github.com/uber/jaeger-client-go
   version: e39d0f1b622558cae3d9db0062a739cc6ffa700f
   subpackages:
@@ -61,9 +63,13 @@ imports:
 - name: github.com/uber/tchannel-go
   version: 79387824978f91318be3bfb43ae12e04c38cfe97
   subpackages:
+  - atomic
   - internal/argreader
   - relay
+  - thrift
+  - thrift/gen-go/meta
   - tnet
+  - trace/thrift/gen-go/tcollector
   - trand
   - typed
 - name: go.uber.org/atomic
@@ -106,6 +112,7 @@ imports:
   - internal/sync
   - peer
   - peer/hostport
+  - transport
   - transport/http
   - transport/tchannel
   - transport/tchannel/internal
@@ -113,7 +120,6 @@ imports:
   version: 236b8f043b920452504e263bc21d354427127473
   subpackages:
   - context
-  - context/ctxhttp
 - name: golang.org/x/tools
   version: 19c96be7c450e3dff3797cb1e458414c15010358
   subpackages:
@@ -139,6 +145,8 @@ testImports:
   version: db0ca22445717d1b2c51ac1034440e0a2a2de645
 - name: github.com/kisielk/gotool
   version: 0de1eaf82fa3f583ce21fde859f1e7e0c5e9b220
+- name: github.com/kyoh86/richgo
+  version: 35d295f8d8df6dc5159273293c5d294cb6fb6b84
 - name: github.com/mattn/goveralls
   version: 8482d0ebd2a64f95ce02d2b9b7065b0d6fe9151b
 - name: github.com/mvdan/interfacer
