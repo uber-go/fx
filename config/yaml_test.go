@@ -351,3 +351,48 @@ func TestMerge(t *testing.T) {
 		})
 	}
 }
+
+type TChannel struct {
+	ListenOn  string `yaml:"listenOn"`
+	Advertise bool   `yaml:"advertise"`
+}
+
+type RPC struct {
+	Name     string
+	TChannel TChannel
+}
+
+type Modules struct {
+	RPC RPC `yaml:"rpc"`
+}
+
+func TestMergeDeepMerge(t *testing.T) {
+	base := []byte(`
+modules:
+  rpc:
+    name: mormont
+    tchannel:
+      listenOn: localhost
+      advertise: true`)
+	dev := []byte(`
+modules:
+  rpc:
+    name: mormont
+    tchannel:
+      listenOn: localhost
+      advertise: false`)
+	bs := NewYAMLProviderFromBytes(base)
+	dv := NewYAMLProviderFromBytes(dev)
+	both := NewYAMLProviderFromBytes(base, dev)
+
+	ms := Modules{}
+	assert.NoError(t, bs.Get("modules").PopulateStruct(&ms))
+	assert.True(t, ms.RPC.TChannel.Advertise)
+
+	assert.NoError(t, dv.Get("modules").PopulateStruct(&ms))
+	assert.False(t, ms.RPC.TChannel.Advertise)
+
+	assert.NoError(t, both.Get("modules").PopulateStruct(&ms))
+	assert.False(t, ms.RPC.TChannel.Advertise)
+
+}
