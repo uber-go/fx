@@ -53,7 +53,8 @@ $(COV_REPORT): $(PKG_FILES) $(ALL_SRC)
 	$(ECHO_V)rm -f $(COV_REPORT)
 
 	@$(call label,Running tests)
-	$(ECHO_V)$(OVERALLS) -project=$(PROJECT_ROOT) \
+	$(ECHO_V)RICHGO_FORCE_COLOR=1 $(OVERALLS) \
+		-project=$(PROJECT_ROOT) \
 		-go-binary=richgo \
 		-ignore "$(OVERALLS_IGNORE)" \
 		-covermode=atomic \
