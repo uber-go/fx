@@ -22,4 +22,4 @@ deps:
 
 .PHONY: thriftsync
 thriftsync: deps
-	$(ECHO_V)thriftrw --pkg-prefix=$(PROJECT_ROOT) --plugin="thriftsync --yarpc-server=go.uber.org/fx/examples/keyvalue/kv/keyvalueserver" kv.thrift
+	$(ECHO_V)thriftrw --pkg-prefix=$(PROJECT_ROOT) --plugin="thriftsync --handler-package=main" kv.thrift

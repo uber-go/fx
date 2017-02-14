@@ -10,7 +10,7 @@ Run `thriftsync` to sync your handler code with the methods in the Thrift file.
 `go install ./vendor/go.uber.org/fx/modules/rpc/thriftrw-plugin-thriftsync`
 
 2. Run thriftrw code genration with thriftsync
-`thriftrw --plugin="thriftsync --yarpc-server=<Import path of the yarpc servicenameserver>" <thrift filepath>`
+`thriftrw --plugin="thriftsync" <thrift filepath>`
 
 Update your makefile with the following lines, and run `make thriftsync`
 3. Update makefile
@@ -23,7 +23,7 @@ deps:
   go install ./vendor/go.uber.org/fx/modules/rpc/thriftrw-plugin-thriftsync
 
 thriftsync: deps
-  thriftrw --plugin="thriftsync --yarpc-server=<Import path of the yarpc servicenameserver>" <thrift filepath>
+  thriftrw --plugin="thriftsync" <thrift filepath>
 ```
 
 ## Example

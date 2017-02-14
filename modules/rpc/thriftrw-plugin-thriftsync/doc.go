@@ -33,7 +33,7 @@
 // go install ./vendor/go.uber.org/fx/modules/rpc/thriftrw-plugin-thriftsync
 //
 // • Run thriftrw code genration with thriftsync
-// thriftrw --plugin="thriftsync --yarpc-server=<Import path of the yarpc servicenameserver>" <thrift filepath>
+// thriftrw --plugin="thriftsync" <thrift filepath>
 //
 // Update your makefile with the following lines, and run make thriftsync3. Update makefile
 //
@@ -46,7 +46,7 @@
 //     go install ./vendor/go.uber.org/fx/modules/rpc/thriftrw-plugin-thriftsync
 //
 //   thriftsync: deps
-//     thriftrw --plugin="thriftsync --yarpc-server=<Import path of the yarpc servicenameserver>" <thrift filepath>
+//     thriftrw --plugin="thriftsync" <thrift filepath>
 //
 // Example
 //
