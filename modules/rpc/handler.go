@@ -30,7 +30,7 @@ import (
 	"go.uber.org/yarpc/api/transport"
 )
 
-const panicResponse = "Server Error"
+const _panicResponse = "Server Error"
 
 type contextInboundMiddleware struct {
 	service.Host
@@ -111,6 +111,6 @@ func panicRecovery(ctx context.Context) {
 		fx.Logger(ctx).Error("Panic recovered serving request", "error", err)
 		// rethrow panic back to yarpc
 		// before https://github.com/yarpc/yarpc-go/issues/734 fixed, throw a generic error.
-		panic(panicResponse)
+		panic(_panicResponse)
 	}
 }
