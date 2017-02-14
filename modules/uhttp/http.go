@@ -59,15 +59,6 @@ const (
 
 var _ service.Module = &Module{}
 
-// Response is an envelope for returning the results of an HTTP call
-type Response struct {
-	Status      int
-	ContentType string
-	Body        interface{}
-	Headers     map[string]string
-	Error       error
-}
-
 // A Module is a module to handle HTTP requests
 type Module struct {
 	modules.ModuleBase
