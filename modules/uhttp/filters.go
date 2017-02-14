@@ -24,10 +24,10 @@ import (
 	"fmt"
 	"net/http"
 
-	"go.uber.org/fx"
 	"go.uber.org/fx/auth"
 	"go.uber.org/fx/modules/uhttp/internal/stats"
 	"go.uber.org/fx/service"
+	"go.uber.org/fx/ulog"
 
 	"github.com/opentracing/opentracing-go"
 	"github.com/opentracing/opentracing-go/ext"
@@ -52,7 +52,7 @@ type contextFilter struct {
 }
 
 func (f contextFilter) Apply(w http.ResponseWriter, r *http.Request, next http.Handler) {
-	ctx := fx.NewContext(r.Context(), f.host)
+	ctx := ulog.NewLogContext(r.Context())
 	next.ServeHTTP(w, r.WithContext(ctx))
 }
 
@@ -64,7 +64,7 @@ func (f tracingServerFilter) Apply(w http.ResponseWriter, r *http.Request, next 
 	carrier := opentracing.HTTPHeadersCarrier(r.Header)
 	spanCtx, err := opentracing.GlobalTracer().Extract(opentracing.HTTPHeaders, carrier)
 	if err != nil && err != opentracing.ErrSpanContextNotFound {
-		fx.Logger(ctx).Warn("Malformed inbound tracing context: ", "error", err.Error())
+		ulog.Logger(ctx).Warn("Malformed inbound tracing context: ", "error", err.Error())
 	}
 	span := opentracing.GlobalTracer().StartSpan(operationName, ext.RPCServerOption(spanCtx))
 	ext.HTTPUrl.Set(span, r.URL.String())
@@ -72,7 +72,7 @@ func (f tracingServerFilter) Apply(w http.ResponseWriter, r *http.Request, next 
 
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
-	ctx = fx.WithContextAwareLogger(ctx, span)
+	ctx = ulog.WithTracingAware(ctx, span)
 
 	next.ServeHTTP(w, r.WithContext(ctx))
 }
@@ -85,7 +85,7 @@ type authorizationFilter struct {
 func (f authorizationFilter) Apply(w http.ResponseWriter, r *http.Request, next http.Handler) {
 	if err := f.authClient.Authorize(r.Context()); err != nil {
 		stats.HTTPAuthFailCounter.Inc(1)
-		fx.Logger(r.Context()).Error(auth.ErrAuthorization, "error", err)
+		ulog.Logger(r.Context()).Error(auth.ErrAuthorization, "error", err)
 		http.Error(w, fmt.Sprintf("Unauthorized access: %+v", err), http.StatusUnauthorized)
 		return
 	}
@@ -100,7 +100,7 @@ func (f panicFilter) Apply(w http.ResponseWriter, r *http.Request, next http.Han
 	ctx := r.Context()
 	defer func() {
 		if err := recover(); err != nil {
-			fx.Logger(ctx).Error("Panic recovered serving request", "error", err, "url", r.URL)
+			ulog.Logger(ctx).Error("Panic recovered serving request", "error", err, "url", r.URL)
 			stats.HTTPPanicCounter.Inc(1)
 			w.Header().Add(ContentType, ContentTypeText)
 			w.WriteHeader(http.StatusInternalServerError)

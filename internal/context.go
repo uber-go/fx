@@ -18,30 +18,9 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package main
+package internal
 
-import (
-	"log"
+type contextKey int
 
-	"go.uber.org/fx/modules"
-	"go.uber.org/fx/modules/rpc"
-	"go.uber.org/fx/service"
-)
-
-func main() {
-	svc, err := service.NewBuilder(
-		service.WithObserver(&Observer{}),
-	).WithModules(
-		// Create a YARPC module that exposes endpoints
-		rpc.ThriftModule(
-			rpc.CreateThriftServiceFunc(NewYarpcThriftHandler),
-			modules.WithRoles("service"),
-		),
-	).Build()
-
-	if err != nil {
-		log.Fatal("Unable to initialize service", "error", err)
-	}
-
-	svc.Start()
-}
+// ContextLogger is the context based logger
+const ContextLogger contextKey = iota

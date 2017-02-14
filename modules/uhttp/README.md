@@ -28,8 +28,8 @@ func main() {
 }
 
 func registerHTTP(service service.Host) []uhttp.RouteHandler {
-  handleHome := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-    fx.Logger(r.Context()).Info("Inside the handler")
+    handleHome := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+    ulog.Logger(r.Context()).Info("Inside the handler")
     io.WriteString(w, "Hello, world")
   })
 
