@@ -115,7 +115,7 @@ func TestPanicFilter(t *testing.T) {
 		panicFilter{},
 	).Build(getPanicHandler())
 	response := testServeHTTP(chain)
-	assert.Contains(t, response.Body.String(), _panicResponse)
+	assert.Equal(t, response.Body.String(), _panicResponse+"\n")
 	assert.Equal(t, http.StatusInternalServerError, response.Code)
 }
 
