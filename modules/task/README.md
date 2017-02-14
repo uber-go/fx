@@ -51,7 +51,7 @@ func updateCache(ctx context.Context, input string, results string) error {
 }
 ```
 
-The async task module is a singleton and a service can intialize only one at this time.
+The async task module is a singleton and a service can initialize only one at this time.
 Users are free to define their own backends and encodings for message passing.
 
 ## Async function requirements
