@@ -115,6 +115,8 @@ func (f panicFilter) Apply(w http.ResponseWriter, r *http.Request, next http.Han
 type metricsFilter struct{}
 
 func (f metricsFilter) Apply(w http.ResponseWriter, r *http.Request, next http.Handler) {
+	stopwatch := stats.HTTPMethodTimer.Timer(r.Method).Start()
+	defer stopwatch.Stop()
 	defer stats.HTTPStatusCountScope.Tagged(map[string]string{stats.TagStatus: w.Header().Get("Status")}).Counter("total").Inc(1)
 	next.ServeHTTP(w, r)
 }

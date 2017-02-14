@@ -44,5 +44,5 @@ func NewRouter(host service.Host) *Router {
 
 // Handle wraps and calls the http.Handler underneath
 func (h *Router) Handle(path string, handler http.Handler) {
-	h.Router.Handle(path, WithHost(h.host, handler))
+	h.Router.Handle(path, handler)
 }
