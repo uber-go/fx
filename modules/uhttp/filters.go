@@ -86,8 +86,7 @@ func (f authorizationFilter) Apply(w http.ResponseWriter, r *http.Request, next 
 	if err := f.authClient.Authorize(r.Context()); err != nil {
 		stats.HTTPAuthFailCounter.Inc(1)
 		fx.Logger(r.Context()).Error(auth.ErrAuthorization, "error", err)
-		w.WriteHeader(http.StatusUnauthorized)
-		fmt.Fprintf(w, "Unauthorized access: %+v", err)
+		http.Error(w, fmt.Sprintf("Unauthorized access: %+v", err), http.StatusUnauthorized)
 		return
 	}
 	next.ServeHTTP(w, r)

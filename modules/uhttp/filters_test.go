@@ -106,7 +106,7 @@ func TestFilterChainFilters_AuthFailure(t *testing.T) {
 			authClient: host.AuthClient(),
 		}).Build(getNopHandler(host))
 	response := testServeHTTP(chain, host)
-	assert.Contains(t, "Unauthorized access: Error authorizing the service", response.Body.String())
+	assert.Contains(t, response.Body.String(), "Unauthorized access: Error authorizing the service")
 	assert.Equal(t, 401, response.Code)
 }
 
