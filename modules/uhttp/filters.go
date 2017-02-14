@@ -52,14 +52,11 @@ type contextFilter struct {
 }
 
 func (f contextFilter) Apply(w http.ResponseWriter, r *http.Request, next http.Handler) {
-	ctx := r.Context()
-	ctx = fx.NewContext(ctx, f.host)
-	r = r.WithContext(ctx)
-	next.ServeHTTP(w, r)
+	ctx := fx.NewContext(r.Context(), f.host)
+	next.ServeHTTP(w, r.WithContext(ctx))
 }
 
-type tracingServerFilter struct {
-}
+type tracingServerFilter struct{}
 
 func (f tracingServerFilter) Apply(w http.ResponseWriter, r *http.Request, next http.Handler) {
 	ctx := r.Context()
@@ -77,8 +74,7 @@ func (f tracingServerFilter) Apply(w http.ResponseWriter, r *http.Request, next 
 
 	ctx = fx.WithContextAwareLogger(ctx, span)
 
-	r = r.WithContext(ctx)
-	next.ServeHTTP(w, r)
+	next.ServeHTTP(w, r.WithContext(ctx))
 }
 
 // authorizationFilter authorizes services based on configuration
