@@ -27,7 +27,6 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/uber-go/tally"
-	"go.uber.org/fx/config"
 	"go.uber.org/fx/ulog/metrics"
 	"go.uber.org/fx/ulog/sentry"
 	"go.uber.org/zap"
@@ -120,13 +119,7 @@ func (lb *LogBuilder) Build() (Log, error) {
 		}, nil
 	}
 
-	var log *zap.Logger
-	var err error
-	if config.IsDevelopmentEnv() {
-		log, err = lb.devLogger()
-	} else {
-		log, err = lb.Configure()
-	}
+	log, err := lb.Configure()
 	if err != nil {
 		return nil, err
 	}
@@ -151,10 +144,6 @@ func (lb *LogBuilder) Build() (Log, error) {
 		log: log,
 		sh:  lb.sentryHook,
 	}, nil
-}
-
-func (lb *LogBuilder) devLogger() (*zap.Logger, error) {
-	return zap.NewDevelopment()
 }
 
 // Configure Log object with the provided log.Configuration

@@ -134,16 +134,6 @@ func withLogger(t *testing.T, f func(*LogBuilder, string, string)) {
 	f(builder, tmpDir, logFile)
 }
 
-func TestDefaultPackageLogger(t *testing.T) {
-	withLogger(t, func(builder *LogBuilder, tmpDir string, logFile string) {
-		defer env.Override(t, config.EnvironmentKey(), "development")()
-		log, err := New()
-		require.NoError(t, err)
-		zapLogger := log.Typed()
-		assert.NotNil(t, zapLogger.Check(zap.DebugLevel, ""))
-	})
-}
-
 func TestConfiguredLoggerWithSentrySuccessful(t *testing.T) {
 	testSentry(t, "https://u:p@example.com/sentry/1", true)
 }
