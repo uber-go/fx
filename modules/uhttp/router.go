@@ -28,10 +28,6 @@ import (
 	"go.uber.org/fx/service"
 )
 
-type route struct {
-	handler http.Handler
-}
-
 // Router is wrapper around gorila mux
 type Router struct {
 	mux.Router
