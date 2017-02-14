@@ -34,7 +34,7 @@ import (
 	raven "github.com/getsentry/raven-go"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/uber-go/zap"
+	"go.uber.org/zap"
 )
 
 type fakeClient raven.Client

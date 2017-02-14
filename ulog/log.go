@@ -25,24 +25,23 @@ import (
 	"fmt"
 	"time"
 
-	"go.uber.org/fx/ulog/sentry"
-
 	"github.com/pkg/errors"
-	"github.com/uber-go/zap"
-	"github.com/uber-go/zap/spy"
+	"go.uber.org/fx/ulog/sentry"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 )
 
 type baseLogger struct {
 	sh  *sentry.Hook
-	log zap.Logger
+	log *zap.Logger
 }
 
 // Log is the UberFx wrapper for underlying logging service
 type Log interface {
 	// With creates a child logger with the provided parameters as key value pairs
 	// ulog uses uber-go/zap library as its child logger which needs pairs of key value objects
-	// in the form of zap.Fields(key, value). ulog performs field conversion from
-	// supplied keyVals pair to zap.Fields format.
+	// in the form of zapcore.Fields(key, value). ulog performs field conversion from
+	// supplied keyVals pair to zapcore.Fields format.
 	//
 	// **IMPORTANT**: With should never be used if the resulting logger
 	// object is not being retained. If you need to add some context to
@@ -50,14 +49,14 @@ type Log interface {
 	// and pass in additional interface{} pairs for logging.
 	With(keyVals ...interface{}) Log
 
-	// Check returns a zap.CheckedMessage if logging a message at the specified level is enabled.
-	Check(level zap.Level, message string) *zap.CheckedMessage
+	// Check returns a zap.CheckedEntry if logging a message at the specified level is enabled.
+	Check(level zapcore.Level, message string) *zapcore.CheckedEntry
 
 	// Typed returns underlying logger implementation (zap.Logger) to get around the ulog.Log interface
-	Typed() zap.Logger
+	Typed() *zap.Logger
 
-	// Log at the provided zap.Level with message, and a sequence of parameters as key value pairs
-	Log(level zap.Level, message string, keyVals ...interface{})
+	// Log at the provided zapcore.Level with message, and a sequence of parameters as key value pairs
+	Log(level zapcore.Level, message string, keyVals ...interface{})
 
 	// Debug logs at Debug level with message, and parameters as key value pairs
 	Debug(message string, keyVals ...interface{})
@@ -81,23 +80,39 @@ type Log interface {
 	DPanic(message string, keyVals ...interface{})
 }
 
-var _std = defaultLogger()
+var _std Log
 
-func defaultLogger() Log {
-	return &baseLogger{
-		log: zap.New(zap.NewJSONEncoder()),
+func init() {
+	// TODO(pedge): this sucks, zap now has a no-op logger as the default as well
+	// it would be better if we forced the logger to be setup, this panic is not good
+	log, err := defaultLogger()
+	if err != nil {
+		panic(err.Error())
 	}
+	_std = log
+}
+
+func defaultLogger() (Log, error) {
+	log, err := zap.NewProduction()
+	if err != nil {
+		return nil, err
+	}
+	return &baseLogger{
+		log: log,
+	}, nil
 }
 
 // TestingLogger returns basic logger and underlying sink for testing the messages
 // WithInMemoryLogger testing helper can also be used to test actual outputted
 // JSON bytes
+/*
 func TestingLogger() (Log, *spy.Sink) {
 	log, sink := spy.New()
 	return &baseLogger{
 		log: log,
 	}, sink
 }
+*/
 
 // Logger returns the package-level logger configured for the service
 // TODO:(at) Remove Logger() call, _std and defaultLogger() access in ulog
@@ -108,7 +123,7 @@ func Logger() Log {
 }
 
 // Typed returns underneath zap implementation for use
-func (l *baseLogger) Typed() zap.Logger {
+func (l *baseLogger) Typed() *zap.Logger {
 	return l.log
 }
 
@@ -125,7 +140,7 @@ func (l *baseLogger) With(keyVals ...interface{}) Log {
 	}
 }
 
-func (l *baseLogger) Check(level zap.Level, expr string) *zap.CheckedMessage {
+func (l *baseLogger) Check(level zapcore.Level, expr string) *zapcore.CheckedEntry {
 	return l.log.Check(level, expr)
 }
 
@@ -157,8 +172,8 @@ func (l *baseLogger) DPanic(message string, keyVals ...interface{}) {
 	l.log.DPanic(message, l.fieldsConversion(keyVals...)...)
 }
 
-func (l *baseLogger) Log(lvl zap.Level, message string, keyVals ...interface{}) {
-	if cm := l.Check(lvl, message); cm.OK() {
+func (l *baseLogger) Log(lvl zapcore.Level, message string, keyVals ...interface{}) {
+	if cm := l.Check(lvl, message); cm != nil {
 		cm.Write(l.fieldsConversion(keyVals...)...)
 	}
 	if l.sh != nil {
@@ -171,12 +186,12 @@ type stackTracer interface {
 	StackTrace() errors.StackTrace
 }
 
-func (l *baseLogger) fieldsConversion(keyVals ...interface{}) []zap.Field {
+func (l *baseLogger) fieldsConversion(keyVals ...interface{}) []zapcore.Field {
 	if len(keyVals)%2 != 0 {
-		return []zap.Field{zap.Error(stderr.New("expected even number of arguments"))}
+		return []zapcore.Field{zap.Error(stderr.New("expected even number of arguments"))}
 	}
 
-	fields := make([]zap.Field, 0, len(keyVals)/2)
+	fields := make([]zapcore.Field, 0, len(keyVals)/2)
 	for idx := 0; idx < len(keyVals); idx += 2 {
 		if key, ok := keyVals[idx].(string); ok {
 			switch value := keyVals[idx+1].(type) {
@@ -200,8 +215,6 @@ func (l *baseLogger) fieldsConversion(keyVals ...interface{}) []zap.Field {
 				fields = append(fields, zap.Time(key, value))
 			case time.Duration:
 				fields = append(fields, zap.Duration(key, value))
-			case zap.LogMarshaler:
-				fields = append(fields, zap.Marshaler(key, value))
 			case fmt.Stringer:
 				fields = append(fields, zap.Stringer(key, value))
 			case stackTracer:
@@ -211,7 +224,7 @@ func (l *baseLogger) fieldsConversion(keyVals ...interface{}) []zap.Field {
 			case error:
 				fields = append(fields, zap.Error(value))
 			default:
-				fields = append(fields, zap.Object(key, value))
+				fields = append(fields, zap.Any(key, value))
 			}
 		}
 	}

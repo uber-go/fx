@@ -20,11 +20,11 @@
 
 package ulog
 
-import "github.com/uber-go/zap"
+import "go.uber.org/zap"
 
 func nopLogger() Log {
 	return &baseLogger{
-		log: zap.New(zap.NullEncoder()),
+		log: zap.New(nil),
 	}
 }
 
