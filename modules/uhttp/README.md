@@ -7,7 +7,6 @@ but the details of that are abstracted away through `uhttp.RouteHandler`.
 package main
 
 import (
-  "context"
   "io"
   "net/http"
 
@@ -29,8 +28,8 @@ func main() {
 }
 
 func registerHTTP(service service.Host) []uhttp.RouteHandler {
-  handleHome := http.HandlerFunc(func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-    fx.Logger(ctx).Info("Inside the handler")
+  handleHome := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+    fx.Logger(r.Context()).Info("Inside the handler")
     io.WriteString(w, "Hello, world")
   })
 
@@ -76,8 +75,8 @@ func main() {
 ### Benchmark results:
 ```
 Current performance benchmark data:
-BenchmarkClientFilters/empty-8         	  500000	      3517 ns/op	     256 B/op	       2 allocs/op
-BenchmarkClientFilters/tracing-8       	   20000	     64421 ns/op	    1729 B/op	      29 allocs/op
-BenchmarkClientFilters/auth-8          	   50000	     36574 ns/op	     728 B/op	      16 allocs/op
-BenchmarkClientFilters/default-8       	   10000	    104374 ns/op	    2275 B/op	      43 allocs/op
+BenchmarkClientFilters/empty-8         	100000000	        10.8 ns/op	       0 B/op	       0 allocs/op
+BenchmarkClientFilters/tracing-8       	  500000	      3918 ns/op	    1729 B/op	      27 allocs/op
+BenchmarkClientFilters/auth-8          	 1000000	      1866 ns/op	     719 B/op	      14 allocs/op
+BenchmarkClientFilters/default-8       	  300000	      5604 ns/op	    2477 B/op	      41 allocs/op
 ```

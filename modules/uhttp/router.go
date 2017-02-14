@@ -21,13 +21,15 @@
 package uhttp
 
 import (
+	"net/http"
+
 	"github.com/gorilla/mux"
 
 	"go.uber.org/fx/service"
 )
 
 type route struct {
-	handler Handler
+	handler http.Handler
 }
 
 // Router is wrapper around gorila mux
@@ -45,6 +47,6 @@ func NewRouter(host service.Host) *Router {
 }
 
 // Handle wraps and calls the http.Handler underneath
-func (h *Router) Handle(path string, handler Handler) {
-	h.Router.Handle(path, Wrap(h.host, handler))
+func (h *Router) Handle(path string, handler http.Handler) {
+	h.Router.Handle(path, WithHost(h.host, handler))
 }

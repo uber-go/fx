@@ -21,7 +21,6 @@
 package uhttp
 
 import (
-	"context"
 	"fmt"
 	"net/http"
 	"testing"
@@ -38,7 +37,7 @@ func TestFromGorilla_OK(t *testing.T) {
 }
 
 func TestNewRouteHandler(t *testing.T) {
-	rh := NewRouteHandler("/", HandlerFunc(func(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	rh := NewRouteHandler("/", http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		fmt.Fprintf(w, "Hi\n")
 	}))
 

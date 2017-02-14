@@ -21,7 +21,6 @@
 package client
 
 import (
-	"context"
 	"net/http"
 	"time"
 
@@ -58,18 +57,18 @@ func newExecutionChain(
 	}
 }
 
-func (ec executionChain) Execute(ctx context.Context, r *http.Request) (resp *http.Response, err error) {
+func (ec executionChain) Execute(r *http.Request) (resp *http.Response, err error) {
 	if ec.currentFilter < len(ec.filters) {
 		filter := ec.filters[ec.currentFilter]
 		ec.currentFilter++
 
-		return filter.Apply(ctx, r, ec)
+		return filter.Apply(r, ec)
 	}
 
-	return ec.finalTransport.RoundTrip(r.WithContext(ctx))
+	return ec.finalTransport.RoundTrip(r)
 }
 
 // Implement http.RoundTripper interface to use as a Transport in http.Client
 func (ec executionChain) RoundTrip(r *http.Request) (resp *http.Response, err error) {
-	return ec.Execute(r.Context(), r)
+	return ec.Execute(r)
 }

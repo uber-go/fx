@@ -21,7 +21,6 @@
 package uhttp
 
 import (
-	"context"
 	"fmt"
 	"net/http"
 
@@ -34,33 +33,33 @@ import (
 	"github.com/opentracing/opentracing-go/ext"
 )
 
-// Filter applies filters on requests, request contexts or responses such as
+// Filter applies filters on requests or responses such as
 // adding tracing to the context
 type Filter interface {
-	Apply(ctx context.Context, w http.ResponseWriter, r *http.Request, next Handler)
+	Apply(w http.ResponseWriter, r *http.Request, next http.Handler)
 }
 
 // FilterFunc is an adaptor to call normal functions to apply filters
-type FilterFunc func(ctx context.Context, w http.ResponseWriter, r *http.Request, next Handler)
+type FilterFunc func(w http.ResponseWriter, r *http.Request, next http.Handler)
 
 // Apply implements Apply from the Filter interface and simply delegates to the function
-func (f FilterFunc) Apply(ctx context.Context, w http.ResponseWriter, r *http.Request, next Handler) {
-	f(ctx, w, r, next)
+func (f FilterFunc) Apply(w http.ResponseWriter, r *http.Request, next http.Handler) {
+	f(w, r, next)
 }
 
 type contextFilter struct {
 	host service.Host
 }
 
-func (f contextFilter) Apply(ctx context.Context, w http.ResponseWriter, r *http.Request, next Handler) {
-	ctx = fx.NewContext(ctx, f.host)
-	next.ServeHTTP(ctx, w, r)
+func (f contextFilter) Apply(w http.ResponseWriter, r *http.Request, next http.Handler) {
+	ctx := fx.NewContext(r.Context(), f.host)
+	next.ServeHTTP(w, r.WithContext(ctx))
 }
 
-type tracingServerFilter struct {
-}
+type tracingServerFilter struct{}
 
-func (f tracingServerFilter) Apply(ctx context.Context, w http.ResponseWriter, r *http.Request, next Handler) {
+func (f tracingServerFilter) Apply(w http.ResponseWriter, r *http.Request, next http.Handler) {
+	ctx := r.Context()
 	operationName := r.Method
 	carrier := opentracing.HTTPHeadersCarrier(r.Header)
 	spanCtx, err := opentracing.GlobalTracer().Extract(opentracing.HTTPHeaders, carrier)
@@ -75,8 +74,7 @@ func (f tracingServerFilter) Apply(ctx context.Context, w http.ResponseWriter, r
 
 	ctx = fx.WithContextAwareLogger(ctx, span)
 
-	r = r.WithContext(ctx)
-	next.ServeHTTP(ctx, w, r)
+	next.ServeHTTP(w, r.WithContext(ctx))
 }
 
 // authorizationFilter authorizes services based on configuration
@@ -84,22 +82,23 @@ type authorizationFilter struct {
 	authClient auth.Client
 }
 
-func (f authorizationFilter) Apply(ctx context.Context, w http.ResponseWriter, r *http.Request, next Handler) {
-	if err := f.authClient.Authorize(ctx); err != nil {
+func (f authorizationFilter) Apply(w http.ResponseWriter, r *http.Request, next http.Handler) {
+	if err := f.authClient.Authorize(r.Context()); err != nil {
 		stats.HTTPAuthFailCounter.Inc(1)
-		fx.Logger(ctx).Error(auth.ErrAuthorization, "error", err)
+		fx.Logger(r.Context()).Error(auth.ErrAuthorization, "error", err)
 		w.WriteHeader(http.StatusUnauthorized)
 		fmt.Fprintf(w, "Unauthorized access: %+v", err)
 		return
 	}
-	next.ServeHTTP(ctx, w, r)
+	next.ServeHTTP(w, r)
 }
 
 // panicFilter handles any panics and return an error
 // panic filter should be added at the end of filter chain to catch panics
 type panicFilter struct{}
 
-func (f panicFilter) Apply(ctx context.Context, w http.ResponseWriter, r *http.Request, next Handler) {
+func (f panicFilter) Apply(w http.ResponseWriter, r *http.Request, next http.Handler) {
+	ctx := r.Context()
 	defer func() {
 		if err := recover(); err != nil {
 			fx.Logger(ctx).Error("Panic recovered serving request", "error", err, "url", r.URL)
@@ -109,14 +108,13 @@ func (f panicFilter) Apply(ctx context.Context, w http.ResponseWriter, r *http.R
 			fmt.Fprintf(w, "Server error: %+v", err)
 		}
 	}()
-	next.ServeHTTP(ctx, w, r)
+	next.ServeHTTP(w, r)
 }
 
 // metricsFilter adds any default metrics related to HTTP
-type metricsFilter struct {
-}
+type metricsFilter struct{}
 
-func (f metricsFilter) Apply(ctx context.Context, w http.ResponseWriter, r *http.Request, next Handler) {
+func (f metricsFilter) Apply(w http.ResponseWriter, r *http.Request, next http.Handler) {
 	defer stats.HTTPStatusCountScope.Tagged(map[string]string{stats.TagStatus: w.Header().Get("Status")}).Counter("total").Inc(1)
-	next.ServeHTTP(ctx, w, r)
+	next.ServeHTTP(w, r)
 }

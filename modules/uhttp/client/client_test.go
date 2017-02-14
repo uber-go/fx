@@ -21,7 +21,6 @@
 package client
 
 import (
-	"context"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -78,11 +77,9 @@ func TestClientGetTwiceExecutesAllFilters(t *testing.T) {
 	t.Parallel()
 	svr := startServer()
 	count := 0
-	var f FilterFunc = func(
-		ctx context.Context, r *http.Request, next Executor,
-	) (resp *http.Response, err error) {
+	var f FilterFunc = func(r *http.Request, next Executor) (resp *http.Response, err error) {
 		count++
-		return next.Execute(ctx, r)
+		return next.Execute(r)
 	}
 
 	cl := New(fakeAuthInfo{yaml: _testYaml}, f)

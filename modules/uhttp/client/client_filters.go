@@ -21,7 +21,6 @@
 package client
 
 import (
-	"context"
 	"net/http"
 
 	"go.uber.org/fx"
@@ -34,31 +33,27 @@ import (
 
 // Executor executes the http request. Execute must be safe to use by multiple go routines
 type Executor interface {
-	Execute(ctx context.Context, r *http.Request) (resp *http.Response, err error)
+	Execute(r *http.Request) (resp *http.Response, err error)
 }
 
-// Filter applies filters on client requests and request's context such as
-// adding tracing to the context. Filters must call next.Execute() at most once, calling it twice and more
+// Filter applies filters on client requests and such as adding tracing to request's context.
+// Filters must call next.Execute() at most once, calling it twice and more
 // will lead to an undefined behavior
 type Filter interface {
-	Apply(ctx context.Context, r *http.Request, next Executor) (resp *http.Response, err error)
+	Apply(r *http.Request, next Executor) (resp *http.Response, err error)
 }
 
 // FilterFunc is an adaptor to call normal functions to apply filters
-type FilterFunc func(
-	ctx context.Context, r *http.Request, next Executor,
-) (resp *http.Response, err error)
+type FilterFunc func(r *http.Request, next Executor) (resp *http.Response, err error)
 
 // Apply implements Apply from the Filter interface and simply delegates to the function
-func (f FilterFunc) Apply(
-	ctx context.Context, r *http.Request, next Executor,
-) (resp *http.Response, err error) {
-	return f(ctx, r, next)
+func (f FilterFunc) Apply(r *http.Request, next Executor) (resp *http.Response, err error) {
+	return f(r, next)
 }
 
 func tracingFilter() FilterFunc {
-	return func(ctx context.Context, req *http.Request, next Executor,
-	) (resp *http.Response, err error) {
+	return func(req *http.Request, next Executor) (resp *http.Response, err error) {
+		ctx := req.Context()
 		opName := req.Method
 		var parent opentracing.SpanContext
 		if s := opentracing.SpanFromContext(ctx); s != nil {
@@ -75,7 +70,7 @@ func tracingFilter() FilterFunc {
 			return nil, err
 		}
 
-		resp, err = next.Execute(ctx, req)
+		resp, err = next.Execute(req.WithContext(ctx))
 		if resp != nil {
 			span.SetTag("http.status_code", resp.StatusCode)
 		}
@@ -91,8 +86,8 @@ func tracingFilter() FilterFunc {
 func authenticationFilter(info auth.CreateAuthInfo) FilterFunc {
 	authClient := auth.Load(info)
 	serviceName := info.Config().Get(config.ServiceNameKey).AsString()
-	return func(ctx context.Context, req *http.Request, next Executor,
-	) (resp *http.Response, err error) {
+	return func(req *http.Request, next Executor) (resp *http.Response, err error) {
+		ctx := req.Context()
 		// Client needs to know what service it is to authenticate
 		authCtx := authClient.SetAttribute(ctx, auth.ServiceAuth, serviceName)
 
@@ -108,7 +103,7 @@ func authenticationFilter(info auth.CreateAuthInfo) FilterFunc {
 			return nil, err
 		}
 
-		return next.Execute(authCtx, req)
+		return next.Execute(req.WithContext(authCtx))
 	}
 }
 
