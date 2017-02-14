@@ -105,7 +105,7 @@
 // Static configuration providers
 //
 // Static configuration providers conform to the Provider interface
-// and are bootstraped first. Use these for simple providers such as file-backed or
+// and are bootstrapped first. Use these for simple providers such as file-backed or
 // environment-based configuration providers.
 //
 //
