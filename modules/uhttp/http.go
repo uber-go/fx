@@ -126,11 +126,11 @@ func newModule(
 
 	err := module.Host().Config().Get(getConfigKey(mi.Name)).PopulateStruct(cfg)
 	if err != nil {
-		ulog.Logger().Error("Error loading http module configuration", "error", err)
+		module.Host().Logger().Error("Error loading http module configuration", "error", err)
 	}
 	module.config = *cfg
 
-	module.log = ulog.Logger().With("moduleName", mi.Name)
+	module.log = module.Host().Logger().With("moduleName", mi.Name)
 
 	for _, option := range options {
 		if err := option(&mi); err != nil {
