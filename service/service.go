@@ -146,3 +146,19 @@ func New(options ...Option) (Owner, error) {
 
 	return svc, nil
 }
+
+type niladicStart func()
+
+func (n niladicStart) OnInit(service Host) error      { return nil }
+func (n niladicStart) OnShutdown(reason Exit)         {}
+func (n niladicStart) OnCriticalError(err error) bool { return true }
+func (n niladicStart) OnStateChange(old State, new State) {
+	if old == Starting && new == Running {
+		n()
+	}
+}
+
+// AfterStart will create an observer that will execute f() immediately after service starts.
+func AfterStart(f func()) Observer {
+	return niladicStart(f)
+}
