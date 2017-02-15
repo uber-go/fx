@@ -69,8 +69,8 @@ func TestDefaultFiltersWithNopHostAuthFailure(t *testing.T) {
 	stats.SetupHTTPMetrics(host.Metrics())
 
 	t.Run("run parallel", func(t *testing.T) {
-		t.Run("testFilterChainFilters_AuthFailure", func(t *testing.T) {
-			testFilterChainFilters_AuthFailure(t, host)
+		t.Run("testFilterChainFiltersAuthFailure", func(t *testing.T) {
+			testFilterChainFiltersAuthFailure(t, host)
 		})
 	})
 
@@ -141,7 +141,7 @@ func testFilterChainFilters(t *testing.T, host service.Host) {
 	assert.Contains(t, response.Body.String(), "filters ok")
 }
 
-func testFilterChainFilters_AuthFailure(t *testing.T, host service.Host) {
+func testFilterChainFiltersAuthFailure(t *testing.T, host service.Host) {
 	chain := newFilterChainBuilder(host).AddFilters(
 		tracingServerFilter{},
 		authorizationFilter{
