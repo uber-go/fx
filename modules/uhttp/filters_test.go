@@ -49,12 +49,15 @@ func TestDefaultFiltersWithNopHost(t *testing.T) {
 
 	t.Run("run parallel", func(t *testing.T) {
 		t.Run("testFilterChain", func(t *testing.T) {
+			t.Parallel()
 			testFilterChain(t, host)
 		})
 		t.Run("testFilterChainFilters", func(t *testing.T) {
+			t.Parallel()
 			testFilterChainFilters(t, host)
 		})
 		t.Run("testPanicFilter", func(t *testing.T) {
+			t.Parallel()
 			testPanicFilter(t, host)
 		})
 	})
@@ -70,6 +73,7 @@ func TestDefaultFiltersWithNopHostAuthFailure(t *testing.T) {
 
 	t.Run("run parallel", func(t *testing.T) {
 		t.Run("testFilterChainFiltersAuthFailure", func(t *testing.T) {
+			t.Parallel()
 			testFilterChainFiltersAuthFailure(t, host)
 		})
 	})
@@ -82,6 +86,7 @@ func TestDefaultFiltersWithNopHostConfigured(t *testing.T) {
 	// this test's sub tests cannot run parallel
 	// and they need to build host by theirselves
 	t.Run("testTracingFilterWithLogs", func(t *testing.T) {
+		t.Parallel()
 		testTracingFilterWithLogs(t)
 		httpMetricsTeardown()
 	})
