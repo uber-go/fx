@@ -65,7 +65,6 @@ func TestExecutionChainFilters(t *testing.T) {
 }
 
 func TestExecutionChainFiltersError(t *testing.T) {
-	t.Parallel()
 	execChain := newExecutionChain(
 		[]Filter{tracingFilter()}, errTransport{},
 	)
