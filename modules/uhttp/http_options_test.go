@@ -73,6 +73,7 @@ func TestWithFilter(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.desc, func(t *testing.T) {
+			t.Parallel()
 			opt := WithFilter(tt.input...)
 			assert.NoError(t, opt(&tt.mi))
 			assert.Equal(t, len(tt.expect), len(filtersFromCreateInfo(tt.mi)))
@@ -124,6 +125,7 @@ func TestFiltersFromCreateInfo(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.desc, func(t *testing.T) {
+			t.Parallel()
 			fs := filtersFromCreateInfo(tt.mi)
 			assert.Equal(t, len(tt.filters), len(fs))
 		})
