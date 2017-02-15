@@ -110,7 +110,7 @@ func (p panicOnewayInboundMiddleware) HandleOneway(ctx context.Context, req *tra
 func panicRecovery(ctx context.Context) {
 	if err := recover(); err != nil {
 		stats.RPCPanicCounter.Inc(1)
-		fx.Logger(ctx).Error("Panic recovered serving request", "error", errors.Errorf("panic in handler: %+v", err))
+		ulog.Logger(ctx).Error("Panic recovered serving request", "error", errors.Errorf("panic in handler: %+v", err))
 		// rethrow panic back to yarpc
 		// before https://github.com/yarpc/yarpc-go/issues/734 fixed, throw a generic error.
 		panic(_panicResponse)
