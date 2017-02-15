@@ -152,8 +152,8 @@ type niladicStart func()
 func (n niladicStart) OnInit(service Host) error      { return nil }
 func (n niladicStart) OnShutdown(reason Exit)         {}
 func (n niladicStart) OnCriticalError(err error) bool { return true }
-func (n niladicStart) OnStateChange(old State, new State) {
-	if old == Starting && new == Running {
+func (n niladicStart) OnStateChange(old State, curr State) {
+	if old == Starting && curr == Running {
 		n()
 	}
 }

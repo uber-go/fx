@@ -39,8 +39,8 @@ func (s *StubObserver) OnInit(svc Host) error {
 }
 
 // OnStateChange is called during state transitions
-func (s *StubObserver) OnStateChange(old State, newState State) {
-	s.state = newState
+func (s *StubObserver) OnStateChange(old State, curr State) {
+	s.state = curr
 }
 
 // OnShutdown is called for a shutdown
