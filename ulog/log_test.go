@@ -21,6 +21,7 @@
 package ulog
 
 import (
+	"context"
 	"fmt"
 	"net"
 	"path/filepath"
@@ -28,12 +29,14 @@ import (
 	"testing"
 	"time"
 
+	"go.uber.org/fx/internal"
 	"go.uber.org/fx/testutils"
 	"go.uber.org/fx/ulog/sentry"
 
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 	"github.com/uber-go/zap"
+	"github.com/uber/jaeger-client-go"
 )
 
 func TestZapSink(t *testing.T) {
@@ -44,6 +47,38 @@ func TestZapSink(t *testing.T) {
 	e := s.Logs()[0]
 	assert.Equal(t, "This is my message", e.Msg)
 	assert.Contains(t, e.Fields, zap.String("And this is", "My field"))
+}
+
+func TestLogger_SetLogger(t *testing.T) {
+	SetLogger(logger())
+	assert.NotNil(t, _std)
+}
+
+func TestContext_LoggerAccess(t *testing.T) {
+	ctx := NewLogContext(context.Background())
+	assert.NotNil(t, ctx)
+	assert.NotNil(t, Logger(ctx))
+	assert.NotNil(t, ctx.Value(internal.ContextLogger))
+}
+
+func TestWithTracingAware(t *testing.T) {
+	testutils.WithInMemoryLogger(t, nil, func(zapLogger zap.Logger, buf *testutils.TestBuffer) {
+		// Create in-memory logger and jaeger tracer
+		loggerWithZap := Builder().SetLogger(zapLogger).Build()
+		tracer, closer := jaeger.NewTracer(
+			"serviceName", jaeger.NewConstSampler(true), jaeger.NewNullReporter(),
+		)
+		defer closer.Close()
+		span := tracer.StartSpan("opName")
+		ctx := context.WithValue(context.Background(), internal.ContextLogger, loggerWithZap)
+		ctx = WithTracingAware(ctx, span)
+		Logger(ctx).Info("Testing context aware logger")
+		assert.True(t, len(buf.Lines()) > 0)
+		for _, line := range buf.Lines() {
+			assert.Contains(t, line, "traceID")
+			assert.Contains(t, line, "spanID")
+		}
+	})
 }
 
 func TestSimpleLogger(t *testing.T) {
@@ -140,7 +175,7 @@ func TestTyped(t *testing.T) {
 }
 
 func TestLogger(t *testing.T) {
-	log := Logger()
+	log := logger()
 	assert.NotNil(t, log.Typed())
 }
 

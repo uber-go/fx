@@ -21,6 +21,7 @@
 package tracing
 
 import (
+	"context"
 	"testing"
 
 	"go.uber.org/fx/metrics"
@@ -42,7 +43,7 @@ var (
 )
 
 func getLogger() ulog.Log {
-	return ulog.Logger()
+	return ulog.Logger(context.Background())
 }
 
 func TestInitGlobalTracer_Simple(t *testing.T) {

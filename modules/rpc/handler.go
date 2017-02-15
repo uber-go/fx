@@ -23,10 +23,10 @@ package rpc
 import (
 	"context"
 
-	"go.uber.org/fx"
 	"go.uber.org/fx/auth"
 	"go.uber.org/fx/modules/rpc/internal/stats"
 	"go.uber.org/fx/service"
+	"go.uber.org/fx/ulog"
 
 	"github.com/pkg/errors"
 	"go.uber.org/yarpc/api/transport"
@@ -45,7 +45,7 @@ func (f contextInboundMiddleware) Handle(ctx context.Context, req *transport.Req
 		Start()
 	defer stopwatch.Stop()
 
-	ctx = fx.NewContext(ctx, f.Host)
+	ctx = ulog.NewLogContext(ctx)
 	return handler.Handle(ctx, req, resw)
 }
 
@@ -54,7 +54,7 @@ type contextOnewayInboundMiddleware struct {
 }
 
 func (f contextOnewayInboundMiddleware) HandleOneway(ctx context.Context, req *transport.Request, handler transport.OnewayHandler) error {
-	ctx = fx.NewContext(ctx, f.Host)
+	ctx = ulog.NewLogContext(ctx)
 	return handler.HandleOneway(ctx, req)
 }
 
@@ -85,7 +85,7 @@ func (a authOnewayInboundMiddleware) HandleOneway(ctx context.Context, req *tran
 func authorize(ctx context.Context, host service.Host) (context.Context, error) {
 	if err := host.AuthClient().Authorize(ctx); err != nil {
 		stats.RPCAuthFailCounter.Inc(1)
-		fx.Logger(ctx).Error(auth.ErrAuthorization, "error", err)
+		ulog.Logger(ctx).Error(auth.ErrAuthorization, "error", err)
 		// TODO(anup): GFM-255 update returned error to transport.BadRequestError (user error than server error)
 		// https://github.com/yarpc/yarpc-go/issues/687
 		return nil, err

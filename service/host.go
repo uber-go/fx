@@ -21,6 +21,7 @@
 package service
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"os/signal"
@@ -29,11 +30,11 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/pkg/errors"
-
 	"go.uber.org/fx/config"
 	"go.uber.org/fx/internal/util"
 	"go.uber.org/fx/ulog"
+
+	"github.com/pkg/errors"
 )
 
 const (
@@ -436,7 +437,7 @@ func loadInstanceConfig(cfg config.Provider, key string, instance interface{}) b
 		// Try to load the service config
 		err := cfg.Get(key).PopulateStruct(configValue.Interface())
 		if err != nil {
-			ulog.Logger().Error("Unable to load instance config", "error", err)
+			ulog.Logger(context.Background()).Error("Unable to load instance config", "error", err)
 			return false
 		}
 		instanceValue := reflect.ValueOf(instance).Elem()

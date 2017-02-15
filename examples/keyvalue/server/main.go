@@ -21,10 +21,11 @@
 package main
 
 import (
+	"log"
+
 	"go.uber.org/fx/modules"
 	"go.uber.org/fx/modules/rpc"
 	"go.uber.org/fx/service"
-	"go.uber.org/fx/ulog"
 )
 
 func main() {
@@ -39,7 +40,7 @@ func main() {
 	).Build()
 
 	if err != nil {
-		ulog.Logger().Fatal("Unable to initialize service", "error", err)
+		log.Fatal("Unable to initialize service", "error", err)
 	}
 
 	svc.Start()

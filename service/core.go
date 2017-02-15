@@ -96,6 +96,7 @@ func (tc *tracerCore) Tracer() opentracing.Tracer {
 	return tc.tracer
 }
 
+// TODO: remove loggingCore and all logging traces from host.Logger()
 type loggingCore struct {
 	log       ulog.Log
 	logConfig ulog.Configuration

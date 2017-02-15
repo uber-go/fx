@@ -19,3 +19,7 @@ deps:
 
 	@echo "Installing thriftrw-plugin-thriftsync..."
 	$(ECHO_V)go install ../../modules/rpc/thriftrw-plugin-thriftsync
+
+.PHONY: thriftsync
+thriftsync: deps
+	$(ECHO_V)thriftrw --pkg-prefix=$(PROJECT_ROOT) --plugin="thriftsync --handler-package=main" kv.thrift

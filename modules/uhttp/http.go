@@ -59,15 +59,6 @@ const (
 
 var _ service.Module = &Module{}
 
-// Response is an envelope for returning the results of an HTTP call
-type Response struct {
-	Status      int
-	ContentType string
-	Body        interface{}
-	Headers     map[string]string
-	Error       error
-}
-
 // A Module is a module to handle HTTP requests
 type Module struct {
 	modules.ModuleBase
@@ -135,11 +126,11 @@ func newModule(
 
 	err := module.Host().Config().Get(getConfigKey(mi.Name)).PopulateStruct(cfg)
 	if err != nil {
-		ulog.Logger().Error("Error loading http module configuration", "error", err)
+		module.Host().Logger().Error("Error loading http module configuration", "error", err)
 	}
 	module.config = *cfg
 
-	module.log = ulog.Logger().With("moduleName", mi.Name)
+	module.log = module.Host().Logger().With("moduleName", mi.Name)
 
 	for _, option := range options {
 		if err := option(&mi); err != nil {

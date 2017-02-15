@@ -18,31 +18,9 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package uhttp
+package internal
 
-import (
-	"net/http"
+type contextKey int
 
-	"github.com/gorilla/mux"
-
-	"go.uber.org/fx/service"
-)
-
-// Router is wrapper around gorila mux
-type Router struct {
-	mux.Router
-
-	host service.Host
-}
-
-// NewRouter creates a new empty router
-func NewRouter(host service.Host) *Router {
-	return &Router{
-		host: host,
-	}
-}
-
-// Handle wraps and calls the http.Handler underneath
-func (h *Router) Handle(path string, handler http.Handler) {
-	h.Router.Handle(path, WithHost(h.host, handler))
-}
+// ContextLogger is the context based logger
+const ContextLogger contextKey = iota

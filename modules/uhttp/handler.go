@@ -23,9 +23,10 @@ package uhttp
 import (
 	"net/http"
 
-	"go.uber.org/fx"
 	"go.uber.org/fx/modules/uhttp/internal/stats"
+
 	"go.uber.org/fx/service"
+	"go.uber.org/fx/ulog"
 )
 
 // WithHost adds host to http.Handler and return http.Handler for gorilla mux.
@@ -43,7 +44,7 @@ type handlerWithHost struct {
 
 // ServeHTTP calls Handler.ServeHTTP( w, r) and injects a new service context for use.
 func (h *handlerWithHost) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	ctx := fx.NewContext(r.Context(), h.host)
+	ctx := ulog.NewLogContext(r.Context())
 	stopwatch := stats.HTTPMethodTimer.Timer(r.Method).Start()
 	defer stopwatch.Stop()
 
