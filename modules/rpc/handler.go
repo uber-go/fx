@@ -27,8 +27,12 @@ import (
 	"go.uber.org/fx/modules/rpc/internal/stats"
 	"go.uber.org/fx/service"
 	"go.uber.org/fx/ulog"
+
+	"github.com/pkg/errors"
 	"go.uber.org/yarpc/api/transport"
 )
+
+const _panicResponse = "Server Error"
 
 type contextInboundMiddleware struct {
 	service.Host
@@ -87,4 +91,28 @@ func authorize(ctx context.Context, host service.Host) (context.Context, error) 
 		return nil, err
 	}
 	return ctx, nil
+}
+
+type panicInboundMiddleware struct{}
+
+func (p panicInboundMiddleware) Handle(ctx context.Context, req *transport.Request, resw transport.ResponseWriter, handler transport.UnaryHandler) error {
+	defer panicRecovery(ctx)
+	return handler.Handle(ctx, req, resw)
+}
+
+type panicOnewayInboundMiddleware struct{}
+
+func (p panicOnewayInboundMiddleware) HandleOneway(ctx context.Context, req *transport.Request, handler transport.OnewayHandler) error {
+	defer panicRecovery(ctx)
+	return handler.HandleOneway(ctx, req)
+}
+
+func panicRecovery(ctx context.Context) {
+	if err := recover(); err != nil {
+		stats.RPCPanicCounter.Inc(1)
+		ulog.Logger(ctx).Error("Panic recovered serving request", "error", errors.Errorf("panic in handler: %+v", err))
+		// rethrow panic back to yarpc
+		// before https://github.com/yarpc/yarpc-go/issues/734 fixed, throw a generic error.
+		panic(_panicResponse)
+	}
 }

@@ -31,6 +31,7 @@ import (
 	"go.uber.org/yarpc/api/transport"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/uber-go/tally"
 )
 
 type fakeEnveloper struct {
@@ -54,7 +55,7 @@ func TestInboundMiddleware_fxContext(t *testing.T) {
 		Host: service.NopHost(),
 	}
 	stats.SetupRPCMetrics(unary.Host.Metrics())
-	err := unary.Handle(context.Background(), &transport.Request{}, nil, &fakeUnaryHandler{t: t})
+	err := unary.Handle(context.Background(), &transport.Request{}, nil, &fakeUnary{t: t})
 	assert.Equal(t, "handle", err.Error())
 }
 
@@ -62,7 +63,7 @@ func TestOnewayInboundMiddleware_fxContext(t *testing.T) {
 	oneway := contextOnewayInboundMiddleware{
 		Host: service.NopHost(),
 	}
-	err := oneway.HandleOneway(context.Background(), &transport.Request{}, &fakeOnewayHandler{t: t})
+	err := oneway.HandleOneway(context.Background(), &transport.Request{}, &fakeOneway{t: t})
 	assert.Equal(t, "oneway handle", err.Error())
 }
 
@@ -70,7 +71,7 @@ func TestInboundMiddleware_auth(t *testing.T) {
 	unary := authInboundMiddleware{
 		Host: service.NopHost(),
 	}
-	err := unary.Handle(context.Background(), &transport.Request{}, nil, &fakeUnaryHandler{t: t})
+	err := unary.Handle(context.Background(), &transport.Request{}, nil, &fakeUnary{t: t})
 	assert.EqualError(t, err, "handle")
 }
 
@@ -78,7 +79,7 @@ func TestInboundMiddleware_authFailure(t *testing.T) {
 	unary := authInboundMiddleware{
 		Host: service.NopHostAuthFailure(),
 	}
-	err := unary.Handle(context.Background(), &transport.Request{}, nil, &fakeUnaryHandler{t: t})
+	err := unary.Handle(context.Background(), &transport.Request{}, nil, &fakeUnary{t: t})
 	assert.EqualError(t, err, "Error authorizing the service")
 
 }
@@ -87,7 +88,7 @@ func TestOnewayInboundMiddleware_auth(t *testing.T) {
 	oneway := authOnewayInboundMiddleware{
 		Host: service.NopHost(),
 	}
-	err := oneway.HandleOneway(context.Background(), &transport.Request{}, &fakeOnewayHandler{t: t})
+	err := oneway.HandleOneway(context.Background(), &transport.Request{}, &fakeOneway{t: t})
 	assert.EqualError(t, err, "oneway handle")
 }
 
@@ -95,24 +96,65 @@ func TestOnewayInboundMiddleware_authFailure(t *testing.T) {
 	oneway := authOnewayInboundMiddleware{
 		Host: service.NopHostAuthFailure(),
 	}
-	err := oneway.HandleOneway(context.Background(), &transport.Request{}, &fakeOnewayHandler{t: t})
+	err := oneway.HandleOneway(context.Background(), &transport.Request{}, &fakeOneway{t: t})
 	assert.EqualError(t, err, "Error authorizing the service")
 }
 
-type fakeUnaryHandler struct {
+func TestInboundMiddleware_panic(t *testing.T) {
+	host := service.NopHost()
+	testScope := host.Metrics()
+	stats.SetupRPCMetrics(testScope)
+
+	defer testPanicHandler(t, testScope)
+	unary := panicInboundMiddleware{}
+	unary.Handle(context.Background(), &transport.Request{}, nil, &alwaysPanicUnary{})
+}
+
+func TestOnewayInboundMiddleware_panic(t *testing.T) {
+	host := service.NopHost()
+	testScope := host.Metrics()
+	stats.SetupRPCMetrics(testScope)
+
+	defer testPanicHandler(t, testScope)
+	oneway := panicOnewayInboundMiddleware{}
+	oneway.HandleOneway(context.Background(), &transport.Request{}, &alwaysPanicOneway{})
+}
+
+func testPanicHandler(t *testing.T, testScope tally.Scope) {
+	r := recover()
+	assert.EqualValues(t, r, _panicResponse)
+
+	snapshot := testScope.(tally.TestScope).Snapshot()
+	counters := snapshot.Counters()
+	assert.True(t, counters["panic"].Value() > 0)
+}
+
+type fakeUnary struct {
 	t *testing.T
 }
 
-func (f fakeUnaryHandler) Handle(ctx context.Context, _param1 *transport.Request, _param2 transport.ResponseWriter) error {
+func (f fakeUnary) Handle(ctx context.Context, _param1 *transport.Request, _param2 transport.ResponseWriter) error {
 	assert.NotNil(f.t, ctx)
 	return errors.New("handle")
 }
 
-type fakeOnewayHandler struct {
+type fakeOneway struct {
 	t *testing.T
 }
 
-func (f fakeOnewayHandler) HandleOneway(ctx context.Context, p *transport.Request) error {
+func (f fakeOneway) HandleOneway(ctx context.Context, p *transport.Request) error {
 	assert.NotNil(f.t, ctx)
 	return errors.New("oneway handle")
+}
+
+type alwaysPanicUnary struct{}
+
+func (p alwaysPanicUnary) Handle(_ context.Context, _ *transport.Request, _ transport.ResponseWriter) error {
+	panic("panic")
+}
+
+type alwaysPanicOneway struct{}
+
+func (p alwaysPanicOneway) HandleOneway(_ context.Context, _ *transport.Request) error {
+	panic("panic")
 }
