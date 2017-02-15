@@ -43,57 +43,90 @@ import (
 )
 
 func TestDefaultFiltersWithNopHost(t *testing.T) {
+	tests := []struct {
+		desc   string
+		testFn func(*testing.T, service.Host)
+	}{
+		{
+			desc:   "testFilterChain",
+			testFn: testFilterChain,
+		},
+		{
+			desc:   "testFilterChainFilters",
+			testFn: testFilterChainFilters,
+		},
+		{
+			desc:   "testPanicFilter",
+			testFn: testPanicFilter,
+		},
+		{
+			desc:   "testMetricsFilter",
+			testFn: testMetricsFilter,
+		},
+	}
+
 	// setup
 	host := service.NopHost()
 	stats.SetupHTTPMetrics(host.Metrics())
-
-	t.Run("run parallel", func(t *testing.T) {
-		t.Run("testFilterChain", func(t *testing.T) {
-			t.Parallel()
-			testFilterChain(t, host)
-		})
-		t.Run("testFilterChainFilters", func(t *testing.T) {
-			t.Parallel()
-			testFilterChainFilters(t, host)
-		})
-		t.Run("testPanicFilter", func(t *testing.T) {
-			t.Parallel()
-			testPanicFilter(t, host)
-		})
-		t.Run("testMetricsFilter", func(t *testing.T) {
-			t.Parallel()
-			testMetricsFilter(t, host)
-		})
-	})
-
 	// teardown
-	httpMetricsTeardown()
+	defer httpMetricsTeardown()
+
+	t.Run("parallel group", func(t *testing.T) {
+		for _, tt := range tests {
+			tt := tt // capture range variable
+			t.Run(tt.desc, func(t *testing.T) {
+				t.Parallel()
+				tt.testFn(t, host)
+			})
+		}
+	})
 }
 
 func TestDefaultFiltersWithNopHostAuthFailure(t *testing.T) {
+	tests := []struct {
+		desc   string
+		testFn func(*testing.T, service.Host)
+	}{
+		{
+			desc:   "testFilterChainFiltersAuthFailure",
+			testFn: testFilterChainFiltersAuthFailure,
+		},
+	}
+
 	// setup
 	host := service.NopHostAuthFailure()
 	stats.SetupHTTPMetrics(host.Metrics())
-
-	t.Run("run parallel", func(t *testing.T) {
-		t.Run("testFilterChainFiltersAuthFailure", func(t *testing.T) {
-			t.Parallel()
-			testFilterChainFiltersAuthFailure(t, host)
-		})
-	})
-
 	// teardown
-	httpMetricsTeardown()
+	defer httpMetricsTeardown()
+
+	t.Run("parallel group", func(t *testing.T) {
+		for _, tt := range tests {
+			tt := tt // capture range variable
+			t.Run(tt.desc, func(t *testing.T) {
+				t.Parallel()
+				tt.testFn(t, host)
+			})
+		}
+	})
 }
 
 func TestDefaultFiltersWithNopHostConfigured(t *testing.T) {
 	// this test's sub tests cannot run parallel
 	// and they need to build host by theirselves
-	t.Run("testTracingFilterWithLogs", func(t *testing.T) {
-		t.Parallel()
-		testTracingFilterWithLogs(t)
+	tests := []struct {
+		desc   string
+		testFn func(*testing.T)
+	}{
+		{
+			desc:   "testTracingFilterWithLogs",
+			testFn: testTracingFilterWithLogs,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.desc, tt.testFn)
 		httpMetricsTeardown()
-	})
+	}
 }
 
 func testFilterChain(t *testing.T, host service.Host) {
