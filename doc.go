@@ -20,15 +20,30 @@
 
 // Package fx is the UberFx Service Framework.
 //
+// UberFx is a flexible, modularized framework for building robust and performant
+// services. It removes boilerplate code out of your hands and lets you focus on
+// your application logic.
+//
+//
 // Status
 //
-// Pre-ALPHA. API Changes are **highly likely**.
+// Alpha. Expect minor API changes and bug fixes. (Beta release coming soon)
 //
-// Abstract
+// What's included
 //
-// This framework is a flexible, modularized basis for building robust and
-// performant services at Uber with the minimum amount of developer code.
+// • Configuration, logging, metrics and tracing setup by default
 //
+// • Configuration provider that seamlessly merges static and dynamic config
+//
+// • Application-level as well as runtime metrics for effective monitoring
+//
+// • Context aware logging for easy debugging
+//
+// • RPC module with thrift interfaces for microservices
+//
+// • HTTP module with intelligent defaults for web applications
+//
+// • Async task module for executing async tasks durably
 //
 // Examples
 //
@@ -43,7 +58,8 @@
 // or a set of RPC service endpoints.
 //
 //
-// The core service is responsible for loading basic configuration and startingand stopping a set of these modules. Each module gets a reference to the
+// The core service is responsible for loading basic configuration and starting
+// and stopping a set of these modules. Each module gets a reference to the
 // service to
 // access standard values such as the service name or basic configuration.
 //
