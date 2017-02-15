@@ -42,14 +42,57 @@ import (
 	"github.com/uber/jaeger-client-go/config"
 )
 
-func TestFilterChain(t *testing.T) {
+func TestDefaultFiltersWithNopHost(t *testing.T) {
+	// setup
 	host := service.NopHost()
+	stats.SetupHTTPMetrics(host.Metrics())
+
+	t.Run("run parallel", func(t *testing.T) {
+		t.Run("testFilterChain", func(t *testing.T) {
+			testFilterChain(t, host)
+		})
+		t.Run("testFilterChainFilters", func(t *testing.T) {
+			testFilterChainFilters(t, host)
+		})
+		t.Run("testPanicFilter", func(t *testing.T) {
+			testPanicFilter(t, host)
+		})
+	})
+
+	// teardown
+	httpMetricsTeardown()
+}
+
+func TestDefaultFiltersWithNopHostAuthFailure(t *testing.T) {
+	// setup
+	host := service.NopHostAuthFailure()
+	stats.SetupHTTPMetrics(host.Metrics())
+
+	t.Run("run parallel", func(t *testing.T) {
+		t.Run("testFilterChainFilters_AuthFailure", func(t *testing.T) {
+			testFilterChainFilters_AuthFailure(t, host)
+		})
+	})
+
+	// teardown
+	httpMetricsTeardown()
+}
+
+func TestDefaultFiltersWithNopHostConfigured(t *testing.T) {
+	// this test's sub tests cannot run parallel
+	t.Run("testTracingFilterWithLogs", func(t *testing.T) {
+		testTracingFilterWithLogs(t)
+		httpMetricsTeardown()
+	})
+}
+
+func testFilterChain(t *testing.T, host service.Host) {
 	chain := newFilterChainBuilder(host).AddFilters([]Filter{}...).Build(getNopHandler())
 	response := testServeHTTP(chain)
 	assert.True(t, strings.Contains(response.Body.String(), "filters ok"))
 }
 
-func TestTracingFilterWithLogs(t *testing.T) {
+func testTracingFilterWithLogs(t *testing.T) {
 	testutils.WithInMemoryLogger(t, nil, func(zapLogger zap.Logger, buf *testutils.TestBuffer) {
 		// Create in-memory logger and jaeger tracer
 		loggerWithZap := ulog.Builder().SetLogger(zapLogger).Build()
@@ -86,8 +129,7 @@ func TestTracingFilterWithLogs(t *testing.T) {
 	})
 }
 
-func TestFilterChainFilters(t *testing.T) {
-	host := service.NopHost()
+func testFilterChainFilters(t *testing.T, host service.Host) {
 	chain := newFilterChainBuilder(host).AddFilters(
 		tracingServerFilter{},
 		authorizationFilter{
@@ -98,9 +140,7 @@ func TestFilterChainFilters(t *testing.T) {
 	assert.Contains(t, response.Body.String(), "filters ok")
 }
 
-func TestFilterChainFilters_AuthFailure(t *testing.T) {
-	host := service.NopHostAuthFailure()
-	stats.SetupHTTPMetrics(host.Metrics())
+func testFilterChainFilters_AuthFailure(t *testing.T, host service.Host) {
 	chain := newFilterChainBuilder(host).AddFilters(
 		tracingServerFilter{},
 		authorizationFilter{
@@ -111,21 +151,18 @@ func TestFilterChainFilters_AuthFailure(t *testing.T) {
 	assert.Equal(t, 401, response.Code)
 }
 
-func TestPanicFilter(t *testing.T) {
-	host := service.NopHost()
-	testScope := host.Metrics()
-
+func testPanicFilter(t *testing.T, host service.Host) {
 	chain := newFilterChainBuilder(host).AddFilters(
 		panicFilter{},
 	).Build(getPanicHandler())
 	response := testServeHTTP(chain)
-
-	snapshot := testScope.(tally.TestScope).Snapshot()
-	counters := snapshot.Counters()
-
-	assert.True(t, counters["panic"].Value() > 0)
 	assert.Equal(t, response.Body.String(), _panicResponse+"\n")
 	assert.Equal(t, http.StatusInternalServerError, response.Code)
+
+	testScope := host.Metrics()
+	snapshot := testScope.(tally.TestScope).Snapshot()
+	counters := snapshot.Counters()
+	assert.True(t, counters["panic"].Value() > 0)
 }
 
 func TestMetricsFilter(t *testing.T) {
@@ -151,6 +188,13 @@ func testServeHTTP(chain filterChain) *httptest.ResponseRecorder {
 	response := httptest.NewRecorder()
 	chain.ServeHTTP(response, request)
 	return response
+}
+
+func httpMetricsTeardown() {
+	stats.HTTPPanicCounter = nil
+	stats.HTTPAuthFailCounter = nil
+	stats.HTTPMethodTimer = nil
+	stats.HTTPStatusCountScope = nil
 }
 
 func getNopHandler() http.HandlerFunc {
