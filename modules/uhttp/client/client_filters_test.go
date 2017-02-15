@@ -55,7 +55,6 @@ func TestExecutionChain(t *testing.T) {
 }
 
 func TestExecutionChainFilters(t *testing.T) {
-	t.Parallel()
 	execChain := newExecutionChain(
 		[]Filter{tracingFilter()}, nopTransport{},
 	)

@@ -74,7 +74,6 @@ func TestClientGet(t *testing.T) {
 }
 
 func TestClientGetTwiceExecutesAllFilters(t *testing.T) {
-	t.Parallel()
 	svr := startServer()
 	count := 0
 	var f FilterFunc = func(r *http.Request, next Executor) (resp *http.Response, err error) {
