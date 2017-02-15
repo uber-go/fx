@@ -128,6 +128,24 @@ func TestPanicFilter(t *testing.T) {
 	assert.Equal(t, http.StatusInternalServerError, response.Code)
 }
 
+func TestMetricsFilter(t *testing.T) {
+	host := service.NopHost()
+	testScope := host.Metrics()
+
+	chain := newFilterChainBuilder(host).AddFilters(
+		metricsFilter{},
+	).Build(getNopHandler())
+	response := testServeHTTP(chain)
+	assert.Contains(t, response.Body.String(), "filters ok")
+
+	snapshot := testScope.(tally.TestScope).Snapshot()
+	counters := snapshot.Counters()
+	timers := snapshot.Timers()
+
+	assert.True(t, counters["total"].Value() > 0)
+	assert.NotNil(t, timers["GET"].Values())
+}
+
 func testServeHTTP(chain filterChain) *httptest.ResponseRecorder {
 	request := httptest.NewRequest("", "http://filters", nil)
 	response := httptest.NewRecorder()
