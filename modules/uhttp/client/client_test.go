@@ -51,7 +51,6 @@ func TestNew_Panic(t *testing.T) {
 }
 
 func TestClientDo(t *testing.T) {
-	t.Parallel()
 	svr := startServer()
 	req := createHTTPClientRequest(svr.URL)
 	resp, err := _testClient.Do(req)
@@ -59,7 +58,6 @@ func TestClientDo(t *testing.T) {
 }
 
 func TestClientDoWithoutFilters(t *testing.T) {
-	t.Parallel()
 	svr := startServer()
 	req := createHTTPClientRequest(svr.URL)
 	resp, err := _testClient.Do(req)
@@ -67,7 +65,6 @@ func TestClientDoWithoutFilters(t *testing.T) {
 }
 
 func TestClientGet(t *testing.T) {
-	t.Parallel()
 	svr := startServer()
 	resp, err := _testClient.Get(svr.URL)
 	checkOKResponse(t, resp, err)
@@ -91,41 +88,35 @@ func TestClientGetTwiceExecutesAllFilters(t *testing.T) {
 }
 
 func TestClientGetError(t *testing.T) {
-	t.Parallel()
 	// Causing newRequest to fail, % does not parse as URL
 	resp, err := _testClient.Get("%")
 	checkErrResponse(t, resp, err)
 }
 
 func TestClientHead(t *testing.T) {
-	t.Parallel()
 	svr := startServer()
 	resp, err := _testClient.Head(svr.URL)
 	checkOKResponse(t, resp, err)
 }
 
 func TestClientHeadError(t *testing.T) {
-	t.Parallel()
 	// Causing newRequest to fail, % does not parse as URL
 	resp, err := _testClient.Head("%")
 	checkErrResponse(t, resp, err)
 }
 
 func TestClientPost(t *testing.T) {
-	t.Parallel()
 	svr := startServer()
 	resp, err := _testClient.Post(svr.URL, "", nil)
 	checkOKResponse(t, resp, err)
 }
 
 func TestClientPostError(t *testing.T) {
-	t.Parallel()
 	resp, err := _testClient.Post("%", "", nil)
 	checkErrResponse(t, resp, err)
 }
 
 func TestClientPostForm(t *testing.T) {
-	t.Parallel()
 	svr := startServer()
 	var urlValues map[string][]string
 	resp, err := _testClient.PostForm(svr.URL, urlValues)
