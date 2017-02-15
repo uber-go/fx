@@ -93,6 +93,8 @@
 //
 // • TChannel server
 //
+// • Async task execution
+//
 // Planned modules:
 //
 // • Kafka ingester

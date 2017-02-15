@@ -62,6 +62,7 @@ Implemented modules:
 
 * HTTP server
 * TChannel server
+* Async task execution
 
 Planned modules:
 
