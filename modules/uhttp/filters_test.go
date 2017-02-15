@@ -60,6 +60,10 @@ func TestDefaultFiltersWithNopHost(t *testing.T) {
 			t.Parallel()
 			testPanicFilter(t, host)
 		})
+		t.Run("testMetricsFilter", func(t *testing.T) {
+			t.Parallel()
+			testMetricsFilter(t, host)
+		})
 	})
 
 	// teardown
@@ -171,20 +175,17 @@ func testPanicFilter(t *testing.T, host service.Host) {
 	assert.True(t, counters["panic"].Value() > 0)
 }
 
-func TestMetricsFilter(t *testing.T) {
-	host := service.NopHost()
-	testScope := host.Metrics()
-
+func testMetricsFilter(t *testing.T, host service.Host) {
 	chain := newFilterChainBuilder(host).AddFilters(
 		metricsFilter{},
 	).Build(getNopHandler())
 	response := testServeHTTP(chain)
 	assert.Contains(t, response.Body.String(), "filters ok")
 
+	testScope := host.Metrics()
 	snapshot := testScope.(tally.TestScope).Snapshot()
 	counters := snapshot.Counters()
 	timers := snapshot.Timers()
-
 	assert.True(t, counters["total"].Value() > 0)
 	assert.NotNil(t, timers["GET"].Values())
 }
