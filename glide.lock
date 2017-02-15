@@ -1,14 +1,14 @@
-hash: 939acaa595b674eca722d0e7ce484e860c1813d7a32cca554b62954921e4d66f
-updated: 2017-02-14T04:13:41.636621755-08:00
+hash: 62f71321007123913c74ecafdef1501b8407cc0a0572d02111e39ef0e22ae7cd
+updated: 2017-02-15T11:44:42.670193638-08:00
 imports:
 - name: github.com/apache/thrift
-  version: 0a660ee285e4a4cbac8f702168c40fd4ef5495d1
+  version: 9549b25c77587b29be4e0b5c258221a4ed85d37a
   subpackages:
   - lib/go/thrift
 - name: github.com/certifi/gocertifi
   version: 03be5e6bb9874570ea7fb0961225d193cbc374c5
 - name: github.com/davecgh/go-spew
-  version: 6d212800a42e8ab5c146b8ace3490ee17e5225f9
+  version: 04cdfd42973bb9c8589fd6a731800cf222fde1a9
   subpackages:
   - spew
 - name: github.com/facebookgo/clock
@@ -37,7 +37,7 @@ imports:
   subpackages:
   - difflib
 - name: github.com/stretchr/testify
-  version: 69483b4bd14f5845b5a1e55bca19e954e827f1d0
+  version: 4d4bfba8f1d1027c4fdbe371823030df51419987
   subpackages:
   - assert
   - require
@@ -63,13 +63,9 @@ imports:
 - name: github.com/uber/tchannel-go
   version: 79387824978f91318be3bfb43ae12e04c38cfe97
   subpackages:
-  - atomic
   - internal/argreader
   - relay
-  - thrift
-  - thrift/gen-go/meta
   - tnet
-  - trace/thrift/gen-go/tcollector
   - trand
   - typed
 - name: go.uber.org/atomic
@@ -92,7 +88,7 @@ imports:
   - version
   - wire
 - name: go.uber.org/yarpc
-  version: e4ae12793c38b4aea58721458670ded8bb4709a0
+  version: 47ebfe9337d943e637cc1748254727ec1fa89bf4
   subpackages:
   - api/encoding
   - api/middleware
@@ -112,20 +108,20 @@ imports:
   - internal/sync
   - peer
   - peer/hostport
-  - transport
   - transport/http
   - transport/tchannel
   - transport/tchannel/internal
 - name: golang.org/x/net
-  version: 236b8f043b920452504e263bc21d354427127473
+  version: 61557ac0112b576429a0df080e1c2cef5dfbb642
   subpackages:
   - context
+  - context/ctxhttp
 - name: golang.org/x/tools
-  version: 19c96be7c450e3dff3797cb1e458414c15010358
+  version: 6e7ee5a9ec598d425ca86d6aab6e76e21baf328c
   subpackages:
   - go/ast/astutil
 - name: gopkg.in/yaml.v2
-  version: a83829b6f1293c91addabc89d0571c246397bbf4
+  version: a3f3340b5840cee44f372bddb5880fcbc419b46a
 testImports:
 - name: github.com/anmitsu/go-shlex
   version: 648efa622239a2f6ff949fed78ee37b48d499ba4
@@ -136,11 +132,11 @@ testImports:
 - name: github.com/go-playground/overalls
   version: b52dfefba43cf6f75bb177ba45697ed12e0d10a2
 - name: github.com/golang/lint
-  version: 3390df4df2787994aea98de825b964ac7944b817
+  version: b8599f7d71e7fead76b25aeb919c0e2558672f4a
   subpackages:
   - golint
 - name: github.com/jessevdk/go-flags
-  version: 0648c820cd4e564706597268ae2d2c7d9e6900c6
+  version: 460c7bb0abd6e927f2767cadc91aa6ef776a98b4
 - name: github.com/kisielk/errcheck
   version: db0ca22445717d1b2c51ac1034440e0a2a2de645
 - name: github.com/kisielk/gotool
@@ -154,9 +150,9 @@ testImports:
   subpackages:
   - cmd/interfacer
 - name: github.com/pborman/uuid
-  version: c55201b036063326c5b1b89ccfe45a184973d073
+  version: 1b00554d822231195d1babd97ff4a781231955c9
 - name: github.com/russross/blackfriday
-  version: ad7f7c56d58a2c7f75a14cdcaa8b8acd5dc4f141
+  version: 5ebfae50aacdef0dacd1a1acc469c2c1c7a7d4d8
 - name: github.com/sectioneight/md-to-godoc
   version: f274e5a4257c85a9eaf60ac820ee813b78cac6ab
 - name: github.com/shurcooL/sanitized_anchor_name
