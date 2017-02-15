@@ -61,8 +61,8 @@ func TestNew_WithOptions(t *testing.T) {
 	})
 }
 
-func TestHTTPModule_WithFilter(t *testing.T) {
-	withModule(t, registerPanic, []modules.Option{WithFilter(fakeFilter())}, false, func(m *Module) {
+func TestHTTPModule_WithFilters(t *testing.T) {
+	withModule(t, registerPanic, []modules.Option{WithFilters(fakeFilter())}, false, func(m *Module) {
 		assert.NotNil(t, m)
 		makeRequest(m, "GET", "/", nil, func(r *http.Response) {
 			body, err := ioutil.ReadAll(r.Body)
@@ -74,7 +74,7 @@ func TestHTTPModule_WithFilter(t *testing.T) {
 }
 
 func TestHTTPModule_WithUserPanicFilter(t *testing.T) {
-	withModule(t, registerTracerCheckHandler, []modules.Option{WithFilter(userPanicFilter())}, false, func(m *Module) {
+	withModule(t, registerTracerCheckHandler, []modules.Option{WithFilters(userPanicFilter())}, false, func(m *Module) {
 		assert.NotNil(t, m)
 		makeRequest(m, "GET", "/", nil, func(r *http.Response) {
 			assert.Equal(t, http.StatusInternalServerError, r.StatusCode, "Expected 500 with panic wrapper")

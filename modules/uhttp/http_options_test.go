@@ -28,7 +28,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestWithFilter(t *testing.T) {
+func TestWithFilters(t *testing.T) {
 	fakeFilter1 := fakeFilter()
 	fakeFilter2 := fakeFilter()
 	tests := []struct {
@@ -72,9 +72,10 @@ func TestWithFilter(t *testing.T) {
 	}
 
 	for _, tt := range tests {
+		tt := tt
 		t.Run(tt.desc, func(t *testing.T) {
 			t.Parallel()
-			opt := WithFilter(tt.input...)
+			opt := WithFilters(tt.input...)
 			assert.NoError(t, opt(&tt.mi))
 			assert.Equal(t, len(tt.expect), len(filtersFromCreateInfo(tt.mi)))
 		})
@@ -124,6 +125,7 @@ func TestFiltersFromCreateInfo(t *testing.T) {
 	}
 
 	for _, tt := range tests {
+		tt := tt
 		t.Run(tt.desc, func(t *testing.T) {
 			t.Parallel()
 			fs := filtersFromCreateInfo(tt.mi)

@@ -27,8 +27,8 @@ import (
 
 const _filterKey = "uhttpFilter"
 
-// WithFilter adds Filter to uhttp Module that will be applied to all incoming http requests.
-func WithFilter(fs ...Filter) modules.Option {
+// WithFilters adds Filters to uhttp Module that will be applied to all incoming http requests.
+func WithFilters(fs ...Filter) modules.Option {
 	return func(mci *service.ModuleCreateInfo) error {
 		filters := filtersFromCreateInfo(*mci)
 		filters = append(filters, fs...)
