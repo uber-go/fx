@@ -80,6 +80,7 @@ func TestDefaultFiltersWithNopHostAuthFailure(t *testing.T) {
 
 func TestDefaultFiltersWithNopHostConfigured(t *testing.T) {
 	// this test's sub tests cannot run parallel
+	// and they need to build host by theirselves
 	t.Run("testTracingFilterWithLogs", func(t *testing.T) {
 		testTracingFilterWithLogs(t)
 		httpMetricsTeardown()
