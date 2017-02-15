@@ -280,7 +280,7 @@ func registerPanic(_ service.Host) []RouteHandler {
 func fakeFilter() FilterFunc {
 	return func(w http.ResponseWriter, r *http.Request, next http.Handler) {
 		io.WriteString(w, "filter is executed")
-		WithHost(service.NopHost(), next).ServeHTTP(w, r)
+		next.ServeHTTP(w, r)
 	}
 }
 
