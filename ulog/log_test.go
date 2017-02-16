@@ -52,16 +52,18 @@ func TestZapSink(t *testing.T) {
 func TestLogger_SetLogger(t *testing.T) {
 	SetLogger(logger())
 	assert.NotNil(t, _std)
+	SetLogger(nil)
+	assert.NotNil(t, _std)
 }
 
 func TestContext_LoggerAccess(t *testing.T) {
-	ctx := NewLogContext(context.Background(), nil)
+	ctx := ContextWithLogger(context.Background(), nil)
 	assert.NotNil(t, ctx)
 	assert.NotNil(t, Logger(ctx))
 	assert.NotNil(t, ctx.Value(internal.ContextLogger))
 }
 
-func TestWithTracingAware(t *testing.T) {
+func TestContextWithTraceLogger(t *testing.T) {
 	testutils.WithInMemoryLogger(t, nil, func(zapLogger zap.Logger, buf *testutils.TestBuffer) {
 		// Create in-memory logger and jaeger tracer
 		loggerWithZap := Builder().SetLogger(zapLogger).Build()
@@ -71,7 +73,7 @@ func TestWithTracingAware(t *testing.T) {
 		defer closer.Close()
 		span := tracer.StartSpan("opName")
 		ctx := context.WithValue(context.Background(), internal.ContextLogger, loggerWithZap)
-		ctx = WithTracingAware(ctx, span)
+		ctx = ContextWithTraceLogger(ctx, span)
 		Logger(ctx).Info("Testing context aware logger")
 		assert.True(t, len(buf.Lines()) > 0)
 		for _, line := range buf.Lines() {

@@ -54,7 +54,7 @@ type contextFilter struct {
 }
 
 func (f contextFilter) Apply(w http.ResponseWriter, r *http.Request, next http.Handler) {
-	ctx := ulog.NewLogContext(r.Context(), f.log)
+	ctx := ulog.ContextWithLogger(r.Context(), f.log)
 	next.ServeHTTP(w, r.WithContext(ctx))
 }
 
@@ -74,7 +74,7 @@ func (f tracingServerFilter) Apply(w http.ResponseWriter, r *http.Request, next 
 
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
-	ctx = ulog.WithTracingAware(ctx, span)
+	ctx = ulog.ContextWithTraceLogger(ctx, span)
 
 	next.ServeHTTP(w, r.WithContext(ctx))
 }

@@ -88,6 +88,7 @@ type Log interface {
 
 var (
 	_setupMu sync.RWMutex
+	_once    sync.Once
 	_std     = defaultLogger()
 )
 
@@ -120,11 +121,12 @@ func logger() Log {
 func SetLogger(log Log) {
 	_setupMu.Lock()
 	defer _setupMu.Unlock()
-
-	// Log and _std log implements zap.Logger with set of predefined fields,
-	// so we require users to use the configured logger. The Zap implementation however
-	// can be overridden by log.SetLogger(zap.Logger)
-	_std = log.(*baseLogger)
+	_once.Do(func() {
+		// Log and _std log implements zap.Logger with set of predefined fields,
+		// so we require users to use the configured logger. The Zap implementation however
+		// can be overridden by log.SetLogger(zap.Logger)
+		_std = log.(*baseLogger)
+	})
 }
 
 // Logger is the context based logger
@@ -139,8 +141,8 @@ func Logger(ctx context.Context) Log {
 	return logger()
 }
 
-// NewLogContext sets the context with the context aware logger
-func NewLogContext(ctx context.Context, log Log) context.Context {
+// ContextWithLogger sets the context with the context aware logger
+func ContextWithLogger(ctx context.Context, log Log) context.Context {
 	if ctx == nil {
 		ctx = context.Background()
 	}
@@ -150,8 +152,8 @@ func NewLogContext(ctx context.Context, log Log) context.Context {
 	return context.WithValue(ctx, internal.ContextLogger, logger())
 }
 
-// WithTracingAware returns a new context with a context-aware logger
-func WithTracingAware(ctx context.Context, span opentracing.Span) context.Context {
+// ContextWithTraceLogger returns a new context with a context-aware logger
+func ContextWithTraceLogger(ctx context.Context, span opentracing.Span) context.Context {
 	// Note that opentracing.Tracer does not expose the tracer id
 	// We only inject tracing information for jaeger.Tracer
 	logger := Logger(ctx)
