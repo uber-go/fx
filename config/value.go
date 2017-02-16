@@ -393,12 +393,7 @@ func convertValue(value interface{}, targetType reflect.Type) (interface{}, erro
 
 // PopulateStruct fills in a struct from configuration
 func (cv Value) PopulateStruct(target interface{}) error {
-	if !cv.HasValue() {
-		return nil
-	}
-
 	_, err := cv.valueStruct(cv.key, target)
-
 	return err
 }
 
@@ -519,18 +514,16 @@ func (cv Value) valueStruct(key string, target interface{}) (interface{}, error)
 		case bucketObject:
 			ntt := derefType(fieldType)
 			newTarget := reflect.New(ntt)
-			if v2 := global.Get(childKey); v2.HasValue() {
-
-				if err := v2.PopulateStruct(newTarget.Interface()); err != nil {
-					return nil, errors.Wrap(err, "unable to populate struct of object target")
-				}
-				// if the target is not a pointer, deref the value
-				// for copy semantics
-				if fieldType.Kind() != reflect.Ptr {
-					newTarget = newTarget.Elem()
-				}
-				fieldValue.Set(newTarget)
+			v2 := global.Get(childKey)
+			if err := v2.PopulateStruct(newTarget.Interface()); err != nil {
+				return nil, errors.Wrap(err, "unable to populate struct of object target")
 			}
+			// if the target is not a pointer, deref the value
+			// for copy semantics
+			if fieldType.Kind() != reflect.Ptr {
+				newTarget = newTarget.Elem()
+			}
+			fieldValue.Set(newTarget)
 		case bucketArray:
 			// TODO(alsam) fix array type DRI-12.
 		case bucketSlice:
@@ -552,6 +545,8 @@ func (cv Value) valueStruct(key string, target interface{}) (interface{}, error)
 					}
 				case bucketObject:
 					newTarget := reflect.New(elementType)
+					// for array, there is no need to set default value on inner struct
+					// so only continue when v2 has value.
 					if v2 := global.Get(arrayKey); v2.HasValue() {
 						if err := v2.PopulateStruct(newTarget.Interface()); err != nil {
 							return nil, errors.Wrap(err, "unable to populate struct of object")

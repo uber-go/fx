@@ -373,3 +373,25 @@ func TestArrayTypeNoPanic(t *testing.T) {
 
 	assert.NoError(t, provider.Get(Root).PopulateStruct(&cs))
 }
+
+func TestNilYAMLProviderSetDefaultTagValue(t *testing.T) {
+	type Inner struct {
+		Set bool `yaml:"set" default:"true"`
+	}
+	data := struct {
+		ID0 int             `yaml:"id0" default:"10"`
+		ID1 string          `yaml:"id1" default:"string"`
+		ID2 Inner           `yaml:"id2"`
+		ID3 []Inner         `yaml:"id3"`
+		ID4 map[Inner]Inner `yaml:"id4"`
+	}{}
+
+	p := NewYAMLProviderFromBytes(nil)
+	p.Get("hello").PopulateStruct(&data)
+
+	assert.Equal(t, 10, data.ID0)
+	assert.Equal(t, "string", data.ID1)
+	assert.True(t, data.ID2.Set)
+	assert.Nil(t, data.ID3)
+	assert.Nil(t, data.ID4)
+}
