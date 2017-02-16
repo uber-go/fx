@@ -28,7 +28,7 @@ type Observer interface {
 
 	// OnStateChange is called whenever the service changes
 	// states
-	OnStateChange(old State, new State)
+	OnStateChange(old State, curr State)
 
 	// OnShutdown is called before the service shuts down
 	OnShutdown(reason Exit)

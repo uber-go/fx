@@ -22,11 +22,13 @@ package service
 
 import (
 	"errors"
+	"sync"
 	"testing"
 	"time"
 
 	"go.uber.org/fx/config"
 	"go.uber.org/fx/testutils/metrics"
+	"go.uber.org/fx/ulog"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -136,4 +138,23 @@ var validServiceConfig = map[string]interface{}{
 
 func withConfig(data map[string]interface{}) Option {
 	return WithConfiguration(config.NewStaticProvider(data))
+}
+
+func TestAfterStartObserver(t *testing.T) {
+	t.Parallel()
+	wg := sync.WaitGroup{}
+	wg.Add(1)
+	h := &host{
+		serviceCore: serviceCore{
+			loggingCore: loggingCore{
+				log: ulog.NopLogger,
+			},
+		},
+		observer: AfterStart(func() {
+			wg.Done()
+		}),
+	}
+
+	h.StartAsync()
+	wg.Wait()
 }
