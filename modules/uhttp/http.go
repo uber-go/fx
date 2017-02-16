@@ -85,9 +85,9 @@ type Config struct {
 type GetHandlersFunc func(service service.Host) []RouteHandler
 
 // New returns a new HTTP module
-func New(hookup GetHandlersFunc, filters []Filter, options ...modules.Option) service.ModuleCreateFunc {
+func New(hookup GetHandlersFunc, options ...modules.Option) service.ModuleCreateFunc {
 	return func(mi service.ModuleCreateInfo) ([]service.Module, error) {
-		mod, err := newModule(mi, hookup, filters, options...)
+		mod, err := newModule(mi, hookup, options...)
 		if err != nil {
 			return nil, errors.Wrap(err, "unable to instantiate HTTP module")
 		}
@@ -98,7 +98,6 @@ func New(hookup GetHandlersFunc, filters []Filter, options ...modules.Option) se
 func newModule(
 	mi service.ModuleCreateInfo,
 	getHandlers GetHandlersFunc,
-	filters []Filter,
 	options ...modules.Option,
 ) (*Module, error) {
 	// setup config defaults
@@ -122,8 +121,6 @@ func newModule(
 		fcb:        defaultFilterChainBuilder(mi.Host),
 	}
 
-	module.fcb = module.fcb.AddFilters(filters...)
-
 	err := module.Host().Config().Get(getConfigKey(mi.Name)).PopulateStruct(cfg)
 	if err != nil {
 		module.Host().Logger().Error("Error loading http module configuration", "error", err)
@@ -138,6 +135,9 @@ func newModule(
 			return module, errors.Wrap(err, "unable to apply option to module")
 		}
 	}
+
+	filters := filtersFromCreateInfo(mi)
+	module.fcb = module.fcb.AddFilters(filters...)
 
 	return module, nil
 }
