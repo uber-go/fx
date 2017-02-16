@@ -25,12 +25,12 @@ import (
 	"go.uber.org/fx/service"
 )
 
-const _middlewareKey = "uhttpServerMiddleware"
+const _middlewareKey = "uhttpInboundMiddleware"
 
-// WithMiddlewares adds middlewares to uhttp Module that will be applied to all incoming http requests.
-func WithMiddlewares(ms ...Middleware) modules.Option {
+// WithInboundMiddlewares adds inbound middlewares to uhttp Module that will be applied to all incoming http requests.
+func WithInboundMiddlewares(ms ...InboundMiddleware) modules.Option {
 	return func(mci *service.ModuleCreateInfo) error {
-		middlewares := middlewaresFromCreateInfo(*mci)
+		middlewares := inboundMiddlewaresFromCreateInfo(*mci)
 		middlewares = append(middlewares, ms...)
 		if mci.Items == nil {
 			mci.Items = make(map[string]interface{})
@@ -41,10 +41,10 @@ func WithMiddlewares(ms ...Middleware) modules.Option {
 	}
 }
 
-func middlewaresFromCreateInfo(mci service.ModuleCreateInfo) []Middleware {
+func inboundMiddlewaresFromCreateInfo(mci service.ModuleCreateInfo) []InboundMiddleware {
 	if items, ok := mci.Items[_middlewareKey]; ok {
 		// Intentionally panic if programmer adds non-middleware slice to the data
-		return items.([]Middleware)
+		return items.([]InboundMiddleware)
 	}
 	return nil
 }

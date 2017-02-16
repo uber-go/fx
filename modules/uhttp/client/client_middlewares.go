@@ -36,22 +36,22 @@ type Executor interface {
 	Execute(r *http.Request) (resp *http.Response, err error)
 }
 
-// Middleware applies middlewares on client requests and such as adding tracing to request's context.
-// Middlewares must call next.Execute() at most once, calling it twice and more
+// OutboundMiddleware applies outbound middlewares on client requests and such as adding tracing to request's context.
+// Outbound middlewares must call next.Execute() at most once, calling it twice and more
 // will lead to an undefined behavior
-type Middleware interface {
+type OutboundMiddleware interface {
 	Handle(r *http.Request, next Executor) (resp *http.Response, err error)
 }
 
-// MiddlewareFunc is an adaptor to call normal functions to apply middlewares
-type MiddlewareFunc func(r *http.Request, next Executor) (resp *http.Response, err error)
+// OutboundMiddlewareFunc is an adaptor to call normal functions to apply outbound middlewares.
+type OutboundMiddlewareFunc func(r *http.Request, next Executor) (resp *http.Response, err error)
 
-// Handle implements Handle from the Middleware interface and simply delegates to the function
-func (f MiddlewareFunc) Handle(r *http.Request, next Executor) (resp *http.Response, err error) {
+// Handle implements Handle from the OutboundMiddleware interface and simply delegates to the function
+func (f OutboundMiddlewareFunc) Handle(r *http.Request, next Executor) (resp *http.Response, err error) {
 	return f(r, next)
 }
 
-func tracingMiddleware() MiddlewareFunc {
+func tracingOutbound() OutboundMiddlewareFunc {
 	return func(req *http.Request, next Executor) (resp *http.Response, err error) {
 		ctx := req.Context()
 		opName := req.Method
@@ -83,9 +83,9 @@ func tracingMiddleware() MiddlewareFunc {
 	}
 }
 
-// authenticationMiddleware on client side calls authenticate, and gets a claim that client is who they say they are
+// authenticationOutbound on client side calls authenticate, and gets a claim that client is who they say they are
 // We only authorize with the claim on server side
-func authenticationMiddleware(info auth.CreateAuthInfo) MiddlewareFunc {
+func authenticationOutbound(info auth.CreateAuthInfo) OutboundMiddlewareFunc {
 	authClient := auth.Load(info)
 	serviceName := info.Config().Get(config.ServiceNameKey).AsString()
 	return func(req *http.Request, next Executor) (resp *http.Response, err error) {

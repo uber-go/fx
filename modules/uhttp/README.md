@@ -39,7 +39,7 @@ func registerHTTP(service service.Host) []uhttp.RouteHandler {
 }
 ```
 
-HTTP handlers are set up with middlewares that inject tracing, authentication information etc. into the
+HTTP handlers are set up with inbound middlewares that inject tracing, authentication information etc. into the
 request context. Request tracing, authentication and context-aware logging are set up by default.
 With context-aware logging, all log statements include trace information such as traceID and spanID.
 This allows service owners to easily find logs corresponding to a request within and even across services.
@@ -47,7 +47,7 @@ This allows service owners to easily find logs corresponding to a request within
 ## HTTP Client
 
 The http client serves similar purpose as http module, but for making requests.
-It has a set of auth and tracing middlewares for http requests and a default timeout set to 2 minutes.
+It has a set of auth and tracing outbound middlewares for http requests and a default timeout set to 2 minutes.
 
 ```go
 package main

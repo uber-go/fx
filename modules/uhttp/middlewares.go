@@ -35,32 +35,32 @@ import (
 
 const _panicResponse = "Server Error"
 
-// Middleware applies middlewares on requests or responses such as
+// InboundMiddleware applies inbound middlewares on requests or responses such as
 // adding tracing to the context
-type Middleware interface {
+type InboundMiddleware interface {
 	Handle(w http.ResponseWriter, r *http.Request, next http.Handler)
 }
 
-// MiddlewareFunc is an adaptor to call normal functions to apply middlewares
-type MiddlewareFunc func(w http.ResponseWriter, r *http.Request, next http.Handler)
+// InboundMiddlewareFunc is an adaptor to call normal functions to apply inbound middlewares
+type InboundMiddlewareFunc func(w http.ResponseWriter, r *http.Request, next http.Handler)
 
-// Handle implements Handle from the Middleware interface and simply delegates to the function
-func (f MiddlewareFunc) Handle(w http.ResponseWriter, r *http.Request, next http.Handler) {
+// Handle implements Handle from the InboundMiddleware interface and simply delegates to the function
+func (f InboundMiddlewareFunc) Handle(w http.ResponseWriter, r *http.Request, next http.Handler) {
 	f(w, r, next)
 }
 
-type contextMiddleware struct {
+type contextInbound struct {
 	log ulog.Log
 }
 
-func (f contextMiddleware) Handle(w http.ResponseWriter, r *http.Request, next http.Handler) {
+func (f contextInbound) Handle(w http.ResponseWriter, r *http.Request, next http.Handler) {
 	ctx := ulog.ContextWithLogger(r.Context(), f.log)
 	next.ServeHTTP(w, r.WithContext(ctx))
 }
 
-type tracingServerMiddleware struct{}
+type tracingInbound struct{}
 
-func (f tracingServerMiddleware) Handle(w http.ResponseWriter, r *http.Request, next http.Handler) {
+func (f tracingInbound) Handle(w http.ResponseWriter, r *http.Request, next http.Handler) {
 	ctx := r.Context()
 	operationName := r.Method
 	carrier := opentracing.HTTPHeadersCarrier(r.Header)
@@ -79,12 +79,12 @@ func (f tracingServerMiddleware) Handle(w http.ResponseWriter, r *http.Request, 
 	next.ServeHTTP(w, r.WithContext(ctx))
 }
 
-// authorizationMiddleware authorizes services based on configuration
-type authorizationMiddleware struct {
+// authorizationInbound authorizes services based on configuration
+type authorizationInbound struct {
 	authClient auth.Client
 }
 
-func (f authorizationMiddleware) Handle(w http.ResponseWriter, r *http.Request, next http.Handler) {
+func (f authorizationInbound) Handle(w http.ResponseWriter, r *http.Request, next http.Handler) {
 	if err := f.authClient.Authorize(r.Context()); err != nil {
 		stats.HTTPAuthFailCounter.Inc(1)
 		ulog.Logger(r.Context()).Error(auth.ErrAuthorization, "error", err)
@@ -94,11 +94,11 @@ func (f authorizationMiddleware) Handle(w http.ResponseWriter, r *http.Request, 
 	next.ServeHTTP(w, r)
 }
 
-// panicMiddleware handles any panics and return an error
-// panic middleware should be added at the end of middleware chain to catch panics
-type panicMiddleware struct{}
+// panicInbound handles any panics and return an error
+// panic inbound middleware should be added at the end of middleware chain to catch panics
+type panicInbound struct{}
 
-func (f panicMiddleware) Handle(w http.ResponseWriter, r *http.Request, next http.Handler) {
+func (f panicInbound) Handle(w http.ResponseWriter, r *http.Request, next http.Handler) {
 	ctx := r.Context()
 	defer func() {
 		if err := recover(); err != nil {
@@ -110,10 +110,10 @@ func (f panicMiddleware) Handle(w http.ResponseWriter, r *http.Request, next htt
 	next.ServeHTTP(w, r)
 }
 
-// metricsMiddleware adds any default metrics related to HTTP
-type metricsMiddleware struct{}
+// metricsInbound adds any default metrics related to HTTP
+type metricsInbound struct{}
 
-func (f metricsMiddleware) Handle(w http.ResponseWriter, r *http.Request, next http.Handler) {
+func (f metricsInbound) Handle(w http.ResponseWriter, r *http.Request, next http.Handler) {
 	stopwatch := stats.HTTPMethodTimer.Timer(r.Method).Start()
 	defer stopwatch.Stop()
 	defer stats.HTTPStatusCountScope.Tagged(map[string]string{stats.TagStatus: w.Header().Get("Status")}).Counter("total").Inc(1)

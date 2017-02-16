@@ -27,12 +27,12 @@ import (
 	"go.uber.org/fx/auth"
 )
 
-// New creates an http.Client that includes 2 extra middlewares: tracing and auth
-// they are going to be applied in following order: tracing, auth, remaining middlewares
+// New creates an http.Client that includes 2 extra outbound middlewares: tracing and auth
+// they are going to be applied in following order: tracing, auth, remaining outbound middlewares
 // and only if all of them passed the request is going to be send.
 // Client is safe to use by multiple go routines, if global tracer is not changed.
-func New(info auth.CreateAuthInfo, middlewares ...Middleware) *http.Client {
-	defaultMiddlewares := []Middleware{tracingMiddleware(), authenticationMiddleware(info)}
+func New(info auth.CreateAuthInfo, middlewares ...OutboundMiddleware) *http.Client {
+	defaultMiddlewares := []OutboundMiddleware{tracingOutbound(), authenticationOutbound(info)}
 	defaultMiddlewares = append(defaultMiddlewares, middlewares...)
 	return &http.Client{
 		Transport: newExecutionChain(defaultMiddlewares, http.DefaultTransport),
@@ -40,17 +40,17 @@ func New(info auth.CreateAuthInfo, middlewares ...Middleware) *http.Client {
 	}
 }
 
-// executionChain represents a chain of middlewares that are being executed recursively
+// executionChain represents a chain of outbound middlewares that are being executed recursively
 // in the increasing order middlewares[0], middlewares[1], ... The final transport is called
 // to make RoundTrip after the last middleware is completed.
 type executionChain struct {
 	currentMiddleware int
-	middlewares       []Middleware
+	middlewares       []OutboundMiddleware
 	finalTransport    http.RoundTripper
 }
 
 func newExecutionChain(
-	middlewares []Middleware, finalTransport http.RoundTripper,
+	middlewares []OutboundMiddleware, finalTransport http.RoundTripper,
 ) executionChain {
 	return executionChain{
 		middlewares:    middlewares,

@@ -27,13 +27,13 @@ import (
 	"go.uber.org/fx/ulog"
 )
 
-type middlewareChain struct {
+type inboundMiddlewareChain struct {
 	currentMiddleware int
 	finalHandler      http.Handler
-	middlewares       []Middleware
+	middlewares       []InboundMiddleware
 }
 
-func (fc middlewareChain) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (fc inboundMiddlewareChain) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if fc.currentMiddleware == len(fc.middlewares) {
 		fc.finalHandler.ServeHTTP(w, r)
 	} else {
@@ -43,37 +43,37 @@ func (fc middlewareChain) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-type middlewareChainBuilder struct {
+type inboundMiddlewareChainBuilder struct {
 	finalHandler http.Handler
-	middlewares  []Middleware
+	middlewares  []InboundMiddleware
 }
 
-func defaultMiddlewareChainBuilder(log ulog.Log, authClient auth.Client) middlewareChainBuilder {
-	mcb := newMiddlewareChainBuilder()
+func defaultInboundMiddlewareChainBuilder(log ulog.Log, authClient auth.Client) inboundMiddlewareChainBuilder {
+	mcb := newInboundMiddlewareChainBuilder()
 	return mcb.AddMiddlewares(
-		contextMiddleware{log},
-		panicMiddleware{},
-		metricsMiddleware{},
-		tracingServerMiddleware{},
-		authorizationMiddleware{
+		contextInbound{log},
+		panicInbound{},
+		metricsInbound{},
+		tracingInbound{},
+		authorizationInbound{
 			authClient: authClient,
 		})
 }
 
-// newMiddlewareChainBuilder creates an empty middlewareChainBuilder for setup
-func newMiddlewareChainBuilder() middlewareChainBuilder {
-	return middlewareChainBuilder{}
+// newInboundMiddlewareChainBuilder creates an empty middlewareChainBuilder for setup
+func newInboundMiddlewareChainBuilder() inboundMiddlewareChainBuilder {
+	return inboundMiddlewareChainBuilder{}
 }
 
-func (m middlewareChainBuilder) AddMiddlewares(middlewares ...Middleware) middlewareChainBuilder {
+func (m inboundMiddlewareChainBuilder) AddMiddlewares(middlewares ...InboundMiddleware) inboundMiddlewareChainBuilder {
 	for _, middleware := range middlewares {
 		m.middlewares = append(m.middlewares, middleware)
 	}
 	return m
 }
 
-func (m middlewareChainBuilder) Build(finalHandler http.Handler) middlewareChain {
-	return middlewareChain{
+func (m inboundMiddlewareChainBuilder) Build(finalHandler http.Handler) inboundMiddlewareChain {
+	return inboundMiddlewareChain{
 		middlewares:  m.middlewares,
 		finalHandler: finalHandler,
 	}

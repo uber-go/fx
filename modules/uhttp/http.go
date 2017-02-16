@@ -69,7 +69,7 @@ type Module struct {
 	listener net.Listener
 	handlers []RouteHandler
 	listenMu sync.RWMutex
-	mcb      middlewareChainBuilder
+	mcb      inboundMiddlewareChainBuilder
 }
 
 var _ service.Module = &Module{}
@@ -121,7 +121,7 @@ func newModule(
 	module := &Module{
 		ModuleBase: *modules.NewModuleBase(mi.Name, mi.Host, []string{}),
 		handlers:   handlers,
-		mcb:        defaultMiddlewareChainBuilder(log, mi.Host.AuthClient()),
+		mcb:        defaultInboundMiddlewareChainBuilder(log, mi.Host.AuthClient()),
 	}
 
 	err := module.Host().Config().Get(getConfigKey(mi.Name)).PopulateStruct(cfg)
@@ -139,7 +139,7 @@ func newModule(
 		}
 	}
 
-	middlewares := middlewaresFromCreateInfo(mi)
+	middlewares := inboundMiddlewaresFromCreateInfo(mi)
 	module.mcb = module.mcb.AddMiddlewares(middlewares...)
 
 	return module, nil

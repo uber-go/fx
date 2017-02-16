@@ -73,7 +73,7 @@ func TestClientGet(t *testing.T) {
 func TestClientGetTwiceExecutesAllMiddlewares(t *testing.T) {
 	svr := startServer()
 	count := 0
-	var f MiddlewareFunc = func(r *http.Request, next Executor) (resp *http.Response, err error) {
+	var f OutboundMiddlewareFunc = func(r *http.Request, next Executor) (resp *http.Response, err error) {
 		count++
 		return next.Execute(r)
 	}

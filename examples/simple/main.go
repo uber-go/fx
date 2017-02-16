@@ -29,7 +29,7 @@ import (
 
 func main() {
 	svc, err := service.WithModules(
-		uhttp.New(registerHTTPers, uhttp.WithMiddlewares(simpleMiddleware{})),
+		uhttp.New(registerHTTPers, uhttp.WithInboundMiddlewares(simpleInboundMiddleware{})),
 	).Build()
 	if err != nil {
 		log.Fatal("Unable to initialize service", "error", err)
