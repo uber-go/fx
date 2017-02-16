@@ -29,9 +29,10 @@
 // Adding an object, or a constructor of an object to the graph.
 //
 // There are two ways of providing an object:
-// 1. Injecting a pointer to an existing object
-// 2. Injecting a "constructor function" that returns one pointer (or interface)
 //
+// • Injecting a pointer to an existing object
+//
+// • Injecting a "constructor function" that returns one pointer (or interface)
 //
 // Injecting an object
 //
