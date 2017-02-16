@@ -29,10 +29,10 @@ import (
 )
 
 var (
-	errParamType   = errors.New("Graph injection must be done through a pointer or a function")
-	errReturnCount = errors.New("Constructor function must return exactly one value")
-	errReturnKind  = errors.New("Constructor return type must be a pointer")
-	errArgKind     = errors.New("Constructor arguments must be pointers")
+	errParamType   = errors.New("graph injection must be done through a pointer or a function")
+	errReturnCount = errors.New("constructor function must return exactly one value")
+	errReturnKind  = errors.New("constructor return type must be a pointer")
+	errArgKind     = errors.New("constructor arguments must be pointers")
 )
 
 // New returns a new Dependency Injection Graph
@@ -112,9 +112,8 @@ func (g *graph) Resolve(obj interface{}) error {
 	// drastically increases the chances that we're not missing something
 	for _, node := range g.nodes {
 		for _, dep := range node.dependencies() {
-			// check that the dependency has been nodes
-			_, ok := g.nodes[dep]
-			if !ok {
+			// check that the dependency is a registered node
+			if _, ok := g.nodes[dep]; !ok {
 				return fmt.Errorf("%v dependency of type %v is not registered", objElemType, dep)
 			}
 		}
