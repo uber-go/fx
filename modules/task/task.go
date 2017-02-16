@@ -23,7 +23,6 @@ package task
 import (
 	"sync"
 
-	"go.uber.org/fx/modules"
 	"go.uber.org/fx/modules/task/internal/stats"
 	"go.uber.org/fx/service"
 
@@ -58,14 +57,14 @@ func GlobalBackend() Backend {
 
 // NewModule creates an async task queue module
 func NewModule(createFunc BackendCreateFunc) service.ModuleCreateFunc {
-	return func(mi service.ModuleCreateInfo) ([]service.Module, error) {
-		mod, err := newAsyncModuleSingleton(mi, createFunc)
-		return []service.Module{mod}, err
+	return func(mi service.ModuleInfo) (service.Module, error) {
+		return newAsyncModuleSingleton(mi, createFunc)
 	}
 }
 
 func newAsyncModuleSingleton(
-	mi service.ModuleCreateInfo, createFunc BackendCreateFunc,
+	mi service.ModuleInfo,
+	createFunc BackendCreateFunc,
 ) (service.Module, error) {
 	_once.Do(func() {
 		_asyncMod, _asyncModErr = newAsyncModule(mi, createFunc)
@@ -74,27 +73,19 @@ func newAsyncModuleSingleton(
 }
 
 func newAsyncModule(
-	mi service.ModuleCreateInfo, createFunc BackendCreateFunc,
+	mi service.ModuleInfo,
+	createFunc BackendCreateFunc,
 ) (service.Module, error) {
-	SetupTaskMetrics(mi.Host.Metrics())
-	backend, err := createFunc(mi.Host)
+	SetupTaskMetrics(mi.Metrics())
+	backend, err := createFunc(mi)
 	if err != nil {
 		return nil, err
 	}
 	_globalBackendMu.Lock()
 	_globalBackend = backend
 	_globalBackendMu.Unlock()
-	return &AsyncModule{
-		Backend: backend,
-		modBase: *modules.NewModuleBase("task", mi.Host, []string{}),
-	}, nil
+	return backend, nil
 }
 
 // BackendCreateFunc creates a backend implementation
 type BackendCreateFunc func(host service.Host) (Backend, error)
-
-// AsyncModule denotes the asynchronous task queue module
-type AsyncModule struct {
-	Backend
-	modBase modules.ModuleBase
-}

@@ -22,10 +22,15 @@ package service
 
 import "github.com/pkg/errors"
 
+type moduleCreateFuncOptionsPair struct {
+	moduleCreatefunc ModuleCreateFunc
+	options          []ModuleOption
+}
+
 // A Builder is a helper to create a service
 type Builder struct {
 	options []Option
-	modules []ModuleCreateFunc
+	modules []*moduleCreateFuncOptionsPair
 }
 
 // NewBuilder returns a new Builder for instantiating services
@@ -34,17 +39,16 @@ func NewBuilder(options ...Option) *Builder {
 	return b.WithOptions(options...)
 }
 
-// WithModules adds the given modules to the service
-func (b *Builder) WithModules(modules ...ModuleCreateFunc) *Builder {
-	b.modules = append(b.modules, modules...)
-
+// WithModule adds the given module to the service
+func (b *Builder) WithModule(module ModuleCreateFunc, options ...ModuleOption) *Builder {
+	b.modules = append(b.modules, &moduleCreateFuncOptionsPair{module, options})
 	return b
 }
 
-// WithModules is a helper to create a service without any options
-func WithModules(modules ...ModuleCreateFunc) *Builder {
+// WithModule is a helper to create a service without any options
+func WithModule(module ModuleCreateFunc, options ...ModuleOption) *Builder {
 	b := NewBuilder()
-	return b.WithModules(modules...)
+	return b.WithModule(module, options...)
 }
 
 // WithOptions adds service Options to the builder
@@ -59,9 +63,10 @@ func (b *Builder) Build() (Owner, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "service instantiation failed due to options")
 	}
-
-	if err := svc.AddModules(b.modules...); err != nil {
-		return nil, errors.Wrap(err, "service modules failed to initialize")
+	for _, module := range b.modules {
+		if err := svc.AddModule(module.moduleCreateFunc, module.options...); err != nil {
+			return nil, errors.Wrap(err, "service modules failed to initialize")
+		}
 	}
 
 	return svc, nil

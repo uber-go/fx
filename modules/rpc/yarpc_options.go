@@ -32,28 +32,29 @@ const (
 )
 
 // WithInboundMiddleware adds custom YARPC inboundMiddleware to the module
-func WithInboundMiddleware(i ...middleware.UnaryInbound) modules.Option {
-	return func(mci *service.ModuleCreateInfo) error {
-		inboundMiddleware := inboundMiddlewareFromCreateInfo(*mci)
-		inboundMiddleware = append(inboundMiddleware, i...)
-		mci.Items[_interceptorKey] = inboundMiddleware
-
-		return nil
-	}
+func WithInboundMiddleware(i ...middleware.UnaryInbound) service.ModuleOption {
+	return service.WithModuleItem(_interceptorKey, func(existing interface{}) interface{} {
+		var inboundMiddleware []middleware.UnaryInbound
+		if existing != nil {
+			inboundMiddleware = existing.([]middleware.UnaryInbound)
+		}
+		return append(inboundMiddleware, i...)
+	})
 }
 
 // WithOnewayInboundMiddleware adds custom YARPC inboundMiddleware to the module
 func WithOnewayInboundMiddleware(i ...middleware.OnewayInbound) modules.Option {
-	return func(mci *service.ModuleCreateInfo) error {
-		inboundMiddleware := onewayInboundMiddlewareFromCreateInfo(*mci)
-		inboundMiddleware = append(inboundMiddleware, i...)
-		mci.Items[_onewayInterceptorKey] = inboundMiddleware
-		return nil
-	}
+	return service.WithModuleItem(_onewayInterceptorKey, func(existing interface{}) interface{} {
+		var inboundMiddleware []middleware.OnewayInbound
+		if existing != nil {
+			inboundMiddleware = existing.([]middleware.OnewayInbound)
+		}
+		return append(inboundMiddleware, i...)
+	})
 }
 
-func inboundMiddlewareFromCreateInfo(mci service.ModuleCreateInfo) []middleware.UnaryInbound {
-	items, ok := mci.Items[_interceptorKey]
+func inboundMiddlewareFromModuleInfo(mci service.ModuleInfo) []middleware.UnaryInbound {
+	items, ok := mci.Items()[_interceptorKey]
 	if !ok {
 		return nil
 	}
@@ -62,8 +63,8 @@ func inboundMiddlewareFromCreateInfo(mci service.ModuleCreateInfo) []middleware.
 	return items.([]middleware.UnaryInbound)
 }
 
-func onewayInboundMiddlewareFromCreateInfo(mci service.ModuleCreateInfo) []middleware.OnewayInbound {
-	items, ok := mci.Items[_onewayInterceptorKey]
+func onewayInboundMiddlewareFromModuleInfo(mci service.ModuleInfo) []middleware.OnewayInbound {
+	items, ok := mci.Items()[_onewayInterceptorKey]
 	if !ok {
 		return nil
 	}

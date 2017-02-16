@@ -31,7 +31,6 @@ import (
 	"go.uber.org/fx/modules"
 	"go.uber.org/fx/modules/uhttp/internal/stats"
 	"go.uber.org/fx/service"
-	"go.uber.org/fx/ulog"
 
 	"github.com/pkg/errors"
 )
@@ -61,9 +60,8 @@ var _ service.Module = &Module{}
 
 // A Module is a module to handle HTTP requests
 type Module struct {
-	modules.ModuleBase
+	service.ModuleInfo
 	config   Config
-	log      ulog.Log
 	srv      *http.Server
 	listener net.Listener
 	handlers []RouteHandler
@@ -75,7 +73,6 @@ var _ service.Module = &Module{}
 
 // Config handles config for HTTP modules
 type Config struct {
-	modules.ModuleConfig
 	Port    int           `yaml:"port"`
 	Timeout time.Duration `yaml:"timeout"`
 	Debug   *bool         `yaml:"debug"`
@@ -85,18 +82,14 @@ type Config struct {
 type GetHandlersFunc func(service service.Host) []RouteHandler
 
 // New returns a new HTTP module
-func New(hookup GetHandlersFunc, filters []Filter, options ...modules.Option) service.ModuleCreateFunc {
-	return func(mi service.ModuleCreateInfo) ([]service.Module, error) {
-		mod, err := newModule(mi, hookup, filters, options...)
-		if err != nil {
-			return nil, errors.Wrap(err, "unable to instantiate HTTP module")
-		}
-		return []service.Module{mod}, nil
+func New(hookup GetHandlersFunc, filters []Filter) service.ModuleCreateFunc {
+	return func(mi service.ModuleInfo) (service.Module, error) {
+		return newModule(mi, hookup, filters)
 	}
 }
 
 func newModule(
-	mi service.ModuleCreateInfo,
+	mi service.ModuleInfo,
 	getHandlers GetHandlersFunc,
 	filters []Filter,
 	options ...modules.Option,
@@ -143,7 +136,7 @@ func newModule(
 }
 
 // Start begins serving requests over HTTP
-func (m *Module) Start(ready chan<- struct{}) <-chan error {
+func (m *Module) Start() error {
 	mux := http.NewServeMux()
 	// Do something unrelated to annotations
 	router := NewRouter(m.Host())
@@ -158,47 +151,27 @@ func (m *Module) Start(ready chan<- struct{}) <-chan error {
 		router.PathPrefix("/debug/pprof").Handler(http.DefaultServeMux)
 	}
 
-	ret := make(chan error, 1)
-
 	// Set up the socket
 	listener, err := net.Listen("tcp", fmt.Sprintf(":%d", m.config.Port))
 	if err != nil {
-		ret <- errors.Wrap(err, "unable to open TCP listener for HTTP module")
-		return ret
+		return errors.Wrap(err, "unable to open TCP listener for HTTP module")
 	}
-
 	// finally, start the http server.
 	// TODO update log object to be accessed via http context #74
 	m.log.Info("Server listening on port", "port", m.config.Port)
 
-	if err != nil {
-		ret <- err
-		return ret
-	}
-	m.listenMu.Lock()
 	m.listener = listener
-	m.srv = &http.Server{
-		Handler: mux,
-	}
-	m.listenMu.Unlock()
-
+	m.srv = &http.Server{Handler: mux}
 	go func() {
-		listener := m.accessListener()
-		ready <- struct{}{}
-		err := m.srv.Serve(listener)
-		ret <- err
-		if err != nil {
-			m.log.Error("HTTP Serve error", "error", err)
+		if err := m.srv.Serve(m.listener); err != nil {
+			m.Logger().Error("HTTP Serve error", "error", err)
 		}
 	}()
-	return ret
+	return nil
 }
 
 // Stop shuts down an HTTP module
 func (m *Module) Stop() error {
-	m.listenMu.Lock()
-	defer m.listenMu.Unlock()
-
 	var err error
 	if m.listener != nil {
 		// TODO: Change to use https://tip.golang.org/pkg/net/http/#Server.Shutdown
@@ -208,23 +181,6 @@ func (m *Module) Stop() error {
 		m.listener = nil
 	}
 	return err
-}
-
-// Thread-safe access to the listener object
-func (m *Module) accessListener() net.Listener {
-	m.listenMu.RLock()
-	defer m.listenMu.RUnlock()
-
-	return m.listener
-}
-
-// IsRunning returns whether the module is currently running
-func (m *Module) IsRunning() bool {
-	return m.accessListener() != nil
-}
-
-func getConfigKey(name string) string {
-	return fmt.Sprintf("modules.%s", name)
 }
 
 // addHealth adds in the default if health handler is not set

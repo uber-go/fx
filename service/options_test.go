@@ -29,15 +29,8 @@ import (
 
 	"github.com/opentracing/opentracing-go"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"github.com/uber-go/tally"
 )
-
-func TestAddModules_OK(t *testing.T) {
-	sh := &host{}
-	require.NoError(t, sh.AddModules(successModuleCreate))
-	assert.Empty(t, sh.Modules())
-}
 
 func TestAddModules_Errors(t *testing.T) {
 	sh := &host{}

@@ -43,11 +43,11 @@ const (
 
 type host struct {
 	serviceCore
-	locked   bool
-	observer Observer
-	modules  []Module
-	roles    map[string]bool
-	stateMu  sync.Mutex
+	locked         bool
+	observer       Observer
+	moduleWrappers []*moduleWrapper
+	roles          map[string]bool
+	stateMu        sync.Mutex
 
 	// Shutdown fields.
 	shutdownMu     sync.Mutex
@@ -61,11 +61,11 @@ type host struct {
 var _ Host = &host{}
 var _ Owner = &host{}
 
-func (s *host) addModule(module Module) error {
+func (s *host) addModuleWrapper(moduleWrapper *moduleWrapper) error {
 	if s.locked {
 		return fmt.Errorf("can't add module: service already started")
 	}
-	s.modules = append(s.modules, module)
+	s.modulesWrappers = append(s.moduleWrapperss, moduleWrapper)
 	return nil
 }
 
@@ -80,12 +80,6 @@ func (s *host) supportsRole(roles ...string) bool {
 		}
 	}
 	return false
-}
-
-func (s *host) Modules() []Module {
-	mods := make([]Module, len(s.modules))
-	copy(mods, s.modules)
-	return mods
 }
 
 func (s *host) IsRunning() bool {
@@ -184,31 +178,18 @@ func (s *host) shutdown(err error, reason string, exitCode *int) (bool, error) {
 }
 
 // AddModules adds the given modules to a service host
-func (s *host) AddModules(modules ...ModuleCreateFunc) error {
-	for _, mcf := range modules {
-		mi := ModuleCreateInfo{
-			Host:  s,
-			Items: make(map[string]interface{}),
-		}
-
-		mods, err := mcf(mi)
-		if err != nil {
-			return err
-		}
-
-		if !s.supportsRole(mi.Roles...) {
-			s.Logger().Info(
-				"module will not be added due to selected roles",
-				"roles", mi.Roles,
-			)
-		}
-
-		for _, mod := range mods {
-			err = s.addModule(mod)
-		}
+func (s *host) AddModule(module ModuleCreateFunc, options ...ModuleOption) error {
+	moduleWrapper, err := newModuleWrapper(s, module, options...)
+	if err != nil {
+		return err
 	}
-
-	return nil
+	if !s.supportsRole(moduleWrapper.moduleInfo.Roles()...) {
+		s.Logger().Info(
+			"module will not be added due to selected roles",
+			"roles", mi.Roles,
+		)
+	}
+	return s.addModuleWrapper(moduleWrapper)
 }
 
 // StartAsync service is used as a non-blocking the call on service start. StartAsync will
@@ -323,29 +304,34 @@ func (s *host) Stop(reason string, exitCode int) error {
 	return err
 }
 
-func (s *host) startModules() map[Module]error {
-	results := map[Module]error{}
+func (s *host) startModules() []error {
+	var results []error
+	var lock sync.Mutex
 	wg := sync.WaitGroup{}
 
 	// make sure we wait for all the start
 	// calls to return
-	wg.Add(len(s.modules))
-	for _, mod := range s.modules {
-		go func(m Module) {
+	wg.Add(len(s.moduleWrappers))
+	for _, mod := range s.moduleWrappers {
+		go func(m *moduleWrapper) {
 			if !m.IsRunning() {
 				readyCh := make(chan struct{}, 1)
-				startResult := m.Start(readyCh)
-
+				errC := make(chan err, 1)
+				go func() { errC <- m.Start() }()
 				select {
-				case <-readyCh:
-					s.Logger().Info("Module started up cleanly", "module", m.Name())
+				case err := <-errC:
+					if err != nil {
+						s.Logger().Error("Error received while starting module", "module", m.Name(), "error", startError)
+						lock.Lock()
+						results = append(results, err)
+						lock.Unlock()
+					} else {
+						s.Logger().Info("Module started up cleanly", "module", m.Name())
+					}
 				case <-time.After(defaultStartupWait):
-					results[m] = fmt.Errorf("module didn't start after %v", defaultStartupWait)
-				}
-
-				if startError := <-startResult; startError != nil {
-					s.Logger().Error("Error received while starting module", "module", m.Name(), "error", startError)
-					results[m] = startError
+					lock.Lock()
+					results = append(results, fmt.Errorf("module didn't start after %v", defaultStartupWait))
+					lock.Unlock()
 				}
 			}
 			wg.Done()
@@ -357,17 +343,20 @@ func (s *host) startModules() map[Module]error {
 	return results
 }
 
-func (s *host) stopModules() map[Module]error {
-	results := map[Module]error{}
+func (s *host) stopModules() []error {
+	var results []error
+	var lock sync.Mutex
 	wg := sync.WaitGroup{}
-	wg.Add(len(s.modules))
-	for _, mod := range s.modules {
-		go func(m Module) {
+	wg.Add(len(s.moduleWrappers))
+	for _, mod := range s.moduleWrappers {
+		go func(m *moduleWrapper) {
 			if !m.IsRunning() {
 				// TODO: have a timeout here so a bad shutdown
 				// doesn't block everyone
 				if err := m.Stop(); err != nil {
-					results[m] = err
+					lock.Lock()
+					results = append(results, err)
+					lock.Unlock
 				}
 			}
 			wg.Done()

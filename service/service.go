@@ -48,7 +48,7 @@ const (
 type Owner interface {
 	Host
 
-	AddModules(modules ...ModuleCreateFunc) error
+	AddModule(module ModuleCreateFunc, options ...ModuleOption) error
 
 	// Start service is used for blocking the call on service start. Start will block the
 	// call and yield the control to the service lifecyce manager. No code will be executed
@@ -88,7 +88,7 @@ type serviceConfig struct {
 func New(options ...Option) (Owner, error) {
 	svc := &host{
 		// TODO: get these out of config struct instead
-		modules: []Module{},
+		moduleWrappers: []*moduleWrapper{},
 		serviceCore: serviceCore{
 			resources: map[string]interface{}{},
 		},

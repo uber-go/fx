@@ -22,7 +22,6 @@ package task
 
 import (
 	"context"
-	"errors"
 
 	"go.uber.org/fx/modules/task/internal/stats"
 	"go.uber.org/fx/service"
@@ -62,8 +61,8 @@ func (b NopBackend) Name() string {
 }
 
 // Start implements the Module interface
-func (b NopBackend) Start(ready chan<- struct{}) <-chan error {
-	return make(chan error)
+func (b NopBackend) Start() error {
+	return nil
 }
 
 // Stop implements the Module interface
@@ -71,23 +70,16 @@ func (b NopBackend) Stop() error {
 	return nil
 }
 
-// IsRunning implements the Module interface
-func (b NopBackend) IsRunning() bool {
-	return true
-}
-
 // inMemBackend is an in-memory implementation of the Backend interface
 type inMemBackend struct {
+	service.Host
 	bufQueue chan []byte
-	state    int
 }
 
 // NewInMemBackend creates a new in memory backend, designed for use in tests
 func NewInMemBackend(host service.Host) Backend {
 	stats.SetupTaskMetrics(host.Metrics())
-	return &inMemBackend{
-		bufQueue: make(chan []byte, 2),
-	}
+	return &inMemBackend{host, make(chan []byte, 2)}
 }
 
 // Encoder implements the Backend interface
@@ -101,22 +93,20 @@ func (b *inMemBackend) Name() string {
 }
 
 // Start implements the Module interface
-func (b *inMemBackend) Start(ready chan<- struct{}) <-chan error {
-	errorCh := make(chan error, 2)
-	if b.IsRunning() {
-		errorCh <- errors.New("cannot start when module is already running")
-	} else if b.state == _stopped {
-		errorCh <- errors.New("cannot start when module has been stopped")
-	} else {
-		b.state = _running
-		go b.consumeFromQueue(errorCh)
-	}
-	return errorCh
+func (b *inMemBackend) Start() error {
+	go b.consumeFromQueue()
+	return nil
 }
 
-func (b *inMemBackend) consumeFromQueue(errorCh chan error) {
+func (b *inMemBackend) consumeFromQueue() {
 	for msg := range b.bufQueue {
-		errorCh <- Run(context.Background(), msg)
+		// TODO(pedge): this was effectively not being handled and was a bug
+		// The error channel passed in is the error channel used for start, which was
+		// only read from once in host.startModules(), and this error was put into
+		// the queue as a second error
+		if err := Run(context.Background(), msg); err != nil {
+			b.Logger().Error("error in consumeFromQueue", "error", err.Error())
+		}
 	}
 }
 
@@ -130,12 +120,6 @@ func (b *inMemBackend) Publish(ctx context.Context, message []byte) error {
 
 // Stop implements the Module interface
 func (b *inMemBackend) Stop() error {
-	b.state = _stopped
 	close(b.bufQueue)
 	return nil
-}
-
-// IsRunning implements the Module interface
-func (b *inMemBackend) IsRunning() bool {
-	return b.state == _running
 }

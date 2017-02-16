@@ -72,14 +72,6 @@ func TestSupportsRole_NoMatch(t *testing.T) {
 	assert.False(t, sh.supportsRole("pleasure"), "Should not support non-matching role")
 }
 
-func TestHost_Modules(t *testing.T) {
-	mods := []Module{}
-	sh := &host{modules: mods}
-
-	copied := sh.Modules()
-	assert.Equal(t, len(mods), len(copied), "Should have same amount of modules")
-}
-
 func TestTransitionState(t *testing.T) {
 	sh := &host{}
 	observer := ObserverStub().(*StubObserver)

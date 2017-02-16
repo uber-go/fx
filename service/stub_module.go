@@ -27,7 +27,6 @@ type StubModule struct {
 	NameVal    string
 	StartError error
 	StopError  error
-	Running    bool
 }
 
 var _ Module = &StubModule{}
@@ -38,19 +37,12 @@ func NewStubModule(host Host) *StubModule {
 }
 
 // Start mimics startup
-func (s *StubModule) Start(ready chan<- struct{}) <-chan error {
-	errs := make(chan error, 1)
-	errs <- s.StartError
-	ready <- struct{}{}
-	s.Running = true
-	return errs
+func (s *StubModule) Start() error {
+	return s.StartError
 }
 
 // Name returns the name of the module
 func (s *StubModule) Name() string { return s.NameVal }
-
-// IsRunning returns the current running state
-func (s *StubModule) IsRunning() bool { return s.Running }
 
 // Stop stops the module
 func (s *StubModule) Stop() error { return s.StopError }
