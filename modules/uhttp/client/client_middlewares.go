@@ -36,22 +36,22 @@ type Executor interface {
 	Execute(r *http.Request) (resp *http.Response, err error)
 }
 
-// Filter applies filters on client requests and such as adding tracing to request's context.
-// Filters must call next.Execute() at most once, calling it twice and more
+// Middleware applies middlewares on client requests and such as adding tracing to request's context.
+// Middlewares must call next.Execute() at most once, calling it twice and more
 // will lead to an undefined behavior
-type Filter interface {
-	Apply(r *http.Request, next Executor) (resp *http.Response, err error)
+type Middleware interface {
+	Handle(r *http.Request, next Executor) (resp *http.Response, err error)
 }
 
-// FilterFunc is an adaptor to call normal functions to apply filters
-type FilterFunc func(r *http.Request, next Executor) (resp *http.Response, err error)
+// MiddlewareFunc is an adaptor to call normal functions to apply middlewares
+type MiddlewareFunc func(r *http.Request, next Executor) (resp *http.Response, err error)
 
-// Apply implements Apply from the Filter interface and simply delegates to the function
-func (f FilterFunc) Apply(r *http.Request, next Executor) (resp *http.Response, err error) {
+// Handle implements Handle from the Middleware interface and simply delegates to the function
+func (f MiddlewareFunc) Handle(r *http.Request, next Executor) (resp *http.Response, err error) {
 	return f(r, next)
 }
 
-func tracingFilter() FilterFunc {
+func tracingMiddleware() MiddlewareFunc {
 	return func(req *http.Request, next Executor) (resp *http.Response, err error) {
 		ctx := req.Context()
 		opName := req.Method
@@ -83,9 +83,9 @@ func tracingFilter() FilterFunc {
 	}
 }
 
-// authenticationFilter on client side calls authenticate, and gets a claim that client is who they say they are
+// authenticationMiddleware on client side calls authenticate, and gets a claim that client is who they say they are
 // We only authorize with the claim on server side
-func authenticationFilter(info auth.CreateAuthInfo) FilterFunc {
+func authenticationMiddleware(info auth.CreateAuthInfo) MiddlewareFunc {
 	authClient := auth.Load(info)
 	serviceName := info.Config().Get(config.ServiceNameKey).AsString()
 	return func(req *http.Request, next Executor) (resp *http.Response, err error) {

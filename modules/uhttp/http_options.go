@@ -25,26 +25,26 @@ import (
 	"go.uber.org/fx/service"
 )
 
-const _filterKey = "uhttpFilter"
+const _middlewareKey = "uhttpServerMiddleware"
 
-// WithFilters adds Filters to uhttp Module that will be applied to all incoming http requests.
-func WithFilters(fs ...Filter) modules.Option {
+// WithMiddlewares adds middlewares to uhttp Module that will be applied to all incoming http requests.
+func WithMiddlewares(ms ...Middleware) modules.Option {
 	return func(mci *service.ModuleCreateInfo) error {
-		filters := filtersFromCreateInfo(*mci)
-		filters = append(filters, fs...)
+		middlewares := middlewaresFromCreateInfo(*mci)
+		middlewares = append(middlewares, ms...)
 		if mci.Items == nil {
 			mci.Items = make(map[string]interface{})
 		}
-		mci.Items[_filterKey] = filters
+		mci.Items[_middlewareKey] = middlewares
 
 		return nil
 	}
 }
 
-func filtersFromCreateInfo(mci service.ModuleCreateInfo) []Filter {
-	if items, ok := mci.Items[_filterKey]; ok {
-		// Intentionally panic if programmer adds non-filter slice to the data
-		return items.([]Filter)
+func middlewaresFromCreateInfo(mci service.ModuleCreateInfo) []Middleware {
+	if items, ok := mci.Items[_middlewareKey]; ok {
+		// Intentionally panic if programmer adds non-middleware slice to the data
+		return items.([]Middleware)
 	}
 	return nil
 }

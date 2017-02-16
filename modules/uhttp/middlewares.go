@@ -35,32 +35,32 @@ import (
 
 const _panicResponse = "Server Error"
 
-// Filter applies filters on requests or responses such as
+// Middleware applies middlewares on requests or responses such as
 // adding tracing to the context
-type Filter interface {
-	Apply(w http.ResponseWriter, r *http.Request, next http.Handler)
+type Middleware interface {
+	Handle(w http.ResponseWriter, r *http.Request, next http.Handler)
 }
 
-// FilterFunc is an adaptor to call normal functions to apply filters
-type FilterFunc func(w http.ResponseWriter, r *http.Request, next http.Handler)
+// MiddlewareFunc is an adaptor to call normal functions to apply middlewares
+type MiddlewareFunc func(w http.ResponseWriter, r *http.Request, next http.Handler)
 
-// Apply implements Apply from the Filter interface and simply delegates to the function
-func (f FilterFunc) Apply(w http.ResponseWriter, r *http.Request, next http.Handler) {
+// Handle implements Handle from the Middleware interface and simply delegates to the function
+func (f MiddlewareFunc) Handle(w http.ResponseWriter, r *http.Request, next http.Handler) {
 	f(w, r, next)
 }
 
-type contextFilter struct {
+type contextMiddleware struct {
 	log ulog.Log
 }
 
-func (f contextFilter) Apply(w http.ResponseWriter, r *http.Request, next http.Handler) {
+func (f contextMiddleware) Handle(w http.ResponseWriter, r *http.Request, next http.Handler) {
 	ctx := ulog.ContextWithLogger(r.Context(), f.log)
 	next.ServeHTTP(w, r.WithContext(ctx))
 }
 
-type tracingServerFilter struct{}
+type tracingServerMiddleware struct{}
 
-func (f tracingServerFilter) Apply(w http.ResponseWriter, r *http.Request, next http.Handler) {
+func (f tracingServerMiddleware) Handle(w http.ResponseWriter, r *http.Request, next http.Handler) {
 	ctx := r.Context()
 	operationName := r.Method
 	carrier := opentracing.HTTPHeadersCarrier(r.Header)
@@ -79,12 +79,12 @@ func (f tracingServerFilter) Apply(w http.ResponseWriter, r *http.Request, next 
 	next.ServeHTTP(w, r.WithContext(ctx))
 }
 
-// authorizationFilter authorizes services based on configuration
-type authorizationFilter struct {
+// authorizationMiddleware authorizes services based on configuration
+type authorizationMiddleware struct {
 	authClient auth.Client
 }
 
-func (f authorizationFilter) Apply(w http.ResponseWriter, r *http.Request, next http.Handler) {
+func (f authorizationMiddleware) Handle(w http.ResponseWriter, r *http.Request, next http.Handler) {
 	if err := f.authClient.Authorize(r.Context()); err != nil {
 		stats.HTTPAuthFailCounter.Inc(1)
 		ulog.Logger(r.Context()).Error(auth.ErrAuthorization, "error", err)
@@ -94,11 +94,11 @@ func (f authorizationFilter) Apply(w http.ResponseWriter, r *http.Request, next 
 	next.ServeHTTP(w, r)
 }
 
-// panicFilter handles any panics and return an error
-// panic filter should be added at the end of filter chain to catch panics
-type panicFilter struct{}
+// panicMiddleware handles any panics and return an error
+// panic middleware should be added at the end of middleware chain to catch panics
+type panicMiddleware struct{}
 
-func (f panicFilter) Apply(w http.ResponseWriter, r *http.Request, next http.Handler) {
+func (f panicMiddleware) Handle(w http.ResponseWriter, r *http.Request, next http.Handler) {
 	ctx := r.Context()
 	defer func() {
 		if err := recover(); err != nil {
@@ -110,10 +110,10 @@ func (f panicFilter) Apply(w http.ResponseWriter, r *http.Request, next http.Han
 	next.ServeHTTP(w, r)
 }
 
-// metricsFilter adds any default metrics related to HTTP
-type metricsFilter struct{}
+// metricsMiddleware adds any default metrics related to HTTP
+type metricsMiddleware struct{}
 
-func (f metricsFilter) Apply(w http.ResponseWriter, r *http.Request, next http.Handler) {
+func (f metricsMiddleware) Handle(w http.ResponseWriter, r *http.Request, next http.Handler) {
 	stopwatch := stats.HTTPMethodTimer.Timer(r.Method).Start()
 	defer stopwatch.Stop()
 	defer stats.HTTPStatusCountScope.Tagged(map[string]string{stats.TagStatus: w.Header().Get("Status")}).Counter("total").Inc(1)

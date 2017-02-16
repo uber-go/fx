@@ -27,43 +27,43 @@ import (
 	"go.uber.org/fx/auth"
 )
 
-// New creates an http.Client that includes 2 extra filters: tracing and auth
-// they are going to be applied in following order: tracing, auth, remaining filters
+// New creates an http.Client that includes 2 extra middlewares: tracing and auth
+// they are going to be applied in following order: tracing, auth, remaining middlewares
 // and only if all of them passed the request is going to be send.
 // Client is safe to use by multiple go routines, if global tracer is not changed.
-func New(info auth.CreateAuthInfo, filters ...Filter) *http.Client {
-	defaultFilters := []Filter{tracingFilter(), authenticationFilter(info)}
-	defaultFilters = append(defaultFilters, filters...)
+func New(info auth.CreateAuthInfo, middlewares ...Middleware) *http.Client {
+	defaultMiddlewares := []Middleware{tracingMiddleware(), authenticationMiddleware(info)}
+	defaultMiddlewares = append(defaultMiddlewares, middlewares...)
 	return &http.Client{
-		Transport: newExecutionChain(defaultFilters, http.DefaultTransport),
+		Transport: newExecutionChain(defaultMiddlewares, http.DefaultTransport),
 		Timeout:   2 * time.Minute,
 	}
 }
 
-// executionChain represents a chain of filters that are being executed recursively
-// in the increasing order filters[0], filters[1], ... The final transport is called
-// to make RoundTrip after the last filter is completed.
+// executionChain represents a chain of middlewares that are being executed recursively
+// in the increasing order middlewares[0], middlewares[1], ... The final transport is called
+// to make RoundTrip after the last middleware is completed.
 type executionChain struct {
-	currentFilter  int
-	filters        []Filter
-	finalTransport http.RoundTripper
+	currentMiddleware int
+	middlewares       []Middleware
+	finalTransport    http.RoundTripper
 }
 
 func newExecutionChain(
-	filters []Filter, finalTransport http.RoundTripper,
+	middlewares []Middleware, finalTransport http.RoundTripper,
 ) executionChain {
 	return executionChain{
-		filters:        filters,
+		middlewares:    middlewares,
 		finalTransport: finalTransport,
 	}
 }
 
 func (ec executionChain) Execute(r *http.Request) (resp *http.Response, err error) {
-	if ec.currentFilter < len(ec.filters) {
-		filter := ec.filters[ec.currentFilter]
-		ec.currentFilter++
+	if ec.currentMiddleware < len(ec.middlewares) {
+		middleware := ec.middlewares[ec.currentMiddleware]
+		ec.currentMiddleware++
 
-		return filter.Apply(r, ec)
+		return middleware.Handle(r, ec)
 	}
 
 	return ec.finalTransport.RoundTrip(r)

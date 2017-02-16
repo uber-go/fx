@@ -69,7 +69,7 @@ type Module struct {
 	listener net.Listener
 	handlers []RouteHandler
 	listenMu sync.RWMutex
-	fcb      filterChainBuilder
+	mcb      middlewareChainBuilder
 }
 
 var _ service.Module = &Module{}
@@ -121,7 +121,7 @@ func newModule(
 	module := &Module{
 		ModuleBase: *modules.NewModuleBase(mi.Name, mi.Host, []string{}),
 		handlers:   handlers,
-		fcb:        defaultFilterChainBuilder(log, mi.Host.AuthClient()),
+		mcb:        defaultMiddlewareChainBuilder(log, mi.Host.AuthClient()),
 	}
 
 	err := module.Host().Config().Get(getConfigKey(mi.Name)).PopulateStruct(cfg)
@@ -139,8 +139,8 @@ func newModule(
 		}
 	}
 
-	filters := filtersFromCreateInfo(mi)
-	module.fcb = module.fcb.AddFilters(filters...)
+	middlewares := middlewaresFromCreateInfo(mi)
+	module.mcb = module.mcb.AddMiddlewares(middlewares...)
 
 	return module, nil
 }
@@ -154,7 +154,7 @@ func (m *Module) Start(ready chan<- struct{}) <-chan error {
 	mux.Handle("/", router)
 
 	for _, h := range m.handlers {
-		router.Handle(h.Path, m.fcb.Build(h.Handler))
+		router.Handle(h.Path, m.mcb.Build(h.Handler))
 	}
 
 	if m.config.Debug == nil || *m.config.Debug {

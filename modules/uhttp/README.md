@@ -39,7 +39,7 @@ func registerHTTP(service service.Host) []uhttp.RouteHandler {
 }
 ```
 
-HTTP handlers are set up with filters that inject tracing, authentication information etc. into the
+HTTP handlers are set up with middlewares that inject tracing, authentication information etc. into the
 request context. Request tracing, authentication and context-aware logging are set up by default.
 With context-aware logging, all log statements include trace information such as traceID and spanID.
 This allows service owners to easily find logs corresponding to a request within and even across services.
@@ -47,7 +47,7 @@ This allows service owners to easily find logs corresponding to a request within
 ## HTTP Client
 
 The http client serves similar purpose as http module, but for making requests.
-It has a set of auth and tracing filters for http requests and a default timeout set to 2 minutes.
+It has a set of auth and tracing middlewares for http requests and a default timeout set to 2 minutes.
 
 ```go
 package main
@@ -75,8 +75,8 @@ func main() {
 ### Benchmark results:
 ```
 Current performance benchmark data:
-BenchmarkClientFilters/empty-8         	100000000	        10.8 ns/op	       0 B/op	       0 allocs/op
-BenchmarkClientFilters/tracing-8       	  500000	      3918 ns/op	    1729 B/op	      27 allocs/op
-BenchmarkClientFilters/auth-8          	 1000000	      1866 ns/op	     719 B/op	      14 allocs/op
-BenchmarkClientFilters/default-8       	  300000	      5604 ns/op	    2477 B/op	      41 allocs/op
+BenchmarkClientMiddlewares/empty-8         	100000000	        10.8 ns/op	       0 B/op	       0 allocs/op
+BenchmarkClientMiddlewares/tracing-8       	  500000	      3918 ns/op	    1729 B/op	      27 allocs/op
+BenchmarkClientMiddlewares/auth-8          	 1000000	      1866 ns/op	     719 B/op	      14 allocs/op
+BenchmarkClientMiddlewares/default-8       	  300000	      5604 ns/op	    2477 B/op	      41 allocs/op
 ```

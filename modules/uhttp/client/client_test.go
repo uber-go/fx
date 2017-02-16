@@ -40,7 +40,7 @@ func TestNew(t *testing.T) {
 	t.Parallel()
 	chain, ok := _testClient.Transport.(executionChain)
 	require.True(t, ok)
-	assert.Equal(t, 2, len(chain.filters))
+	assert.Equal(t, 2, len(chain.middlewares))
 }
 
 func TestNew_Panic(t *testing.T) {
@@ -57,7 +57,7 @@ func TestClientDo(t *testing.T) {
 	checkOKResponse(t, resp, err)
 }
 
-func TestClientDoWithoutFilters(t *testing.T) {
+func TestClientDoWithoutMiddlewares(t *testing.T) {
 	svr := startServer()
 	req := createHTTPClientRequest(svr.URL)
 	resp, err := _testClient.Do(req)
@@ -70,10 +70,10 @@ func TestClientGet(t *testing.T) {
 	checkOKResponse(t, resp, err)
 }
 
-func TestClientGetTwiceExecutesAllFilters(t *testing.T) {
+func TestClientGetTwiceExecutesAllMiddlewares(t *testing.T) {
 	svr := startServer()
 	count := 0
-	var f FilterFunc = func(r *http.Request, next Executor) (resp *http.Response, err error) {
+	var f MiddlewareFunc = func(r *http.Request, next Executor) (resp *http.Response, err error) {
 		count++
 		return next.Execute(r)
 	}
