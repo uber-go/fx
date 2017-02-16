@@ -59,6 +59,8 @@ func tracingFilter() FilterFunc {
 		if s := opentracing.SpanFromContext(ctx); s != nil {
 			parent = s.Context()
 		}
+
+		// TODO(alsam) This makes our client to be not safe to use by multiple go routines.
 		span := opentracing.GlobalTracer().StartSpan(opName, opentracing.ChildOf(parent))
 		ext.SpanKindRPCClient.Set(span)
 		ext.HTTPUrl.Set(span, req.URL.String())
