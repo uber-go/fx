@@ -28,7 +28,7 @@ package dig
 //         Grandchild2
 //     Child3 ->
 //         GrandchildInt1 (Grandchild1 object)
-//			   GrandchildInt2 (Grandchild2 object)
+//         GrandchildInt2 (Grandchild2 object)
 
 type Parent1 struct {
 	c1   *Child1

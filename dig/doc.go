@@ -83,10 +83,16 @@
 //
 //   var o *Object
 //   err := dig.Resolve(&o) // notice the pointer to a pointer as param type
+//   if err == nil {
+//       // o is ready to use
+//   }
 //
 //   type Do interface{}
 //   var d Do
 //   err := dig.Resolve(&d) // notice pointer to an interface
+//   if err == nil {
+//       // d is ready to use
+//   }
 //
 //
 package dig
