@@ -32,27 +32,26 @@ import (
 	"github.com/uber-go/tally"
 )
 
-func TestAddModules_OK(t *testing.T) {
-	sh := &host{}
-	require.NoError(t, sh.AddModules(successModuleCreate))
-	assert.Empty(t, sh.Modules())
+func TestNewOwner_ModulesOK(t *testing.T) {
+	_, err := NewOwner([]ModuleCreateFunc{successModuleCreate}, withConfig(validServiceConfig))
+	require.NoError(t, err)
 }
 
-func TestAddModules_Errors(t *testing.T) {
-	sh := &host{}
-	assert.Error(t, sh.AddModules(errorModuleCreate))
+func TestNewOwner_ModulesErr(t *testing.T) {
+	_, err := NewOwner([]ModuleCreateFunc{errorModuleCreate}, withConfig(validServiceConfig))
+	assert.Error(t, err)
 }
 
-func TestWithMetrics_OK(t *testing.T) {
+func TestNewOwner_WithMetricsOK(t *testing.T) {
 	assert.NotPanics(t, func() {
-		New(WithMetrics(tally.NoopScope, metrics.NopCachedStatsReporter))
+		NewOwner([]ModuleCreateFunc{successModuleCreate}, WithMetrics(tally.NoopScope, metrics.NopCachedStatsReporter))
 	})
 }
 
-func TestWithTracing_OK(t *testing.T) {
+func TestNewOwner_WithTracingOK(t *testing.T) {
 	tracer := &opentracing.NoopTracer{}
 	assert.NotPanics(t, func() {
-		New(WithTracer(tracer))
+		NewOwner([]ModuleCreateFunc{successModuleCreate}, WithTracer(tracer))
 	})
 }
 

@@ -28,14 +28,10 @@ func WithService(module service.ModuleCreateFunc, observer service.Observer, opt
 		observer = service.ObserverStub()
 	}
 
-	svc, err := service.New(append(options, service.WithObserver(observer))...)
+	svc, err := service.NewOwner([]service.ModuleCreateFunc{module}, append(options, service.WithObserver(observer))...)
 	if err != nil {
 		panic(err)
 	}
-	err = svc.AddModules(module)
 
-	if err != nil {
-		panic(err)
-	}
 	fn(svc)
 }

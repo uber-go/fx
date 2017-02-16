@@ -48,8 +48,6 @@ const (
 type Owner interface {
 	Host
 
-	AddModules(modules ...ModuleCreateFunc) error
-
 	// Start service is used for blocking the call on service start. Start will block the
 	// call and yield the control to the service lifecyce manager. No code will be executed
 	//after call to Start() the service.
@@ -83,9 +81,8 @@ type serviceConfig struct {
 	Roles       []string `yaml:"roles"`
 }
 
-// New creates a service owner from a set of service instances and options
-// TODO(glib): Something is fishy here... `service.New` returns a service.Owner -_-
-func New(options ...Option) (Owner, error) {
+// NewOwner creates a service owner from a set of module creation functions and options.
+func NewOwner(modules []ModuleCreateFunc, options ...Option) (Owner, error) {
 	svc := &host{
 		// TODO: get these out of config struct instead
 		modules: []Module{},
@@ -143,6 +140,10 @@ func New(options ...Option) (Owner, error) {
 	svc.transitionState(Initialized)
 
 	svc.Metrics().Counter("boot").Inc(1)
+
+	if err := svc.addModules(modules...); err != nil {
+		return nil, err
+	}
 
 	return svc, nil
 }

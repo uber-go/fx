@@ -29,14 +29,14 @@ import (
 )
 
 func main() {
-	svc, err := service.NewBuilder(
-		service.WithObserver(&Observer{}),
-	).WithModules(
+	svc, err := service.WithModules(
 		// Create a YARPC module that exposes endpoints
 		rpc.ThriftModule(
 			rpc.CreateThriftServiceFunc(NewYarpcThriftHandler),
 			modules.WithRoles("service"),
 		),
+	).WithOptions(
+		service.WithObserver(&Observer{}),
 	).Build()
 
 	if err != nil {
