@@ -109,10 +109,10 @@ logging:
 
 	svc, err := New(cfgOpt)
 	require.NoError(t, err)
-	assert.NotNil(t, svc.Logger())
+	assert.NotNil(t, svc.(*host).log)
 	// Note: Sentry is not accessible so we cannot directly test it here. Just invoking the code
 	// path to make sure there is no panic
-	svc.Logger().Info("Testing sentry call")
+	svc.(*host).log.Info("Testing sentry call")
 }
 
 func TestBadOption_Panics(t *testing.T) {

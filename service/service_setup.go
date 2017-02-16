@@ -45,7 +45,7 @@ func (svc *serviceCore) setupLogging() {
 		svc.log = logBuilder.WithConfiguration(svc.logConfig).Build()
 		ulog.SetLogger(svc.log)
 	} else {
-		svc.log.Debug("Using custom log provider due to service.WithLogger option")
+		ulog.Logger(context.Background()).Debug("Using custom log provider due to service.WithLogger option")
 	}
 }
 
@@ -55,7 +55,7 @@ func (svc *serviceCore) setupStandardConfig() error {
 	}
 
 	if errs := validator.Validate(svc.standardConfig); errs != nil {
-		svc.Logger().Error("Invalid service configuration", "error", errs)
+		svc.log.Error("Invalid service configuration", "error", errs)
 		return errors.Wrap(errs, "service configuration failed validation")
 	}
 	return nil

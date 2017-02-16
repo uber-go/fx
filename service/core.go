@@ -46,7 +46,6 @@ type Host interface {
 	Observer() Observer
 	Config() config.Provider
 	Resources() map[string]interface{}
-	Logger() ulog.Log
 	Tracer() opentracing.Tracer
 }
 
@@ -100,10 +99,6 @@ func (tc *tracerCore) Tracer() opentracing.Tracer {
 type loggingCore struct {
 	log       ulog.Log
 	logConfig ulog.Configuration
-}
-
-func (lc *loggingCore) Logger() ulog.Log {
-	return lc.log
 }
 
 type serviceCore struct {

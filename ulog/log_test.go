@@ -55,7 +55,7 @@ func TestLogger_SetLogger(t *testing.T) {
 }
 
 func TestContext_LoggerAccess(t *testing.T) {
-	ctx := NewLogContext(context.Background())
+	ctx := NewLogContext(context.Background(), nil)
 	assert.NotNil(t, ctx)
 	assert.NotNil(t, Logger(ctx))
 	assert.NotNil(t, ctx.Value(internal.ContextLogger))

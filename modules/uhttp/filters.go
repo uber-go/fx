@@ -26,7 +26,6 @@ import (
 
 	"go.uber.org/fx/auth"
 	"go.uber.org/fx/modules/uhttp/internal/stats"
-	"go.uber.org/fx/service"
 	"go.uber.org/fx/ulog"
 
 	"github.com/opentracing/opentracing-go"
@@ -51,11 +50,11 @@ func (f FilterFunc) Apply(w http.ResponseWriter, r *http.Request, next http.Hand
 }
 
 type contextFilter struct {
-	host service.Host
+	log ulog.Log
 }
 
 func (f contextFilter) Apply(w http.ResponseWriter, r *http.Request, next http.Handler) {
-	ctx := ulog.NewLogContext(r.Context())
+	ctx := ulog.NewLogContext(r.Context(), f.log)
 	next.ServeHTTP(w, r.WithContext(ctx))
 }
 

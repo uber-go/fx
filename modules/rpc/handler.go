@@ -45,7 +45,7 @@ func (f contextInboundMiddleware) Handle(ctx context.Context, req *transport.Req
 		Start()
 	defer stopwatch.Stop()
 
-	ctx = ulog.NewLogContext(ctx)
+	ctx = ulog.NewLogContext(ctx, ulog.Logger(ctx))
 	return handler.Handle(ctx, req, resw)
 }
 
@@ -54,7 +54,7 @@ type contextOnewayInboundMiddleware struct {
 }
 
 func (f contextOnewayInboundMiddleware) HandleOneway(ctx context.Context, req *transport.Request, handler transport.OnewayHandler) error {
-	ctx = ulog.NewLogContext(ctx)
+	ctx = ulog.NewLogContext(ctx, ulog.Logger(ctx))
 	return handler.HandleOneway(ctx, req)
 }
 

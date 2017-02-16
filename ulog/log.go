@@ -140,11 +140,13 @@ func Logger(ctx context.Context) Log {
 }
 
 // NewLogContext sets the context with the context aware logger
-func NewLogContext(ctx context.Context) context.Context {
+func NewLogContext(ctx context.Context, log Log) context.Context {
 	if ctx == nil {
 		ctx = context.Background()
 	}
-
+	if log != nil {
+		return context.WithValue(ctx, internal.ContextLogger, log)
+	}
 	return context.WithValue(ctx, internal.ContextLogger, logger())
 }
 

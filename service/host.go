@@ -95,7 +95,7 @@ func (s *host) IsRunning() bool {
 func (s *host) OnCriticalError(err error) {
 	shutdown := true
 	if s.observer == nil {
-		s.Logger().Warn(
+		s.log.Warn(
 			"No observer set to handle lifecycle events. Shutting down.",
 			"event", "OnCriticalError",
 		)
@@ -106,7 +106,7 @@ func (s *host) OnCriticalError(err error) {
 	if shutdown {
 		if ok, err := s.shutdown(err, "", nil); !ok || err != nil {
 			// TODO(ai) verify we flush logs
-			s.Logger().Info("Problem shutting down module", "success", ok, "error", err)
+			s.log.Info("Problem shutting down module", "success", ok, "error", err)
 		}
 	}
 }
@@ -146,7 +146,7 @@ func (s *host) shutdown(err error, reason string, exitCode *int) (bool, error) {
 	errs := s.stopModules()
 	if len(errs) > 0 {
 		for k, v := range errs {
-			s.Logger().Error("Failure to shut down module", "name", k.Name(), "error", v.Error())
+			s.log.Error("Failure to shut down module", "name", k.Name(), "error", v.Error())
 		}
 	}
 
@@ -158,15 +158,15 @@ func (s *host) shutdown(err error, reason string, exitCode *int) (bool, error) {
 	// Stop the metrics reporting
 	if s.metricsCloser != nil {
 		if err = s.metricsCloser.Close(); err != nil {
-			s.Logger().Error("Failure to close metrics", "error", err)
+			s.log.Error("Failure to close metrics", "error", err)
 		}
 	}
 
 	// Flush tracing buffers
 	if s.tracerCloser != nil {
-		s.Logger().Debug("Closing tracer")
+		s.log.Debug("Closing tracer")
 		if err = s.tracerCloser.Close(); err != nil {
-			s.Logger().Error("Failure to close tracer", "error", err)
+			s.log.Error("Failure to close tracer", "error", err)
 		}
 	}
 
@@ -197,7 +197,7 @@ func (s *host) AddModules(modules ...ModuleCreateFunc) error {
 		}
 
 		if !s.supportsRole(mi.Roles...) {
-			s.Logger().Info(
+			s.log.Info(
 				"module will not be added due to selected roles",
 				"roles", mi.Roles,
 			)
@@ -278,9 +278,9 @@ func (s *host) start() Control {
 
 				s.shutdownMu.Unlock()
 				if _, err := s.shutdown(e, "", nil); err != nil {
-					s.Logger().Error("Unable to shut down modules", "initialError", e, "shutdownError", err)
+					s.log.Error("Unable to shut down modules", "initialError", e, "shutdownError", err)
 				}
-				s.Logger().Error("Error starting the module", "error", e)
+				s.log.Error("Error starting the module", "error", e)
 				// return first service error
 				if serviceErr == nil {
 					serviceErr = e
@@ -309,9 +309,9 @@ func (s *host) registerSignalHandlers() {
 	signal.Notify(ch, syscall.SIGINT, syscall.SIGTERM)
 	go func() {
 		sig := <-ch
-		s.Logger().Warn("Received shutdown signal", "signal", sig.String())
+		s.log.Warn("Received shutdown signal", "signal", sig.String())
 		if err := s.Stop("Received syscall", 0); err != nil {
-			s.Logger().Error("Error shutting down", "error", err.Error())
+			s.log.Error("Error shutting down", "error", err.Error())
 		}
 	}()
 }
@@ -338,13 +338,13 @@ func (s *host) startModules() map[Module]error {
 
 				select {
 				case <-readyCh:
-					s.Logger().Info("Module started up cleanly", "module", m.Name())
+					s.log.Info("Module started up cleanly", "module", m.Name())
 				case <-time.After(defaultStartupWait):
 					results[m] = fmt.Errorf("module didn't start after %v", defaultStartupWait)
 				}
 
 				if startError := <-startResult; startError != nil {
-					s.Logger().Error("Error received while starting module", "module", m.Name(), "error", startError)
+					s.log.Error("Error received while starting module", "module", m.Name(), "error", startError)
 					results[m] = startError
 				}
 			}
@@ -383,7 +383,7 @@ type ExitCallback func(shutdown Exit) int
 
 func (s *host) WaitForShutdown(exitCallback ExitCallback) {
 	shutdown := <-s.closeChan
-	s.Logger().Info("Shutting down", "reason", shutdown.Reason)
+	s.log.Info("Shutting down", "reason", shutdown.Reason)
 
 	exit := 0
 	if exitCallback != nil {
@@ -400,7 +400,7 @@ func (s *host) transitionState(to State) {
 
 	// TODO(ai) this isn't used yet
 	if to < s.state {
-		s.Logger().Fatal("Can't down from state", "from", s.state, "to", to, "service", s.Name())
+		s.log.Fatal("Can't down from state", "from", s.state, "to", to, "service", s.Name())
 	}
 
 	for s.state < to {
