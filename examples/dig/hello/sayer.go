@@ -34,7 +34,7 @@ func init() {
 	}
 }
 
-// Sayer returns a string that say hello to the person
+// Sayer returns a string that says hello to the person
 type Sayer interface {
 	SayHello(person string) string
 }
@@ -46,7 +46,7 @@ func (ps *politeSayer) SayHello(person string) string {
 }
 
 // DIG injection function that provides a polite sayer
-// Function takes no parameters, i.e. it has no dependencies
+// Function takes no parameters, therefore does not register any dependencies
 func NewPoliteSayer() Sayer {
 	return &politeSayer{}
 }

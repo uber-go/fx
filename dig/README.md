@@ -1,21 +1,21 @@
 # Dependency Injection Graph
 
-This package provides a fairly opinionated way of resolving object dependencies.
-There are two sides of dig: `Inject` and `Resolve`
+Package dig provides a fairly opinionated way of resolving object dependencies.
+There are two sides of dig: `Inject` and `Resolve`.
 
 ## Inject
 
-Adding an object, or a constructor of an object to the graph.
+`Inject` adds an object, or a constructor of an object to the graph.
 
-There are two ways of providing an object:
+There are two ways to inject an object:
 
-1. Injecting a pointer to an existing object
-1. Injecting a "constructor function" that returns one pointer (or interface)
+1. Inject a pointer to an existing object
+1. Inject a "constructor function" that returns one pointer (or interface)
 
-### Injecting an object
+### Inject an object
 
 Injecting an object means it has no dependencies, and will be used as a
-**shared** singleton instance for all resolutions within the graph
+**shared** singleton instance for all resolutions within the graph.
 
 ```go
 type Fake struct {
@@ -31,7 +31,7 @@ require.NoError(t, err)
 // f1 is ready to use here...
 ```
 
-### Injecting a constructor
+### Inject a constructor
 
 This is a more interesting and widely used scenario. Constructor is defined as a
 function that returns exactly one pointer (or interface) and takes 0-N number of
@@ -57,9 +57,9 @@ err := dig.Inject(NewObject)
 
 ## Resolve
 
-Mechanism of retrieving objects from the graph by type.
+`Resolve` retrieves objects from the graph by type.
 
-In the future, there are plans to do named retrievals to support multiple
+There are future plans to do named retrievals to support multiple
 objects of the same type in the graph.
 
 ```go
