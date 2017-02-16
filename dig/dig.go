@@ -22,7 +22,6 @@ package dig
 
 import (
 	"bytes"
-	"container/list"
 	"fmt"
 	"reflect"
 
@@ -208,16 +207,6 @@ func (n funcNode) value(g *graph) (reflect.Value, error) {
 				return reflect.Zero(n.objType), errors.Wrap(err, "dependency resolution failed")
 			}
 			args[idx] = v
-		}
-	}
-
-	l := list.New()
-	for _, node := range g.nodes {
-		for _, dep := range node.dependencies() {
-			node, ok := g.nodes[dep]
-			if ok {
-				l.PushFront(node)
-			}
 		}
 	}
 
