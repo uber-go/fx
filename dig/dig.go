@@ -101,7 +101,7 @@ func (g *graph) Resolve(obj interface{}) error {
 	objElemType := reflect.TypeOf(obj).Elem()
 	objVal := reflect.ValueOf(obj)
 
-	// check if the type has been nodes
+	// check if the type is a registered node
 	n, ok := g.nodes[objElemType]
 	if !ok {
 		return fmt.Errorf("type %v is not registered", objType)
