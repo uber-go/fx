@@ -42,11 +42,9 @@ func WithFilters(fs ...Filter) modules.Option {
 }
 
 func filtersFromCreateInfo(mci service.ModuleCreateInfo) []Filter {
-	items, ok := mci.Items[_filterKey]
-	if !ok {
-		return nil
+	if items, ok := mci.Items[_filterKey]; ok {
+		// Intentionally panic if programmer adds non-filter slice to the data
+		return items.([]Filter)
 	}
-
-	// Intentionally panic if programmer adds non-filter slice to the data
-	return items.([]Filter)
+	return nil
 }
