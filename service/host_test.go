@@ -28,7 +28,6 @@ import (
 	"go.uber.org/fx/config"
 	"go.uber.org/fx/metrics"
 	"go.uber.org/fx/testutils"
-	"go.uber.org/fx/ulog"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -167,12 +166,8 @@ func TestHostStop_NoError(t *testing.T) {
 func TestOnCriticalError_ObserverShutdown(t *testing.T) {
 	o := observerStub()
 	sh := &host{
-		observer: o,
-		serviceCore: serviceCore{
-			loggingCore: loggingCore{
-				log: ulog.NopLogger,
-			},
-		},
+		observer:    o,
+		serviceCore: serviceCore{},
 	}
 
 	sh.OnCriticalError(errors.New("simulated shutdown"))
@@ -323,10 +318,6 @@ func makeRunningHost() *host {
 
 func makeHost() *host {
 	return &host{
-		serviceCore: serviceCore{
-			loggingCore: loggingCore{
-				log: ulog.NopLogger,
-			},
-		},
+		serviceCore: serviceCore{},
 	}
 }

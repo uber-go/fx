@@ -25,7 +25,6 @@ import (
 	"testing"
 
 	"go.uber.org/fx/metrics"
-	"go.uber.org/fx/ulog"
 
 	"github.com/opentracing/opentracing-go"
 	"github.com/stretchr/testify/assert"
@@ -42,13 +41,6 @@ func TestAddModules_OK(t *testing.T) {
 func TestAddModules_Errors(t *testing.T) {
 	sh := &host{}
 	assert.Error(t, sh.AddModules(errorModuleCreate))
-}
-
-func TestWithLogger_OK(t *testing.T) {
-	logger := ulog.New()
-	assert.NotPanics(t, func() {
-		New(WithLogger(logger))
-	})
 }
 
 func TestWithMetrics_OK(t *testing.T) {

@@ -53,9 +53,6 @@ func NopHostConfigured(client auth.Client, logger ulog.Log, tracer opentracing.T
 			Owner:       "root@example.com",
 			Description: "does cool stuff",
 		},
-		loggingCore: loggingCore{
-			log: logger,
-		},
 		metricsCore: metricsCore{
 			metrics:       tally.NoopScope,
 			statsReporter: metrics.NopCachedStatsReporter,
