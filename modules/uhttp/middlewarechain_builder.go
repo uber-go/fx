@@ -30,14 +30,14 @@ import (
 type inboundMiddlewareChain struct {
 	currentMiddleware int
 	finalHandler      http.Handler
-	middlewares       []InboundMiddleware
+	middleware        []InboundMiddleware
 }
 
 func (fc inboundMiddlewareChain) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	if fc.currentMiddleware == len(fc.middlewares) {
+	if fc.currentMiddleware == len(fc.middleware) {
 		fc.finalHandler.ServeHTTP(w, r)
 	} else {
-		middleware := fc.middlewares[fc.currentMiddleware]
+		middleware := fc.middleware[fc.currentMiddleware]
 		fc.currentMiddleware++
 		middleware.Handle(w, r, fc)
 	}
@@ -45,12 +45,12 @@ func (fc inboundMiddlewareChain) ServeHTTP(w http.ResponseWriter, r *http.Reques
 
 type inboundMiddlewareChainBuilder struct {
 	finalHandler http.Handler
-	middlewares  []InboundMiddleware
+	middleware   []InboundMiddleware
 }
 
 func defaultInboundMiddlewareChainBuilder(log ulog.Log, authClient auth.Client) inboundMiddlewareChainBuilder {
 	mcb := newInboundMiddlewareChainBuilder()
-	return mcb.AddMiddlewares(
+	return mcb.AddMiddleware(
 		contextInbound{log},
 		panicInbound{},
 		metricsInbound{},
@@ -65,16 +65,14 @@ func newInboundMiddlewareChainBuilder() inboundMiddlewareChainBuilder {
 	return inboundMiddlewareChainBuilder{}
 }
 
-func (m inboundMiddlewareChainBuilder) AddMiddlewares(middlewares ...InboundMiddleware) inboundMiddlewareChainBuilder {
-	for _, middleware := range middlewares {
-		m.middlewares = append(m.middlewares, middleware)
-	}
+func (m inboundMiddlewareChainBuilder) AddMiddleware(middleware ...InboundMiddleware) inboundMiddlewareChainBuilder {
+	m.middleware = append(m.middleware, middleware...)
 	return m
 }
 
 func (m inboundMiddlewareChainBuilder) Build(finalHandler http.Handler) inboundMiddlewareChain {
 	return inboundMiddlewareChain{
-		middlewares:  m.middlewares,
+		middleware:   m.middleware,
 		finalHandler: finalHandler,
 	}
 }

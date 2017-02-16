@@ -28,7 +28,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestWithInboundMiddlewares(t *testing.T) {
+func TestWithInboundMiddleware(t *testing.T) {
 	fakeInbound1 := fakeInbound()
 	fakeInbound2 := fakeInbound()
 	tests := []struct {
@@ -44,7 +44,7 @@ func TestWithInboundMiddlewares(t *testing.T) {
 			expect: []InboundMiddleware{fakeInbound1},
 		},
 		{
-			desc:   "TestWithTwoInboundMiddlewares",
+			desc:   "TestWithTwoInboundMiddleware",
 			mi:     service.ModuleCreateInfo{},
 			input:  []InboundMiddleware{fakeInbound1, fakeInbound2},
 			expect: []InboundMiddleware{fakeInbound1, fakeInbound2},
@@ -75,14 +75,14 @@ func TestWithInboundMiddlewares(t *testing.T) {
 		tt := tt
 		t.Run(tt.desc, func(t *testing.T) {
 			t.Parallel()
-			opt := WithInboundMiddlewares(tt.input...)
+			opt := WithInboundMiddleware(tt.input...)
 			assert.NoError(t, opt(&tt.mi))
-			assert.Equal(t, len(tt.expect), len(inboundMiddlewaresFromCreateInfo(tt.mi)))
+			assert.Equal(t, len(tt.expect), len(inboundMiddlewareFromCreateInfo(tt.mi)))
 		})
 	}
 }
 
-func TestWithInboundMiddlewaresTwice(t *testing.T) {
+func TestWithInboundMiddlewareTwice(t *testing.T) {
 	fakeInbound1 := fakeInbound()
 	fakeInbound2 := fakeInbound()
 	tests := []struct {
@@ -98,7 +98,7 @@ func TestWithInboundMiddlewaresTwice(t *testing.T) {
 			expect: []InboundMiddleware{fakeInbound1, fakeInbound1},
 		},
 		{
-			desc:   "TestWithTwoInboundMiddlewaresTwice",
+			desc:   "TestWithTwoInboundMiddlewareTwice",
 			mi:     service.ModuleCreateInfo{},
 			input:  []InboundMiddleware{fakeInbound1, fakeInbound2},
 			expect: []InboundMiddleware{fakeInbound1, fakeInbound2, fakeInbound1, fakeInbound2},
@@ -129,29 +129,29 @@ func TestWithInboundMiddlewaresTwice(t *testing.T) {
 		tt := tt
 		t.Run(tt.desc, func(t *testing.T) {
 			t.Parallel()
-			opt := WithInboundMiddlewares(tt.input...)
+			opt := WithInboundMiddleware(tt.input...)
 			assert.NoError(t, opt(&tt.mi))
 
-			opt = WithInboundMiddlewares(tt.input...)
+			opt = WithInboundMiddleware(tt.input...)
 			assert.NoError(t, opt(&tt.mi))
 
-			assert.Equal(t, len(tt.expect), len(inboundMiddlewaresFromCreateInfo(tt.mi)))
+			assert.Equal(t, len(tt.expect), len(inboundMiddlewareFromCreateInfo(tt.mi)))
 		})
 	}
 }
 
-func TestInboundMiddlewaresFromCreateInfo(t *testing.T) {
+func TestInboundMiddlewareFromCreateInfo(t *testing.T) {
 	fakeInbound1 := fakeInbound()
 	fakeInbound2 := fakeInbound()
 	tests := []struct {
-		desc        string
-		mi          service.ModuleCreateInfo
-		middlewares []InboundMiddleware
+		desc       string
+		mi         service.ModuleCreateInfo
+		middleware []InboundMiddleware
 	}{
 		{
-			desc:        "TestEmptyItems",
-			mi:          service.ModuleCreateInfo{},
-			middlewares: nil,
+			desc:       "TestEmptyItems",
+			mi:         service.ModuleCreateInfo{},
+			middleware: nil,
 		},
 		{
 			desc: "TestSometingElseInItems",
@@ -160,7 +160,7 @@ func TestInboundMiddlewaresFromCreateInfo(t *testing.T) {
 					"somethingElse": []InboundMiddleware{fakeInbound1},
 				},
 			},
-			middlewares: nil,
+			middleware: nil,
 		},
 		{
 			desc: "TestOneInboundMiddlewareInItems",
@@ -169,16 +169,16 @@ func TestInboundMiddlewaresFromCreateInfo(t *testing.T) {
 					_middlewareKey: []InboundMiddleware{fakeInbound1},
 				},
 			},
-			middlewares: []InboundMiddleware{fakeInbound1},
+			middleware: []InboundMiddleware{fakeInbound1},
 		},
 		{
-			desc: "TestTwoInboundMiddlewaresInItems",
+			desc: "TestTwoInboundMiddlewareInItems",
 			mi: service.ModuleCreateInfo{
 				Items: map[string]interface{}{
 					_middlewareKey: []InboundMiddleware{fakeInbound1, fakeInbound2},
 				},
 			},
-			middlewares: []InboundMiddleware{fakeInbound1, fakeInbound2},
+			middleware: []InboundMiddleware{fakeInbound1, fakeInbound2},
 		},
 	}
 
@@ -186,8 +186,8 @@ func TestInboundMiddlewaresFromCreateInfo(t *testing.T) {
 		tt := tt
 		t.Run(tt.desc, func(t *testing.T) {
 			t.Parallel()
-			fs := inboundMiddlewaresFromCreateInfo(tt.mi)
-			assert.Equal(t, len(tt.middlewares), len(fs))
+			fs := inboundMiddlewareFromCreateInfo(tt.mi)
+			assert.Equal(t, len(tt.middleware), len(fs))
 		})
 	}
 }

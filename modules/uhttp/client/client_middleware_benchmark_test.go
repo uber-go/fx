@@ -34,11 +34,11 @@ import (
 	jconfig "github.com/uber/jaeger-client-go/config"
 )
 
-// BenchmarkClientMiddlewares/empty-8          100000000           10.8 ns/op         0 B/op          0 allocs/op
-// BenchmarkClientMiddlewares/tracing-8          500000          3918 ns/op        1729 B/op         27 allocs/op
-// BenchmarkClientMiddlewares/auth-8            1000000          1866 ns/op         719 B/op         14 allocs/op
-// BenchmarkClientMiddlewares/default-8          300000          5604 ns/op        2477 B/op         41 allocs/op
-func BenchmarkClientMiddlewares(b *testing.B) {
+// BenchmarkClientMiddleware/empty-8          100000000           10.8 ns/op         0 B/op          0 allocs/op
+// BenchmarkClientMiddleware/tracing-8          500000          3918 ns/op        1729 B/op         27 allocs/op
+// BenchmarkClientMiddleware/auth-8            1000000          1866 ns/op         719 B/op         14 allocs/op
+// BenchmarkClientMiddleware/default-8          300000          5604 ns/op        2477 B/op         41 allocs/op
+func BenchmarkClientMiddleware(b *testing.B) {
 	tracer, closer, err := tracing.InitGlobalTracer(&jconfig.Configuration{}, "Test", ulog.NopLogger, metrics.NopCachedStatsReporter)
 	if err != nil {
 		b.Error(err)
@@ -52,8 +52,8 @@ func BenchmarkClientMiddlewares(b *testing.B) {
 		"default": {tracingOutbound(), authenticationOutbound(fakeAuthInfo{_testYaml})},
 	}
 
-	for name, middlewares := range bm {
-		chain := newExecutionChain(middlewares, nopTransport{})
+	for name, middleware := range bm {
+		chain := newExecutionChain(middleware, nopTransport{})
 		span := tracer.StartSpan("test_method")
 		span.SetBaggageItem(auth.ServiceAuth, "testService")
 

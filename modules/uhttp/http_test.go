@@ -61,8 +61,8 @@ func TestNew_WithOptions(t *testing.T) {
 	})
 }
 
-func TestHTTPModule_WithInboundMiddlewares(t *testing.T) {
-	withModule(t, registerPanic, []modules.Option{WithInboundMiddlewares(fakeInbound())}, false, func(m *Module) {
+func TestHTTPModule_WithInboundMiddleware(t *testing.T) {
+	withModule(t, registerPanic, []modules.Option{WithInboundMiddleware(fakeInbound())}, false, func(m *Module) {
 		assert.NotNil(t, m)
 		makeRequest(m, "GET", "/", nil, func(r *http.Response) {
 			body, err := ioutil.ReadAll(r.Body)
@@ -74,7 +74,7 @@ func TestHTTPModule_WithInboundMiddlewares(t *testing.T) {
 }
 
 func TestHTTPModule_WithUserPanicInboundMiddleware(t *testing.T) {
-	withModule(t, registerTracerCheckHandler, []modules.Option{WithInboundMiddlewares(userPanicInbound())}, false, func(m *Module) {
+	withModule(t, registerTracerCheckHandler, []modules.Option{WithInboundMiddleware(userPanicInbound())}, false, func(m *Module) {
 		assert.NotNil(t, m)
 		makeRequest(m, "GET", "/", nil, func(r *http.Response) {
 			assert.Equal(t, http.StatusInternalServerError, r.StatusCode, "Expected 500 with panic wrapper")

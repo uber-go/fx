@@ -27,40 +27,40 @@ import (
 	"go.uber.org/fx/auth"
 )
 
-// New creates an http.Client that includes 2 extra outbound middlewares: tracing and auth
-// they are going to be applied in following order: tracing, auth, remaining outbound middlewares
+// New creates an http.Client that includes 2 extra outbound middleware: tracing and auth
+// they are going to be applied in following order: tracing, auth, remaining outbound middleware
 // and only if all of them passed the request is going to be send.
 // Client is safe to use by multiple go routines, if global tracer is not changed.
-func New(info auth.CreateAuthInfo, middlewares ...OutboundMiddleware) *http.Client {
-	defaultMiddlewares := []OutboundMiddleware{tracingOutbound(), authenticationOutbound(info)}
-	defaultMiddlewares = append(defaultMiddlewares, middlewares...)
+func New(info auth.CreateAuthInfo, middleware ...OutboundMiddleware) *http.Client {
+	defaultMiddleware := []OutboundMiddleware{tracingOutbound(), authenticationOutbound(info)}
+	defaultMiddleware = append(defaultMiddleware, middleware...)
 	return &http.Client{
-		Transport: newExecutionChain(defaultMiddlewares, http.DefaultTransport),
+		Transport: newExecutionChain(defaultMiddleware, http.DefaultTransport),
 		Timeout:   2 * time.Minute,
 	}
 }
 
-// executionChain represents a chain of outbound middlewares that are being executed recursively
-// in the increasing order middlewares[0], middlewares[1], ... The final transport is called
+// executionChain represents a chain of outbound middleware that are being executed recursively
+// in the increasing order middleware[0], middleware[1], ... The final transport is called
 // to make RoundTrip after the last middleware is completed.
 type executionChain struct {
 	currentMiddleware int
-	middlewares       []OutboundMiddleware
+	middleware        []OutboundMiddleware
 	finalTransport    http.RoundTripper
 }
 
 func newExecutionChain(
-	middlewares []OutboundMiddleware, finalTransport http.RoundTripper,
+	middleware []OutboundMiddleware, finalTransport http.RoundTripper,
 ) executionChain {
 	return executionChain{
-		middlewares:    middlewares,
+		middleware:     middleware,
 		finalTransport: finalTransport,
 	}
 }
 
 func (ec executionChain) Execute(r *http.Request) (resp *http.Response, err error) {
-	if ec.currentMiddleware < len(ec.middlewares) {
-		middleware := ec.middlewares[ec.currentMiddleware]
+	if ec.currentMiddleware < len(ec.middleware) {
+		middleware := ec.middleware[ec.currentMiddleware]
 		ec.currentMiddleware++
 
 		return middleware.Handle(r, ec)

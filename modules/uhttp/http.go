@@ -139,8 +139,8 @@ func newModule(
 		}
 	}
 
-	middlewares := inboundMiddlewaresFromCreateInfo(mi)
-	module.mcb = module.mcb.AddMiddlewares(middlewares...)
+	middleware := inboundMiddlewareFromCreateInfo(mi)
+	module.mcb = module.mcb.AddMiddleware(middleware...)
 
 	return module, nil
 }

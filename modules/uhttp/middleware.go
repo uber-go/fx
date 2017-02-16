@@ -35,13 +35,13 @@ import (
 
 const _panicResponse = "Server Error"
 
-// InboundMiddleware applies inbound middlewares on requests or responses such as
-// adding tracing to the context
+// InboundMiddleware applies inbound middleware on requests or responses such as
+// adding tracing to the context.
 type InboundMiddleware interface {
 	Handle(w http.ResponseWriter, r *http.Request, next http.Handler)
 }
 
-// InboundMiddlewareFunc is an adaptor to call normal functions to apply inbound middlewares
+// InboundMiddlewareFunc is an adaptor to call normal functions to apply inbound middleware.
 type InboundMiddlewareFunc func(w http.ResponseWriter, r *http.Request, next http.Handler)
 
 // Handle implements Handle from the InboundMiddleware interface and simply delegates to the function

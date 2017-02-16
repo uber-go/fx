@@ -36,14 +36,14 @@ type Executor interface {
 	Execute(r *http.Request) (resp *http.Response, err error)
 }
 
-// OutboundMiddleware applies outbound middlewares on client requests and such as adding tracing to request's context.
-// Outbound middlewares must call next.Execute() at most once, calling it twice and more
+// OutboundMiddleware applies outbound middleware on client requests and such as adding tracing to request's context.
+// Outbound middleware must call next.Execute() at most once, calling it twice and more
 // will lead to an undefined behavior
 type OutboundMiddleware interface {
 	Handle(r *http.Request, next Executor) (resp *http.Response, err error)
 }
 
-// OutboundMiddlewareFunc is an adaptor to call normal functions to apply outbound middlewares.
+// OutboundMiddlewareFunc is an adaptor to call normal functions to apply outbound middleware.
 type OutboundMiddlewareFunc func(r *http.Request, next Executor) (resp *http.Response, err error)
 
 // Handle implements Handle from the OutboundMiddleware interface and simply delegates to the function

@@ -40,7 +40,7 @@ func TestNew(t *testing.T) {
 	t.Parallel()
 	chain, ok := _testClient.Transport.(executionChain)
 	require.True(t, ok)
-	assert.Equal(t, 2, len(chain.middlewares))
+	assert.Equal(t, 2, len(chain.middleware))
 }
 
 func TestNew_Panic(t *testing.T) {
@@ -57,7 +57,7 @@ func TestClientDo(t *testing.T) {
 	checkOKResponse(t, resp, err)
 }
 
-func TestClientDoWithoutMiddlewares(t *testing.T) {
+func TestClientDoWithoutMiddleware(t *testing.T) {
 	svr := startServer()
 	req := createHTTPClientRequest(svr.URL)
 	resp, err := _testClient.Do(req)
@@ -70,7 +70,7 @@ func TestClientGet(t *testing.T) {
 	checkOKResponse(t, resp, err)
 }
 
-func TestClientGetTwiceExecutesAllMiddlewares(t *testing.T) {
+func TestClientGetTwiceExecutesAllMiddleware(t *testing.T) {
 	svr := startServer()
 	count := 0
 	var f OutboundMiddlewareFunc = func(r *http.Request, next Executor) (resp *http.Response, err error) {

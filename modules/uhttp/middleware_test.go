@@ -41,7 +41,7 @@ import (
 	"github.com/uber/jaeger-client-go/config"
 )
 
-func TestDefaultInboundMiddlewaresWithNopHost(t *testing.T) {
+func TestDefaultInboundMiddlewareWithNopHost(t *testing.T) {
 	tests := []struct {
 		desc   string
 		testFn func(*testing.T, service.Host)
@@ -81,7 +81,7 @@ func TestDefaultInboundMiddlewaresWithNopHost(t *testing.T) {
 	})
 }
 
-func TestDefaultMiddlewaresWithNopHostAuthFailure(t *testing.T) {
+func TestDefaultMiddlewareWithNopHostAuthFailure(t *testing.T) {
 	tests := []struct {
 		desc   string
 		testFn func(*testing.T, service.Host)
@@ -109,7 +109,7 @@ func TestDefaultMiddlewaresWithNopHostAuthFailure(t *testing.T) {
 	})
 }
 
-func TestDefaultInboundMiddlewaresWithNopHostConfigured(t *testing.T) {
+func TestDefaultInboundMiddlewareWithNopHostConfigured(t *testing.T) {
 	// this test's sub tests cannot run parallel
 	// and they need to build host by theirselves
 	tests := []struct {
@@ -129,9 +129,9 @@ func TestDefaultInboundMiddlewaresWithNopHostConfigured(t *testing.T) {
 }
 
 func testInboundMiddlewareChain(t *testing.T, host service.Host) {
-	chain := newInboundMiddlewareChainBuilder().AddMiddlewares([]InboundMiddleware{}...).Build(getNopHandler())
+	chain := newInboundMiddlewareChainBuilder().AddMiddleware([]InboundMiddleware{}...).Build(getNopHandler())
 	response := testServeHTTP(chain)
-	assert.True(t, strings.Contains(response.Body.String(), "middlewares ok"))
+	assert.True(t, strings.Contains(response.Body.String(), "inbound middleware ok"))
 }
 
 func testTracingInboundWithLogs(t *testing.T) {
@@ -151,9 +151,9 @@ func testTracingInboundWithLogs(t *testing.T) {
 		defer opentracing.InitGlobalTracer(opentracing.NoopTracer{})
 
 		ulog.SetLogger(loggerWithZap)
-		chain := newInboundMiddlewareChainBuilder().AddMiddlewares([]InboundMiddleware{contextInbound{loggerWithZap}, tracingInbound{}}...).Build(getNopHandler())
+		chain := newInboundMiddlewareChainBuilder().AddMiddleware([]InboundMiddleware{contextInbound{loggerWithZap}, tracingInbound{}}...).Build(getNopHandler())
 		response := testServeHTTP(chain)
-		assert.Contains(t, response.Body.String(), "middlewares ok")
+		assert.Contains(t, response.Body.String(), "inbound middleware ok")
 		assert.True(t, len(buf.Lines()) > 0)
 		var tracecount = 0
 		var spancount = 0
@@ -171,18 +171,18 @@ func testTracingInboundWithLogs(t *testing.T) {
 }
 
 func testInboundTraceInboundAuthChain(t *testing.T, host service.Host) {
-	chain := newInboundMiddlewareChainBuilder().AddMiddlewares(
+	chain := newInboundMiddlewareChainBuilder().AddMiddleware(
 		tracingInbound{},
 		authorizationInbound{
 			authClient: host.AuthClient(),
 		}).Build(getNopHandler())
 
 	response := testServeHTTP(chain)
-	assert.Contains(t, response.Body.String(), "middlewares ok")
+	assert.Contains(t, response.Body.String(), "inbound middleware ok")
 }
 
 func testInboundMiddlewareChainAuthFailure(t *testing.T, host service.Host) {
-	chain := newInboundMiddlewareChainBuilder().AddMiddlewares(
+	chain := newInboundMiddlewareChainBuilder().AddMiddleware(
 		tracingInbound{},
 		authorizationInbound{
 			authClient: host.AuthClient(),
@@ -193,7 +193,7 @@ func testInboundMiddlewareChainAuthFailure(t *testing.T, host service.Host) {
 }
 
 func testPanicInbound(t *testing.T, host service.Host) {
-	chain := newInboundMiddlewareChainBuilder().AddMiddlewares(
+	chain := newInboundMiddlewareChainBuilder().AddMiddleware(
 		panicInbound{},
 	).Build(getPanicHandler())
 	response := testServeHTTP(chain)
@@ -207,11 +207,11 @@ func testPanicInbound(t *testing.T, host service.Host) {
 }
 
 func testMetricsInbound(t *testing.T, host service.Host) {
-	chain := newInboundMiddlewareChainBuilder().AddMiddlewares(
+	chain := newInboundMiddlewareChainBuilder().AddMiddleware(
 		metricsInbound{},
 	).Build(getNopHandler())
 	response := testServeHTTP(chain)
-	assert.Contains(t, response.Body.String(), "inbound middlewares ok")
+	assert.Contains(t, response.Body.String(), "inbound middleware ok")
 
 	testScope := host.Metrics()
 	snapshot := testScope.(tally.TestScope).Snapshot()
@@ -222,7 +222,7 @@ func testMetricsInbound(t *testing.T, host service.Host) {
 }
 
 func testServeHTTP(chain inboundMiddlewareChain) *httptest.ResponseRecorder {
-	request := httptest.NewRequest("", "http://middlewares", nil)
+	request := httptest.NewRequest("", "http://middleware", nil)
 	response := httptest.NewRecorder()
 	chain.ServeHTTP(response, request)
 	return response
@@ -238,7 +238,7 @@ func httpMetricsTeardown() {
 func getNopHandler() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ulog.Logger(r.Context()).Info("Inside Noop Handler")
-		io.WriteString(w, "inbound middlewares ok")
+		io.WriteString(w, "inbound middleware ok")
 	}
 }
 
