@@ -1,12 +1,10 @@
-hash: 62f71321007123913c74ecafdef1501b8407cc0a0572d02111e39ef0e22ae7cd
-updated: 2017-02-15T11:44:42.670193638-08:00
+hash: f4a033e6af47e10391f8b22f93a319ab1becad7c4c6035665f0def36d18d76ed
+updated: 2017-02-16T00:35:29.71174199-08:00
 imports:
 - name: github.com/apache/thrift
   version: 9549b25c77587b29be4e0b5c258221a4ed85d37a
   subpackages:
   - lib/go/thrift
-- name: github.com/certifi/gocertifi
-  version: 03be5e6bb9874570ea7fb0961225d193cbc374c5
 - name: github.com/davecgh/go-spew
   version: 04cdfd42973bb9c8589fd6a731800cf222fde1a9
   subpackages:
@@ -46,9 +44,7 @@ imports:
 - name: github.com/uber-go/tally
   version: 43c1379c0577ac1eb74f9f3869cea07191c9992b
 - name: github.com/uber-go/zap
-  version: c064b5c44b285a7e2fd5c9b26e8c38228ce2bccb
-  subpackages:
-  - spy
+  version: 72313cde80537dd4dc9b7b80eda6d7ed796c4232
 - name: github.com/uber/jaeger-client-go
   version: e39d0f1b622558cae3d9db0062a739cc6ffa700f
   subpackages:
@@ -111,8 +107,16 @@ imports:
   - transport/http
   - transport/tchannel
   - transport/tchannel/internal
+- name: go.uber.org/zap
+  version: 72313cde80537dd4dc9b7b80eda6d7ed796c4232
+  subpackages:
+  - buffer
+  - internal/bufferpool
+  - internal/exit
+  - internal/multierror
+  - zapcore
 - name: golang.org/x/net
-  version: 61557ac0112b576429a0df080e1c2cef5dfbb642
+  version: b4690f45fa1cafc47b1c280c2e75116efe40cc13
   subpackages:
   - context
   - context/ctxhttp
