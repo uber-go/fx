@@ -159,6 +159,7 @@ func TestBasicResolve(t *testing.T) {
 
 	require.NoError(t, err, "No error expected during Resolve")
 	require.NotNil(t, p1.c1, "Child1 must have been injected")
+	require.NotNil(t, p1.c1.gc1, "Grandchild1 must have been injected")
 }
 
 func testGraph() *graph {
