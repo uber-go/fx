@@ -82,6 +82,64 @@ func TestWithFilters(t *testing.T) {
 	}
 }
 
+func TestWithFiltersTwice(t *testing.T) {
+	fakeFilter1 := fakeFilter()
+	fakeFilter2 := fakeFilter()
+	tests := []struct {
+		desc   string
+		mi     service.ModuleCreateInfo
+		input  []Filter
+		expect []Filter
+	}{
+		{
+			desc:   "TestWithOneFilterTwice",
+			mi:     service.ModuleCreateInfo{},
+			input:  []Filter{fakeFilter1},
+			expect: []Filter{fakeFilter1, fakeFilter1},
+		},
+		{
+			desc:   "TestWithTwoFiltersTwice",
+			mi:     service.ModuleCreateInfo{},
+			input:  []Filter{fakeFilter1, fakeFilter2},
+			expect: []Filter{fakeFilter1, fakeFilter2, fakeFilter1, fakeFilter2},
+		},
+		{
+			desc: "TestHasOneWithOneFilterTwice",
+			mi: service.ModuleCreateInfo{
+				Items: map[string]interface{}{
+					_filterKey: []Filter{fakeFilter1},
+				},
+			},
+			input:  []Filter{fakeFilter2},
+			expect: []Filter{fakeFilter1, fakeFilter2, fakeFilter2},
+		},
+		{
+			desc: "TestHasOneWithNilFilterTwice",
+			mi: service.ModuleCreateInfo{
+				Items: map[string]interface{}{
+					_filterKey: []Filter{fakeFilter1},
+				},
+			},
+			input:  nil,
+			expect: []Filter{fakeFilter1},
+		},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.desc, func(t *testing.T) {
+			t.Parallel()
+			opt := WithFilters(tt.input...)
+			assert.NoError(t, opt(&tt.mi))
+
+			opt = WithFilters(tt.input...)
+			assert.NoError(t, opt(&tt.mi))
+
+			assert.Equal(t, len(tt.expect), len(filtersFromCreateInfo(tt.mi)))
+		})
+	}
+}
+
 func TestFiltersFromCreateInfo(t *testing.T) {
 	fakeFilter1 := fakeFilter()
 	fakeFilter2 := fakeFilter()
