@@ -78,7 +78,7 @@ type Config struct {
 	modules.ModuleConfig
 	Port    int           `yaml:"port"`
 	Timeout time.Duration `yaml:"timeout"`
-	Debug   bool          `yaml:"debug"`
+	Debug   bool          `yaml:"debug" default:"true"`
 }
 
 // GetHandlersFunc returns a slice of registrants from a service host
