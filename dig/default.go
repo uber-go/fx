@@ -40,6 +40,5 @@ func Resolve(i interface{}) error {
 
 // Reset the default graph
 func Reset() {
-	// re-make the map
-	defaultGraph.nodes = make(map[interface{}]object)
+	defaultGraph.Reset()
 }

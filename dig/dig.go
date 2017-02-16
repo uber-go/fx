@@ -56,6 +56,9 @@ type Graph interface {
 
 	// Resolve the dependencies of the object and populate the pointer value
 	Resolve(interface{}) error
+
+	// Reset the graph by removing all the registered nodes
+	Reset()
 }
 
 // Inject an object in the dependency graph
@@ -78,7 +81,6 @@ func (g *graph) Inject(c interface{}) error {
 
 		return g.injectConstructor(c)
 	case reflect.Ptr:
-		// validation for pointers?
 		return g.injectObject(c)
 	default:
 		return errParamType
@@ -128,6 +130,11 @@ func (g *graph) Resolve(obj interface{}) error {
 	objVal.Elem().Set(v)
 
 	return nil
+}
+
+// Reset the graph by removing all the registered nodes
+func (g *graph) Reset() {
+	defaultGraph.nodes = make(map[interface{}]object)
 }
 
 type object interface {
