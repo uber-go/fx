@@ -78,7 +78,7 @@ type Config struct {
 	modules.ModuleConfig
 	Port    int           `yaml:"port"`
 	Timeout time.Duration `yaml:"timeout"`
-	Debug   *bool         `yaml:"debug"`
+	Debug   bool          `yaml:"debug"`
 }
 
 // GetHandlersFunc returns a slice of registrants from a service host
@@ -154,7 +154,7 @@ func (m *Module) Start(ready chan<- struct{}) <-chan error {
 		router.Handle(h.Path, m.fcb.Build(h.Handler))
 	}
 
-	if m.config.Debug == nil || *m.config.Debug {
+	if m.config.Debug {
 		router.PathPrefix("/debug/pprof").Handler(http.DefaultServeMux)
 	}
 

@@ -187,6 +187,9 @@ func withModule(
 	// us an ephemeral port on tests
 	mod.config.Port = 0
 
+	// set pprof on
+	mod.config.Debug = true
+
 	errs := make(chan error, 1)
 	readyChan := make(chan struct{}, 1)
 	go func() {
