@@ -515,6 +515,10 @@ func (cv Value) valueStruct(key string, target interface{}) (interface{}, error)
 			ntt := derefType(fieldType)
 			newTarget := reflect.New(ntt)
 			v2 := global.Get(childKey)
+			if !v2.HasValue() && fieldType.Kind() == reflect.Ptr {
+				// in this case we will keep the pointer value as not defined.
+				continue
+			}
 			if err := v2.PopulateStruct(newTarget.Interface()); err != nil {
 				return nil, errors.Wrap(err, "unable to populate struct of object target")
 			}

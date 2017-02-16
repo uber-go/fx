@@ -92,6 +92,7 @@ func TestNilStaticProviderSetDefaultTagValue(t *testing.T) {
 		ID2 Inner           `yaml:"id2"`
 		ID3 []Inner         `yaml:"id3"`
 		ID4 map[Inner]Inner `yaml:"id4"`
+		ID5 *Inner          `yaml:"id5"`
 	}{}
 
 	p := NewStaticProvider(nil)
@@ -102,4 +103,5 @@ func TestNilStaticProviderSetDefaultTagValue(t *testing.T) {
 	assert.True(t, data.ID2.Set)
 	assert.Nil(t, data.ID3)
 	assert.Nil(t, data.ID4)
+	assert.Nil(t, data.ID5)
 }
