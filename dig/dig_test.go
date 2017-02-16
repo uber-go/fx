@@ -137,11 +137,16 @@ func TestConstructorInject(t *testing.T) {
 	err := g.Inject(NewGrandchild1)
 	require.NoError(t, err)
 
-	var gc1 *Grandchild1
-	err = g.Resolve(&gc1)
+	var first *Grandchild1
+	err = g.Resolve(&first)
+
+	var second *Grandchild1
+	err = g.Resolve(&second)
 
 	require.NoError(t, err, "No error expected during Resolve")
-	require.NotNil(t, gc1, "Child1 must have been injected")
+	require.NotNil(t, first, "Child1 must have been injected")
+	require.NotNil(t, second, "Child1 must have been injected")
+	require.True(t, first == second, "Must point to the same object")
 }
 
 func TestBasicResolve(t *testing.T) {

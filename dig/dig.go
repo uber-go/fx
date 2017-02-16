@@ -162,9 +162,10 @@ func (g graph) String() string {
 type node struct {
 	fmt.Stringer
 
-	obj     interface{}
-	objType reflect.Type
-	cached  bool
+	obj         interface{}
+	objType     reflect.Type
+	cached      bool
+	cachedValue reflect.Value
 }
 
 // Return the earlier provided instance
@@ -193,7 +194,11 @@ type funcNode struct {
 }
 
 // Call the function and return the result
-func (n funcNode) value(g *graph) (reflect.Value, error) {
+func (n *funcNode) value(g *graph) (reflect.Value, error) {
+	if n.cached {
+		return n.cachedValue, nil
+	}
+
 	cv := reflect.ValueOf(n.constructor)
 	ct := reflect.TypeOf(n.constructor)
 
@@ -210,7 +215,11 @@ func (n funcNode) value(g *graph) (reflect.Value, error) {
 		}
 	}
 
-	return cv.Call(args)[0], nil
+	v := cv.Call(args)[0]
+	n.cached = true
+	n.cachedValue = v
+
+	return v, nil
 }
 
 func (n funcNode) dependencies() []interface{} {
