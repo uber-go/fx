@@ -523,7 +523,9 @@ func (cv Value) valueStruct(key string, target interface{}) (interface{}, error)
 			if fieldType.Kind() != reflect.Ptr {
 				newTarget = newTarget.Elem()
 			}
-			fieldValue.Set(newTarget)
+			if fieldValue.CanSet() {
+				fieldValue.Set(newTarget)
+			}
 		case bucketArray:
 			// TODO(alsam) fix array type DRI-12.
 		case bucketSlice:
