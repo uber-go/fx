@@ -20,7 +20,19 @@
 
 package hello
 
-import "fmt"
+import (
+	"fmt"
+	"log"
+
+	"go.uber.org/fx/dig"
+)
+
+func init() {
+	err := dig.Inject(NewPoliteSayer)
+	if err != nil {
+		log.Fatalf("Failed to inject a new polite sayer: %v", err)
+	}
+}
 
 // Sayer returns a string that say hello to the person
 type Sayer interface {

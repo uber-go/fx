@@ -25,22 +25,11 @@ import (
 
 	"go.uber.org/fx/dig"
 	"go.uber.org/fx/examples/dig/handlers"
-	"go.uber.org/fx/examples/dig/hello"
 	"go.uber.org/fx/modules/uhttp"
 	"go.uber.org/fx/service"
 )
 
 func main() {
-	// Polite sayer and HelloHandler are injected into the dependency graph
-	// This can be done from any package, for this example it's done in main
-	err := dig.InjectAll(
-		hello.NewPoliteSayer,
-		handlers.NewHandler,
-	)
-	if err != nil {
-		panic(err)
-	}
-
 	svc, err := service.WithModules(
 		uhttp.New(router, []uhttp.Filter{}),
 	).Build()
