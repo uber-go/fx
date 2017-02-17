@@ -81,8 +81,8 @@ type serviceConfig struct {
 	Roles       []string `yaml:"roles"`
 }
 
-// NewOwner creates a service owner from a set of module creation functions and options.
-func NewOwner(modules []ModuleCreateFunc, options ...Option) (Owner, error) {
+// newOwner creates a service owner from a set of module creation functions and options.
+func newOwner(modules []ModuleCreateFunc, options ...Option) (Owner, error) {
 	svc := &host{
 		// TODO: get these out of config struct instead
 		modules: []Module{},
