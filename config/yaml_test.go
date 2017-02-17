@@ -416,7 +416,7 @@ abc:
 `)
 	cfg := struct {
 		Str     string `yaml:"str" default:"nope"`
-		Int     int    `yaml:"int" default: "0"`
+		Int     int    `yaml:"int" default:"0"`
 		Bool    bool   `yaml:"bool" default:"true"`
 		BoolPtr *bool  `yaml:"bool_ptr"`
 	}{}
