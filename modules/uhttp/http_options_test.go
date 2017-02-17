@@ -28,46 +28,46 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestWithFilters(t *testing.T) {
-	fakeFilter1 := fakeFilter()
-	fakeFilter2 := fakeFilter()
+func TestWithInboundMiddleware(t *testing.T) {
+	fakeInbound1 := fakeInbound()
+	fakeInbound2 := fakeInbound()
 	tests := []struct {
 		desc   string
 		mi     service.ModuleCreateInfo
-		input  []Filter
-		expect []Filter
+		input  []InboundMiddleware
+		expect []InboundMiddleware
 	}{
 		{
-			desc:   "TestWithOneFilter",
+			desc:   "TestWithOneInboundMiddleware",
 			mi:     service.ModuleCreateInfo{},
-			input:  []Filter{fakeFilter1},
-			expect: []Filter{fakeFilter1},
+			input:  []InboundMiddleware{fakeInbound1},
+			expect: []InboundMiddleware{fakeInbound1},
 		},
 		{
-			desc:   "TestWithTwoFilters",
+			desc:   "TestWithTwoInboundMiddleware",
 			mi:     service.ModuleCreateInfo{},
-			input:  []Filter{fakeFilter1, fakeFilter2},
-			expect: []Filter{fakeFilter1, fakeFilter2},
+			input:  []InboundMiddleware{fakeInbound1, fakeInbound2},
+			expect: []InboundMiddleware{fakeInbound1, fakeInbound2},
 		},
 		{
-			desc: "TestHasOneWithOneFilter",
+			desc: "TestHasOneWithOneInboundMiddleware",
 			mi: service.ModuleCreateInfo{
 				Items: map[string]interface{}{
-					_filterKey: []Filter{fakeFilter1},
+					_middlewareKey: []InboundMiddleware{fakeInbound1},
 				},
 			},
-			input:  []Filter{fakeFilter2},
-			expect: []Filter{fakeFilter1, fakeFilter2},
+			input:  []InboundMiddleware{fakeInbound2},
+			expect: []InboundMiddleware{fakeInbound1, fakeInbound2},
 		},
 		{
-			desc: "TestHasOneWithNilFilter",
+			desc: "TestHasOneWithNilInboundMiddleware",
 			mi: service.ModuleCreateInfo{
 				Items: map[string]interface{}{
-					_filterKey: []Filter{fakeFilter1},
+					_middlewareKey: []InboundMiddleware{fakeInbound1},
 				},
 			},
 			input:  nil,
-			expect: []Filter{fakeFilter1},
+			expect: []InboundMiddleware{fakeInbound1},
 		},
 	}
 
@@ -75,53 +75,53 @@ func TestWithFilters(t *testing.T) {
 		tt := tt
 		t.Run(tt.desc, func(t *testing.T) {
 			t.Parallel()
-			opt := WithFilters(tt.input...)
+			opt := WithInboundMiddleware(tt.input...)
 			assert.NoError(t, opt(&tt.mi))
-			assert.Equal(t, len(tt.expect), len(filtersFromCreateInfo(tt.mi)))
+			assert.Equal(t, len(tt.expect), len(inboundMiddlewareFromCreateInfo(tt.mi)))
 		})
 	}
 }
 
-func TestWithFiltersTwice(t *testing.T) {
-	fakeFilter1 := fakeFilter()
-	fakeFilter2 := fakeFilter()
+func TestWithInboundMiddlewareTwice(t *testing.T) {
+	fakeInbound1 := fakeInbound()
+	fakeInbound2 := fakeInbound()
 	tests := []struct {
 		desc   string
 		mi     service.ModuleCreateInfo
-		input  []Filter
-		expect []Filter
+		input  []InboundMiddleware
+		expect []InboundMiddleware
 	}{
 		{
-			desc:   "TestWithOneFilterTwice",
+			desc:   "TestWithOneInboundMiddlewareTwice",
 			mi:     service.ModuleCreateInfo{},
-			input:  []Filter{fakeFilter1},
-			expect: []Filter{fakeFilter1, fakeFilter1},
+			input:  []InboundMiddleware{fakeInbound1},
+			expect: []InboundMiddleware{fakeInbound1, fakeInbound1},
 		},
 		{
-			desc:   "TestWithTwoFiltersTwice",
+			desc:   "TestWithTwoInboundMiddlewareTwice",
 			mi:     service.ModuleCreateInfo{},
-			input:  []Filter{fakeFilter1, fakeFilter2},
-			expect: []Filter{fakeFilter1, fakeFilter2, fakeFilter1, fakeFilter2},
+			input:  []InboundMiddleware{fakeInbound1, fakeInbound2},
+			expect: []InboundMiddleware{fakeInbound1, fakeInbound2, fakeInbound1, fakeInbound2},
 		},
 		{
-			desc: "TestHasOneWithOneFilterTwice",
+			desc: "TestHasOneWithOneInboundMiddlewareTwice",
 			mi: service.ModuleCreateInfo{
 				Items: map[string]interface{}{
-					_filterKey: []Filter{fakeFilter1},
+					_middlewareKey: []InboundMiddleware{fakeInbound1},
 				},
 			},
-			input:  []Filter{fakeFilter2},
-			expect: []Filter{fakeFilter1, fakeFilter2, fakeFilter2},
+			input:  []InboundMiddleware{fakeInbound2},
+			expect: []InboundMiddleware{fakeInbound1, fakeInbound2, fakeInbound2},
 		},
 		{
-			desc: "TestHasOneWithNilFilterTwice",
+			desc: "TestHasOneWithNilInboundMiddlewareTwice",
 			mi: service.ModuleCreateInfo{
 				Items: map[string]interface{}{
-					_filterKey: []Filter{fakeFilter1},
+					_middlewareKey: []InboundMiddleware{fakeInbound1},
 				},
 			},
 			input:  nil,
-			expect: []Filter{fakeFilter1},
+			expect: []InboundMiddleware{fakeInbound1},
 		},
 	}
 
@@ -129,56 +129,56 @@ func TestWithFiltersTwice(t *testing.T) {
 		tt := tt
 		t.Run(tt.desc, func(t *testing.T) {
 			t.Parallel()
-			opt := WithFilters(tt.input...)
+			opt := WithInboundMiddleware(tt.input...)
 			assert.NoError(t, opt(&tt.mi))
 
-			opt = WithFilters(tt.input...)
+			opt = WithInboundMiddleware(tt.input...)
 			assert.NoError(t, opt(&tt.mi))
 
-			assert.Equal(t, len(tt.expect), len(filtersFromCreateInfo(tt.mi)))
+			assert.Equal(t, len(tt.expect), len(inboundMiddlewareFromCreateInfo(tt.mi)))
 		})
 	}
 }
 
-func TestFiltersFromCreateInfo(t *testing.T) {
-	fakeFilter1 := fakeFilter()
-	fakeFilter2 := fakeFilter()
+func TestInboundMiddlewareFromCreateInfo(t *testing.T) {
+	fakeInbound1 := fakeInbound()
+	fakeInbound2 := fakeInbound()
 	tests := []struct {
-		desc    string
-		mi      service.ModuleCreateInfo
-		filters []Filter
+		desc       string
+		mi         service.ModuleCreateInfo
+		middleware []InboundMiddleware
 	}{
 		{
-			desc:    "TestEmptyItems",
-			mi:      service.ModuleCreateInfo{},
-			filters: nil,
+			desc:       "TestEmptyItems",
+			mi:         service.ModuleCreateInfo{},
+			middleware: nil,
 		},
 		{
 			desc: "TestSometingElseInItems",
 			mi: service.ModuleCreateInfo{
 				Items: map[string]interface{}{
-					"somethingElse": []Filter{fakeFilter1},
+					"somethingElse": []InboundMiddleware{fakeInbound1},
 				},
 			},
-			filters: nil,
+			middleware: nil,
 		},
 		{
-			desc: "TestOneFilterInItems",
+			desc: "TestOneInboundMiddlewareInItems",
 			mi: service.ModuleCreateInfo{
 				Items: map[string]interface{}{
-					_filterKey: []Filter{fakeFilter1},
+					_middlewareKey: []InboundMiddleware{fakeInbound1},
 				},
 			},
-			filters: []Filter{fakeFilter1},
+			middleware: []InboundMiddleware{fakeInbound1},
 		},
 		{
-			desc: "TestTwoFiltersInItems",
+			desc: "TestTwoInboundMiddlewareInItems",
 			mi: service.ModuleCreateInfo{
 				Items: map[string]interface{}{
-					_filterKey: []Filter{fakeFilter1, fakeFilter2},
+					_middlewareKey: []InboundMiddleware{fakeInbound1, fakeInbound2},
 				},
 			},
-			filters: []Filter{fakeFilter1, fakeFilter2},
+			middleware: []InboundMiddleware{fakeInbound1, fakeInbound2},
 		},
 	}
 
@@ -186,8 +186,8 @@ func TestFiltersFromCreateInfo(t *testing.T) {
 		tt := tt
 		t.Run(tt.desc, func(t *testing.T) {
 			t.Parallel()
-			fs := filtersFromCreateInfo(tt.mi)
-			assert.Equal(t, len(tt.filters), len(fs))
+			fs := inboundMiddlewareFromCreateInfo(tt.mi)
+			assert.Equal(t, len(tt.middleware), len(fs))
 		})
 	}
 }

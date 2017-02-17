@@ -27,54 +27,52 @@ import (
 	"go.uber.org/fx/ulog"
 )
 
-type filterChain struct {
-	currentFilter int
-	finalHandler  http.Handler
-	filters       []Filter
+type inboundMiddlewareChain struct {
+	currentMiddleware int
+	finalHandler      http.Handler
+	middleware        []InboundMiddleware
 }
 
-func (fc filterChain) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	if fc.currentFilter == len(fc.filters) {
+func (fc inboundMiddlewareChain) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	if fc.currentMiddleware == len(fc.middleware) {
 		fc.finalHandler.ServeHTTP(w, r)
 	} else {
-		filter := fc.filters[fc.currentFilter]
-		fc.currentFilter++
-		filter.Apply(w, r, fc)
+		middleware := fc.middleware[fc.currentMiddleware]
+		fc.currentMiddleware++
+		middleware.Handle(w, r, fc)
 	}
 }
 
-type filterChainBuilder struct {
+type inboundMiddlewareChainBuilder struct {
 	finalHandler http.Handler
-	filters      []Filter
+	middleware   []InboundMiddleware
 }
 
-func defaultFilterChainBuilder(log ulog.Log, authClient auth.Client) filterChainBuilder {
-	fcb := newFilterChainBuilder()
-	return fcb.AddFilters(
-		contextFilter{log},
-		panicFilter{},
-		metricsFilter{},
-		tracingServerFilter{},
-		authorizationFilter{
+func defaultInboundMiddlewareChainBuilder(log ulog.Log, authClient auth.Client) inboundMiddlewareChainBuilder {
+	mcb := newInboundMiddlewareChainBuilder()
+	return mcb.AddMiddleware(
+		contextInbound{log},
+		panicInbound{},
+		metricsInbound{},
+		tracingInbound{},
+		authorizationInbound{
 			authClient: authClient,
 		})
 }
 
-// NewFilterChainBuilder creates an empty filterChainBuilder for setup
-func newFilterChainBuilder() filterChainBuilder {
-	return filterChainBuilder{}
+// newInboundMiddlewareChainBuilder creates an empty middlewareChainBuilder for setup
+func newInboundMiddlewareChainBuilder() inboundMiddlewareChainBuilder {
+	return inboundMiddlewareChainBuilder{}
 }
 
-func (f filterChainBuilder) AddFilters(filters ...Filter) filterChainBuilder {
-	for _, filter := range filters {
-		f.filters = append(f.filters, filter)
-	}
-	return f
+func (m inboundMiddlewareChainBuilder) AddMiddleware(middleware ...InboundMiddleware) inboundMiddlewareChainBuilder {
+	m.middleware = append(m.middleware, middleware...)
+	return m
 }
 
-func (f filterChainBuilder) Build(finalHandler http.Handler) filterChain {
-	return filterChain{
-		filters:      f.filters,
+func (m inboundMiddlewareChainBuilder) Build(finalHandler http.Handler) inboundMiddlewareChain {
+	return inboundMiddlewareChain{
+		middleware:   m.middleware,
 		finalHandler: finalHandler,
 	}
 }

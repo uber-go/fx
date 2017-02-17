@@ -41,26 +41,26 @@ import (
 	"github.com/uber/jaeger-client-go/config"
 )
 
-func TestDefaultFiltersWithNopHost(t *testing.T) {
+func TestDefaultInboundMiddlewareWithNopHost(t *testing.T) {
 	tests := []struct {
 		desc   string
 		testFn func(*testing.T, service.Host)
 	}{
 		{
-			desc:   "testFilterChain",
-			testFn: testFilterChain,
+			desc:   "testInboundMiddlewareChain",
+			testFn: testInboundMiddlewareChain,
 		},
 		{
-			desc:   "testFilterChainFilters",
-			testFn: testFilterChainFilters,
+			desc:   "testInboundTraceInboundAuthChain",
+			testFn: testInboundTraceInboundAuthChain,
 		},
 		{
-			desc:   "testPanicFilter",
-			testFn: testPanicFilter,
+			desc:   "testPanicInbound",
+			testFn: testPanicInbound,
 		},
 		{
-			desc:   "testMetricsFilter",
-			testFn: testMetricsFilter,
+			desc:   "testMetricsInbound",
+			testFn: testMetricsInbound,
 		},
 	}
 
@@ -81,14 +81,14 @@ func TestDefaultFiltersWithNopHost(t *testing.T) {
 	})
 }
 
-func TestDefaultFiltersWithNopHostAuthFailure(t *testing.T) {
+func TestDefaultMiddlewareWithNopHostAuthFailure(t *testing.T) {
 	tests := []struct {
 		desc   string
 		testFn func(*testing.T, service.Host)
 	}{
 		{
-			desc:   "testFilterChainFiltersAuthFailure",
-			testFn: testFilterChainFiltersAuthFailure,
+			desc:   "testInboundMiddlewareChainAuthFailure",
+			testFn: testInboundMiddlewareChainAuthFailure,
 		},
 	}
 
@@ -109,7 +109,7 @@ func TestDefaultFiltersWithNopHostAuthFailure(t *testing.T) {
 	})
 }
 
-func TestDefaultFiltersWithNopHostConfigured(t *testing.T) {
+func TestDefaultInboundMiddlewareWithNopHostConfigured(t *testing.T) {
 	// this test's sub tests cannot run parallel
 	// and they need to build host by theirselves
 	tests := []struct {
@@ -117,8 +117,8 @@ func TestDefaultFiltersWithNopHostConfigured(t *testing.T) {
 		testFn func(*testing.T)
 	}{
 		{
-			desc:   "testTracingFilterWithLogs",
-			testFn: testTracingFilterWithLogs,
+			desc:   "testTracingInboundWithLogs",
+			testFn: testTracingInboundWithLogs,
 		},
 	}
 
@@ -128,13 +128,13 @@ func TestDefaultFiltersWithNopHostConfigured(t *testing.T) {
 	}
 }
 
-func testFilterChain(t *testing.T, host service.Host) {
-	chain := newFilterChainBuilder().AddFilters([]Filter{}...).Build(getNopHandler())
+func testInboundMiddlewareChain(t *testing.T, host service.Host) {
+	chain := newInboundMiddlewareChainBuilder().AddMiddleware([]InboundMiddleware{}...).Build(getNopHandler())
 	response := testServeHTTP(chain)
-	assert.True(t, strings.Contains(response.Body.String(), "filters ok"))
+	assert.True(t, strings.Contains(response.Body.String(), "inbound middleware ok"))
 }
 
-func testTracingFilterWithLogs(t *testing.T) {
+func testTracingInboundWithLogs(t *testing.T) {
 	testutils.WithInMemoryLogger(t, nil, func(zapLogger zap.Logger, buf *testutils.TestBuffer) {
 		// Create in-memory logger and jaeger tracer
 		loggerWithZap := ulog.Builder().SetLogger(zapLogger).Build()
@@ -151,9 +151,9 @@ func testTracingFilterWithLogs(t *testing.T) {
 		defer opentracing.InitGlobalTracer(opentracing.NoopTracer{})
 
 		ulog.SetLogger(loggerWithZap)
-		chain := newFilterChainBuilder().AddFilters([]Filter{contextFilter{loggerWithZap}, tracingServerFilter{}}...).Build(getNopHandler())
+		chain := newInboundMiddlewareChainBuilder().AddMiddleware([]InboundMiddleware{contextInbound{loggerWithZap}, tracingInbound{}}...).Build(getNopHandler())
 		response := testServeHTTP(chain)
-		assert.Contains(t, response.Body.String(), "filters ok")
+		assert.Contains(t, response.Body.String(), "inbound middleware ok")
 		assert.True(t, len(buf.Lines()) > 0)
 		var tracecount = 0
 		var spancount = 0
@@ -170,21 +170,21 @@ func testTracingFilterWithLogs(t *testing.T) {
 	})
 }
 
-func testFilterChainFilters(t *testing.T, host service.Host) {
-	chain := newFilterChainBuilder().AddFilters(
-		tracingServerFilter{},
-		authorizationFilter{
+func testInboundTraceInboundAuthChain(t *testing.T, host service.Host) {
+	chain := newInboundMiddlewareChainBuilder().AddMiddleware(
+		tracingInbound{},
+		authorizationInbound{
 			authClient: host.AuthClient(),
 		}).Build(getNopHandler())
 
 	response := testServeHTTP(chain)
-	assert.Contains(t, response.Body.String(), "filters ok")
+	assert.Contains(t, response.Body.String(), "inbound middleware ok")
 }
 
-func testFilterChainFiltersAuthFailure(t *testing.T, host service.Host) {
-	chain := newFilterChainBuilder().AddFilters(
-		tracingServerFilter{},
-		authorizationFilter{
+func testInboundMiddlewareChainAuthFailure(t *testing.T, host service.Host) {
+	chain := newInboundMiddlewareChainBuilder().AddMiddleware(
+		tracingInbound{},
+		authorizationInbound{
 			authClient: host.AuthClient(),
 		}).Build(getNopHandler())
 	response := testServeHTTP(chain)
@@ -192,9 +192,9 @@ func testFilterChainFiltersAuthFailure(t *testing.T, host service.Host) {
 	assert.Equal(t, 401, response.Code)
 }
 
-func testPanicFilter(t *testing.T, host service.Host) {
-	chain := newFilterChainBuilder().AddFilters(
-		panicFilter{},
+func testPanicInbound(t *testing.T, host service.Host) {
+	chain := newInboundMiddlewareChainBuilder().AddMiddleware(
+		panicInbound{},
 	).Build(getPanicHandler())
 	response := testServeHTTP(chain)
 	assert.Equal(t, response.Body.String(), _panicResponse+"\n")
@@ -206,12 +206,12 @@ func testPanicFilter(t *testing.T, host service.Host) {
 	assert.True(t, counters["panic"].Value() > 0)
 }
 
-func testMetricsFilter(t *testing.T, host service.Host) {
-	chain := newFilterChainBuilder().AddFilters(
-		metricsFilter{},
+func testMetricsInbound(t *testing.T, host service.Host) {
+	chain := newInboundMiddlewareChainBuilder().AddMiddleware(
+		metricsInbound{},
 	).Build(getNopHandler())
 	response := testServeHTTP(chain)
-	assert.Contains(t, response.Body.String(), "filters ok")
+	assert.Contains(t, response.Body.String(), "inbound middleware ok")
 
 	testScope := host.Metrics()
 	snapshot := testScope.(tally.TestScope).Snapshot()
@@ -221,8 +221,8 @@ func testMetricsFilter(t *testing.T, host service.Host) {
 	assert.NotNil(t, timers["GET"].Values())
 }
 
-func testServeHTTP(chain filterChain) *httptest.ResponseRecorder {
-	request := httptest.NewRequest("", "http://filters", nil)
+func testServeHTTP(chain inboundMiddlewareChain) *httptest.ResponseRecorder {
+	request := httptest.NewRequest("", "http://middleware", nil)
 	response := httptest.NewRecorder()
 	chain.ServeHTTP(response, request)
 	return response
@@ -238,7 +238,7 @@ func httpMetricsTeardown() {
 func getNopHandler() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ulog.Logger(r.Context()).Info("Inside Noop Handler")
-		io.WriteString(w, "filters ok")
+		io.WriteString(w, "inbound middleware ok")
 	}
 }
 
