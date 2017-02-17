@@ -114,7 +114,7 @@ func (g *graph) Resolve(obj interface{}) error {
 	objElemType := reflect.TypeOf(obj).Elem()
 	objVal := reflect.ValueOf(obj)
 
-	// check if the type is a registered node
+	// check if the type is a registered objNode
 	n, ok := g.nodes[objElemType]
 	if !ok {
 		return fmt.Errorf("type %v is not registered", objType)
@@ -191,7 +191,7 @@ func (g *graph) String() string {
 	return fmt.Sprintf("{nodes:\n%v}", b.String())
 }
 
-type node struct {
+type objNode struct {
 	fmt.Stringer
 
 	obj         interface{}
@@ -201,24 +201,25 @@ type node struct {
 }
 
 // Return the earlier provided instance
-func (n node) value(g *graph) (reflect.Value, error) {
+func (n objNode) value(g *graph) (reflect.Value, error) {
 	return reflect.ValueOf(n.obj), nil
 }
 
-func (n node) dependencies() []interface{} {
+func (n objNode) dependencies() []interface{} {
 	return nil
 }
 
-func (n node) String() string {
+func (n objNode) String() string {
 	return fmt.Sprintf(
-		"(object) obj: %v, deps: nil, cached: %v",
+		"(object) obj: %v, deps: nil, cached: %v, cachedValue: %v",
 		n.objType,
 		n.cached,
+		n.cachedValue,
 	)
 }
 
 type funcNode struct {
-	node
+	objNode
 	fmt.Stringer
 
 	constructor interface{}
@@ -239,7 +240,7 @@ func (n *funcNode) value(g *graph) (reflect.Value, error) {
 	// drastically increases the chances that we're not missing something
 	for _, node := range g.nodes {
 		for _, dep := range node.dependencies() {
-			// check that the dependency is a registered node
+			// check that the dependency is a registered objNode
 			if _, ok := g.nodes[dep]; !ok {
 				err := fmt.Errorf("%v dependency of type %v is not registered", ct, dep)
 				return reflect.Zero(ct), err
@@ -250,8 +251,7 @@ func (n *funcNode) value(g *graph) (reflect.Value, error) {
 	args := make([]reflect.Value, ct.NumIn(), ct.NumIn())
 	for idx := range args {
 		arg := ct.In(idx)
-		node, ok := g.nodes[arg]
-		if ok {
+		if node, ok := g.nodes[arg]; ok {
 			v, err := node.value(g)
 			if err != nil {
 				return reflect.Zero(n.objType), errors.Wrap(err, "dependency resolution failed")
@@ -273,18 +273,19 @@ func (n funcNode) dependencies() []interface{} {
 
 func (n funcNode) String() string {
 	return fmt.Sprintf(
-		"(function) deps: %v, type: %v, constructor: %v, cached: %v",
+		"(function) deps: %v, type: %v, constructor: %v, cached: %v, cachedValue: %v",
 		n.deps,
 		n.objType,
 		n.constructor,
 		n.cached,
+		n.cachedValue,
 	)
 }
 
 func (g *graph) registerObject(o interface{}) error {
 	otype := reflect.TypeOf(o)
 
-	n := node{
+	n := objNode{
 		obj:     o,
 		objType: otype,
 		cached:  true,
@@ -302,7 +303,7 @@ func (g *graph) registerConstructor(c interface{}) error {
 	n := funcNode{
 		deps:        make([]interface{}, argc),
 		constructor: c,
-		node: node{
+		objNode: objNode{
 			objType: objType,
 		},
 	}
