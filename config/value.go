@@ -532,7 +532,7 @@ func (cv Value) valueStruct(key string, target interface{}) (interface{}, error)
 				fieldValue.Set(newTarget)
 			}
 		case bucketArray:
-			// TODO(alsam) fix array type.
+			// TODO(alsam) fix array type DRI-12.
 		case bucketSlice:
 			destSlice := reflect.MakeSlice(fieldType, 0, 4)
 
