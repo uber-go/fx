@@ -54,7 +54,7 @@ func TestInject(t *testing.T) {
 	for _, tc := range tts {
 		t.Run(tc.name, func(t *testing.T) {
 			g := New()
-			err := g.Inject(tc.param)
+			err := g.Register(tc.param)
 
 			if tc.err != nil {
 				require.EqualError(t, err, tc.err.Error())
@@ -67,14 +67,14 @@ func TestInject(t *testing.T) {
 
 func TestResolve(t *testing.T) {
 	tts := []struct {
-		name    string
-		inject  func(g *graph) error
-		resolve func(g *graph) error
-		es      string
+		name     string
+		register func(g *graph) error
+		resolve  func(g *graph) error
+		es       string
 	}{
 		{
 			"non pointer resolve",
-			func(g *graph) error { return g.Inject(NewParent1) },
+			func(g *graph) error { return g.Register(NewParent1) },
 			func(g *graph) error { return g.Resolve(S{}) },
 			"can not resolve non-pointer object",
 		},
@@ -93,8 +93,8 @@ func TestResolve(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			g := testGraph()
 
-			err := tc.inject(g)
-			require.NoError(t, err, "Inject part of the test cant have errors")
+			err := tc.register(g)
+			require.NoError(t, err, "Register part of the test cant have errors")
 
 			err = tc.resolve(g)
 			if err != nil {
@@ -113,7 +113,7 @@ func TestObjectInject(t *testing.T) {
 	type Fake struct {
 		Name string
 	}
-	err := g.Inject(&Fake{Name: "I am a fake injected thing"})
+	err := g.Register(&Fake{Name: "I am a fake injected thing"})
 	require.NoError(t, err)
 
 	// get one pointer resolved
@@ -134,7 +134,7 @@ func TestObjectInject(t *testing.T) {
 func TestConstructorInject(t *testing.T) {
 	g := testGraph()
 
-	err := g.Inject(NewGrandchild1)
+	err := g.Register(NewGrandchild1)
 	require.NoError(t, err)
 
 	var first *Grandchild1
@@ -152,7 +152,7 @@ func TestConstructorInject(t *testing.T) {
 func TestBasicResolve(t *testing.T) {
 	g := testGraph()
 
-	err := g.InjectAll(
+	err := g.RegisterAll(
 		NewParent1,
 		NewChild1,
 		NewGrandchild1,

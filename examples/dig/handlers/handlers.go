@@ -36,7 +36,7 @@ type HelloHandler struct {
 }
 
 func init() {
-	err := dig.Inject(NewHandler)
+	err := dig.Register(NewHandler)
 	if err != nil {
 		log.Fatalf("Failed to inject new handler: %v", err)
 	}

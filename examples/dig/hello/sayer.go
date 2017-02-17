@@ -28,7 +28,7 @@ import (
 )
 
 func init() {
-	err := dig.Inject(NewPoliteSayer)
+	err := dig.Register(NewPoliteSayer)
 	if err != nil {
 		log.Fatalf("Failed to inject a new polite sayer: %v", err)
 	}

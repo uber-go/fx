@@ -21,7 +21,7 @@ Injecting an object means it has no dependencies, and will be used as a
 type Fake struct {
     Name string
 }
-err := g.Inject(&Fake{Name: "I am an injected thing"})
+err := g.Register(&Fake{Name: "I am an injected thing"})
 require.NoError(t, err)
 
 var f1 *Fake
@@ -52,7 +52,7 @@ func NewObject(d *Dep) *Object {
   return &Object{Dep: d}
 }
 
-err := dig.Inject(NewObject)
+err := dig.Register(NewObject)
 ```
 
 ## Resolve

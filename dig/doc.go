@@ -42,7 +42,7 @@
 //   type Fake struct {
 //       Name string
 //   }
-//   err := g.Inject(&Fake{Name: "I am an injected thing"})
+//   err := g.Register(&Fake{Name: "I am an injected thing"})
 //   require.NoError(t, err)
 //
 //   var f1 *Fake
@@ -71,7 +71,7 @@
 //     return &Object{Dep: d}
 //   }
 //
-//   err := dig.Inject(NewObject)
+//   err := dig.Register(NewObject)
 //
 // Resolve
 //

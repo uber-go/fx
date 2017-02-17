@@ -23,14 +23,14 @@ package dig
 // Default graph is used for all the top-level inject calls
 var defaultGraph = newGraph()
 
-// Inject into the default graph
-func Inject(i interface{}) error {
-	return defaultGraph.Inject(i)
+// Register into the default graph
+func Register(i interface{}) error {
+	return defaultGraph.Register(i)
 }
 
-// InjectAll into the default graph
-func InjectAll(is ...interface{}) error {
-	return defaultGraph.InjectAll(is...)
+// RegisterAll into the default graph
+func RegisterAll(is ...interface{}) error {
+	return defaultGraph.RegisterAll(is...)
 }
 
 // Resolve an object through the default graph

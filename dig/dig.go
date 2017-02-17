@@ -42,17 +42,17 @@ func New() Graph {
 
 // Graph facilitates basic dependency injection
 //
-// TODO: Inject functions should take options to control resolve behaviour
+// TODO: Register functions should take options to control resolve behaviour
 // for example, at the moment everything is a singleton and we need an option
 // to initialize a new instance on every resolve
 type Graph interface {
-	// Inject into the dependency graph
+	// Register into the dependency graph
 	// Parameter must be a pointer or a constructor function returning exactly one pointer
-	Inject(interface{}) error
+	Register(interface{}) error
 
-	// Same as calling .Inject for each provided vararg
+	// Same as calling .Register for each provided vararg
 	// Returns the first error encountered
-	InjectAll(...interface{}) error
+	RegisterAll(...interface{}) error
 
 	// Resolve the dependencies of the object and populate the pointer value
 	Resolve(interface{}) error
@@ -61,11 +61,11 @@ type Graph interface {
 	Reset()
 }
 
-// Inject an object in the dependency graph
+// Register an object in the dependency graph
 //
 // Provided argument must be a function that returns exactly one pointer argument
 // All arguments to the function must be pointers
-func (g *graph) Inject(c interface{}) error {
+func (g *graph) Register(c interface{}) error {
 	ctype := reflect.TypeOf(c)
 
 	switch ctype.Kind() {
@@ -79,9 +79,9 @@ func (g *graph) Inject(c interface{}) error {
 			return errReturnKind
 		}
 
-		return g.injectConstructor(c)
+		return g.registerConstructor(c)
 	case reflect.Ptr:
-		return g.injectObject(c)
+		return g.registerObject(c)
 	default:
 		return errParamType
 	}
@@ -242,7 +242,7 @@ func (n funcNode) String() string {
 	)
 }
 
-func (g *graph) injectObject(o interface{}) error {
+func (g *graph) registerObject(o interface{}) error {
 	otype := reflect.TypeOf(o)
 
 	n := node{
@@ -255,7 +255,7 @@ func (g *graph) injectObject(o interface{}) error {
 	return nil
 }
 
-func (g *graph) injectConstructor(c interface{}) error {
+func (g *graph) registerConstructor(c interface{}) error {
 	ctype := reflect.TypeOf(c)
 	objType := ctype.Out(0)
 
@@ -280,10 +280,10 @@ func (g *graph) injectConstructor(c interface{}) error {
 	return nil
 }
 
-// InjectAll registers all the provided args in the dependency graph
-func (g *graph) InjectAll(cs ...interface{}) error {
+// RegisterAll registers all the provided args in the dependency graph
+func (g *graph) RegisterAll(cs ...interface{}) error {
 	for _, c := range cs {
-		err := g.Inject(c)
+		err := g.Register(c)
 		if err != nil {
 			return err
 		}
