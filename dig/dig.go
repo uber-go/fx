@@ -120,18 +120,6 @@ func (g *graph) Resolve(obj interface{}) error {
 		return fmt.Errorf("type %v is not registered", objType)
 	}
 
-	// check that all the dependencies have nodes present in the graph
-	// doesn't mean everything will go smoothly during resolve, but it
-	// drastically increases the chances that we're not missing something
-	for _, node := range g.nodes {
-		for _, dep := range node.dependencies() {
-			// check that the dependency is a registered node
-			if _, ok := g.nodes[dep]; !ok {
-				return fmt.Errorf("%v dependency of type %v is not registered", objElemType, dep)
-			}
-		}
-	}
-
 	v, err := n.value(g)
 	if err != nil {
 		return errors.Wrapf(err, "unable to resolve %v", objType)
@@ -245,6 +233,19 @@ func (n *funcNode) value(g *graph) (reflect.Value, error) {
 
 	cv := reflect.ValueOf(n.constructor)
 	ct := reflect.TypeOf(n.constructor)
+
+	// check that all the dependencies have nodes present in the graph
+	// doesn't mean everything will go smoothly during resolve, but it
+	// drastically increases the chances that we're not missing something
+	for _, node := range g.nodes {
+		for _, dep := range node.dependencies() {
+			// check that the dependency is a registered node
+			if _, ok := g.nodes[dep]; !ok {
+				err := fmt.Errorf("%v dependency of type %v is not registered", ct, dep)
+				return reflect.Zero(ct), err
+			}
+		}
+	}
 
 	args := make([]reflect.Value, ct.NumIn(), ct.NumIn())
 	for idx := range args {
