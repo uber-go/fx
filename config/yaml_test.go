@@ -362,3 +362,14 @@ func TestYamlProviderFmtPrintOnValueNoPanic(t *testing.T) {
 	}
 	assert.NotPanics(t, f)
 }
+
+func TestArrayTypeNoPanic(t *testing.T) {
+	// This test will panic if we treat array the same as slice.
+	provider := NewYAMLProviderFromBytes(yamlConfig1)
+
+	cs := struct {
+		ID [6]int `yaml:"id"`
+	}{}
+
+	assert.NoError(t, provider.Get(Root).PopulateStruct(&cs))
+}
