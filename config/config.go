@@ -102,6 +102,7 @@ func getConfigFiles() []string {
 	for _, dir := range dirs {
 		for _, baseFile := range baseFiles {
 			files = append(files, fmt.Sprintf("%s/%s.yaml", dir, baseFile))
+			files = append(files, fmt.Sprintf("%s/%s.yml", dir, baseFile))
 		}
 	}
 
