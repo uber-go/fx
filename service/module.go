@@ -29,11 +29,11 @@ import (
 type Module interface {
 	// Return the default name of the Module. This can be overridden with WithModuleName.
 	Name() string
-	// Start the Module. If an error is returned, the Module is assumed to be started.
-	// There is no need for this to be thread-safe, it will be called in a thread-safe manner
+	// Start the Module. If an error is returned, the Module is assumed to be not started.
+	// There is no need for this to be thread-safe, it will be called in a thread-safe manner.
 	Start() error
 	// Stop the Module. If an error is returned, the Module is still assumed to be stopped.
-	// There is no need for this to be thread-safe, it will be called in a thread-safe manner
+	// There is no need for this to be thread-safe, it will be called in a thread-safe manner.
 	Stop() error
 }
 

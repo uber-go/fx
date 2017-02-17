@@ -315,7 +315,6 @@ func (s *host) startModules() []error {
 	for _, mod := range s.moduleWrappers {
 		go func(m *moduleWrapper) {
 			if !m.IsRunning() {
-				readyCh := make(chan struct{}, 1)
 				errC := make(chan err, 1)
 				go func() { errC <- m.Start() }()
 				select {
