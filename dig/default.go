@@ -38,6 +38,11 @@ func Resolve(i interface{}) error {
 	return defaultGraph.Resolve(i)
 }
 
+// ResolveAll objects through the default graph
+func ResolveAll(is ...interface{}) error {
+	return defaultGraph.ResolveAll(is...)
+}
+
 // Reset the default graph
 func Reset() {
 	defaultGraph.Reset()

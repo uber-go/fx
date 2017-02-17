@@ -57,6 +57,10 @@ type Graph interface {
 	// Resolve the dependencies of the object and populate the pointer value
 	Resolve(interface{}) error
 
+	// ResolveAll the dependencies of each provided object
+	// Returns the first error encountered
+	ResolveAll(...interface{}) error
+
 	// Reset the graph by removing all the registered nodes
 	Reset()
 }
@@ -129,6 +133,29 @@ func (g *graph) Resolve(obj interface{}) error {
 	// set the pointer value of the provided object to the instance pointer
 	objVal.Elem().Set(v)
 
+	return nil
+}
+
+// ResolveAll the dependencies of each provided object
+// Returns the first error encountered
+func (g *graph) ResolveAll(objs ...interface{}) error {
+	for _, o := range objs {
+		err := g.Resolve(o)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// RegisterAll registers all the provided args in the dependency graph
+func (g *graph) RegisterAll(cs ...interface{}) error {
+	for _, c := range cs {
+		err := g.Register(c)
+		if err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
@@ -277,16 +304,5 @@ func (g *graph) registerConstructor(c interface{}) error {
 	}
 
 	g.nodes[objType] = &n
-	return nil
-}
-
-// RegisterAll registers all the provided args in the dependency graph
-func (g *graph) RegisterAll(cs ...interface{}) error {
-	for _, c := range cs {
-		err := g.Register(c)
-		if err != nil {
-			return err
-		}
-	}
 	return nil
 }

@@ -38,7 +38,7 @@ func nonPointerParams(one, two string) *S {
 	return &S{}
 }
 
-func TestInject(t *testing.T) {
+func TestRegister(t *testing.T) {
 	tts := []struct {
 		name  string
 		param interface{}
@@ -48,7 +48,7 @@ func TestInject(t *testing.T) {
 		{"wrong return count", noReturn, errReturnCount},
 		{"non pointer return", returnNonPointer, errReturnKind},
 		{"wrong parameters type", nonPointerParams, errArgKind},
-		{"pointer inject", &struct{}{}, nil},
+		{"pointer register", &struct{}{}, nil},
 	}
 
 	for _, tc := range tts {
@@ -106,14 +106,14 @@ func TestResolve(t *testing.T) {
 	}
 }
 
-func TestObjectInject(t *testing.T) {
+func TestObjectRegister(t *testing.T) {
 	g := New()
 
-	// inject a fake struct type into the graph
+	// register a fake struct type into the graph
 	type Fake struct {
 		Name string
 	}
-	err := g.Register(&Fake{Name: "I am a fake injected thing"})
+	err := g.Register(&Fake{Name: "I am a fake registered thing"})
 	require.NoError(t, err)
 
 	// get one pointer resolved
@@ -131,7 +131,7 @@ func TestObjectInject(t *testing.T) {
 	require.Equal(t, *f1, *f2)
 }
 
-func TestConstructorInject(t *testing.T) {
+func TestBasicRegisterResolve(t *testing.T) {
 	g := testGraph()
 
 	err := g.Register(NewGrandchild1)
@@ -144,12 +144,12 @@ func TestConstructorInject(t *testing.T) {
 	err = g.Resolve(&second)
 
 	require.NoError(t, err, "No error expected during Resolve")
-	require.NotNil(t, first, "Child1 must have been injected")
-	require.NotNil(t, second, "Child1 must have been injected")
+	require.NotNil(t, first, "Child1 must have been registered")
+	require.NotNil(t, second, "Child1 must have been registered")
 	require.True(t, first == second, "Must point to the same object")
 }
 
-func TestBasicResolve(t *testing.T) {
+func TestRegisterAll(t *testing.T) {
 	g := testGraph()
 
 	err := g.RegisterAll(
@@ -163,8 +163,29 @@ func TestBasicResolve(t *testing.T) {
 	err = g.Resolve(&p1)
 
 	require.NoError(t, err, "No error expected during Resolve")
-	require.NotNil(t, p1.c1, "Child1 must have been injected")
-	require.NotNil(t, p1.c1.gc1, "Grandchild1 must have been injected")
+	require.NotNil(t, p1.c1, "Child1 must have been registered")
+	require.NotNil(t, p1.c1.gc1, "Grandchild1 must have been registered")
+}
+
+func TestResolveAll(t *testing.T) {
+	g := testGraph()
+
+	err := g.RegisterAll(
+		NewParent1,
+		NewChild1,
+		NewGrandchild1,
+	)
+	require.NoError(t, err)
+
+	var p1 *Parent1
+	var p2 *Parent1
+	var p3 *Parent1
+	var p4 *Parent1
+
+	err = g.ResolveAll(&p1, &p2, &p3, &p4)
+	require.NoError(t, err, "Did not expect error on resolve all")
+	require.Equal(t, p1.name, "Parent1")
+	require.True(t, p1 == p2 && p2 == p3 && p3 == p4, "All pointers must be equal")
 }
 
 func testGraph() *graph {
