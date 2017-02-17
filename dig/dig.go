@@ -135,8 +135,7 @@ func (g *graph) Resolve(obj interface{}) error {
 // Returns the first error encountered
 func (g *graph) ResolveAll(objs ...interface{}) error {
 	for _, o := range objs {
-		err := g.Resolve(o)
-		if err != nil {
+		if err := g.Resolve(o); err != nil {
 			return err
 		}
 	}
@@ -146,8 +145,7 @@ func (g *graph) ResolveAll(objs ...interface{}) error {
 // RegisterAll registers all the provided args in the dependency graph
 func (g *graph) RegisterAll(cs ...interface{}) error {
 	for _, c := range cs {
-		err := g.Register(c)
-		if err != nil {
+		if err := g.Register(c); err != nil {
 			return err
 		}
 	}
