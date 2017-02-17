@@ -132,6 +132,7 @@ func TestObjectRegister(t *testing.T) {
 }
 
 func TestBasicRegisterResolve(t *testing.T) {
+	t.Parallel()
 	g := testGraph()
 
 	err := g.Register(NewGrandchild1)
@@ -150,6 +151,7 @@ func TestBasicRegisterResolve(t *testing.T) {
 }
 
 func TestRegisterAll(t *testing.T) {
+	t.Parallel()
 	g := testGraph()
 
 	err := g.RegisterAll(
@@ -167,7 +169,22 @@ func TestRegisterAll(t *testing.T) {
 	require.NotNil(t, p1.c1.gc1, "Grandchild1 must have been registered")
 }
 
+func TestConcurrentAccess(t *testing.T) {
+	t.Parallel()
+	g := testGraph()
+
+	for i := 0; i < 10; i++ {
+		go func() {
+			require.NoError(t, g.Register(NewGrandchild1))
+
+			var gc1 *Grandchild1
+			require.NoError(t, g.Resolve(&gc1))
+		}()
+	}
+}
+
 func TestResolveAll(t *testing.T) {
+	t.Parallel()
 	g := testGraph()
 
 	err := g.RegisterAll(

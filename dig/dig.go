@@ -24,6 +24,7 @@ import (
 	"bytes"
 	"fmt"
 	"reflect"
+	"sync"
 
 	"github.com/pkg/errors"
 )
@@ -70,6 +71,9 @@ type Graph interface {
 // Provided argument must be a function that returns exactly one pointer argument
 // All arguments to the function must be pointers
 func (g *graph) Register(c interface{}) error {
+	g.Lock()
+	defer g.Unlock()
+
 	ctype := reflect.TypeOf(c)
 
 	switch ctype.Kind() {
@@ -99,6 +103,9 @@ func (g *graph) Register(c interface{}) error {
 //
 // TODO(glib): catch any and all panics from this method, as there is a lot of reflect going on
 func (g *graph) Resolve(obj interface{}) error {
+	g.Lock()
+	defer g.Unlock()
+
 	objType := reflect.TypeOf(obj)
 	if objType.Kind() != reflect.Ptr {
 		return fmt.Errorf("can not resolve non-pointer object of type %v", objType)
@@ -161,6 +168,9 @@ func (g *graph) RegisterAll(cs ...interface{}) error {
 
 // Reset the graph by removing all the registered nodes
 func (g *graph) Reset() {
+	g.Lock()
+	defer g.Unlock()
+
 	defaultGraph.nodes = make(map[interface{}]object)
 }
 
@@ -174,6 +184,7 @@ type object interface {
 
 type graph struct {
 	fmt.Stringer
+	sync.Mutex
 
 	nodes map[interface{}]object
 }
@@ -184,7 +195,7 @@ func newGraph() *graph {
 	}
 }
 
-func (g graph) String() string {
+func (g *graph) String() string {
 	var b bytes.Buffer
 	for key, reg := range g.nodes {
 		b.WriteString(fmt.Sprintf("%v -> %v\n", key, reg))
