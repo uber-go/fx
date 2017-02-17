@@ -551,8 +551,8 @@ func (cv Value) valueStruct(key string, target interface{}) (interface{}, error)
 					}
 				case bucketObject:
 					newTarget := reflect.New(elementType)
-					// for array, there is no need to set default value on inner struct
-					// so only continue when v2 has value.
+					// for slice, there is no need to set default value on inner struct
+					// when input is empty, so only continue when v2 has value.
 					if v2 := global.Get(arrayKey); v2.HasValue() {
 						if err := v2.PopulateStruct(newTarget.Interface()); err != nil {
 							return nil, errors.Wrap(err, "unable to populate struct of object")
