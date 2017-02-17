@@ -358,7 +358,7 @@ func TestYamlProviderFmtPrintOnValueNoPanic(t *testing.T) {
 	c := provider.Get("modules.rpc.bind")
 
 	f := func() {
-		fmt.Sprintf("%v", c)
+		assert.Contains(t, fmt.Sprintf("%v", c), "")
 	}
 	assert.NotPanics(t, f)
 }

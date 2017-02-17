@@ -77,7 +77,7 @@ func TestStaticProviderFmtPrintOnValueNoPanic(t *testing.T) {
 	val := p.Get("something")
 
 	f := func() {
-		fmt.Sprintf("%v", val)
+		assert.Contains(t, fmt.Sprintf("%v", val), "")
 	}
 	assert.NotPanics(t, f)
 }
