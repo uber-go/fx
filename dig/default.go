@@ -38,7 +38,7 @@ func Resolve(i interface{}) error {
 	return defaultGraph.Resolve(i)
 }
 
-// ResolveAll objects through the default graph
+// ResolveAll the passed in pointers through the dependency graph
 func ResolveAll(is ...interface{}) error {
 	return defaultGraph.ResolveAll(is...)
 }

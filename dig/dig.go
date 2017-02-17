@@ -58,7 +58,7 @@ type Graph interface {
 	// Resolve the dependencies of the object and populate the pointer value
 	Resolve(interface{}) error
 
-	// ResolveAll the dependencies of each provided object
+	// ResolveAll the passed in pointers through the dependency graph
 	// Returns the first error encountered
 	ResolveAll(...interface{}) error
 
