@@ -162,6 +162,11 @@ func (cv Value) ChildKeys() []string {
 	return nil
 }
 
+// String prints out underline value in Value with fmt.Srpintf.
+func (cv Value) String() string {
+	return fmt.Sprintf("%v", cv.value)
+}
+
 // TryAsString attempts to return the configuration value as a string
 func (cv Value) TryAsString() (string, bool) {
 	v := cv.Value()

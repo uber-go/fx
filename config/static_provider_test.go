@@ -21,6 +21,7 @@
 package config
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -69,4 +70,14 @@ func TestStaticProvider_Callbacks(t *testing.T) {
 	p := NewStaticProvider(nil)
 	assert.NoError(t, p.RegisterChangeCallback("test", nil))
 	assert.NoError(t, p.UnregisterChangeCallback("token"))
+}
+
+func TestStaticProviderFmtPrintOnValueNoPanic(t *testing.T) {
+	p := NewStaticProvider(nil)
+	val := p.Get("something")
+
+	f := func() {
+		assert.Contains(t, fmt.Sprintf("%v", val), "")
+	}
+	assert.NotPanics(t, f)
 }

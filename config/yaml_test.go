@@ -22,6 +22,7 @@ package config
 
 import (
 	"bytes"
+	"fmt"
 	"io/ioutil"
 	"os"
 	"path"
@@ -350,4 +351,14 @@ func TestMerge(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestYamlProviderFmtPrintOnValueNoPanic(t *testing.T) {
+	provider := NewYAMLProviderFromBytes(yamlConfig1)
+	c := provider.Get("modules.rpc.bind")
+
+	f := func() {
+		assert.Contains(t, fmt.Sprintf("%v", c), "")
+	}
+	assert.NotPanics(t, f)
 }
