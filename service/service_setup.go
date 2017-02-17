@@ -34,19 +34,16 @@ import (
 	"github.com/pkg/errors"
 )
 
-func (svc *serviceCore) setupLogging() {
-	if svc.log == nil {
-		err := svc.configProvider.Get("logging").PopulateStruct(&svc.logConfig)
-		if err != nil {
-			ulog.Logger(context.Background()).Info("Logging configuration is not provided, setting to default logger", "error", err)
-		}
+var _simpleCtx = context.Background()
 
-		logBuilder := ulog.Builder().WithScope(svc.metrics)
-		svc.log = logBuilder.WithConfiguration(svc.logConfig).Build()
-		ulog.SetLogger(svc.log)
-	} else {
-		svc.log.Debug("Using custom log provider due to service.WithLogger option")
+func (svc *serviceCore) setupLogging() {
+	err := svc.configProvider.Get("logging").PopulateStruct(&svc.logConfig)
+	if err != nil {
+		ulog.Logger(_simpleCtx).Info("Logging configuration is not provided, setting to default logger", "error", err)
 	}
+
+	logBuilder := ulog.Builder().WithScope(svc.metrics)
+	ulog.SetLogger(logBuilder.WithConfiguration(svc.logConfig).Build())
 }
 
 func (svc *serviceCore) setupStandardConfig() error {
@@ -55,7 +52,7 @@ func (svc *serviceCore) setupStandardConfig() error {
 	}
 
 	if errs := validator.Validate(svc.standardConfig); errs != nil {
-		svc.Logger().Error("Invalid service configuration", "error", errs)
+		ulog.Logger(_simpleCtx).Error("Invalid service configuration", "error", errs)
 		return errors.Wrap(errs, "service configuration failed validation")
 	}
 	return nil
@@ -94,7 +91,7 @@ func (svc *serviceCore) setupTracer() error {
 	tracer, closer, err := tracing.InitGlobalTracer(
 		&svc.tracerConfig,
 		svc.standardConfig.Name,
-		svc.log,
+		ulog.Logger(_simpleCtx),
 		svc.statsReporter,
 	)
 	if err != nil {

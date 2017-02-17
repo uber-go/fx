@@ -107,12 +107,11 @@ logging:
 `)
 	cfgOpt := WithConfiguration(config.NewYAMLProviderFromBytes(data))
 
-	svc, err := New(cfgOpt)
+	_, err := New(cfgOpt)
 	require.NoError(t, err)
-	assert.NotNil(t, svc.Logger())
 	// Note: Sentry is not accessible so we cannot directly test it here. Just invoking the code
 	// path to make sure there is no panic
-	svc.Logger().Info("Testing sentry call")
+	ulog.Logger(_simpleCtx).Info("Testing sentry call")
 }
 
 func TestBadOption_Panics(t *testing.T) {
@@ -145,11 +144,7 @@ func TestAfterStartObserver(t *testing.T) {
 	wg := sync.WaitGroup{}
 	wg.Add(1)
 	h := &host{
-		serviceCore: serviceCore{
-			loggingCore: loggingCore{
-				log: ulog.NopLogger,
-			},
-		},
+		serviceCore: serviceCore{},
 		observer: AfterStart(func() {
 			wg.Done()
 		}),

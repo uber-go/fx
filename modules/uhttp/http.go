@@ -21,6 +21,7 @@
 package uhttp
 
 import (
+	"context"
 	"fmt"
 	"net"
 	"net/http"
@@ -114,20 +115,22 @@ func newModule(
 
 	handlers := addHealth(getHandlers(mi.Host))
 
+	log := ulog.Logger(context.Background()).With("moduleName", mi.Name)
+
 	// TODO (madhu): Add other middleware - logging, metrics.
 	module := &Module{
 		ModuleBase: *modules.NewModuleBase(mi.Name, mi.Host, []string{}),
 		handlers:   handlers,
-		fcb:        defaultFilterChainBuilder(mi.Host),
+		fcb:        defaultFilterChainBuilder(log, mi.Host.AuthClient()),
 	}
 
 	err := module.Host().Config().Get(getConfigKey(mi.Name)).PopulateStruct(cfg)
 	if err != nil {
-		module.Host().Logger().Error("Error loading http module configuration", "error", err)
+		log.Error("Error loading http module configuration", "error", err)
 	}
 	module.config = *cfg
 
-	module.log = module.Host().Logger().With("moduleName", mi.Name)
+	module.log = log
 
 	for _, option := range options {
 		if err := option(&mi); err != nil {

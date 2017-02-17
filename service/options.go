@@ -22,7 +22,6 @@ package service
 
 import (
 	"go.uber.org/fx/config"
-	"go.uber.org/fx/ulog"
 
 	"github.com/opentracing/opentracing-go"
 	"github.com/uber-go/tally"
@@ -37,16 +36,6 @@ func WithConfiguration(config config.Provider) Option {
 		// TODO(ai) verify type assertion is correct
 		svc2 := svc.(*host)
 		svc2.configProvider = config
-		return nil
-	}
-}
-
-// WithLogger adds ulog to a service host
-func WithLogger(log ulog.Log) Option {
-	return func(svc Host) error {
-		// TODO(ai) verify type assertion is correct
-		svc2 := svc.(*host)
-		svc2.log = log
 		return nil
 	}
 }

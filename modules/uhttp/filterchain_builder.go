@@ -23,7 +23,8 @@ package uhttp
 import (
 	"net/http"
 
-	"go.uber.org/fx/service"
+	"go.uber.org/fx/auth"
+	"go.uber.org/fx/ulog"
 )
 
 type filterChain struct {
@@ -43,29 +44,25 @@ func (fc filterChain) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 type filterChainBuilder struct {
-	service.Host
-
 	finalHandler http.Handler
 	filters      []Filter
 }
 
-func defaultFilterChainBuilder(host service.Host) filterChainBuilder {
-	fcb := newFilterChainBuilder(host)
+func defaultFilterChainBuilder(log ulog.Log, authClient auth.Client) filterChainBuilder {
+	fcb := newFilterChainBuilder()
 	return fcb.AddFilters(
-		contextFilter{host},
+		contextFilter{log},
 		panicFilter{},
 		metricsFilter{},
 		tracingServerFilter{},
 		authorizationFilter{
-			authClient: host.AuthClient(),
+			authClient: authClient,
 		})
 }
 
 // NewFilterChainBuilder creates an empty filterChainBuilder for setup
-func newFilterChainBuilder(host service.Host) filterChainBuilder {
-	return filterChainBuilder{
-		Host: host,
-	}
+func newFilterChainBuilder() filterChainBuilder {
+	return filterChainBuilder{}
 }
 
 func (f filterChainBuilder) AddFilters(filters ...Filter) filterChainBuilder {

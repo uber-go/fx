@@ -21,6 +21,7 @@
 package rpc
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"sync"
@@ -226,7 +227,7 @@ func newYARPCModule(
 
 	stats.SetupRPCMetrics(mi.Host.Metrics())
 
-	module.log = module.Host().Logger().With("moduleName", name)
+	module.log = ulog.Logger(context.Background()).With("moduleName", name)
 	for _, opt := range options {
 		if err := opt(&mi); err != nil {
 			return module, errs.Wrap(err, "unable to apply option to YARPC module")
