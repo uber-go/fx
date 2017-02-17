@@ -83,7 +83,6 @@ func TestStaticProviderFmtPrintOnValueNoPanic(t *testing.T) {
 }
 
 func TestNilStaticProviderSetDefaultTagValue(t *testing.T) {
-	// TODO (yutong) uncomment comment out part after #279
 	type Inner struct {
 		Set bool `yaml:"set" default:"true"`
 	}
@@ -95,7 +94,7 @@ func TestNilStaticProviderSetDefaultTagValue(t *testing.T) {
 		ID4 map[Inner]Inner `yaml:"id4"`
 		ID5 *Inner          `yaml:"id5"`
 		//ID6 [6]Inner        `yaml:"id6"`
-		//ID7 [6]*Inner       `yaml:"id7"`
+		ID7 [7]*Inner `yaml:"id7"`
 	}{}
 
 	p := NewStaticProvider(nil)
@@ -107,6 +106,7 @@ func TestNilStaticProviderSetDefaultTagValue(t *testing.T) {
 	assert.Nil(t, data.ID3)
 	assert.Nil(t, data.ID4)
 	assert.Nil(t, data.ID5)
+	// TODO (yutong) uncomment following assert after DRI-12.
 	// assert.True(t, data.ID6[0].Set)
-	// assert.Nil(t, data.ID7[0])
+	assert.Nil(t, data.ID7[0])
 }
