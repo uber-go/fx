@@ -20,7 +20,7 @@
 
 package dig
 
-// defaultGraph is used for all the top-level inject calls
+// Default graph is used for all the top-level inject calls
 var defaultGraph = newGraph()
 
 // DefaultGraph returns the graph used by top-level inject calls
