@@ -144,7 +144,8 @@ func panicRecovery(ctx context.Context) {
 	if err := recover(); err != nil {
 		stats.RPCPanicCounter.Inc(1)
 		ulog.Logger(ctx).Error(
-			"Panic recovered serving request", "error", errors.Errorf("panic in handler: %+v", err))
+			"Panic recovered serving request", "error", errors.Errorf("panic in handler: %+v", err),
+		)
 		// rethrow panic back to yarpc
 		// before https://github.com/yarpc/yarpc-go/issues/734 fixed, throw a generic error.
 		panic(_panicResponse)
