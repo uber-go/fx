@@ -40,18 +40,21 @@ import (
 type fakeClient raven.Client
 
 func TestBadDSN(t *testing.T) {
+	t.Parallel()
 	_, err := New("123http://whoops")
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to create sentry client")
 }
 
 func TestEmptyDSN(t *testing.T) {
+	t.Parallel()
 	l, err := New("")
 	assert.NoError(t, err)
 	assert.NotNil(t, l)
 }
 
 func TestWithLevels(t *testing.T) {
+	t.Parallel()
 	l, err := New("", MinLevel(zap.InfoLevel))
 	assert.NoError(t, err)
 	assert.NotNil(t, l)
@@ -59,6 +62,7 @@ func TestWithLevels(t *testing.T) {
 }
 
 func TestExtra(t *testing.T) {
+	t.Parallel()
 	f := map[string]interface{}{
 		"requestID":         "123h2eor2039423",
 		"someInt":           123,
@@ -71,6 +75,7 @@ func TestExtra(t *testing.T) {
 }
 
 func TestWith(t *testing.T) {
+	t.Parallel()
 	sh, err := New("", Fields(map[string]interface{}{
 		"someInt": 123,
 	}))
@@ -81,6 +86,7 @@ func TestWith(t *testing.T) {
 }
 
 func TestCopy(t *testing.T) {
+	t.Parallel()
 	sh, err := New("", Fields(map[string]interface{}{
 		"someInt": 123,
 	}))
@@ -98,6 +104,7 @@ func TestCopy(t *testing.T) {
 }
 
 func TestWithTraceDisabled(t *testing.T) {
+	t.Parallel()
 	_, ps := capturePackets(func(sh *Hook) {
 		sh.CheckAndFire(zap.ErrorLevel, "some error message", "foo", "bar")
 		sh.CheckAndFire(zap.ErrorLevel, "another error message")
@@ -109,6 +116,7 @@ func TestWithTraceDisabled(t *testing.T) {
 }
 
 func TestTraceCfg(t *testing.T) {
+	t.Parallel()
 	l, err := New(
 		"",
 		TraceSkipFrames(1),
@@ -122,6 +130,7 @@ func TestTraceCfg(t *testing.T) {
 }
 
 func TestLevels(t *testing.T) {
+	t.Parallel()
 	_, ps := capturePackets(func(sh *Hook) {
 		sh.CheckAndFire(zap.DebugLevel, "debug level log")
 		sh.CheckAndFire(zap.InfoLevel, "info level log")
@@ -133,6 +142,7 @@ func TestLevels(t *testing.T) {
 }
 
 func TestErrorCapture(t *testing.T) {
+	t.Parallel()
 	_, p := capturePacket(func(sh *Hook) {
 		sh.CheckAndFire(zap.ErrorLevel, "some error message", "foo", "bar")
 	})
@@ -145,6 +155,7 @@ func TestErrorCapture(t *testing.T) {
 }
 
 func TestPacketSending(t *testing.T) {
+	t.Parallel()
 	withTestSentry(func(dsn string, ch <-chan *raven.Packet) {
 		sh, err := New(dsn)
 		defer sh.Close()
@@ -160,6 +171,7 @@ func TestPacketSending(t *testing.T) {
 }
 
 func TestConfigure(t *testing.T) {
+	t.Parallel()
 	one := 1
 	two := 2
 	debug := zap.DebugLevel.String()
