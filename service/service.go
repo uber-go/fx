@@ -83,7 +83,7 @@ type serviceConfig struct {
 
 // newManager creates a service Manager from a set of module creation functions and options.
 func newManager(modules []ModuleCreateFunc, options ...Option) (Manager, error) {
-	svc := &host{
+	svc := &manager{
 		// TODO: get these out of config struct instead
 		modules: []Module{},
 		serviceCore: serviceCore{

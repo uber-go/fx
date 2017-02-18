@@ -96,6 +96,7 @@ func (tc *tracerCore) Tracer() opentracing.Tracer {
 	return tc.tracer
 }
 
+// Implements Host interface
 type serviceCore struct {
 	metricsCore
 	tracerCore

@@ -145,7 +145,7 @@ func TestAfterStartObserver(t *testing.T) {
 	t.Parallel()
 	wg := sync.WaitGroup{}
 	wg.Add(1)
-	h := &host{
+	h := &manager{
 		serviceCore: serviceCore{},
 		observer: AfterStart(func() {
 			wg.Done()

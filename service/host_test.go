@@ -53,19 +53,19 @@ func TestOnCriticalError_NoObserver(t *testing.T) {
 }
 
 func TestSupportsRole_NoRoles(t *testing.T) {
-	sh := &host{}
-	assert.True(t, sh.supportsRole("anything"), "Empty host roles should pass any value")
+	sh := &manager{}
+	assert.True(t, sh.supportsRole("anything"), "Empty manager roles should pass any value")
 }
 
 func TestSuupportsRole_Matches(t *testing.T) {
-	sh := &host{
+	sh := &manager{
 		roles: map[string]bool{"chilling": true},
 	}
 	assert.True(t, sh.supportsRole("chilling"), "Should support matching role")
 }
 
 func TestSupportsRole_NoMatch(t *testing.T) {
-	sh := &host{
+	sh := &manager{
 		roles: map[string]bool{"business": true},
 	}
 	assert.False(t, sh.supportsRole("pleasure"), "Should not support non-matching role")
@@ -73,14 +73,14 @@ func TestSupportsRole_NoMatch(t *testing.T) {
 
 func TestHost_Modules(t *testing.T) {
 	mods := []Module{}
-	sh := &host{modules: mods}
+	sh := &manager{modules: mods}
 
 	copied := sh.Modules()
 	assert.Equal(t, len(mods), len(copied), "Should have same amount of modules")
 }
 
 func TestTransitionState(t *testing.T) {
-	sh := &host{}
+	sh := &manager{}
 	observer := ObserverStub().(*StubObserver)
 	require.NoError(t, WithObserver(observer)(sh))
 
@@ -159,13 +159,13 @@ foo:
 }
 
 func TestHostStop_NoError(t *testing.T) {
-	sh := &host{}
+	sh := &manager{}
 	assert.NoError(t, sh.Stop("testing", 1))
 }
 
 func TestOnCriticalError_ObserverShutdown(t *testing.T) {
 	o := observerStub()
-	sh := &host{
+	sh := &manager{
 		observer:    o,
 		serviceCore: serviceCore{},
 	}
@@ -217,7 +217,7 @@ func TestHostShutdown_TracerCloserError(t *testing.T) {
 	checkShutdown(t, sh, true)
 }
 
-func checkShutdown(t *testing.T, h *host, expectedErr bool) {
+func checkShutdown(t *testing.T, h *manager, expectedErr bool) {
 	exitCode := 1
 	shutdown, err := h.shutdown(nil, "testing", &exitCode)
 	assert.True(t, shutdown)
@@ -229,7 +229,7 @@ func checkShutdown(t *testing.T, h *host, expectedErr bool) {
 }
 
 func TestHostStart_InShutdown(t *testing.T) {
-	sh := &host{
+	sh := &manager{
 		inShutdown: true,
 	}
 	control := sh.StartAsync()
@@ -245,7 +245,7 @@ func TestHostStart_AlreadyRunning(t *testing.T) {
 func TestStartWithObserver_InitError(t *testing.T) {
 	obs := observerStub()
 	obs.initError = errors.New("can't touch this")
-	sh := &host{
+	sh := &manager{
 		observer: obs,
 	}
 	control := sh.StartAsync()
@@ -254,14 +254,14 @@ func TestStartWithObserver_InitError(t *testing.T) {
 }
 
 func TestAddModule_Locked(t *testing.T) {
-	sh := &host{
+	sh := &manager{
 		locked: true,
 	}
 	assert.Error(t, sh.addModule(nil))
 }
 
 func TestAddModule_NotLocked(t *testing.T) {
-	sh := &host{}
+	sh := &manager{}
 	mod := NewStubModule(sh)
 	assert.NoError(t, sh.addModule(mod))
 	assert.Equal(t, sh, mod.Host)
@@ -310,14 +310,14 @@ func TestStartHost_WithErrors(t *testing.T) {
 	assert.Error(t, control.ServiceError)
 }
 
-func makeRunningHost() *host {
+func makeRunningHost() *manager {
 	h := makeHost()
 	h.closeChan = make(chan Exit, 1) // Indicates service is running
 	return h
 }
 
-func makeHost() *host {
-	return &host{
+func makeHost() *manager {
+	return &manager{
 		serviceCore: serviceCore{},
 	}
 }
