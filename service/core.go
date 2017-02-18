@@ -45,6 +45,7 @@ type Host interface {
 	RuntimeMetricsCollector() *metrics.RuntimeCollector
 	Observer() Observer
 	Config() config.Provider
+	// TODO: delete me!
 	Resources() map[string]interface{}
 	Tracer() opentracing.Tracer
 }
