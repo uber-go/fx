@@ -182,11 +182,13 @@ func newGraph() *graph {
 }
 
 func (g *graph) String() string {
-	var b bytes.Buffer
+	b := &bytes.Buffer{}
+	fmt.Fprintln(b, "{nodes:")
 	for key, reg := range g.nodes {
-		b.WriteString(fmt.Sprintf("%v -> %v\n", key, reg))
+		fmt.Fprintln(b, key, " -> ", reg)
 	}
-	return fmt.Sprintf("{nodes:\n%v}", b.String())
+	fmt.Fprintln(b, "}")
+	return b.String()
 }
 
 type objNode struct {
