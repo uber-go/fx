@@ -20,30 +20,30 @@
 
 package dig
 
-// Default graph is used for all the top-level inject calls
-var defaultGraph = newGraph()
+// DefaultGraph is used for all the top-level inject calls
+var DefaultGraph Graph = newGraph()
 
 // Register into the default graph
 func Register(i interface{}) error {
-	return defaultGraph.Register(i)
+	return DefaultGraph.Register(i)
 }
 
 // RegisterAll into the default graph
 func RegisterAll(is ...interface{}) error {
-	return defaultGraph.RegisterAll(is...)
+	return DefaultGraph.RegisterAll(is...)
 }
 
 // Resolve an object through the default graph
 func Resolve(i interface{}) error {
-	return defaultGraph.Resolve(i)
+	return DefaultGraph.Resolve(i)
 }
 
 // ResolveAll the passed in pointers through the dependency graph
 func ResolveAll(is ...interface{}) error {
-	return defaultGraph.ResolveAll(is...)
+	return DefaultGraph.ResolveAll(is...)
 }
 
 // Reset the default graph
 func Reset() {
-	defaultGraph.Reset()
+	DefaultGraph.Reset()
 }
