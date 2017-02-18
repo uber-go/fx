@@ -57,9 +57,9 @@ type host struct {
 	started        bool
 }
 
-// TODO(glib): host is both an Owner and a Host?
+// TODO(glib): host is both an Controller and a Host?
 var _ Host = &host{}
-var _ Owner = &host{}
+var _ Controller = &host{}
 
 func (s *host) addModule(module Module) error {
 	if s.locked {

@@ -46,7 +46,7 @@ import (
 var _defaultHTTPClient = &http.Client{Timeout: 2 * time.Second}
 
 func TestNew_OK(t *testing.T) {
-	WithService(New(registerNothing), nil, []service.Option{configOption()}, func(s service.Owner) {
+	WithService(New(registerNothing), nil, []service.Option{configOption()}, func(s service.Controller) {
 		assert.NotNil(t, s, "Should create a module")
 	})
 }

@@ -48,7 +48,7 @@ func (b *Builder) WithOptions(options ...Option) *Builder {
 }
 
 // Build returns the service, or any errors encountered during build phase.
-func (b *Builder) Build() (Owner, error) {
+func (b *Builder) Build() (Controller, error) {
 	svc, err := newOwner(b.modules, b.options...)
 	if err != nil {
 		return nil, errors.Wrap(err, "service instantiation failed")
