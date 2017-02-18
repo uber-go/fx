@@ -39,14 +39,15 @@ func InitGlobalTracer(
 	logger ulog.Log,
 	statsReporter tally.CachedStatsReporter,
 ) (opentracing.Tracer, io.Closer, error) {
-	tracer, closer, err := createTracer(cfg, serviceName, logger, statsReporter)
+	tracer, closer, err := CreateTracer(cfg, serviceName, logger, statsReporter)
 	if err == nil {
 		opentracing.InitGlobalTracer(tracer)
 	}
 	return tracer, closer, err
 }
 
-func createTracer(
+// CreateTracer creates a tracer
+func CreateTracer(
 	cfg *config.Configuration,
 	serviceName string,
 	logger ulog.Log,

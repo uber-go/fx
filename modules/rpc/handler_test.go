@@ -28,7 +28,7 @@ import (
 	"go.uber.org/fx/modules/rpc/internal/stats"
 	"go.uber.org/fx/service"
 	"go.uber.org/fx/testutils"
-	"go.uber.org/fx/tracing"
+	"go.uber.org/fx/testutils/tracing"
 	"go.uber.org/fx/ulog"
 	"go.uber.org/thriftrw/wire"
 	"go.uber.org/yarpc/api/transport"
