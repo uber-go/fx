@@ -18,7 +18,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package client
+package uhttp
 
 import (
 	"net/http"
@@ -31,8 +31,9 @@ import (
 	"github.com/opentracing/opentracing-go/ext"
 )
 
-// Executor executes the http request. Execute must be safe to use by multiple go routines
-type Executor interface {
+// OutboundExecutor executes the outbound http request.
+// Execute must be safe to use by multiple go routines.
+type OutboundExecutor interface {
 	Execute(r *http.Request) (resp *http.Response, err error)
 }
 
@@ -40,19 +41,19 @@ type Executor interface {
 // Outbound middleware must call next.Execute() at most once, calling it twice and more
 // will lead to an undefined behavior
 type OutboundMiddleware interface {
-	Handle(r *http.Request, next Executor) (resp *http.Response, err error)
+	Handle(r *http.Request, next OutboundExecutor) (resp *http.Response, err error)
 }
 
 // OutboundMiddlewareFunc is an adaptor to call normal functions to apply outbound middleware.
-type OutboundMiddlewareFunc func(r *http.Request, next Executor) (resp *http.Response, err error)
+type OutboundMiddlewareFunc func(r *http.Request, next OutboundExecutor) (resp *http.Response, err error)
 
 // Handle implements Handle from the OutboundMiddleware interface and simply delegates to the function
-func (f OutboundMiddlewareFunc) Handle(r *http.Request, next Executor) (resp *http.Response, err error) {
+func (f OutboundMiddlewareFunc) Handle(r *http.Request, next OutboundExecutor) (resp *http.Response, err error) {
 	return f(r, next)
 }
 
 func tracingOutbound() OutboundMiddlewareFunc {
-	return func(req *http.Request, next Executor) (resp *http.Response, err error) {
+	return func(req *http.Request, next OutboundExecutor) (resp *http.Response, err error) {
 		ctx := req.Context()
 		opName := req.Method
 		var parent opentracing.SpanContext
@@ -88,7 +89,7 @@ func tracingOutbound() OutboundMiddlewareFunc {
 func authenticationOutbound(info auth.CreateAuthInfo) OutboundMiddlewareFunc {
 	authClient := auth.Load(info)
 	serviceName := info.Config().Get(config.ServiceNameKey).AsString()
-	return func(req *http.Request, next Executor) (resp *http.Response, err error) {
+	return func(req *http.Request, next OutboundExecutor) (resp *http.Response, err error) {
 		ctx := req.Context()
 		// Client needs to know what service it is to authenticate
 		authCtx := authClient.SetAttribute(ctx, auth.ServiceAuth, serviceName)

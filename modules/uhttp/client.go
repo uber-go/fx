@@ -18,7 +18,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package client
+package uhttp
 
 import (
 	"net/http"
@@ -27,49 +27,15 @@ import (
 	"go.uber.org/fx/auth"
 )
 
-// New creates an http.Client that includes 2 extra outbound middleware: tracing and auth
+// NewClient creates an http.Client that includes 2 extra outbound middleware: tracing and auth
 // they are going to be applied in following order: tracing, auth, remaining outbound middleware
 // and only if all of them passed the request is going to be send.
 // Client is safe to use by multiple go routines, if global tracer is not changed.
-func New(info auth.CreateAuthInfo, middleware ...OutboundMiddleware) *http.Client {
+func NewClient(info auth.CreateAuthInfo, middleware ...OutboundMiddleware) *http.Client {
 	defaultMiddleware := []OutboundMiddleware{tracingOutbound(), authenticationOutbound(info)}
 	defaultMiddleware = append(defaultMiddleware, middleware...)
 	return &http.Client{
-		Transport: newExecutionChain(defaultMiddleware, http.DefaultTransport),
+		Transport: newOutboundMiddlewareChain(defaultMiddleware, http.DefaultTransport),
 		Timeout:   2 * time.Minute,
 	}
-}
-
-// executionChain represents a chain of outbound middleware that are being executed recursively
-// in the increasing order middleware[0], middleware[1], ... The final transport is called
-// to make RoundTrip after the last middleware is completed.
-type executionChain struct {
-	currentMiddleware int
-	middleware        []OutboundMiddleware
-	finalTransport    http.RoundTripper
-}
-
-func newExecutionChain(
-	middleware []OutboundMiddleware, finalTransport http.RoundTripper,
-) executionChain {
-	return executionChain{
-		middleware:     middleware,
-		finalTransport: finalTransport,
-	}
-}
-
-func (ec executionChain) Execute(r *http.Request) (resp *http.Response, err error) {
-	if ec.currentMiddleware < len(ec.middleware) {
-		middleware := ec.middleware[ec.currentMiddleware]
-		ec.currentMiddleware++
-
-		return middleware.Handle(r, ec)
-	}
-
-	return ec.finalTransport.RoundTrip(r)
-}
-
-// Implement http.RoundTripper interface to use as a Transport in http.Client
-func (ec executionChain) RoundTrip(r *http.Request) (resp *http.Response, err error) {
-	return ec.Execute(r)
 }
