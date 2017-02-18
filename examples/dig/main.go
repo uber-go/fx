@@ -31,7 +31,7 @@ import (
 
 func main() {
 	svc, err := service.WithModules(
-		uhttp.New(router, []uhttp.Filter{}),
+		uhttp.New(router),
 	).Build()
 
 	if err != nil {
