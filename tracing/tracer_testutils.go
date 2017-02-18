@@ -36,7 +36,9 @@ func WithSpan(t *testing.T, log ulog.Log, f func(opentracing.Span)) {
 		nil, "serviceName", log, metrics.NopCachedStatsReporter,
 	)
 	require.NoError(t, err)
-	defer closer.Close()
+	defer func() {
+		require.NoError(t, closer.Close())
+	}()
 	span := tracer.StartSpan("test")
 	defer span.Finish()
 	f(span)
