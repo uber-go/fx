@@ -183,8 +183,8 @@ func (s *host) shutdown(err error, reason string, exitCode *int) (bool, error) {
 	return true, err
 }
 
-// AddModules adds the given modules to a service host
-func (s *host) AddModules(modules ...ModuleCreateFunc) error {
+// addModules adds the given modules to a service host
+func (s *host) addModules(modules ...ModuleCreateFunc) error {
 	for _, mcf := range modules {
 		mi := ModuleCreateInfo{
 			Host:  s,
