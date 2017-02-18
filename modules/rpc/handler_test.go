@@ -27,11 +27,17 @@ import (
 
 	"go.uber.org/fx/modules/rpc/internal/stats"
 	"go.uber.org/fx/service"
+	"go.uber.org/fx/testutils"
+	"go.uber.org/fx/tracing"
+	"go.uber.org/fx/ulog"
 	"go.uber.org/thriftrw/wire"
 	"go.uber.org/yarpc/api/transport"
 
+	"github.com/opentracing/opentracing-go"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"github.com/uber-go/tally"
+	"github.com/uber-go/zap"
 )
 
 type fakeEnveloper struct {
@@ -50,21 +56,46 @@ func (f fakeEnveloper) ToWire() (wire.Value, error) {
 	return wire.NewValueStruct(wire.Struct{}), nil
 }
 
-func TestInboundMiddleware_fxContext(t *testing.T) {
+func TestInboundMiddleware_Context(t *testing.T) {
 	unary := contextInboundMiddleware{
 		Host: service.NopHost(),
 	}
 	stats.SetupRPCMetrics(unary.Host.Metrics())
-	err := unary.Handle(context.Background(), &transport.Request{}, nil, &fakeUnary{t: t})
-	assert.Equal(t, "handle", err.Error())
+	testutils.WithInMemoryLogger(t, nil, func(zapLogger zap.Logger, buf *testutils.TestBuffer) {
+		loggerWithZap := ulog.Builder().SetLogger(zapLogger).Build()
+		tracing.WithSpan(t, loggerWithZap, func(span opentracing.Span) {
+			ctx := ulog.ContextWithLogger(context.Background(), loggerWithZap)
+			ctx = opentracing.ContextWithSpan(ctx, span)
+			err := unary.Handle(ctx, &transport.Request{}, nil, &fakeUnary{t: t})
+			assert.Equal(t, "handle", err.Error())
+			checkLogForTrace(t, buf)
+		})
+	})
 }
 
-func TestOnewayInboundMiddleware_fxContext(t *testing.T) {
+func TestOnewayInboundMiddleware_Context(t *testing.T) {
 	oneway := contextOnewayInboundMiddleware{
 		Host: service.NopHost(),
 	}
-	err := oneway.HandleOneway(context.Background(), &transport.Request{}, &fakeOneway{t: t})
-	assert.Equal(t, "oneway handle", err.Error())
+	testutils.WithInMemoryLogger(t, nil, func(zapLogger zap.Logger, buf *testutils.TestBuffer) {
+		loggerWithZap := ulog.Builder().SetLogger(zapLogger).Build()
+		tracing.WithSpan(t, loggerWithZap, func(span opentracing.Span) {
+			ctx := ulog.ContextWithLogger(context.Background(), loggerWithZap)
+			ctx = opentracing.ContextWithSpan(ctx, span)
+			err := oneway.HandleOneway(ctx, &transport.Request{}, &fakeOneway{t: t})
+			require.Equal(t, "oneway handle", err.Error())
+			checkLogForTrace(t, buf)
+		})
+	})
+}
+
+func checkLogForTrace(t *testing.T, buf *testutils.TestBuffer) {
+	require.True(t, len(buf.Lines()) > 0)
+	for _, line := range buf.Lines() {
+		assert.Contains(t, line, "traceID")
+		assert.Contains(t, line, "spanID")
+	}
+
 }
 
 func TestInboundMiddleware_auth(t *testing.T) {
@@ -133,7 +164,12 @@ type fakeUnary struct {
 	t *testing.T
 }
 
-func (f fakeUnary) Handle(ctx context.Context, _param1 *transport.Request, _param2 transport.ResponseWriter) error {
+func (f fakeUnary) Handle(
+	ctx context.Context,
+	_param1 *transport.Request,
+	_param2 transport.ResponseWriter,
+) error {
+	ulog.Logger(ctx).Info("fakeUnary")
 	assert.NotNil(f.t, ctx)
 	return errors.New("handle")
 }
@@ -143,6 +179,7 @@ type fakeOneway struct {
 }
 
 func (f fakeOneway) HandleOneway(ctx context.Context, p *transport.Request) error {
+	ulog.Logger(ctx).Info("fakeOneway")
 	assert.NotNil(f.t, ctx)
 	return errors.New("oneway handle")
 }
