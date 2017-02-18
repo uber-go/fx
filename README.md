@@ -11,10 +11,13 @@ application logic.
 
 ## Status
 
-Alpha. Expect minor API changes and bug fixes. (Beta release coming soon)
+Beta. Expect minor API changes and bug fixes. See [our changelog](CHANGELOG.md)
+for more.
 
 ## What's included
+
 UberFx builds the following into your service:
+
 * Configuration, logging, metrics, and tracing setup by default
 * Configuration provider that seamlessly merges static and dynamic config
 * Application-level as well as runtime metrics for effective monitoring
