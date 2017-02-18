@@ -40,7 +40,7 @@ func TestServiceCreation(t *testing.T) {
 	r.CountersWG.Add(1)
 	scope, closer := tally.NewRootScope("", nil, r, 50*time.Millisecond, tally.DefaultSeparator)
 	defer closer.Close()
-	svc, err := newOwner(
+	svc, err := newManager(
 		[]ModuleCreateFunc{successModuleCreate},
 		withConfig(validServiceConfig),
 		WithMetrics(scope, nil),
@@ -53,7 +53,7 @@ func TestServiceCreation(t *testing.T) {
 }
 
 func TestWithObserver_Nil(t *testing.T) {
-	svc, err := newOwner(
+	svc, err := newManager(
 		[]ModuleCreateFunc{successModuleCreate},
 		withConfig(validServiceConfig),
 		WithObserver(nil),
@@ -64,7 +64,7 @@ func TestWithObserver_Nil(t *testing.T) {
 }
 
 func TestServiceCreation_MissingRequiredParams(t *testing.T) {
-	_, err := newOwner([]ModuleCreateFunc{successModuleCreate}, withConfig(nil))
+	_, err := newManager([]ModuleCreateFunc{successModuleCreate}, withConfig(nil))
 	assert.Error(t, err, "should fail with missing service name")
 	assert.Contains(t, err.Error(), "zero value")
 }
@@ -77,7 +77,7 @@ func TestServiceWithRoles(t *testing.T) {
 	}
 	cfgOpt := withConfig(data)
 
-	svc, err := newOwner([]ModuleCreateFunc{successModuleCreate}, cfgOpt)
+	svc, err := newManager([]ModuleCreateFunc{successModuleCreate}, cfgOpt)
 	require.NoError(t, err)
 
 	assert.Contains(t, svc.Roles(), "foo")
@@ -93,7 +93,7 @@ metrics:
 `)
 	cfgOpt := WithConfiguration(config.NewYAMLProviderFromBytes(data))
 
-	svc, err := newOwner([]ModuleCreateFunc{successModuleCreate}, cfgOpt)
+	svc, err := newManager([]ModuleCreateFunc{successModuleCreate}, cfgOpt)
 	require.NoError(t, err)
 
 	assert.Nil(t, svc.RuntimeMetricsCollector())
@@ -109,7 +109,7 @@ logging:
 `)
 	cfgOpt := WithConfiguration(config.NewYAMLProviderFromBytes(data))
 
-	_, err := newOwner([]ModuleCreateFunc{successModuleCreate}, cfgOpt)
+	_, err := newManager([]ModuleCreateFunc{successModuleCreate}, cfgOpt)
 	require.NoError(t, err)
 	// Note: Sentry is not accessible so we cannot directly test it here. Just invoking the code
 	// path to make sure there is no panic
@@ -121,13 +121,13 @@ func TestBadOption_Panics(t *testing.T) {
 		return errors.New("nope")
 	}
 
-	_, err := newOwner([]ModuleCreateFunc{successModuleCreate}, withConfig(validServiceConfig), opt)
+	_, err := newManager([]ModuleCreateFunc{successModuleCreate}, withConfig(validServiceConfig), opt)
 	assert.Error(t, err, "should fail with invalid option")
 }
 
 func TestNew_WithObserver(t *testing.T) {
 	o := observerStub()
-	svc, err := newOwner([]ModuleCreateFunc{successModuleCreate}, withConfig(validServiceConfig), WithObserver(o))
+	svc, err := newManager([]ModuleCreateFunc{successModuleCreate}, withConfig(validServiceConfig), WithObserver(o))
 	require.NoError(t, err)
 	assert.Equal(t, o, svc.Observer())
 }

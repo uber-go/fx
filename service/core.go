@@ -125,7 +125,7 @@ func (s *serviceCore) Description() string {
 }
 
 // ServiceOwner is a string in config.
-// Controller is also a struct that embeds Host
+// Manager is also a struct that embeds Host
 func (s *serviceCore) Owner() string {
 	return s.standardConfig.Owner
 }

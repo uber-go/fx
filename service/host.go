@@ -57,9 +57,9 @@ type host struct {
 	started        bool
 }
 
-// TODO(glib): host is both an Controller and a Host?
+// TODO(glib): host is both an Manager and a Host?
 var _ Host = &host{}
-var _ Controller = &host{}
+var _ Manager = &host{}
 
 func (s *host) addModule(module Module) error {
 	if s.locked {
