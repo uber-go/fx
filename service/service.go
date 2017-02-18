@@ -44,8 +44,8 @@ const (
 	Stopped
 )
 
-// A Owner encapsulates service ownership
-type Owner interface {
+// A Manager encapsulates service ownership
+type Manager interface {
 	Host
 
 	// Start service is used for blocking the call on service start. Start will block the
@@ -81,9 +81,9 @@ type serviceConfig struct {
 	Roles       []string `yaml:"roles"`
 }
 
-// newOwner creates a service owner from a set of module creation functions and options.
-func newOwner(modules []ModuleCreateFunc, options ...Option) (Owner, error) {
-	svc := &host{
+// newManager creates a service Manager from a set of module creation functions and options.
+func newManager(modules []ModuleCreateFunc, options ...Option) (Manager, error) {
+	svc := &manager{
 		// TODO: get these out of config struct instead
 		modules: []Module{},
 		serviceCore: serviceCore{

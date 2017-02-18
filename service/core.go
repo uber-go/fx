@@ -96,6 +96,7 @@ func (tc *tracerCore) Tracer() opentracing.Tracer {
 	return tc.tracer
 }
 
+// Implements Host interface
 type serviceCore struct {
 	metricsCore
 	tracerCore
@@ -125,7 +126,7 @@ func (s *serviceCore) Description() string {
 }
 
 // ServiceOwner is a string in config.
-// Owner is also a struct that embeds Host
+// Manager is also a struct that embeds Host
 func (s *serviceCore) Owner() string {
 	return s.standardConfig.Owner
 }

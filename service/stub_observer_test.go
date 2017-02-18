@@ -30,7 +30,7 @@ import (
 
 func TestStubObserver_OnInit(t *testing.T) {
 	o := observerStub()
-	require.NoError(t, o.OnInit(&host{}))
+	require.NoError(t, o.OnInit(&manager{}))
 
 	assert.True(t, o.init)
 }

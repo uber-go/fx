@@ -33,25 +33,25 @@ import (
 )
 
 func TestNewOwner_ModulesOK(t *testing.T) {
-	_, err := newOwner([]ModuleCreateFunc{successModuleCreate}, withConfig(validServiceConfig))
+	_, err := newManager([]ModuleCreateFunc{successModuleCreate}, withConfig(validServiceConfig))
 	require.NoError(t, err)
 }
 
 func TestNewOwner_ModulesErr(t *testing.T) {
-	_, err := newOwner([]ModuleCreateFunc{errorModuleCreate}, withConfig(validServiceConfig))
+	_, err := newManager([]ModuleCreateFunc{errorModuleCreate}, withConfig(validServiceConfig))
 	assert.Error(t, err)
 }
 
 func TestNewOwner_WithMetricsOK(t *testing.T) {
 	assert.NotPanics(t, func() {
-		newOwner([]ModuleCreateFunc{successModuleCreate}, WithMetrics(tally.NoopScope, metrics.NopCachedStatsReporter))
+		newManager([]ModuleCreateFunc{successModuleCreate}, WithMetrics(tally.NoopScope, metrics.NopCachedStatsReporter))
 	})
 }
 
 func TestNewOwner_WithTracingOK(t *testing.T) {
 	tracer := &opentracing.NoopTracer{}
 	assert.NotPanics(t, func() {
-		newOwner([]ModuleCreateFunc{successModuleCreate}, WithTracer(tracer))
+		newManager([]ModuleCreateFunc{successModuleCreate}, WithTracer(tracer))
 	})
 }
 
