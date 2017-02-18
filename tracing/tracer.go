@@ -23,20 +23,30 @@ package tracing
 import (
 	"fmt"
 	"io"
-	"testing"
 	"time"
 
-	"go.uber.org/fx/metrics"
 	"go.uber.org/fx/ulog"
 
 	"github.com/opentracing/opentracing-go"
-	"github.com/stretchr/testify/assert"
 	"github.com/uber-go/tally"
 	"github.com/uber/jaeger-client-go/config"
 )
 
 // InitGlobalTracer instantiates a new global tracer
 func InitGlobalTracer(
+	cfg *config.Configuration,
+	serviceName string,
+	logger ulog.Log,
+	statsReporter tally.CachedStatsReporter,
+) (opentracing.Tracer, io.Closer, error) {
+	tracer, closer, err := createTracer(cfg, serviceName, logger, statsReporter)
+	if err == nil {
+		opentracing.InitGlobalTracer(tracer)
+	}
+	return tracer, closer, err
+}
+
+func createTracer(
 	cfg *config.Configuration,
 	serviceName string,
 	logger ulog.Log,
@@ -50,11 +60,7 @@ func InitGlobalTracer(
 			reporter: statsReporter,
 		}
 	}
-	tracer, closer, err := cfg.New(serviceName, reporter)
-	if err == nil {
-		opentracing.InitGlobalTracer(tracer)
-	}
-	return tracer, closer, err
+	return cfg.New(serviceName, reporter)
 }
 
 func loadAppConfig(cfg *config.Configuration, logger ulog.Log) *config.Configuration {
@@ -102,18 +108,4 @@ func (jr *jaegerReporter) UpdateGauge(name string, tags map[string]string, value
 // RecordTimer records the metrics timer
 func (jr *jaegerReporter) RecordTimer(name string, tags map[string]string, d time.Duration) {
 	jr.reporter.AllocateTimer(name, tags).ReportTimer(d)
-}
-
-// WithSpan is used for generating a span to be used in testing
-func WithSpan(t *testing.T, log ulog.Log, f func(opentracing.Span)) {
-	tracer, closer, err := InitGlobalTracer(
-		nil, "serviceName", log, metrics.NopCachedStatsReporter,
-	)
-	assert.NoError(t, err)
-	defer closer.Close()
-	opentracing.InitGlobalTracer(tracer)
-	defer opentracing.InitGlobalTracer(opentracing.NoopTracer{})
-	span := opentracing.GlobalTracer().StartSpan("test")
-	defer span.Finish()
-	f(span)
 }
