@@ -164,6 +164,7 @@ func (s *manager) shutdown(err error, reason string, exitCode *int) (bool, error
 	}
 
 	// Flush tracing buffers
+	// GFM-378 uhttp.Client is not safe to send requests anymore
 	if s.tracerCloser != nil {
 		ulog.Logger(_simpleCtx).Debug("Closing tracer")
 		if err = s.tracerCloser.Close(); err != nil {

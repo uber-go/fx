@@ -24,18 +24,30 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/opentracing/opentracing-go"
 	"go.uber.org/fx/auth"
 )
+
+type Option func() OutboundMiddleware
+
+func WithOutbound(middleware OutboundMiddleware) Option{
+	return func () OutboundMiddleware{ return middleware}
+}
 
 // New creates an http.Client that includes 2 extra outbound middleware: tracing and auth
 // they are going to be applied in following order: tracing, auth, remaining outbound middleware
 // and only if all of them passed the request is going to be send.
-// Client is safe to use by multiple go routines, if global tracer is not changed.
-func New(info auth.CreateAuthInfo, middleware ...OutboundMiddleware) *http.Client {
-	defaultMiddleware := []OutboundMiddleware{tracingOutbound(), authenticationOutbound(info)}
-	defaultMiddleware = append(defaultMiddleware, middleware...)
+func New(options... Option) *http.Client {
+	middleware := make([]OutboundMiddleware, 0, len(options) + 2)
+
+	var trace
+	middleware = append(middleware, tracingOutbound(tracer), authenticationOutbound(info))
+	for _, x := range options {
+		middleware = append(middleware, x())
+	}
+
 	return &http.Client{
-		Transport: newExecutionChain(defaultMiddleware, http.DefaultTransport),
+		Transport: newExecutionChain(middleware, http.DefaultTransport),
 		Timeout:   2 * time.Minute,
 	}
 }

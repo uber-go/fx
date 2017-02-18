@@ -47,9 +47,9 @@ func BenchmarkClientMiddleware(b *testing.B) {
 	defer closer.Close()
 	bm := map[string][]OutboundMiddleware{
 		"empty":   {},
-		"tracing": {tracingOutbound()},
+		"tracing": {tracingOutbound(tracer)},
 		"auth":    {authenticationOutbound(fakeAuthInfo{_testYaml})},
-		"default": {tracingOutbound(), authenticationOutbound(fakeAuthInfo{_testYaml})},
+		"default": {tracingOutbound(tracer), authenticationOutbound(fakeAuthInfo{_testYaml})},
 	}
 
 	for name, middleware := range bm {

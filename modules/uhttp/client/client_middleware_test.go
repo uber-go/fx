@@ -56,7 +56,7 @@ func TestExecutionChain(t *testing.T) {
 
 func TestExecutionChainOutboundMiddleware(t *testing.T) {
 	execChain := newExecutionChain(
-		[]OutboundMiddleware{tracingOutbound()}, nopTransport{},
+		[]OutboundMiddleware{tracingOutbound(opentracing.NoopTracer{})}, nopTransport{},
 	)
 	resp, err := execChain.RoundTrip(_req())
 	assert.NoError(t, err)
@@ -65,7 +65,7 @@ func TestExecutionChainOutboundMiddleware(t *testing.T) {
 
 func TestExecutionChainOutboundMiddlewareError(t *testing.T) {
 	execChain := newExecutionChain(
-		[]OutboundMiddleware{tracingOutbound()}, errTransport{},
+		[]OutboundMiddleware{tracingOutbound(opentracing.NoopTracer{})}, errTransport{},
 	)
 	resp, err := execChain.RoundTrip(_req().WithContext(context.Background()))
 	assert.Error(t, err)
@@ -115,22 +115,21 @@ func TestExecutionChainOutboundMiddleware_AuthContextPropagationFailure(t *testi
 }
 
 func TestOutboundMiddlewareWithTracerErrors(t *testing.T) {
+	t.Parallel()
+	tr := &shadowTracer{
+		opentracing.NoopTracer{},
+		func(sm opentracing.SpanContext, format interface{}, carrier interface{}) error {
+			return errors.New("Very bad tracer")
+		},
+		nil,
+	}
 	testCases := map[string]OutboundMiddleware{
 		"auth":    authenticationOutbound(fakeAuthInfo{_testYaml}),
-		"tracing": tracingOutbound(),
+		"tracing": tracingOutbound(opentracing.NoopTracer{}),
 	}
 
 	for name, middleware := range testCases {
 		op := func(tracer opentracing.Tracer) {
-			tr := &shadowTracer{
-				tracer,
-				func(sm opentracing.SpanContext, format interface{}, carrier interface{}) error {
-					return errors.New("Very bad tracer")
-				},
-				nil,
-			}
-			opentracing.InitGlobalTracer(tr)
-
 			execChain := newExecutionChain(
 				[]OutboundMiddleware{middleware}, nopTransport{})
 			span := tracer.StartSpan("test_method")
@@ -142,8 +141,6 @@ func TestOutboundMiddlewareWithTracerErrors(t *testing.T) {
 
 			_, err := execChain.RoundTrip(_req().WithContext(ctx))
 			assert.EqualError(t, err, "Very bad tracer")
-
-			opentracing.InitGlobalTracer(tracer)
 		}
 
 		t.Run(name, func(t *testing.T) { withOpentracingSetup(t, nil, op) })

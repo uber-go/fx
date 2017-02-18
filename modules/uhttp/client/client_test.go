@@ -25,6 +25,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/opentracing/opentracing-go"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -33,7 +34,7 @@ var (
 	_testYaml = []byte(`
 name: test
 `)
-	_testClient = New(fakeAuthInfo{yaml: _testYaml})
+	_testClient = New(opentracing.NoopTracer{}, fakeAuthInfo{yaml: _testYaml})
 )
 
 func TestNew(t *testing.T) {
@@ -46,11 +47,12 @@ func TestNew(t *testing.T) {
 func TestNew_Panic(t *testing.T) {
 	t.Parallel()
 	assert.Panics(t, func() {
-		New(fakeAuthInfo{yaml: []byte(``)})
+		New(opentracing.NoopTracer{}, fakeAuthInfo{yaml: []byte(``)})
 	})
 }
 
 func TestClientDo(t *testing.T) {
+	t.Parallel()
 	svr := startServer()
 	req := createHTTPClientRequest(svr.URL)
 	resp, err := _testClient.Do(req)
@@ -58,6 +60,7 @@ func TestClientDo(t *testing.T) {
 }
 
 func TestClientDoWithoutMiddleware(t *testing.T) {
+	t.Parallel()
 	svr := startServer()
 	req := createHTTPClientRequest(svr.URL)
 	resp, err := _testClient.Do(req)
@@ -65,12 +68,14 @@ func TestClientDoWithoutMiddleware(t *testing.T) {
 }
 
 func TestClientGet(t *testing.T) {
+	t.Parallel()
 	svr := startServer()
 	resp, err := _testClient.Get(svr.URL)
 	checkOKResponse(t, resp, err)
 }
 
 func TestClientGetTwiceExecutesAllMiddleware(t *testing.T) {
+	t.Parallel()
 	svr := startServer()
 	count := 0
 	var f OutboundMiddlewareFunc = func(r *http.Request, next Executor) (resp *http.Response, err error) {
@@ -78,7 +83,7 @@ func TestClientGetTwiceExecutesAllMiddleware(t *testing.T) {
 		return next.Execute(r)
 	}
 
-	cl := New(fakeAuthInfo{yaml: _testYaml}, f)
+	cl := New(opentracing.NoopTracer{}, fakeAuthInfo{yaml: _testYaml}, f)
 	resp, err := cl.Get(svr.URL)
 	checkOKResponse(t, resp, err)
 	require.Equal(t, 1, count)
@@ -88,35 +93,41 @@ func TestClientGetTwiceExecutesAllMiddleware(t *testing.T) {
 }
 
 func TestClientGetError(t *testing.T) {
+	t.Parallel()
 	// Causing newRequest to fail, % does not parse as URL
 	resp, err := _testClient.Get("%")
 	checkErrResponse(t, resp, err)
 }
 
 func TestClientHead(t *testing.T) {
+	t.Parallel()
 	svr := startServer()
 	resp, err := _testClient.Head(svr.URL)
 	checkOKResponse(t, resp, err)
 }
 
 func TestClientHeadError(t *testing.T) {
+	t.Parallel()
 	// Causing newRequest to fail, % does not parse as URL
 	resp, err := _testClient.Head("%")
 	checkErrResponse(t, resp, err)
 }
 
 func TestClientPost(t *testing.T) {
+	t.Parallel()
 	svr := startServer()
 	resp, err := _testClient.Post(svr.URL, "", nil)
 	checkOKResponse(t, resp, err)
 }
 
 func TestClientPostError(t *testing.T) {
+	t.Parallel()
 	resp, err := _testClient.Post("%", "", nil)
 	checkErrResponse(t, resp, err)
 }
 
 func TestClientPostForm(t *testing.T) {
+	t.Parallel()
 	svr := startServer()
 	var urlValues map[string][]string
 	resp, err := _testClient.PostForm(svr.URL, urlValues)
