@@ -50,7 +50,7 @@ func (f contextInboundMiddleware) Handle(
 		Timer(req.Procedure).
 		Start()
 	defer stopwatch.Stop()
-
+	// Span is populated by YARPC, we just extract and use it
 	if span := opentracing.SpanFromContext(ctx); span != nil {
 		ctx = ulog.ContextWithTraceLogger(ctx, span)
 	}
@@ -66,6 +66,7 @@ func (f contextOnewayInboundMiddleware) HandleOneway(
 	req *transport.Request,
 	handler transport.OnewayHandler,
 ) error {
+	// Span is populated by YARPC, we just extract and use it
 	if span := opentracing.SpanFromContext(ctx); span != nil {
 		ctx = ulog.ContextWithTraceLogger(ctx, span)
 	}
