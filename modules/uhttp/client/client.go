@@ -37,7 +37,7 @@ const (
 	_graphKey      = "httpClientGraph"
 )
 
-// WithOutbound lets you add custom middleware to the client
+// WithOutbound lets you add to custom middleware to the client
 func WithOutbound(middleware ...OutboundMiddleware) modules.Option {
 	return func(info *service.ModuleCreateInfo) error {
 		items := info.Items
@@ -50,7 +50,7 @@ func WithOutbound(middleware ...OutboundMiddleware) modules.Option {
 	}
 }
 
-// WithGraph allows you to a custom dependency injection graph to resolve Tracer and AuthInfo
+// WithGraph allows you to use a custom dependency injection graph to resolve Tracer and AuthInfo
 func WithGraph(graph dig.Graph) modules.Option {
 	return func(info *service.ModuleCreateInfo) error {
 		info.Items[_graphKey] = graph
