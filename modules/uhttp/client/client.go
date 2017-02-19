@@ -90,7 +90,7 @@ func New(options ...modules.Option) (*http.Client, error) {
 		return nil, err
 	}
 
-	// Construct filters.
+	// Make middleware.
 	middleware := make([]OutboundMiddleware, 0, len(options)+2)
 	middleware = append(middleware, tracingOutbound(*tracer), authenticationOutbound(*auth))
 
