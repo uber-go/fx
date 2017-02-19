@@ -15,13 +15,17 @@ type graphNode interface {
 	dependencies() []interface{}
 }
 
-type objNode struct {
-	fmt.Stringer
-
-	obj         interface{}
+type node struct {
 	objType     reflect.Type
 	cached      bool
 	cachedValue reflect.Value
+}
+
+type objNode struct {
+	node
+	fmt.Stringer
+
+	obj interface{}
 }
 
 // Return the earlier provided instance
@@ -43,7 +47,7 @@ func (n objNode) String() string {
 }
 
 type funcNode struct {
-	objNode
+	node
 	fmt.Stringer
 
 	constructor interface{}

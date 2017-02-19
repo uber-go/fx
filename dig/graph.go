@@ -130,9 +130,11 @@ func (g *graph) registerObject(o interface{}) error {
 	otype := reflect.TypeOf(o)
 
 	n := objNode{
-		obj:     o,
-		objType: otype,
-		cached:  true,
+		obj: o,
+		node: node{
+			objType: otype,
+			cached:  true,
+		},
 	}
 
 	g.nodes[otype] = &n
@@ -147,7 +149,7 @@ func (g *graph) registerConstructor(c interface{}) error {
 	n := funcNode{
 		deps:        make([]interface{}, argc),
 		constructor: c,
-		objNode: objNode{
+		node: node{
 			objType: objType,
 		},
 	}
