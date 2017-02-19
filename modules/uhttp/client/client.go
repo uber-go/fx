@@ -74,7 +74,7 @@ func New(options ...modules.Option) (*http.Client, error) {
 		}
 	}
 
-	// Resolve auth and _tracer.
+	// Resolve auth and tracer.
 	graph := dig.DefaultGraph()
 	if g, ok := info.Items[_graphKey]; ok {
 		graph = g.(dig.Graph)
