@@ -39,6 +39,7 @@ func nonPointerParams(one, two string) *S {
 }
 
 func TestRegister(t *testing.T) {
+	t.Parallel()
 	tts := []struct {
 		name  string
 		param interface{}
@@ -66,6 +67,7 @@ func TestRegister(t *testing.T) {
 }
 
 func TestResolve(t *testing.T) {
+	t.Parallel()
 	tts := []struct {
 		name     string
 		register func(g *graph) error
@@ -107,6 +109,7 @@ func TestResolve(t *testing.T) {
 }
 
 func TestObjectRegister(t *testing.T) {
+	t.Parallel()
 	g := New()
 
 	// register a fake struct type into the graph
@@ -139,12 +142,11 @@ func TestBasicRegisterResolve(t *testing.T) {
 	require.NoError(t, err)
 
 	var first *Grandchild1
-	err = g.Resolve(&first)
+	require.NoError(t, g.Resolve(&first), "No error expected during first Resolve")
 
 	var second *Grandchild1
-	err = g.Resolve(&second)
+	require.NoError(t, g.Resolve(&second), "No error expected during second Resolve")
 
-	require.NoError(t, err, "No error expected during Resolve")
 	require.NotNil(t, first, "Child1 must have been registered")
 	require.NotNil(t, second, "Child1 must have been registered")
 	require.True(t, first == second, "Must point to the same object")
@@ -203,6 +205,18 @@ func TestResolveAll(t *testing.T) {
 	require.NoError(t, err, "Did not expect error on resolve all")
 	require.Equal(t, p1.name, "Parent1")
 	require.True(t, p1 == p2 && p2 == p3 && p3 == p4, "All pointers must be equal")
+}
+
+func TestEmptyAfterReset(t *testing.T) {
+	t.Parallel()
+	g := testGraph()
+
+	require.NoError(t, g.Register(NewGrandchild1))
+
+	var first *Grandchild1
+	require.NoError(t, g.Resolve(&first), "No error expected during first Resolve")
+	g.Reset()
+	require.Contains(t, g.Resolve(&first).Error(), "not registered")
 }
 
 func testGraph() *graph {

@@ -57,4 +57,8 @@ func TestDefaultGraph(t *testing.T) {
 	require.NoError(t, ResolveAll(&t2g, &t3g))
 	require.True(t, t2g == t2)
 	require.True(t, t3g == t3)
+
+	var t2g2 *Type2
+	require.NoError(t, DefaultGraph().Resolve(&t2g2))
+	require.Equal(t, t2, t2g2)
 }

@@ -23,6 +23,11 @@ package dig
 // Default graph is used for all the top-level inject calls
 var defaultGraph = newGraph()
 
+// DefaultGraph returns the graph used by top-level inject calls
+func DefaultGraph() Graph {
+	return defaultGraph
+}
+
 // Register into the default graph
 func Register(i interface{}) error {
 	return defaultGraph.Register(i)

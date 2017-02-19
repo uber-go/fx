@@ -157,7 +157,7 @@ func (g *graph) Reset() {
 	g.Lock()
 	defer g.Unlock()
 
-	defaultGraph.nodes = make(map[interface{}]object)
+	g.nodes = make(map[interface{}]object)
 }
 
 type object interface {
