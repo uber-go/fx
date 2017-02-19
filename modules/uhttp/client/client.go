@@ -24,12 +24,12 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/opentracing/opentracing-go"
 	"go.uber.org/fx/auth"
 	"go.uber.org/fx/dig"
-
 	"go.uber.org/fx/modules"
 	"go.uber.org/fx/service"
+
+	"github.com/opentracing/opentracing-go"
 )
 
 const (
@@ -62,14 +62,19 @@ func WithGraph(graph dig.Graph) modules.Option {
 // they are going to be applied in following order: tracing, auth, remaining outbound middleware
 // and only if all of them passed the request is going to be send.
 func New(options ...modules.Option) (*http.Client, error) {
+
+	// Apply options.
 	info := service.ModuleCreateInfo{
 		Items: make(map[string]interface{}),
 	}
 
 	for _, opt := range options {
-		opt(&info)
+		if err := opt(&info); err != nil {
+			return nil, err
+		}
 	}
 
+	// Resolve auth and tracer.
 	graph := dig.DefaultGraph()
 	if g, ok := info.Items[_graphKey]; ok {
 		graph = g.(dig.Graph)
@@ -85,6 +90,7 @@ func New(options ...modules.Option) (*http.Client, error) {
 		return nil, err
 	}
 
+	// Construct filters.
 	middleware := make([]OutboundMiddleware, 0, len(options)+2)
 	middleware = append(middleware, tracingOutbound(*tracer), authenticationOutbound(*auth))
 
