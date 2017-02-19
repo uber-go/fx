@@ -221,6 +221,6 @@ func TestEmptyAfterReset(t *testing.T) {
 
 func testGraph() *graph {
 	return &graph{
-		nodes: make(map[interface{}]object),
+		nodes: make(map[interface{}]graphNode),
 	}
 }
