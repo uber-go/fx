@@ -37,7 +37,7 @@ const (
 	_graphKey      = "httpClientGraph"
 )
 
-// WithOutbound lets you add to custom middleware to the client
+// WithOutbound lets you to add a custom middleware to the client
 func WithOutbound(middleware ...OutboundMiddleware) modules.Option {
 	return func(info *service.ModuleCreateInfo) error {
 		items := info.Items
