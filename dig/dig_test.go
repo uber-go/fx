@@ -185,6 +185,21 @@ func TestConcurrentAccess(t *testing.T) {
 	}
 }
 
+func TestCycles(t *testing.T) {
+	type Type1 interface{}
+	type Type2 interface{}
+	c1 := func(t2 Type2) Type1 { return nil }
+	c2 := func(t1 Type1) Type2 { return nil }
+
+	g := testGraph()
+
+	require.NoError(t, g.Register(c1))
+	require.NoError(t, g.Register(c2))
+
+	var r Type1
+	require.NoError(t, g.Resolve(&r))
+}
+
 func TestResolveAll(t *testing.T) {
 	t.Parallel()
 	g := testGraph()
