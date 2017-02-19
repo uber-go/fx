@@ -32,20 +32,25 @@ import (
 	"go.uber.org/fx/service"
 )
 
-type Option struct {
-	graph dig.Graph
-}
+const (
+	_middlewareKey = "httpClientMiddleware"
+	_graphKey      = "httpClientGraph"
+)
 
-const _middlewareKey = "_httpClientMiddleware"
-const _graphKey = "_httpClientGraph"
-
-func WithOutbound(middleware... OutboundMiddleware) modules.Option{
+// WithOutbound lets you add custom middleware to the client
+func WithOutbound(middleware ...OutboundMiddleware) modules.Option {
 	return func(info *service.ModuleCreateInfo) error {
-		info.Items[_middlewareKey] = append(info.Items[_middlewareKey].([]OutboundMiddleware, middleware...)
+		items := info.Items
+		if m, ok := items[_middlewareKey]; ok {
+			items[_middlewareKey] = append(m.([]OutboundMiddleware), middleware...)
+		} else {
+			items[_middlewareKey] = middleware
+		}
 		return nil
 	}
 }
 
+// WithGraph allows you to a custom dependency injection graph to resolve Tracer and AuthInfo
 func WithGraph(graph dig.Graph) modules.Option {
 	return func(info *service.ModuleCreateInfo) error {
 		info.Items[_graphKey] = graph
@@ -53,10 +58,16 @@ func WithGraph(graph dig.Graph) modules.Option {
 	}
 }
 
-func New(options... modules.Option) *http.Client {
-	var info service.ModuleCreateInfo
+// New creates an http.Client that includes 2 extra outbound middleware: tracing and auth
+// they are going to be applied in following order: tracing, auth, remaining outbound middleware
+// and only if all of them passed the request is going to be send.
+func New(options ...modules.Option) (*http.Client, error) {
+	info := service.ModuleCreateInfo{
+		Items: make(map[string]interface{}),
+	}
+
 	for _, opt := range options {
-		opt(info)
+		opt(&info)
 	}
 
 	graph := dig.DefaultGraph()
@@ -64,22 +75,27 @@ func New(options... modules.Option) *http.Client {
 		graph = g.(dig.Graph)
 	}
 
-	middleware := make([]OutboundMiddleware, 0, len(options) + 2)
-
-	var tracer opentracing.Tracer
+	var tracer *opentracing.Tracer
 	if err := graph.Resolve(&tracer); err != nil {
-
+		return nil, err
 	}
 
-	middleware = append(middleware, tracingOutbound(*tracer), authenticationOutbound(info))
-	for _, x := range options {
-		middleware = append(middleware, x())
+	var auth *auth.CreateAuthInfo
+	if err := graph.Resolve(&auth); err != nil {
+		return nil, err
+	}
+
+	middleware := make([]OutboundMiddleware, 0, len(options)+2)
+	middleware = append(middleware, tracingOutbound(*tracer), authenticationOutbound(*auth))
+
+	if val, ok := info.Items[_middlewareKey]; ok {
+		middleware = append(middleware, val.([]OutboundMiddleware)...)
 	}
 
 	return &http.Client{
 		Transport: newExecutionChain(middleware, http.DefaultTransport),
 		Timeout:   2 * time.Minute,
-	}
+	}, nil
 }
 
 // executionChain represents a chain of outbound middleware that are being executed recursively

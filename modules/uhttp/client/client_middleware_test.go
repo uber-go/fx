@@ -125,11 +125,11 @@ func TestOutboundMiddlewareWithTracerErrors(t *testing.T) {
 	}
 	testCases := map[string]OutboundMiddleware{
 		"auth":    authenticationOutbound(fakeAuthInfo{_testYaml}),
-		"tracing": tracingOutbound(opentracing.NoopTracer{}),
+		"tracing": tracingOutbound(tr),
 	}
 
 	for name, middleware := range testCases {
-		op := func(tracer opentracing.Tracer) {
+		op := func(t *testing.T) {
 			execChain := newExecutionChain(
 				[]OutboundMiddleware{middleware}, nopTransport{})
 			span := tracer.StartSpan("test_method")
@@ -143,7 +143,7 @@ func TestOutboundMiddlewareWithTracerErrors(t *testing.T) {
 			assert.EqualError(t, err, "Very bad tracer")
 		}
 
-		t.Run(name, func(t *testing.T) { withOpentracingSetup(t, nil, op) })
+		t.Run(name, op)
 	}
 }
 
