@@ -20,10 +20,10 @@
 
 package dig
 
-// Default graph is used for all the top-level inject calls
+// Default graph is used for all the top-level calls
 var defaultGraph = newGraph()
 
-// DefaultGraph returns the graph used by top-level inject calls
+// DefaultGraph returns the graph used by top-level calls
 func DefaultGraph() Graph {
 	return defaultGraph
 }
