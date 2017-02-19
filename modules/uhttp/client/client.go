@@ -26,22 +26,52 @@ import (
 
 	"github.com/opentracing/opentracing-go"
 	"go.uber.org/fx/auth"
+	"go.uber.org/fx/dig"
+
+	"go.uber.org/fx/modules"
+	"go.uber.org/fx/service"
 )
 
-type Option func() OutboundMiddleware
-
-func WithOutbound(middleware OutboundMiddleware) Option{
-	return func () OutboundMiddleware{ return middleware}
+type Option struct {
+	graph dig.Graph
 }
 
-// New creates an http.Client that includes 2 extra outbound middleware: tracing and auth
-// they are going to be applied in following order: tracing, auth, remaining outbound middleware
-// and only if all of them passed the request is going to be send.
-func New(options... Option) *http.Client {
+const _middlewareKey = "_httpClientMiddleware"
+const _graphKey = "_httpClientGraph"
+
+func WithOutbound(middleware... OutboundMiddleware) modules.Option{
+	return func(info *service.ModuleCreateInfo) error {
+		info.Items[_middlewareKey] = append(info.Items[_middlewareKey].([]OutboundMiddleware, middleware...)
+		return nil
+	}
+}
+
+func WithGraph(graph dig.Graph) modules.Option {
+	return func(info *service.ModuleCreateInfo) error {
+		info.Items[_graphKey] = graph
+		return nil
+	}
+}
+
+func New(options... modules.Option) *http.Client {
+	var info service.ModuleCreateInfo
+	for _, opt := range options {
+		opt(info)
+	}
+
+	graph := dig.DefaultGraph()
+	if g, ok := info.Items[_graphKey]; ok {
+		graph = g.(dig.Graph)
+	}
+
 	middleware := make([]OutboundMiddleware, 0, len(options) + 2)
 
-	var trace
-	middleware = append(middleware, tracingOutbound(tracer), authenticationOutbound(info))
+	var tracer opentracing.Tracer
+	if err := graph.Resolve(&tracer); err != nil {
+
+	}
+
+	middleware = append(middleware, tracingOutbound(*tracer), authenticationOutbound(info))
 	for _, x := range options {
 		middleware = append(middleware, x())
 	}
