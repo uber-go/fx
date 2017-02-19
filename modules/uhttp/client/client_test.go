@@ -42,7 +42,7 @@ name: test
 	authInfo = fakeAuthInfo{yaml: _testYaml}
 )
 
-func withTestGraph(t *testing.T, tracer opentracing.Tracer, info auth.CreateAuthInfo) modules.Option{
+func withTestGraph(t *testing.T, tracer opentracing.Tracer, info auth.CreateAuthInfo) modules.Option {
 	g := dig.New()
 	require.NoError(t, g.Register(&tracer))
 	require.NoError(t, g.Register(&info))
