@@ -194,10 +194,10 @@ func TestCycles(t *testing.T) {
 	g := testGraph()
 
 	require.NoError(t, g.Register(c1))
-	require.NoError(t, g.Register(c2))
 
-	var r Type1
-	require.NoError(t, g.Resolve(&r))
+	err := g.Register(c2)
+	require.Contains(t, err.Error(), "unable to register dig.Type2")
+	require.Contains(t, err.Error(), "cycle")
 }
 
 func TestResolveAll(t *testing.T) {

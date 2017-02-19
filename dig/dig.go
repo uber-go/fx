@@ -29,6 +29,7 @@ var (
 	errReturnCount = errors.New("constructor function must return exactly one value")
 	errReturnKind  = errors.New("constructor return type must be a pointer")
 	errArgKind     = errors.New("constructor arguments must be pointers")
+	errCycle       = errors.New("cycle dependencies detected")
 )
 
 // New returns a new Dependency Injection Graph
