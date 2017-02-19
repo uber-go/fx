@@ -38,8 +38,8 @@ var (
 	_testYaml = []byte(`
 name: test
 `)
-	tracer   = opentracing.NoopTracer{}
-	authInfo = fakeAuthInfo{yaml: _testYaml}
+	_tracer   = opentracing.NoopTracer{}
+	_authInfo = fakeAuthInfo{yaml: _testYaml}
 )
 
 func withTestGraph(t *testing.T, tracer opentracing.Tracer, info auth.CreateAuthInfo) modules.Option {
@@ -50,7 +50,7 @@ func withTestGraph(t *testing.T, tracer opentracing.Tracer, info auth.CreateAuth
 }
 
 func testClient(t *testing.T) *http.Client {
-	cl, err := New(withTestGraph(t, tracer, authInfo))
+	cl, err := New(withTestGraph(t, _tracer, _authInfo))
 	require.NoError(t, err)
 	return cl
 }
@@ -66,7 +66,7 @@ func TestNew(t *testing.T) {
 func TestNew_Panic(t *testing.T) {
 	t.Parallel()
 	assert.Panics(t, func() {
-		New(withTestGraph(t, tracer, &fakeAuthInfo{yaml: []byte(``)}))
+		New(withTestGraph(t, _tracer, &fakeAuthInfo{yaml: []byte(``)}))
 	})
 }
 
@@ -102,7 +102,7 @@ func TestClientGetTwiceExecutesAllMiddleware(t *testing.T) {
 		return next.Execute(r)
 	}
 
-	cl, err := New(withTestGraph(t, tracer, authInfo), WithOutbound(f), WithOutbound(f))
+	cl, err := New(withTestGraph(t, _tracer, _authInfo), WithOutbound(f), WithOutbound(f))
 	require.NoError(t, err)
 	resp, err := cl.Get(svr.URL)
 	checkOKResponse(t, resp, err)

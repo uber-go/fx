@@ -119,7 +119,7 @@ func TestOutboundMiddlewareWithTracerErrors(t *testing.T) {
 	tr := &shadowTracer{
 		opentracing.NoopTracer{},
 		func(sm opentracing.SpanContext, format interface{}, carrier interface{}) error {
-			return errors.New("Very bad tracer")
+			return errors.New("Very bad _tracer")
 		},
 		nil,
 	}
@@ -132,7 +132,7 @@ func TestOutboundMiddlewareWithTracerErrors(t *testing.T) {
 		op := func(t *testing.T) {
 			execChain := newExecutionChain(
 				[]OutboundMiddleware{middleware}, nopTransport{})
-			span := tracer.StartSpan("test_method")
+			span := _tracer.StartSpan("test_method")
 			span.SetBaggageItem(auth.ServiceAuth, "testService")
 			sp := &shadowSpan{span, tr}
 			tr.span = sp
@@ -140,7 +140,7 @@ func TestOutboundMiddlewareWithTracerErrors(t *testing.T) {
 			ctx := opentracing.ContextWithSpan(context.Background(), sp)
 
 			_, err := execChain.RoundTrip(_req().WithContext(ctx))
-			assert.EqualError(t, err, "Very bad tracer")
+			assert.EqualError(t, err, "Very bad _tracer")
 		}
 
 		t.Run(name, op)
