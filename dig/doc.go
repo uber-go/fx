@@ -22,19 +22,19 @@
 //
 // Package dig provides a fairly opinionated way of resolving object dependencies.
 // There are two sides of dig:
-// Inject and Resolve.
+// Register and Resolve.
 //
-// Inject
+// Register
 //
-// Inject adds an object, or a constructor of an object to the graph.
+// Register adds an object, or a constructor of an object to the graph.
 //
-// There are two ways to inject an object:
+// There are two ways to register an object:
 //
-// • Inject a pointer to an existing object
+// • Register a pointer to an existing object
 //
-// • Inject a "constructor function" that returns one pointer (or interface)
+// • Register a "constructor function" that returns one pointer (or interface)
 //
-// Inject an object
+// Register an object
 //
 // Injecting an object means it has no dependencies, and will be used as a
 // **shared** singleton instance for all resolutions within the graph.
@@ -51,7 +51,7 @@
 //
 //   // f1 is ready to use here...
 //
-// Inject a constructor
+// Register a constructor
 //
 // This is a more interesting and widely used scenario. Constructor is defined as a
 // function that returns exactly one pointer (or interface) and takes 0-N number of

@@ -18,47 +18,29 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package dig
+package tracing
 
 import (
 	"testing"
 
+	"go.uber.org/fx/metrics"
+	"go.uber.org/fx/tracing"
+	"go.uber.org/fx/ulog"
+
+	"github.com/opentracing/opentracing-go"
 	"github.com/stretchr/testify/require"
 )
 
-type Type1 struct {
-	t int
-}
-
-type Type2 struct {
-	s string
-}
-
-type Type3 struct {
-	f float32
-}
-
-func TestDefaultGraph(t *testing.T) {
-	defer Reset()
-
-	t1 := &Type1{t: 42}
-	require.NoError(t, Register(t1))
-
-	t2 := &Type2{s: "42"}
-	t3 := &Type3{f: 4.2}
-	require.NoError(t, RegisterAll(t2, t3))
-
-	var t1g *Type1
-	require.NoError(t, Resolve(&t1g))
-	require.True(t, t1g == t1)
-
-	var t2g *Type2
-	var t3g *Type3
-	require.NoError(t, ResolveAll(&t2g, &t3g))
-	require.True(t, t2g == t2)
-	require.True(t, t3g == t3)
-
-	var t2g2 *Type2
-	require.NoError(t, DefaultGraph().Resolve(&t2g2))
-	require.Equal(t, t2, t2g2)
+// WithSpan is used for generating a span to be used in testing
+func WithSpan(t *testing.T, log ulog.Log, f func(opentracing.Span)) {
+	tracer, closer, err := tracing.CreateTracer(
+		nil, "serviceName", log, metrics.NopCachedStatsReporter,
+	)
+	require.NoError(t, err)
+	defer func() {
+		require.NoError(t, closer.Close())
+	}()
+	span := tracer.StartSpan("test")
+	defer span.Finish()
+	f(span)
 }

@@ -18,9 +18,10 @@ for more.
 
 UberFx builds the following into your service:
 
-* Configuration, logging, metrics, and tracing setup by default
+* Logging backed by the zap logger
 * Configuration provider that seamlessly merges static and dynamic config
 * Application-level as well as runtime metrics for effective monitoring
+* Request tracing for application-level instrumentation
 * Context-aware logging for easy debugging
 * RPC module with Thrift interfaces for microservices
 * HTTP module with intelligent defaults for web applications
