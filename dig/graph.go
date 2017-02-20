@@ -211,6 +211,9 @@ func (g *graph) recursiveDetectCycles(n graphNode, visited map[string]bool) erro
 	for _, dep := range n.dependencies() {
 		if node, ok := g.nodes[dep]; ok {
 			if err := g.recursiveDetectCycles(node, visited); err != nil {
+				// TODO(glib): rework the returned error to include the cycle
+				// i.e. Type1 -> Type3 -> Type2 -> Type1
+				// this will likely require `visited` map to be [string]reflect.Type
 				return err
 			}
 		}
