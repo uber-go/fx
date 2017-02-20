@@ -23,18 +23,15 @@ package main
 import (
 	"log"
 
-	"go.uber.org/fx/modules"
 	"go.uber.org/fx/modules/rpc"
 	"go.uber.org/fx/service"
 )
 
 func main() {
-	svc, err := service.WithModules(
+	svc, err := service.WithModule(
 		// Create a YARPC module that exposes endpoints
-		rpc.ThriftModule(
-			rpc.CreateThriftServiceFunc(NewYarpcThriftHandler),
-			modules.WithRoles("service"),
-		),
+		rpc.ThriftModule(rpc.CreateThriftServiceFunc(NewYarpcThriftHandler)),
+		service.WithModuleRole("service"),
 	).WithOptions(
 		service.WithObserver(&Observer{}),
 	).Build()

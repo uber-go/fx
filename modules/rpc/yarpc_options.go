@@ -21,7 +21,6 @@
 package rpc
 
 import (
-	"go.uber.org/fx/modules"
 	"go.uber.org/fx/service"
 	"go.uber.org/yarpc/api/middleware"
 )
@@ -43,7 +42,7 @@ func WithInboundMiddleware(i ...middleware.UnaryInbound) service.ModuleOption {
 }
 
 // WithOnewayInboundMiddleware adds custom YARPC inboundMiddleware to the module
-func WithOnewayInboundMiddleware(i ...middleware.OnewayInbound) modules.Option {
+func WithOnewayInboundMiddleware(i ...middleware.OnewayInbound) service.ModuleOption {
 	return service.WithModuleItem(_onewayInterceptorKey, func(existing interface{}) interface{} {
 		var inboundMiddleware []middleware.OnewayInbound
 		if existing != nil {
