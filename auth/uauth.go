@@ -26,7 +26,6 @@ import (
 
 	"github.com/uber-go/tally"
 	"go.uber.org/fx/config"
-	"go.uber.org/fx/ulog"
 )
 
 var (
@@ -48,7 +47,6 @@ var (
 // CreateAuthInfo interface provides necessary data
 type CreateAuthInfo interface {
 	Config() config.Provider
-	Logger() ulog.Log
 	Metrics() tally.Scope
 }
 

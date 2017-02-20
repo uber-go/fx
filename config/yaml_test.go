@@ -22,6 +22,7 @@ package config
 
 import (
 	"bytes"
+	"fmt"
 	"io/ioutil"
 	"os"
 	"path"
@@ -350,4 +351,25 @@ func TestMerge(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestYamlProviderFmtPrintOnValueNoPanic(t *testing.T) {
+	provider := NewYAMLProviderFromBytes(yamlConfig1)
+	c := provider.Get("modules.rpc.bind")
+
+	f := func() {
+		assert.Contains(t, fmt.Sprintf("%v", c), "")
+	}
+	assert.NotPanics(t, f)
+}
+
+func TestArrayTypeNoPanic(t *testing.T) {
+	// This test will panic if we treat array the same as slice.
+	provider := NewYAMLProviderFromBytes(yamlConfig1)
+
+	cs := struct {
+		ID [6]int `yaml:"id"`
+	}{}
+
+	assert.NoError(t, provider.Get(Root).PopulateStruct(&cs))
 }

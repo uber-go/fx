@@ -1,8 +1,8 @@
 package: go.uber.org/fx
 import:
 - package: github.com/uber-go/zap
-  # TODO(ai): Pin to semver range after 1.0 is released
-  version: master
+  # Pinned temporarily while zap reaches 1.0 (https://github.com/uber-go/fx/pull/243)
+  version: c064b5c44b285a7e2fd5c9b26e8c38228ce2bccb
 - package: github.com/uber-go/tally
   version: ^1.1.0
 - package: github.com/gorilla/mux

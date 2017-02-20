@@ -46,7 +46,7 @@ import (
 var _defaultHTTPClient = &http.Client{Timeout: 2 * time.Second}
 
 func TestNew_OK(t *testing.T) {
-	WithService(New(registerNothing, nil), nil, []service.Option{configOption()}, func(s service.Owner) {
+	WithService(New(registerNothing), nil, []service.Option{configOption()}, func(s service.Manager) {
 		assert.NotNil(t, s, "Should create a module")
 	})
 }
@@ -56,25 +56,25 @@ func TestNew_WithOptions(t *testing.T) {
 		modules.WithRoles("testing"),
 	}
 
-	withModule(t, registerPanic, nil, options, false, func(m *Module) {
+	withModule(t, registerPanic, options, false, func(m *Module) {
 		assert.NotNil(t, m, "Expected OK with options")
 	})
 }
 
-func TestHTTPModule_WithFilter(t *testing.T) {
-	withModule(t, registerPanic, []Filter{fakeFilter()}, nil, false, func(m *Module) {
+func TestHTTPModule_WithInboundMiddleware(t *testing.T) {
+	withModule(t, registerPanic, []modules.Option{WithInboundMiddleware(fakeInbound())}, false, func(m *Module) {
 		assert.NotNil(t, m)
 		makeRequest(m, "GET", "/", nil, func(r *http.Response) {
 			body, err := ioutil.ReadAll(r.Body)
 			assert.NoError(t, err)
-			assert.Contains(t, string(body), "filter is executed")
+			assert.Contains(t, string(body), "inbound middleware is executed")
 		})
 		verifyMetrics(t, m.Host().Metrics())
 	})
 }
 
-func TestHTTPModule_WithUserPanicFilter(t *testing.T) {
-	withModule(t, registerTracerCheckHandler, []Filter{userPanicFilter()}, nil, false, func(m *Module) {
+func TestHTTPModule_WithUserPanicInboundMiddleware(t *testing.T) {
+	withModule(t, registerTracerCheckHandler, []modules.Option{WithInboundMiddleware(userPanicInbound())}, false, func(m *Module) {
 		assert.NotNil(t, m)
 		makeRequest(m, "GET", "/", nil, func(r *http.Response) {
 			assert.Equal(t, http.StatusInternalServerError, r.StatusCode, "Expected 500 with panic wrapper")
@@ -83,7 +83,7 @@ func TestHTTPModule_WithUserPanicFilter(t *testing.T) {
 }
 
 func TestHTTPModule_Panic_OK(t *testing.T) {
-	withModule(t, registerPanic, nil, nil, false, func(m *Module) {
+	withModule(t, registerPanic, nil, false, func(m *Module) {
 		assert.NotNil(t, m)
 		makeRequest(m, "GET", "/", nil, func(r *http.Response) {
 			assert.Equal(t, http.StatusInternalServerError, r.StatusCode, "Expected 500 with panic wrapper")
@@ -92,7 +92,7 @@ func TestHTTPModule_Panic_OK(t *testing.T) {
 }
 
 func TestHTTPModule_Tracer(t *testing.T) {
-	withModule(t, registerTracerCheckHandler, nil, nil, false, func(m *Module) {
+	withModule(t, registerTracerCheckHandler, nil, false, func(m *Module) {
 		assert.NotNil(t, m)
 		makeRequest(m, "GET", "/", nil, func(r *http.Response) {
 			assert.Equal(t, http.StatusOK, r.StatusCode, "Expected 200 with tracer check")
@@ -101,13 +101,13 @@ func TestHTTPModule_Tracer(t *testing.T) {
 }
 
 func TestHTTPModule_StartsAndStops(t *testing.T) {
-	withModule(t, registerPanic, nil, nil, false, func(m *Module) {
+	withModule(t, registerPanic, nil, false, func(m *Module) {
 		assert.True(t, m.IsRunning(), "Start should be successful")
 	})
 }
 
 func TestBuiltinHealth_OK(t *testing.T) {
-	withModule(t, registerNothing, nil, nil, false, func(m *Module) {
+	withModule(t, registerNothing, nil, false, func(m *Module) {
 		assert.NotNil(t, m)
 		makeRequest(m, "GET", "/health", nil, func(r *http.Response) {
 			assert.Equal(t, http.StatusOK, r.StatusCode, "Expected 200 with default health handler")
@@ -116,7 +116,7 @@ func TestBuiltinHealth_OK(t *testing.T) {
 }
 
 func TestOverrideHealth_OK(t *testing.T) {
-	withModule(t, registerCustomHealth, nil, nil, false, func(m *Module) {
+	withModule(t, registerCustomHealth, nil, false, func(m *Module) {
 		assert.NotNil(t, m)
 		makeRequest(m, "GET", "/health", nil, func(r *http.Response) {
 			assert.Equal(t, http.StatusOK, r.StatusCode, "Expected 200 with default health handler")
@@ -128,7 +128,7 @@ func TestOverrideHealth_OK(t *testing.T) {
 }
 
 func TestPProf_Registered(t *testing.T) {
-	withModule(t, registerNothing, nil, nil, false, func(m *Module) {
+	withModule(t, registerNothing, nil, false, func(m *Module) {
 		assert.NotNil(t, m)
 		makeRequest(m, "GET", "/debug/pprof", nil, func(r *http.Response) {
 			assert.Equal(t, http.StatusOK, r.StatusCode, "Expected 200 from pprof handler")
@@ -141,7 +141,7 @@ func TestHookupOptions(t *testing.T) {
 		modules.WithName("an optional name"),
 	}
 
-	withModule(t, registerNothing, nil, options, false, func(m *Module) {
+	withModule(t, registerNothing, options, false, func(m *Module) {
 		assert.NotNil(t, m)
 	})
 }
@@ -153,7 +153,7 @@ func TestHookupOptions_Error(t *testing.T) {
 		},
 	}
 
-	withModule(t, registerNothing, nil, options, true, func(m *Module) {
+	withModule(t, registerNothing, options, true, func(m *Module) {
 		assert.Nil(t, m)
 	})
 }
@@ -167,7 +167,6 @@ func configOption() service.Option {
 func withModule(
 	t testing.TB,
 	hookup GetHandlersFunc,
-	filters []Filter,
 	options []modules.Option,
 	expectError bool,
 	fn func(*Module),
@@ -176,7 +175,7 @@ func withModule(
 		Host: service.NopHost(),
 	}
 	stats.SetupHTTPMetrics(mi.Host.Metrics())
-	mod, err := newModule(mi, hookup, filters, options...)
+	mod, err := newModule(mi, hookup, options...)
 	if expectError {
 		require.Error(t, err, "Expected error instantiating module")
 		fn(nil)
@@ -277,14 +276,14 @@ func registerPanic(_ service.Host) []RouteHandler {
 	})
 }
 
-func fakeFilter() FilterFunc {
+func fakeInbound() InboundMiddlewareFunc {
 	return func(w http.ResponseWriter, r *http.Request, next http.Handler) {
-		io.WriteString(w, "filter is executed")
+		io.WriteString(w, "inbound middleware is executed")
 		next.ServeHTTP(w, r)
 	}
 }
 
-func userPanicFilter() FilterFunc {
+func userPanicInbound() InboundMiddlewareFunc {
 	return func(_ http.ResponseWriter, r *http.Request, _ http.Handler) {
 		panic("Intentional panic for:" + r.URL.Path)
 	}

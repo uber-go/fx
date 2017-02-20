@@ -39,6 +39,20 @@ func InitGlobalTracer(
 	logger ulog.Log,
 	statsReporter tally.CachedStatsReporter,
 ) (opentracing.Tracer, io.Closer, error) {
+	tracer, closer, err := CreateTracer(cfg, serviceName, logger, statsReporter)
+	if err == nil {
+		opentracing.InitGlobalTracer(tracer)
+	}
+	return tracer, closer, err
+}
+
+// CreateTracer creates a tracer
+func CreateTracer(
+	cfg *config.Configuration,
+	serviceName string,
+	logger ulog.Log,
+	statsReporter tally.CachedStatsReporter,
+) (opentracing.Tracer, io.Closer, error) {
 	var reporter *jaegerReporter
 	if cfg == nil || !cfg.Disabled {
 		cfg = loadAppConfig(cfg, logger)
@@ -47,11 +61,7 @@ func InitGlobalTracer(
 			reporter: statsReporter,
 		}
 	}
-	tracer, closer, err := cfg.New(serviceName, reporter)
-	if err == nil {
-		opentracing.InitGlobalTracer(tracer)
-	}
-	return tracer, closer, err
+	return cfg.New(serviceName, reporter)
 }
 
 func loadAppConfig(cfg *config.Configuration, logger ulog.Log) *config.Configuration {

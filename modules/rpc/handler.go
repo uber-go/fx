@@ -28,6 +28,7 @@ import (
 	"go.uber.org/fx/service"
 	"go.uber.org/fx/ulog"
 
+	"github.com/opentracing/opentracing-go"
 	"github.com/pkg/errors"
 	"go.uber.org/yarpc/api/transport"
 )
@@ -38,14 +39,21 @@ type contextInboundMiddleware struct {
 	service.Host
 }
 
-func (f contextInboundMiddleware) Handle(ctx context.Context, req *transport.Request, resw transport.ResponseWriter, handler transport.UnaryHandler) error {
+func (f contextInboundMiddleware) Handle(
+	ctx context.Context,
+	req *transport.Request,
+	resw transport.ResponseWriter,
+	handler transport.UnaryHandler,
+) error {
 	stopwatch := stats.RPCHandleTimer.
 		Tagged(map[string]string{stats.TagProcedure: req.Procedure}).
 		Timer(req.Procedure).
 		Start()
 	defer stopwatch.Stop()
-
-	ctx = ulog.NewLogContext(ctx)
+	// Span is populated by YARPC, we just extract and use it
+	if span := opentracing.SpanFromContext(ctx); span != nil {
+		ctx = ulog.ContextWithTraceLogger(ctx, span)
+	}
 	return handler.Handle(ctx, req, resw)
 }
 
@@ -53,8 +61,15 @@ type contextOnewayInboundMiddleware struct {
 	service.Host
 }
 
-func (f contextOnewayInboundMiddleware) HandleOneway(ctx context.Context, req *transport.Request, handler transport.OnewayHandler) error {
-	ctx = ulog.NewLogContext(ctx)
+func (f contextOnewayInboundMiddleware) HandleOneway(
+	ctx context.Context,
+	req *transport.Request,
+	handler transport.OnewayHandler,
+) error {
+	// Span is populated by YARPC, we just extract and use it
+	if span := opentracing.SpanFromContext(ctx); span != nil {
+		ctx = ulog.ContextWithTraceLogger(ctx, span)
+	}
 	return handler.HandleOneway(ctx, req)
 }
 
@@ -62,7 +77,12 @@ type authInboundMiddleware struct {
 	service.Host
 }
 
-func (a authInboundMiddleware) Handle(ctx context.Context, req *transport.Request, resw transport.ResponseWriter, handler transport.UnaryHandler) error {
+func (a authInboundMiddleware) Handle(
+	ctx context.Context,
+	req *transport.Request,
+	resw transport.ResponseWriter,
+	handler transport.UnaryHandler,
+) error {
 	fxctx, err := authorize(ctx, a.Host)
 	if err != nil {
 		return err
@@ -74,7 +94,11 @@ type authOnewayInboundMiddleware struct {
 	service.Host
 }
 
-func (a authOnewayInboundMiddleware) HandleOneway(ctx context.Context, req *transport.Request, handler transport.OnewayHandler) error {
+func (a authOnewayInboundMiddleware) HandleOneway(
+	ctx context.Context,
+	req *transport.Request,
+	handler transport.OnewayHandler,
+) error {
 	fxctx, err := authorize(ctx, a.Host)
 	if err != nil {
 		return err
@@ -95,14 +119,23 @@ func authorize(ctx context.Context, host service.Host) (context.Context, error) 
 
 type panicInboundMiddleware struct{}
 
-func (p panicInboundMiddleware) Handle(ctx context.Context, req *transport.Request, resw transport.ResponseWriter, handler transport.UnaryHandler) error {
+func (p panicInboundMiddleware) Handle(
+	ctx context.Context,
+	req *transport.Request,
+	resw transport.ResponseWriter,
+	handler transport.UnaryHandler,
+) error {
 	defer panicRecovery(ctx)
 	return handler.Handle(ctx, req, resw)
 }
 
 type panicOnewayInboundMiddleware struct{}
 
-func (p panicOnewayInboundMiddleware) HandleOneway(ctx context.Context, req *transport.Request, handler transport.OnewayHandler) error {
+func (p panicOnewayInboundMiddleware) HandleOneway(
+	ctx context.Context,
+	req *transport.Request,
+	handler transport.OnewayHandler,
+) error {
 	defer panicRecovery(ctx)
 	return handler.HandleOneway(ctx, req)
 }
@@ -110,7 +143,9 @@ func (p panicOnewayInboundMiddleware) HandleOneway(ctx context.Context, req *tra
 func panicRecovery(ctx context.Context) {
 	if err := recover(); err != nil {
 		stats.RPCPanicCounter.Inc(1)
-		ulog.Logger(ctx).Error("Panic recovered serving request", "error", errors.Errorf("panic in handler: %+v", err))
+		ulog.Logger(ctx).Error(
+			"Panic recovered serving request", "error", errors.Errorf("panic in handler: %+v", err),
+		)
 		// rethrow panic back to yarpc
 		// before https://github.com/yarpc/yarpc-go/issues/734 fixed, throw a generic error.
 		panic(_panicResponse)

@@ -40,7 +40,7 @@ func NopHostWithConfig(configProvider config.Provider) Host {
 	return nopHostConfigured(auth.NopClient, ulog.NopLogger, opentracing.NoopTracer{}, configProvider)
 }
 
-// NopHostAuthFailure is nop host with failure auth client
+// NopHostAuthFailure is nop manager with failure auth client
 func NopHostAuthFailure() Host {
 	auth.UnregisterClient()
 	defer auth.UnregisterClient()
@@ -48,7 +48,7 @@ func NopHostAuthFailure() Host {
 	return NopHostConfigured(auth.Load(nil), ulog.NopLogger, opentracing.NoopTracer{})
 }
 
-// NopHostConfigured is a nop host with set logger and tracer for tests
+// NopHostConfigured is a nop manager with set logger and tracer for tests
 func NopHostConfigured(client auth.Client, logger ulog.Log, tracer opentracing.Tracer) Host {
 	return nopHostConfigured(client, logger, tracer, nil)
 }
@@ -64,9 +64,6 @@ func nopHostConfigured(client auth.Client, logger ulog.Log, tracer opentracing.T
 			Name:        "dummy",
 			Owner:       "root@example.com",
 			Description: "does cool stuff",
-		},
-		loggingCore: loggingCore{
-			log: logger,
 		},
 		metricsCore: metricsCore{
 			metrics:       tally.NoopScope,

@@ -21,6 +21,7 @@
 package uhttp
 
 import (
+	"context"
 	"fmt"
 	"net"
 	"net/http"
@@ -31,6 +32,7 @@ import (
 	"go.uber.org/fx/modules"
 	"go.uber.org/fx/modules/uhttp/internal/stats"
 	"go.uber.org/fx/service"
+	"go.uber.org/fx/ulog"
 
 	"github.com/pkg/errors"
 )
@@ -66,7 +68,7 @@ type Module struct {
 	listener net.Listener
 	handlers []RouteHandler
 	listenMu sync.RWMutex
-	fcb      filterChainBuilder
+	mcb      inboundMiddlewareChainBuilder
 }
 
 var _ service.Module = &Module{}
@@ -91,7 +93,6 @@ func New(hookup GetHandlersFunc, filters []Filter) service.ModuleCreateFunc {
 func newModule(
 	mi service.ModuleInfo,
 	getHandlers GetHandlersFunc,
-	filters []Filter,
 	options ...modules.Option,
 ) (*Module, error) {
 	// setup config defaults
@@ -108,22 +109,22 @@ func newModule(
 
 	handlers := addHealth(getHandlers(mi.Host))
 
+	log := ulog.Logger(context.Background()).With("moduleName", mi.Name)
+
 	// TODO (madhu): Add other middleware - logging, metrics.
 	module := &Module{
 		ModuleBase: *modules.NewModuleBase(mi.Name, mi.Host, []string{}),
 		handlers:   handlers,
-		fcb:        defaultFilterChainBuilder(mi.Host),
+		mcb:        defaultInboundMiddlewareChainBuilder(log, mi.Host.AuthClient()),
 	}
-
-	module.fcb = module.fcb.AddFilters(filters...)
 
 	err := module.Host().Config().Get(getConfigKey(mi.Name)).PopulateStruct(cfg)
 	if err != nil {
-		module.Host().Logger().Error("Error loading http module configuration", "error", err)
+		log.Error("Error loading http module configuration", "error", err)
 	}
 	module.config = *cfg
 
-	module.log = module.Host().Logger().With("moduleName", mi.Name)
+	module.log = log
 
 	for _, option := range options {
 		if err := option(&mi); err != nil {
@@ -131,6 +132,9 @@ func newModule(
 			return module, errors.Wrap(err, "unable to apply option to module")
 		}
 	}
+
+	middleware := inboundMiddlewareFromCreateInfo(mi)
+	module.mcb = module.mcb.AddMiddleware(middleware...)
 
 	return module, nil
 }
@@ -144,7 +148,7 @@ func (m *Module) Start() error {
 	mux.Handle("/", router)
 
 	for _, h := range m.handlers {
-		router.Handle(h.Path, m.fcb.Build(h.Handler))
+		router.Handle(h.Path, m.mcb.Build(h.Handler))
 	}
 
 	if m.config.Debug == nil || *m.config.Debug {

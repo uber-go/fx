@@ -44,11 +44,9 @@ const (
 	Stopped
 )
 
-// A Owner encapsulates service ownership
-type Owner interface {
+// A Manager encapsulates service ownership
+type Manager interface {
 	Host
-
-	AddModule(module ModuleCreateFunc, options ...ModuleOption) error
 
 	// Start service is used for blocking the call on service start. Start will block the
 	// call and yield the control to the service lifecyce manager. No code will be executed
@@ -83,10 +81,9 @@ type serviceConfig struct {
 	Roles       []string `yaml:"roles"`
 }
 
-// New creates a service owner from a set of service instances and options
-// TODO(glib): Something is fishy here... `service.New` returns a service.Owner -_-
-func New(options ...Option) (Owner, error) {
-	svc := &host{
+// newManager creates a service Manager from a set of module creation functions and options.
+func newManager(modules []ModuleCreateFunc, options ...Option) (Manager, error) {
+	svc := &manager{
 		// TODO: get these out of config struct instead
 		moduleWrappers: []*moduleWrapper{},
 		serviceCore: serviceCore{
@@ -144,5 +141,25 @@ func New(options ...Option) (Owner, error) {
 
 	svc.Metrics().Counter("boot").Inc(1)
 
+	if err := svc.addModules(modules...); err != nil {
+		return nil, err
+	}
+
 	return svc, nil
+}
+
+type niladicStart func()
+
+func (n niladicStart) OnInit(service Host) error      { return nil }
+func (n niladicStart) OnShutdown(reason Exit)         {}
+func (n niladicStart) OnCriticalError(err error) bool { return true }
+func (n niladicStart) OnStateChange(old State, curr State) {
+	if old == Starting && curr == Running {
+		n()
+	}
+}
+
+// AfterStart will create an observer that will execute f() immediately after service starts.
+func AfterStart(f func()) Observer {
+	return niladicStart(f)
 }

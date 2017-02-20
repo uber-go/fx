@@ -41,7 +41,8 @@ const (
 	defaultStartupWait = time.Second
 )
 
-type host struct {
+// Implements Manager interface
+type manager struct {
 	serviceCore
 	locked         bool
 	observer       Observer
@@ -57,11 +58,11 @@ type host struct {
 	started        bool
 }
 
-// TODO(glib): host is both an Owner and a Host?
-var _ Host = &host{}
-var _ Owner = &host{}
+// TODO(glib): manager is both an Manager and a Host?
+var _ Host = &manager{}
+var _ Manager = &manager{}
 
-func (s *host) addModuleWrapper(moduleWrapper *moduleWrapper) error {
+func (s *manager) addModuleWrapper(moduleWrapper *moduleWrapper) error {
 	if s.locked {
 		return fmt.Errorf("can't add module: service already started")
 	}
@@ -69,7 +70,7 @@ func (s *host) addModuleWrapper(moduleWrapper *moduleWrapper) error {
 	return nil
 }
 
-func (s *host) supportsRole(roles ...string) bool {
+func (s *manager) supportsRole(roles ...string) bool {
 	if len(s.roles) == 0 || len(roles) == 0 {
 		return true
 	}
@@ -82,14 +83,20 @@ func (s *host) supportsRole(roles ...string) bool {
 	return false
 }
 
-func (s *host) IsRunning() bool {
+func (s *manager) Modules() []Module {
+	mods := make([]Module, len(s.modules))
+	copy(mods, s.modules)
+	return mods
+}
+
+func (s *manager) IsRunning() bool {
 	return s.closeChan != nil
 }
 
-func (s *host) OnCriticalError(err error) {
+func (s *manager) OnCriticalError(err error) {
 	shutdown := true
 	if s.observer == nil {
-		s.Logger().Warn(
+		ulog.Logger(_simpleCtx).Warn(
 			"No observer set to handle lifecycle events. Shutting down.",
 			"event", "OnCriticalError",
 		)
@@ -100,12 +107,12 @@ func (s *host) OnCriticalError(err error) {
 	if shutdown {
 		if ok, err := s.shutdown(err, "", nil); !ok || err != nil {
 			// TODO(ai) verify we flush logs
-			s.Logger().Info("Problem shutting down module", "success", ok, "error", err)
+			ulog.Logger(_simpleCtx).Info("Problem shutting down module", "success", ok, "error", err)
 		}
 	}
 }
 
-func (s *host) shutdown(err error, reason string, exitCode *int) (bool, error) {
+func (s *manager) shutdown(err error, reason string, exitCode *int) (bool, error) {
 	s.shutdownMu.Lock()
 	s.inShutdown = true
 	defer func() {
@@ -140,7 +147,7 @@ func (s *host) shutdown(err error, reason string, exitCode *int) (bool, error) {
 	errs := s.stopModules()
 	if len(errs) > 0 {
 		for k, v := range errs {
-			s.Logger().Error("Failure to shut down module", "name", k.Name(), "error", v.Error())
+			ulog.Logger(_simpleCtx).Error("Failure to shut down module", "name", k.Name(), "error", v.Error())
 		}
 	}
 
@@ -152,15 +159,15 @@ func (s *host) shutdown(err error, reason string, exitCode *int) (bool, error) {
 	// Stop the metrics reporting
 	if s.metricsCloser != nil {
 		if err = s.metricsCloser.Close(); err != nil {
-			s.Logger().Error("Failure to close metrics", "error", err)
+			ulog.Logger(_simpleCtx).Error("Failure to close metrics", "error", err)
 		}
 	}
 
 	// Flush tracing buffers
 	if s.tracerCloser != nil {
-		s.Logger().Debug("Closing tracer")
+		ulog.Logger(_simpleCtx).Debug("Closing tracer")
 		if err = s.tracerCloser.Close(); err != nil {
-			s.Logger().Error("Failure to close tracer", "error", err)
+			ulog.Logger(_simpleCtx).Error("Failure to close tracer", "error", err)
 		}
 	}
 
@@ -177,8 +184,7 @@ func (s *host) shutdown(err error, reason string, exitCode *int) (bool, error) {
 	return true, err
 }
 
-// AddModules adds the given modules to a service host
-func (s *host) AddModule(module ModuleCreateFunc, options ...ModuleOption) error {
+func (s *manager) addModule(module ModuleCreateFunc, options ...ModuleOption) error {
 	moduleWrapper, err := newModuleWrapper(s, module, options...)
 	if err != nil {
 		return err
@@ -195,21 +201,21 @@ func (s *host) AddModule(module ModuleCreateFunc, options ...ModuleOption) error
 // StartAsync service is used as a non-blocking the call on service start. StartAsync will
 // return the call to the caller with a Control to listen on channels
 // and trigger manual shutdowns.
-func (s *host) StartAsync() Control {
+func (s *manager) StartAsync() Control {
 	return s.start()
 }
 
 // Start service is used for blocking the call on service start. Start will block the
 // call and yield the control to the service lifecyce manager. Start will not yield back
 // the control to the caller, so no code will be executed after calling Start()
-func (s *host) Start() {
+func (s *manager) Start() {
 	s.start()
 
 	// block until forced exit
 	s.WaitForShutdown(nil)
 }
 
-func (s *host) start() Control {
+func (s *manager) start() Control {
 	var err error
 	s.locked = true
 	s.shutdownMu.Lock()
@@ -259,9 +265,9 @@ func (s *host) start() Control {
 
 				s.shutdownMu.Unlock()
 				if _, err := s.shutdown(e, "", nil); err != nil {
-					s.Logger().Error("Unable to shut down modules", "initialError", e, "shutdownError", err)
+					ulog.Logger(_simpleCtx).Error("Unable to shut down modules", "initialError", e, "shutdownError", err)
 				}
-				s.Logger().Error("Error starting the module", "error", e)
+				ulog.Logger(_simpleCtx).Error("Error starting the module", "error", e)
 				// return first service error
 				if serviceErr == nil {
 					serviceErr = e
@@ -285,28 +291,33 @@ func (s *host) start() Control {
 	}
 }
 
-func (s *host) registerSignalHandlers() {
+func (s *manager) registerSignalHandlers() {
 	ch := make(chan os.Signal)
 	signal.Notify(ch, syscall.SIGINT, syscall.SIGTERM)
 	go func() {
 		sig := <-ch
-		s.Logger().Warn("Received shutdown signal", "signal", sig.String())
+		ulog.Logger(_simpleCtx).Warn("Received shutdown signal", "signal", sig.String())
 		if err := s.Stop("Received syscall", 0); err != nil {
-			s.Logger().Error("Error shutting down", "error", err.Error())
+			ulog.Logger(_simpleCtx).Error("Error shutting down", "error", err.Error())
 		}
 	}()
 }
 
 // Stop shuts down the service.
-func (s *host) Stop(reason string, exitCode int) error {
+func (s *manager) Stop(reason string, exitCode int) error {
 	ec := &exitCode
 	_, err := s.shutdown(nil, reason, ec)
 	return err
 }
 
+<<<<<<< HEAD
 func (s *host) startModules() []error {
 	var results []error
 	var lock sync.Mutex
+=======
+func (s *manager) startModules() map[Module]error {
+	results := map[Module]error{}
+>>>>>>> master
 	wg := sync.WaitGroup{}
 
 	// make sure we wait for all the start
@@ -318,6 +329,7 @@ func (s *host) startModules() []error {
 				errC := make(chan err, 1)
 				go func() { errC <- m.Start() }()
 				select {
+<<<<<<< HEAD
 				case err := <-errC:
 					if err != nil {
 						s.Logger().Error("Error received while starting module", "module", m.Name(), "error", startError)
@@ -331,6 +343,17 @@ func (s *host) startModules() []error {
 					lock.Lock()
 					results = append(results, fmt.Errorf("module didn't start after %v", defaultStartupWait))
 					lock.Unlock()
+=======
+				case <-readyCh:
+					ulog.Logger(_simpleCtx).Info("Module started up cleanly", "module", m.Name())
+				case <-time.After(defaultStartupWait):
+					results[m] = fmt.Errorf("module didn't start after %v", defaultStartupWait)
+				}
+
+				if startError := <-startResult; startError != nil {
+					ulog.Logger(_simpleCtx).Error("Error received while starting module", "module", m.Name(), "error", startError)
+					results[m] = startError
+>>>>>>> master
 				}
 			}
 			wg.Done()
@@ -342,9 +365,14 @@ func (s *host) startModules() []error {
 	return results
 }
 
+<<<<<<< HEAD
 func (s *host) stopModules() []error {
 	var results []error
 	var lock sync.Mutex
+=======
+func (s *manager) stopModules() map[Module]error {
+	results := map[Module]error{}
+>>>>>>> master
 	wg := sync.WaitGroup{}
 	wg.Add(len(s.moduleWrappers))
 	for _, mod := range s.moduleWrappers {
@@ -369,9 +397,9 @@ func (s *host) stopModules() []error {
 // an exit code
 type ExitCallback func(shutdown Exit) int
 
-func (s *host) WaitForShutdown(exitCallback ExitCallback) {
+func (s *manager) WaitForShutdown(exitCallback ExitCallback) {
 	shutdown := <-s.closeChan
-	s.Logger().Info("Shutting down", "reason", shutdown.Reason)
+	ulog.Logger(_simpleCtx).Info("Shutting down", "reason", shutdown.Reason)
 
 	exit := 0
 	if exitCallback != nil {
@@ -382,13 +410,13 @@ func (s *host) WaitForShutdown(exitCallback ExitCallback) {
 	os.Exit(exit)
 }
 
-func (s *host) transitionState(to State) {
+func (s *manager) transitionState(to State) {
 	s.stateMu.Lock()
 	defer s.stateMu.Unlock()
 
 	// TODO(ai) this isn't used yet
 	if to < s.state {
-		s.Logger().Fatal("Can't down from state", "from", s.state, "to", to, "service", s.Name())
+		ulog.Logger(_simpleCtx).Fatal("Can't down from state", "from", s.state, "to", to, "service", s.Name())
 	}
 
 	for s.state < to {

@@ -104,25 +104,9 @@
 //
 // • Etc...
 //
-// Instantiation
-//
-// Generally, you create a service in one of two ways:
-//
-// • The builder pattern, that is service.WithModules(...).Build()
-//
-// • Calling service.New() directly.
-//
-// The former is generally easier. We use the builder pattern in all examples, but
-// New() is exported in case you'd like extra control over how your service is
-// instantiated.
-//
-//
-// If you **choose to** call service.New(), you need to call
-// AddModules(...) to configure which modules you'd like to serve.
-//
 // Options
 //
-// Both the builder pattern and the New() function take a variadic Optionspattern, allowing you to pick and choose which components you'd like to
+// The service builder takes a variadic Optionspattern, allowing you to pick and choose which components you'd like to
 // override. As a common theme of UberFx, specifying zero options should give
 // you a fully working application.
 //

@@ -45,8 +45,8 @@ type Host interface {
 	RuntimeMetricsCollector() *metrics.RuntimeCollector
 	Observer() Observer
 	Config() config.Provider
+	// TODO: delete me!
 	Resources() map[string]interface{}
-	Logger() ulog.Log
 	Tracer() opentracing.Tracer
 }
 
@@ -96,22 +96,13 @@ func (tc *tracerCore) Tracer() opentracing.Tracer {
 	return tc.tracer
 }
 
-// TODO: remove loggingCore and all logging traces from host.Logger()
-type loggingCore struct {
-	log       ulog.Log
-	logConfig ulog.Configuration
-}
-
-func (lc *loggingCore) Logger() ulog.Log {
-	return lc.log
-}
-
+// Implements Host interface
 type serviceCore struct {
-	loggingCore
 	metricsCore
 	tracerCore
 	authClient     auth.Client
 	configProvider config.Provider
+	logConfig      ulog.Configuration
 	observer       Observer
 	resources      map[string]interface{}
 	roles          []string
@@ -135,7 +126,7 @@ func (s *serviceCore) Description() string {
 }
 
 // ServiceOwner is a string in config.
-// Owner is also a struct that embeds Host
+// Manager is also a struct that embeds Host
 func (s *serviceCore) Owner() string {
 	return s.standardConfig.Owner
 }

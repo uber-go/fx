@@ -45,12 +45,6 @@ func (b *Builder) WithModule(module ModuleCreateFunc, options ...ModuleOption) *
 	return b
 }
 
-// WithModule is a helper to create a service without any options
-func WithModule(module ModuleCreateFunc, options ...ModuleOption) *Builder {
-	b := NewBuilder()
-	return b.WithModule(module, options...)
-}
-
 // WithOptions adds service Options to the builder
 func (b *Builder) WithOptions(options ...Option) *Builder {
 	b.options = append(b.options, options...)
@@ -58,16 +52,15 @@ func (b *Builder) WithOptions(options ...Option) *Builder {
 }
 
 // Build returns the service, or any errors encountered during build phase.
-func (b *Builder) Build() (Owner, error) {
-	svc, err := New(b.options...)
+func (b *Builder) Build() (Manager, error) {
+	svc, err := newManager(b.modules, b.options...)
 	if err != nil {
-		return nil, errors.Wrap(err, "service instantiation failed due to options")
+		return nil, errors.Wrap(err, "service instantiation failed")
 	}
 	for _, module := range b.modules {
-		if err := svc.AddModule(module.moduleCreateFunc, module.options...); err != nil {
+		if err := svc.addModule(module.moduleCreateFunc, module.options...); err != nil {
 			return nil, errors.Wrap(err, "service modules failed to initialize")
 		}
 	}
-
 	return svc, nil
 }

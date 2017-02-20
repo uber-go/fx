@@ -48,26 +48,24 @@ var (
 
 func TestExecutionChain(t *testing.T) {
 	t.Parallel()
-	execChain := newExecutionChain([]Filter{}, nopTransport{})
+	execChain := newExecutionChain([]OutboundMiddleware{}, nopTransport{})
 	resp, err := execChain.RoundTrip(_req().WithContext(context.Background()))
 	assert.NoError(t, err)
 	assert.Equal(t, _respOK, resp)
 }
 
-func TestExecutionChainFilters(t *testing.T) {
-	t.Parallel()
+func TestExecutionChainOutboundMiddleware(t *testing.T) {
 	execChain := newExecutionChain(
-		[]Filter{tracingFilter()}, nopTransport{},
+		[]OutboundMiddleware{tracingOutbound()}, nopTransport{},
 	)
 	resp, err := execChain.RoundTrip(_req())
 	assert.NoError(t, err)
 	assert.Equal(t, _respOK, resp)
 }
 
-func TestExecutionChainFiltersError(t *testing.T) {
-	t.Parallel()
+func TestExecutionChainOutboundMiddlewareError(t *testing.T) {
 	execChain := newExecutionChain(
-		[]Filter{tracingFilter()}, errTransport{},
+		[]OutboundMiddleware{tracingOutbound()}, errTransport{},
 	)
 	resp, err := execChain.RoundTrip(_req().WithContext(context.Background()))
 	assert.Error(t, err)
@@ -87,10 +85,10 @@ func withOpentracingSetup(t *testing.T, registerFunc auth.RegisterFunc, fn func(
 	fn(tracer)
 }
 
-func TestExecutionChainFilters_AuthContextPropagation(t *testing.T) {
+func TestExecutionChainOutboundMiddleware_AuthContextPropagation(t *testing.T) {
 	withOpentracingSetup(t, nil, func(tracer opentracing.Tracer) {
 		execChain := newExecutionChain(
-			[]Filter{authenticationFilter(fakeAuthInfo{_testYaml})}, contextPropagationTransport{t},
+			[]OutboundMiddleware{authenticationOutbound(fakeAuthInfo{_testYaml})}, contextPropagationTransport{t},
 		)
 		span := tracer.StartSpan("test_method")
 		span.SetBaggageItem(auth.ServiceAuth, "test_service")
@@ -102,10 +100,10 @@ func TestExecutionChainFilters_AuthContextPropagation(t *testing.T) {
 	})
 }
 
-func TestExecutionChainFilters_AuthContextPropagationFailure(t *testing.T) {
+func TestExecutionChainOutboundMiddleware_AuthContextPropagationFailure(t *testing.T) {
 	withOpentracingSetup(t, auth.FakeFailureClient, func(tracer opentracing.Tracer) {
 		execChain := newExecutionChain(
-			[]Filter{authenticationFilter(fakeAuthInfo{_testYaml})}, contextPropagationTransport{t},
+			[]OutboundMiddleware{authenticationOutbound(fakeAuthInfo{_testYaml})}, contextPropagationTransport{t},
 		)
 		span := tracer.StartSpan("test_method")
 		span.SetBaggageItem(auth.ServiceAuth, "testService")
@@ -116,13 +114,13 @@ func TestExecutionChainFilters_AuthContextPropagationFailure(t *testing.T) {
 	})
 }
 
-func TestFiltersWithTracerErrors(t *testing.T) {
-	testCases := map[string]Filter{
-		"auth":    authenticationFilter(fakeAuthInfo{_testYaml}),
-		"tracing": tracingFilter(),
+func TestOutboundMiddlewareWithTracerErrors(t *testing.T) {
+	testCases := map[string]OutboundMiddleware{
+		"auth":    authenticationOutbound(fakeAuthInfo{_testYaml}),
+		"tracing": tracingOutbound(),
 	}
 
-	for name, filter := range testCases {
+	for name, middleware := range testCases {
 		op := func(tracer opentracing.Tracer) {
 			tr := &shadowTracer{
 				tracer,
@@ -134,7 +132,7 @@ func TestFiltersWithTracerErrors(t *testing.T) {
 			opentracing.InitGlobalTracer(tr)
 
 			execChain := newExecutionChain(
-				[]Filter{filter}, nopTransport{})
+				[]OutboundMiddleware{middleware}, nopTransport{})
 			span := tracer.StartSpan("test_method")
 			span.SetBaggageItem(auth.ServiceAuth, "testService")
 			sp := &shadowSpan{span, tr}

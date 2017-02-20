@@ -162,6 +162,11 @@ func (cv Value) ChildKeys() []string {
 	return nil
 }
 
+// String prints out underline value in Value with fmt.Srpintf.
+func (cv Value) String() string {
+	return fmt.Sprintf("%v", cv.value)
+}
+
 // TryAsString attempts to return the configuration value as a string
 func (cv Value) TryAsString() (string, bool) {
 	v := cv.Value()
@@ -287,6 +292,7 @@ const (
 	bucketArray     = 1
 	bucketObject    = 2
 	bucketMap       = 3
+	bucketSlice     = 4
 )
 
 func getBucket(t reflect.Type) int {
@@ -304,9 +310,9 @@ func getBucket(t reflect.Type) int {
 	case reflect.Map:
 		return bucketMap
 	case reflect.Array:
-		fallthrough
-	case reflect.Slice:
 		return bucketArray
+	case reflect.Slice:
+		return bucketSlice
 	case reflect.Struct:
 		return bucketObject
 	}
@@ -526,6 +532,8 @@ func (cv Value) valueStruct(key string, target interface{}) (interface{}, error)
 				fieldValue.Set(newTarget)
 			}
 		case bucketArray:
+			// TODO(alsam) fix array type DRI-12.
+		case bucketSlice:
 			destSlice := reflect.MakeSlice(fieldType, 0, 4)
 
 			// start looking for child values.

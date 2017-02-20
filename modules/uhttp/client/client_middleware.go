@@ -36,22 +36,22 @@ type Executor interface {
 	Execute(r *http.Request) (resp *http.Response, err error)
 }
 
-// Filter applies filters on client requests and such as adding tracing to request's context.
-// Filters must call next.Execute() at most once, calling it twice and more
+// OutboundMiddleware applies outbound middleware on client requests and such as adding tracing to request's context.
+// Outbound middleware must call next.Execute() at most once, calling it twice and more
 // will lead to an undefined behavior
-type Filter interface {
-	Apply(r *http.Request, next Executor) (resp *http.Response, err error)
+type OutboundMiddleware interface {
+	Handle(r *http.Request, next Executor) (resp *http.Response, err error)
 }
 
-// FilterFunc is an adaptor to call normal functions to apply filters
-type FilterFunc func(r *http.Request, next Executor) (resp *http.Response, err error)
+// OutboundMiddlewareFunc is an adaptor to call normal functions to apply outbound middleware.
+type OutboundMiddlewareFunc func(r *http.Request, next Executor) (resp *http.Response, err error)
 
-// Apply implements Apply from the Filter interface and simply delegates to the function
-func (f FilterFunc) Apply(r *http.Request, next Executor) (resp *http.Response, err error) {
+// Handle implements Handle from the OutboundMiddleware interface and simply delegates to the function
+func (f OutboundMiddlewareFunc) Handle(r *http.Request, next Executor) (resp *http.Response, err error) {
 	return f(r, next)
 }
 
-func tracingFilter() FilterFunc {
+func tracingOutbound() OutboundMiddlewareFunc {
 	return func(req *http.Request, next Executor) (resp *http.Response, err error) {
 		ctx := req.Context()
 		opName := req.Method
@@ -59,6 +59,8 @@ func tracingFilter() FilterFunc {
 		if s := opentracing.SpanFromContext(ctx); s != nil {
 			parent = s.Context()
 		}
+
+		// TODO(alsam) This makes our client to be not safe to use by multiple go routines.
 		span := opentracing.GlobalTracer().StartSpan(opName, opentracing.ChildOf(parent))
 		ext.SpanKindRPCClient.Set(span)
 		ext.HTTPUrl.Set(span, req.URL.String())
@@ -81,9 +83,9 @@ func tracingFilter() FilterFunc {
 	}
 }
 
-// authenticationFilter on client side calls authenticate, and gets a claim that client is who they say they are
+// authenticationOutbound on client side calls authenticate, and gets a claim that client is who they say they are
 // We only authorize with the claim on server side
-func authenticationFilter(info auth.CreateAuthInfo) FilterFunc {
+func authenticationOutbound(info auth.CreateAuthInfo) OutboundMiddlewareFunc {
 	authClient := auth.Load(info)
 	serviceName := info.Config().Get(config.ServiceNameKey).AsString()
 	return func(req *http.Request, next Executor) (resp *http.Response, err error) {

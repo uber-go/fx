@@ -22,7 +22,6 @@ package service
 
 import (
 	"go.uber.org/fx/config"
-	"go.uber.org/fx/ulog"
 
 	"github.com/opentracing/opentracing-go"
 	"github.com/uber-go/tally"
@@ -35,18 +34,8 @@ type Option func(Host) error
 func WithConfiguration(config config.Provider) Option {
 	return func(svc Host) error {
 		// TODO(ai) verify type assertion is correct
-		svc2 := svc.(*host)
+		svc2 := svc.(*manager)
 		svc2.configProvider = config
-		return nil
-	}
-}
-
-// WithLogger adds ulog to a service host
-func WithLogger(log ulog.Log) Option {
-	return func(svc Host) error {
-		// TODO(ai) verify type assertion is correct
-		svc2 := svc.(*host)
-		svc2.log = log
 		return nil
 	}
 }
@@ -54,7 +43,7 @@ func WithLogger(log ulog.Log) Option {
 // WithMetrics configures a service host with metrics and stats reporter
 func WithMetrics(scope tally.Scope, reporter tally.CachedStatsReporter) Option {
 	return func(svc Host) error {
-		svc2 := svc.(*host)
+		svc2 := svc.(*manager)
 		svc2.metrics = scope
 		svc2.statsReporter = reporter
 		return nil
@@ -64,7 +53,7 @@ func WithMetrics(scope tally.Scope, reporter tally.CachedStatsReporter) Option {
 // WithTracer configures a service host with a tracer
 func WithTracer(tracer opentracing.Tracer) Option {
 	return func(svc Host) error {
-		svc2 := svc.(*host)
+		svc2 := svc.(*manager)
 		svc2.tracer = tracer
 		return nil
 	}
@@ -73,7 +62,7 @@ func WithTracer(tracer opentracing.Tracer) Option {
 // WithObserver configures a service with an instance lifecycle observer
 func WithObserver(observer Observer) Option {
 	return func(svc Host) error {
-		service := svc.(*host)
+		service := svc.(*manager)
 		service.observer = observer
 		service.serviceCore.observer = observer
 		return nil

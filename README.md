@@ -5,14 +5,23 @@
 [![Build Status][ci-img]][ci]
 [![Report Card][report-card-img]][report-card]
 
+UberFx is a flexible, modularized framework for building robust and performant
+services. It takes care of the boilerplate code and lets you focus on your
+application logic.
+
 ## Status
 
-Pre-ALPHA. API Changes are **highly likely**.
+Alpha. Expect minor API changes and bug fixes. (Beta release coming soon)
 
-## Abstract
-
-This framework is a flexible, modularized basis for building robust and
-performant services at Uber with the minimum amount of developer code.
+## What's included
+UberFx builds the following into your service:
+* Configuration, logging, metrics, and tracing setup by default
+* Configuration provider that seamlessly merges static and dynamic config
+* Application-level as well as runtime metrics for effective monitoring
+* Context-aware logging for easy debugging
+* RPC module with Thrift interfaces for microservices
+* HTTP module with intelligent defaults for web applications
+* Task module for executing async tasks durably
 
 ## Examples
 
@@ -23,11 +32,11 @@ To get a feel for what an UberFx service looks like, see our
 
 A service is a container for a set of **modules** and controls their lifecycle.
 A service can have any number of modules, each responsible for a specific type
-of functionality, such as a Kafka message ingestion, exposing an HTTP server, 
+of functionality, such as a Kafka message ingestion, exposing an HTTP server,
 or a set of RPC service endpoints.
 
-The core service is responsible for loading basic configuration and starting 
-and stopping a set of these modules. Each module gets a reference to the 
+The core service is responsible for loading basic configuration and starting
+and stopping a set of these modules. Each module gets a reference to the
 service to
 access standard values such as the service name or basic configuration.
 
@@ -54,6 +63,7 @@ Implemented modules:
 
 * HTTP server
 * TChannel server
+* Async task execution
 
 Planned modules:
 
@@ -63,8 +73,8 @@ Planned modules:
 ### Module Configuration
 
 You give your modules named keys for the purpose of looking up their
-configuration. This naming is arbitrary and only needs to be unique across 
-modules. We do this because it's possible for a service to have multiple 
+configuration. This naming is arbitrary and only needs to be unique across
+modules. We do this because it's possible for a service to have multiple
 modules of the same type, such as multiple Kafka ingesters.
 
 ```yaml

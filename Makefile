@@ -142,6 +142,8 @@ examples:
 	@$(call label,Building examples)
 	@echo
 	$(ECHO_V)$(MAKE) -C examples/keyvalue ECHO_V=$(ECHO_V)
+	$(ECHO_V)go test ./examples/simple
+	$(ECHO_V)go test ./examples/dig
 
 .PHONY: vendor
 vendor:

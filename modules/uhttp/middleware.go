@@ -26,7 +26,6 @@ import (
 
 	"go.uber.org/fx/auth"
 	"go.uber.org/fx/modules/uhttp/internal/stats"
-	"go.uber.org/fx/service"
 	"go.uber.org/fx/ulog"
 
 	"github.com/opentracing/opentracing-go"
@@ -36,32 +35,32 @@ import (
 
 const _panicResponse = "Server Error"
 
-// Filter applies filters on requests or responses such as
-// adding tracing to the context
-type Filter interface {
-	Apply(w http.ResponseWriter, r *http.Request, next http.Handler)
+// InboundMiddleware applies inbound middleware on requests or responses such as
+// adding tracing to the context.
+type InboundMiddleware interface {
+	Handle(w http.ResponseWriter, r *http.Request, next http.Handler)
 }
 
-// FilterFunc is an adaptor to call normal functions to apply filters
-type FilterFunc func(w http.ResponseWriter, r *http.Request, next http.Handler)
+// InboundMiddlewareFunc is an adaptor to call normal functions to apply inbound middleware.
+type InboundMiddlewareFunc func(w http.ResponseWriter, r *http.Request, next http.Handler)
 
-// Apply implements Apply from the Filter interface and simply delegates to the function
-func (f FilterFunc) Apply(w http.ResponseWriter, r *http.Request, next http.Handler) {
+// Handle implements Handle from the InboundMiddleware interface and simply delegates to the function
+func (f InboundMiddlewareFunc) Handle(w http.ResponseWriter, r *http.Request, next http.Handler) {
 	f(w, r, next)
 }
 
-type contextFilter struct {
-	host service.Host
+type contextInbound struct {
+	log ulog.Log
 }
 
-func (f contextFilter) Apply(w http.ResponseWriter, r *http.Request, next http.Handler) {
-	ctx := ulog.NewLogContext(r.Context())
+func (f contextInbound) Handle(w http.ResponseWriter, r *http.Request, next http.Handler) {
+	ctx := ulog.ContextWithLogger(r.Context(), f.log)
 	next.ServeHTTP(w, r.WithContext(ctx))
 }
 
-type tracingServerFilter struct{}
+type tracingInbound struct{}
 
-func (f tracingServerFilter) Apply(w http.ResponseWriter, r *http.Request, next http.Handler) {
+func (f tracingInbound) Handle(w http.ResponseWriter, r *http.Request, next http.Handler) {
 	ctx := r.Context()
 	operationName := r.Method
 	carrier := opentracing.HTTPHeadersCarrier(r.Header)
@@ -75,17 +74,17 @@ func (f tracingServerFilter) Apply(w http.ResponseWriter, r *http.Request, next 
 
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
-	ctx = ulog.WithTracingAware(ctx, span)
+	ctx = ulog.ContextWithTraceLogger(ctx, span)
 
 	next.ServeHTTP(w, r.WithContext(ctx))
 }
 
-// authorizationFilter authorizes services based on configuration
-type authorizationFilter struct {
+// authorizationInbound authorizes services based on configuration
+type authorizationInbound struct {
 	authClient auth.Client
 }
 
-func (f authorizationFilter) Apply(w http.ResponseWriter, r *http.Request, next http.Handler) {
+func (f authorizationInbound) Handle(w http.ResponseWriter, r *http.Request, next http.Handler) {
 	if err := f.authClient.Authorize(r.Context()); err != nil {
 		stats.HTTPAuthFailCounter.Inc(1)
 		ulog.Logger(r.Context()).Error(auth.ErrAuthorization, "error", err)
@@ -95,11 +94,11 @@ func (f authorizationFilter) Apply(w http.ResponseWriter, r *http.Request, next 
 	next.ServeHTTP(w, r)
 }
 
-// panicFilter handles any panics and return an error
-// panic filter should be added at the end of filter chain to catch panics
-type panicFilter struct{}
+// panicInbound handles any panics and return an error
+// panic inbound middleware should be added at the end of middleware chain to catch panics
+type panicInbound struct{}
 
-func (f panicFilter) Apply(w http.ResponseWriter, r *http.Request, next http.Handler) {
+func (f panicInbound) Handle(w http.ResponseWriter, r *http.Request, next http.Handler) {
 	ctx := r.Context()
 	defer func() {
 		if err := recover(); err != nil {
@@ -111,10 +110,10 @@ func (f panicFilter) Apply(w http.ResponseWriter, r *http.Request, next http.Han
 	next.ServeHTTP(w, r)
 }
 
-// metricsFilter adds any default metrics related to HTTP
-type metricsFilter struct{}
+// metricsInbound adds any default metrics related to HTTP
+type metricsInbound struct{}
 
-func (f metricsFilter) Apply(w http.ResponseWriter, r *http.Request, next http.Handler) {
+func (f metricsInbound) Handle(w http.ResponseWriter, r *http.Request, next http.Handler) {
 	stopwatch := stats.HTTPMethodTimer.Timer(r.Method).Start()
 	defer stopwatch.Stop()
 	defer stats.HTTPStatusCountScope.Tagged(map[string]string{stats.TagStatus: w.Header().Get("Status")}).Counter("total").Inc(1)
