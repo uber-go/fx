@@ -183,5 +183,41 @@ func (g *graph) registerConstructor(c interface{}) error {
 	}
 
 	g.nodes[objType] = &n
+
+	// object needs to be part of the graph to properly detect cycles
+	if cycleErr := g.detectCycles(&n); cycleErr != nil {
+		// if the cycle was detected delete from the graph
+		delete(g.nodes, objType)
+		return errors.Wrapf(cycleErr, "unable to register %v", objType)
+	}
+
+	return nil
+}
+
+// When a new constructor is being inserted, detect any present cycles
+func (g *graph) detectCycles(n *funcNode) error {
+	visited := make(map[string]bool)
+	return g.recursiveDetectCycles(n, visited)
+}
+
+// DFS and tracking if same node is visited twice
+func (g *graph) recursiveDetectCycles(n graphNode, visited map[string]bool) error {
+	if visited[n.id()] {
+		return errCycle
+	}
+
+	visited[n.id()] = true
+
+	for _, dep := range n.dependencies() {
+		if node, ok := g.nodes[dep]; ok {
+			if err := g.recursiveDetectCycles(node, visited); err != nil {
+				// TODO(glib): rework the returned error to include the cycle
+				// i.e. Type1 -> Type3 -> Type2 -> Type1
+				// this will likely require `visited` map to be [string]reflect.Type
+				return err
+			}
+		}
+	}
+
 	return nil
 }

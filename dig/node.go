@@ -33,12 +33,21 @@ type graphNode interface {
 
 	// Other things that need to be present before this object can be created
 	dependencies() []interface{}
+
+	// unique identification per node
+	id() string
 }
 
 type node struct {
 	objType     reflect.Type
 	cached      bool
 	cachedValue reflect.Value
+}
+
+func (n node) id() string {
+	// in the future, more than just the type of node is going to be required
+	// for instance, when multiple types are allowed with different names
+	return n.objType.Name()
 }
 
 type objNode struct {
@@ -49,7 +58,7 @@ type objNode struct {
 }
 
 // Return the earlier provided instance
-func (n objNode) value(g *graph) (reflect.Value, error) {
+func (n *objNode) value(g *graph) (reflect.Value, error) {
 	return reflect.ValueOf(n.obj), nil
 }
 
@@ -121,11 +130,7 @@ func (n funcNode) dependencies() []interface{} {
 
 func (n funcNode) String() string {
 	return fmt.Sprintf(
-		"(function) deps: %v, type: %v, constructor: %v, cached: %v, cachedValue: %v",
-		n.deps,
-		n.objType,
-		n.constructor,
-		n.cached,
-		n.cachedValue,
+		"(function) id: %s, deps: %v, type: %v, constructor: %v, cached: %v, cachedValue: %v",
+		n.id(), n.deps, n.objType, n.constructor, n.cached, n.cachedValue,
 	)
 }
