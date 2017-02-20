@@ -81,8 +81,8 @@ type serviceConfig struct {
 	Roles       []string `yaml:"roles"`
 }
 
-// newManager creates a service Manager from a set of module creation functions and options.
-func newManager(modules []ModuleCreateFunc, options ...Option) (Manager, error) {
+// newManager creates a service Manager from a Builder.
+func newManager(builder *Builder) (Manager, error) {
 	svc := &manager{
 		// TODO: get these out of config struct instead
 		moduleWrappers: []*moduleWrapper{},
@@ -98,7 +98,7 @@ func newManager(modules []ModuleCreateFunc, options ...Option) (Manager, error) 
 	}
 
 	// Run the rest of the options
-	for _, opt := range options {
+	for _, opt := range builder.Options {
 		if optionErr := opt(svc); optionErr != nil {
 			return nil, errors.Wrap(optionErr, "option failed to apply")
 		}
@@ -141,8 +141,10 @@ func newManager(modules []ModuleCreateFunc, options ...Option) (Manager, error) 
 
 	svc.Metrics().Counter("boot").Inc(1)
 
-	if err := svc.addModules(modules...); err != nil {
-		return nil, err
+	for _, module := range builder.Modules {
+		if err := svc.addModule(module.moduleCreateFunc, module.options...); err != nil {
+			return nil, err
+		}
 	}
 
 	return svc, nil

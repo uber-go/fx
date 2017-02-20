@@ -60,8 +60,7 @@ var (
 	// that are stored together to create a shared dispatcher.
 	// The YARPC team advised it to be a 'singleton' to control
 	// the lifecycle of all of the in/out bound traffic.
-	_controller        dispatcherController
-	_controllerRunning bool
+	_controller dispatcherController
 )
 
 type registerServiceFunc func(module *YARPCModule)
@@ -211,7 +210,7 @@ func newYARPCModule(
 		moduleInfo: mi,
 		register:   reg,
 	}
-	if err := mi.ConfigValue().PopulateStruct(&module.config); err != nil {
+	if err := mi.Config().Scope("modules").Get(mi.Name()).PopulateStruct(&module.config); err != nil {
 		return nil, errs.Wrap(err, "can't read inbounds")
 	}
 	stats.SetupRPCMetrics(mi.Metrics())
@@ -266,21 +265,13 @@ func (m *YARPCModule) Start() error {
 	if err := _controller.Start(m.Host()); err != nil {
 		return errs.Wrap(err, "unable to start dispatcher")
 	}
-	_dispatcherMu.Lock()
-	_controllerRunning = true
-	_dispatcherMu.Unlock()
 	m.register(m)
-	m.log.Info("Module started")
+	m.Logger().Info("Module started")
 	return nil
 }
 
 // Stop shuts down the YARPC module: stops the dispatcher.
 func (m *YARPCModule) Stop() error {
-	_dispatcherMu.Lock()
-	defer _dispatcherMu.Unlock()
-	if !_controllerRunning {
-		return nil
-	}
 	return _controller.Stop()
 }
 
@@ -316,7 +307,4 @@ func defaultYARPCStarter(dispatcher *yarpc.Dispatcher) error {
 // It should be called after at least one module have been started, otherwise it will be nil.
 func Dispatcher() *yarpc.Dispatcher {
 	return _controller.dispatcher
-}
-
-func stopController() error {
 }

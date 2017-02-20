@@ -32,7 +32,6 @@ import (
 var _setupMu sync.Mutex
 
 // CreateThriftServiceFunc creates a Thrift service from a service host
-// TODO(pedge): pass all module info?
 type CreateThriftServiceFunc func(svc service.Host) ([]transport.Procedure, error)
 
 // ThriftModule creates a Thrift Module from a service func

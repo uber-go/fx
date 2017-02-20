@@ -67,7 +67,6 @@ type Module struct {
 	srv      *http.Server
 	listener net.Listener
 	handlers []RouteHandler
-	listenMu sync.RWMutex
 	mcb      inboundMiddlewareChainBuilder
 }
 
@@ -84,66 +83,49 @@ type Config struct {
 type GetHandlersFunc func(service service.Host) []RouteHandler
 
 // New returns a new HTTP module
-func New(hookup GetHandlersFunc, filters []Filter) service.ModuleCreateFunc {
+func New(hookup GetHandlersFunc) service.ModuleCreateFunc {
 	return func(mi service.ModuleInfo) (service.Module, error) {
-		return newModule(mi, hookup, filters)
+		return newModule(mi, hookup)
 	}
 }
 
 func newModule(
 	mi service.ModuleInfo,
 	getHandlers GetHandlersFunc,
-	options ...modules.Option,
 ) (*Module, error) {
 	// setup config defaults
 	cfg := &Config{
 		Port:    defaultPort,
 		Timeout: defaultTimeout,
 	}
-
-	if mi.Name == "" {
-		mi.Name = "http"
+	if err := mi.Host().Config().Scope("modules").Get(mi.Name()).PopulateStruct(cfg); err != nil {
+		mi.Logger().Error("Error loading http module configuration", "error", err)
 	}
-
-	stats.SetupHTTPMetrics(mi.Host.Metrics())
-
-	handlers := addHealth(getHandlers(mi.Host))
-
-	log := ulog.Logger(context.Background()).With("moduleName", mi.Name)
-
-	// TODO (madhu): Add other middleware - logging, metrics.
 	module := &Module{
-		ModuleBase: *modules.NewModuleBase(mi.Name, mi.Host, []string{}),
+		ModuleInfo: mi,
 		handlers:   handlers,
-		mcb:        defaultInboundMiddlewareChainBuilder(log, mi.Host.AuthClient()),
-	}
-
-	err := module.Host().Config().Get(getConfigKey(mi.Name)).PopulateStruct(cfg)
-	if err != nil {
-		log.Error("Error loading http module configuration", "error", err)
+		mcb:        defaultInboundMiddlewareChainBuilder(mi.Logger(), mi.AuthClient()),
 	}
 	module.config = *cfg
 
-	module.log = log
+	stats.SetupHTTPMetrics(mi.Metrics())
+	handlers := addHealth(getHandlers(mi))
 
-	for _, option := range options {
-		if err := option(&mi); err != nil {
-			module.log.Error("Unable to apply option", "error", err, "option", option)
-			return module, errors.Wrap(err, "unable to apply option to module")
-		}
-	}
-
-	middleware := inboundMiddlewareFromCreateInfo(mi)
+	middleware := inboundMiddlewareFromModuleInfo(mi)
 	module.mcb = module.mcb.AddMiddleware(middleware...)
-
 	return module, nil
+}
+
+// Name returns the default name
+func (m *Module) Name() string {
+	return "http"
 }
 
 // Start begins serving requests over HTTP
 func (m *Module) Start() error {
 	mux := http.NewServeMux()
 	// Do something unrelated to annotations
-	router := NewRouter(m.Host())
+	router := NewRouter(m.ModuleInfo))
 
 	mux.Handle("/", router)
 

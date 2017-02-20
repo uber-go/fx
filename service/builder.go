@@ -33,10 +33,10 @@ type Builder struct {
 	modules []*moduleCreateFuncOptionsPair
 }
 
-// NewBuilder returns a new Builder for instantiating services
-func NewBuilder(options ...Option) *Builder {
+// WithModule is a helper to create a service without any options
+func WithModule(module ModuleCreateFunc, options ...ModuleOption) *Builder {
 	b := &Builder{}
-	return b.WithOptions(options...)
+	return b.WithModule(module, options...)
 }
 
 // WithModule adds the given module to the service
@@ -53,14 +53,9 @@ func (b *Builder) WithOptions(options ...Option) *Builder {
 
 // Build returns the service, or any errors encountered during build phase.
 func (b *Builder) Build() (Manager, error) {
-	svc, err := newManager(b.modules, b.options...)
+	svc, err := newManager(b)
 	if err != nil {
 		return nil, errors.Wrap(err, "service instantiation failed")
-	}
-	for _, module := range b.modules {
-		if err := svc.addModule(module.moduleCreateFunc, module.options...); err != nil {
-			return nil, errors.Wrap(err, "service modules failed to initialize")
-		}
 	}
 	return svc, nil
 }

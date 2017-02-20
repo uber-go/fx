@@ -42,8 +42,6 @@ type Module interface {
 type ModuleInfo interface {
 	Host
 	Items() map[string]interface{}
-	// TODO(pedge)
-	ConfigValue() config.Value
 }
 
 // ModuleOption is a function that configures module creation.
@@ -84,13 +82,11 @@ func WithModuleRole(role string) ModuleOption {
 // it will be passed as the argument to the population function.
 func WithModuleItem(key string, f func(interface{})interface{}) ModuleOption {
 	return func(o *moduleOption) error {
-		value, ok := o.items[key]
-		if ok {
-			value = f(value)
-		} else {
-			value = f(nil)
+		if value, ok := o.items[key]; ok {
+			o.items[key] = f(value)
+			return nil
 		}
-		o.items[key] = value
+		o.items[key] = f(nil)
 		return nil
 	}
 }
@@ -199,8 +195,4 @@ func (mi *moduleInfo) Logger() ulog.Log {
 // TODO(pedge): merge with concept of resources?
 func (mi *moduleInfo) Items() map[string]interface {
 	return mi.items
-}
-
-func (mi *moduleInfo) ConfigValue() config.Value {
-	return mi.Host.Config().Scope("modules").Get(mi.name)
 }

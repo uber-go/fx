@@ -310,14 +310,9 @@ func (s *manager) Stop(reason string, exitCode int) error {
 	return err
 }
 
-<<<<<<< HEAD
-func (s *host) startModules() []error {
+func (s *manager) startModules() []error {
 	var results []error
 	var lock sync.Mutex
-=======
-func (s *manager) startModules() map[Module]error {
-	results := map[Module]error{}
->>>>>>> master
 	wg := sync.WaitGroup{}
 
 	// make sure we wait for all the start
@@ -329,7 +324,6 @@ func (s *manager) startModules() map[Module]error {
 				errC := make(chan err, 1)
 				go func() { errC <- m.Start() }()
 				select {
-<<<<<<< HEAD
 				case err := <-errC:
 					if err != nil {
 						s.Logger().Error("Error received while starting module", "module", m.Name(), "error", startError)
@@ -343,17 +337,6 @@ func (s *manager) startModules() map[Module]error {
 					lock.Lock()
 					results = append(results, fmt.Errorf("module didn't start after %v", defaultStartupWait))
 					lock.Unlock()
-=======
-				case <-readyCh:
-					ulog.Logger(_simpleCtx).Info("Module started up cleanly", "module", m.Name())
-				case <-time.After(defaultStartupWait):
-					results[m] = fmt.Errorf("module didn't start after %v", defaultStartupWait)
-				}
-
-				if startError := <-startResult; startError != nil {
-					ulog.Logger(_simpleCtx).Error("Error received while starting module", "module", m.Name(), "error", startError)
-					results[m] = startError
->>>>>>> master
 				}
 			}
 			wg.Done()
@@ -365,14 +348,9 @@ func (s *manager) startModules() map[Module]error {
 	return results
 }
 
-<<<<<<< HEAD
-func (s *host) stopModules() []error {
+func (s *manager) stopModules() []error {
 	var results []error
 	var lock sync.Mutex
-=======
-func (s *manager) stopModules() map[Module]error {
-	results := map[Module]error{}
->>>>>>> master
 	wg := sync.WaitGroup{}
 	wg.Add(len(s.moduleWrappers))
 	for _, mod := range s.moduleWrappers {
