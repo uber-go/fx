@@ -46,10 +46,10 @@ func ThriftModule(hookup CreateThriftServiceFunc) service.ModuleCreateFunc {
 }
 
 func newYARPCThriftModule(
-	mi service.ModuleCreateInfo,
+	mi service.ModuleInfo,
 	createService CreateThriftServiceFunc,
 ) (*YARPCModule, error) {
-	registrants, err := createService(mi.Host)
+	registrants, err := createService(mi)
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to create YARPC thrift handler")
 	}

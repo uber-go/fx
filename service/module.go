@@ -45,6 +45,7 @@ type Module interface {
 // This can be stored inside the module for use.
 type ModuleInfo interface {
 	Host
+	Logger(context.Context) ulog.Log
 	Items() map[string]interface{}
 }
 
