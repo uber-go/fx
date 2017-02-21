@@ -96,7 +96,7 @@ func newManager(builder *Builder) (Manager, error) {
 	}
 
 	// Run the rest of the options
-	for _, opt := range builder.Options {
+	for _, opt := range builder.options {
 		if optionErr := opt(svc); optionErr != nil {
 			return nil, errors.Wrap(optionErr, "option failed to apply")
 		}
@@ -139,7 +139,7 @@ func newManager(builder *Builder) (Manager, error) {
 
 	svc.Metrics().Counter("boot").Inc(1)
 
-	for _, module := range builder.Modules {
+	for _, module := range builder.modules {
 		if err := svc.addModule(module.moduleCreateFunc, module.options...); err != nil {
 			return nil, err
 		}

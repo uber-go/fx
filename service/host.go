@@ -21,7 +21,6 @@
 package service
 
 import (
-	"context"
 	"fmt"
 	"os"
 	"os/signal"
@@ -66,7 +65,7 @@ func (s *manager) addModuleWrapper(moduleWrapper *moduleWrapper) error {
 	if s.locked {
 		return fmt.Errorf("can't add module: service already started")
 	}
-	s.modulesWrappers = append(s.moduleWrapperss, moduleWrapper)
+	s.moduleWrappers = append(s.moduleWrappers, moduleWrapper)
 	return nil
 }
 
@@ -83,12 +82,6 @@ func (s *manager) supportsRole(roles ...string) bool {
 	return false
 }
 
-func (s *manager) Modules() []Module {
-	mods := make([]Module, len(s.modules))
-	copy(mods, s.modules)
-	return mods
-}
-
 func (s *manager) IsRunning() bool {
 	return s.closeChan != nil
 }
@@ -96,7 +89,7 @@ func (s *manager) IsRunning() bool {
 func (s *manager) OnCriticalError(err error) {
 	shutdown := true
 	if s.observer == nil {
-		ulog.Logger(_simpleCtx).Warn(
+		logger().Warn(
 			"No observer set to handle lifecycle events. Shutting down.",
 			"event", "OnCriticalError",
 		)
@@ -107,7 +100,7 @@ func (s *manager) OnCriticalError(err error) {
 	if shutdown {
 		if ok, err := s.shutdown(err, "", nil); !ok || err != nil {
 			// TODO(ai) verify we flush logs
-			ulog.Logger(_simpleCtx).Info("Problem shutting down module", "success", ok, "error", err)
+			logger().Info("Problem shutting down module", "success", ok, "error", err)
 		}
 	}
 }
@@ -146,8 +139,8 @@ func (s *manager) shutdown(err error, reason string, exitCode *int) (bool, error
 	// Log the module shutdown errors
 	errs := s.stopModules()
 	if len(errs) > 0 {
-		for k, v := range errs {
-			ulog.Logger(_simpleCtx).Error("Failure to shut down module", "name", k.Name(), "error", v.Error())
+		for _, err := range errs {
+			logger().Error("Failure to shut down module", "error", err.Error())
 		}
 	}
 
@@ -159,15 +152,15 @@ func (s *manager) shutdown(err error, reason string, exitCode *int) (bool, error
 	// Stop the metrics reporting
 	if s.metricsCloser != nil {
 		if err = s.metricsCloser.Close(); err != nil {
-			ulog.Logger(_simpleCtx).Error("Failure to close metrics", "error", err)
+			logger().Error("Failure to close metrics", "error", err)
 		}
 	}
 
 	// Flush tracing buffers
 	if s.tracerCloser != nil {
-		ulog.Logger(_simpleCtx).Debug("Closing tracer")
+		logger().Debug("Closing tracer")
 		if err = s.tracerCloser.Close(); err != nil {
-			ulog.Logger(_simpleCtx).Error("Failure to close tracer", "error", err)
+			logger().Error("Failure to close tracer", "error", err)
 		}
 	}
 
@@ -190,9 +183,9 @@ func (s *manager) addModule(module ModuleCreateFunc, options ...ModuleOption) er
 		return err
 	}
 	if !s.supportsRole(moduleWrapper.moduleInfo.Roles()...) {
-		s.Logger().Info(
+		logger().Info(
 			"module will not be added due to selected roles",
-			"roles", mi.Roles,
+			"roles", moduleWrapper.moduleInfo.Roles(),
 		)
 	}
 	return s.addModuleWrapper(moduleWrapper)
@@ -265,9 +258,9 @@ func (s *manager) start() Control {
 
 				s.shutdownMu.Unlock()
 				if _, err := s.shutdown(e, "", nil); err != nil {
-					ulog.Logger(_simpleCtx).Error("Unable to shut down modules", "initialError", e, "shutdownError", err)
+					logger().Error("Unable to shut down modules", "initialError", e, "shutdownError", err)
 				}
-				ulog.Logger(_simpleCtx).Error("Error starting the module", "error", e)
+				logger().Error("Error starting the module", "error", e)
 				// return first service error
 				if serviceErr == nil {
 					serviceErr = e
@@ -296,9 +289,9 @@ func (s *manager) registerSignalHandlers() {
 	signal.Notify(ch, syscall.SIGINT, syscall.SIGTERM)
 	go func() {
 		sig := <-ch
-		ulog.Logger(_simpleCtx).Warn("Received shutdown signal", "signal", sig.String())
+		logger().Warn("Received shutdown signal", "signal", sig.String())
 		if err := s.Stop("Received syscall", 0); err != nil {
-			ulog.Logger(_simpleCtx).Error("Error shutting down", "error", err.Error())
+			logger().Error("Error shutting down", "error", err.Error())
 		}
 	}()
 }
@@ -321,17 +314,17 @@ func (s *manager) startModules() []error {
 	for _, mod := range s.moduleWrappers {
 		go func(m *moduleWrapper) {
 			if !m.IsRunning() {
-				errC := make(chan err, 1)
+				errC := make(chan error, 1)
 				go func() { errC <- m.Start() }()
 				select {
 				case err := <-errC:
 					if err != nil {
-						s.Logger().Error("Error received while starting module", "module", m.Name(), "error", startError)
+						logger().Error("Error received while starting module", "module", m.Name(), "error", err.Error())
 						lock.Lock()
 						results = append(results, err)
 						lock.Unlock()
 					} else {
-						s.Logger().Info("Module started up cleanly", "module", m.Name())
+						logger().Info("Module started up cleanly", "module", m.Name())
 					}
 				case <-time.After(defaultStartupWait):
 					lock.Lock()
@@ -361,7 +354,7 @@ func (s *manager) stopModules() []error {
 				if err := m.Stop(); err != nil {
 					lock.Lock()
 					results = append(results, err)
-					lock.Unlock
+					lock.Unlock()
 				}
 			}
 			wg.Done()
@@ -377,7 +370,7 @@ type ExitCallback func(shutdown Exit) int
 
 func (s *manager) WaitForShutdown(exitCallback ExitCallback) {
 	shutdown := <-s.closeChan
-	ulog.Logger(_simpleCtx).Info("Shutting down", "reason", shutdown.Reason)
+	logger().Info("Shutting down", "reason", shutdown.Reason)
 
 	exit := 0
 	if exitCallback != nil {
@@ -394,7 +387,7 @@ func (s *manager) transitionState(to State) {
 
 	// TODO(ai) this isn't used yet
 	if to < s.state {
-		ulog.Logger(_simpleCtx).Fatal("Can't down from state", "from", s.state, "to", to, "service", s.Name())
+		logger().Fatal("Can't down from state", "from", s.state, "to", to, "service", s.Name())
 	}
 
 	for s.state < to {
@@ -431,7 +424,7 @@ func loadInstanceConfig(cfg config.Provider, key string, instance interface{}) b
 		// Try to load the service config
 		err := cfg.Get(key).PopulateStruct(configValue.Interface())
 		if err != nil {
-			ulog.Logger(context.Background()).Error("Unable to load instance config", "error", err)
+			logger().Error("Unable to load instance config", "error", err)
 			return false
 		}
 		instanceValue := reflect.ValueOf(instance).Elem()
@@ -439,4 +432,8 @@ func loadInstanceConfig(cfg config.Provider, key string, instance interface{}) b
 		return true
 	}
 	return false
+}
+
+func logger() ulog.Log {
+	return ulog.Logger(_simpleCtx)
 }

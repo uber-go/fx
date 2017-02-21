@@ -21,8 +21,12 @@
 package service
 
 import (
+	"context"
 	"fmt"
 	"sync"
+
+	"github.com/uber-go/tally"
+	"go.uber.org/fx/ulog"
 )
 
 // Module is the basic building block of an UberFx service.
@@ -45,14 +49,14 @@ type ModuleInfo interface {
 }
 
 // ModuleOption is a function that configures module creation.
-type ModuleOption func(*moduleOption) error
+type ModuleOption func(*moduleOptions) error
 
 // WithModuleName will override the Module's default name.
 //
 // A WithModuleName option specifed later in the ModuleOptions list will
 // override a WithName option earlier in the list.
 func WithModuleName(name string) ModuleOption {
-	return func(o *moduleOption) error {
+	return func(o *moduleOptions) error {
 		o.name = name
 		return nil
 	}
@@ -62,7 +66,7 @@ func WithModuleName(name string) ModuleOption {
 //
 // If the role was already added, this will be a no-op
 func WithModuleRole(role string) ModuleOption {
-	return func(o *moduleOption) error {
+	return func(o *moduleOptions) error {
 		// TODO(pedge): is this desired? return an error?
 		if role == "" {
 			return nil
@@ -80,8 +84,8 @@ func WithModuleRole(role string) ModuleOption {
 
 // WithModuleItem adds the value to the Module. If there is an existing value,
 // it will be passed as the argument to the population function.
-func WithModuleItem(key string, f func(interface{})interface{}) ModuleOption {
-	return func(o *moduleOption) error {
+func WithModuleItem(key string, f func(interface{}) interface{}) ModuleOption {
+	return func(o *moduleOptions) error {
 		if value, ok := o.items[key]; ok {
 			o.items[key] = f(value)
 			return nil
@@ -94,21 +98,21 @@ func WithModuleItem(key string, f func(interface{})interface{}) ModuleOption {
 // ModuleCreateFunc handles instantiating modules from creation configuration,
 type ModuleCreateFunc func(ModuleInfo) (Module, error)
 
-type moduleOption struct {
+type moduleOptions struct {
 	name  string
 	roles []string
 	items map[string]interface{}
 }
 
 type moduleWrapper struct {
-	module    Module
+	module     Module
 	moduleInfo ModuleInfo
-	name      string
-	isRunning bool
-	lock      sync.RWMutex
+	name       string
+	isRunning  bool
+	lock       sync.RWMutex
 }
 
-func newModuleWrapper(host Host, moduleCreateFunc ModuleCreateFunc, options ...ModuleOptions) (*moduleWrapper, error) {
+func newModuleWrapper(host Host, moduleCreateFunc ModuleCreateFunc, options ...ModuleOption) (*moduleWrapper, error) {
 	moduleOptions := &moduleOptions{}
 	for _, option := range options {
 		if err := option(moduleOptions); err != nil {
@@ -117,7 +121,7 @@ func newModuleWrapper(host Host, moduleCreateFunc ModuleCreateFunc, options ...M
 	}
 	moduleInfo := newModuleInfo(
 		host,
-		moduleOptions.Name,
+		moduleOptions.name,
 		moduleOptions.roles,
 		moduleOptions.items,
 	)
@@ -126,8 +130,9 @@ func newModuleWrapper(host Host, moduleCreateFunc ModuleCreateFunc, options ...M
 		return nil, err
 	}
 	name := module.Name()
-	if moduleOptions.Name != "" {
-		name = moduleOptions.Name
+	if moduleOptions.name != "" {
+		name = moduleOptions.name
+		moduleInfo.name = name
 	}
 	return &moduleWrapper{module: module, moduleInfo: moduleInfo, name: name}, nil
 }
@@ -139,23 +144,23 @@ func (m *moduleWrapper) Name() string {
 func (m *moduleWrapper) Start() error {
 	m.lock.Lock()
 	defer m.lock.Unlock()
-	if m.running {
+	if m.isRunning {
 		return fmt.Errorf("module %s is running", m.name)
 	}
 	if err := m.module.Start(); err != nil {
 		return err
 	}
-	m.running = true
+	m.isRunning = true
 	return nil
 }
 
 func (m *moduleWrapper) Stop() error {
 	m.lock.Lock()
 	defer m.lock.Unlock()
-	if !m.running {
+	if !m.isRunning {
 		return fmt.Errorf("module %s is not running", m.name)
 	}
-	m.running = false
+	m.isRunning = false
 	return m.module.Stop()
 }
 
@@ -169,12 +174,13 @@ func (m *moduleWrapper) IsRunning() bool {
 // under the hood, as oppoed to making all these calls for scoping every time
 type moduleInfo struct {
 	Host
+	name  string
 	roles []string
 	items map[string]interface{}
 }
 
-func newModuleInfo(host Host, roles []string, items map[string]interface{}) *moduleInfo {
-	return &moduleInfo{host, roles, items}
+func newModuleInfo(host Host, name string, roles []string, items map[string]interface{}) *moduleInfo {
+	return &moduleInfo{host, name, roles, items}
 }
 
 // TODO(pedge): what about the Host's roles?
@@ -186,13 +192,12 @@ func (mi *moduleInfo) Metrics() tally.Scope {
 	return mi.Host.Metrics().SubScope("modules").SubScope(mi.name)
 }
 
-func (mi *moduleInfo) Logger() ulog.Log {
-	return mi.Host.Logger().With("module", mi.name)
-
+func (mi *moduleInfo) Logger(ctx context.Context) ulog.Log {
+	return ulog.Logger(ctx).With("module", mi.name)
 }
 
 // TODO(pedge): do we want to copy this?
 // TODO(pedge): merge with concept of resources?
-func (mi *moduleInfo) Items() map[string]interface {
+func (mi *moduleInfo) Items() map[string]interface{} {
 	return mi.items
 }

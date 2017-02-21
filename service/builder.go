@@ -23,7 +23,7 @@ package service
 import "github.com/pkg/errors"
 
 type moduleCreateFuncOptionsPair struct {
-	moduleCreatefunc ModuleCreateFunc
+	moduleCreateFunc ModuleCreateFunc
 	options          []ModuleOption
 }
 
