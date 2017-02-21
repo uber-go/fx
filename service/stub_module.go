@@ -31,15 +31,25 @@ type StubModule struct {
 
 var _ Module = &StubModule{}
 
+// DefaultStubModuleCreateFunc is a ModuleCreateFunc that returns a StubModule with only Host set.
+var DefaultStubModuleCreateFunc = NewStubModuleCreateFunc(StubModule{})
+
+// StubModuleCreateFunc returns a new ModuleCreateFunc for a new StubModule.
+// Host will be overwritten.
+func NewStubModuleCreateFunc(stubModule StubModule) ModuleCreateFunc {
+	return func(moduleInfo ModuleInfo) (Module, error) {
+		stubModule.Host = moduleInfo
+		return &stubModule, nil
+	}
+}
+
 // NewStubModule generates a Module for use in testing
 func NewStubModule(host Host) *StubModule {
 	return &StubModule{Host: host}
 }
 
 // Start mimics startup
-func (s *StubModule) Start() error {
-	return s.StartError
-}
+func (s *StubModule) Start() error { return s.StartError }
 
 // Name returns the name of the module
 func (s *StubModule) Name() string { return s.NameVal }

@@ -47,7 +47,7 @@ func TestThriftModule_OK(t *testing.T) {
 	dale := ThriftModule(okCreate)
 	cfg := []byte(`
 modules:
-  rpc:
+  hello:
     inbounds:
      - tchannel:
          port: 0
@@ -55,19 +55,20 @@ modules:
          port: 0
 `)
 
-	mi, err := service.NewModuleInfo(
+	mi := newModuleInfo(
+		t,
 		testHost{
 			Host:   service.NopHost(),
 			config: config.NewYAMLProviderFromBytes(cfg),
 		},
+		"hello",
 	)
-	require.NoError(t, err)
-
 	goofy, err := chip(mi)
 	require.NoError(t, err)
 	assert.NotNil(t, goofy)
+	assert.Equal(t, "hello", goofy.(*YARPCModule).moduleInfo.Name())
 
-	gopher, err := dale(mih(t))
+	gopher, err := dale(mih(t, "hello"))
 	require.NoError(t, err)
 	assert.NotNil(t, gopher)
 
@@ -77,23 +78,23 @@ modules:
 
 func TestThrfitModule_Error(t *testing.T) {
 	modCreate := ThriftModule(badCreateService)
-	mod, err := modCreate(mih(t))
+	mod, err := modCreate(mih(t, "hello"))
 	assert.Error(t, err)
 	assert.Nil(t, mod)
 }
 
 func testInitRunModule(t *testing.T, mod service.Module) {
+	assert.NoError(t, mod.Start())
 	assert.NoError(t, mod.Stop())
-	err := mod.Start()
-	defer func() {
-		assert.NoError(t, mod.Stop())
-	}()
-	assert.NoError(t, err)
-	assert.Error(t, mod.Start())
 }
 
-func mih(t *testing.T) service.ModuleInfo {
-	mi, err := service.NewModuleInfo(service.NopHost())
+func mih(t *testing.T, moduleName string) service.ModuleInfo {
+	return newModuleInfo(t, service.NopHost(), moduleName)
+}
+
+func newModuleInfo(t *testing.T, host service.Host, moduleName string) service.ModuleInfo {
+	// need to add name since we are not fully instantiating ModuleInfo
+	mi, err := service.NewModuleInfo(host, service.WithModuleName(moduleName))
 	require.NoError(t, err)
 	return mi
 }

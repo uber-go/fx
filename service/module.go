@@ -44,6 +44,8 @@ type Module interface {
 // ModuleInfo is the information passed to a Module on creation.
 // This can be stored inside the module for use.
 type ModuleInfo interface {
+	// Name: If no name specified using WithModuleName, this will be "" when passed to
+	// a ModuleCreateFunc, and will be module.Name() after registration.
 	Host
 	Logger(context.Context) ulog.Log
 	Items() map[string]interface{}
@@ -110,6 +112,10 @@ type moduleOptions struct {
 	items map[string]interface{}
 }
 
+func newModuleOptions() *moduleOptions {
+	return &moduleOptions{"", nil, make(map[string]interface{})}
+}
+
 type moduleWrapper struct {
 	module     Module
 	moduleInfo *moduleInfo
@@ -118,6 +124,9 @@ type moduleWrapper struct {
 }
 
 func newModuleWrapper(host Host, moduleCreateFunc ModuleCreateFunc, options ...ModuleOption) (*moduleWrapper, error) {
+	if moduleCreateFunc == nil {
+		return nil, nil
+	}
 	moduleInfo, err := newModuleInfo(host, options...)
 	if err != nil {
 		return nil, err
@@ -125,6 +134,9 @@ func newModuleWrapper(host Host, moduleCreateFunc ModuleCreateFunc, options ...M
 	module, err := moduleCreateFunc(moduleInfo)
 	if err != nil {
 		return nil, err
+	}
+	if module == nil {
+		return nil, nil
 	}
 	if moduleInfo.name == "" {
 		moduleInfo.name = module.Name()
@@ -175,7 +187,7 @@ type moduleInfo struct {
 }
 
 func newModuleInfo(host Host, options ...ModuleOption) (*moduleInfo, error) {
-	moduleOptions := &moduleOptions{}
+	moduleOptions := newModuleOptions()
 	for _, option := range options {
 		if err := option(moduleOptions); err != nil {
 			return nil, err
@@ -187,6 +199,10 @@ func newModuleInfo(host Host, options ...ModuleOption) (*moduleInfo, error) {
 		moduleOptions.roles,
 		moduleOptions.items,
 	}, nil
+}
+
+func (mi *moduleInfo) Name() string {
+	return mi.name
 }
 
 // TODO(pedge): what about the Host's roles?

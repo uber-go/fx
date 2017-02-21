@@ -30,6 +30,7 @@ import (
 
 	"go.uber.org/fx/modules/uhttp/internal/stats"
 	"go.uber.org/fx/service"
+	"go.uber.org/fx/ulog"
 
 	"github.com/pkg/errors"
 )
@@ -90,12 +91,16 @@ func newModule(
 	mi service.ModuleInfo,
 	getHandlers GetHandlersFunc,
 ) (*Module, error) {
+	name := mi.Name()
+	if name == "" {
+		name = "http"
+	}
 	// setup config defaults
 	cfg := Config{
 		Port:    defaultPort,
 		Timeout: defaultTimeout,
 	}
-	if err := mi.Config().Scope("modules").Get(mi.Name()).PopulateStruct(&cfg); err != nil {
+	if err := mi.Config().Scope("modules").Get(name).PopulateStruct(&cfg); err != nil {
 		mi.Logger(context.Background()).Error("Error loading http module configuration", "error", err)
 	}
 	module := &Module{
@@ -103,7 +108,7 @@ func newModule(
 		handlers:   addHealth(getHandlers(mi)),
 		// TODO(pedge): issue with module name here, we will register this logger
 		// before any naming overrides can happen in the service package
-		mcb:    defaultInboundMiddlewareChainBuilder(mi.Logger(context.Background()), mi.AuthClient()),
+		mcb:    defaultInboundMiddlewareChainBuilder(ulog.Logger(context.Background()).With("module", name), mi.AuthClient()),
 		config: cfg,
 	}
 	stats.SetupHTTPMetrics(mi.Metrics())

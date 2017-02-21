@@ -62,9 +62,6 @@ var _ Host = &manager{}
 var _ Manager = &manager{}
 
 func (s *manager) addModuleWrapper(moduleWrapper *moduleWrapper) error {
-	if s.locked {
-		return fmt.Errorf("can't add module: service already started")
-	}
 	s.moduleWrappers = append(s.moduleWrappers, moduleWrapper)
 	return nil
 }
@@ -178,9 +175,15 @@ func (s *manager) shutdown(err error, reason string, exitCode *int) (bool, error
 }
 
 func (s *manager) addModule(module ModuleCreateFunc, options ...ModuleOption) error {
+	if s.locked {
+		return fmt.Errorf("can't add module: service already started")
+	}
 	moduleWrapper, err := newModuleWrapper(s, module, options...)
 	if err != nil {
 		return err
+	}
+	if moduleWrapper == nil {
+		return nil
 	}
 	if !s.supportsRole(moduleWrapper.moduleInfo.Roles()...) {
 		logger().Info(

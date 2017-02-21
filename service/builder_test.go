@@ -30,14 +30,14 @@ import (
 )
 
 func TestWithModules_OK(t *testing.T) {
-	_, err := WithModules(nopModule).WithOptions(
+	_, err := WithModule(nopModule).WithOptions(
 		WithConfiguration(StaticAppData(nil)),
 	).Build()
 	assert.NoError(t, err)
 }
 
 func TestWithModules_Err(t *testing.T) {
-	_, err := WithModules(errModule).WithOptions(
+	_, err := WithModule(errModule).WithOptions(
 		WithConfiguration(StaticAppData(nil)),
 	).Build()
 	assert.Error(t, err)
@@ -45,16 +45,16 @@ func TestWithModules_Err(t *testing.T) {
 
 func TestWithModules_SkipsModulesBadInit(t *testing.T) {
 	empty := ""
-	_, err := WithModules(nopModule).WithOptions(
+	_, err := WithModule(nopModule).WithOptions(
 		WithConfiguration(StaticAppData(&empty)),
 	).Build()
 	assert.Error(t, err, "Expected service name to be provided")
 }
 
-func nopModule(_ ModuleCreateInfo) ([]Module, error) {
+func nopModule(_ ModuleInfo) (Module, error) {
 	return nil, nil
 }
 
-func errModule(_ ModuleCreateInfo) ([]Module, error) {
+func errModule(_ ModuleInfo) (Module, error) {
 	return nil, errors.New("intentional module creation failure")
 }

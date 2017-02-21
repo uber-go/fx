@@ -254,9 +254,9 @@ func TestAddModule_Locked(t *testing.T) {
 
 func TestAddModule_NotLocked(t *testing.T) {
 	sh := &manager{}
-	mod := NewStubModule(sh)
-	assert.NoError(t, sh.addModule(mod))
-	assert.Equal(t, sh, mod.Host)
+	require.NoError(t, sh.addModule(DefaultStubModuleCreateFunc))
+	require.Len(t, sh.moduleWrappers, 1)
+	require.Equal(t, sh, sh.moduleWrappers[0].module.(*StubModule).Host.(*moduleInfo).Host)
 }
 
 func TestStartStopRegressionDeadlock(t *testing.T) {
@@ -272,8 +272,7 @@ func TestStartStopRegressionDeadlock(t *testing.T) {
 
 func TestStartModule_NoErrors(t *testing.T) {
 	s := makeHost()
-	mod := NewStubModule(s)
-	require.NoError(t, s.addModule(mod))
+	require.NoError(t, s.addModule(DefaultStubModuleCreateFunc))
 
 	control := s.StartAsync()
 	go func() {
@@ -285,15 +284,14 @@ func TestStartModule_NoErrors(t *testing.T) {
 	}()
 
 	assert.NoError(t, control.ServiceError)
-	assert.True(t, mod.IsRunning())
 	assert.Equal(t, s.state, Running)
 }
 
 func TestStartHost_WithErrors(t *testing.T) {
 	s := makeHost()
-	mod := NewStubModule(s)
-	mod.StartError = errors.New("can't start this")
-	require.NoError(t, s.addModule(mod))
+	require.NoError(t, s.addModule(NewStubModuleCreateFunc(StubModule{
+		StartError: errors.New("can't start this"),
+	})))
 
 	control := s.StartAsync()
 	go func() {

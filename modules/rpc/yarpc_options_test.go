@@ -39,5 +39,5 @@ func TestWithInboundMiddleware_OK(t *testing.T) {
 func TestWithOnewayInboundMiddleware_OK(t *testing.T) {
 	mc, err := service.NewModuleInfo(nil, WithOnewayInboundMiddleware(middleware.NopOnewayInbound))
 	require.NoError(t, err)
-	assert.Equal(t, 1, len(inboundMiddlewareFromModuleInfo(mc)))
+	assert.Equal(t, 1, len(onewayInboundMiddlewareFromModuleInfo(mc)))
 }

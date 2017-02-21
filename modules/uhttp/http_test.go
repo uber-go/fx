@@ -29,7 +29,6 @@ import (
 	"testing"
 	"time"
 
-	"go.uber.org/fx/modules/uhttp/internal/stats"
 	"go.uber.org/fx/service"
 	. "go.uber.org/fx/service/testutils"
 	. "go.uber.org/fx/testutils"
@@ -54,6 +53,7 @@ func TestHTTPModule_WithInboundMiddleware(t *testing.T) {
 		t,
 		registerPanic,
 		[]service.ModuleOption{WithInboundMiddleware(fakeInbound())},
+		"hello",
 		false,
 		func(m *Module) {
 			assert.NotNil(t, m)
@@ -62,7 +62,7 @@ func TestHTTPModule_WithInboundMiddleware(t *testing.T) {
 				assert.NoError(t, err)
 				assert.Contains(t, string(body), "inbound middleware is executed")
 			})
-			verifyMetrics(t, m.Host().Metrics())
+			verifyMetrics(t, m.Metrics())
 		})
 }
 
@@ -71,6 +71,7 @@ func TestHTTPModule_WithUserPanicInboundMiddleware(t *testing.T) {
 		t,
 		registerTracerCheckHandler,
 		[]service.ModuleOption{WithInboundMiddleware(userPanicInbound())},
+		"hello",
 		false,
 		func(m *Module) {
 			assert.NotNil(t, m)
@@ -81,7 +82,7 @@ func TestHTTPModule_WithUserPanicInboundMiddleware(t *testing.T) {
 }
 
 func TestHTTPModule_Panic_OK(t *testing.T) {
-	withModule(t, registerPanic, nil, false, func(m *Module) {
+	withModule(t, registerPanic, nil, "hello", false, func(m *Module) {
 		assert.NotNil(t, m)
 		makeRequest(m, "GET", "/", nil, func(r *http.Response) {
 			assert.Equal(t, http.StatusInternalServerError, r.StatusCode, "Expected 500 with panic wrapper")
@@ -90,7 +91,7 @@ func TestHTTPModule_Panic_OK(t *testing.T) {
 }
 
 func TestHTTPModule_Tracer(t *testing.T) {
-	withModule(t, registerTracerCheckHandler, nil, false, func(m *Module) {
+	withModule(t, registerTracerCheckHandler, nil, "hello", false, func(m *Module) {
 		assert.NotNil(t, m)
 		makeRequest(m, "GET", "/", nil, func(r *http.Response) {
 			assert.Equal(t, http.StatusOK, r.StatusCode, "Expected 200 with tracer check")
@@ -99,13 +100,13 @@ func TestHTTPModule_Tracer(t *testing.T) {
 }
 
 func TestHTTPModule_StartsAndStops(t *testing.T) {
-	withModule(t, registerPanic, nil, false, func(m *Module) {
-		assert.True(t, m.IsRunning(), "Start should be successful")
+	withModule(t, registerPanic, nil, "hello", false, func(m *Module) {
+		assert.NotNil(t, m.listener, "Start should be successful")
 	})
 }
 
 func TestBuiltinHealth_OK(t *testing.T) {
-	withModule(t, registerNothing, nil, false, func(m *Module) {
+	withModule(t, registerNothing, nil, "hello", false, func(m *Module) {
 		assert.NotNil(t, m)
 		makeRequest(m, "GET", "/health", nil, func(r *http.Response) {
 			assert.Equal(t, http.StatusOK, r.StatusCode, "Expected 200 with default health handler")
@@ -114,7 +115,7 @@ func TestBuiltinHealth_OK(t *testing.T) {
 }
 
 func TestOverrideHealth_OK(t *testing.T) {
-	withModule(t, registerCustomHealth, nil, false, func(m *Module) {
+	withModule(t, registerCustomHealth, nil, "hello", false, func(m *Module) {
 		assert.NotNil(t, m)
 		makeRequest(m, "GET", "/health", nil, func(r *http.Response) {
 			assert.Equal(t, http.StatusOK, r.StatusCode, "Expected 200 with default health handler")
@@ -126,7 +127,7 @@ func TestOverrideHealth_OK(t *testing.T) {
 }
 
 func TestPProf_Registered(t *testing.T) {
-	withModule(t, registerNothing, nil, false, func(m *Module) {
+	withModule(t, registerNothing, nil, "hello", false, func(m *Module) {
 		assert.NotNil(t, m)
 		makeRequest(m, "GET", "/debug/pprof", nil, func(r *http.Response) {
 			assert.Equal(t, http.StatusOK, r.StatusCode, "Expected 200 from pprof handler")
@@ -144,12 +145,18 @@ func withModule(
 	t testing.TB,
 	hookup GetHandlersFunc,
 	moduleOptions []service.ModuleOption,
+	moduleName string,
 	expectError bool,
 	fn func(*Module),
 ) {
-	mi, err := service.NewModuleInfo(service.NopHost(), moduleOptions...)
+	mi, err := service.NewModuleInfo(
+		service.NopHost(),
+		append(
+			[]service.ModuleOption{service.WithModuleName(moduleName)},
+			moduleOptions...,
+		)...,
+	)
 	require.NoError(t, err)
-	stats.SetupHTTPMetrics(mi.Host.Metrics())
 	mod, err := newModule(mi, hookup)
 	if expectError {
 		require.Error(t, err, "Expected error instantiating module")
@@ -242,6 +249,8 @@ func verifyMetrics(t *testing.T, scope tally.Scope) {
 	timers := snapshot.Timers()
 	counters := snapshot.Counters()
 
+	require.NotNil(t, timers["GET"])
 	assert.NotNil(t, timers["GET"].Values())
+	require.NotNil(t, counters["fail"])
 	assert.NotNil(t, counters["fail"].Value())
 }

@@ -33,161 +33,38 @@ func TestWithInboundMiddleware(t *testing.T) {
 	fakeInbound2 := fakeInbound()
 	tests := []struct {
 		desc   string
-		mi     service.ModuleCreateInfo
-		input  []InboundMiddleware
+		input  []service.ModuleOption
 		expect []InboundMiddleware
 	}{
 		{
 			desc:   "TestWithOneInboundMiddleware",
-			mi:     service.ModuleCreateInfo{},
-			input:  []InboundMiddleware{fakeInbound1},
+			input:  []service.ModuleOption{WithInboundMiddleware(fakeInbound1)},
 			expect: []InboundMiddleware{fakeInbound1},
 		},
 		{
 			desc:   "TestWithTwoInboundMiddleware",
-			mi:     service.ModuleCreateInfo{},
-			input:  []InboundMiddleware{fakeInbound1, fakeInbound2},
+			input:  []service.ModuleOption{WithInboundMiddleware(fakeInbound1, fakeInbound2)},
 			expect: []InboundMiddleware{fakeInbound1, fakeInbound2},
 		},
-		{
-			desc: "TestHasOneWithOneInboundMiddleware",
-			mi: service.ModuleCreateInfo{
-				Items: map[string]interface{}{
-					_middlewareKey: []InboundMiddleware{fakeInbound1},
-				},
-			},
-			input:  []InboundMiddleware{fakeInbound2},
-			expect: []InboundMiddleware{fakeInbound1, fakeInbound2},
-		},
-		{
-			desc: "TestHasOneWithNilInboundMiddleware",
-			mi: service.ModuleCreateInfo{
-				Items: map[string]interface{}{
-					_middlewareKey: []InboundMiddleware{fakeInbound1},
-				},
-			},
-			input:  nil,
-			expect: []InboundMiddleware{fakeInbound1},
-		},
-	}
-
-	for _, tt := range tests {
-		tt := tt
-		t.Run(tt.desc, func(t *testing.T) {
-			t.Parallel()
-			opt := WithInboundMiddleware(tt.input...)
-			assert.NoError(t, opt(&tt.mi))
-			assert.Equal(t, len(tt.expect), len(inboundMiddlewareFromCreateInfo(tt.mi)))
-		})
-	}
-}
-
-func TestWithInboundMiddlewareTwice(t *testing.T) {
-	fakeInbound1 := fakeInbound()
-	fakeInbound2 := fakeInbound()
-	tests := []struct {
-		desc   string
-		mi     service.ModuleCreateInfo
-		input  []InboundMiddleware
-		expect []InboundMiddleware
-	}{
 		{
 			desc:   "TestWithOneInboundMiddlewareTwice",
-			mi:     service.ModuleCreateInfo{},
-			input:  []InboundMiddleware{fakeInbound1},
+			input:  []service.ModuleOption{WithInboundMiddleware(fakeInbound1), WithInboundMiddleware(fakeInbound1)},
 			expect: []InboundMiddleware{fakeInbound1, fakeInbound1},
 		},
 		{
 			desc:   "TestWithTwoInboundMiddlewareTwice",
-			mi:     service.ModuleCreateInfo{},
-			input:  []InboundMiddleware{fakeInbound1, fakeInbound2},
+			input:  []service.ModuleOption{WithInboundMiddleware(fakeInbound1, fakeInbound2), WithInboundMiddleware(fakeInbound1, fakeInbound2)},
 			expect: []InboundMiddleware{fakeInbound1, fakeInbound2, fakeInbound1, fakeInbound2},
 		},
-		{
-			desc: "TestHasOneWithOneInboundMiddlewareTwice",
-			mi: service.ModuleCreateInfo{
-				Items: map[string]interface{}{
-					_middlewareKey: []InboundMiddleware{fakeInbound1},
-				},
-			},
-			input:  []InboundMiddleware{fakeInbound2},
-			expect: []InboundMiddleware{fakeInbound1, fakeInbound2, fakeInbound2},
-		},
-		{
-			desc: "TestHasOneWithNilInboundMiddlewareTwice",
-			mi: service.ModuleCreateInfo{
-				Items: map[string]interface{}{
-					_middlewareKey: []InboundMiddleware{fakeInbound1},
-				},
-			},
-			input:  nil,
-			expect: []InboundMiddleware{fakeInbound1},
-		},
 	}
 
 	for _, tt := range tests {
 		tt := tt
 		t.Run(tt.desc, func(t *testing.T) {
 			t.Parallel()
-			opt := WithInboundMiddleware(tt.input...)
-			assert.NoError(t, opt(&tt.mi))
-
-			opt = WithInboundMiddleware(tt.input...)
-			assert.NoError(t, opt(&tt.mi))
-
-			assert.Equal(t, len(tt.expect), len(inboundMiddlewareFromCreateInfo(tt.mi)))
-		})
-	}
-}
-
-func TestInboundMiddlewareFromCreateInfo(t *testing.T) {
-	fakeInbound1 := fakeInbound()
-	fakeInbound2 := fakeInbound()
-	tests := []struct {
-		desc       string
-		mi         service.ModuleCreateInfo
-		middleware []InboundMiddleware
-	}{
-		{
-			desc:       "TestEmptyItems",
-			mi:         service.ModuleCreateInfo{},
-			middleware: nil,
-		},
-		{
-			desc: "TestSometingElseInItems",
-			mi: service.ModuleCreateInfo{
-				Items: map[string]interface{}{
-					"somethingElse": []InboundMiddleware{fakeInbound1},
-				},
-			},
-			middleware: nil,
-		},
-		{
-			desc: "TestOneInboundMiddlewareInItems",
-			mi: service.ModuleCreateInfo{
-				Items: map[string]interface{}{
-					_middlewareKey: []InboundMiddleware{fakeInbound1},
-				},
-			},
-			middleware: []InboundMiddleware{fakeInbound1},
-		},
-		{
-			desc: "TestTwoInboundMiddlewareInItems",
-			mi: service.ModuleCreateInfo{
-				Items: map[string]interface{}{
-					_middlewareKey: []InboundMiddleware{fakeInbound1, fakeInbound2},
-				},
-			},
-			middleware: []InboundMiddleware{fakeInbound1, fakeInbound2},
-		},
-	}
-
-	for _, tt := range tests {
-		tt := tt
-		t.Run(tt.desc, func(t *testing.T) {
-			t.Parallel()
-			fs := inboundMiddlewareFromCreateInfo(tt.mi)
-			assert.Equal(t, len(tt.middleware), len(fs))
+			mi, err := service.NewModuleInfo(nil, tt.input...)
+			assert.NoError(t, err)
+			assert.Equal(t, len(tt.expect), len(inboundMiddlewareFromModuleInfo(mi)))
 		})
 	}
 }
