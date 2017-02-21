@@ -26,6 +26,7 @@ import (
 	"net"
 	"net/http"
 	_ "net/http/pprof" // for automatic pprof
+	"sync"
 	"time"
 
 	"go.uber.org/fx/modules/uhttp/internal/stats"
@@ -65,6 +66,7 @@ type Module struct {
 	listener net.Listener
 	handlers []RouteHandler
 	mcb      inboundMiddlewareChainBuilder
+	lock     sync.RWMutex
 }
 
 var _ service.Module = &Module{}
@@ -138,8 +140,11 @@ func (m *Module) Start() error {
 	m.listener = listener
 	m.srv = &http.Server{Handler: mux}
 	go func() {
+		m.lock.RLock()
+		listener := m.listener
+		m.lock.RUnlock()
 		// TODO(pedge): what to do about error?
-		if err := m.srv.Serve(m.listener); err != nil {
+		if err := m.srv.Serve(listener); err != nil {
 			m.Logger(context.Background()).Error("HTTP Serve error", "error", err)
 		}
 	}()
@@ -148,6 +153,8 @@ func (m *Module) Start() error {
 
 // Stop shuts down an HTTP module
 func (m *Module) Stop() error {
+	m.lock.Lock()
+	defer m.lock.Unlock()
 	var err error
 	if m.listener != nil {
 		// TODO: Change to use https://tip.golang.org/pkg/net/http/#Server.Shutdown
