@@ -24,9 +24,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strconv"
 	"sync"
 
-	"go.uber.org/fx/dig"
 	"go.uber.org/fx/modules"
 	"go.uber.org/fx/modules/rpc/internal/stats"
 	"go.uber.org/fx/service"
@@ -43,14 +43,17 @@ import (
 // YARPCModule is an implementation of a core RPC module using YARPC.
 // All the YARPC modules share the same dispatcher and middleware.
 // Dispatcher will start when any created module calls Start().
+// The YARPC team advised dispatcher to be a 'singleton' to control
+// the lifecycle of all of the in/out bound traffic, so we will
+// register it in a dig.Graph provided with options/default graph.
 type YARPCModule struct {
 	modules.ModuleBase
-	register  registerServiceFunc
-	config    yarpcConfig
-	log       ulog.Log
-	stateMu   sync.RWMutex
-	isRunning bool
-	di        dig.Graph
+	register   registerServiceFunc
+	config     yarpcConfig
+	log        ulog.Log
+	stateMu    sync.RWMutex
+	isRunning  bool
+	controller *dispatcherController
 }
 
 var (
@@ -82,10 +85,27 @@ type yarpcConfig struct {
 }
 
 // Inbound is a union that configures how to configure a single inbound.
-// TODO(alsam) write a formatter to print ports instead of addresses.
 type Inbound struct {
 	TChannel *Address
 	HTTP     *Address
+}
+
+func (i *Inbound) String() string {
+	if i == nil {
+		return ""
+	}
+
+	http := "none"
+	if i.HTTP != nil {
+		http = strconv.Itoa(i.HTTP.Port)
+	}
+
+	tchannel := "none"
+	if i.TChannel != nil {
+		tchannel = strconv.Itoa(i.TChannel.Port)
+	}
+
+	return fmt.Sprintf("Inbound:{HTTP: %s; TChannel: %s}", http, tchannel)
 }
 
 // Address is a struct that have a required port for tchannel/http transports.
@@ -97,8 +117,6 @@ type Address struct {
 // Stores a collection of all modules configs with a shared dispatcher
 // that are safe to call from multiple go routines. All the configs must
 // share the same AdvertiseName and represent a single service.
-// The YARPC team advised it to be a 'singleton' to control
-// the lifecycle of all of the in/out bound traffic.
 type dispatcherController struct {
 	// sync configs
 	sync.RWMutex
@@ -110,7 +128,7 @@ type dispatcherController struct {
 	startError error
 
 	configs    []*yarpcConfig
-	dispatcher *yarpc.Dispatcher
+	dispatcher yarpc.Dispatcher
 }
 
 // Adds the config to the controller
@@ -154,12 +172,14 @@ func (c *dispatcherController) Start(host service.Host) error {
 
 		_dispatcherMu.Lock()
 		defer _dispatcherMu.Unlock()
-		if c.dispatcher, err = _dispatcherFn(host, cfg); err != nil {
+		var d *yarpc.Dispatcher
+		if d, err = _dispatcherFn(host, cfg); err != nil {
 			c.startError = err
 			return
 		}
 
-		c.startError = _starterFn(c.dispatcher)
+		c.dispatcher = *d
+		c.startError = _starterFn(&c.dispatcher)
 	})
 
 	return c.startError
@@ -248,21 +268,25 @@ func newYARPCModule(
 	module.config.inboundMiddleware = inboundMiddlewareFromCreateInfo(mi)
 	module.config.onewayInboundMiddleware = onewayInboundMiddlewareFromCreateInfo(mi)
 
-	module.di = graphFromCreateInfo(mi)
-	var controller *dispatcherController
+	di := graphFromCreateInfo(mi)
 
 	// Try to resolve a controller first
 	// TODO(alsam) use dig options when available.
-	if err := module.di.Resolve(&controller); err != nil {
+	if err := di.Resolve(&module.controller); err != nil {
 
 		// Try to register it then
-		controller = &dispatcherController{}
-		if errCr := module.di.Register(controller); errCr != nil {
+		module.controller = &dispatcherController{}
+		if errCr := di.Register(module.controller); errCr != nil {
 			return nil, errs.Wrap(errCr, "can't register a dispatcher controller")
+		}
+
+		// Register dispatcher
+		if err := di.Register(&module.controller.dispatcher); err != nil {
+			return nil, errs.Wrap(err, "unable to register the dispatcher")
 		}
 	}
 
-	controller.addConfig(module.config)
+	module.controller.addConfig(module.config)
 
 	module.log.Info("Module successfuly created", "inbounds", module.config.Inbounds)
 
@@ -306,22 +330,9 @@ func (m *YARPCModule) Start(readyCh chan<- struct{}) <-chan error {
 	m.stateMu.Lock()
 	defer m.stateMu.Unlock()
 
-	// Resolve the controller
-	var controller *dispatcherController
-	if err := m.di.Resolve(&controller); err != nil {
-		ret <- errs.Wrap(err, "unable to resolve dispatcher controller")
-		return ret
-	}
-
 	// TODO(alsam) allow services to advertise with a name separate from the host name.
-	if err := controller.Start(m.Host()); err != nil {
+	if err := m.controller.Start(m.Host()); err != nil {
 		ret <- errs.Wrap(err, "unable to start dispatcher")
-		return ret
-	}
-
-	// Register dispatcher
-	if err := m.di.Register(controller.dispatcher); err != nil {
-		ret <- errs.Wrap(err, "unable to register the dispatcher")
 		return ret
 	}
 
@@ -343,13 +354,8 @@ func (m *YARPCModule) Stop() error {
 	m.stateMu.Lock()
 	defer m.stateMu.Unlock()
 
-	var controller *dispatcherController
-	if err := m.di.Resolve(&controller); err != nil {
-		return errs.Wrap(err, "unable to resolve dispatcher controller")
-	}
-
 	m.isRunning = false
-	return controller.Stop()
+	return m.controller.Stop()
 }
 
 // IsRunning returns whether a module is running

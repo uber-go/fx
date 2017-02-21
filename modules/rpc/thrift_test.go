@@ -80,8 +80,43 @@ modules:
 	// Dispatcher must be resolved in the default graph
 	var dispatcher *yarpc.Dispatcher
 	assert.NoError(t, dig.Resolve(&dispatcher))
-	assert.NotEmpty(t, dispatcher)
+	assert.Equal(t, 2, len(dispatcher.Inbounds()))
+}
 
+func TestThriftModuleSeparateGraph_OK(t *testing.T) {
+	t.Parallel()
+	di := dig.New()
+	snowflake := ThriftModule(okCreate, modules.WithRoles("rescue"), withGraph(di))
+
+	cfg := []byte(`
+modules:
+  rpc:
+    inbounds:
+     - tchannel:
+         port: 0
+     - http:
+         port: 0
+`)
+
+	mci := service.ModuleCreateInfo{
+		Name: "RPC",
+		Host: testHost{
+			Host:   service.NopHost(),
+			config: config.NewYAMLProviderFromBytes(cfg),
+		},
+		Items: make(map[string]interface{}),
+	}
+
+	special, err := snowflake(mci)
+	require.NoError(t, err)
+	assert.NotEmpty(t, special)
+
+	testInitRunModule(t, special[0], mci)
+
+	// Dispatcher must be resolved in the default graph
+	var dispatcher *yarpc.Dispatcher
+	assert.NoError(t, di.Resolve(&dispatcher))
+	assert.Equal(t, 2, len(dispatcher.Inbounds()))
 }
 
 func TestThriftModule_BadOptions(t *testing.T) {
@@ -113,7 +148,8 @@ func testInitRunModule(t *testing.T, mod service.Module, mci service.ModuleCreat
 
 func mch() service.ModuleCreateInfo {
 	return service.ModuleCreateInfo{
-		Host: service.NopHost(),
+		Host:  service.NopHost(),
+		Items: make(map[string]interface{}),
 	}
 }
 
