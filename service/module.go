@@ -186,7 +186,9 @@ func newModuleInfo(host Host, name string, options ...ModuleOption) (*moduleInfo
 		name,
 		moduleOptions.roles,
 		moduleOptions.items,
-		host.Metrics().SubScope("modules").SubScope(name),
+		// TODO(pedge): scope to the modules if we remove the global stats in the various packages
+		host.Metrics(),
+		//host.Metrics().SubScope("modules").SubScope(name),
 	}, nil
 }
 

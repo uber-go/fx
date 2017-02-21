@@ -29,6 +29,7 @@ import (
 
 func main() {
 	svc, err := service.WithModule(
+		"example",
 		// Create a YARPC module that exposes endpoints
 		rpc.ThriftModule(rpc.CreateThriftServiceFunc(NewYarpcThriftHandler)),
 		service.WithModuleRole("service"),

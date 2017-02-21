@@ -55,11 +55,6 @@ func (b NopBackend) Encoder() Encoding {
 	return &NopEncoding{}
 }
 
-// Name implements the Module interface
-func (b NopBackend) Name() string {
-	return "nop"
-}
-
 // Start implements the Module interface
 func (b NopBackend) Start() error {
 	return nil
@@ -72,24 +67,20 @@ func (b NopBackend) Stop() error {
 
 // inMemBackend is an in-memory implementation of the Backend interface
 type inMemBackend struct {
-	service.Host
+	service.ModuleInfo
 	bufQueue chan []byte
+	errorCh  chan error
 }
 
 // NewInMemBackend creates a new in memory backend, designed for use in tests
-func NewInMemBackend(host service.Host) Backend {
-	stats.SetupTaskMetrics(host.Metrics())
-	return &inMemBackend{host, make(chan []byte, 2)}
+func NewInMemBackend(moduleInfo service.ModuleInfo) Backend {
+	stats.SetupTaskMetrics(moduleInfo.Metrics())
+	return &inMemBackend{moduleInfo, make(chan []byte, 2), make(chan error, 1)}
 }
 
 // Encoder implements the Backend interface
 func (b *inMemBackend) Encoder() Encoding {
 	return gobEncoding
-}
-
-// Name implements the Module interface
-func (b *inMemBackend) Name() string {
-	return "inMem"
 }
 
 // Start implements the Module interface
@@ -98,15 +89,18 @@ func (b *inMemBackend) Start() error {
 	return nil
 }
 
+// ErrorCh returns the error channel for problems with running
+func (b *inMemBackend) ErrorCh() <-chan error {
+	return b.errorCh
+}
+
 func (b *inMemBackend) consumeFromQueue() {
 	for msg := range b.bufQueue {
 		// TODO(pedge): this was effectively not being handled and was a bug
 		// The error channel passed in is the error channel used for start, which was
 		// only read from once in host.startModules(), and this error was put into
 		// the queue as a second error
-		if err := Run(context.Background(), msg); err != nil {
-			b.Logger().Error("error in consumeFromQueue", "error", err.Error())
-		}
+		b.errorCh <- Run(context.Background(), msg)
 	}
 }
 

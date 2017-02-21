@@ -88,4 +88,4 @@ func newAsyncModule(
 }
 
 // BackendCreateFunc creates a backend implementation
-type BackendCreateFunc func(host service.Host) (Backend, error)
+type BackendCreateFunc func(moduleInfo service.ModuleInfo) (Backend, error)
