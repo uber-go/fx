@@ -30,14 +30,10 @@ import (
 )
 
 func main() {
-	svc, err := service.WithModules(
-		uhttp.New(router),
-	).Build()
-
+	svc, err := service.WithModule(uhttp.New(router)).Build()
 	if err != nil {
 		log.Fatal("Unable to initialize service", "error", err)
 	}
-
 	svc.Start()
 }
 

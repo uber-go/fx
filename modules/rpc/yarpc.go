@@ -21,6 +21,7 @@
 package rpc
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"sync"
@@ -225,7 +226,7 @@ func newYARPCModule(
 	module.config.onewayInboundMiddleware = onewayInboundMiddlewareFromModuleInfo(mi)
 	_controller.addConfig(module.config)
 
-	mi.Logger().Info("Module successfuly created", "inbounds", module.config.Inbounds)
+	mi.Logger(context.Background()).Info("Module successfuly created", "inbounds", module.config.Inbounds)
 	return module, nil
 }
 
@@ -262,11 +263,11 @@ func (m *YARPCModule) Name() string {
 // Start begins serving requests with YARPC.
 func (m *YARPCModule) Start() error {
 	// TODO(alsam) allow services to advertise with a name separate from the host name.
-	if err := _controller.Start(m.Host()); err != nil {
+	if err := _controller.Start(m.moduleInfo); err != nil {
 		return errs.Wrap(err, "unable to start dispatcher")
 	}
 	m.register(m)
-	m.Logger().Info("Module started")
+	m.moduleInfo.Logger(context.Background()).Info("Module started")
 	return nil
 }
 

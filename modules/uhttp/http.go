@@ -26,12 +26,10 @@ import (
 	"net"
 	"net/http"
 	_ "net/http/pprof" // for automatic pprof
-	"sync"
 	"time"
 
 	"go.uber.org/fx/modules/uhttp/internal/stats"
 	"go.uber.org/fx/service"
-	"go.uber.org/fx/ulog"
 
 	"github.com/pkg/errors"
 )
@@ -93,23 +91,22 @@ func newModule(
 	getHandlers GetHandlersFunc,
 ) (*Module, error) {
 	// setup config defaults
-	cfg := &Config{
+	cfg := Config{
 		Port:    defaultPort,
 		Timeout: defaultTimeout,
 	}
-	if err := mi.Host().Config().Scope("modules").Get(mi.Name()).PopulateStruct(cfg); err != nil {
-		mi.Logger().Error("Error loading http module configuration", "error", err)
+	if err := mi.Config().Scope("modules").Get(mi.Name()).PopulateStruct(&cfg); err != nil {
+		mi.Logger(context.Background()).Error("Error loading http module configuration", "error", err)
 	}
 	module := &Module{
 		ModuleInfo: mi,
-		handlers:   handlers,
-		mcb:        defaultInboundMiddlewareChainBuilder(mi.Logger(), mi.AuthClient()),
+		handlers:   addHealth(getHandlers(mi)),
+		// TODO(pedge): issue with module name here, we will register this logger
+		// before any naming overrides can happen in the service package
+		mcb:    defaultInboundMiddlewareChainBuilder(mi.Logger(context.Background()), mi.AuthClient()),
+		config: cfg,
 	}
-	module.config = *cfg
-
 	stats.SetupHTTPMetrics(mi.Metrics())
-	handlers := addHealth(getHandlers(mi))
-
 	middleware := inboundMiddlewareFromModuleInfo(mi)
 	module.mcb = module.mcb.AddMiddleware(middleware...)
 	return module, nil
@@ -124,7 +121,7 @@ func (m *Module) Name() string {
 func (m *Module) Start() error {
 	mux := http.NewServeMux()
 	// Do something unrelated to annotations
-	router := NewRouter(m.ModuleInfo))
+	router := NewRouter(m.ModuleInfo)
 
 	mux.Handle("/", router)
 
@@ -143,13 +140,13 @@ func (m *Module) Start() error {
 	}
 	// finally, start the http server.
 	// TODO update log object to be accessed via http context #74
-	m.log.Info("Server listening on port", "port", m.config.Port)
+	m.Logger(context.Background()).Info("Server listening on port", "port", m.config.Port)
 
 	m.listener = listener
 	m.srv = &http.Server{Handler: mux}
 	go func() {
 		if err := m.srv.Serve(m.listener); err != nil {
-			m.Logger().Error("HTTP Serve error", "error", err)
+			m.Logger(context.Background()).Error("HTTP Serve error", "error", err)
 		}
 	}()
 	return nil
