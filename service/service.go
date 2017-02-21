@@ -86,9 +86,7 @@ func newManager(builder *Builder) (Manager, error) {
 	svc := &manager{
 		// TODO: get these out of config struct instead
 		moduleWrappers: []*moduleWrapper{},
-		serviceCore: serviceCore{
-			resources: map[string]interface{}{},
-		},
+		serviceCore:    serviceCore{},
 	}
 
 	// hash up the roles
