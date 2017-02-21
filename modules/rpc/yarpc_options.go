@@ -87,6 +87,6 @@ func graphFromCreateInfo(mci service.ModuleCreateInfo) dig.Graph {
 		return dig.DefaultGraph()
 	}
 
-	// Intentionally panic if programmer adds non-middleware slice to the data
+	// Intentionally panic if someone adds non-graph to Items.
 	return g.(dig.Graph)
 }

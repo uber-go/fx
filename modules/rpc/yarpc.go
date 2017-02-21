@@ -260,7 +260,6 @@ func newYARPCModule(
 		if errCr := module.di.Register(controller); errCr != nil {
 			return nil, errs.Wrap(errCr, "can't register a dispatcher controller")
 		}
-
 	}
 
 	controller.addConfig(module.config)
