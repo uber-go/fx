@@ -36,7 +36,5 @@ func TestStubModule_StartError(t *testing.T) {
 func TestStubModule_Accessors(t *testing.T) {
 	s := NewStubModule(NopHost())
 	assert := assert.New(t)
-
-	assert.Empty(s.Name())
 	assert.NoError(s.Stop())
 }

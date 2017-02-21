@@ -43,7 +43,7 @@ import (
 var _defaultHTTPClient = &http.Client{Timeout: 2 * time.Second}
 
 func TestNew_OK(t *testing.T) {
-	WithService(New(registerNothing), nil, []service.Option{configOption()}, func(s service.Manager) {
+	WithService("hello", New(registerNothing), nil, []service.Option{configOption()}, func(s service.Manager) {
 		assert.NotNil(t, s, "Should create a module")
 	})
 }
@@ -149,13 +149,7 @@ func withModule(
 	expectError bool,
 	fn func(*Module),
 ) {
-	mi, err := service.NewModuleInfo(
-		service.NopHost(),
-		append(
-			[]service.ModuleOption{service.WithModuleName(moduleName)},
-			moduleOptions...,
-		)...,
-	)
+	mi, err := service.NewModuleInfo(service.NopHost(), moduleName, moduleOptions...)
 	require.NoError(t, err)
 	mod, err := newModule(mi, hookup)
 	if expectError {

@@ -41,7 +41,7 @@ func TestServiceCreation(t *testing.T) {
 	scope, closer := tally.NewRootScope("", nil, r, 50*time.Millisecond, tally.DefaultSeparator)
 	defer closer.Close()
 	svc, err := newManager(
-		WithModule(successModuleCreate).
+		WithModule("hello", successModuleCreate).
 			WithOptions(
 				withConfig(validServiceConfig),
 				WithMetrics(scope, nil),
@@ -56,7 +56,7 @@ func TestServiceCreation(t *testing.T) {
 
 func TestWithObserver_Nil(t *testing.T) {
 	svc, err := newManager(
-		WithModule(successModuleCreate).
+		WithModule("hello", successModuleCreate).
 			WithOptions(
 				withConfig(validServiceConfig),
 				WithObserver(nil),
@@ -69,7 +69,7 @@ func TestWithObserver_Nil(t *testing.T) {
 
 func TestServiceCreation_MissingRequiredParams(t *testing.T) {
 	_, err := newManager(
-		WithModule(successModuleCreate).
+		WithModule("hello", successModuleCreate).
 			WithOptions(
 				withConfig(nil),
 			),
@@ -87,7 +87,7 @@ func TestServiceWithRoles(t *testing.T) {
 	cfgOpt := withConfig(data)
 
 	svc, err := newManager(
-		WithModule(successModuleCreate).
+		WithModule("hello", successModuleCreate).
 			WithOptions(
 				cfgOpt,
 			),
@@ -108,7 +108,7 @@ metrics:
 	cfgOpt := WithConfiguration(config.NewYAMLProviderFromBytes(data))
 
 	svc, err := newManager(
-		WithModule(successModuleCreate).
+		WithModule("hello", successModuleCreate).
 			WithOptions(
 				cfgOpt,
 			),
@@ -129,7 +129,7 @@ logging:
 	cfgOpt := WithConfiguration(config.NewYAMLProviderFromBytes(data))
 
 	_, err := newManager(
-		WithModule(successModuleCreate).
+		WithModule("hello", successModuleCreate).
 			WithOptions(
 				cfgOpt,
 			),
@@ -146,7 +146,7 @@ func TestBadOption_Panics(t *testing.T) {
 	}
 
 	_, err := newManager(
-		WithModule(successModuleCreate).
+		WithModule("hello", successModuleCreate).
 			WithOptions(
 				withConfig(validServiceConfig),
 				opt,
@@ -158,7 +158,7 @@ func TestBadOption_Panics(t *testing.T) {
 func TestNew_WithObserver(t *testing.T) {
 	o := observerStub()
 	svc, err := newManager(
-		WithModule(successModuleCreate).
+		WithModule("hello", successModuleCreate).
 			WithOptions(
 				withConfig(validServiceConfig),
 				WithObserver(o),

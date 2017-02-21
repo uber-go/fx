@@ -62,7 +62,7 @@ func TestWithInboundMiddleware(t *testing.T) {
 		tt := tt
 		t.Run(tt.desc, func(t *testing.T) {
 			t.Parallel()
-			mi, err := service.NewModuleInfo(nil, tt.input...)
+			mi, err := service.NewModuleInfo(service.NopHost(), "hello", tt.input...)
 			assert.NoError(t, err)
 			assert.Equal(t, len(tt.expect), len(inboundMiddlewareFromModuleInfo(mi)))
 		})

@@ -31,8 +31,6 @@ import (
 
 // Module is the basic building block of an UberFx service.
 type Module interface {
-	// Return the default name of the Module. This can be overridden with WithModuleName.
-	Name() string
 	// Start the Module. If an error is returned, the Module is assumed to be not started.
 	// There is no need for this to be thread-safe, it will be called in a thread-safe manner.
 	Start() error
@@ -44,31 +42,18 @@ type Module interface {
 // ModuleInfo is the information passed to a Module on creation.
 // This can be stored inside the module for use.
 type ModuleInfo interface {
-	// Name: If no name specified using WithModuleName, this will be "" when passed to
-	// a ModuleCreateFunc, and will be module.Name() after registration.
 	Host
 	Logger(context.Context) ulog.Log
 	Items() map[string]interface{}
 }
 
 // NewModuleInfo returns a new ModuleInfo. This should generally be used for testing.
-func NewModuleInfo(host Host, options ...ModuleOption) (ModuleInfo, error) {
-	return newModuleInfo(host, options...)
+func NewModuleInfo(host Host, name string, options ...ModuleOption) (ModuleInfo, error) {
+	return newModuleInfo(host, name, options...)
 }
 
 // ModuleOption is a function that configures module creation.
 type ModuleOption func(*moduleOptions) error
-
-// WithModuleName will override the Module's default name.
-//
-// A WithModuleName option specifed later in the ModuleOptions list will
-// override a WithName option earlier in the list.
-func WithModuleName(name string) ModuleOption {
-	return func(o *moduleOptions) error {
-		o.name = name
-		return nil
-	}
-}
 
 // WithModuleRole will add a role to the Module.
 //
@@ -103,17 +88,16 @@ func WithModuleItem(key string, f func(interface{}) interface{}) ModuleOption {
 	}
 }
 
-// ModuleCreateFunc handles instantiating modules from creation configuration,
+// ModuleCreateFunc handles instantiating modules from creation configuration.
 type ModuleCreateFunc func(ModuleInfo) (Module, error)
 
 type moduleOptions struct {
-	name  string
 	roles []string
 	items map[string]interface{}
 }
 
 func newModuleOptions() *moduleOptions {
-	return &moduleOptions{"", nil, make(map[string]interface{})}
+	return &moduleOptions{nil, make(map[string]interface{})}
 }
 
 type moduleWrapper struct {
@@ -123,11 +107,16 @@ type moduleWrapper struct {
 	lock       sync.RWMutex
 }
 
-func newModuleWrapper(host Host, moduleCreateFunc ModuleCreateFunc, options ...ModuleOption) (*moduleWrapper, error) {
+func newModuleWrapper(
+	host Host,
+	name string,
+	moduleCreateFunc ModuleCreateFunc,
+	options ...ModuleOption,
+) (*moduleWrapper, error) {
 	if moduleCreateFunc == nil {
 		return nil, nil
 	}
-	moduleInfo, err := newModuleInfo(host, options...)
+	moduleInfo, err := newModuleInfo(host, name, options...)
 	if err != nil {
 		return nil, err
 	}
@@ -137,9 +126,6 @@ func newModuleWrapper(host Host, moduleCreateFunc ModuleCreateFunc, options ...M
 	}
 	if module == nil {
 		return nil, nil
-	}
-	if moduleInfo.name == "" {
-		moduleInfo.name = module.Name()
 	}
 	return &moduleWrapper{module: module, moduleInfo: moduleInfo}, nil
 }
@@ -184,9 +170,11 @@ type moduleInfo struct {
 	name  string
 	roles []string
 	items map[string]interface{}
+
+	metrics tally.Scope
 }
 
-func newModuleInfo(host Host, options ...ModuleOption) (*moduleInfo, error) {
+func newModuleInfo(host Host, name string, options ...ModuleOption) (*moduleInfo, error) {
 	moduleOptions := newModuleOptions()
 	for _, option := range options {
 		if err := option(moduleOptions); err != nil {
@@ -195,9 +183,10 @@ func newModuleInfo(host Host, options ...ModuleOption) (*moduleInfo, error) {
 	}
 	return &moduleInfo{
 		host,
-		moduleOptions.name,
+		name,
 		moduleOptions.roles,
 		moduleOptions.items,
+		host.Metrics().SubScope("modules").SubScope(name),
 	}, nil
 }
 
@@ -211,7 +200,7 @@ func (mi *moduleInfo) Roles() []string {
 }
 
 func (mi *moduleInfo) Metrics() tally.Scope {
-	return mi.Host.Metrics().SubScope("modules").SubScope(mi.name)
+	return mi.metrics
 }
 
 func (mi *moduleInfo) Logger(ctx context.Context) ulog.Log {

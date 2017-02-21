@@ -28,7 +28,6 @@ import (
 
 	"go.uber.org/fx/modules/rpc/internal/stats"
 	"go.uber.org/fx/service"
-	"go.uber.org/fx/ulog"
 
 	errs "github.com/pkg/errors"
 	"go.uber.org/yarpc"
@@ -212,17 +211,13 @@ func newYARPCModule(
 		moduleInfo: mi,
 		register:   reg,
 	}
-	name := mi.Name()
-	if name == "" {
-		name = module.Name()
-	}
-	if err := mi.Config().Scope("modules").Get(name).PopulateStruct(&module.config); err != nil {
+	if err := mi.Config().Scope("modules").Get(mi.Name()).PopulateStruct(&module.config); err != nil {
 		return nil, errs.Wrap(err, "can't read inbounds")
 	}
 	stats.SetupRPCMetrics(mi.Metrics())
 
 	// iterate over inbounds
-	transportsIn, err := prepareInbounds(module.config.Inbounds, name)
+	transportsIn, err := prepareInbounds(module.config.Inbounds, mi.Name())
 	if err != nil {
 		return nil, errs.Wrap(err, "can't process inbounds")
 	}
@@ -231,11 +226,7 @@ func newYARPCModule(
 	module.config.onewayInboundMiddleware = onewayInboundMiddlewareFromModuleInfo(mi)
 	_controller.addConfig(module.config)
 
-	ulog.Logger(context.Background()).Info(
-		"Module successfuly created",
-		"module", name,
-		"inbounds", module.config.Inbounds,
-	)
+	mi.Logger(context.Background()).Info("Module successfuly created", "inbounds", module.config.Inbounds)
 	return module, nil
 }
 
@@ -263,10 +254,6 @@ func prepareInbounds(inbounds []Inbound, serviceName string) (transportsIn []tra
 	}
 
 	return transportsIn, nil
-}
-
-func (m *YARPCModule) Name() string {
-	return "rpc"
 }
 
 // Start begins serving requests with YARPC.

@@ -22,7 +22,8 @@ package service
 
 import "github.com/pkg/errors"
 
-type moduleCreateFuncOptionsPair struct {
+type moduleCreateInfo struct {
+	name             string
 	moduleCreateFunc ModuleCreateFunc
 	options          []ModuleOption
 }
@@ -30,18 +31,18 @@ type moduleCreateFuncOptionsPair struct {
 // A Builder is a helper to create a service
 type Builder struct {
 	options []Option
-	modules []*moduleCreateFuncOptionsPair
+	modules []*moduleCreateInfo
 }
 
 // WithModule is a helper to create a service without any options
-func WithModule(module ModuleCreateFunc, options ...ModuleOption) *Builder {
+func WithModule(name string, module ModuleCreateFunc, options ...ModuleOption) *Builder {
 	b := &Builder{}
-	return b.WithModule(module, options...)
+	return b.WithModule(name, module, options...)
 }
 
-// WithModule adds the given module to the service
-func (b *Builder) WithModule(module ModuleCreateFunc, options ...ModuleOption) *Builder {
-	b.modules = append(b.modules, &moduleCreateFuncOptionsPair{module, options})
+// WithModule adds the given module to the service with the given name
+func (b *Builder) WithModule(name string, module ModuleCreateFunc, options ...ModuleOption) *Builder {
+	b.modules = append(b.modules, &moduleCreateInfo{name, module, options})
 	return b
 }
 

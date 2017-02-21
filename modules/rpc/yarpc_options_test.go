@@ -31,13 +31,13 @@ import (
 )
 
 func TestWithInboundMiddleware_OK(t *testing.T) {
-	mc, err := service.NewModuleInfo(nil, WithInboundMiddleware(middleware.NopUnaryInbound))
+	mc, err := service.NewModuleInfo(service.NopHost(), "hello", WithInboundMiddleware(middleware.NopUnaryInbound))
 	require.NoError(t, err)
 	assert.Equal(t, 1, len(inboundMiddlewareFromModuleInfo(mc)))
 }
 
 func TestWithOnewayInboundMiddleware_OK(t *testing.T) {
-	mc, err := service.NewModuleInfo(nil, WithOnewayInboundMiddleware(middleware.NopOnewayInbound))
+	mc, err := service.NewModuleInfo(service.NopHost(), "hello", WithOnewayInboundMiddleware(middleware.NopOnewayInbound))
 	require.NoError(t, err)
 	assert.Equal(t, 1, len(onewayInboundMiddlewareFromModuleInfo(mc)))
 }

@@ -94,7 +94,7 @@ func mih(t *testing.T, moduleName string) service.ModuleInfo {
 
 func newModuleInfo(t *testing.T, host service.Host, moduleName string) service.ModuleInfo {
 	// need to add name since we are not fully instantiating ModuleInfo
-	mi, err := service.NewModuleInfo(host, service.WithModuleName(moduleName))
+	mi, err := service.NewModuleInfo(host, moduleName)
 	require.NoError(t, err)
 	return mi
 }

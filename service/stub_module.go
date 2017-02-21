@@ -24,7 +24,6 @@ package service
 type StubModule struct {
 	Host       Host
 	InitError  error
-	NameVal    string
 	StartError error
 	StopError  error
 }
@@ -50,9 +49,6 @@ func NewStubModule(host Host) *StubModule {
 
 // Start mimics startup
 func (s *StubModule) Start() error { return s.StartError }
-
-// Name returns the name of the module
-func (s *StubModule) Name() string { return s.NameVal }
 
 // Stop stops the module
 func (s *StubModule) Stop() error { return s.StopError }

@@ -30,14 +30,14 @@ import (
 )
 
 func TestWithModules_OK(t *testing.T) {
-	_, err := WithModule(nopModule).WithOptions(
+	_, err := WithModule("hello", nopModule).WithOptions(
 		WithConfiguration(StaticAppData(nil)),
 	).Build()
 	assert.NoError(t, err)
 }
 
 func TestWithModules_Err(t *testing.T) {
-	_, err := WithModule(errModule).WithOptions(
+	_, err := WithModule("hello", errModule).WithOptions(
 		WithConfiguration(StaticAppData(nil)),
 	).Build()
 	assert.Error(t, err)
@@ -45,7 +45,7 @@ func TestWithModules_Err(t *testing.T) {
 
 func TestWithModules_SkipsModulesBadInit(t *testing.T) {
 	empty := ""
-	_, err := WithModule(nopModule).WithOptions(
+	_, err := WithModule("hello", nopModule).WithOptions(
 		WithConfiguration(StaticAppData(&empty)),
 	).Build()
 	assert.Error(t, err, "Expected service name to be provided")
