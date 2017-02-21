@@ -45,8 +45,6 @@ type Host interface {
 	RuntimeMetricsCollector() *metrics.RuntimeCollector
 	Observer() Observer
 	Config() config.Provider
-	// TODO: delete me!
-	Resources() map[string]interface{}
 	Tracer() opentracing.Tracer
 }
 
@@ -104,7 +102,6 @@ type serviceCore struct {
 	configProvider config.Provider
 	logConfig      ulog.Configuration
 	observer       Observer
-	resources      map[string]interface{}
 	roles          []string
 	scopeMux       sync.Mutex
 	standardConfig serviceConfig
@@ -137,11 +134,6 @@ func (s *serviceCore) State() State {
 
 func (s *serviceCore) Roles() []string {
 	return s.standardConfig.Roles
-}
-
-// What items?
-func (s *serviceCore) Resources() map[string]interface{} {
-	return s.resources
 }
 
 func (s *serviceCore) Observer() Observer {

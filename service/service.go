@@ -85,10 +85,8 @@ type serviceConfig struct {
 func newManager(modules []ModuleCreateFunc, options ...Option) (Manager, error) {
 	svc := &manager{
 		// TODO: get these out of config struct instead
-		modules: []Module{},
-		serviceCore: serviceCore{
-			resources: map[string]interface{}{},
-		},
+		modules:     []Module{},
+		serviceCore: serviceCore{},
 	}
 
 	// hash up the roles
