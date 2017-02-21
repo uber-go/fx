@@ -20,7 +20,7 @@
 
 // Package dig is the Dependency Injection Graph.
 //
-// Package dig provides a fairly opinionated way of resolving object dependencies.
+// package dig provides an opinionated way of resolving object dependencies.
 // There are two sides of dig:
 // Register and Resolve.
 //
