@@ -27,6 +27,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/fx/dig"
 	"go.uber.org/yarpc/api/middleware"
 )
 
@@ -71,4 +72,16 @@ func TestWithOnewayInboundMiddleware_PanicsBadData(t *testing.T) {
 	assert.Panics(t, func() {
 		opt(mc)
 	})
+}
+
+func TestWithGraph_OK(t *testing.T) {
+	graph := dig.New()
+	opt := withGraph(graph)
+	mc := &service.ModuleCreateInfo{
+		Items: make(map[string]interface{}),
+	}
+
+	assert.Equal(t, dig.DefaultGraph(), graphFromCreateInfo(*mc))
+	require.NoError(t, opt(mc))
+	assert.Equal(t, graph, graphFromCreateInfo(*mc))
 }

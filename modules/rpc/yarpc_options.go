@@ -21,6 +21,7 @@
 package rpc
 
 import (
+	"go.uber.org/fx/dig"
 	"go.uber.org/fx/modules"
 	"go.uber.org/fx/service"
 	"go.uber.org/yarpc/api/middleware"
@@ -29,6 +30,7 @@ import (
 const (
 	_interceptorKey       = "yarpcUnaryInboundMiddleware"
 	_onewayInterceptorKey = "yarpcOnewayInboundMiddleware"
+	_graphInterceptorKey  = "yarpcDIGraph"
 )
 
 // WithInboundMiddleware adds custom YARPC inboundMiddleware to the module
@@ -70,4 +72,21 @@ func onewayInboundMiddlewareFromCreateInfo(mci service.ModuleCreateInfo) []middl
 
 	// Intentionally panic if programmer adds non-middleware slice to the data
 	return items.([]middleware.OnewayInbound)
+}
+
+func withGraph(graph dig.Graph) modules.Option {
+	return func(mci *service.ModuleCreateInfo) error {
+		mci.Items[_graphInterceptorKey] = graph
+		return nil
+	}
+}
+
+func graphFromCreateInfo(mci service.ModuleCreateInfo) dig.Graph {
+	g, ok := mci.Items[_graphInterceptorKey]
+	if !ok {
+		return dig.DefaultGraph()
+	}
+
+	// Intentionally panic if programmer adds non-middleware slice to the data
+	return g.(dig.Graph)
 }

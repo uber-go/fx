@@ -21,12 +21,15 @@
 package rpc
 
 import (
+	"context"
 	"sync"
 
 	"go.uber.org/fx/modules"
 	"go.uber.org/fx/service"
+	"go.uber.org/fx/ulog"
 
 	"github.com/pkg/errors"
+	"go.uber.org/yarpc"
 	"go.uber.org/yarpc/api/transport"
 )
 
@@ -64,7 +67,13 @@ func newYARPCThriftModule(
 	reg := func(mod *YARPCModule) {
 		_setupMu.Lock()
 		defer _setupMu.Unlock()
-		Dispatcher().Register(registrants)
+		var dispatcher yarpc.Dispatcher
+		if err := mod.di.Resolve(&dispatcher); err != nil {
+			ulog.Logger(context.Background()).Error("can't resolve dispatcher", "error", err)
+			return
+		}
+
+		dispatcher.Register(registrants)
 	}
 
 	return newYARPCModule(mi, reg, options...)
