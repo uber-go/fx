@@ -33,7 +33,7 @@ var _ Module = &StubModule{}
 // DefaultStubModuleCreateFunc is a ModuleCreateFunc that returns a StubModule with only Host set.
 var DefaultStubModuleCreateFunc = NewStubModuleCreateFunc(StubModule{})
 
-// StubModuleCreateFunc returns a new ModuleCreateFunc for a new StubModule.
+// NewStubModuleCreateFunc returns a new ModuleCreateFunc for a new StubModule.
 // Host will be overwritten.
 func NewStubModuleCreateFunc(stubModule StubModule) ModuleCreateFunc {
 	return func(moduleInfo ModuleInfo) (Module, error) {
