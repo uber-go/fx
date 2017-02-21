@@ -25,7 +25,6 @@ import (
 	"testing"
 
 	"go.uber.org/fx/config"
-	"go.uber.org/fx/modules"
 	"go.uber.org/fx/service"
 
 	"github.com/stretchr/testify/assert"
@@ -44,8 +43,8 @@ func (h testHost) Config() config.Provider {
 }
 
 func TestThriftModule_OK(t *testing.T) {
-	chip := ThriftModule(okCreate, modules.WithRoles("rescue"))
-	dale := ThriftModule(okCreate, modules.WithRoles("ranges"))
+	chip := ThriftModule(okCreate)
+	dale := ThriftModule(okCreate)
 	cfg := []byte(`
 modules:
   rpc:
@@ -56,61 +55,47 @@ modules:
          port: 0
 `)
 
-	mci := service.ModuleCreateInfo{
-		Name: "RPC",
-		Host: testHost{
+	mi, err := service.NewModuleInfo(
+		testHost{
 			Host:   service.NopHost(),
 			config: config.NewYAMLProviderFromBytes(cfg),
 		},
-	}
-
-	goofy, err := chip(mci)
+	)
 	require.NoError(t, err)
-	assert.NotEmpty(t, goofy)
 
-	gopher, err := dale(mch())
+	goofy, err := chip(mi)
 	require.NoError(t, err)
-	assert.NotEmpty(t, gopher)
+	assert.NotNil(t, goofy)
 
-	testInitRunModule(t, goofy[0], mci)
-	testInitRunModule(t, gopher[0], mci)
-}
+	gopher, err := dale(mih(t))
+	require.NoError(t, err)
+	assert.NotNil(t, gopher)
 
-func TestThriftModule_BadOptions(t *testing.T) {
-	modCreate := ThriftModule(okCreate, errorOption)
-	_, err := modCreate(mch())
-	assert.Error(t, err)
+	testInitRunModule(t, goofy)
+	testInitRunModule(t, gopher)
 }
 
 func TestThrfitModule_Error(t *testing.T) {
 	modCreate := ThriftModule(badCreateService)
-	mods, err := modCreate(service.ModuleCreateInfo{})
+	mod, err := modCreate(mih(t))
 	assert.Error(t, err)
-	assert.Nil(t, mods)
+	assert.Nil(t, mod)
 }
 
-func testInitRunModule(t *testing.T, mod service.Module, mci service.ModuleCreateInfo) {
-	readyCh := make(chan struct{}, 1)
+func testInitRunModule(t *testing.T, mod service.Module) {
 	assert.NoError(t, mod.Stop())
-	errs := mod.Start(readyCh)
+	err := mod.Start()
 	defer func() {
 		assert.NoError(t, mod.Stop())
 	}()
-	assert.True(t, mod.IsRunning())
-	assert.NoError(t, <-errs)
-
-	c := mod.Start(make(chan struct{}))
-	assert.Error(t, <-c)
+	assert.NoError(t, err)
+	assert.Error(t, mod.Start())
 }
 
-func mch() service.ModuleCreateInfo {
-	return service.ModuleCreateInfo{
-		Host: service.NopHost(),
-	}
-}
-
-func errorOption(_ *service.ModuleCreateInfo) error {
-	return errors.New("bad option")
+func mih(t *testing.T) service.ModuleInfo {
+	mi, err := service.NewModuleInfo(service.NopHost())
+	require.NoError(t, err)
+	return mi
 }
 
 func okCreate(_ service.Host) ([]transport.Procedure, error) {

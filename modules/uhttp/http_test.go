@@ -21,7 +21,6 @@
 package uhttp
 
 import (
-	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -30,7 +29,6 @@ import (
 	"testing"
 	"time"
 
-	"go.uber.org/fx/modules"
 	"go.uber.org/fx/modules/uhttp/internal/stats"
 	"go.uber.org/fx/service"
 	. "go.uber.org/fx/service/testutils"
@@ -51,35 +49,35 @@ func TestNew_OK(t *testing.T) {
 	})
 }
 
-func TestNew_WithOptions(t *testing.T) {
-	options := []modules.Option{
-		modules.WithRoles("testing"),
-	}
-
-	withModule(t, registerPanic, options, false, func(m *Module) {
-		assert.NotNil(t, m, "Expected OK with options")
-	})
-}
-
 func TestHTTPModule_WithInboundMiddleware(t *testing.T) {
-	withModule(t, registerPanic, []modules.Option{WithInboundMiddleware(fakeInbound())}, false, func(m *Module) {
-		assert.NotNil(t, m)
-		makeRequest(m, "GET", "/", nil, func(r *http.Response) {
-			body, err := ioutil.ReadAll(r.Body)
-			assert.NoError(t, err)
-			assert.Contains(t, string(body), "inbound middleware is executed")
+	withModule(
+		t,
+		registerPanic,
+		[]service.ModuleOption{WithInboundMiddleware(fakeInbound())},
+		false,
+		func(m *Module) {
+			assert.NotNil(t, m)
+			makeRequest(m, "GET", "/", nil, func(r *http.Response) {
+				body, err := ioutil.ReadAll(r.Body)
+				assert.NoError(t, err)
+				assert.Contains(t, string(body), "inbound middleware is executed")
+			})
+			verifyMetrics(t, m.Host().Metrics())
 		})
-		verifyMetrics(t, m.Host().Metrics())
-	})
 }
 
 func TestHTTPModule_WithUserPanicInboundMiddleware(t *testing.T) {
-	withModule(t, registerTracerCheckHandler, []modules.Option{WithInboundMiddleware(userPanicInbound())}, false, func(m *Module) {
-		assert.NotNil(t, m)
-		makeRequest(m, "GET", "/", nil, func(r *http.Response) {
-			assert.Equal(t, http.StatusInternalServerError, r.StatusCode, "Expected 500 with panic wrapper")
+	withModule(
+		t,
+		registerTracerCheckHandler,
+		[]service.ModuleOption{WithInboundMiddleware(userPanicInbound())},
+		false,
+		func(m *Module) {
+			assert.NotNil(t, m)
+			makeRequest(m, "GET", "/", nil, func(r *http.Response) {
+				assert.Equal(t, http.StatusInternalServerError, r.StatusCode, "Expected 500 with panic wrapper")
+			})
 		})
-	})
 }
 
 func TestHTTPModule_Panic_OK(t *testing.T) {
@@ -136,28 +134,6 @@ func TestPProf_Registered(t *testing.T) {
 	})
 }
 
-func TestHookupOptions(t *testing.T) {
-	options := []modules.Option{
-		modules.WithName("an optional name"),
-	}
-
-	withModule(t, registerNothing, options, false, func(m *Module) {
-		assert.NotNil(t, m)
-	})
-}
-
-func TestHookupOptions_Error(t *testing.T) {
-	options := []modules.Option{
-		func(_ *service.ModuleCreateInfo) error {
-			return errors.New("i just can't")
-		},
-	}
-
-	withModule(t, registerNothing, options, true, func(m *Module) {
-		assert.Nil(t, m)
-	})
-}
-
 // TODO(ai) add a test for binding a bad port and get an error out of Start()
 
 func configOption() service.Option {
@@ -167,54 +143,26 @@ func configOption() service.Option {
 func withModule(
 	t testing.TB,
 	hookup GetHandlersFunc,
-	options []modules.Option,
+	moduleOptions []service.ModuleOption,
 	expectError bool,
 	fn func(*Module),
 ) {
-	mi := service.ModuleCreateInfo{
-		Host: service.NopHost(),
-	}
+	mi, err := service.NewModuleInfo(service.NopHost(), moduleOptions...)
+	require.NoError(t, err)
 	stats.SetupHTTPMetrics(mi.Host.Metrics())
-	mod, err := newModule(mi, hookup, options...)
+	mod, err := newModule(mi, hookup)
 	if expectError {
 		require.Error(t, err, "Expected error instantiating module")
 		fn(nil)
 		return
 	}
-
 	require.NoError(t, err, "Unable to instantiate module")
-
 	// us an ephemeral port on tests
 	mod.config.Port = 0
-
-	errs := make(chan error, 1)
-	readyChan := make(chan struct{}, 1)
-	go func() {
-		// horray funny channel syntax. start() returns an err chan
-		errs <- <-mod.Start(readyChan)
-	}()
-	select {
-	case <-readyChan:
-	// cool, we're ready
-	case <-time.After(time.Second):
-		assert.Fail(t, "Module failed to start after 1 second")
-	}
-
-	var exitError error
-	defer func() {
-		exitError = mod.Stop()
-	}()
-
+	assert.NoError(t, mod.Start(), "Got error from starting")
 	fn(mod)
 	runtime.Gosched()
-	assert.NoError(t, exitError, "No exit error should occur")
-	// check errs channel
-	select {
-	case err := <-errs:
-		assert.NoError(t, err, "Got error from listening")
-	default:
-		// no errors, we're good
-	}
+	assert.NoError(t, mod.Stop(), "No exit error should occur")
 }
 
 func getURL(m *Module) string {

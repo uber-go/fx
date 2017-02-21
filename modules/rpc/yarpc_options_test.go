@@ -31,44 +31,13 @@ import (
 )
 
 func TestWithInboundMiddleware_OK(t *testing.T) {
-	opt := WithInboundMiddleware(middleware.NopUnaryInbound)
-	mc := &service.ModuleCreateInfo{
-		Items: make(map[string]interface{}),
-	}
-
-	require.NoError(t, opt(mc))
-	assert.Equal(t, 1, len(inboundMiddlewareFromCreateInfo(*mc)))
+	mc, err := service.NewModuleInfo(nil, WithInboundMiddleware(middleware.NopUnaryInbound))
+	require.NoError(t, err)
+	assert.Equal(t, 1, len(inboundMiddlewareFromModuleInfo(mc)))
 }
 
 func TestWithOnewayInboundMiddleware_OK(t *testing.T) {
-	opt := WithOnewayInboundMiddleware(middleware.NopOnewayInbound)
-	mc := &service.ModuleCreateInfo{
-		Items: make(map[string]interface{}),
-	}
-	require.NoError(t, opt(mc))
-	assert.Equal(t, 1, len(onewayInboundMiddlewareFromCreateInfo(*mc)))
-}
-
-func TestWithInboundMiddleware_PanicsBadData(t *testing.T) {
-	opt := WithInboundMiddleware(middleware.NopUnaryInbound)
-	mc := &service.ModuleCreateInfo{
-		Items: map[string]interface{}{
-			_interceptorKey: "foo",
-		},
-	}
-	assert.Panics(t, func() {
-		opt(mc)
-	})
-}
-
-func TestWithOnewayInboundMiddleware_PanicsBadData(t *testing.T) {
-	opt := WithOnewayInboundMiddleware(middleware.NopOnewayInbound)
-	mc := &service.ModuleCreateInfo{
-		Items: map[string]interface{}{
-			_onewayInterceptorKey: "foo",
-		},
-	}
-	assert.Panics(t, func() {
-		opt(mc)
-	})
+	mc, err := service.NewModuleInfo(nil, WithOnewayInboundMiddleware(middleware.NopOnewayInbound))
+	require.NoError(t, err)
+	assert.Equal(t, 1, len(inboundMiddlewareFromModuleInfo(mc)))
 }

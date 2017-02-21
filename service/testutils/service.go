@@ -28,7 +28,7 @@ func WithService(module service.ModuleCreateFunc, observer service.Observer, opt
 		observer = service.ObserverStub()
 	}
 
-	svc, err := service.WithModules(module).WithOptions(append(options, service.WithObserver(observer))...).Build()
+	svc, err := service.WithModule(module).WithOptions(append(options, service.WithObserver(observer))...).Build()
 	if err != nil {
 		panic(err)
 	}

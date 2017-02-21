@@ -145,6 +145,7 @@ func (m *Module) Start() error {
 	m.listener = listener
 	m.srv = &http.Server{Handler: mux}
 	go func() {
+		// TODO(pedge): what to do about error?
 		if err := m.srv.Serve(m.listener); err != nil {
 			m.Logger(context.Background()).Error("HTTP Serve error", "error", err)
 		}

@@ -49,6 +49,11 @@ type ModuleInfo interface {
 	Items() map[string]interface{}
 }
 
+// NewModuleInfo returns a new ModuleInfo. This should generally be used for testing.
+func NewModuleInfo(host Host, options ...ModuleOption) (ModuleInfo, error) {
+	return newModuleInfo(host, options...)
+}
+
 // ModuleOption is a function that configures module creation.
 type ModuleOption func(*moduleOptions) error
 
@@ -107,46 +112,35 @@ type moduleOptions struct {
 
 type moduleWrapper struct {
 	module     Module
-	moduleInfo ModuleInfo
-	name       string
+	moduleInfo *moduleInfo
 	isRunning  bool
 	lock       sync.RWMutex
 }
 
 func newModuleWrapper(host Host, moduleCreateFunc ModuleCreateFunc, options ...ModuleOption) (*moduleWrapper, error) {
-	moduleOptions := &moduleOptions{}
-	for _, option := range options {
-		if err := option(moduleOptions); err != nil {
-			return nil, err
-		}
+	moduleInfo, err := newModuleInfo(host, options...)
+	if err != nil {
+		return nil, err
 	}
-	moduleInfo := newModuleInfo(
-		host,
-		moduleOptions.name,
-		moduleOptions.roles,
-		moduleOptions.items,
-	)
 	module, err := moduleCreateFunc(moduleInfo)
 	if err != nil {
 		return nil, err
 	}
-	name := module.Name()
-	if moduleOptions.name != "" {
-		name = moduleOptions.name
-		moduleInfo.name = name
+	if moduleInfo.name == "" {
+		moduleInfo.name = module.Name()
 	}
-	return &moduleWrapper{module: module, moduleInfo: moduleInfo, name: name}, nil
+	return &moduleWrapper{module: module, moduleInfo: moduleInfo}, nil
 }
 
 func (m *moduleWrapper) Name() string {
-	return m.name
+	return m.moduleInfo.name
 }
 
 func (m *moduleWrapper) Start() error {
 	m.lock.Lock()
 	defer m.lock.Unlock()
 	if m.isRunning {
-		return fmt.Errorf("module %s is running", m.name)
+		return fmt.Errorf("module %s is running", m.Name())
 	}
 	if err := m.module.Start(); err != nil {
 		return err
@@ -159,7 +153,7 @@ func (m *moduleWrapper) Stop() error {
 	m.lock.Lock()
 	defer m.lock.Unlock()
 	if !m.isRunning {
-		return fmt.Errorf("module %s is not running", m.name)
+		return fmt.Errorf("module %s is not running", m.Name())
 	}
 	m.isRunning = false
 	return m.module.Stop()
@@ -180,8 +174,19 @@ type moduleInfo struct {
 	items map[string]interface{}
 }
 
-func newModuleInfo(host Host, name string, roles []string, items map[string]interface{}) *moduleInfo {
-	return &moduleInfo{host, name, roles, items}
+func newModuleInfo(host Host, options ...ModuleOption) (*moduleInfo, error) {
+	moduleOptions := &moduleOptions{}
+	for _, option := range options {
+		if err := option(moduleOptions); err != nil {
+			return nil, err
+		}
+	}
+	return &moduleInfo{
+		host,
+		moduleOptions.name,
+		moduleOptions.roles,
+		moduleOptions.items,
+	}, nil
 }
 
 // TODO(pedge): what about the Host's roles?
