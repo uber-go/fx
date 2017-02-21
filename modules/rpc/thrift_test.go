@@ -113,7 +113,7 @@ modules:
 
 	testInitRunModule(t, special[0], mci)
 
-	// Dispatcher must be resolved in the default graph
+	// Dispatcher must be resolved in the new graph
 	var dispatcher *yarpc.Dispatcher
 	assert.NoError(t, di.Resolve(&dispatcher))
 	assert.Equal(t, 2, len(dispatcher.Inbounds()))
