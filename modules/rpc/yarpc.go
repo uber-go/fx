@@ -249,15 +249,18 @@ func newYARPCModule(
 	module.config.onewayInboundMiddleware = onewayInboundMiddlewareFromCreateInfo(mi)
 
 	module.di = graphFromCreateInfo(mi)
-	var controller dispatcherController
+	var controller *dispatcherController
 
 	// Try to resolve a controller first
 	// TODO(alsam) use dig options when available.
 	if err := module.di.Resolve(&controller); err != nil {
+
 		// Try to register it then
-		if errCr := module.di.Register(&controller); err != nil {
+		controller = &dispatcherController{}
+		if errCr := module.di.Register(controller); errCr != nil {
 			return nil, errs.Wrap(errCr, "can't register a dispatcher controller")
 		}
+
 	}
 
 	controller.addConfig(module.config)
@@ -304,7 +307,8 @@ func (m *YARPCModule) Start(readyCh chan<- struct{}) <-chan error {
 	m.stateMu.Lock()
 	defer m.stateMu.Unlock()
 
-	var controller dispatcherController
+	// Resolve the controller
+	var controller *dispatcherController
 	if err := m.di.Resolve(&controller); err != nil {
 		ret <- errs.Wrap(err, "unable to resolve dispatcher controller")
 		return ret
@@ -313,6 +317,12 @@ func (m *YARPCModule) Start(readyCh chan<- struct{}) <-chan error {
 	// TODO(alsam) allow services to advertise with a name separate from the host name.
 	if err := controller.Start(m.Host()); err != nil {
 		ret <- errs.Wrap(err, "unable to start dispatcher")
+		return ret
+	}
+
+	// Register dispatcher
+	if err := m.di.Register(controller.dispatcher); err != nil {
+		ret <- errs.Wrap(err, "unable to register the dispatcher")
 		return ret
 	}
 
@@ -334,7 +344,7 @@ func (m *YARPCModule) Stop() error {
 	m.stateMu.Lock()
 	defer m.stateMu.Unlock()
 
-	var controller dispatcherController
+	var controller *dispatcherController
 	if err := m.di.Resolve(&controller); err != nil {
 		return errs.Wrap(err, "unable to resolve dispatcher controller")
 	}

@@ -67,7 +67,7 @@ func newYARPCThriftModule(
 	reg := func(mod *YARPCModule) {
 		_setupMu.Lock()
 		defer _setupMu.Unlock()
-		var dispatcher yarpc.Dispatcher
+		var dispatcher *yarpc.Dispatcher
 		if err := mod.di.Resolve(&dispatcher); err != nil {
 			ulog.Logger(context.Background()).Error("can't resolve dispatcher", "error", err)
 			return

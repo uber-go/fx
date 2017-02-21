@@ -32,6 +32,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/yarpc/api/transport"
 	"go.uber.org/yarpc/encoding/thrift"
+	"go.uber.org/yarpc"
+	"go.uber.org/fx/dig"
 )
 
 type testHost struct {
@@ -74,6 +76,12 @@ modules:
 
 	testInitRunModule(t, goofy[0], mci)
 	testInitRunModule(t, gopher[0], mci)
+
+	// Dispatcher must be resolved in the default graph
+	var dispatcher *yarpc.Dispatcher
+	assert.NoError(t, dig.Resolve(&dispatcher))
+	assert.NotEmpty(t, dispatcher)
+
 }
 
 func TestThriftModule_BadOptions(t *testing.T) {
