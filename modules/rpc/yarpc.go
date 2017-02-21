@@ -271,7 +271,8 @@ func newYARPCModule(
 	di := graphFromCreateInfo(mi)
 
 	// Try to resolve a controller first
-	// TODO(alsam) use dig options when available.
+	// TODO(alsam) use dig options when available, because we can overwrite the controller in case of multiple
+	// modules registering a controller.
 	if err := di.Resolve(&module.controller); err != nil {
 
 		// Try to register it then

@@ -94,8 +94,6 @@ modules:
     inbounds:
      - tchannel:
          port: 0
-     - http:
-         port: 0
 `)
 
 	mci := service.ModuleCreateInfo{
@@ -116,7 +114,7 @@ modules:
 	// Dispatcher must be resolved in the new graph
 	var dispatcher *yarpc.Dispatcher
 	assert.NoError(t, di.Resolve(&dispatcher))
-	assert.Equal(t, 2, len(dispatcher.Inbounds()))
+	assert.Equal(t, 1, len(dispatcher.Inbounds()))
 }
 
 func TestThriftModule_BadOptions(t *testing.T) {
