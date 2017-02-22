@@ -47,7 +47,7 @@ type node struct {
 func (n node) id() string {
 	// in the future, more than just the type of node is going to be required
 	// for instance, when multiple types are allowed with different names
-	return n.objType.Name()
+	return n.objType.String()
 }
 
 type objNode struct {
