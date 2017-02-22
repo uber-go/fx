@@ -21,11 +21,11 @@
 package rpc
 
 import (
+	"fmt"
 	"testing"
 
 	"go.uber.org/fx/service"
 
-	"fmt"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/yarpc/api/transport"
 	"go.uber.org/yarpc/transport/http"

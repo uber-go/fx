@@ -29,7 +29,6 @@ import (
 const (
 	_interceptorKey       = "yarpcUnaryInboundMiddleware"
 	_onewayInterceptorKey = "yarpcOnewayInboundMiddleware"
-	_graphInterceptorKey  = "yarpcDIGraph"
 )
 
 // WithInboundMiddleware adds custom YARPC inboundMiddleware to the module
