@@ -38,6 +38,15 @@ func nonPointerParams(one, two string) *S {
 	return &S{}
 }
 
+type closer struct {
+	closed bool
+}
+
+func (c *closer) Close() error {
+	c.closed = true
+	return nil
+}
+
 func TestRegister(t *testing.T) {
 	t.Parallel()
 	tts := []struct {
@@ -235,6 +244,16 @@ func TestEmptyAfterReset(t *testing.T) {
 	require.NoError(t, g.Resolve(&first), "No error expected during first Resolve")
 	g.Reset()
 	require.Contains(t, g.Resolve(&first).Error(), "not registered")
+}
+
+func TestResetClosesObjects(t *testing.T) {
+	c := &closer{closed: false}
+
+	g := testGraph()
+	require.NoError(t, g.Register(c))
+
+	g.Reset()
+	require.True(t, c.closed)
 }
 
 func testGraph() *graph {

@@ -23,6 +23,7 @@ package dig
 import (
 	"bytes"
 	"fmt"
+	"io"
 	"reflect"
 	"sync"
 
@@ -132,6 +133,16 @@ func (g *graph) RegisterAll(cs ...interface{}) error {
 func (g *graph) Reset() {
 	g.Lock()
 	defer g.Unlock()
+
+	for _, node := range g.nodes {
+		if v, err := node.value(g); err == nil {
+			if nc, ok := v.Interface().(io.Closer); ok {
+				// Error is ignored. What else can be done here, should Reset() return an error?
+				// Assignment is to satisfy errcheck :(
+				err = nc.Close()
+			}
+		}
+	}
 
 	g.nodes = make(map[interface{}]graphNode)
 }
