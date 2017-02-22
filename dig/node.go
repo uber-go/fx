@@ -35,6 +35,10 @@ type graphNode interface {
 	dependencies() []interface{}
 
 	// unique identification per node
+	//
+	// TODO(glib): GFM-396
+	// consider using a custom type to identify objects, rather than a string
+	// type id struct { reflect.Type, string name, } or something of the sort
 	id() string
 }
 
@@ -47,7 +51,11 @@ type node struct {
 func (n node) id() string {
 	// in the future, more than just the type of node is going to be required
 	// for instance, when multiple types are allowed with different names
-	return n.objType.Name()
+	//
+	// TODO(glib): GFM-396
+	// Type.String() is not guaranteed to be unique and can return the same value
+	// for structs with the same name in a different package.
+	return n.objType.String()
 }
 
 type objNode struct {

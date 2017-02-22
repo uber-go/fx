@@ -208,9 +208,9 @@ func TestResolveAll(t *testing.T) {
 	g := testGraph()
 
 	err := g.RegisterAll(
-		NewParent1,
-		NewChild1,
 		NewGrandchild1,
+		NewChild1,
+		NewParent1,
 	)
 	require.NoError(t, err)
 
