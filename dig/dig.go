@@ -59,5 +59,6 @@ type Graph interface {
 	ResolveAll(...interface{}) error
 
 	// Reset the graph by removing all the registered nodes
+	// Any objects conforming to io.Closer will be closed upon Reset
 	Reset()
 }

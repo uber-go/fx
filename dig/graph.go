@@ -129,7 +129,6 @@ func (g *graph) RegisterAll(cs ...interface{}) error {
 	return nil
 }
 
-// Reset the graph by removing all the registered nodes
 func (g *graph) Reset() {
 	g.Lock()
 	defer g.Unlock()
