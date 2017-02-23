@@ -23,15 +23,15 @@ package task
 import "github.com/uber-go/tally"
 
 const (
-	// TagModule is module tag for metrics
-	TagModule = "module"
-	// TagType is either execution or publish
-	TagType = "type"
+	// _tagModule is module tag for metrics
+	_tagModule = "module"
+	// _tagType is either execution or publish
+	_tagType = "type"
 )
 
 var (
 	taskTags = map[string]string{
-		TagModule: "task",
+		_tagModule: "task",
 	}
 )
 
@@ -47,12 +47,12 @@ type statsClient struct {
 func newStatsClient(scope tally.Scope) *statsClient {
 	taskTagsScope := scope.Tagged(taskTags)
 	return &statsClient{
-		taskTagsScope.Tagged(map[string]string{TagType: "execution"}).Counter("count"),
-		taskTagsScope.Tagged(map[string]string{TagType: "publish"}).Counter("count"),
-		taskTagsScope.Tagged(map[string]string{TagType: "execution"}).Counter("fail"),
-		taskTagsScope.Tagged(map[string]string{TagType: "publish"}).Counter("fail"),
-		taskTagsScope.Tagged(map[string]string{TagType: "execution"}).Timer("time"),
-		taskTagsScope.Tagged(map[string]string{TagType: "publish"}).Timer("time"),
+		taskTagsScope.Tagged(map[string]string{_tagType: "execution"}).Counter("count"),
+		taskTagsScope.Tagged(map[string]string{_tagType: "publish"}).Counter("count"),
+		taskTagsScope.Tagged(map[string]string{_tagType: "execution"}).Counter("fail"),
+		taskTagsScope.Tagged(map[string]string{_tagType: "publish"}).Counter("fail"),
+		taskTagsScope.Tagged(map[string]string{_tagType: "execution"}).Timer("time"),
+		taskTagsScope.Tagged(map[string]string{_tagType: "publish"}).Timer("time"),
 	}
 }
 
