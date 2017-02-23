@@ -25,7 +25,6 @@ import (
 	"errors"
 	"testing"
 
-	"go.uber.org/fx/modules/rpc/internal/stats"
 	"go.uber.org/fx/service"
 	"go.uber.org/fx/testutils"
 	"go.uber.org/fx/testutils/tracing"
@@ -57,10 +56,8 @@ func (f fakeEnveloper) ToWire() (wire.Value, error) {
 }
 
 func TestInboundMiddleware_Context(t *testing.T) {
-	unary := contextInboundMiddleware{
-		Host: service.NopHost(),
-	}
-	stats.SetupRPCMetrics(unary.Host.Metrics())
+	host := service.NopHost()
+	unary := contextInboundMiddleware{host, newStatsClient(host.Metrics())}
 	testutils.WithInMemoryLogger(t, nil, func(zapLogger zap.Logger, buf *testutils.TestBuffer) {
 		loggerWithZap := ulog.Builder().SetLogger(zapLogger).Build()
 		tracing.WithSpan(t, loggerWithZap, func(span opentracing.Span) {
@@ -99,17 +96,15 @@ func checkLogForTrace(t *testing.T, buf *testutils.TestBuffer) {
 }
 
 func TestInboundMiddleware_auth(t *testing.T) {
-	unary := authInboundMiddleware{
-		Host: service.NopHost(),
-	}
+	host := service.NopHost()
+	unary := authInboundMiddleware{host, newStatsClient(host.Metrics())}
 	err := unary.Handle(context.Background(), &transport.Request{}, nil, &fakeUnary{t: t})
 	assert.EqualError(t, err, "handle")
 }
 
 func TestInboundMiddleware_authFailure(t *testing.T) {
-	unary := authInboundMiddleware{
-		Host: service.NopHostAuthFailure(),
-	}
+	host := service.NopHostAuthFailure()
+	unary := authInboundMiddleware{host, newStatsClient(host.Metrics())}
 	err := unary.Handle(context.Background(), &transport.Request{}, nil, &fakeUnary{t: t})
 	assert.EqualError(t, err, "Error authorizing the service")
 
@@ -124,9 +119,8 @@ func TestOnewayInboundMiddleware_auth(t *testing.T) {
 }
 
 func TestOnewayInboundMiddleware_authFailure(t *testing.T) {
-	oneway := authOnewayInboundMiddleware{
-		Host: service.NopHostAuthFailure(),
-	}
+	host := service.NopHostAuthFailure()
+	oneway := authOnewayInboundMiddleware{host, newStatsClient(host.Metrics())}
 	err := oneway.HandleOneway(context.Background(), &transport.Request{}, &fakeOneway{t: t})
 	assert.EqualError(t, err, "Error authorizing the service")
 }
@@ -134,20 +128,20 @@ func TestOnewayInboundMiddleware_authFailure(t *testing.T) {
 func TestInboundMiddleware_panic(t *testing.T) {
 	host := service.NopHost()
 	testScope := host.Metrics()
-	stats.SetupRPCMetrics(testScope)
+	statsClient := newStatsClient(testScope)
 
 	defer testPanicHandler(t, testScope)
-	unary := panicInboundMiddleware{}
+	unary := panicInboundMiddleware{statsClient}
 	unary.Handle(context.Background(), &transport.Request{}, nil, &alwaysPanicUnary{})
 }
 
 func TestOnewayInboundMiddleware_panic(t *testing.T) {
 	host := service.NopHost()
 	testScope := host.Metrics()
-	stats.SetupRPCMetrics(testScope)
+	statsClient := newStatsClient(testScope)
 
 	defer testPanicHandler(t, testScope)
-	oneway := panicOnewayInboundMiddleware{}
+	oneway := panicOnewayInboundMiddleware{statsClient}
 	oneway.HandleOneway(context.Background(), &transport.Request{}, &alwaysPanicOneway{})
 }
 

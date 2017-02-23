@@ -46,7 +46,7 @@ func TestDispatcher(t *testing.T) {
 	c := dispatcherController{}
 	host := service.NopHost()
 	c.addConfig(yarpcConfig{transports: transports{inbounds: []transport.Inbound{}}})
-	assert.NoError(t, c.Start(host))
+	assert.NoError(t, c.Start(host, newStatsClient(host.Metrics())))
 }
 
 func TestBindToBadPortReturnsError(t *testing.T) {
@@ -59,7 +59,8 @@ func TestBindToBadPortReturnsError(t *testing.T) {
 	}
 
 	c.addConfig(cfg)
-	assert.Error(t, c.Start(service.NopHost()))
+	host := service.NopHost()
+	assert.Error(t, c.Start(host, newStatsClient(host.Metrics())))
 }
 
 func TestMergeOfEmptyConfigCollectionReturnsError(t *testing.T) {
@@ -67,7 +68,8 @@ func TestMergeOfEmptyConfigCollectionReturnsError(t *testing.T) {
 	c := dispatcherController{}
 	_, err := c.mergeConfigs("test")
 	assert.EqualError(t, err, "unable to merge empty configs")
-	assert.EqualError(t, c.Start(service.NopHost()), err.Error())
+	host := service.NopHost()
+	assert.EqualError(t, c.Start(host, newStatsClient(host.Metrics())), err.Error())
 }
 
 func TestInboundPrint(t *testing.T) {
