@@ -60,7 +60,6 @@ func (n node) id() string {
 
 type objNode struct {
 	node
-	fmt.Stringer
 
 	obj interface{}
 }
@@ -85,7 +84,6 @@ func (n objNode) String() string {
 
 type funcNode struct {
 	node
-	fmt.Stringer
 
 	constructor interface{}
 	deps        []interface{}
