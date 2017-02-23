@@ -115,8 +115,8 @@ type Address struct {
 
 type handlerWithDispatcher func(dispatcher *yarpc.Dispatcher) error
 
-// Stores a collection of all modules configs with a shared dispatcher and user handles to
-// append procedures to the dispatcher
+// Stores a collection of all module configs with a shared dispatcher
+// and user handles to work with the dispatcher.
 type dispatcherController struct {
 	// sync configs
 	sync.RWMutex
@@ -178,7 +178,7 @@ func (c *dispatcherController) addDefaultMiddleware(host service.Host, statsClie
 }
 
 // Starts the dispatcher:
-// 1. Merge all existing configs
+// 1. Add default middleware and merge all existing configs
 // 2. Create a dispatcher
 // 3. Call user handles to e.g. register transport.Procedures on the dispatcher
 // 4. Start the dispatcher
@@ -284,7 +284,7 @@ func newYARPCModule(
 		return nil, errs.Wrap(err, "can't read inbounds")
 	}
 
-	// iterate over inbounds
+	// Iterate over inbounds.
 	transportsIn, err := prepareInbounds(module.config.Inbounds, mi.Host.Name())
 	if err != nil {
 		return nil, errs.Wrap(err, "can't process inbounds")
