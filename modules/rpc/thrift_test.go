@@ -33,6 +33,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/yarpc"
+	"go.uber.org/yarpc/api/transport"
 	"go.uber.org/yarpc/encoding/thrift"
 )
 
@@ -50,10 +51,10 @@ func TestThriftModule_OK(t *testing.T) {
 
 	wg := sync.WaitGroup{}
 	wg.Add(1)
-	testInbounds := func(_ service.Host, dispatcher *yarpc.Dispatcher) error {
+	testInbounds := func(_ service.Host, dispatcher *yarpc.Dispatcher) ([]transport.Procedure, error) {
 		require.Equal(t, 2, len(dispatcher.Inbounds()))
 		wg.Done()
-		return nil
+		return nil, nil
 	}
 
 	chip := ThriftModule(testInbounds, modules.WithRoles("rescue"))
@@ -133,15 +134,12 @@ func errorOption(_ *service.ModuleCreateInfo) error {
 	return errors.New("bad option")
 }
 
-func okCreate(_ service.Host, dispatcher *yarpc.Dispatcher) error {
-	reg := thrift.BuildProcedures(thrift.Service{
+func okCreate(_ service.Host, dispatcher *yarpc.Dispatcher) ([]transport.Procedure, error) {
+	return thrift.BuildProcedures(thrift.Service{
 		Name: "foo",
-	})
-
-	dispatcher.Register(reg)
-	return nil
+	}), nil
 }
 
-func badCreateService(service.Host, *yarpc.Dispatcher) error {
-	return errors.New("can't create service")
+func badCreateService(service.Host, *yarpc.Dispatcher) ([]transport.Procedure, error) {
+	return nil, errors.New("can't create service")
 }

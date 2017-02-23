@@ -308,7 +308,13 @@ func newYARPCModule(
 
 	module.controller.addConfig(module.config)
 	module.controller.appendHandler(func(dispatcher *yarpc.Dispatcher) error {
-		return reg(mi.Host, dispatcher)
+		t, err := reg(mi.Host, dispatcher)
+		if err != nil {
+			return err
+		}
+
+		dispatcher.Register(t)
+		return nil
 	})
 
 	module.log.Info("Module successfuly created", "inbounds", module.config.Inbounds)

@@ -28,21 +28,20 @@ import (
 	kvs "go.uber.org/fx/examples/keyvalue/kv/keyvalueserver"
 	"go.uber.org/fx/service"
 	"go.uber.org/yarpc"
+	"go.uber.org/yarpc/api/transport"
 )
 
-type YarpcHandler struct {
+type YARPCHandler struct {
 	sync.RWMutex
 
 	items map[string]string
 }
 
-func NewYarpcThriftHandler(_ service.Host, dispatcher *yarpc.Dispatcher) error {
-	handler := &YarpcHandler{items: map[string]string{}}
-	dispatcher.Register(kvs.New(handler))
-	return nil
+func NewYARPCThriftHandler(_ service.Host, _ *yarpc.Dispatcher) ([]transport.Procedure, error) {
+	return kvs.New(&YARPCHandler{items: map[string]string{}}), nil
 }
 
-func (h *YarpcHandler) GetValue(ctx context.Context, key *string) (string, error) {
+func (h *YARPCHandler) GetValue(ctx context.Context, key *string) (string, error) {
 	h.RLock()
 	defer h.RUnlock()
 
@@ -52,7 +51,7 @@ func (h *YarpcHandler) GetValue(ctx context.Context, key *string) (string, error
 	return "", &kv.ResourceDoesNotExist{Key: *key}
 }
 
-func (h *YarpcHandler) SetValue(ctx context.Context, key *string, value *string) error {
+func (h *YARPCHandler) SetValue(ctx context.Context, key *string, value *string) error {
 	h.Lock()
 
 	h.items[*key] = *value
