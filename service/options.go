@@ -22,6 +22,7 @@ package service
 
 import (
 	"go.uber.org/fx/config"
+	"go.uber.org/fx/metrics"
 
 	"github.com/opentracing/opentracing-go"
 	"github.com/uber-go/tally"
@@ -46,6 +47,18 @@ func WithMetrics(scope tally.Scope, reporter tally.CachedStatsReporter) Option {
 		svc2 := svc.(*manager)
 		svc2.metrics = scope
 		svc2.statsReporter = reporter
+		return nil
+	}
+}
+
+// WithRootScope registers the root scope for all the service metrics
+func WithRootScope(scopeFunc metrics.ScopeFunc) Option {
+	return func(svc Host) error {
+		svc2 := svc.(*manager)
+		if svc2.serviceCore.metricsClient == nil {
+			svc2.serviceCore.metricsClient = metrics.NewClient()
+		}
+		svc2.serviceCore.metricsClient.RegisterRootScope(scopeFunc)
 		return nil
 	}
 }
