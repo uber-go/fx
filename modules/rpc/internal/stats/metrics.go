@@ -41,39 +41,33 @@ var (
 )
 
 // Client is a client for stats.
-type Client interface {
-	// RPCAuthFailCounter counts auth failures
-	RPCAuthFailCounter() tally.Counter
-	// RPCHandleTimer is a turnaround time for rpc handler
-	RPCHandleTimer() tally.Scope
-	// RPCPanicCounter counts panics occurred for rpc handler
-	RPCPanicCounter() tally.Counter
+type Client struct {
+	rpcAuthFailCounter tally.Counter
+	rpcHandleTimer     tally.Scope
+	rpcPanicCounter    tally.Counter
 }
 
 // NewClient returns a new Client for the given tally.Scope.
-func NewClient(scope tally.Scope) Client {
+func NewClient(scope tally.Scope) *Client {
 	rpcTagsScope := scope.Tagged(rpcTags)
-	return &client{
+	return &Client{
 		rpcTagsScope.Tagged(map[string]string{TagMiddleware: "auth"}).Counter("fail"),
 		rpcTagsScope.Tagged(rpcTags),
 		rpcTagsScope.Counter("panic"),
 	}
 }
 
-type client struct {
-	rpcAuthFailCounter tally.Counter
-	rpcHandleTimer     tally.Scope
-	rpcPanicCounter    tally.Counter
-}
-
-func (c *client) RPCAuthFailCounter() tally.Counter {
+// RPCAuthFailCounter counts auth failures
+func (c *Client) RPCAuthFailCounter() tally.Counter {
 	return c.rpcAuthFailCounter
 }
 
-func (c *client) RPCHandleTimer() tally.Scope {
+// RPCHandleTimer is a turnaround time for rpc handler
+func (c *Client) RPCHandleTimer() tally.Scope {
 	return c.rpcHandleTimer
 }
 
-func (c *client) RPCPanicCounter() tally.Counter {
+// RPCPanicCounter counts panics occurred for rpc handler
+func (c *Client) RPCPanicCounter() tally.Counter {
 	return c.rpcPanicCounter
 }

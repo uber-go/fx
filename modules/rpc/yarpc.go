@@ -52,7 +52,7 @@ type YARPCModule struct {
 	register    registerServiceFunc
 	config      yarpcConfig
 	log         ulog.Log
-	statsClient stats.Client
+	statsClient *stats.Client
 	stateMu     sync.RWMutex
 	isRunning   bool
 	controller  *dispatcherController
@@ -142,7 +142,7 @@ func (c *dispatcherController) addConfig(config yarpcConfig) {
 }
 
 // Adds the default middleware: context propagation and auth.
-func (c *dispatcherController) addDefaultMiddleware(host service.Host, statsClient stats.Client) {
+func (c *dispatcherController) addDefaultMiddleware(host service.Host, statsClient *stats.Client) {
 	cfg := yarpcConfig{
 		inboundMiddleware: []middleware.UnaryInbound{
 			contextInboundMiddleware{host, statsClient},
@@ -161,7 +161,7 @@ func (c *dispatcherController) addDefaultMiddleware(host service.Host, statsClie
 
 // Starts the dispatcher: wait until all modules call start, create a single dispatcher and then start it.
 // Once started the collection will not start the dispatcher again.
-func (c *dispatcherController) Start(host service.Host, statsClient stats.Client) error {
+func (c *dispatcherController) Start(host service.Host, statsClient *stats.Client) error {
 	c.start.Do(func() {
 		c.addDefaultMiddleware(host, statsClient)
 

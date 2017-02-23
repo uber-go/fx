@@ -37,7 +37,7 @@ const _panicResponse = "Server Error"
 
 type contextInboundMiddleware struct {
 	service.Host
-	statsClient stats.Client
+	statsClient *stats.Client
 }
 
 func (f contextInboundMiddleware) Handle(
@@ -76,7 +76,7 @@ func (f contextOnewayInboundMiddleware) HandleOneway(
 
 type authInboundMiddleware struct {
 	service.Host
-	statsClient stats.Client
+	statsClient *stats.Client
 }
 
 func (a authInboundMiddleware) Handle(
@@ -94,7 +94,7 @@ func (a authInboundMiddleware) Handle(
 
 type authOnewayInboundMiddleware struct {
 	service.Host
-	statsClient stats.Client
+	statsClient *stats.Client
 }
 
 func (a authOnewayInboundMiddleware) HandleOneway(
@@ -109,7 +109,7 @@ func (a authOnewayInboundMiddleware) HandleOneway(
 	return handler.HandleOneway(fxctx, req)
 }
 
-func authorize(ctx context.Context, host service.Host, statsClient stats.Client) (context.Context, error) {
+func authorize(ctx context.Context, host service.Host, statsClient *stats.Client) (context.Context, error) {
 	if err := host.AuthClient().Authorize(ctx); err != nil {
 		statsClient.RPCAuthFailCounter().Inc(1)
 		ulog.Logger(ctx).Error(auth.ErrAuthorization, "error", err)
@@ -121,7 +121,7 @@ func authorize(ctx context.Context, host service.Host, statsClient stats.Client)
 }
 
 type panicInboundMiddleware struct {
-	statsClient stats.Client
+	statsClient *stats.Client
 }
 
 func (p panicInboundMiddleware) Handle(
@@ -135,7 +135,7 @@ func (p panicInboundMiddleware) Handle(
 }
 
 type panicOnewayInboundMiddleware struct {
-	statsClient stats.Client
+	statsClient *stats.Client
 }
 
 func (p panicOnewayInboundMiddleware) HandleOneway(
@@ -147,7 +147,7 @@ func (p panicOnewayInboundMiddleware) HandleOneway(
 	return handler.HandleOneway(ctx, req)
 }
 
-func panicRecovery(ctx context.Context, statsClient stats.Client) {
+func panicRecovery(ctx context.Context, statsClient *stats.Client) {
 	if err := recover(); err != nil {
 		statsClient.RPCPanicCounter().Inc(1)
 		ulog.Logger(ctx).Error(
