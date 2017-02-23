@@ -36,8 +36,30 @@ func TestWithInboundMiddleware_OK(t *testing.T) {
 	assert.Equal(t, 1, len(inboundMiddlewareFromModuleInfo(mc)))
 }
 
+func TestWithInboundMiddleware_Multiple(t *testing.T) {
+	mc, err := service.NewModuleInfo(
+		service.NopHost(),
+		"hello",
+		WithInboundMiddleware(middleware.NopUnaryInbound),
+		WithInboundMiddleware(middleware.NopUnaryInbound),
+	)
+	require.NoError(t, err)
+	assert.Equal(t, 2, len(inboundMiddlewareFromModuleInfo(mc)))
+}
+
 func TestWithOnewayInboundMiddleware_OK(t *testing.T) {
 	mc, err := service.NewModuleInfo(service.NopHost(), "hello", WithOnewayInboundMiddleware(middleware.NopOnewayInbound))
 	require.NoError(t, err)
 	assert.Equal(t, 1, len(onewayInboundMiddlewareFromModuleInfo(mc)))
+}
+
+func TestWithOnewayInboundMiddleware_Multiple(t *testing.T) {
+	mc, err := service.NewModuleInfo(
+		service.NopHost(),
+		"hello",
+		WithOnewayInboundMiddleware(middleware.NopOnewayInbound),
+		WithOnewayInboundMiddleware(middleware.NopOnewayInbound),
+	)
+	require.NoError(t, err)
+	assert.Equal(t, 2, len(onewayInboundMiddlewareFromModuleInfo(mc)))
 }
