@@ -76,3 +76,37 @@ func (m inboundMiddlewareChainBuilder) Build(finalHandler http.Handler) inboundM
 		finalHandler: finalHandler,
 	}
 }
+
+// outboundMiddlewareChain represents a chain of outbound middleware that are being executed recursively
+// in the increasing order middleware[0], middleware[1], ... The final transport is called
+// to make RoundTrip after the last middleware is completed.
+type outboundMiddlewareChain struct {
+	currentMiddleware int
+	middleware        []OutboundMiddleware
+	finalTransport    http.RoundTripper
+}
+
+func newOutboundMiddlewareChain(
+	middleware []OutboundMiddleware, finalTransport http.RoundTripper,
+) outboundMiddlewareChain {
+	return outboundMiddlewareChain{
+		middleware:     middleware,
+		finalTransport: finalTransport,
+	}
+}
+
+func (ec outboundMiddlewareChain) Execute(r *http.Request) (resp *http.Response, err error) {
+	if ec.currentMiddleware < len(ec.middleware) {
+		middleware := ec.middleware[ec.currentMiddleware]
+		ec.currentMiddleware++
+
+		return middleware.Handle(r, ec)
+	}
+
+	return ec.finalTransport.RoundTrip(r)
+}
+
+// Implement http.RoundTripper interface to use as a Transport in http.Client
+func (ec outboundMiddlewareChain) RoundTrip(r *http.Request) (resp *http.Response, err error) {
+	return ec.Execute(r)
+}

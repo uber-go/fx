@@ -18,7 +18,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package client
+package uhttp
 
 import (
 	"net/http"
@@ -33,12 +33,12 @@ var (
 	_testYaml = []byte(`
 name: test
 `)
-	_testClient = New(fakeAuthInfo{yaml: _testYaml})
+	_testClient = NewClient(fakeAuthInfo{yaml: _testYaml})
 )
 
 func TestNew(t *testing.T) {
 	t.Parallel()
-	chain, ok := _testClient.Transport.(executionChain)
+	chain, ok := _testClient.Transport.(outboundMiddlewareChain)
 	require.True(t, ok)
 	assert.Equal(t, 2, len(chain.middleware))
 }
@@ -46,7 +46,7 @@ func TestNew(t *testing.T) {
 func TestNew_Panic(t *testing.T) {
 	t.Parallel()
 	assert.Panics(t, func() {
-		New(fakeAuthInfo{yaml: []byte(``)})
+		NewClient(fakeAuthInfo{yaml: []byte(``)})
 	})
 }
 
@@ -73,12 +73,12 @@ func TestClientGet(t *testing.T) {
 func TestClientGetTwiceExecutesAllMiddleware(t *testing.T) {
 	svr := startServer()
 	count := 0
-	var f OutboundMiddlewareFunc = func(r *http.Request, next Executor) (resp *http.Response, err error) {
+	var f OutboundMiddlewareFunc = func(r *http.Request, next OutboundExecutor) (resp *http.Response, err error) {
 		count++
 		return next.Execute(r)
 	}
 
-	cl := New(fakeAuthInfo{yaml: _testYaml}, f)
+	cl := NewClient(fakeAuthInfo{yaml: _testYaml}, f)
 	resp, err := cl.Get(svr.URL)
 	checkOKResponse(t, resp, err)
 	require.Equal(t, 1, count)

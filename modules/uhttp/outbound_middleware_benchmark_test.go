@@ -18,7 +18,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package client
+package uhttp
 
 import (
 	"context"
@@ -53,7 +53,7 @@ func BenchmarkClientMiddleware(b *testing.B) {
 	}
 
 	for name, middleware := range bm {
-		chain := newExecutionChain(middleware, nopTransport{})
+		chain := newOutboundMiddlewareChain(middleware, nopTransport{})
 		span := tracer.StartSpan("test_method")
 		span.SetBaggageItem(auth.ServiceAuth, "testService")
 
