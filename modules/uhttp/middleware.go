@@ -120,6 +120,6 @@ type metricsInbound struct {
 func (f metricsInbound) Handle(w http.ResponseWriter, r *http.Request, next http.Handler) {
 	stopwatch := f.statsClient.HTTPMethodTimer().Timer(r.Method).Start()
 	defer stopwatch.Stop()
-	defer f.statsClient.HTTPStatusCountScope().Tagged(map[string]string{TagStatus: w.Header().Get("Status")}).Counter("total").Inc(1)
+	defer f.statsClient.HTTPStatusCountScope().Tagged(map[string]string{_tagStatus: w.Header().Get("Status")}).Counter("total").Inc(1)
 	next.ServeHTTP(w, r)
 }

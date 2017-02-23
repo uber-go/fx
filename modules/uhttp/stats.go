@@ -23,20 +23,20 @@ package uhttp
 import "github.com/uber-go/tally"
 
 const (
-	//TagModule is module tag for metrics
-	TagModule = "module"
-	// TagType is either request or response
-	TagType = "type"
-	// TagStatus is status of the request
-	TagStatus = "status"
-	// TagMiddleware is the middleware tag
-	TagMiddleware = "middleware"
+	//_tagModule is module tag for metrics
+	_tagModule = "module"
+	// _tagType is either request or response
+	_tagType = "type"
+	// _tagStatus is status of the request
+	_tagStatus = "status"
+	// _tagMiddleware is the middleware tag
+	_tagMiddleware = "middleware"
 )
 
 var (
 	httpTags = map[string]string{
-		TagModule: "http",
-		TagType:   "request",
+		_tagModule: "http",
+		_tagType:   "request",
 	}
 )
 
@@ -51,7 +51,7 @@ func newStatsClient(scope tally.Scope) *statsClient {
 	httpScope := scope.Tagged(httpTags)
 	return &statsClient{
 		httpScope.Counter("panic"),
-		httpScope.Tagged(map[string]string{TagMiddleware: "auth"}).Counter("fail"),
+		httpScope.Tagged(map[string]string{_tagMiddleware: "auth"}).Counter("fail"),
 		httpScope.Tagged(httpTags),
 		httpScope,
 	}
