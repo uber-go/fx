@@ -33,15 +33,14 @@ import (
 )
 
 func TestRegisterReporter_OK(t *testing.T) {
-	defer cleanup()
-
-	scope, reporter, closer := getScope()
+	client := NewClient()
+	scope, reporter, closer := client.RootScope(scopeInit())
 	assert.Equal(t, scope, tally.NoopScope)
 	assert.Equal(t, reporter, NopCachedStatsReporter)
 	assert.NoError(t, closer.Close())
 
-	RegisterRootScope(goodScope)
-	scope, reporter, closer = getScope()
+	client.RegisterRootScope(goodScope)
+	scope, reporter, closer = client.RootScope(scopeInit())
 	defer closer.Close()
 	assert.NotNil(t, scope)
 	assert.NotNil(t, reporter)
@@ -49,29 +48,26 @@ func TestRegisterReporter_OK(t *testing.T) {
 }
 
 func TestRegisterReporterPanics(t *testing.T) {
-	defer cleanup()
-
-	RegisterRootScope(goodScope)
+	client := NewClient()
+	client.RegisterRootScope(goodScope)
 	assert.Panics(t, func() {
-		RegisterRootScope(goodScope)
+		client.RegisterRootScope(goodScope)
 	})
 }
 
 func TestRegisterReporterFrozen(t *testing.T) {
-	defer cleanup()
-
-	Freeze()
+	client := NewClient()
+	client.Freeze()
 	assert.Panics(t, func() {
-		RegisterRootScope(goodScope)
+		client.RegisterRootScope(goodScope)
 	})
 }
 
 func TestRegisterBadReporterPanics(t *testing.T) {
-	defer cleanup()
-
-	RegisterRootScope(badScope)
+	client := NewClient()
+	client.RegisterRootScope(badScope)
 	assert.Panics(t, func() {
-		getScope()
+		client.RootScope(scopeInit())
 	})
 }
 
@@ -81,10 +77,6 @@ func goodScope(i ScopeInit) (tally.Scope, tally.CachedStatsReporter, io.Closer, 
 
 func badScope(i ScopeInit) (tally.Scope, tally.CachedStatsReporter, io.Closer, error) {
 	return nil, nil, nil, errors.New("fake error")
-}
-
-func getScope() (tally.Scope, tally.CachedStatsReporter, io.Closer) {
-	return RootScope(scopeInit())
 }
 
 type scopeIniter struct {
@@ -107,11 +99,6 @@ func scopeInit() ScopeInit {
 			"foo": "bar",
 		}),
 	}
-}
-
-func cleanup() {
-	_scopeFunc = nil
-	_frozen = false
 }
 
 func configData(data map[string]interface{}) config.Provider {
