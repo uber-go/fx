@@ -66,9 +66,6 @@ func TestDefaultInboundMiddlewareWithNopHost(t *testing.T) {
 
 	// setup
 	host := service.NopHost()
-	stats.SetupHTTPMetrics(host.Metrics())
-	// teardown
-	defer httpMetricsTeardown()
 
 	t.Run("parallel group", func(t *testing.T) {
 		for _, tt := range tests {
@@ -94,9 +91,6 @@ func TestDefaultMiddlewareWithNopHostAuthFailure(t *testing.T) {
 
 	// setup
 	host := service.NopHostAuthFailure()
-	stats.SetupHTTPMetrics(host.Metrics())
-	// teardown
-	defer httpMetricsTeardown()
 
 	t.Run("parallel group", func(t *testing.T) {
 		for _, tt := range tests {
@@ -124,7 +118,6 @@ func TestDefaultInboundMiddlewareWithNopHostConfigured(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.desc, tt.testFn)
-		httpMetricsTeardown()
 	}
 }
 
@@ -174,7 +167,8 @@ func testInboundTraceInboundAuthChain(t *testing.T, host service.Host) {
 	chain := newInboundMiddlewareChainBuilder().AddMiddleware(
 		tracingInbound{},
 		authorizationInbound{
-			authClient: host.AuthClient(),
+			authClient:  host.AuthClient(),
+			statsClient: stats.NewClient(host.Metrics()),
 		}).Build(getNopHandler())
 
 	response := testServeHTTP(chain)
@@ -185,7 +179,8 @@ func testInboundMiddlewareChainAuthFailure(t *testing.T, host service.Host) {
 	chain := newInboundMiddlewareChainBuilder().AddMiddleware(
 		tracingInbound{},
 		authorizationInbound{
-			authClient: host.AuthClient(),
+			authClient:  host.AuthClient(),
+			statsClient: stats.NewClient(host.Metrics()),
 		}).Build(getNopHandler())
 	response := testServeHTTP(chain)
 	assert.Equal(t, response.Body.String(), "Unauthorized access: Error authorizing the service\n")
@@ -194,7 +189,7 @@ func testInboundMiddlewareChainAuthFailure(t *testing.T, host service.Host) {
 
 func testPanicInbound(t *testing.T, host service.Host) {
 	chain := newInboundMiddlewareChainBuilder().AddMiddleware(
-		panicInbound{},
+		panicInbound{stats.NewClient(host.Metrics())},
 	).Build(getPanicHandler())
 	response := testServeHTTP(chain)
 	assert.Equal(t, response.Body.String(), _panicResponse+"\n")
@@ -208,7 +203,7 @@ func testPanicInbound(t *testing.T, host service.Host) {
 
 func testMetricsInbound(t *testing.T, host service.Host) {
 	chain := newInboundMiddlewareChainBuilder().AddMiddleware(
-		metricsInbound{},
+		metricsInbound{stats.NewClient(host.Metrics())},
 	).Build(getNopHandler())
 	response := testServeHTTP(chain)
 	assert.Contains(t, response.Body.String(), "inbound middleware ok")
@@ -226,13 +221,6 @@ func testServeHTTP(chain inboundMiddlewareChain) *httptest.ResponseRecorder {
 	response := httptest.NewRecorder()
 	chain.ServeHTTP(response, request)
 	return response
-}
-
-func httpMetricsTeardown() {
-	stats.HTTPPanicCounter = nil
-	stats.HTTPAuthFailCounter = nil
-	stats.HTTPMethodTimer = nil
-	stats.HTTPStatusCountScope = nil
 }
 
 func getNopHandler() http.HandlerFunc {

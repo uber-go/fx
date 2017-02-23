@@ -111,8 +111,6 @@ func newModule(
 		mi.Name = "http"
 	}
 
-	stats.SetupHTTPMetrics(mi.Host.Metrics())
-
 	handlers := addHealth(getHandlers(mi.Host))
 
 	log := ulog.Logger(context.Background()).With("moduleName", mi.Name)
@@ -121,7 +119,7 @@ func newModule(
 	module := &Module{
 		ModuleBase: *modules.NewModuleBase(mi.Name, mi.Host, []string{}),
 		handlers:   handlers,
-		mcb:        defaultInboundMiddlewareChainBuilder(log, mi.Host.AuthClient()),
+		mcb:        defaultInboundMiddlewareChainBuilder(log, mi.Host.AuthClient(), stats.NewClient(mi.Host.Metrics())),
 	}
 
 	err := module.Host().Config().Get(getConfigKey(mi.Name)).PopulateStruct(cfg)

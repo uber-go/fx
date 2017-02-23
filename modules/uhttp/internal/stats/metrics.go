@@ -33,31 +33,55 @@ const (
 	TagMiddleware = "middleware"
 )
 
-// HTTPTags creates metrics scope with defined tags
 var (
-	HTTPTags = map[string]string{
+	httpTags = map[string]string{
 		TagModule: "http",
 		TagType:   "request",
 	}
-
-	// HTTPPanicCounter counts panics occurred in http
-	HTTPPanicCounter tally.Counter
-	// HTTPAuthFailCounter counts auth failures
-	HTTPAuthFailCounter tally.Counter
-	// HTTPMethodTimer is a turnaround time for http methods
-	HTTPMethodTimer tally.Scope
-	// HTTPStatusCountScope is a scope for http status
-	HTTPStatusCountScope tally.Scope
 )
 
-// SetupHTTPMetrics allocates counters for necessary setup
-func SetupHTTPMetrics(scope tally.Scope) {
-	httpScope := scope.Tagged(HTTPTags)
-	HTTPPanicCounter = httpScope.Counter("panic")
+// Client is a client for stats.
+type Client interface {
+	// HTTPPanicCounter counts panics occurred in http
+	HTTPPanicCounter() tally.Counter
+	// HTTPAuthFailCounter counts auth failures
+	HTTPAuthFailCounter() tally.Counter
+	// HTTPMethodTimer is a turnaround time for http methods
+	HTTPMethodTimer() tally.Scope
+	// HTTPStatusCountScope is a scope for http status
+	HTTPStatusCountScope() tally.Scope
+}
 
-	HTTPAuthFailCounter = httpScope.Tagged(map[string]string{TagMiddleware: "auth"}).Counter("fail")
+// NewClient returns a new Client for the given tally.Scope.
+func NewClient(scope tally.Scope) Client {
+	httpScope := scope.Tagged(httpTags)
+	return &client{
+		httpScope.Counter("panic"),
+		httpScope.Tagged(map[string]string{TagMiddleware: "auth"}).Counter("fail"),
+		httpScope.Tagged(httpTags),
+		httpScope,
+	}
+}
 
-	HTTPMethodTimer = httpScope.Tagged(HTTPTags)
+type client struct {
+	httpPanicCounter     tally.Counter
+	httpAuthFailCounter  tally.Counter
+	httpMethodTimer      tally.Scope
+	httpStatusCountScope tally.Scope
+}
 
-	HTTPStatusCountScope = httpScope
+func (c *client) HTTPPanicCounter() tally.Counter {
+	return c.httpPanicCounter
+}
+
+func (c *client) HTTPAuthFailCounter() tally.Counter {
+	return c.httpAuthFailCounter
+}
+
+func (c *client) HTTPMethodTimer() tally.Scope {
+	return c.httpMethodTimer
+}
+
+func (c *client) HTTPStatusCountScope() tally.Scope {
+	return c.httpStatusCountScope
 }
