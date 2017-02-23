@@ -33,27 +33,46 @@ const (
 	TagMiddleware = "middleware"
 )
 
-// HTTPTags creates metrics scope with defined tags
 var (
-
-	// RPCTags creates metrics scope with defined tags
-	RPCTags = map[string]string{
+	rpcTags = map[string]string{
 		TagModule: "rpc",
 		TagType:   "request",
 	}
-
-	// RPCAuthFailCounter counts auth failures
-	RPCAuthFailCounter tally.Counter
-	// RPCHandleTimer is a turnaround time for rpc handler
-	RPCHandleTimer tally.Scope
-	// RPCPanicCounter counts panics occurred for rpc handler
-	RPCPanicCounter tally.Counter
 )
 
-// SetupRPCMetrics allocates counters for necessary setup
-func SetupRPCMetrics(scope tally.Scope) {
-	rpcTagsScope := scope.Tagged(RPCTags)
-	RPCAuthFailCounter = rpcTagsScope.Tagged(map[string]string{TagMiddleware: "auth"}).Counter("fail")
-	RPCHandleTimer = rpcTagsScope.Tagged(RPCTags)
-	RPCPanicCounter = rpcTagsScope.Counter("panic")
+// Client is a client for stats.
+type Client interface {
+	// RPCAuthFailCounter counts auth failures
+	RPCAuthFailCounter() tally.Counter
+	// RPCHandleTimer is a turnaround time for rpc handler
+	RPCHandleTimer() tally.Scope
+	// RPCPanicCounter counts panics occurred for rpc handler
+	RPCPanicCounter() tally.Counter
+}
+
+func NewClient(scope tally.Scope) Client {
+	rpcTagsScope := scope.Tagged(rpcTags)
+	return &client{
+		rpcTagsScope.Tagged(map[string]string{TagMiddleware: "auth"}).Counter("fail"),
+		rpcTagsScope.Tagged(rpcTags),
+		rpcTagsScope.Counter("panic"),
+	}
+}
+
+type client struct {
+	rpcAuthFailCounter tally.Counter
+	rpcHandleTimer     tally.Scope
+	rpcPanicCounter    tally.Counter
+}
+
+func (c *client) RPCAuthFailCounter() tally.Counter {
+	return c.rpcAuthFailCounter
+}
+
+func (c *client) RPCHandleTimer() tally.Scope {
+	return c.rpcHandleTimer
+}
+
+func (c *client) RPCPanicCounter() tally.Counter {
+	return c.rpcPanicCounter
 }

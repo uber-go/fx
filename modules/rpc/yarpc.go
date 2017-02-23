@@ -49,12 +49,13 @@ import (
 // register it in a dig.Graph provided with options/default graph.
 type YARPCModule struct {
 	modules.ModuleBase
-	register   registerServiceFunc
-	config     yarpcConfig
-	log        ulog.Log
-	stateMu    sync.RWMutex
-	isRunning  bool
-	controller *dispatcherController
+	register    registerServiceFunc
+	config      yarpcConfig
+	log         ulog.Log
+	statsClient stats.Client
+	stateMu     sync.RWMutex
+	isRunning   bool
+	controller  *dispatcherController
 }
 
 var (
@@ -141,17 +142,17 @@ func (c *dispatcherController) addConfig(config yarpcConfig) {
 }
 
 // Adds the default middleware: context propagation and auth.
-func (c *dispatcherController) addDefaultMiddleware(host service.Host) {
+func (c *dispatcherController) addDefaultMiddleware(host service.Host, statsClient stats.Client) {
 	cfg := yarpcConfig{
 		inboundMiddleware: []middleware.UnaryInbound{
-			contextInboundMiddleware{host},
-			panicInboundMiddleware{},
-			authInboundMiddleware{host},
+			contextInboundMiddleware{host, statsClient},
+			panicInboundMiddleware{statsClient},
+			authInboundMiddleware{host, statsClient},
 		},
 		onewayInboundMiddleware: []middleware.OnewayInbound{
 			contextOnewayInboundMiddleware{host},
-			panicOnewayInboundMiddleware{},
-			authOnewayInboundMiddleware{host},
+			panicOnewayInboundMiddleware{statsClient},
+			authOnewayInboundMiddleware{host, statsClient},
 		},
 	}
 
@@ -160,9 +161,9 @@ func (c *dispatcherController) addDefaultMiddleware(host service.Host) {
 
 // Starts the dispatcher: wait until all modules call start, create a single dispatcher and then start it.
 // Once started the collection will not start the dispatcher again.
-func (c *dispatcherController) Start(host service.Host) error {
+func (c *dispatcherController) Start(host service.Host, statsClient stats.Client) error {
 	c.start.Do(func() {
-		c.addDefaultMiddleware(host)
+		c.addDefaultMiddleware(host, statsClient)
 
 		var cfg yarpc.Config
 		var err error
@@ -241,11 +242,10 @@ func newYARPCModule(
 	}
 
 	module := &YARPCModule{
-		ModuleBase: *modules.NewModuleBase(name, mi.Host, []string{}),
-		register:   reg,
+		ModuleBase:  *modules.NewModuleBase(name, mi.Host, []string{}),
+		register:    reg,
+		statsClient: stats.NewClient(mi.Host.Metrics()),
 	}
-
-	stats.SetupRPCMetrics(mi.Host.Metrics())
 
 	module.log = ulog.Logger(context.Background()).With("moduleName", name)
 	for _, opt := range options {
@@ -331,7 +331,7 @@ func (m *YARPCModule) Start(readyCh chan<- struct{}) <-chan error {
 	defer m.stateMu.Unlock()
 
 	// TODO(alsam) allow services to advertise with a name separate from the host name.
-	if err := m.controller.Start(m.Host()); err != nil {
+	if err := m.controller.Start(m.Host(), m.statsClient); err != nil {
 		ret <- errs.Wrap(err, "unable to start dispatcher")
 		return ret
 	}

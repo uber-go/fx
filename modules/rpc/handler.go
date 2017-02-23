@@ -37,6 +37,7 @@ const _panicResponse = "Server Error"
 
 type contextInboundMiddleware struct {
 	service.Host
+	statsClient stats.Client
 }
 
 func (f contextInboundMiddleware) Handle(
@@ -45,7 +46,7 @@ func (f contextInboundMiddleware) Handle(
 	resw transport.ResponseWriter,
 	handler transport.UnaryHandler,
 ) error {
-	stopwatch := stats.RPCHandleTimer.
+	stopwatch := f.statsClient.RPCHandleTimer().
 		Tagged(map[string]string{stats.TagProcedure: req.Procedure}).
 		Timer(req.Procedure).
 		Start()
@@ -75,6 +76,7 @@ func (f contextOnewayInboundMiddleware) HandleOneway(
 
 type authInboundMiddleware struct {
 	service.Host
+	statsClient stats.Client
 }
 
 func (a authInboundMiddleware) Handle(
@@ -83,7 +85,7 @@ func (a authInboundMiddleware) Handle(
 	resw transport.ResponseWriter,
 	handler transport.UnaryHandler,
 ) error {
-	fxctx, err := authorize(ctx, a.Host)
+	fxctx, err := authorize(ctx, a.Host, a.statsClient)
 	if err != nil {
 		return err
 	}
@@ -92,6 +94,7 @@ func (a authInboundMiddleware) Handle(
 
 type authOnewayInboundMiddleware struct {
 	service.Host
+	statsClient stats.Client
 }
 
 func (a authOnewayInboundMiddleware) HandleOneway(
@@ -99,16 +102,16 @@ func (a authOnewayInboundMiddleware) HandleOneway(
 	req *transport.Request,
 	handler transport.OnewayHandler,
 ) error {
-	fxctx, err := authorize(ctx, a.Host)
+	fxctx, err := authorize(ctx, a.Host, a.statsClient)
 	if err != nil {
 		return err
 	}
 	return handler.HandleOneway(fxctx, req)
 }
 
-func authorize(ctx context.Context, host service.Host) (context.Context, error) {
+func authorize(ctx context.Context, host service.Host, statsClient stats.Client) (context.Context, error) {
 	if err := host.AuthClient().Authorize(ctx); err != nil {
-		stats.RPCAuthFailCounter.Inc(1)
+		statsClient.RPCAuthFailCounter().Inc(1)
 		ulog.Logger(ctx).Error(auth.ErrAuthorization, "error", err)
 		// TODO(anup): GFM-255 update returned error to transport.BadRequestError (user error than server error)
 		// https://github.com/yarpc/yarpc-go/issues/687
@@ -117,7 +120,9 @@ func authorize(ctx context.Context, host service.Host) (context.Context, error) 
 	return ctx, nil
 }
 
-type panicInboundMiddleware struct{}
+type panicInboundMiddleware struct {
+	statsClient stats.Client
+}
 
 func (p panicInboundMiddleware) Handle(
 	ctx context.Context,
@@ -125,24 +130,26 @@ func (p panicInboundMiddleware) Handle(
 	resw transport.ResponseWriter,
 	handler transport.UnaryHandler,
 ) error {
-	defer panicRecovery(ctx)
+	defer panicRecovery(ctx, p.statsClient)
 	return handler.Handle(ctx, req, resw)
 }
 
-type panicOnewayInboundMiddleware struct{}
+type panicOnewayInboundMiddleware struct {
+	statsClient stats.Client
+}
 
 func (p panicOnewayInboundMiddleware) HandleOneway(
 	ctx context.Context,
 	req *transport.Request,
 	handler transport.OnewayHandler,
 ) error {
-	defer panicRecovery(ctx)
+	defer panicRecovery(ctx, p.statsClient)
 	return handler.HandleOneway(ctx, req)
 }
 
-func panicRecovery(ctx context.Context) {
+func panicRecovery(ctx context.Context, statsClient stats.Client) {
 	if err := recover(); err != nil {
-		stats.RPCPanicCounter.Inc(1)
+		statsClient.RPCPanicCounter().Inc(1)
 		ulog.Logger(ctx).Error(
 			"Panic recovered serving request", "error", errors.Errorf("panic in handler: %+v", err),
 		)
