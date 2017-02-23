@@ -36,7 +36,9 @@ import (
 	"github.com/uber/jaeger-client-go"
 )
 
-const _contextLoggerKey = "_ulogLogger"
+const _contextLoggerKey contextLoggerKey = "_ulogLogger"
+
+type contextLoggerKey string
 
 type baseLogger struct {
 	sh  *sentry.Hook
