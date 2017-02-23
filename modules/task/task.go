@@ -26,14 +26,13 @@ import (
 	"github.com/uber-go/tally"
 
 	"go.uber.org/fx/modules"
-	"go.uber.org/fx/modules/task/internal/stats"
 	"go.uber.org/fx/service"
 )
 
 var (
 	_globalBackendMu          sync.RWMutex
 	_globalBackend            Backend = &NopBackend{}
-	_globalBackendStatsClient         = stats.NewClient(tally.NoopScope)
+	_globalBackendStatsClient         = newStatsClient(tally.NoopScope)
 	_asyncMod                 service.Module
 	_asyncModErr              error
 	_once                     sync.Once
@@ -47,7 +46,7 @@ func GlobalBackend() Backend {
 	return _globalBackend
 }
 
-func globalBackendStatsClient() *stats.Client {
+func globalBackendStatsClient() *statsClient {
 	_globalBackendMu.RLock()
 	defer _globalBackendMu.RUnlock()
 	return _globalBackendStatsClient
