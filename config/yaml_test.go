@@ -395,3 +395,58 @@ func TestArrayTypeNoPanic(t *testing.T) {
 
 	assert.NoError(t, provider.Get(Root).PopulateStruct(&cs))
 }
+
+func TestNilYAMLProviderSetDefaultTagValue(t *testing.T) {
+	type Inner struct {
+		Set bool `yaml:"set" default:"true"`
+	}
+	data := struct {
+		ID0 int             `yaml:"id0" default:"10"`
+		ID1 string          `yaml:"id1" default:"string"`
+		ID2 Inner           `yaml:"id2"`
+		ID3 []Inner         `yaml:"id3"`
+		ID4 map[Inner]Inner `yaml:"id4"`
+		ID5 *Inner          `yaml:"id5"`
+		//ID6 [6]Inner        `yaml:"id6"`
+		ID7 [7]*Inner `yaml:"id7"`
+	}{}
+
+	p := NewYAMLProviderFromBytes(nil)
+	p.Get("hello").PopulateStruct(&data)
+
+	assert.Equal(t, 10, data.ID0)
+	assert.Equal(t, "string", data.ID1)
+	assert.True(t, data.ID2.Set)
+	assert.Nil(t, data.ID3)
+	assert.Nil(t, data.ID4)
+	assert.Nil(t, data.ID5)
+	// TODO (yutong) uncomment following assert after DRI-12.
+	// assert.True(t, data.ID6[0].Set)
+	assert.Nil(t, data.ID7[0])
+}
+
+func TestDefaultWithMergeConfig(t *testing.T) {
+	base := []byte(`
+abc:
+  str: "base"
+  int: 1
+`)
+
+	prod := []byte(`
+abc:
+  str: "prod"
+`)
+	cfg := struct {
+		Str     string `yaml:"str" default:"nope"`
+		Int     int    `yaml:"int" default:"0"`
+		Bool    bool   `yaml:"bool" default:"true"`
+		BoolPtr *bool  `yaml:"bool_ptr"`
+	}{}
+	p := NewYAMLProviderFromBytes(base, prod)
+	p.Get("abc").PopulateStruct(&cfg)
+
+	assert.Equal(t, "prod", cfg.Str)
+	assert.Equal(t, 1, cfg.Int)
+	assert.Equal(t, true, cfg.Bool)
+	assert.Nil(t, cfg.BoolPtr)
+}
