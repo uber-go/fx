@@ -78,6 +78,7 @@ func newAsyncModule(
 	}
 	_globalBackendMu.Lock()
 	_globalBackend = backend
+	_globalBackendStatsClient = newStatsClient(mi.Host.Metrics())
 	_globalBackendMu.Unlock()
 	return &AsyncModule{
 		Backend: backend,
