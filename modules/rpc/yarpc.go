@@ -28,7 +28,6 @@ import (
 	"sync"
 
 	"go.uber.org/fx/modules"
-	"go.uber.org/fx/modules/rpc/internal/stats"
 	"go.uber.org/fx/service"
 	"go.uber.org/fx/ulog"
 
@@ -52,7 +51,7 @@ type YARPCModule struct {
 	register    registerServiceFunc
 	config      yarpcConfig
 	log         ulog.Log
-	statsClient *stats.Client
+	statsClient *statsClient
 	stateMu     sync.RWMutex
 	isRunning   bool
 	controller  *dispatcherController
@@ -142,7 +141,7 @@ func (c *dispatcherController) addConfig(config yarpcConfig) {
 }
 
 // Adds the default middleware: context propagation and auth.
-func (c *dispatcherController) addDefaultMiddleware(host service.Host, statsClient *stats.Client) {
+func (c *dispatcherController) addDefaultMiddleware(host service.Host, statsClient *statsClient) {
 	cfg := yarpcConfig{
 		inboundMiddleware: []middleware.UnaryInbound{
 			contextInboundMiddleware{host, statsClient},
@@ -161,7 +160,7 @@ func (c *dispatcherController) addDefaultMiddleware(host service.Host, statsClie
 
 // Starts the dispatcher: wait until all modules call start, create a single dispatcher and then start it.
 // Once started the collection will not start the dispatcher again.
-func (c *dispatcherController) Start(host service.Host, statsClient *stats.Client) error {
+func (c *dispatcherController) Start(host service.Host, statsClient *statsClient) error {
 	c.start.Do(func() {
 		c.addDefaultMiddleware(host, statsClient)
 
@@ -244,7 +243,7 @@ func newYARPCModule(
 	module := &YARPCModule{
 		ModuleBase:  *modules.NewModuleBase(name, mi.Host, []string{}),
 		register:    reg,
-		statsClient: stats.NewClient(mi.Host.Metrics()),
+		statsClient: newStatsClient(mi.Host.Metrics()),
 	}
 
 	module.log = ulog.Logger(context.Background()).With("moduleName", name)

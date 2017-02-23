@@ -18,7 +18,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package stats
+package rpc
 
 import "github.com/uber-go/tally"
 
@@ -40,17 +40,15 @@ var (
 	}
 )
 
-// Client is a client for stats.
-type Client struct {
+type statsClient struct {
 	rpcAuthFailCounter tally.Counter
 	rpcHandleTimer     tally.Scope
 	rpcPanicCounter    tally.Counter
 }
 
-// NewClient returns a new Client for the given tally.Scope.
-func NewClient(scope tally.Scope) *Client {
+func newStatsClient(scope tally.Scope) *statsClient {
 	rpcTagsScope := scope.Tagged(rpcTags)
-	return &Client{
+	return &statsClient{
 		rpcTagsScope.Tagged(map[string]string{TagMiddleware: "auth"}).Counter("fail"),
 		rpcTagsScope.Tagged(rpcTags),
 		rpcTagsScope.Counter("panic"),
@@ -58,16 +56,16 @@ func NewClient(scope tally.Scope) *Client {
 }
 
 // RPCAuthFailCounter counts auth failures
-func (c *Client) RPCAuthFailCounter() tally.Counter {
+func (c *statsClient) RPCAuthFailCounter() tally.Counter {
 	return c.rpcAuthFailCounter
 }
 
 // RPCHandleTimer is a turnaround time for rpc handler
-func (c *Client) RPCHandleTimer() tally.Scope {
+func (c *statsClient) RPCHandleTimer() tally.Scope {
 	return c.rpcHandleTimer
 }
 
 // RPCPanicCounter counts panics occurred for rpc handler
-func (c *Client) RPCPanicCounter() tally.Counter {
+func (c *statsClient) RPCPanicCounter() tally.Counter {
 	return c.rpcPanicCounter
 }
