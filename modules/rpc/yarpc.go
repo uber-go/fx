@@ -69,7 +69,7 @@ var (
 	_ service.Module = &YARPCModule{}
 )
 
-type registerServiceFunc func(module *YARPCModule)
+type registerServiceFunc func(module *YARPCModule) error
 
 type transports struct {
 	inbounds []transport.Inbound
@@ -278,11 +278,6 @@ func newYARPCModule(
 		if errCr := dig.Register(module.controller); errCr != nil {
 			return nil, errs.Wrap(errCr, "can't register a dispatcher controller")
 		}
-
-		// Register dispatcher
-		if err := dig.Register(&module.controller.dispatcher); err != nil {
-			return nil, errs.Wrap(err, "unable to register the dispatcher")
-		}
 	}
 
 	module.controller.addConfig(module.config)
@@ -335,7 +330,11 @@ func (m *YARPCModule) Start(readyCh chan<- struct{}) <-chan error {
 		return ret
 	}
 
-	m.register(m)
+	if err := m.register(m); err != nil {
+		ret <- errs.Wrap(err, "unable to create YARPC thrift handler")
+		return ret
+	}
+
 	m.log.Info("Module started")
 
 	m.isRunning = true

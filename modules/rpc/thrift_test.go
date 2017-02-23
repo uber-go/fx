@@ -25,15 +25,14 @@ import (
 	"testing"
 
 	"go.uber.org/fx/config"
-	"go.uber.org/fx/dig"
 	"go.uber.org/fx/modules"
 	"go.uber.org/fx/service"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/yarpc"
-	"go.uber.org/yarpc/api/transport"
 	"go.uber.org/yarpc/encoding/thrift"
+	"sync"
 )
 
 type testHost struct {
@@ -46,7 +45,15 @@ func (h testHost) Config() config.Provider {
 }
 
 func TestThriftModule_OK(t *testing.T) {
-	chip := ThriftModule(okCreate, modules.WithRoles("rescue"))
+	wg := sync.WaitGroup{}
+	wg.Add(1)
+	testInbounds := func(_ service.Host, dispatcher *yarpc.Dispatcher) error {
+		require.Equal(t, 2, len(dispatcher.Inbounds()))
+		wg.Done()
+		return nil
+	}
+
+	chip := ThriftModule(testInbounds, modules.WithRoles("rescue"))
 	dale := ThriftModule(okCreate, modules.WithRoles("ranges"))
 	cfg := []byte(`
 modules:
@@ -76,11 +83,7 @@ modules:
 
 	testInitRunModule(t, goofy[0], mci)
 	testInitRunModule(t, gopher[0], mci)
-
-	// Dispatcher must be resolved in the default graph
-	var dispatcher *yarpc.Dispatcher
-	assert.NoError(t, dig.Resolve(&dispatcher))
-	assert.Equal(t, 2, len(dispatcher.Inbounds()))
+	wg.Wait()
 }
 
 func TestThriftModule_BadOptions(t *testing.T) {
@@ -91,9 +94,13 @@ func TestThriftModule_BadOptions(t *testing.T) {
 
 func TestThrfitModule_Error(t *testing.T) {
 	modCreate := ThriftModule(badCreateService)
-	mods, err := modCreate(service.ModuleCreateInfo{})
-	assert.Error(t, err)
-	assert.Nil(t, mods)
+	mods, err := modCreate(service.ModuleCreateInfo{Host: testHost{
+		Host:   service.NopHost(),
+		config: config.NewYAMLProviderFromBytes([]byte(``)),
+	}})
+	assert.NoError(t, err)
+	ready := make(chan struct{})
+	assert.EqualError(t, <-mods[0].Start(ready), "unable to create YARPC thrift handler: can't create service")
 }
 
 func testInitRunModule(t *testing.T, mod service.Module, mci service.ModuleCreateInfo) {
@@ -121,13 +128,15 @@ func errorOption(_ *service.ModuleCreateInfo) error {
 	return errors.New("bad option")
 }
 
-func okCreate(_ service.Host) ([]transport.Procedure, error) {
+func okCreate(_ service.Host, dispatcher *yarpc.Dispatcher) error {
 	reg := thrift.BuildProcedures(thrift.Service{
 		Name: "foo",
 	})
-	return reg, nil
+
+	dispatcher.Register(reg)
+	return nil
 }
 
-func badCreateService(_ service.Host) ([]transport.Procedure, error) {
-	return nil, errors.New("can't create service")
+func badCreateService(service.Host, *yarpc.Dispatcher) error {
+	return errors.New("can't create service")
 }
