@@ -30,7 +30,6 @@ import (
 	"time"
 
 	"go.uber.org/fx/modules"
-	"go.uber.org/fx/modules/uhttp/internal/stats"
 	"go.uber.org/fx/service"
 	"go.uber.org/fx/ulog"
 
@@ -111,8 +110,6 @@ func newModule(
 		mi.Name = "http"
 	}
 
-	stats.SetupHTTPMetrics(mi.Host.Metrics())
-
 	handlers := addHealth(getHandlers(mi.Host))
 
 	log := ulog.Logger(context.Background()).With("moduleName", mi.Name)
@@ -121,7 +118,7 @@ func newModule(
 	module := &Module{
 		ModuleBase: *modules.NewModuleBase(mi.Name, mi.Host, []string{}),
 		handlers:   handlers,
-		mcb:        defaultInboundMiddlewareChainBuilder(log, mi.Host.AuthClient()),
+		mcb:        defaultInboundMiddlewareChainBuilder(log, mi.Host.AuthClient(), newStatsClient(mi.Host.Metrics())),
 	}
 
 	err := module.Host().Config().Get(getConfigKey(mi.Name)).PopulateStruct(cfg)

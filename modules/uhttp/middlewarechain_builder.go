@@ -48,16 +48,15 @@ type inboundMiddlewareChainBuilder struct {
 	middleware   []InboundMiddleware
 }
 
-func defaultInboundMiddlewareChainBuilder(log ulog.Log, authClient auth.Client) inboundMiddlewareChainBuilder {
+func defaultInboundMiddlewareChainBuilder(log ulog.Log, authClient auth.Client, statsClient *statsClient) inboundMiddlewareChainBuilder {
 	mcb := newInboundMiddlewareChainBuilder()
 	return mcb.AddMiddleware(
 		contextInbound{log},
-		panicInbound{},
-		metricsInbound{},
+		panicInbound{statsClient},
+		metricsInbound{statsClient},
 		tracingInbound{},
-		authorizationInbound{
-			authClient: authClient,
-		})
+		authorizationInbound{authClient, statsClient},
+	)
 }
 
 // newInboundMiddlewareChainBuilder creates an empty middlewareChainBuilder for setup

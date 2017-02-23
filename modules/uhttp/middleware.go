@@ -25,7 +25,6 @@ import (
 	"net/http"
 
 	"go.uber.org/fx/auth"
-	"go.uber.org/fx/modules/uhttp/internal/stats"
 	"go.uber.org/fx/ulog"
 
 	"github.com/opentracing/opentracing-go"
@@ -81,12 +80,13 @@ func (f tracingInbound) Handle(w http.ResponseWriter, r *http.Request, next http
 
 // authorizationInbound authorizes services based on configuration
 type authorizationInbound struct {
-	authClient auth.Client
+	authClient  auth.Client
+	statsClient *statsClient
 }
 
 func (f authorizationInbound) Handle(w http.ResponseWriter, r *http.Request, next http.Handler) {
 	if err := f.authClient.Authorize(r.Context()); err != nil {
-		stats.HTTPAuthFailCounter.Inc(1)
+		f.statsClient.HTTPAuthFailCounter().Inc(1)
 		ulog.Logger(r.Context()).Error(auth.ErrAuthorization, "error", err)
 		http.Error(w, fmt.Sprintf("Unauthorized access: %+v", err), http.StatusUnauthorized)
 		return
@@ -96,14 +96,16 @@ func (f authorizationInbound) Handle(w http.ResponseWriter, r *http.Request, nex
 
 // panicInbound handles any panics and return an error
 // panic inbound middleware should be added at the end of middleware chain to catch panics
-type panicInbound struct{}
+type panicInbound struct {
+	statsClient *statsClient
+}
 
 func (f panicInbound) Handle(w http.ResponseWriter, r *http.Request, next http.Handler) {
 	ctx := r.Context()
 	defer func() {
 		if err := recover(); err != nil {
 			ulog.Logger(ctx).Error("Panic recovered serving request", "error", errors.Errorf("panic in handler: %+v", err), "url", r.URL)
-			stats.HTTPPanicCounter.Inc(1)
+			f.statsClient.HTTPPanicCounter().Inc(1)
 			http.Error(w, _panicResponse, http.StatusInternalServerError)
 		}
 	}()
@@ -111,11 +113,13 @@ func (f panicInbound) Handle(w http.ResponseWriter, r *http.Request, next http.H
 }
 
 // metricsInbound adds any default metrics related to HTTP
-type metricsInbound struct{}
+type metricsInbound struct {
+	statsClient *statsClient
+}
 
 func (f metricsInbound) Handle(w http.ResponseWriter, r *http.Request, next http.Handler) {
-	stopwatch := stats.HTTPMethodTimer.Timer(r.Method).Start()
+	stopwatch := f.statsClient.HTTPMethodTimer().Timer(r.Method).Start()
 	defer stopwatch.Stop()
-	defer stats.HTTPStatusCountScope.Tagged(map[string]string{stats.TagStatus: w.Header().Get("Status")}).Counter("total").Inc(1)
+	defer f.statsClient.HTTPStatusCountScope().Tagged(map[string]string{_tagStatus: w.Header().Get("Status")}).Counter("total").Inc(1)
 	next.ServeHTTP(w, r)
 }
