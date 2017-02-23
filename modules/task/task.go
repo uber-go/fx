@@ -32,8 +32,8 @@ import (
 
 var (
 	_globalBackendMu          sync.RWMutex
-	_globalBackend            Backend      = &NopBackend{}
-	_globalBackendStatsClient stats.Client = stats.NewClient(tally.NoopScope)
+	_globalBackend            Backend = &NopBackend{}
+	_globalBackendStatsClient         = stats.NewClient(tally.NoopScope)
 	_asyncMod                 service.Module
 	_asyncModErr              error
 	_once                     sync.Once
