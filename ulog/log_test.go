@@ -59,7 +59,7 @@ func TestContext_LoggerAccess(t *testing.T) {
 	ctx := ContextWithLogger(context.Background(), nil)
 	assert.NotNil(t, ctx)
 	assert.NotNil(t, Logger(ctx))
-	assert.NotNil(t, ctx.Value(_contextLogger))
+	assert.NotNil(t, ctx.Value(_contextLoggerKey))
 }
 
 func TestContextWithTraceLogger(t *testing.T) {
@@ -71,7 +71,7 @@ func TestContextWithTraceLogger(t *testing.T) {
 		)
 		defer closer.Close()
 		span := tracer.StartSpan("opName")
-		ctx := context.WithValue(context.Background(), _contextLogger, loggerWithZap)
+		ctx := context.WithValue(context.Background(), _contextLoggerKey, loggerWithZap)
 		ctx = ContextWithTraceLogger(ctx, span)
 		Logger(ctx).Info("Testing context aware logger")
 		assert.True(t, len(buf.Lines()) > 0)

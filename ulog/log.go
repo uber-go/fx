@@ -36,9 +36,7 @@ import (
 	"github.com/uber/jaeger-client-go"
 )
 
-const _contextLogger contextKey = iota
-
-type contextKey int
+const _contextLoggerKey = "_ulogLogger"
 
 type baseLogger struct {
 	sh  *sentry.Hook
@@ -137,7 +135,7 @@ func Logger(ctx context.Context) Log {
 	if ctx == nil {
 		panic("logger requires a context that cannot be nil")
 	}
-	log := ctx.Value(_contextLogger)
+	log := ctx.Value(_contextLoggerKey)
 	if log != nil {
 		return log.(Log)
 	}
@@ -150,9 +148,9 @@ func ContextWithLogger(ctx context.Context, log Log) context.Context {
 		ctx = context.Background()
 	}
 	if log != nil {
-		return context.WithValue(ctx, _contextLogger, log)
+		return context.WithValue(ctx, _contextLoggerKey, log)
 	}
-	return context.WithValue(ctx, _contextLogger, logger())
+	return context.WithValue(ctx, _contextLoggerKey, logger())
 }
 
 // ContextWithTraceLogger returns a new context with a context-aware logger
@@ -165,7 +163,7 @@ func ContextWithTraceLogger(ctx context.Context, span opentracing.Span) context.
 			"traceID", jSpanCtx.TraceID(), "spanID", jSpanCtx.SpanID(),
 		)
 	}
-	return context.WithValue(ctx, _contextLogger, logger)
+	return context.WithValue(ctx, _contextLoggerKey, logger)
 }
 
 // Typed returns underneath zap implementation for use
