@@ -27,7 +27,6 @@ import (
 	"sync"
 	"time"
 
-	"go.uber.org/fx/internal"
 	"go.uber.org/fx/ulog/sentry"
 
 	"github.com/opentracing/opentracing-go"
@@ -36,6 +35,10 @@ import (
 	"github.com/uber-go/zap/spy"
 	"github.com/uber/jaeger-client-go"
 )
+
+const _contextLogger contextKey = iota
+
+type contextKey int
 
 type baseLogger struct {
 	sh  *sentry.Hook
@@ -134,7 +137,7 @@ func Logger(ctx context.Context) Log {
 	if ctx == nil {
 		panic("logger requires a context that cannot be nil")
 	}
-	log := ctx.Value(internal.ContextLogger)
+	log := ctx.Value(_contextLogger)
 	if log != nil {
 		return log.(Log)
 	}
@@ -147,9 +150,9 @@ func ContextWithLogger(ctx context.Context, log Log) context.Context {
 		ctx = context.Background()
 	}
 	if log != nil {
-		return context.WithValue(ctx, internal.ContextLogger, log)
+		return context.WithValue(ctx, _contextLogger, log)
 	}
-	return context.WithValue(ctx, internal.ContextLogger, logger())
+	return context.WithValue(ctx, _contextLogger, logger())
 }
 
 // ContextWithTraceLogger returns a new context with a context-aware logger
@@ -162,7 +165,7 @@ func ContextWithTraceLogger(ctx context.Context, span opentracing.Span) context.
 			"traceID", jSpanCtx.TraceID(), "spanID", jSpanCtx.SpanID(),
 		)
 	}
-	return context.WithValue(ctx, internal.ContextLogger, logger)
+	return context.WithValue(ctx, _contextLogger, logger)
 }
 
 // Typed returns underneath zap implementation for use

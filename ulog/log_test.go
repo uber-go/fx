@@ -29,7 +29,6 @@ import (
 	"testing"
 	"time"
 
-	"go.uber.org/fx/internal"
 	"go.uber.org/fx/testutils"
 	"go.uber.org/fx/ulog/sentry"
 
@@ -60,7 +59,7 @@ func TestContext_LoggerAccess(t *testing.T) {
 	ctx := ContextWithLogger(context.Background(), nil)
 	assert.NotNil(t, ctx)
 	assert.NotNil(t, Logger(ctx))
-	assert.NotNil(t, ctx.Value(internal.ContextLogger))
+	assert.NotNil(t, ctx.Value(_contextLogger))
 }
 
 func TestContextWithTraceLogger(t *testing.T) {
@@ -72,7 +71,7 @@ func TestContextWithTraceLogger(t *testing.T) {
 		)
 		defer closer.Close()
 		span := tracer.StartSpan("opName")
-		ctx := context.WithValue(context.Background(), internal.ContextLogger, loggerWithZap)
+		ctx := context.WithValue(context.Background(), _contextLogger, loggerWithZap)
 		ctx = ContextWithTraceLogger(ctx, span)
 		Logger(ctx).Info("Testing context aware logger")
 		assert.True(t, len(buf.Lines()) > 0)
