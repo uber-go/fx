@@ -69,8 +69,6 @@ var (
 	_ service.Module = &YARPCModule{}
 )
 
-type registerServiceFunc func(module *YARPCModule) error
-
 type transports struct {
 	inbounds []transport.Inbound
 }
@@ -115,9 +113,10 @@ type Address struct {
 	Port int
 }
 
-// Stores a collection of all modules configs with a shared dispatcher
-// that are safe to call from multiple go routines. All the configs must
-// share the same AdvertiseName and represent a single service.
+type handlerWithDispatcher func(dispatcher *yarpc.Dispatcher) error
+
+// Stores a collection of all modules configs with a shared dispatcher and user handles to
+// append procedures to the dispatcher
 type dispatcherController struct {
 	// sync configs
 	sync.RWMutex
@@ -129,15 +128,35 @@ type dispatcherController struct {
 	startError error
 
 	configs    []*yarpcConfig
-	dispatcher yarpc.Dispatcher
+	handlers   []handlerWithDispatcher
+	dispatcher *yarpc.Dispatcher
 }
 
-// Adds the config to the controller
+// Adds the config to the controller.
 func (c *dispatcherController) addConfig(config yarpcConfig) {
 	c.Lock()
 	defer c.Unlock()
 
 	c.configs = append(c.configs, &config)
+}
+
+// Adds the config to the controller.
+func (c *dispatcherController) appendHandler(handler handlerWithDispatcher) {
+	c.Lock()
+	defer c.Unlock()
+
+	c.handlers = append(c.handlers, handler)
+}
+
+// Apply handlers to the dispatcher.
+func (c *dispatcherController) applyHandlers() error {
+	for _, h := range c.handlers {
+		if err := h(c.dispatcher); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 // Adds the default middleware: context propagation and auth.
@@ -158,9 +177,14 @@ func (c *dispatcherController) addDefaultMiddleware(host service.Host, statsClie
 	c.addConfig(cfg)
 }
 
-// Starts the dispatcher: wait until all modules call start, create a single dispatcher and then start it.
-// Once started the collection will not start the dispatcher again.
-func (c *dispatcherController) Start(host service.Host, statsClient *statsClient) error {
+// Starts the dispatcher:
+// 1. Merge all existing configs
+// 2. Create a dispatcher
+// 3. Call user handles to e.g. register transport.Procedures on the dispatcher
+// 4. Start the dispatcher
+//
+// Once started the controller will not start the dispatcher again.
+func (c *dispatcherController) Start(host service.Host) error {
 	c.start.Do(func() {
 		c.addDefaultMiddleware(host, statsClient)
 
@@ -173,14 +197,18 @@ func (c *dispatcherController) Start(host service.Host, statsClient *statsClient
 
 		_dispatcherMu.Lock()
 		defer _dispatcherMu.Unlock()
-		var d *yarpc.Dispatcher
-		if d, err = _dispatcherFn(host, cfg); err != nil {
+
+		if c.dispatcher, err = _dispatcherFn(host, cfg); err != nil {
 			c.startError = err
 			return
 		}
 
-		c.dispatcher = *d
-		c.startError = _starterFn(&c.dispatcher)
+		if err := c.applyHandlers(); err != nil {
+			c.startError = err
+			return
+		}
+
+		c.startError = _starterFn(c.dispatcher)
 	})
 
 	return c.startError
@@ -232,7 +260,7 @@ func (c *dispatcherController) mergeConfigs(name string) (conf yarpc.Config, err
 // The first created module defines the service name.
 func newYARPCModule(
 	mi service.ModuleCreateInfo,
-	reg registerServiceFunc,
+	reg CreateThriftServiceFunc,
 	options ...modules.Option,
 ) (*YARPCModule, error) {
 	name := "yarpc"
@@ -241,9 +269,7 @@ func newYARPCModule(
 	}
 
 	module := &YARPCModule{
-		ModuleBase:  *modules.NewModuleBase(name, mi.Host, []string{}),
-		register:    reg,
-		statsClient: newStatsClient(mi.Host.Metrics()),
+		ModuleBase: *modules.NewModuleBase(name, mi.Host, []string{}),
 	}
 
 	module.log = ulog.Logger(context.Background()).With("moduleName", name)
@@ -281,6 +307,9 @@ func newYARPCModule(
 	}
 
 	module.controller.addConfig(module.config)
+	module.controller.appendHandler(func(dispatcher *yarpc.Dispatcher) error {
+		return reg(mi.Host, dispatcher)
+	})
 
 	module.log.Info("Module successfuly created", "inbounds", module.config.Inbounds)
 
@@ -327,11 +356,6 @@ func (m *YARPCModule) Start(readyCh chan<- struct{}) <-chan error {
 	// TODO(alsam) allow services to advertise with a name separate from the host name.
 	if err := m.controller.Start(m.Host(), m.statsClient); err != nil {
 		ret <- errs.Wrap(err, "unable to start dispatcher")
-		return ret
-	}
-
-	if err := m.register(m); err != nil {
-		ret <- errs.Wrap(err, "unable to create YARPC thrift handler")
 		return ret
 	}
 

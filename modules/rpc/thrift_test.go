@@ -22,9 +22,11 @@ package rpc
 
 import (
 	"errors"
+	"sync"
 	"testing"
 
 	"go.uber.org/fx/config"
+	"go.uber.org/fx/dig"
 	"go.uber.org/fx/modules"
 	"go.uber.org/fx/service"
 
@@ -32,7 +34,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/yarpc"
 	"go.uber.org/yarpc/encoding/thrift"
-	"sync"
 )
 
 type testHost struct {
@@ -45,6 +46,8 @@ func (h testHost) Config() config.Provider {
 }
 
 func TestThriftModule_OK(t *testing.T) {
+	dig.Reset()
+
 	wg := sync.WaitGroup{}
 	wg.Add(1)
 	testInbounds := func(_ service.Host, dispatcher *yarpc.Dispatcher) error {
@@ -92,15 +95,17 @@ func TestThriftModule_BadOptions(t *testing.T) {
 	assert.Error(t, err)
 }
 
-func TestThrfitModule_Error(t *testing.T) {
+func TestThriftModule_Error(t *testing.T) {
+	dig.Reset()
 	modCreate := ThriftModule(badCreateService)
 	mods, err := modCreate(service.ModuleCreateInfo{Host: testHost{
 		Host:   service.NopHost(),
 		config: config.NewYAMLProviderFromBytes([]byte(``)),
 	}})
+
 	assert.NoError(t, err)
 	ready := make(chan struct{})
-	assert.EqualError(t, <-mods[0].Start(ready), "unable to create YARPC thrift handler: can't create service")
+	assert.EqualError(t, <-mods[0].Start(ready), "unable to start dispatcher: can't create service")
 }
 
 func testInitRunModule(t *testing.T, mod service.Module, mci service.ModuleCreateInfo) {
