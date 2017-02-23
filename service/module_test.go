@@ -166,8 +166,41 @@ func TestNewModuleInfo(t *testing.T) {
 			assert.Equal(t, test.expectedItems, moduleInfo.Items())
 			logger, sink := ulog.TestingLogger()
 			moduleInfo.Logger(ulog.ContextWithLogger(context.Background(), logger)).Info("")
-			assert.Equal(t, 1, len(sink.Logs()))
+			require.Equal(t, 1, len(sink.Logs()))
 			assert.Contains(t, fmt.Sprint(sink.Logs()[0]), test.name)
 		})
 	}
+}
+
+func TestModuleWrapper(t *testing.T) {
+	moduleWrapper, err := newModuleWrapper(
+		NopHost(),
+		"hello",
+		func(moduleInfo ModuleInfo) (Module, error) {
+			return NewStubModule(moduleInfo), nil
+		},
+	)
+	require.NoError(t, err)
+	assert.Equal(t, "hello", moduleWrapper.Name())
+	assert.False(t, moduleWrapper.IsRunning())
+	assert.NoError(t, moduleWrapper.Start())
+	assert.True(t, moduleWrapper.IsRunning())
+	assert.Error(t, moduleWrapper.Start())
+	assert.NoError(t, moduleWrapper.Stop())
+	assert.False(t, moduleWrapper.IsRunning())
+	assert.Error(t, moduleWrapper.Stop())
+	assert.NoError(t, moduleWrapper.Start())
+	assert.NoError(t, moduleWrapper.Stop())
+	moduleWrapper, err = newModuleWrapper(NopHost(), "hello", nil)
+	assert.NoError(t, err)
+	assert.Nil(t, moduleWrapper)
+	moduleWrapper, err = newModuleWrapper(
+		NopHost(),
+		"hello",
+		func(moduleInfo ModuleInfo) (Module, error) {
+			return nil, nil
+		},
+	)
+	assert.NoError(t, err)
+	assert.Nil(t, moduleWrapper)
 }
