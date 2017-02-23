@@ -8,8 +8,7 @@ go:
 go_import_path: go.uber.org/fx
 
 env:
-  - V=1
-  - COVERMODE=atomic
+  - V=1 COVERMODE=atomic
 
 matrix:
   # Fail the build as soon as the first job fails
