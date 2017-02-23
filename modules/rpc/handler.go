@@ -46,7 +46,7 @@ func (f contextInboundMiddleware) Handle(
 	handler transport.UnaryHandler,
 ) error {
 	stopwatch := f.statsClient.RPCHandleTimer().
-		Tagged(map[string]string{TagProcedure: req.Procedure}).
+		Tagged(map[string]string{_tagProcedure: req.Procedure}).
 		Timer(req.Procedure).
 		Start()
 	defer stopwatch.Stop()

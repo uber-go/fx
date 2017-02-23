@@ -23,20 +23,20 @@ package rpc
 import "github.com/uber-go/tally"
 
 const (
-	//TagModule is module tag for metrics
-	TagModule = "module"
-	// TagType is either request or response
-	TagType = "type"
-	// TagProcedure is the procedure name
-	TagProcedure = "procedure"
-	//TagMiddleware is middleware type
-	TagMiddleware = "middleware"
+	//_tagModule is module tag for metrics
+	_tagModule = "module"
+	// _tagType is either request or response
+	_tagType = "type"
+	// _tagProcedure is the procedure name
+	_tagProcedure = "procedure"
+	//_tagMiddleware is middleware type
+	_tagMiddleware = "middleware"
 )
 
 var (
 	rpcTags = map[string]string{
-		TagModule: "rpc",
-		TagType:   "request",
+		_tagModule: "rpc",
+		_tagType:   "request",
 	}
 )
 
@@ -49,7 +49,7 @@ type statsClient struct {
 func newStatsClient(scope tally.Scope) *statsClient {
 	rpcTagsScope := scope.Tagged(rpcTags)
 	return &statsClient{
-		rpcTagsScope.Tagged(map[string]string{TagMiddleware: "auth"}).Counter("fail"),
+		rpcTagsScope.Tagged(map[string]string{_tagMiddleware: "auth"}).Counter("fail"),
 		rpcTagsScope.Tagged(rpcTags),
 		rpcTagsScope.Counter("panic"),
 	}
