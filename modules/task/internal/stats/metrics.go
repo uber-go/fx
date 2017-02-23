@@ -36,25 +36,19 @@ var (
 )
 
 // Client is a client for stats.
-type Client interface {
-	// TaskExecutionCount counts number of executions
-	TaskExecutionCount() tally.Counter
-	// TaskPublishCount counts number of tasks enqueued
-	TaskPublishCount() tally.Counter
-	// TaskExecuteFail counts number of tasks failed to execute
-	TaskExecuteFail() tally.Counter
-	// TaskPublishFail counts number of tasks failed to enqueue
-	TaskPublishFail() tally.Counter
-	// TaskExecutionTime is a turnaround time for execution
-	TaskExecutionTime() tally.Timer
-	// TaskPublishTime is a publish time for tasks
-	TaskPublishTime() tally.Timer
+type Client struct {
+	taskExecutionCount tally.Counter
+	taskPublishCount   tally.Counter
+	taskExecuteFail    tally.Counter
+	taskPublishFail    tally.Counter
+	taskExecutionTime  tally.Timer
+	taskPublishTime    tally.Timer
 }
 
 // NewClient returns a new Client for the given tally.Scope.
-func NewClient(scope tally.Scope) Client {
+func NewClient(scope tally.Scope) *Client {
 	taskTagsScope := scope.Tagged(taskTags)
-	return &client{
+	return &Client{
 		taskTagsScope.Tagged(map[string]string{TagType: "execution"}).Counter("count"),
 		taskTagsScope.Tagged(map[string]string{TagType: "publish"}).Counter("count"),
 		taskTagsScope.Tagged(map[string]string{TagType: "execution"}).Counter("fail"),
@@ -64,35 +58,32 @@ func NewClient(scope tally.Scope) Client {
 	}
 }
 
-type client struct {
-	taskExecutionCount tally.Counter
-	taskPublishCount   tally.Counter
-	taskExecuteFail    tally.Counter
-	taskPublishFail    tally.Counter
-	taskExecutionTime  tally.Timer
-	taskPublishTime    tally.Timer
-}
-
-func (c *client) TaskExecutionCount() tally.Counter {
+// TaskExecutionCount counts number of executions
+func (c *Client) TaskExecutionCount() tally.Counter {
 	return c.taskExecutionCount
 }
 
-func (c *client) TaskPublishCount() tally.Counter {
+// TaskPublishCount counts number of tasks enqueued
+func (c *Client) TaskPublishCount() tally.Counter {
 	return c.taskPublishCount
 }
 
-func (c *client) TaskExecuteFail() tally.Counter {
+// TaskExecuteFail counts number of tasks failed to execute
+func (c *Client) TaskExecuteFail() tally.Counter {
 	return c.taskExecuteFail
 }
 
-func (c *client) TaskPublishFail() tally.Counter {
+// TaskPublishFail counts number of tasks failed to enqueue
+func (c *Client) TaskPublishFail() tally.Counter {
 	return c.taskPublishFail
 }
 
-func (c *client) TaskExecutionTime() tally.Timer {
+// TaskExecutionTime is a turnaround time for execution
+func (c *Client) TaskExecutionTime() tally.Timer {
 	return c.taskExecutionTime
 }
 
-func (c *client) TaskPublishTime() tally.Timer {
+// TaskPublishTime is a publish time for tasks
+func (c *Client) TaskPublishTime() tally.Timer {
 	return c.taskPublishTime
 }

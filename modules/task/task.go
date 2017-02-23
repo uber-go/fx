@@ -47,7 +47,7 @@ func GlobalBackend() Backend {
 	return _globalBackend
 }
 
-func globalBackendStatsClient() stats.Client {
+func globalBackendStatsClient() *stats.Client {
 	_globalBackendMu.RLock()
 	defer _globalBackendMu.RUnlock()
 	return _globalBackendStatsClient
