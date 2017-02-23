@@ -27,7 +27,6 @@ import (
 	"go.uber.org/fx/examples/keyvalue/kv"
 	kvs "go.uber.org/fx/examples/keyvalue/kv/keyvalueserver"
 	"go.uber.org/fx/service"
-	"go.uber.org/yarpc"
 	"go.uber.org/yarpc/api/transport"
 )
 
@@ -37,7 +36,7 @@ type YARPCHandler struct {
 	items map[string]string
 }
 
-func NewYARPCThriftHandler(_ service.Host, _ *yarpc.Dispatcher) ([]transport.Procedure, error) {
+func NewYARPCThriftHandler(_ service.Host) ([]transport.Procedure, error) {
 	return kvs.New(&YARPCHandler{items: map[string]string{}}), nil
 }
 

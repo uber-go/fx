@@ -22,7 +22,6 @@ package rpc
 
 import (
 	"errors"
-	"sync"
 	"testing"
 
 	"go.uber.org/fx/config"
@@ -49,15 +48,7 @@ func (h testHost) Config() config.Provider {
 func TestThriftModule_OK(t *testing.T) {
 	dig.Reset()
 
-	wg := sync.WaitGroup{}
-	wg.Add(1)
-	testInbounds := func(_ service.Host, dispatcher *yarpc.Dispatcher) ([]transport.Procedure, error) {
-		require.Equal(t, 2, len(dispatcher.Inbounds()))
-		wg.Done()
-		return nil, nil
-	}
-
-	chip := ThriftModule(testInbounds, modules.WithRoles("rescue"))
+	chip := ThriftModule(okCreate, modules.WithRoles("rescue"))
 	dale := ThriftModule(okCreate, modules.WithRoles("ranges"))
 	cfg := []byte(`
 modules:
@@ -87,7 +78,11 @@ modules:
 
 	testInitRunModule(t, goofy[0], mci)
 	testInitRunModule(t, gopher[0], mci)
-	wg.Wait()
+
+	// Dispatcher must be resolved in the default graph
+	var dispatcher *yarpc.Dispatcher
+	assert.NoError(t, dig.Resolve(&dispatcher))
+	assert.Equal(t, 2, len(dispatcher.Inbounds()))
 }
 
 func TestThriftModule_BadOptions(t *testing.T) {
@@ -134,12 +129,13 @@ func errorOption(_ *service.ModuleCreateInfo) error {
 	return errors.New("bad option")
 }
 
-func okCreate(_ service.Host, dispatcher *yarpc.Dispatcher) ([]transport.Procedure, error) {
-	return thrift.BuildProcedures(thrift.Service{
+func okCreate(_ service.Host) ([]transport.Procedure, error) {
+	reg := thrift.BuildProcedures(thrift.Service{
 		Name: "foo",
-	}), nil
+	})
+	return reg, nil
 }
 
-func badCreateService(service.Host, *yarpc.Dispatcher) ([]transport.Procedure, error) {
+func badCreateService(_ service.Host) ([]transport.Procedure, error) {
 	return nil, errors.New("can't create service")
 }

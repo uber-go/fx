@@ -129,7 +129,7 @@ type dispatcherController struct {
 
 	configs    []*yarpcConfig
 	handlers   []handlerWithDispatcher
-	dispatcher *yarpc.Dispatcher
+	dispatcher yarpc.Dispatcher
 }
 
 // Adds the config to the controller.
@@ -151,7 +151,7 @@ func (c *dispatcherController) appendHandler(handler handlerWithDispatcher) {
 // Apply handlers to the dispatcher.
 func (c *dispatcherController) applyHandlers() error {
 	for _, h := range c.handlers {
-		if err := h(c.dispatcher); err != nil {
+		if err := h(&c.dispatcher); err != nil {
 			return err
 		}
 	}
@@ -198,17 +198,19 @@ func (c *dispatcherController) Start(host service.Host) error {
 		_dispatcherMu.Lock()
 		defer _dispatcherMu.Unlock()
 
-		if c.dispatcher, err = _dispatcherFn(host, cfg); err != nil {
+		var d *yarpc.Dispatcher
+		if d, err = _dispatcherFn(host, cfg); err != nil {
 			c.startError = err
 			return
 		}
 
+		c.dispatcher = *d
 		if err := c.applyHandlers(); err != nil {
 			c.startError = err
 			return
 		}
 
-		c.startError = _starterFn(c.dispatcher)
+		c.startError = _starterFn(&c.dispatcher)
 	})
 
 	return c.startError
@@ -304,11 +306,16 @@ func newYARPCModule(
 		if errCr := dig.Register(module.controller); errCr != nil {
 			return nil, errs.Wrap(errCr, "can't register a dispatcher controller")
 		}
+
+		// Register dispatcher
+		if err := dig.Register(&module.controller.dispatcher); err != nil {
+			return nil, errs.Wrap(err, "unable to register the dispatcher")
+		}
 	}
 
 	module.controller.addConfig(module.config)
 	module.controller.appendHandler(func(dispatcher *yarpc.Dispatcher) error {
-		t, err := reg(mi.Host, dispatcher)
+		t, err := reg(mi.Host)
 		if err != nil {
 			return err
 		}
