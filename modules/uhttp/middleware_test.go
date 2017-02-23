@@ -28,7 +28,6 @@ import (
 	"testing"
 
 	"go.uber.org/fx/metrics"
-	"go.uber.org/fx/modules/uhttp/internal/stats"
 	"go.uber.org/fx/service"
 	"go.uber.org/fx/testutils"
 	"go.uber.org/fx/tracing"
@@ -168,7 +167,7 @@ func testInboundTraceInboundAuthChain(t *testing.T, host service.Host) {
 		tracingInbound{},
 		authorizationInbound{
 			authClient:  host.AuthClient(),
-			statsClient: stats.NewClient(host.Metrics()),
+			statsClient: newStatsClient(host.Metrics()),
 		}).Build(getNopHandler())
 
 	response := testServeHTTP(chain)
@@ -180,7 +179,7 @@ func testInboundMiddlewareChainAuthFailure(t *testing.T, host service.Host) {
 		tracingInbound{},
 		authorizationInbound{
 			authClient:  host.AuthClient(),
-			statsClient: stats.NewClient(host.Metrics()),
+			statsClient: newStatsClient(host.Metrics()),
 		}).Build(getNopHandler())
 	response := testServeHTTP(chain)
 	assert.Equal(t, response.Body.String(), "Unauthorized access: Error authorizing the service\n")
@@ -189,7 +188,7 @@ func testInboundMiddlewareChainAuthFailure(t *testing.T, host service.Host) {
 
 func testPanicInbound(t *testing.T, host service.Host) {
 	chain := newInboundMiddlewareChainBuilder().AddMiddleware(
-		panicInbound{stats.NewClient(host.Metrics())},
+		panicInbound{newStatsClient(host.Metrics())},
 	).Build(getPanicHandler())
 	response := testServeHTTP(chain)
 	assert.Equal(t, response.Body.String(), _panicResponse+"\n")
@@ -203,7 +202,7 @@ func testPanicInbound(t *testing.T, host service.Host) {
 
 func testMetricsInbound(t *testing.T, host service.Host) {
 	chain := newInboundMiddlewareChainBuilder().AddMiddleware(
-		metricsInbound{stats.NewClient(host.Metrics())},
+		metricsInbound{newStatsClient(host.Metrics())},
 	).Build(getNopHandler())
 	response := testServeHTTP(chain)
 	assert.Contains(t, response.Body.String(), "inbound middleware ok")

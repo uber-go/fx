@@ -18,7 +18,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package stats
+package uhttp
 
 import "github.com/uber-go/tally"
 
@@ -40,18 +40,16 @@ var (
 	}
 )
 
-// Client is a client for stats.
-type Client struct {
+type statsClient struct {
 	httpPanicCounter     tally.Counter
 	httpAuthFailCounter  tally.Counter
 	httpMethodTimer      tally.Scope
 	httpStatusCountScope tally.Scope
 }
 
-// NewClient returns a new Client for the given tally.Scope.
-func NewClient(scope tally.Scope) *Client {
+func newStatsClient(scope tally.Scope) *statsClient {
 	httpScope := scope.Tagged(httpTags)
-	return &Client{
+	return &statsClient{
 		httpScope.Counter("panic"),
 		httpScope.Tagged(map[string]string{TagMiddleware: "auth"}).Counter("fail"),
 		httpScope.Tagged(httpTags),
@@ -60,21 +58,21 @@ func NewClient(scope tally.Scope) *Client {
 }
 
 // HTTPPanicCounter counts panics occurred in http
-func (c *Client) HTTPPanicCounter() tally.Counter {
+func (c *statsClient) HTTPPanicCounter() tally.Counter {
 	return c.httpPanicCounter
 }
 
 // HTTPAuthFailCounter counts auth failures
-func (c *Client) HTTPAuthFailCounter() tally.Counter {
+func (c *statsClient) HTTPAuthFailCounter() tally.Counter {
 	return c.httpAuthFailCounter
 }
 
 // HTTPMethodTimer is a turnaround time for http methods
-func (c *Client) HTTPMethodTimer() tally.Scope {
+func (c *statsClient) HTTPMethodTimer() tally.Scope {
 	return c.httpMethodTimer
 }
 
 // HTTPStatusCountScope is a scope for http status
-func (c *Client) HTTPStatusCountScope() tally.Scope {
+func (c *statsClient) HTTPStatusCountScope() tally.Scope {
 	return c.httpStatusCountScope
 }

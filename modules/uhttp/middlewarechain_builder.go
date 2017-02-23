@@ -24,7 +24,6 @@ import (
 	"net/http"
 
 	"go.uber.org/fx/auth"
-	"go.uber.org/fx/modules/uhttp/internal/stats"
 	"go.uber.org/fx/ulog"
 )
 
@@ -49,7 +48,7 @@ type inboundMiddlewareChainBuilder struct {
 	middleware   []InboundMiddleware
 }
 
-func defaultInboundMiddlewareChainBuilder(log ulog.Log, authClient auth.Client, statsClient *stats.Client) inboundMiddlewareChainBuilder {
+func defaultInboundMiddlewareChainBuilder(log ulog.Log, authClient auth.Client, statsClient *statsClient) inboundMiddlewareChainBuilder {
 	mcb := newInboundMiddlewareChainBuilder()
 	return mcb.AddMiddleware(
 		contextInbound{log},

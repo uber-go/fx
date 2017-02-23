@@ -25,7 +25,6 @@ import (
 	"net/http"
 
 	"go.uber.org/fx/auth"
-	"go.uber.org/fx/modules/uhttp/internal/stats"
 	"go.uber.org/fx/ulog"
 
 	"github.com/opentracing/opentracing-go"
@@ -82,7 +81,7 @@ func (f tracingInbound) Handle(w http.ResponseWriter, r *http.Request, next http
 // authorizationInbound authorizes services based on configuration
 type authorizationInbound struct {
 	authClient  auth.Client
-	statsClient *stats.Client
+	statsClient *statsClient
 }
 
 func (f authorizationInbound) Handle(w http.ResponseWriter, r *http.Request, next http.Handler) {
@@ -98,7 +97,7 @@ func (f authorizationInbound) Handle(w http.ResponseWriter, r *http.Request, nex
 // panicInbound handles any panics and return an error
 // panic inbound middleware should be added at the end of middleware chain to catch panics
 type panicInbound struct {
-	statsClient *stats.Client
+	statsClient *statsClient
 }
 
 func (f panicInbound) Handle(w http.ResponseWriter, r *http.Request, next http.Handler) {
@@ -115,12 +114,12 @@ func (f panicInbound) Handle(w http.ResponseWriter, r *http.Request, next http.H
 
 // metricsInbound adds any default metrics related to HTTP
 type metricsInbound struct {
-	statsClient *stats.Client
+	statsClient *statsClient
 }
 
 func (f metricsInbound) Handle(w http.ResponseWriter, r *http.Request, next http.Handler) {
 	stopwatch := f.statsClient.HTTPMethodTimer().Timer(r.Method).Start()
 	defer stopwatch.Stop()
-	defer f.statsClient.HTTPStatusCountScope().Tagged(map[string]string{stats.TagStatus: w.Header().Get("Status")}).Counter("total").Inc(1)
+	defer f.statsClient.HTTPStatusCountScope().Tagged(map[string]string{TagStatus: w.Header().Get("Status")}).Counter("total").Inc(1)
 	next.ServeHTTP(w, r)
 }
