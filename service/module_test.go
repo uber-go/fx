@@ -163,7 +163,11 @@ func TestNewModuleInfo(t *testing.T) {
 			require.NoError(t, err)
 			assert.Equal(t, test.name, moduleInfo.Name())
 			assert.Equal(t, test.expectedRoles, moduleInfo.Roles())
-			assert.Equal(t, test.expectedItems, moduleInfo.Items())
+			for key, expectedValue := range test.expectedItems {
+				value, ok := moduleInfo.Item(key)
+				assert.True(t, ok)
+				assert.Equal(t, expectedValue, value)
+			}
 			logger, sink := ulog.TestingLogger()
 			moduleInfo.Logger(ulog.ContextWithLogger(context.Background(), logger)).Info("")
 			require.Equal(t, 1, len(sink.Logs()))

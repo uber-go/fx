@@ -53,7 +53,7 @@ func WithOnewayInboundMiddleware(i ...middleware.OnewayInbound) service.ModuleOp
 }
 
 func inboundMiddlewareFromModuleInfo(mci service.ModuleInfo) []middleware.UnaryInbound {
-	if items, ok := mci.Items()[_interceptorKey]; ok {
+	if items, ok := mci.Item(_interceptorKey); ok {
 		// Intentionally panic if programmer adds non-middleware slice to the data
 		return items.([]middleware.UnaryInbound)
 	}
@@ -61,7 +61,7 @@ func inboundMiddlewareFromModuleInfo(mci service.ModuleInfo) []middleware.UnaryI
 }
 
 func onewayInboundMiddlewareFromModuleInfo(mci service.ModuleInfo) []middleware.OnewayInbound {
-	if items, ok := mci.Items()[_onewayInterceptorKey]; ok {
+	if items, ok := mci.Item(_onewayInterceptorKey); ok {
 		// Intentionally panic if programmer adds non-middleware slice to the data
 		return items.([]middleware.OnewayInbound)
 	}

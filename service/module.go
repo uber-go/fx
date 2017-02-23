@@ -44,7 +44,7 @@ type Module interface {
 type ModuleInfo interface {
 	Host
 	Logger(context.Context) ulog.Log
-	Items() map[string]interface{}
+	Item(key string) (interface{}, bool)
 }
 
 // NewModuleInfo returns a new ModuleInfo. This should generally be used for testing.
@@ -209,8 +209,8 @@ func (mi *moduleInfo) Logger(ctx context.Context) ulog.Log {
 	return ulog.Logger(ctx).With("module", mi.name)
 }
 
-// TODO(pedge): do we want to copy this?
 // TODO(pedge): merge with concept of resources?
-func (mi *moduleInfo) Items() map[string]interface{} {
-	return mi.items
+func (mi *moduleInfo) Item(key string) (interface{}, bool) {
+	item, ok := mi.items[key]
+	return item, ok
 }

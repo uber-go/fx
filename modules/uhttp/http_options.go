@@ -36,7 +36,7 @@ func WithInboundMiddleware(m ...InboundMiddleware) service.ModuleOption {
 }
 
 func inboundMiddlewareFromModuleInfo(mi service.ModuleInfo) []InboundMiddleware {
-	if items, ok := mi.Items()[_middlewareKey]; ok {
+	if items, ok := mi.Item(_middlewareKey); ok {
 		// Intentionally panic if programmer adds non-middleware slice to the data
 		return items.([]InboundMiddleware)
 	}
