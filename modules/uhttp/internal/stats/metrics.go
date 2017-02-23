@@ -41,21 +41,17 @@ var (
 )
 
 // Client is a client for stats.
-type Client interface {
-	// HTTPPanicCounter counts panics occurred in http
-	HTTPPanicCounter() tally.Counter
-	// HTTPAuthFailCounter counts auth failures
-	HTTPAuthFailCounter() tally.Counter
-	// HTTPMethodTimer is a turnaround time for http methods
-	HTTPMethodTimer() tally.Scope
-	// HTTPStatusCountScope is a scope for http status
-	HTTPStatusCountScope() tally.Scope
+type Client struct {
+	httpPanicCounter     tally.Counter
+	httpAuthFailCounter  tally.Counter
+	httpMethodTimer      tally.Scope
+	httpStatusCountScope tally.Scope
 }
 
 // NewClient returns a new Client for the given tally.Scope.
-func NewClient(scope tally.Scope) Client {
+func NewClient(scope tally.Scope) *Client {
 	httpScope := scope.Tagged(httpTags)
-	return &client{
+	return &Client{
 		httpScope.Counter("panic"),
 		httpScope.Tagged(map[string]string{TagMiddleware: "auth"}).Counter("fail"),
 		httpScope.Tagged(httpTags),
@@ -63,25 +59,22 @@ func NewClient(scope tally.Scope) Client {
 	}
 }
 
-type client struct {
-	httpPanicCounter     tally.Counter
-	httpAuthFailCounter  tally.Counter
-	httpMethodTimer      tally.Scope
-	httpStatusCountScope tally.Scope
-}
-
-func (c *client) HTTPPanicCounter() tally.Counter {
+// HTTPPanicCounter counts panics occurred in http
+func (c *Client) HTTPPanicCounter() tally.Counter {
 	return c.httpPanicCounter
 }
 
-func (c *client) HTTPAuthFailCounter() tally.Counter {
+// HTTPAuthFailCounter counts auth failures
+func (c *Client) HTTPAuthFailCounter() tally.Counter {
 	return c.httpAuthFailCounter
 }
 
-func (c *client) HTTPMethodTimer() tally.Scope {
+// HTTPMethodTimer is a turnaround time for http methods
+func (c *Client) HTTPMethodTimer() tally.Scope {
 	return c.httpMethodTimer
 }
 
-func (c *client) HTTPStatusCountScope() tally.Scope {
+// HTTPStatusCountScope is a scope for http status
+func (c *Client) HTTPStatusCountScope() tally.Scope {
 	return c.httpStatusCountScope
 }

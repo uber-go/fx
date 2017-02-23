@@ -49,7 +49,7 @@ type inboundMiddlewareChainBuilder struct {
 	middleware   []InboundMiddleware
 }
 
-func defaultInboundMiddlewareChainBuilder(log ulog.Log, authClient auth.Client, statsClient stats.Client) inboundMiddlewareChainBuilder {
+func defaultInboundMiddlewareChainBuilder(log ulog.Log, authClient auth.Client, statsClient *stats.Client) inboundMiddlewareChainBuilder {
 	mcb := newInboundMiddlewareChainBuilder()
 	return mcb.AddMiddleware(
 		contextInbound{log},
