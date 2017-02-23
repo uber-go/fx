@@ -13,6 +13,8 @@ all: lint test
 
 COV_REPORT := overalls.coverprofile
 
+DOCKER_IMAGE := uber/fx
+
 # all .go files that don't exist in hidden directories
 ALL_SRC := $(shell find . -name "*.go" | grep -v -e vendor \
 	-e ".*/\..*" \
@@ -122,6 +124,18 @@ benchreset:
 	$(ECHO_V)rm -f $(BASELINE_BENCH_FILE)
 	$(ECHO_V)rm -f $(BENCH_FILE)
 
+
+.PHONY: dockerbuild
+dockerbuild:
+	docker build -t $(DOCKER_IMAGE) .
+
+.PHONY: dockerlint
+dockerlint: dockerbuild
+	docker run $(DOCKER_IMAGE) make lint
+
+.PHONY: dockertest
+dockertest: dockertest
+	docker run $(DOCKER_IMAGE) make test
 
 include $(SUPPORT_FILES)/lint.mk
 include $(SUPPORT_FILES)/licence.mk
