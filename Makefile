@@ -16,16 +16,18 @@ COV_REPORT := overalls.coverprofile
 # all .go files that don't exist in hidden directories
 ALL_SRC := $(shell find . -name "*.go" | grep -v -e vendor \
 	-e ".*/\..*" \
-	-e "examples/keyvalue/.*" \
+	-e "examples/.*" \
 	-e ".*/_.*")
 
 TEST_TIMEOUT := "-timeout=10s"
 
 .PHONY: test
-test: examples $(COV_REPORT)
+test: $(COV_REPORT)
 
 TEST_IGNORES = vendor .git
 COVER_IGNORES = $(TEST_IGNORES) examples testutils
+
+COVERMODE ?= set
 
 comma := ,
 null :=
@@ -57,7 +59,7 @@ $(COV_REPORT): $(PKG_FILES) $(ALL_SRC)
 		-project=$(PROJECT_ROOT) \
 		-go-binary=richgo \
 		-ignore "$(OVERALLS_IGNORE)" \
-		-covermode=atomic \
+		-covermode=$(COVERMODE) \
 		$(DEBUG_FLAG) -- \
 		$(TEST_FLAGS) $(RACE) $(TEST_TIMEOUT) $(TEST_VERBOSITY_FLAG) | \
 		grep -v "No Go Test files" | \
