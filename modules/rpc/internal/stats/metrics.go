@@ -50,6 +50,7 @@ type Client interface {
 	RPCPanicCounter() tally.Counter
 }
 
+// NewClient returns a new Client for the given tally.Scope.
 func NewClient(scope tally.Scope) Client {
 	rpcTagsScope := scope.Tagged(rpcTags)
 	return &client{
