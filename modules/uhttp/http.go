@@ -34,6 +34,7 @@ import (
 	"go.uber.org/fx/ulog"
 
 	"github.com/pkg/errors"
+	"go.uber.org/zap"
 )
 
 const (
@@ -63,7 +64,7 @@ var _ service.Module = &Module{}
 type Module struct {
 	modules.ModuleBase
 	config   Config
-	log      ulog.Log
+	log      *zap.Logger
 	srv      *http.Server
 	listener net.Listener
 	handlers []RouteHandler
@@ -112,7 +113,7 @@ func newModule(
 
 	handlers := addHealth(getHandlers(mi.Host))
 
-	log := ulog.Logger(context.Background()).With("moduleName", mi.Name)
+	log := ulog.Logger(context.Background()).With(zap.String("moduleName", mi.Name))
 
 	// TODO (madhu): Add other middleware - logging, metrics.
 	module := &Module{
@@ -123,7 +124,7 @@ func newModule(
 
 	err := module.Host().Config().Get(getConfigKey(mi.Name)).PopulateStruct(cfg)
 	if err != nil {
-		log.Error("Error loading http module configuration", "error", err)
+		log.Error("Error loading http module configuration", zap.Error(err))
 	}
 	module.config = *cfg
 
@@ -131,7 +132,7 @@ func newModule(
 
 	for _, option := range options {
 		if err := option(&mi); err != nil {
-			module.log.Error("Unable to apply option", "error", err, "option", option)
+			module.log.Error("Unable to apply option", zap.Error(err), zap.Any("option", option))
 			return module, errors.Wrap(err, "unable to apply option to module")
 		}
 	}
@@ -169,7 +170,7 @@ func (m *Module) Start(ready chan<- struct{}) <-chan error {
 
 	// finally, start the http server.
 	// TODO update log object to be accessed via http context #74
-	m.log.Info("Server listening on port", "port", m.config.Port)
+	m.log.Info("Server listening on port", zap.Int("port", m.config.Port))
 
 	if err != nil {
 		ret <- err
@@ -188,7 +189,7 @@ func (m *Module) Start(ready chan<- struct{}) <-chan error {
 		err := m.srv.Serve(listener)
 		ret <- err
 		if err != nil {
-			m.log.Error("HTTP Serve error", "error", err)
+			m.log.Error("HTTP Serve error", zap.Error(err))
 		}
 	}()
 	return ret
