@@ -23,30 +23,21 @@ package task
 import (
 	"sync"
 
+	"github.com/uber-go/tally"
+
 	"go.uber.org/fx/modules"
 	"go.uber.org/fx/modules/task/internal/stats"
 	"go.uber.org/fx/service"
-
-	"github.com/uber-go/tally"
 )
-
-type globalBackend struct {
-	backend Backend
-	sync.RWMutex
-}
 
 var (
-	_globalBackendMu sync.RWMutex
-	_globalBackend   Backend = &NopBackend{}
-	_asyncMod        service.Module
-	_asyncModErr     error
-	_once            sync.Once
+	_globalBackendMu          sync.RWMutex
+	_globalBackend            Backend      = &NopBackend{}
+	_globalBackendStatsClient stats.Client = stats.NewClient(tally.NoopScope)
+	_asyncMod                 service.Module
+	_asyncModErr              error
+	_once                     sync.Once
 )
-
-// SetupTaskMetrics sets up default counters and timers for task execution
-func SetupTaskMetrics(scope tally.Scope) {
-	stats.SetupTaskMetrics(scope)
-}
 
 // GlobalBackend returns global instance of the backend
 // TODO (madhu): Make work with multiple backends
@@ -54,6 +45,12 @@ func GlobalBackend() Backend {
 	_globalBackendMu.RLock()
 	defer _globalBackendMu.RUnlock()
 	return _globalBackend
+}
+
+func globalBackendStatsClient() stats.Client {
+	_globalBackendMu.RLock()
+	defer _globalBackendMu.RUnlock()
+	return _globalBackendStatsClient
 }
 
 // NewModule creates an async task queue module
@@ -76,7 +73,6 @@ func newAsyncModuleSingleton(
 func newAsyncModule(
 	mi service.ModuleCreateInfo, createFunc BackendCreateFunc,
 ) (service.Module, error) {
-	SetupTaskMetrics(mi.Host.Metrics())
 	backend, err := createFunc(mi.Host)
 	if err != nil {
 		return nil, err

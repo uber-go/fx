@@ -29,35 +29,70 @@ const (
 	TagType = "type"
 )
 
-// HTTPTags creates metrics scope with defined tags
 var (
-	// TaskTags creates metrics scope with defined tags
-	TaskTags = map[string]string{
+	taskTags = map[string]string{
 		TagModule: "task",
 	}
-
-	// TaskExecutionCount counts number of executions
-	TaskExecutionCount tally.Counter
-	// TaskPublishCount counts number of tasks enqueued
-	TaskPublishCount tally.Counter
-	// TaskExecuteFail counts number of tasks failed to execute
-	TaskExecuteFail tally.Counter
-	// TaskPublishFail counts number of tasks failed to enqueue
-	TaskPublishFail tally.Counter
-	// TaskExecutionTime is a turnaround time for execution
-	TaskExecutionTime tally.Timer
-	// TaskPublishTime is a publish time for tasks
-	TaskPublishTime tally.Timer
 )
 
-// SetupTaskMetrics allocates counters for necessary setup
-func SetupTaskMetrics(scope tally.Scope) {
-	taskTagsScope := scope.Tagged(TaskTags)
-	TaskExecutionCount = taskTagsScope.Tagged(map[string]string{TagType: "execution"}).Counter("count")
-	TaskPublishCount = taskTagsScope.Tagged(map[string]string{TagType: "publish"}).Counter("count")
-	TaskExecuteFail = taskTagsScope.Tagged(map[string]string{TagType: "execution"}).Counter("fail")
-	TaskPublishFail = taskTagsScope.Tagged(map[string]string{TagType: "publish"}).Counter("fail")
+// Client is a client for stats.
+type Client interface {
+	// TaskExecutionCount counts number of executions
+	TaskExecutionCount() tally.Counter
+	// TaskPublishCount counts number of tasks enqueued
+	TaskPublishCount() tally.Counter
+	// TaskExecuteFail counts number of tasks failed to execute
+	TaskExecuteFail() tally.Counter
+	// TaskPublishFail counts number of tasks failed to enqueue
+	TaskPublishFail() tally.Counter
+	// TaskExecutionTime is a turnaround time for execution
+	TaskExecutionTime() tally.Timer
+	// TaskPublishTime is a publish time for tasks
+	TaskPublishTime() tally.Timer
+}
 
-	TaskExecutionTime = taskTagsScope.Tagged(map[string]string{TagType: "execution"}).Timer("time")
-	TaskPublishTime = taskTagsScope.Tagged(map[string]string{TagType: "publish"}).Timer("time")
+// NewClient returns a new Client for the given tally.Scope.
+func NewClient(scope tally.Scope) Client {
+	taskTagsScope := scope.Tagged(taskTags)
+	return &client{
+		taskTagsScope.Tagged(map[string]string{TagType: "execution"}).Counter("count"),
+		taskTagsScope.Tagged(map[string]string{TagType: "publish"}).Counter("count"),
+		taskTagsScope.Tagged(map[string]string{TagType: "execution"}).Counter("fail"),
+		taskTagsScope.Tagged(map[string]string{TagType: "publish"}).Counter("fail"),
+		taskTagsScope.Tagged(map[string]string{TagType: "execution"}).Timer("time"),
+		taskTagsScope.Tagged(map[string]string{TagType: "publish"}).Timer("time"),
+	}
+}
+
+type client struct {
+	taskExecutionCount tally.Counter
+	taskPublishCount   tally.Counter
+	taskExecuteFail    tally.Counter
+	taskPublishFail    tally.Counter
+	taskExecutionTime  tally.Timer
+	taskPublishTime    tally.Timer
+}
+
+func (c *client) TaskExecutionCount() tally.Counter {
+	return c.taskExecutionCount
+}
+
+func (c *client) TaskPublishCount() tally.Counter {
+	return c.taskPublishCount
+}
+
+func (c *client) TaskExecuteFail() tally.Counter {
+	return c.taskExecuteFail
+}
+
+func (c *client) TaskPublishFail() tally.Counter {
+	return c.taskPublishFail
+}
+
+func (c *client) TaskExecutionTime() tally.Timer {
+	return c.taskExecutionTime
+}
+
+func (c *client) TaskPublishTime() tally.Timer {
+	return c.taskPublishTime
 }
