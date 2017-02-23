@@ -134,7 +134,7 @@ dockerlint: dockerbuild
 	docker run $(DOCKER_IMAGE) make lint
 
 .PHONY: dockertest
-dockertest: dockertest
+dockertest: dockerbuild
 	docker run $(DOCKER_IMAGE) make test
 
 include $(SUPPORT_FILES)/lint.mk
