@@ -21,6 +21,7 @@
 package rpc
 
 import (
+	"fmt"
 	"testing"
 
 	"go.uber.org/fx/service"
@@ -67,4 +68,19 @@ func TestMergeOfEmptyConfigCollectionReturnsError(t *testing.T) {
 	_, err := c.mergeConfigs("test")
 	assert.EqualError(t, err, "unable to merge empty configs")
 	assert.EqualError(t, c.Start(service.NopHost()), err.Error())
+}
+
+func TestInboundPrint(t *testing.T) {
+	t.Parallel()
+	var i *Inbound
+	assert.Equal(t, "", fmt.Sprint(i))
+
+	i = &Inbound{}
+	assert.Equal(t, "Inbound:{HTTP: none; TChannel: none}", fmt.Sprint(i))
+	i.HTTP = &Address{8080}
+	assert.Equal(t, "Inbound:{HTTP: 8080; TChannel: none}", fmt.Sprint(i))
+	i.TChannel = &Address{9876}
+	assert.Equal(t, "Inbound:{HTTP: 8080; TChannel: 9876}", fmt.Sprint(i))
+	i.HTTP = nil
+	assert.Equal(t, "Inbound:{HTTP: none; TChannel: 9876}", fmt.Sprint(i))
 }

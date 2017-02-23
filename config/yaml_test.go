@@ -353,6 +353,28 @@ func TestMerge(t *testing.T) {
 	}
 }
 
+func TestMergePanics(t *testing.T) {
+	t.Parallel()
+	src := []byte(`
+map:
+  key: value
+`)
+	dst := []byte(`
+map:
+  - array
+`)
+
+	defer func() {
+		if e := recover(); e != nil {
+			assert.Contains(t, e, `can't merge map[interface{}]interface{} and []interface {}. Source: map["key":"value"]. Destination: ["array"]`)
+			return
+		}
+		assert.Fail(t, "expected a panic")
+	}()
+
+	NewYAMLProviderFromBytes(dst, src)
+}
+
 func TestYamlProviderFmtPrintOnValueNoPanic(t *testing.T) {
 	provider := NewYAMLProviderFromBytes(yamlConfig1)
 	c := provider.Get("modules.rpc.bind")

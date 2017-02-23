@@ -57,7 +57,8 @@ func newYARPCThriftModule(
 	reg := func(mod *YARPCModule) {
 		_setupMu.Lock()
 		defer _setupMu.Unlock()
-		Dispatcher().Register(registrants)
+
+		mod.controller.dispatcher.Register(registrants)
 	}
 
 	return newYARPCModule(mi, reg)

@@ -62,6 +62,16 @@ func newYAMLProviderCore(files ...io.ReadCloser) Provider {
 
 // We need to have a custom merge map because yamlV2 doesn't unmarshal `map[interface{}]map[interface{}]interface{}`
 // as we expect: it will replace second level maps with new maps on each unmarshal call, instead of merging them.
+// The merge strategy for two objects A and B is following:
+// * if A and B are maps, A and B will form a new map with keys from A and B and values from B will overwrite values of A. e.g.
+//   A:                B:                 merge(A, B):
+//     keep:A            new:B              keep:A
+//     update:fromA      update:fromB       update:fromB
+//                                          new:B
+//
+// * if A is a map and B is not, this function will panic, e.g. key:value and -slice
+//
+// * in all the remaining cases B will overwrite A.
 func mergeMaps(dst interface{}, src interface{}) interface{} {
 	if dst == nil {
 		panic("Destination node is nil")
@@ -75,7 +85,11 @@ func mergeMaps(dst interface{}, src interface{}) interface{} {
 	case map[interface{}]interface{}:
 		dstMap, ok := dst.(map[interface{}]interface{})
 		if !ok {
-			panic(fmt.Sprintf("Expected map[interface{}]interface{}, actual: %T", dstMap))
+			panic(fmt.Sprintf(
+				"can't merge map[interface{}]interface{} and %T. Source: %q. Destination: %q",
+				dst,
+				src,
+				dst))
 		}
 
 		for k, v := range s {

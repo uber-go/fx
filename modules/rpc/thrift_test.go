@@ -25,10 +25,12 @@ import (
 	"testing"
 
 	"go.uber.org/fx/config"
+	"go.uber.org/fx/dig"
 	"go.uber.org/fx/service"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/yarpc"
 	"go.uber.org/yarpc/api/transport"
 	"go.uber.org/yarpc/encoding/thrift"
 )
@@ -74,6 +76,11 @@ modules:
 
 	testInitRunModule(t, goofy)
 	testInitRunModule(t, gopher)
+
+	// Dispatcher must be resolved in the default graph
+	var dispatcher *yarpc.Dispatcher
+	assert.NoError(t, dig.Resolve(&dispatcher))
+	assert.Equal(t, 2, len(dispatcher.Inbounds()))
 }
 
 func TestThrfitModule_Error(t *testing.T) {
