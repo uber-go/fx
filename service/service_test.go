@@ -117,7 +117,7 @@ logging:
 }
 
 func TestBadOption_Panics(t *testing.T) {
-	opt := func(_ Host) error {
+	opt := func(_ *manager) error {
 		return errors.New("nope")
 	}
 
