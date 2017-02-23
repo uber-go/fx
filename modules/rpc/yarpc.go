@@ -21,7 +21,6 @@
 package rpc
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"strconv"
@@ -29,7 +28,6 @@ import (
 
 	"go.uber.org/fx/modules"
 	"go.uber.org/fx/service"
-	"go.uber.org/fx/ulog"
 
 	errs "github.com/pkg/errors"
 	"go.uber.org/fx/dig"
@@ -38,6 +36,7 @@ import (
 	"go.uber.org/yarpc/api/transport"
 	"go.uber.org/yarpc/transport/http"
 	tch "go.uber.org/yarpc/transport/tchannel"
+	"go.uber.org/zap"
 )
 
 // YARPCModule is an implementation of a core RPC module using YARPC.
@@ -50,7 +49,7 @@ type YARPCModule struct {
 	modules.ModuleBase
 	register    registerServiceFunc
 	config      yarpcConfig
-	log         ulog.Log
+	log         *zap.Logger
 	statsClient *statsClient
 	stateMu     sync.RWMutex
 	isRunning   bool
@@ -246,7 +245,7 @@ func newYARPCModule(
 		statsClient: newStatsClient(mi.Host.Metrics()),
 	}
 
-	module.log = ulog.Logger(context.Background()).With("moduleName", name)
+	module.log = zap.L().With(zap.String("moduleName", name))
 	for _, opt := range options {
 		if err := opt(&mi); err != nil {
 			return module, errs.Wrap(err, "unable to apply option to YARPC module")
@@ -287,7 +286,7 @@ func newYARPCModule(
 
 	module.controller.addConfig(module.config)
 
-	module.log.Info("Module successfuly created", "inbounds", module.config.Inbounds)
+	module.log.Info("Module successfuly created", zap.Any("inbounds", module.config.Inbounds))
 
 	return module, nil
 }
