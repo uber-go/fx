@@ -48,7 +48,6 @@ import (
 // register it in a dig.Graph provided with options/default graph.
 type YARPCModule struct {
 	modules.ModuleBase
-	register    registerServiceFunc
 	config      yarpcConfig
 	log         ulog.Log
 	statsClient *statsClient
@@ -184,7 +183,7 @@ func (c *dispatcherController) addDefaultMiddleware(host service.Host, statsClie
 // 4. Start the dispatcher
 //
 // Once started the controller will not start the dispatcher again.
-func (c *dispatcherController) Start(host service.Host) error {
+func (c *dispatcherController) Start(host service.Host, statsClient *statsClient) error {
 	c.start.Do(func() {
 		c.addDefaultMiddleware(host, statsClient)
 
