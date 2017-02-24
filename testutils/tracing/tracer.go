@@ -23,19 +23,17 @@ package tracing
 import (
 	"testing"
 
-	"go.uber.org/fx/metrics"
 	"go.uber.org/fx/tracing"
 
 	"github.com/opentracing/opentracing-go"
 	"github.com/stretchr/testify/require"
+	"github.com/uber-go/tally"
 	"go.uber.org/zap"
 )
 
 // WithSpan is used for generating a span to be used in testing
 func WithSpan(t *testing.T, log *zap.Logger, f func(opentracing.Span)) {
-	tracer, closer, err := tracing.CreateTracer(
-		nil, "serviceName", log, metrics.NopCachedStatsReporter,
-	)
+	tracer, closer, err := tracing.CreateTracer(nil, "serviceName", log, tally.NoopScope)
 	require.NoError(t, err)
 	defer func() {
 		require.NoError(t, closer.Close())

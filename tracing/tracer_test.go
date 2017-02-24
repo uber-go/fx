@@ -23,27 +23,22 @@ package tracing
 import (
 	"testing"
 
-	"go.uber.org/fx/metrics"
-	"go.uber.org/fx/testutils"
-
 	"github.com/stretchr/testify/assert"
-	jaeger "github.com/uber/jaeger-client-go"
+	"github.com/uber-go/tally"
 	"github.com/uber/jaeger-client-go/config"
 	"go.uber.org/zap"
-	ztest "go.uber.org/zap/testutils"
 )
 
 var (
-	_serviceName            = "serviceName"
-	_statsReporter          = metrics.NopCachedStatsReporter
-	_emptyJaegerConfig      = &config.Configuration{}
-	_disabledJaegerConfig   = &config.Configuration{Disabled: true}
-	_jaegerConfigWithLogger = &config.Configuration{Logger: jaeger.NullLogger}
+	_serviceName          = "serviceName"
+	_scope                = tally.NoopScope
+	_emptyJaegerConfig    = &config.Configuration{}
+	_disabledJaegerConfig = &config.Configuration{Disabled: true}
 )
 
 func TestInitGlobalTracer_Simple(t *testing.T) {
 	tracer, closer, err := InitGlobalTracer(
-		_emptyJaegerConfig, _serviceName, zap.L(), _statsReporter,
+		_emptyJaegerConfig, _serviceName, zap.L(), _scope,
 	)
 	defer closer.Close()
 	assert.NotNil(t, tracer)
@@ -53,7 +48,7 @@ func TestInitGlobalTracer_Simple(t *testing.T) {
 
 func TestInitGlobalTracer_Disabled(t *testing.T) {
 	tracer, closer, err := InitGlobalTracer(
-		_disabledJaegerConfig, _serviceName, zap.L(), _statsReporter,
+		_disabledJaegerConfig, _serviceName, zap.L(), _scope,
 	)
 	defer closer.Close()
 	assert.NotNil(t, tracer)
@@ -62,42 +57,18 @@ func TestInitGlobalTracer_Disabled(t *testing.T) {
 }
 
 func TestInitGlobalTracer_NoServiceName(t *testing.T) {
-	tracer, closer, err := InitGlobalTracer(_emptyJaegerConfig, "", zap.L(), _statsReporter)
+	tracer, closer, err := InitGlobalTracer(_emptyJaegerConfig, "", zap.L(), _scope)
 	assert.Error(t, err)
 	assert.Nil(t, tracer)
 	assert.Nil(t, closer)
 }
 
 func TestLoadAppConfig(t *testing.T) {
-	jConfig := loadAppConfig(_emptyJaegerConfig, zap.L())
+	jConfig := loadAppConfig(_emptyJaegerConfig)
 	assert.NotNil(t, jConfig)
-	assert.NotNil(t, jConfig.Logger)
-}
-
-func TestLoadAppConfig_JaegerConfigWithLogger(t *testing.T) {
-	jConfig := loadAppConfig(_jaegerConfigWithLogger, zap.L())
-	assert.NotNil(t, jConfig)
-	assert.Equal(t, jaeger.NullLogger, jConfig.Logger)
 }
 
 func TestLoadAppConfig_NilJaegerConfig(t *testing.T) {
-	jConfig := loadAppConfig(nil, zap.L())
+	jConfig := loadAppConfig(nil)
 	assert.NotNil(t, jConfig)
-	assert.NotNil(t, jConfig.Logger)
-}
-
-func TestJaegerLogger(t *testing.T) {
-	testutils.WithInMemoryLogger(t, nil, func(logger *zap.Logger, buf *ztest.Buffer) {
-		jLogger := jaegerLogger{logger.Sugar()}
-		jLogger.Infof("info message")
-		jLogger.Infof("info message: %s", "oddArg")
-		jLogger.Infof("info message: %s %s", "value1", "value2")
-		jLogger.Error("error message")
-		assert.Equal(t, []string{
-			`{"level":"info","msg":"info message"}`,
-			`{"level":"info","msg":"info message: oddArg"}`,
-			`{"level":"info","msg":"info message: value1 value2"}`,
-			`{"level":"error","msg":"error message"}`,
-		}, buf.Lines(), "Incorrect output from logger")
-	})
 }

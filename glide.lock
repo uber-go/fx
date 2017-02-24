@@ -1,10 +1,12 @@
-hash: 2b2a3032c1ba22a3650890ee852545a11f4113801497cb33adde98a36f0f9cea
-updated: 2017-02-23T16:04:45.370717001-08:00
+hash: f5c7c493baa0a29039c147f7244c37d573f95eee31ee448577a64024dabd6770
+updated: 2017-02-23T17:37:32.832575-08:00
 imports:
 - name: github.com/apache/thrift
   version: 9549b25c77587b29be4e0b5c258221a4ed85d37a
   subpackages:
   - lib/go/thrift
+- name: github.com/codahale/hdrhistogram
+  version: 3a0bb77429bd3a61596f5e8a3172445844342120
 - name: github.com/davecgh/go-spew
   version: 04cdfd42973bb9c8589fd6a731800cf222fde1a9
   subpackages:
@@ -44,16 +46,23 @@ imports:
 - name: github.com/uber-go/tally
   version: 43c1379c0577ac1eb74f9f3869cea07191c9992b
 - name: github.com/uber/jaeger-client-go
-  version: e39d0f1b622558cae3d9db0062a739cc6ffa700f
+  version: a1c7be77e82c1ccd832ace5c4c04b25700d90b1f
   subpackages:
   - config
   - internal/spanlog
+  - log
+  - log/zap
   - thrift-gen/agent
   - thrift-gen/sampling
   - thrift-gen/zipkincore
   - transport
   - transport/udp
   - utils
+- name: github.com/uber/jaeger-lib
+  version: b9556711760c45a30bd79c31c8f041d0d9aba997
+  subpackages:
+  - metrics
+  - metrics/tally
 - name: github.com/uber/tchannel-go
   version: 79387824978f91318be3bfb43ae12e04c38cfe97
   subpackages:
@@ -149,7 +158,7 @@ testImports:
 - name: github.com/mattn/goveralls
   version: 8482d0ebd2a64f95ce02d2b9b7065b0d6fe9151b
 - name: github.com/mvdan/interfacer
-  version: 588bd9940e912b1b2760d41bd836ef28ff97164d
+  version: e2f2db5bb7b0f89a41d2e1d905ff7b78fc09c88d
   subpackages:
   - cmd/interfacer
 - name: github.com/pborman/uuid
