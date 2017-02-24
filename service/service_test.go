@@ -28,7 +28,7 @@ import (
 
 	"go.uber.org/fx/config"
 	"go.uber.org/fx/testutils/metrics"
-	"go.uber.org/fx/ulog"
+	"go.uber.org/zap"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -113,7 +113,7 @@ logging:
 	require.NoError(t, err)
 	// Note: Sentry is not accessible so we cannot directly test it here. Just invoking the code
 	// path to make sure there is no panic
-	ulog.Logger(_simpleCtx).Info("Testing sentry call")
+	zap.L().Info("Testing sentry call")
 }
 
 func TestBadOption_Panics(t *testing.T) {

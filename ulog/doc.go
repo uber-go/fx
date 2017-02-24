@@ -112,19 +112,6 @@
 //     stdout: true
 //     level: debug
 //
-// Benchmarks
-//
-// Current performance benchmark data with ulog interface,
-// ulog baseLogger struct, and zap.Logger
-//
-//   BenchmarkUlogWithoutFields-8                    10000000               223 ns/op               0 B/op          0 allocs/op
-//   BenchmarkUlogWithFieldsLogIFace-8                1000000              1237 ns/op            1005 B/op         18 allocs/op
-//   BenchmarkUlogWithFieldsBaseLoggerStruct-8        1000000              1096 ns/op             748 B/op         17 allocs/op
-//   BenchmarkUlogWithFieldsZapLogger-8               2000000               664 ns/op             514 B/op          1 allocs/op
-//   BenchmarkUlogLiteWithFields-8                    3000000               489 ns/op             249 B/op          6 allocs/op
-//   BenchmarkUlogSentry-8                            3000000               407 ns/op             128 B/op          4 allocs/op
-//   BenchmarkUlogSentryWith-8                        1000000              1535 ns/op            1460 B/op         12 allocs/op
-//
 // Sentry
 //
 // ulog has a seamless integration with Sentry. For out-of-the-box usage

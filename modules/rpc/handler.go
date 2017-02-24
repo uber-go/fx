@@ -26,8 +26,8 @@ import (
 	"go.uber.org/fx/auth"
 	"go.uber.org/fx/service"
 	"go.uber.org/fx/ulog"
+	"go.uber.org/zap"
 
-	"github.com/opentracing/opentracing-go"
 	"github.com/pkg/errors"
 	"go.uber.org/yarpc/api/transport"
 )
@@ -50,10 +50,7 @@ func (f contextInboundMiddleware) Handle(
 		Timer(req.Procedure).
 		Start()
 	defer stopwatch.Stop()
-	// Span is populated by YARPC, we just extract and use it
-	if span := opentracing.SpanFromContext(ctx); span != nil {
-		ctx = ulog.ContextWithTraceLogger(ctx, span)
-	}
+
 	return handler.Handle(ctx, req, resw)
 }
 
@@ -66,10 +63,6 @@ func (f contextOnewayInboundMiddleware) HandleOneway(
 	req *transport.Request,
 	handler transport.OnewayHandler,
 ) error {
-	// Span is populated by YARPC, we just extract and use it
-	if span := opentracing.SpanFromContext(ctx); span != nil {
-		ctx = ulog.ContextWithTraceLogger(ctx, span)
-	}
 	return handler.HandleOneway(ctx, req)
 }
 
@@ -111,7 +104,7 @@ func (a authOnewayInboundMiddleware) HandleOneway(
 func authorize(ctx context.Context, host service.Host, statsClient *statsClient) (context.Context, error) {
 	if err := host.AuthClient().Authorize(ctx); err != nil {
 		statsClient.RPCAuthFailCounter().Inc(1)
-		ulog.Logger(ctx).Error(auth.ErrAuthorization, "error", err)
+		ulog.Logger(ctx).Error(auth.ErrAuthorization, zap.Error(err))
 		// TODO(anup): GFM-255 update returned error to transport.BadRequestError (user error than server error)
 		// https://github.com/yarpc/yarpc-go/issues/687
 		return nil, err
@@ -149,8 +142,8 @@ func (p panicOnewayInboundMiddleware) HandleOneway(
 func panicRecovery(ctx context.Context, statsClient *statsClient) {
 	if err := recover(); err != nil {
 		statsClient.RPCPanicCounter().Inc(1)
-		ulog.Logger(ctx).Error(
-			"Panic recovered serving request", "error", errors.Errorf("panic in handler: %+v", err),
+		ulog.Logger(ctx).Error("Panic recovered serving request",
+			zap.Error(errors.Errorf("panic in handler: %+v", err)),
 		)
 		// rethrow panic back to yarpc
 		// before https://github.com/yarpc/yarpc-go/issues/734 fixed, throw a generic error.

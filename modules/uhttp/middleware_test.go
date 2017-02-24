@@ -36,8 +36,9 @@ import (
 	"github.com/opentracing/opentracing-go"
 	"github.com/stretchr/testify/assert"
 	"github.com/uber-go/tally"
-	"github.com/uber-go/zap"
 	"github.com/uber/jaeger-client-go/config"
+	"go.uber.org/zap"
+	ztest "go.uber.org/zap/testutils"
 )
 
 func TestDefaultInboundMiddlewareWithNopHost(t *testing.T) {
@@ -127,9 +128,9 @@ func testInboundMiddlewareChain(t *testing.T, host service.Host) {
 }
 
 func testTracingInboundWithLogs(t *testing.T) {
-	testutils.WithInMemoryLogger(t, nil, func(zapLogger zap.Logger, buf *testutils.TestBuffer) {
-		// Create in-memory logger and jaeger tracer
-		loggerWithZap := ulog.Builder().SetLogger(zapLogger).Build()
+	testutils.WithInMemoryLogger(t, nil, func(loggerWithZap *zap.Logger, buf *ztest.Buffer) {
+		defer ulog.SetLogger(loggerWithZap)()
+		// Create a Jaeger tracer.
 		jConfig := &config.Configuration{
 			Sampler:  &config.SamplerConfig{Type: "const", Param: 1.0},
 			Reporter: &config.ReporterConfig{LogSpans: true},
@@ -142,18 +143,18 @@ func testTracingInboundWithLogs(t *testing.T) {
 		opentracing.InitGlobalTracer(tracer)
 		defer opentracing.InitGlobalTracer(opentracing.NoopTracer{})
 
-		ulog.SetLogger(loggerWithZap)
 		chain := newInboundMiddlewareChainBuilder().AddMiddleware([]InboundMiddleware{contextInbound{loggerWithZap}, tracingInbound{}}...).Build(getNopHandler())
 		response := testServeHTTP(chain)
 		assert.Contains(t, response.Body.String(), "inbound middleware ok")
 		assert.True(t, len(buf.Lines()) > 0)
 		var tracecount = 0
 		var spancount = 0
+		t.Log(buf.Lines())
 		for _, line := range buf.Lines() {
-			if strings.Contains(line, "traceID") {
+			if strings.Contains(line, `"trace":`) {
 				tracecount++
 			}
-			if strings.Contains(line, "spanID") {
+			if strings.Contains(line, `"span":`) {
 				spancount++
 			}
 		}

@@ -30,6 +30,7 @@ import (
 	"github.com/opentracing/opentracing-go"
 	"github.com/opentracing/opentracing-go/ext"
 	"github.com/pkg/errors"
+	"go.uber.org/zap"
 )
 
 const _panicResponse = "Server Error"
@@ -49,12 +50,11 @@ func (f InboundMiddlewareFunc) Handle(w http.ResponseWriter, r *http.Request, ne
 }
 
 type contextInbound struct {
-	log ulog.Log
+	log *zap.Logger
 }
 
 func (f contextInbound) Handle(w http.ResponseWriter, r *http.Request, next http.Handler) {
-	ctx := ulog.ContextWithLogger(r.Context(), f.log)
-	next.ServeHTTP(w, r.WithContext(ctx))
+	next.ServeHTTP(w, r.WithContext(r.Context()))
 }
 
 type tracingInbound struct{}
@@ -65,16 +65,13 @@ func (f tracingInbound) Handle(w http.ResponseWriter, r *http.Request, next http
 	carrier := opentracing.HTTPHeadersCarrier(r.Header)
 	spanCtx, err := opentracing.GlobalTracer().Extract(opentracing.HTTPHeaders, carrier)
 	if err != nil && err != opentracing.ErrSpanContextNotFound {
-		ulog.Logger(ctx).Warn("Malformed inbound tracing context: ", "error", err.Error())
+		ulog.Logger(ctx).Warn("Malformed inbound tracing context: ", zap.Error(err))
 	}
 	span := opentracing.GlobalTracer().StartSpan(operationName, ext.RPCServerOption(spanCtx))
 	ext.HTTPUrl.Set(span, r.URL.String())
 	defer span.Finish()
 
 	ctx = opentracing.ContextWithSpan(ctx, span)
-
-	ctx = ulog.ContextWithTraceLogger(ctx, span)
-
 	next.ServeHTTP(w, r.WithContext(ctx))
 }
 
@@ -87,7 +84,7 @@ type authorizationInbound struct {
 func (f authorizationInbound) Handle(w http.ResponseWriter, r *http.Request, next http.Handler) {
 	if err := f.authClient.Authorize(r.Context()); err != nil {
 		f.statsClient.HTTPAuthFailCounter().Inc(1)
-		ulog.Logger(r.Context()).Error(auth.ErrAuthorization, "error", err)
+		ulog.Logger(r.Context()).Error(auth.ErrAuthorization, zap.Error(err))
 		http.Error(w, fmt.Sprintf("Unauthorized access: %+v", err), http.StatusUnauthorized)
 		return
 	}
@@ -104,7 +101,10 @@ func (f panicInbound) Handle(w http.ResponseWriter, r *http.Request, next http.H
 	ctx := r.Context()
 	defer func() {
 		if err := recover(); err != nil {
-			ulog.Logger(ctx).Error("Panic recovered serving request", "error", errors.Errorf("panic in handler: %+v", err), "url", r.URL)
+			ulog.Logger(ctx).Error("Panic recovered serving request",
+				zap.Error(errors.Errorf("panic in handler: %+v", err)),
+				zap.Stringer("url", r.URL),
+			)
 			f.statsClient.HTTPPanicCounter().Inc(1)
 			http.Error(w, _panicResponse, http.StatusInternalServerError)
 		}

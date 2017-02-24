@@ -36,7 +36,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/uber-go/tally"
-	"github.com/uber-go/zap"
+	"go.uber.org/zap"
+	ztest "go.uber.org/zap/testutils"
 )
 
 type fakeEnveloper struct {
@@ -58,11 +59,10 @@ func (f fakeEnveloper) ToWire() (wire.Value, error) {
 func TestInboundMiddleware_Context(t *testing.T) {
 	host := service.NopHost()
 	unary := contextInboundMiddleware{host, newStatsClient(host.Metrics())}
-	testutils.WithInMemoryLogger(t, nil, func(zapLogger zap.Logger, buf *testutils.TestBuffer) {
-		loggerWithZap := ulog.Builder().SetLogger(zapLogger).Build()
+	testutils.WithInMemoryLogger(t, nil, func(loggerWithZap *zap.Logger, buf *ztest.Buffer) {
+		defer ulog.SetLogger(loggerWithZap)()
 		tracing.WithSpan(t, loggerWithZap, func(span opentracing.Span) {
-			ctx := ulog.ContextWithLogger(context.Background(), loggerWithZap)
-			ctx = opentracing.ContextWithSpan(ctx, span)
+			ctx := opentracing.ContextWithSpan(context.Background(), span)
 			err := unary.Handle(ctx, &transport.Request{}, nil, &fakeUnary{t: t})
 			require.Contains(t, err.Error(), "handle")
 			checkLogForTrace(t, buf)
@@ -74,11 +74,10 @@ func TestOnewayInboundMiddleware_Context(t *testing.T) {
 	oneway := contextOnewayInboundMiddleware{
 		Host: service.NopHost(),
 	}
-	testutils.WithInMemoryLogger(t, nil, func(zapLogger zap.Logger, buf *testutils.TestBuffer) {
-		loggerWithZap := ulog.Builder().SetLogger(zapLogger).Build()
+	testutils.WithInMemoryLogger(t, nil, func(loggerWithZap *zap.Logger, buf *ztest.Buffer) {
+		defer ulog.SetLogger(loggerWithZap)()
 		tracing.WithSpan(t, loggerWithZap, func(span opentracing.Span) {
-			ctx := ulog.ContextWithLogger(context.Background(), loggerWithZap)
-			ctx = opentracing.ContextWithSpan(ctx, span)
+			ctx := opentracing.ContextWithSpan(context.Background(), span)
 			err := oneway.HandleOneway(ctx, &transport.Request{}, &fakeOneway{t: t})
 			require.Contains(t, err.Error(), "oneway handle")
 			checkLogForTrace(t, buf)
@@ -86,11 +85,11 @@ func TestOnewayInboundMiddleware_Context(t *testing.T) {
 	})
 }
 
-func checkLogForTrace(t *testing.T, buf *testutils.TestBuffer) {
+func checkLogForTrace(t *testing.T, buf *ztest.Buffer) {
 	require.True(t, len(buf.Lines()) > 0)
 	for _, line := range buf.Lines() {
-		assert.Contains(t, line, "traceID")
-		assert.Contains(t, line, "spanID")
+		assert.Contains(t, line, "trace")
+		assert.Contains(t, line, "span")
 	}
 
 }
