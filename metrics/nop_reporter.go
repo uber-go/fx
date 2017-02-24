@@ -129,5 +129,4 @@ type nopCachedHistogramBucket struct {
 }
 
 func (nopCachedHistogramBucket) ReportSamples(value int64) {
-
 }
