@@ -91,8 +91,8 @@ modules:
     timeout: 60s
 ```
 
-In this example, a module named: "rpc" would look up its advertise name as
-`modules.rpc.advertiseName`.
+In this example, a module named: "yarpc" would look up its advertise name as
+`modules.yarpc.advertiseName`.
 
 ## Metrics
 

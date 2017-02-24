@@ -138,7 +138,7 @@ To set up Sentry in code use `sentry.Hook`. For example:
 
 ```go
 import (
-  "github.com/uber-go/zap"
+  "go.uber.org/zap"
   "go.uber.org/fx/ulog/ulog"
   "go.uber.org/fx/ulog/sentry"
   "go.uber.org/fx/service"

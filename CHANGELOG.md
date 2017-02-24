@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.0.0-beta2 (unreleased)
+
+* [Breaking] Remove `ulog` and expose `*zap.Logger` directly.
+* [Breaking] Upgrade `zap` to `v1.0.0-rc.2` (now go.uber.org/zap, was
+    github.com/uber-go/zap)
+
 ## v1.0.0-beta1 (20 Feb 2017)
 
 This is the first beta release of the framework, where we invite users to start

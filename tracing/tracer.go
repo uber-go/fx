@@ -21,22 +21,20 @@
 package tracing
 
 import (
-	"fmt"
 	"io"
 	"time"
-
-	"go.uber.org/fx/ulog"
 
 	"github.com/opentracing/opentracing-go"
 	"github.com/uber-go/tally"
 	"github.com/uber/jaeger-client-go/config"
+	"go.uber.org/zap"
 )
 
 // InitGlobalTracer instantiates a new global tracer
 func InitGlobalTracer(
 	cfg *config.Configuration,
 	serviceName string,
-	logger ulog.Log,
+	logger *zap.Logger,
 	statsReporter tally.CachedStatsReporter,
 ) (opentracing.Tracer, io.Closer, error) {
 	tracer, closer, err := CreateTracer(cfg, serviceName, logger, statsReporter)
@@ -50,7 +48,7 @@ func InitGlobalTracer(
 func CreateTracer(
 	cfg *config.Configuration,
 	serviceName string,
-	logger ulog.Log,
+	logger *zap.Logger,
 	statsReporter tally.CachedStatsReporter,
 ) (opentracing.Tracer, io.Closer, error) {
 	var reporter *jaegerReporter
@@ -64,32 +62,23 @@ func CreateTracer(
 	return cfg.New(serviceName, reporter)
 }
 
-func loadAppConfig(cfg *config.Configuration, logger ulog.Log) *config.Configuration {
+func loadAppConfig(cfg *config.Configuration, logger *zap.Logger) *config.Configuration {
 	if cfg == nil {
 		cfg = &config.Configuration{}
 	}
 	if cfg.Logger == nil {
-		jaegerlogger := &jaegerLogger{
-			log: logger,
-		}
-		cfg.Logger = jaegerlogger
+		cfg.Logger = &jaegerLogger{logger.Sugar()}
 	}
 	return cfg
 }
 
 type jaegerLogger struct {
-	log ulog.Log
+	*zap.SugaredLogger
 }
 
 // Error logs an error message
 func (jl *jaegerLogger) Error(msg string) {
-	jl.log.Error(msg)
-}
-
-// Infof logs an info message with args as key value pairs
-func (jl *jaegerLogger) Infof(msg string, args ...interface{}) {
-	logMsg := fmt.Sprintf(msg, args...)
-	jl.log.Info(logMsg)
+	jl.SugaredLogger.Error(msg)
 }
 
 type jaegerReporter struct {

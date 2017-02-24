@@ -2,12 +2,13 @@ language: go
 sudo: false
 go:
   - 1.7
+  - 1.8
   - tip
 
 go_import_path: go.uber.org/fx
 
 env:
-  - V=1
+  - V=1 COVERMODE=atomic
 
 matrix:
   # Fail the build as soon as the first job fails
@@ -23,6 +24,7 @@ install:
 script:
   - make lint
   - make test
+  - make examples
 
 after_success:
    - '[ "${TRAVIS_GO_VERSION}" != "tip" ] && make coveralls'

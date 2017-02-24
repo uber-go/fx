@@ -25,7 +25,6 @@ import (
 	"errors"
 	"testing"
 
-	"go.uber.org/fx/modules/rpc/internal/stats"
 	"go.uber.org/fx/service"
 	"go.uber.org/fx/testutils"
 	"go.uber.org/fx/testutils/tracing"
@@ -37,7 +36,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/uber-go/tally"
-	"github.com/uber-go/zap"
+	"go.uber.org/zap"
+	ztest "go.uber.org/zap/testutils"
 )
 
 type fakeEnveloper struct {
@@ -57,15 +57,12 @@ func (f fakeEnveloper) ToWire() (wire.Value, error) {
 }
 
 func TestInboundMiddleware_Context(t *testing.T) {
-	unary := contextInboundMiddleware{
-		Host: service.NopHost(),
-	}
-	stats.SetupRPCMetrics(unary.Host.Metrics())
-	testutils.WithInMemoryLogger(t, nil, func(zapLogger zap.Logger, buf *testutils.TestBuffer) {
-		loggerWithZap := ulog.Builder().SetLogger(zapLogger).Build()
+	host := service.NopHost()
+	unary := contextInboundMiddleware{host, newStatsClient(host.Metrics())}
+	testutils.WithInMemoryLogger(t, nil, func(loggerWithZap *zap.Logger, buf *ztest.Buffer) {
+		defer ulog.SetLogger(loggerWithZap)()
 		tracing.WithSpan(t, loggerWithZap, func(span opentracing.Span) {
-			ctx := ulog.ContextWithLogger(context.Background(), loggerWithZap)
-			ctx = opentracing.ContextWithSpan(ctx, span)
+			ctx := opentracing.ContextWithSpan(context.Background(), span)
 			err := unary.Handle(ctx, &transport.Request{}, nil, &fakeUnary{t: t})
 			require.Contains(t, err.Error(), "handle")
 			checkLogForTrace(t, buf)
@@ -77,11 +74,10 @@ func TestOnewayInboundMiddleware_Context(t *testing.T) {
 	oneway := contextOnewayInboundMiddleware{
 		Host: service.NopHost(),
 	}
-	testutils.WithInMemoryLogger(t, nil, func(zapLogger zap.Logger, buf *testutils.TestBuffer) {
-		loggerWithZap := ulog.Builder().SetLogger(zapLogger).Build()
+	testutils.WithInMemoryLogger(t, nil, func(loggerWithZap *zap.Logger, buf *ztest.Buffer) {
+		defer ulog.SetLogger(loggerWithZap)()
 		tracing.WithSpan(t, loggerWithZap, func(span opentracing.Span) {
-			ctx := ulog.ContextWithLogger(context.Background(), loggerWithZap)
-			ctx = opentracing.ContextWithSpan(ctx, span)
+			ctx := opentracing.ContextWithSpan(context.Background(), span)
 			err := oneway.HandleOneway(ctx, &transport.Request{}, &fakeOneway{t: t})
 			require.Contains(t, err.Error(), "oneway handle")
 			checkLogForTrace(t, buf)
@@ -89,27 +85,25 @@ func TestOnewayInboundMiddleware_Context(t *testing.T) {
 	})
 }
 
-func checkLogForTrace(t *testing.T, buf *testutils.TestBuffer) {
+func checkLogForTrace(t *testing.T, buf *ztest.Buffer) {
 	require.True(t, len(buf.Lines()) > 0)
 	for _, line := range buf.Lines() {
-		assert.Contains(t, line, "traceID")
-		assert.Contains(t, line, "spanID")
+		assert.Contains(t, line, "trace")
+		assert.Contains(t, line, "span")
 	}
 
 }
 
 func TestInboundMiddleware_auth(t *testing.T) {
-	unary := authInboundMiddleware{
-		Host: service.NopHost(),
-	}
+	host := service.NopHost()
+	unary := authInboundMiddleware{host, newStatsClient(host.Metrics())}
 	err := unary.Handle(context.Background(), &transport.Request{}, nil, &fakeUnary{t: t})
 	assert.EqualError(t, err, "handle")
 }
 
 func TestInboundMiddleware_authFailure(t *testing.T) {
-	unary := authInboundMiddleware{
-		Host: service.NopHostAuthFailure(),
-	}
+	host := service.NopHostAuthFailure()
+	unary := authInboundMiddleware{host, newStatsClient(host.Metrics())}
 	err := unary.Handle(context.Background(), &transport.Request{}, nil, &fakeUnary{t: t})
 	assert.EqualError(t, err, "Error authorizing the service")
 
@@ -124,9 +118,8 @@ func TestOnewayInboundMiddleware_auth(t *testing.T) {
 }
 
 func TestOnewayInboundMiddleware_authFailure(t *testing.T) {
-	oneway := authOnewayInboundMiddleware{
-		Host: service.NopHostAuthFailure(),
-	}
+	host := service.NopHostAuthFailure()
+	oneway := authOnewayInboundMiddleware{host, newStatsClient(host.Metrics())}
 	err := oneway.HandleOneway(context.Background(), &transport.Request{}, &fakeOneway{t: t})
 	assert.EqualError(t, err, "Error authorizing the service")
 }
@@ -134,20 +127,20 @@ func TestOnewayInboundMiddleware_authFailure(t *testing.T) {
 func TestInboundMiddleware_panic(t *testing.T) {
 	host := service.NopHost()
 	testScope := host.Metrics()
-	stats.SetupRPCMetrics(testScope)
+	statsClient := newStatsClient(testScope)
 
 	defer testPanicHandler(t, testScope)
-	unary := panicInboundMiddleware{}
+	unary := panicInboundMiddleware{statsClient}
 	unary.Handle(context.Background(), &transport.Request{}, nil, &alwaysPanicUnary{})
 }
 
 func TestOnewayInboundMiddleware_panic(t *testing.T) {
 	host := service.NopHost()
 	testScope := host.Metrics()
-	stats.SetupRPCMetrics(testScope)
+	statsClient := newStatsClient(testScope)
 
 	defer testPanicHandler(t, testScope)
-	oneway := panicOnewayInboundMiddleware{}
+	oneway := panicOnewayInboundMiddleware{statsClient}
 	oneway.HandleOneway(context.Background(), &transport.Request{}, &alwaysPanicOneway{})
 }
 

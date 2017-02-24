@@ -21,10 +21,8 @@
 package main
 
 import (
-	"context"
-
 	"go.uber.org/fx/service"
-	"go.uber.org/fx/ulog"
+	"go.uber.org/zap"
 )
 
 // Observer receives callbacks during various service lifecycle events
@@ -37,7 +35,7 @@ type Observer struct {
 
 // OnInit is called during service init process. Returning an error halts the init?
 func (o *Observer) OnInit(svc service.Host) error {
-	ulog.Logger(context.Background()).Info(
+	zap.S().Info(
 		"Received service init callback",
 		"service_name", o.Name(),
 		"some_number", o.ServiceConfig.SomeNumber,

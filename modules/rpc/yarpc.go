@@ -21,16 +21,13 @@
 package rpc
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"strconv"
 	"sync"
 
 	"go.uber.org/fx/modules"
-	"go.uber.org/fx/modules/rpc/internal/stats"
 	"go.uber.org/fx/service"
-	"go.uber.org/fx/ulog"
 
 	errs "github.com/pkg/errors"
 	"go.uber.org/fx/dig"
@@ -39,6 +36,7 @@ import (
 	"go.uber.org/yarpc/api/transport"
 	"go.uber.org/yarpc/transport/http"
 	tch "go.uber.org/yarpc/transport/tchannel"
+	"go.uber.org/zap"
 )
 
 // YARPCModule is an implementation of a core RPC module using YARPC.
@@ -49,12 +47,12 @@ import (
 // register it in a dig.Graph provided with options/default graph.
 type YARPCModule struct {
 	modules.ModuleBase
-	register   registerServiceFunc
-	config     yarpcConfig
-	log        ulog.Log
-	stateMu    sync.RWMutex
-	isRunning  bool
-	controller *dispatcherController
+	config      yarpcConfig
+	log         *zap.Logger
+	statsClient *statsClient
+	stateMu     sync.RWMutex
+	isRunning   bool
+	controller  *dispatcherController
 }
 
 var (
@@ -68,8 +66,6 @@ var (
 
 	_ service.Module = &YARPCModule{}
 )
-
-type registerServiceFunc func(module *YARPCModule)
 
 type transports struct {
 	inbounds []transport.Inbound
@@ -115,9 +111,10 @@ type Address struct {
 	Port int
 }
 
-// Stores a collection of all modules configs with a shared dispatcher
-// that are safe to call from multiple go routines. All the configs must
-// share the same AdvertiseName and represent a single service.
+type handlerWithDispatcher func(dispatcher *yarpc.Dispatcher) error
+
+// Stores a collection of all module configs with a shared dispatcher
+// and user handles to work with the dispatcher.
 type dispatcherController struct {
 	// sync configs
 	sync.RWMutex
@@ -129,10 +126,11 @@ type dispatcherController struct {
 	startError error
 
 	configs    []*yarpcConfig
+	handlers   []handlerWithDispatcher
 	dispatcher yarpc.Dispatcher
 }
 
-// Adds the config to the controller
+// Adds the config to the controller.
 func (c *dispatcherController) addConfig(config yarpcConfig) {
 	c.Lock()
 	defer c.Unlock()
@@ -140,29 +138,53 @@ func (c *dispatcherController) addConfig(config yarpcConfig) {
 	c.configs = append(c.configs, &config)
 }
 
+// Adds the config to the controller.
+func (c *dispatcherController) appendHandler(handler handlerWithDispatcher) {
+	c.Lock()
+	defer c.Unlock()
+
+	c.handlers = append(c.handlers, handler)
+}
+
+// Apply handlers to the dispatcher.
+func (c *dispatcherController) applyHandlers() error {
+	for _, h := range c.handlers {
+		if err := h(&c.dispatcher); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 // Adds the default middleware: context propagation and auth.
-func (c *dispatcherController) addDefaultMiddleware(host service.Host) {
+func (c *dispatcherController) addDefaultMiddleware(host service.Host, statsClient *statsClient) {
 	cfg := yarpcConfig{
 		inboundMiddleware: []middleware.UnaryInbound{
-			contextInboundMiddleware{host},
-			panicInboundMiddleware{},
-			authInboundMiddleware{host},
+			contextInboundMiddleware{host, statsClient},
+			panicInboundMiddleware{statsClient},
+			authInboundMiddleware{host, statsClient},
 		},
 		onewayInboundMiddleware: []middleware.OnewayInbound{
 			contextOnewayInboundMiddleware{host},
-			panicOnewayInboundMiddleware{},
-			authOnewayInboundMiddleware{host},
+			panicOnewayInboundMiddleware{statsClient},
+			authOnewayInboundMiddleware{host, statsClient},
 		},
 	}
 
 	c.addConfig(cfg)
 }
 
-// Starts the dispatcher: wait until all modules call start, create a single dispatcher and then start it.
-// Once started the collection will not start the dispatcher again.
-func (c *dispatcherController) Start(host service.Host) error {
+// Starts the dispatcher:
+// 1. Add default middleware and merge all existing configs
+// 2. Create a dispatcher
+// 3. Call user handles to e.g. register transport.Procedures on the dispatcher
+// 4. Start the dispatcher
+//
+// Once started the controller will not start the dispatcher again.
+func (c *dispatcherController) Start(host service.Host, statsClient *statsClient) error {
 	c.start.Do(func() {
-		c.addDefaultMiddleware(host)
+		c.addDefaultMiddleware(host, statsClient)
 
 		var cfg yarpc.Config
 		var err error
@@ -173,6 +195,7 @@ func (c *dispatcherController) Start(host service.Host) error {
 
 		_dispatcherMu.Lock()
 		defer _dispatcherMu.Unlock()
+
 		var d *yarpc.Dispatcher
 		if d, err = _dispatcherFn(host, cfg); err != nil {
 			c.startError = err
@@ -180,6 +203,11 @@ func (c *dispatcherController) Start(host service.Host) error {
 		}
 
 		c.dispatcher = *d
+		if err := c.applyHandlers(); err != nil {
+			c.startError = err
+			return
+		}
+
 		c.startError = _starterFn(&c.dispatcher)
 	})
 
@@ -232,7 +260,7 @@ func (c *dispatcherController) mergeConfigs(name string) (conf yarpc.Config, err
 // The first created module defines the service name.
 func newYARPCModule(
 	mi service.ModuleCreateInfo,
-	reg registerServiceFunc,
+	reg CreateThriftServiceFunc,
 	options ...modules.Option,
 ) (*YARPCModule, error) {
 	name := "yarpc"
@@ -242,12 +270,9 @@ func newYARPCModule(
 
 	module := &YARPCModule{
 		ModuleBase: *modules.NewModuleBase(name, mi.Host, []string{}),
-		register:   reg,
 	}
 
-	stats.SetupRPCMetrics(mi.Host.Metrics())
-
-	module.log = ulog.Logger(context.Background()).With("moduleName", name)
+	module.log = zap.L().With(zap.String("moduleName", name))
 	for _, opt := range options {
 		if err := opt(&mi); err != nil {
 			return module, errs.Wrap(err, "unable to apply option to YARPC module")
@@ -259,7 +284,7 @@ func newYARPCModule(
 		return nil, errs.Wrap(err, "can't read inbounds")
 	}
 
-	// iterate over inbounds
+	// Iterate over inbounds.
 	transportsIn, err := prepareInbounds(module.config.Inbounds, mi.Host.Name())
 	if err != nil {
 		return nil, errs.Wrap(err, "can't process inbounds")
@@ -287,8 +312,17 @@ func newYARPCModule(
 	}
 
 	module.controller.addConfig(module.config)
+	module.controller.appendHandler(func(dispatcher *yarpc.Dispatcher) error {
+		t, err := reg(mi.Host)
+		if err != nil {
+			return err
+		}
 
-	module.log.Info("Module successfuly created", "inbounds", module.config.Inbounds)
+		dispatcher.Register(t)
+		return nil
+	})
+
+	module.log.Info("Module successfuly created", zap.Any("inbounds", module.config.Inbounds))
 
 	return module, nil
 }
@@ -331,12 +365,11 @@ func (m *YARPCModule) Start(readyCh chan<- struct{}) <-chan error {
 	defer m.stateMu.Unlock()
 
 	// TODO(alsam) allow services to advertise with a name separate from the host name.
-	if err := m.controller.Start(m.Host()); err != nil {
+	if err := m.controller.Start(m.Host(), m.statsClient); err != nil {
 		ret <- errs.Wrap(err, "unable to start dispatcher")
 		return ret
 	}
 
-	m.register(m)
 	m.log.Info("Module started")
 
 	m.isRunning = true

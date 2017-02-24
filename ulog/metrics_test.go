@@ -18,9 +18,42 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package internal
+package ulog
 
-type contextKey int
+import (
+	"testing"
 
-// ContextLogger is the context based logger
-const ContextLogger contextKey = iota
+	"go.uber.org/fx/testutils/metrics"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
+)
+
+func TestMetricsHook(t *testing.T) {
+	cfg := zap.NewDevelopmentConfig()
+	cfg.OutputPaths = nil
+	cfg.ErrorOutputPaths = nil
+	log, err := cfg.Build()
+	require.NoError(t, err, "Failed to construct a logger.")
+
+	scope, reporter := metrics.NewTestScope()
+	log = log.WithOptions(zap.Hooks(Metrics(scope)))
+
+	reporter.CountersWG.Add(6)
+	log.Debug("debug")
+	log.Info("info")
+	log.Warn("warn")
+	log.Error("error")
+	assert.Panics(t, func() { log.DPanic("dpanic") }, "Expected Logger.DPanic to panic in development.")
+	assert.Panics(t, func() { log.Panic("panic") }, "Expected Logger.Panic to panic.")
+	reporter.CountersWG.Wait()
+
+	// FX's metrics spy doesn't support tags, so granular assertions aren't
+	// possible.
+	assert.Equal(t, 1, len(reporter.Counters))
+	assert.Equal(t, int64(6), reporter.Counters["logs"], "Expected counts to have name:logs.")
+}
+
+func assertConfigEqual(t testing.TB, merged, expected zap.Config) {
+}

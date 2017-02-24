@@ -28,10 +28,10 @@ import (
 	"go.uber.org/fx/auth"
 	"go.uber.org/fx/metrics"
 	"go.uber.org/fx/tracing"
-	"go.uber.org/fx/ulog"
 
 	"github.com/opentracing/opentracing-go"
 	jconfig "github.com/uber/jaeger-client-go/config"
+	"go.uber.org/zap"
 )
 
 // BenchmarkClientMiddleware/empty-8          100000000           10.8 ns/op         0 B/op          0 allocs/op
@@ -39,7 +39,7 @@ import (
 // BenchmarkClientMiddleware/auth-8            1000000          1866 ns/op         719 B/op         14 allocs/op
 // BenchmarkClientMiddleware/default-8          300000          5604 ns/op        2477 B/op         41 allocs/op
 func BenchmarkClientMiddleware(b *testing.B) {
-	tracer, closer, err := tracing.InitGlobalTracer(&jconfig.Configuration{}, "Test", ulog.NopLogger, metrics.NopCachedStatsReporter)
+	tracer, closer, err := tracing.InitGlobalTracer(&jconfig.Configuration{}, "Test", zap.NewNop(), metrics.NopCachedStatsReporter)
 	if err != nil {
 		b.Error(err)
 	}
