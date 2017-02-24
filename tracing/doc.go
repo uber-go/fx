@@ -36,19 +36,18 @@
 //
 //   import (
 //     "go.uber.org/fx/tracing"
-//     "go.uber.org/fx/ulog"
 //
+//   	"github.com/uber-go/tally"
 //     "github.com/uber/jaeger-client-go/config"
+//   	"go.uber.org/zap"
 //   )
 //
 //   func main() {
-//     logger := ulog.Logger()
-//     statsReporter := // initialize stats reporter
 //     tracer, closer, err := tracing.InitGlobalTracer(
 //       &config.Configuration{},
 //       "service-name",
-//       logger,
-//       statsReporter,
+//       zap.L(),
+//       tally.NoopScope,
 //     )
 //     if err != nil {
 //       logger.Fatal("Error initializing tracer", "error", err)
