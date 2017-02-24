@@ -285,9 +285,8 @@ func (s *manager) start() Control {
 				s.shutdownMu.Unlock()
 				if _, err := s.shutdown(e, "", nil); err != nil {
 					zap.L().Error("Unable to shut down modules",
-						// FIXME: Migrate to zap.NamedError.
-						zap.Any("initialError", e),
-						zap.Any("shutdownError", err),
+						zap.NamedError("initialError", e),
+						zap.NamedError("shutdownError", err),
 					)
 				}
 				zap.L().Error("Error starting the module", zap.Error(e))
