@@ -29,7 +29,6 @@ import (
 
 	"go.uber.org/fx/auth"
 	"go.uber.org/fx/config"
-	"go.uber.org/fx/metrics"
 	"go.uber.org/fx/tracing"
 
 	"github.com/opentracing/opentracing-go"
@@ -73,8 +72,12 @@ func TestExecutionChainOutboundMiddlewareError(t *testing.T) {
 	assert.Nil(t, resp)
 }
 
-func withOpentracingSetup(t *testing.T, registerFunc auth.RegisterFunc, fn func(tracer opentracing.Tracer)) {
-	tracer, closer, err := tracing.InitGlobalTracer(&jconfig.Configuration{}, "Test", zap.NewNop(), metrics.NopCachedStatsReporter)
+func withOpentracingSetup(
+	t *testing.T, registerFunc auth.RegisterFunc, fn func(tracer opentracing.Tracer),
+) {
+	tracer, closer, err := tracing.InitGlobalTracer(
+		&jconfig.Configuration{}, "Test", zap.NewNop(), tally.NoopScope,
+	)
 	defer closer.Close()
 	assert.NotNil(t, closer)
 	require.NoError(t, err)
@@ -88,7 +91,8 @@ func withOpentracingSetup(t *testing.T, registerFunc auth.RegisterFunc, fn func(
 func TestExecutionChainOutboundMiddleware_AuthContextPropagation(t *testing.T) {
 	withOpentracingSetup(t, nil, func(tracer opentracing.Tracer) {
 		execChain := newExecutionChain(
-			[]OutboundMiddleware{authenticationOutbound(fakeAuthInfo{_testYaml})}, contextPropagationTransport{t},
+			[]OutboundMiddleware{authenticationOutbound(fakeAuthInfo{_testYaml})},
+			contextPropagationTransport{t},
 		)
 		span := tracer.StartSpan("test_method")
 		span.SetBaggageItem(auth.ServiceAuth, "test_service")
@@ -103,7 +107,8 @@ func TestExecutionChainOutboundMiddleware_AuthContextPropagation(t *testing.T) {
 func TestExecutionChainOutboundMiddleware_AuthContextPropagationFailure(t *testing.T) {
 	withOpentracingSetup(t, auth.FakeFailureClient, func(tracer opentracing.Tracer) {
 		execChain := newExecutionChain(
-			[]OutboundMiddleware{authenticationOutbound(fakeAuthInfo{_testYaml})}, contextPropagationTransport{t},
+			[]OutboundMiddleware{authenticationOutbound(fakeAuthInfo{_testYaml})},
+			contextPropagationTransport{t},
 		)
 		span := tracer.StartSpan("test_method")
 		span.SetBaggageItem(auth.ServiceAuth, "testService")

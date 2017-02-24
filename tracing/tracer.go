@@ -22,11 +22,12 @@ package tracing
 
 import (
 	"io"
-	"time"
 
 	"github.com/opentracing/opentracing-go"
 	"github.com/uber-go/tally"
 	"github.com/uber/jaeger-client-go/config"
+	jzap "github.com/uber/jaeger-client-go/log/zap"
+	jtally "github.com/uber/jaeger-lib/metrics/tally"
 	"go.uber.org/zap"
 )
 
@@ -35,9 +36,9 @@ func InitGlobalTracer(
 	cfg *config.Configuration,
 	serviceName string,
 	logger *zap.Logger,
-	statsReporter tally.CachedStatsReporter,
+	scope tally.Scope,
 ) (opentracing.Tracer, io.Closer, error) {
-	tracer, closer, err := CreateTracer(cfg, serviceName, logger, statsReporter)
+	tracer, closer, err := CreateTracer(cfg, serviceName, logger, scope)
 	if err == nil {
 		opentracing.InitGlobalTracer(tracer)
 	}
@@ -49,53 +50,19 @@ func CreateTracer(
 	cfg *config.Configuration,
 	serviceName string,
 	logger *zap.Logger,
-	statsReporter tally.CachedStatsReporter,
+	scope tally.Scope,
 ) (opentracing.Tracer, io.Closer, error) {
-	var reporter *jaegerReporter
 	if cfg == nil || !cfg.Disabled {
-		cfg = loadAppConfig(cfg, logger)
-		// TODO: Change to use the right stats reporter
-		reporter = &jaegerReporter{
-			reporter: statsReporter,
-		}
+		cfg = loadAppConfig(cfg)
 	}
-	return cfg.New(serviceName, reporter)
+	jMetrics := jtally.Wrap(scope)
+	jLogger := jzap.NewLogger(logger)
+	return cfg.New(serviceName, config.Metrics(jMetrics), config.Logger(jLogger))
 }
 
-func loadAppConfig(cfg *config.Configuration, logger *zap.Logger) *config.Configuration {
+func loadAppConfig(cfg *config.Configuration) *config.Configuration {
 	if cfg == nil {
 		cfg = &config.Configuration{}
 	}
-	if cfg.Logger == nil {
-		cfg.Logger = &jaegerLogger{logger.Sugar()}
-	}
 	return cfg
-}
-
-type jaegerLogger struct {
-	*zap.SugaredLogger
-}
-
-// Error logs an error message
-func (jl *jaegerLogger) Error(msg string) {
-	jl.SugaredLogger.Error(msg)
-}
-
-type jaegerReporter struct {
-	reporter tally.CachedStatsReporter
-}
-
-// IncCounter increments metrics counter TODO: Change to use scope with tally functions to increment/update
-func (jr *jaegerReporter) IncCounter(name string, tags map[string]string, value int64) {
-	jr.reporter.AllocateCounter(name, tags).ReportCount(value)
-}
-
-// UpdateGauge updates metrics gauge
-func (jr *jaegerReporter) UpdateGauge(name string, tags map[string]string, value int64) {
-	jr.reporter.AllocateGauge(name, tags).ReportGauge(float64(value))
-}
-
-// RecordTimer records the metrics timer
-func (jr *jaegerReporter) RecordTimer(name string, tags map[string]string, d time.Duration) {
-	jr.reporter.AllocateTimer(name, tags).ReportTimer(d)
 }
