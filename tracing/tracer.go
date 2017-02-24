@@ -55,9 +55,9 @@ func CreateTracer(
 	if cfg == nil || !cfg.Disabled {
 		cfg = loadAppConfig(cfg)
 	}
-	jMetrics := jtally.Wrap(scope)
-	jLogger := jzap.NewLogger(logger)
-	return cfg.New(serviceName, config.Metrics(jMetrics), config.Logger(jLogger))
+	jaegerMetrics := jtally.Wrap(scope)
+	jaegerLogger := jzap.NewLogger(logger)
+	return cfg.New(serviceName, config.Metrics(jaegerMetrics), config.Logger(jaegerLogger))
 }
 
 func loadAppConfig(cfg *config.Configuration) *config.Configuration {

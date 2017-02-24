@@ -73,7 +73,9 @@ func TestExecutionChainOutboundMiddlewareError(t *testing.T) {
 }
 
 func withOpentracingSetup(
-	t *testing.T, registerFunc auth.RegisterFunc, fn func(tracer opentracing.Tracer),
+	t *testing.T,
+	registerFunc auth.RegisterFunc,
+	fn func(tracer opentracing.Tracer),
 ) {
 	tracer, closer, err := tracing.InitGlobalTracer(
 		&jconfig.Configuration{}, "Test", zap.NewNop(), tally.NoopScope,
@@ -90,10 +92,7 @@ func withOpentracingSetup(
 
 func TestExecutionChainOutboundMiddleware_AuthContextPropagation(t *testing.T) {
 	withOpentracingSetup(t, nil, func(tracer opentracing.Tracer) {
-		execChain := newExecutionChain(
-			[]OutboundMiddleware{authenticationOutbound(fakeAuthInfo{_testYaml})},
-			contextPropagationTransport{t},
-		)
+		execChain := getExecChainWithAuth(t)
 		span := tracer.StartSpan("test_method")
 		span.SetBaggageItem(auth.ServiceAuth, "test_service")
 		ctx := opentracing.ContextWithSpan(context.Background(), span)
@@ -106,10 +105,7 @@ func TestExecutionChainOutboundMiddleware_AuthContextPropagation(t *testing.T) {
 
 func TestExecutionChainOutboundMiddleware_AuthContextPropagationFailure(t *testing.T) {
 	withOpentracingSetup(t, auth.FakeFailureClient, func(tracer opentracing.Tracer) {
-		execChain := newExecutionChain(
-			[]OutboundMiddleware{authenticationOutbound(fakeAuthInfo{_testYaml})},
-			contextPropagationTransport{t},
-		)
+		execChain := getExecChainWithAuth(t)
 		span := tracer.StartSpan("test_method")
 		span.SetBaggageItem(auth.ServiceAuth, "testService")
 		ctx := opentracing.ContextWithSpan(context.Background(), span)
@@ -117,6 +113,13 @@ func TestExecutionChainOutboundMiddleware_AuthContextPropagationFailure(t *testi
 		assert.Error(t, err)
 		assert.Nil(t, resp)
 	})
+}
+
+func getExecChainWithAuth(t *testing.T) executionChain {
+	return newExecutionChain(
+		[]OutboundMiddleware{authenticationOutbound(fakeAuthInfo{_testYaml})},
+		contextPropagationTransport{t},
+	)
 }
 
 func TestOutboundMiddlewareWithTracerErrors(t *testing.T) {

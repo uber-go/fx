@@ -16,9 +16,9 @@ package main
 import (
   "go.uber.org/fx/tracing"
 
-	"github.com/uber-go/tally"
+  "github.com/uber-go/tally"
   "github.com/uber/jaeger-client-go/config"
-	"go.uber.org/zap"
+  "go.uber.org/zap"
 )
 
 func main() {
