@@ -80,7 +80,7 @@ func TestTraceField(t *testing.T) {
 		// but that just copies the production code.
 		assert.Equal(
 			t,
-			map[string]struct{}{"span": struct{}{}, "trace": struct{}{}, "parent": struct{}{}},
+			map[string]struct{}{"span": {}, "trace": {}, "parent": {}},
 			keys,
 			"Expected to log span and trace IDs.",
 		)
