@@ -32,7 +32,7 @@ func main() {
 	svc, err := service.WithModules(
 		// Create a YARPC module that exposes endpoints
 		rpc.ThriftModule(
-			rpc.CreateThriftServiceFunc(NewYarpcThriftHandler),
+			rpc.CreateThriftServiceFunc(NewYARPCThriftHandler),
 			modules.WithRoles("service"),
 		),
 	).WithOptions(

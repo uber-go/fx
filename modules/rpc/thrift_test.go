@@ -46,6 +46,8 @@ func (h testHost) Config() config.Provider {
 }
 
 func TestThriftModule_OK(t *testing.T) {
+	dig.Reset()
+
 	chip := ThriftModule(okCreate, modules.WithRoles("rescue"))
 	dale := ThriftModule(okCreate, modules.WithRoles("ranges"))
 	cfg := []byte(`
@@ -89,11 +91,17 @@ func TestThriftModule_BadOptions(t *testing.T) {
 	assert.Error(t, err)
 }
 
-func TestThrfitModule_Error(t *testing.T) {
+func TestThriftModule_Error(t *testing.T) {
+	dig.Reset()
 	modCreate := ThriftModule(badCreateService)
-	mods, err := modCreate(service.ModuleCreateInfo{})
-	assert.Error(t, err)
-	assert.Nil(t, mods)
+	mods, err := modCreate(service.ModuleCreateInfo{Host: testHost{
+		Host:   service.NopHost(),
+		config: config.NewYAMLProviderFromBytes([]byte(``)),
+	}})
+
+	assert.NoError(t, err)
+	ready := make(chan struct{})
+	assert.EqualError(t, <-mods[0].Start(ready), "unable to start dispatcher: can't create service")
 }
 
 func testInitRunModule(t *testing.T, mod service.Module, mci service.ModuleCreateInfo) {
