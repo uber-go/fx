@@ -25,7 +25,6 @@ import (
 	"os"
 	"path"
 	"path/filepath"
-	"strings"
 	"sync"
 )
 
@@ -138,12 +137,6 @@ func Environment() string {
 		env = _devEnv
 	}
 	return env
-}
-
-// IsDevelopmentEnv returns true if the current environment is set to development
-// TODO(glib): Remove usage of this function
-func IsDevelopmentEnv() bool {
-	return strings.Contains(Environment(), _devEnv)
 }
 
 // Path returns path to the yaml configurations
