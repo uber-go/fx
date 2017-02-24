@@ -32,8 +32,8 @@ func main() {
 		"example",
 		rpc.ThriftModule(
 			rpc.CreateThriftServiceFunc(NewYARPCThriftHandler),
-			modules.WithRoles("service"),
 		),
+		service.WithModuleRole("service"),
 	).WithOptions(
 		service.WithObserver(&Observer{}),
 	).Build()
