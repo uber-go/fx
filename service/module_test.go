@@ -21,11 +21,7 @@
 package service
 
 import (
-	"context"
-	"fmt"
 	"testing"
-
-	"go.uber.org/fx/ulog"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -168,10 +164,6 @@ func TestNewModuleInfo(t *testing.T) {
 				assert.True(t, ok)
 				assert.Equal(t, expectedValue, value)
 			}
-			logger, sink := ulog.TestingLogger()
-			moduleInfo.Logger(ulog.ContextWithLogger(context.Background(), logger)).Info("")
-			require.Equal(t, 1, len(sink.Logs()))
-			assert.Contains(t, fmt.Sprint(sink.Logs()[0]), test.name)
 		})
 	}
 }

@@ -21,12 +21,10 @@
 package service
 
 import (
-	"context"
 	"fmt"
 	"sync"
 
 	"github.com/uber-go/tally"
-	"go.uber.org/fx/ulog"
 )
 
 // Module is the basic building block of an UberFx service.
@@ -43,7 +41,6 @@ type Module interface {
 // This can be stored inside the module for use.
 type ModuleInfo interface {
 	Host
-	Logger(context.Context) ulog.Log
 	Item(key string) (interface{}, bool)
 }
 
@@ -203,10 +200,6 @@ func (mi *moduleInfo) Roles() []string {
 
 func (mi *moduleInfo) Metrics() tally.Scope {
 	return mi.metrics
-}
-
-func (mi *moduleInfo) Logger(ctx context.Context) ulog.Log {
-	return ulog.Logger(ctx).With("module", mi.name)
 }
 
 // TODO(pedge): merge with concept of resources?

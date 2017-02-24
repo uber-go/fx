@@ -85,10 +85,11 @@ modules:
 }
 
 func TestThrfitModule_Error(t *testing.T) {
+	dig.Reset()
 	modCreate := ThriftModule(badCreateService)
 	mod, err := modCreate(mih(t, "hello"))
-	assert.Error(t, err)
-	assert.Nil(t, mod)
+	assert.NoError(t, err)
+	assert.EqualError(t, mod.Start(), "unable to start dispatcher: can't create service")
 }
 
 func testInitRunModule(t *testing.T, mod service.Module) {

@@ -140,7 +140,7 @@ func (s *manager) shutdown(err error, reason string, exitCode *int) (bool, error
 	errs := s.stopModules()
 	if len(errs) > 0 {
 		for _, err := range errs {
-			zap.L().Error("Failure to shut down module", "error", zap.Error(err))
+			zap.L().Error("Failure to shut down module", zap.Error(err))
 		}
 	}
 

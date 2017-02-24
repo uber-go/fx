@@ -21,12 +21,14 @@
 package rpc
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"strconv"
 	"sync"
 
 	"go.uber.org/fx/service"
+	"go.uber.org/fx/ulog"
 
 	errs "github.com/pkg/errors"
 	"go.uber.org/fx/dig"
@@ -45,11 +47,11 @@ import (
 // the lifecycle of all of the in/out bound traffic, so we will
 // register it in a dig.Graph provided with options/default graph.
 type YARPCModule struct {
-	moduleInfo service.ModuleInfo
-	register   registerServiceFunc
-	config     yarpcConfig
+	moduleInfo  service.ModuleInfo
+	statsClient *statsClient
+	config      yarpcConfig
 	log         *zap.Logger
-	controller *dispatcherController
+	controller  *dispatcherController
 }
 
 var (
@@ -258,14 +260,13 @@ func newYARPCModule(
 	reg CreateThriftServiceFunc,
 ) (*YARPCModule, error) {
 	module := &YARPCModule{
-		moduleInfo: mi,
-		register:   reg,
-		log: ulog.Logger(context.Background()).With("module", mi.Name())
+		moduleInfo:  mi,
+		statsClient: newStatsClient(mi.Metrics()),
+		log:         ulog.Logger(context.Background()).With(zap.String("module", mi.Name())),
 	}
 	if err := mi.Config().Scope("modules").Get(mi.Name()).PopulateStruct(&module.config); err != nil {
 		return nil, errs.Wrap(err, "can't read inbounds")
 	}
-	stats.SetupRPCMetrics(mi.Metrics())
 
 	// iterate over inbounds
 	transportsIn, err := prepareInbounds(module.config.Inbounds, mi.Name())
@@ -295,7 +296,7 @@ func newYARPCModule(
 
 	module.controller.addConfig(module.config)
 	module.controller.appendHandler(func(dispatcher *yarpc.Dispatcher) error {
-		t, err := reg(mi.Host)
+		t, err := reg(mi)
 		if err != nil {
 			return err
 		}
@@ -337,10 +338,9 @@ func prepareInbounds(inbounds []Inbound, serviceName string) (transportsIn []tra
 // Start begins serving requests with YARPC.
 func (m *YARPCModule) Start() error {
 	// TODO(alsam) allow services to advertise with a name separate from the host name.
-	if err := m.controller.Start(m.moduleInfo); err != nil {
+	if err := m.controller.Start(m.moduleInfo, m.statsClient); err != nil {
 		return errs.Wrap(err, "unable to start dispatcher")
 	}
-	m.register(m)
 	m.log.Info("Module started")
 	return nil
 }

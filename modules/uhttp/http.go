@@ -99,18 +99,17 @@ func newModule(
 		Port:    defaultPort,
 		Timeout: defaultTimeout,
 	}
-	log := ulog.Logger(context.Background()).With(zap.String("module", mi.Name))
+	log := ulog.Logger(context.Background()).With(zap.String("module", mi.Name()))
 	if err := mi.Config().Scope("modules").Get(mi.Name()).PopulateStruct(&cfg); err != nil {
 		log.Error("Error loading http module configuration", zap.Error(err))
 	}
 	module := &Module{
 		ModuleInfo: mi,
 		handlers:   addHealth(getHandlers(mi)),
-		mcb:        defaultInboundMiddlewareChainBuilder(log, mi.AuthClient()),
+		mcb:        defaultInboundMiddlewareChainBuilder(log, mi.AuthClient(), newStatsClient(mi.Metrics())),
 		config:     cfg,
 		log:        log,
 	}
-	stats.SetupHTTPMetrics(module.Metrics())
 	middleware := inboundMiddlewareFromModuleInfo(mi)
 	module.mcb = module.mcb.AddMiddleware(middleware...)
 	return module, nil
