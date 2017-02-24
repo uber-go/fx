@@ -25,14 +25,14 @@ import (
 
 	"go.uber.org/fx/metrics"
 	"go.uber.org/fx/tracing"
-	"go.uber.org/fx/ulog"
 
 	"github.com/opentracing/opentracing-go"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
 )
 
 // WithSpan is used for generating a span to be used in testing
-func WithSpan(t *testing.T, log ulog.Log, f func(opentracing.Span)) {
+func WithSpan(t *testing.T, log *zap.Logger, f func(opentracing.Span)) {
 	tracer, closer, err := tracing.CreateTracer(
 		nil, "serviceName", log, metrics.NopCachedStatsReporter,
 	)

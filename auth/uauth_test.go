@@ -25,11 +25,11 @@ import (
 	"testing"
 
 	"go.uber.org/fx/config"
-	"go.uber.org/fx/ulog"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/uber-go/tally"
+	"go.uber.org/zap"
 )
 
 func withAuthClientSetup(t *testing.T, registerFunc RegisterFunc, info CreateAuthInfo, fn func()) {
@@ -86,8 +86,8 @@ func (fakeAuthInfo) Config() config.Provider {
 	return nil
 }
 
-func (fakeAuthInfo) Logger() ulog.Log {
-	return ulog.NopLogger
+func (fakeAuthInfo) Logger() *zap.Logger {
+	return zap.NewNop()
 }
 
 func (fakeAuthInfo) Metrics() tally.Scope {

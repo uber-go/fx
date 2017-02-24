@@ -45,6 +45,7 @@ func (h testHost) Config() config.Provider {
 }
 
 func TestThriftModule_OK(t *testing.T) {
+	dig.Reset()
 	chip := ThriftModule(okCreate)
 	dale := ThriftModule(okCreate)
 	cfg := []byte(`

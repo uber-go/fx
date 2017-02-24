@@ -18,46 +18,54 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package stats
+package rpc
 
 import "github.com/uber-go/tally"
 
 const (
-	//TagModule is module tag for metrics
-	TagModule = "module"
-	// TagType is either request or response
-	TagType = "type"
-	// TagStatus is status of the request
-	TagStatus = "status"
-	// TagMiddleware is the middleware tag
-	TagMiddleware = "middleware"
+	//_tagModule is module tag for metrics
+	_tagModule = "module"
+	// _tagType is either request or response
+	_tagType = "type"
+	// _tagProcedure is the procedure name
+	_tagProcedure = "procedure"
+	//_tagMiddleware is middleware type
+	_tagMiddleware = "middleware"
 )
 
-// HTTPTags creates metrics scope with defined tags
 var (
-	HTTPTags = map[string]string{
-		TagModule: "http",
-		TagType:   "request",
+	rpcTags = map[string]string{
+		_tagModule: "rpc",
+		_tagType:   "request",
 	}
-
-	// HTTPPanicCounter counts panics occurred in http
-	HTTPPanicCounter tally.Counter
-	// HTTPAuthFailCounter counts auth failures
-	HTTPAuthFailCounter tally.Counter
-	// HTTPMethodTimer is a turnaround time for http methods
-	HTTPMethodTimer tally.Scope
-	// HTTPStatusCountScope is a scope for http status
-	HTTPStatusCountScope tally.Scope
 )
 
-// SetupHTTPMetrics allocates counters for necessary setup
-func SetupHTTPMetrics(scope tally.Scope) {
-	httpScope := scope.Tagged(HTTPTags)
-	HTTPPanicCounter = httpScope.Counter("panic")
+type statsClient struct {
+	rpcAuthFailCounter tally.Counter
+	rpcHandleTimer     tally.Scope
+	rpcPanicCounter    tally.Counter
+}
 
-	HTTPAuthFailCounter = httpScope.Tagged(map[string]string{TagMiddleware: "auth"}).Counter("fail")
+func newStatsClient(scope tally.Scope) *statsClient {
+	rpcTagsScope := scope.Tagged(rpcTags)
+	return &statsClient{
+		rpcTagsScope.Tagged(map[string]string{_tagMiddleware: "auth"}).Counter("fail"),
+		rpcTagsScope.Tagged(rpcTags),
+		rpcTagsScope.Counter("panic"),
+	}
+}
 
-	HTTPMethodTimer = httpScope.Tagged(HTTPTags)
+// RPCAuthFailCounter counts auth failures
+func (c *statsClient) RPCAuthFailCounter() tally.Counter {
+	return c.rpcAuthFailCounter
+}
 
-	HTTPStatusCountScope = httpScope
+// RPCHandleTimer is a turnaround time for rpc handler
+func (c *statsClient) RPCHandleTimer() tally.Scope {
+	return c.rpcHandleTimer
+}
+
+// RPCPanicCounter counts panics occurred for rpc handler
+func (c *statsClient) RPCPanicCounter() tally.Counter {
+	return c.rpcPanicCounter
 }

@@ -26,6 +26,7 @@ import (
 	"go.uber.org/fx/auth"
 	"go.uber.org/fx/config"
 	"go.uber.org/fx/ulog"
+	"go.uber.org/zap"
 
 	"github.com/opentracing/opentracing-go"
 	"github.com/opentracing/opentracing-go/ext"
@@ -95,13 +96,13 @@ func authenticationOutbound(info auth.CreateAuthInfo) OutboundMiddlewareFunc {
 
 		authCtx, err = authClient.Authenticate(authCtx)
 		if err != nil {
-			ulog.Logger(ctx).Error(auth.ErrAuthentication, "error", err)
+			ulog.Logger(ctx).Error(auth.ErrAuthentication, zap.Error(err))
 			return nil, err
 		}
 
 		span := opentracing.SpanFromContext(authCtx)
 		if err := injectSpanIntoHeaders(req.Header, span); err != nil {
-			ulog.Logger(authCtx).Error("Error injecting auth context", "error", err)
+			ulog.Logger(authCtx).Error("Error injecting auth context", zap.Error(err))
 			return nil, err
 		}
 

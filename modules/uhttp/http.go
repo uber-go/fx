@@ -29,10 +29,11 @@ import (
 	"sync"
 	"time"
 
-	"go.uber.org/fx/modules/uhttp/internal/stats"
 	"go.uber.org/fx/service"
+	"go.uber.org/fx/ulog"
 
 	"github.com/pkg/errors"
+	"go.uber.org/zap"
 )
 
 const (
@@ -62,6 +63,7 @@ var _ service.Module = &Module{}
 type Module struct {
 	service.ModuleInfo
 	config   Config
+	log      *zap.Logger
 	srv      *http.Server
 	listener net.Listener
 	handlers []RouteHandler
@@ -97,14 +99,16 @@ func newModule(
 		Port:    defaultPort,
 		Timeout: defaultTimeout,
 	}
+	log := ulog.Logger(context.Background()).With(zap.String("module", mi.Name))
 	if err := mi.Config().Scope("modules").Get(mi.Name()).PopulateStruct(&cfg); err != nil {
-		mi.Logger(context.Background()).Error("Error loading http module configuration", "error", err)
+		log.Error("Error loading http module configuration", zap.Error(err))
 	}
 	module := &Module{
 		ModuleInfo: mi,
 		handlers:   addHealth(getHandlers(mi)),
-		mcb:        defaultInboundMiddlewareChainBuilder(mi.Logger(context.Background()), mi.AuthClient()),
+		mcb:        defaultInboundMiddlewareChainBuilder(log, mi.AuthClient()),
 		config:     cfg,
+		log:        log,
 	}
 	stats.SetupHTTPMetrics(module.Metrics())
 	middleware := inboundMiddlewareFromModuleInfo(mi)
@@ -135,7 +139,7 @@ func (m *Module) Start() error {
 	}
 	// finally, start the http server.
 	// TODO update log object to be accessed via http context #74
-	m.Logger(context.Background()).Info("Server listening on port", "port", m.config.Port)
+	m.log.Info("Server listening on port", zap.Int("port", m.config.Port))
 
 	m.listener = listener
 	m.srv = &http.Server{Handler: mux}
@@ -145,7 +149,7 @@ func (m *Module) Start() error {
 		m.lock.RUnlock()
 		// TODO(pedge): what to do about error?
 		if err := m.srv.Serve(listener); err != nil {
-			m.Logger(context.Background()).Error("HTTP Serve error", "error", err)
+			m.log.Error("HTTP Serve error", zap.Error(err))
 		}
 	}()
 	return nil

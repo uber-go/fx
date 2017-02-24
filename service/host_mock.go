@@ -24,10 +24,10 @@ import (
 	"go.uber.org/fx/auth"
 	"go.uber.org/fx/config"
 	"go.uber.org/fx/metrics"
-	"go.uber.org/fx/ulog"
 
 	"github.com/opentracing/opentracing-go"
 	"github.com/uber-go/tally"
+	"go.uber.org/zap"
 )
 
 // NopHost is to be used in tests
@@ -37,7 +37,7 @@ func NopHost() Host {
 
 // NopHostWithConfig is to be used in tests and allows setting of config.
 func NopHostWithConfig(configProvider config.Provider) Host {
-	return nopHostConfigured(auth.NopClient, ulog.NopLogger, opentracing.NoopTracer{}, configProvider)
+	return nopHostConfigured(auth.NopClient, zap.NewNop(), opentracing.NoopTracer{}, configProvider)
 }
 
 // NopHostAuthFailure is nop manager with failure auth client
@@ -45,15 +45,15 @@ func NopHostAuthFailure() Host {
 	auth.UnregisterClient()
 	defer auth.UnregisterClient()
 	auth.RegisterClient(auth.FakeFailureClient)
-	return NopHostConfigured(auth.Load(nil), ulog.NopLogger, opentracing.NoopTracer{})
+	return NopHostConfigured(auth.Load(nil), zap.NewNop(), opentracing.NoopTracer{})
 }
 
 // NopHostConfigured is a nop manager with set logger and tracer for tests
-func NopHostConfigured(client auth.Client, logger ulog.Log, tracer opentracing.Tracer) Host {
+func NopHostConfigured(client auth.Client, logger *zap.Logger, tracer opentracing.Tracer) Host {
 	return nopHostConfigured(client, logger, tracer, nil)
 }
 
-func nopHostConfigured(client auth.Client, logger ulog.Log, tracer opentracing.Tracer, configProvider config.Provider) Host {
+func nopHostConfigured(client auth.Client, logger *zap.Logger, tracer opentracing.Tracer, configProvider config.Provider) Host {
 	if configProvider == nil {
 		configProvider = config.NewStaticProvider(nil)
 	}
