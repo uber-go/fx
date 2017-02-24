@@ -2,9 +2,12 @@
 
 ## v1.0.0-beta2 (unreleased)
 
-* [Breaking] Remove `ulog` and expose `*zap.Logger` directly.
+* [Breaking] Remove `ulog.Logger` interface and expose `*zap.Logger` directly.
 * [Breaking] Upgrade `zap` to `v1.0.0-rc.2` (now go.uber.org/zap, was
     github.com/uber-go/zap)
+* Remove now-unused `config.IsDevelopmentEnv()` helper to encourage better
+  testing practices. Not a breaking change as nobody is using this func
+  themselves according to our code search tool.
 
 ## v1.0.0-beta1 (20 Feb 2017)
 
