@@ -28,56 +28,50 @@ import (
 	"github.com/uber-go/tally"
 )
 
-// A Option configures a service host
-type Option func(Host) error
+// A Option configures a manager
+type Option func(*manager) error
 
-// WithConfiguration adds configuration to a service host
+// WithConfiguration adds configuration to a manager
 func WithConfiguration(config config.Provider) Option {
-	return func(svc Host) error {
-		// TODO(ai) verify type assertion is correct
-		svc2 := svc.(*manager)
-		svc2.configProvider = config
+	return func(m *manager) error {
+		m.configProvider = config
 		return nil
 	}
 }
 
-// WithMetrics configures a service host with metrics and stats reporter
+// WithMetrics configures a manager with metrics and stats reporter
 func WithMetrics(scope tally.Scope, reporter tally.CachedStatsReporter) Option {
-	return func(svc Host) error {
-		svc2 := svc.(*manager)
-		svc2.metrics = scope
-		svc2.statsReporter = reporter
+	return func(m *manager) error {
+		m.metrics = scope
+		m.statsReporter = reporter
 		return nil
 	}
 }
 
-// WithRootScope registers the root scope for all the service metrics
+// WithRootScope registers the root scope for all the manager metrics
 func WithRootScope(scopeFunc metrics.ScopeFunc) Option {
-	return func(svc Host) error {
-		svc2 := svc.(*manager)
-		if svc2.serviceCore.metricsClient == nil {
-			svc2.serviceCore.metricsClient = metrics.NewClient()
+	return func(m *manager) error {
+		if m.serviceCore.metricsClient == nil {
+			m.serviceCore.metricsClient = metrics.NewClient()
 		}
-		svc2.serviceCore.metricsClient.RegisterRootScope(scopeFunc)
+		m.serviceCore.metricsClient.RegisterRootScope(scopeFunc)
 		return nil
 	}
 }
 
-// WithTracer configures a service host with a tracer
+// WithTracer configures a manager with a tracer
 func WithTracer(tracer opentracing.Tracer) Option {
-	return func(svc Host) error {
-		svc2 := svc.(*manager)
-		svc2.tracer = tracer
+	return func(m *manager) error {
+		m.tracer = tracer
 		return nil
 	}
 }
 
-// WithObserver configures a service with an instance lifecycle observer
+// WithObserver configures a manager with an instance lifecycle observer
 func WithObserver(observer Observer) Option {
-	return func(svc Host) error {
-		service := svc.(*manager)
-		service.observer = observer
-		service.serviceCore.observer = observer
+	return func(m *manager) error {
+		m.observer = observer
+		m.serviceCore.observer = observer
 		return nil
 	}
 }

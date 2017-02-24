@@ -21,7 +21,6 @@
 package service
 
 import (
-	"context"
 	"time"
 
 	"go.uber.org/fx/auth"
@@ -32,18 +31,24 @@ import (
 
 	"github.com/go-validator/validator"
 	"github.com/pkg/errors"
+	"go.uber.org/zap"
 )
-
-var _simpleCtx = context.Background()
 
 func (svc *serviceCore) setupLogging() {
 	err := svc.configProvider.Get("logging").PopulateStruct(&svc.logConfig)
 	if err != nil {
-		ulog.Logger(_simpleCtx).Info("Logging configuration is not provided, setting to default logger", "error", err)
+		zap.L().Info("Logging configuration is not provided, using UberFX defaults", zap.Error(err))
+		svc.logConfig = ulog.DefaultConfiguration()
 	}
 
-	logBuilder := ulog.Builder().WithScope(svc.metrics)
-	ulog.SetLogger(logBuilder.WithConfiguration(svc.logConfig).Build())
+	logger, err := svc.logConfig.Build(zap.Hooks(ulog.Metrics(svc.metrics)))
+	if err != nil {
+		// Typically, this means that we're trying to log to files that don't
+		// exist or don't have appropriate permissions set.
+		zap.L().Info("Failed to configure logger", zap.Error(err))
+		return
+	}
+	ulog.SetLogger(logger)
 }
 
 func (svc *serviceCore) setupStandardConfig() error {
@@ -52,7 +57,7 @@ func (svc *serviceCore) setupStandardConfig() error {
 	}
 
 	if errs := validator.Validate(svc.standardConfig); errs != nil {
-		ulog.Logger(_simpleCtx).Error("Invalid service configuration", "error", errs)
+		zap.L().Error("Invalid service configuration", zap.Error(errs))
 		return errors.Wrap(errs, "service configuration failed validation")
 	}
 	return nil
@@ -94,7 +99,7 @@ func (svc *serviceCore) setupTracer() error {
 	tracer, closer, err := tracing.InitGlobalTracer(
 		&svc.tracerConfig,
 		svc.standardConfig.Name,
-		ulog.Logger(_simpleCtx),
+		zap.L(),
 		svc.statsReporter,
 	)
 	if err != nil {

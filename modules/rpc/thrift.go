@@ -21,16 +21,12 @@
 package rpc
 
 import (
-	"sync"
-
 	"go.uber.org/fx/modules"
 	"go.uber.org/fx/service"
 
 	"github.com/pkg/errors"
 	"go.uber.org/yarpc/api/transport"
 )
-
-var _setupMu sync.Mutex
 
 // CreateThriftServiceFunc creates a Thrift service from a service host
 type CreateThriftServiceFunc func(svc service.Host) ([]transport.Procedure, error)
@@ -42,31 +38,11 @@ func ThriftModule(hookup CreateThriftServiceFunc, options ...modules.Option) ser
 			mi.Name = "rpc"
 		}
 
-		mod, err := newYARPCThriftModule(mi, hookup, options...)
+		mod, err := newYARPCModule(mi, hookup, options...)
 		if err != nil {
 			return nil, errors.Wrap(err, "unable to instantiate Thrift module")
 		}
 
 		return []service.Module{mod}, nil
 	}
-}
-
-func newYARPCThriftModule(
-	mi service.ModuleCreateInfo,
-	createService CreateThriftServiceFunc,
-	options ...modules.Option,
-) (*YARPCModule, error) {
-	registrants, err := createService(mi.Host)
-	if err != nil {
-		return nil, errors.Wrap(err, "unable to create YARPC thrift handler")
-	}
-
-	reg := func(mod *YARPCModule) {
-		_setupMu.Lock()
-		defer _setupMu.Unlock()
-
-		mod.controller.dispatcher.Register(registrants)
-	}
-
-	return newYARPCModule(mi, reg, options...)
 }

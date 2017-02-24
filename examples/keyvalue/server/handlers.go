@@ -30,18 +30,17 @@ import (
 	"go.uber.org/yarpc/api/transport"
 )
 
-type YarpcHandler struct {
+type YARPCHandler struct {
 	sync.RWMutex
 
 	items map[string]string
 }
 
-func NewYarpcThriftHandler(service.Host) ([]transport.Procedure, error) {
-	handler := &YarpcHandler{items: map[string]string{}}
-	return kvs.New(handler), nil
+func NewYARPCThriftHandler(_ service.Host) ([]transport.Procedure, error) {
+	return kvs.New(&YARPCHandler{items: map[string]string{}}), nil
 }
 
-func (h *YarpcHandler) GetValue(ctx context.Context, key *string) (string, error) {
+func (h *YARPCHandler) GetValue(ctx context.Context, key *string) (string, error) {
 	h.RLock()
 	defer h.RUnlock()
 
@@ -51,7 +50,7 @@ func (h *YarpcHandler) GetValue(ctx context.Context, key *string) (string, error
 	return "", &kv.ResourceDoesNotExist{Key: *key}
 }
 
-func (h *YarpcHandler) SetValue(ctx context.Context, key *string, value *string) error {
+func (h *YARPCHandler) SetValue(ctx context.Context, key *string, value *string) error {
 	h.Lock()
 
 	h.items[*key] = *value

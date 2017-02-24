@@ -21,7 +21,6 @@
 package service
 
 import (
-	"context"
 	"fmt"
 	"os"
 	"os/signal"
@@ -32,7 +31,7 @@ import (
 
 	"go.uber.org/fx/config"
 	"go.uber.org/fx/internal/util"
-	"go.uber.org/fx/ulog"
+	"go.uber.org/zap"
 
 	"github.com/pkg/errors"
 )
@@ -96,9 +95,9 @@ func (s *manager) IsRunning() bool {
 func (s *manager) OnCriticalError(err error) {
 	shutdown := true
 	if s.observer == nil {
-		ulog.Logger(_simpleCtx).Warn(
+		zap.L().Warn(
 			"No observer set to handle lifecycle events. Shutting down.",
-			"event", "OnCriticalError",
+			zap.String("event", "OnCriticalError"),
 		)
 	} else {
 		shutdown = !s.observer.OnCriticalError(err)
@@ -107,7 +106,10 @@ func (s *manager) OnCriticalError(err error) {
 	if shutdown {
 		if ok, err := s.shutdown(err, "", nil); !ok || err != nil {
 			// TODO(ai) verify we flush logs
-			ulog.Logger(_simpleCtx).Info("Problem shutting down module", "success", ok, "error", err)
+			zap.L().Info("Problem shutting down module",
+				zap.Bool("success", ok),
+				zap.Error(err),
+			)
 		}
 	}
 }
@@ -147,7 +149,10 @@ func (s *manager) shutdown(err error, reason string, exitCode *int) (bool, error
 	errs := s.stopModules()
 	if len(errs) > 0 {
 		for k, v := range errs {
-			ulog.Logger(_simpleCtx).Error("Failure to shut down module", "name", k.Name(), "error", v.Error())
+			zap.L().Error("Failure to shut down module",
+				zap.String("name", k.Name()),
+				zap.Error(v),
+			)
 		}
 	}
 
@@ -159,15 +164,15 @@ func (s *manager) shutdown(err error, reason string, exitCode *int) (bool, error
 	// Stop the metrics reporting
 	if s.metricsCloser != nil {
 		if err = s.metricsCloser.Close(); err != nil {
-			ulog.Logger(_simpleCtx).Error("Failure to close metrics", "error", err)
+			zap.L().Error("Failure to close metrics", zap.Error(err))
 		}
 	}
 
 	// Flush tracing buffers
 	if s.tracerCloser != nil {
-		ulog.Logger(_simpleCtx).Debug("Closing tracer")
+		zap.L().Debug("Closing tracer")
 		if err = s.tracerCloser.Close(); err != nil {
-			ulog.Logger(_simpleCtx).Error("Failure to close tracer", "error", err)
+			zap.L().Error("Failure to close tracer", zap.Error(err))
 		}
 	}
 
@@ -198,9 +203,9 @@ func (s *manager) addModules(modules ...ModuleCreateFunc) error {
 		}
 
 		if !s.supportsRole(mi.Roles...) {
-			ulog.Logger(_simpleCtx).Info(
+			zap.L().Info(
 				"module will not be added due to selected roles",
-				"roles", mi.Roles,
+				zap.Any("roles", mi.Roles),
 			)
 		}
 
@@ -279,9 +284,12 @@ func (s *manager) start() Control {
 
 				s.shutdownMu.Unlock()
 				if _, err := s.shutdown(e, "", nil); err != nil {
-					ulog.Logger(_simpleCtx).Error("Unable to shut down modules", "initialError", e, "shutdownError", err)
+					zap.L().Error("Unable to shut down modules",
+						zap.NamedError("initialError", e),
+						zap.NamedError("shutdownError", err),
+					)
 				}
-				ulog.Logger(_simpleCtx).Error("Error starting the module", "error", e)
+				zap.L().Error("Error starting the module", zap.Error(e))
 				// return first service error
 				if serviceErr == nil {
 					serviceErr = e
@@ -310,9 +318,9 @@ func (s *manager) registerSignalHandlers() {
 	signal.Notify(ch, syscall.SIGINT, syscall.SIGTERM)
 	go func() {
 		sig := <-ch
-		ulog.Logger(_simpleCtx).Warn("Received shutdown signal", "signal", sig.String())
+		zap.L().Warn("Received shutdown signal", zap.String("signal", sig.String()))
 		if err := s.Stop("Received syscall", 0); err != nil {
-			ulog.Logger(_simpleCtx).Error("Error shutting down", "error", err.Error())
+			zap.L().Error("Error shutting down", zap.Error(err))
 		}
 	}()
 }
@@ -339,13 +347,13 @@ func (s *manager) startModules() map[Module]error {
 
 				select {
 				case <-readyCh:
-					ulog.Logger(_simpleCtx).Info("Module started up cleanly", "module", m.Name())
+					zap.L().Info("Module started up cleanly", zap.String("module", m.Name()))
 				case <-time.After(defaultStartupWait):
 					results[m] = fmt.Errorf("module didn't start after %v", defaultStartupWait)
 				}
 
 				if startError := <-startResult; startError != nil {
-					ulog.Logger(_simpleCtx).Error("Error received while starting module", "module", m.Name(), "error", startError)
+					zap.L().Error("Error received while starting module", zap.String("module", m.Name()), zap.Error(startError))
 					results[m] = startError
 				}
 			}
@@ -384,7 +392,7 @@ type ExitCallback func(shutdown Exit) int
 
 func (s *manager) WaitForShutdown(exitCallback ExitCallback) {
 	shutdown := <-s.closeChan
-	ulog.Logger(_simpleCtx).Info("Shutting down", "reason", shutdown.Reason)
+	zap.L().Info("Shutting down", zap.String("reason", shutdown.Reason))
 
 	exit := 0
 	if exitCallback != nil {
@@ -401,7 +409,11 @@ func (s *manager) transitionState(to State) {
 
 	// TODO(ai) this isn't used yet
 	if to < s.state {
-		ulog.Logger(_simpleCtx).Fatal("Can't down from state", "from", s.state, "to", to, "service", s.Name())
+		zap.L().Fatal("Can't down from state",
+			zap.Any("from", s.state),
+			zap.Any("to", to),
+			zap.String("service", s.Name()),
+		)
 	}
 
 	for s.state < to {
@@ -438,7 +450,7 @@ func loadInstanceConfig(cfg config.Provider, key string, instance interface{}) b
 		// Try to load the service config
 		err := cfg.Get(key).PopulateStruct(configValue.Interface())
 		if err != nil {
-			ulog.Logger(context.Background()).Error("Unable to load instance config", "error", err)
+			zap.L().Error("Unable to load instance config", zap.Error(err))
 			return false
 		}
 		instanceValue := reflect.ValueOf(instance).Elem()
