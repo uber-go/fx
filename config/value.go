@@ -25,6 +25,7 @@ import (
 	"fmt"
 	"reflect"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/go-validator/validator"
@@ -51,9 +52,11 @@ const (
 	Dictionary
 	// Zero constants
 	_float64Zero = float64(0)
+
+	_separator = "."
 )
 
-var _typeTimeDuration = reflect.TypeOf(time.Duration(0))
+var _typeOfString = reflect.TypeOf("string")
 
 // GetType returns GO type of the provided object
 func GetType(value interface{}) ValueType {
@@ -127,6 +130,7 @@ func (cv Value) Source() string {
 	if cv.provider == nil {
 		return ""
 	}
+
 	return cv.provider.Name()
 }
 
@@ -135,6 +139,7 @@ func (cv Value) LastUpdated() time.Time {
 	if !cv.HasValue() {
 		return time.Time{} // zero value if never updated?
 	}
+
 	return cv.Timestamp
 }
 
@@ -170,9 +175,10 @@ func (cv Value) String() string {
 // TryAsString attempts to return the configuration value as a string
 func (cv Value) TryAsString() (string, bool) {
 	v := cv.Value()
-	if val, err := convertValue(v, reflect.TypeOf("")); v != nil && err == nil {
+	if val, err := convertValue(v, _typeOfString); v != nil && err == nil {
 		return val.(string), true
 	}
+
 	return "", false
 }
 
@@ -202,6 +208,7 @@ func (cv Value) TryAsBool() (bool, bool) {
 	if val, err := convertValue(v, reflect.TypeOf(true)); v != nil && err == nil {
 		return val.(bool), true
 	}
+
 	return false, false
 
 }
@@ -212,6 +219,7 @@ func (cv Value) TryAsFloat() (float64, bool) {
 	if val, err := convertValue(v, reflect.TypeOf(_float64Zero)); v != nil && err == nil {
 		return val.(float64), true
 	}
+
 	switch val := v.(type) {
 	case int:
 		return float64(val), true
@@ -229,41 +237,41 @@ func (cv Value) TryAsFloat() (float64, bool) {
 // AsString returns the configuration value as a string, or panics if not
 // string-able
 func (cv Value) AsString() string {
-	s, ok := cv.TryAsString()
-	if !ok {
-		panic(fmt.Sprintf("Can't convert to string: %v", cv.Value()))
+	if s, ok := cv.TryAsString(); ok {
+		return s
 	}
-	return s
+
+	panic(fmt.Sprintf("Can't convert to string: %v", cv.Value()))
 }
 
 // AsInt returns the configuration value as an int, or panics if not
 // int-able
 func (cv Value) AsInt() int {
-	s, ok := cv.TryAsInt()
-	if !ok {
-		panic(fmt.Sprintf("Can't convert to int: %T %v", cv.Value(), cv.Value()))
+	if s, ok := cv.TryAsInt(); ok {
+		return s
 	}
-	return s
+
+	panic(fmt.Sprintf("Can't convert to int: %T %v", cv.Value(), cv.Value()))
 }
 
 // AsFloat returns the configuration value as an float64, or panics if not
 // float64-able
 func (cv Value) AsFloat() float64 {
-	s, ok := cv.TryAsFloat()
-	if !ok {
-		panic(fmt.Sprintf("Can't convert to float64: %v", cv.Value()))
+	if s, ok := cv.TryAsFloat(); ok {
+		return s
 	}
-	return s
+
+	panic(fmt.Sprintf("Can't convert to float64: %v", cv.Value()))
 }
 
 // AsBool returns the configuration value as an bool, or panics if not
 // bool-able
 func (cv Value) AsBool() bool {
-	s, ok := cv.TryAsBool()
-	if !ok {
-		panic(fmt.Sprintf("Can't convert to bool: %v", cv.Value()))
+	if s, ok := cv.TryAsBool(); ok {
+		return s
 	}
-	return s
+
+	panic(fmt.Sprintf("Can't convert to bool: %v", cv.Value()))
 }
 
 // IsDefault returns whether the return value is the default.
@@ -283,16 +291,16 @@ func (cv Value) Value() interface{} {
 	if cv.found {
 		return cv.value
 	}
+
 	return cv.defaultValue
 }
 
 const (
-	bucketInvalid   = -1
-	bucketPrimitive = 0
-	bucketArray     = 1
-	bucketObject    = 2
-	bucketMap       = 3
-	bucketSlice     = 4
+	bucketPrimitive = iota
+	bucketArray
+	bucketObject
+	bucketMap
+	bucketSlice
 )
 
 func getBucket(t reflect.Type) int {
@@ -300,6 +308,7 @@ func getBucket(t reflect.Type) int {
 	if kind == reflect.Ptr {
 		kind = t.Elem().Kind()
 	}
+
 	switch kind {
 	case reflect.Chan:
 		fallthrough
@@ -336,6 +345,7 @@ func derefType(t reflect.Type) reflect.Type {
 	if t.Kind() == reflect.Ptr {
 		t = t.Elem()
 	}
+
 	return t
 }
 
@@ -343,6 +353,7 @@ func convertValueFromStruct(value interface{}, targetType reflect.Type, fieldTyp
 	// The fieldType is probably a custom type here. We will try and set the fieldValue by
 	// the custom type
 	// TODO: refactor switch cases into isType functions
+	// TODO(alsam) Fix overflows/negatives for unsigned types...
 	switch fieldType.Kind() {
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
 		fieldValue.SetInt(int64(value.(int)))
@@ -371,9 +382,10 @@ func convertValue(value interface{}, targetType reflect.Type) (interface{}, erro
 	valueType := reflect.TypeOf(value)
 	if valueType.AssignableTo(targetType) {
 		return value, nil
-	} else if targetType.Name() == "string" {
+	} else if targetType == _typeOfString {
 		return fmt.Sprintf("%v", value), nil
 	}
+
 	switch v := value.(type) {
 	case string:
 		target := reflect.New(targetType).Interface()
@@ -382,216 +394,263 @@ func convertValue(value interface{}, targetType reflect.Type) (interface{}, erro
 			return strconv.Atoi(v)
 		case *bool:
 			return strconv.ParseBool(v)
+		case *time.Duration:
+			return time.ParseDuration(v)
 		case encoding.TextUnmarshaler:
 			err := t.UnmarshalText([]byte(v))
 			// target should have a pointer receiver to be able to change itself based on text
 			return reflect.ValueOf(target).Elem().Interface(), err
 		}
 	}
+
 	return nil, fmt.Errorf("can't convert %v to %v", reflect.TypeOf(value).String(), targetType)
 }
 
 // PopulateStruct fills in a struct from configuration
+// TODO(alsam) add check for cycles
+// TODO(alsam) now we can populate not only structs. Provide a generic function.
 func (cv Value) PopulateStruct(target interface{}) error {
-	_, err := cv.valueStruct(cv.key, target)
-	return err
+	return cv.valueStruct(cv.key, target)
 }
 
 func (cv Value) getGlobalProvider() Provider {
 	if cv.root == nil {
 		return cv.provider
 	}
+
 	return cv.root
 }
 
-func (cv Value) valueStruct(key string, target interface{}) (interface{}, error) {
-	// walk through the struct and start asking the providers for values at each key.
-	//
-	// - for individual values, we terminate
-	// - for array values, we start asking for indexes
-	// - for object values, we recurse.
-	//
-
-	tarGet := reflect.Indirect(reflect.ValueOf(target))
-	targetType := tarGet.Type()
-	// if b := getBucket(tarGet); b == bucketInvalid {
-	// 	return nil, false, errors.Error("Invalid target object kind")
-	// } else if b == bucketPrimitive {
-	// 	return cc.Get(key, def)
-	// }
+// Sets value to a primitive type.
+func (cv Value) scalar(childKey string, value reflect.Value, def string) error {
+	valueType := value.Type()
 
 	global := cv.getGlobalProvider()
 
+	var val interface{}
+
+	if valueType.Kind() == reflect.Ptr {
+		if v1 := global.Get(childKey); v1.HasValue() {
+			val = v1.Value()
+			if val != nil {
+				// We cannot assign reflect.ValueOf(Val) to it as is to value.
+				// value is a pointer, which currently points to non address.
+				// We need to set a new reflect.Value with field type same as the field we are populating
+				// before assigning the value (val) parsed from yaml
+				if value.IsNil() {
+					value.Set(reflect.New(valueType.Elem()))
+				}
+
+				// We cannot assign reflect.ValueOf(val) to value as is, when field is a user defined type
+				// We need to find the Kind of the custom type and set the value to the specific type
+				// that user defined type is defined with.
+				kind := valueType.Elem().Kind()
+				switch kind {
+				case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+					value.Elem().SetInt(int64(val.(int)))
+				case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr:
+					value.Elem().SetUint(uint64(val.(int)))
+				case reflect.Float32, reflect.Float64:
+					value.Elem().SetFloat(val.(float64))
+				case reflect.Bool:
+					value.Elem().SetBool(val.(bool))
+				case reflect.String:
+					value.Elem().SetString(val.(string))
+				default:
+					value.Elem().Set(reflect.ValueOf(val))
+				}
+			}
+		}
+
+		return nil
+	}
+
+	// For primitive values, just get the value and set it into the field
+	if v2 := global.Get(childKey); v2.HasValue() {
+		val = v2.Value()
+	} else if def != "" {
+		val = def
+	}
+
+	if val != nil {
+		// First try to convert primitive type values, if convertValue wasn't able
+		// to convert to primitive,try converting the value as a struct value
+		if ret, err := convertValue(val, valueType); ret != nil {
+			if err != nil {
+				return err
+			}
+
+			value.Set(reflect.ValueOf(ret))
+		} else {
+			return convertValueFromStruct(val, value.Type(), valueType, value)
+		}
+	}
+
+	return nil
+}
+
+// Set value for a sequence type
+// TODO(alsam) We stop populating sequence on a first nil value. Can we do better?
+func (cv Value) sequence(childKey string, fieldValue reflect.Value) error {
+	fieldType := fieldValue.Type()
+	global := cv.getGlobalProvider()
+	destSlice := reflect.MakeSlice(fieldType, 0, 4)
+
+	// start looking for child values.
+	elementType := derefType(fieldType).Elem()
+	childKey += _separator
+
+	for ai := 0; ; ai++ {
+		arrayKey := childKey + strconv.Itoa(ai)
+
+		// Iterate until we find first missing value.
+		if v2 := global.Get(arrayKey); v2.HasValue() {
+			val := reflect.New(elementType).Elem()
+
+			// Unmarshal current element.
+			if err := cv.unmarshal(arrayKey, val, ""); err != nil {
+				return err
+			}
+
+			// Append element to the slice
+			if destSlice.Len() <= ai {
+				destSlice = reflect.Append(destSlice, reflect.Zero(elementType))
+			}
+
+			destSlice.Index(ai).Set(val)
+		} else {
+			break
+		}
+	}
+
+	if destSlice.Len() > 0 {
+		fieldValue.Set(destSlice)
+	}
+
+	return nil
+}
+
+// Sets value to a map type.
+func (cv Value) mapping(childKey string, value reflect.Value) error {
+	valueType := value.Type()
+	global := cv.getGlobalProvider()
+
+	val := global.Get(childKey).Value()
+
+	// We fallthrough for interface to maps
+	if valueType.Kind() == reflect.Interface {
+		value.Set(reflect.ValueOf(val))
+		return nil
+	}
+
+	if val == nil {
+		return nil
+	}
+
+	destMap := reflect.ValueOf(reflect.MakeMap(valueType).Interface())
+
+	// child yamlNode parsed from yaml file is of type map[interface{}]interface{}
+	// type casting here makes sure that we are iterating over a parsed map.
+	if v, ok := val.(map[interface{}]interface{}); ok {
+		childKey += _separator
+		for key := range v {
+			mapKey := childKey + fmt.Sprintf("%v", key)
+			itemValue := reflect.New(valueType.Elem()).Elem()
+
+			// Try to unmarshal value and save it in the map.
+			if err := cv.unmarshal(mapKey, itemValue, ""); err != nil {
+				return err
+			}
+
+			destMap.SetMapIndex(reflect.ValueOf(key), itemValue)
+		}
+
+		value.Set(destMap)
+	}
+
+	return nil
+}
+
+// Sets value to an object type.
+func (cv Value) object(childKey string, value reflect.Value) error {
+	valueType := value.Type()
+	global := cv.getGlobalProvider()
+
+	ntt := derefType(valueType)
+	newTarget := reflect.New(ntt)
+	v2 := global.Get(childKey)
+
+	if !v2.HasValue() && valueType.Kind() == reflect.Ptr {
+		// in this case we will keep the pointer value as not defined.
+		return nil
+	}
+
+	if err := v2.PopulateStruct(newTarget.Interface()); err != nil {
+		return errors.Wrap(err, "unable to populate struct of object target")
+	}
+
+	// if the target is not a pointer, deref the value
+	// for copy semantics
+	if valueType.Kind() != reflect.Ptr {
+		newTarget = newTarget.Elem()
+	}
+
+	if value.CanSet() {
+		value.Set(newTarget)
+	}
+
+	return nil
+}
+
+// Walk through the struct and start asking the providers for values at each key.
+//
+// - for individual values, we terminate
+// - for array values, we start asking for indexes
+// - for object values, we recurse.
+func (cv Value) valueStruct(key string, target interface{}) error {
+	tarGet := reflect.Indirect(reflect.ValueOf(target))
+	targetType := tarGet.Type()
+
 	for i := 0; i < targetType.NumField(); i++ {
 		field := targetType.Field(i)
-		fieldType := field.Type
 		fieldName := field.Name
+		if fieldName[0] != strings.ToUpper(fieldName)[0] {
+			// Skip un-exported fields
+			continue
+		}
 
 		fieldInfo := getFieldInfo(field)
 		if fieldInfo.FieldName != "" {
 			fieldName = fieldInfo.FieldName
 		}
 
-		childKey := fieldName
 		if key != "" {
-			childKey = key + "." + childKey
+			fieldName = key + _separator + fieldName
 		}
+
 		fieldValue := tarGet.Field(i)
-
-		switch getBucket(fieldType) {
-		case bucketInvalid:
-			continue
-		case bucketPrimitive:
-			var val interface{}
-
-			if fieldType.Kind() == reflect.Ptr {
-				if v1 := global.Get(childKey); v1.HasValue() {
-					val = v1.Value()
-					if val != nil {
-						// We cannot assign reflect.ValueOf(Val) to it as is to fieldValue.
-						// fieldValue is a pointer, which currently points to non address.
-						// We need to set a new reflect.Value with field type same as the field we are populating
-						// before assigning the value (val) parsed from yaml
-						if fieldValue.IsNil() {
-							fieldValue.Set(reflect.New(fieldType.Elem()))
-						}
-
-						// We cannot assign reflect.ValueOf(val) to fieldValue as is, when field is a user defined type
-						// We need to find the Kind of the custom type and set the fieldValue to the specific type
-						// that user defined type is defined with.
-						kind := fieldType.Elem().Kind()
-						switch kind {
-						case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-							fieldValue.Elem().SetInt(int64(val.(int)))
-						case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr:
-							fieldValue.Elem().SetUint(uint64(val.(int)))
-						case reflect.Float32, reflect.Float64:
-							fieldValue.Elem().SetFloat(val.(float64))
-						case reflect.Bool:
-							fieldValue.Elem().SetBool(val.(bool))
-						case reflect.String:
-							fieldValue.Elem().SetString(val.(string))
-						default:
-							fieldValue.Elem().Set(reflect.ValueOf(val))
-						}
-					}
-				}
-				continue
-			}
-
-			if fieldType == _typeTimeDuration {
-				if v := global.Get(childKey); v.HasValue() {
-					duration, err := time.ParseDuration(v.AsString())
-					if err != nil {
-						return nil, errors.Wrap(err, "unable to parse time.Duration")
-					}
-					fieldValue.Set(reflect.ValueOf(duration))
-					continue
-				}
-			}
-
-			// For primitive values, just get the value and set it into the field
-			if v2 := global.Get(childKey); v2.HasValue() {
-				val = v2.Value()
-			} else if fieldInfo.DefaultValue != "" {
-				val = fieldInfo.DefaultValue
-			}
-			if val != nil {
-				// First try to convert primitive type values, if convertValue wasn't able
-				// to convert to primitive,try converting the value as a struct value
-				if ret, err := convertValue(val, fieldType); ret != nil {
-					if err != nil {
-						return nil, err
-					}
-					fieldValue.Set(reflect.ValueOf(ret))
-				} else {
-					if err := convertValueFromStruct(val, fieldValue.Type(), fieldType, fieldValue); err != nil {
-						return nil, err
-					}
-				}
-			}
-			continue
-		case bucketObject:
-			ntt := derefType(fieldType)
-			newTarget := reflect.New(ntt)
-			v2 := global.Get(childKey)
-			if !v2.HasValue() && fieldType.Kind() == reflect.Ptr {
-				// in this case we will keep the pointer value as not defined.
-				continue
-			}
-			if err := v2.PopulateStruct(newTarget.Interface()); err != nil {
-				return nil, errors.Wrap(err, "unable to populate struct of object target")
-			}
-			// if the target is not a pointer, deref the value
-			// for copy semantics
-			if fieldType.Kind() != reflect.Ptr {
-				newTarget = newTarget.Elem()
-			}
-			if fieldValue.CanSet() {
-				fieldValue.Set(newTarget)
-			}
-		case bucketArray:
-			// TODO(alsam) fix array type DRI-12.
-		case bucketSlice:
-			destSlice := reflect.MakeSlice(fieldType, 0, 4)
-
-			// start looking for child values.
-			//
-			elementType := derefType(fieldType).Elem()
-			bucket := getBucket(elementType)
-
-			for ai := 0; ; ai++ {
-				arrayKey := fmt.Sprintf("%s.%d", childKey, ai)
-
-				var itemValue interface{}
-				switch bucket {
-				case bucketPrimitive:
-					if v2 := global.Get(arrayKey); v2.HasValue() {
-						itemValue = v2.Value()
-					}
-				case bucketObject:
-					newTarget := reflect.New(elementType)
-					// for slice, there is no need to set default value on inner struct
-					// when input is empty, so only continue when v2 has value.
-					if v2 := global.Get(arrayKey); v2.HasValue() {
-						if err := v2.PopulateStruct(newTarget.Interface()); err != nil {
-							return nil, errors.Wrap(err, "unable to populate struct of object")
-						}
-						itemValue = reflect.Indirect(newTarget).Interface()
-					}
-				}
-
-				if itemValue != nil {
-					// make sure we have the capacity
-					if destSlice.Len() <= ai {
-						destSlice = reflect.Append(destSlice, reflect.Zero(elementType))
-					}
-
-					item := destSlice.Index(ai)
-					item.Set(reflect.ValueOf(itemValue))
-				} else {
-					break
-				}
-			}
-			if destSlice.Len() > 0 {
-				fieldValue.Set(destSlice)
-			}
-		case bucketMap:
-			val := global.Get(childKey).Value()
-			if val != nil {
-				destMap := reflect.ValueOf(reflect.MakeMap(fieldType).Interface())
-
-				// child yamlNode parsed from yaml file is of type map[interface{}]interface{}
-				// type casting here makes sure that we are iterating over a parsed map.
-				v, ok := val.(map[interface{}]interface{})
-				if ok {
-					for key, value := range v {
-						destMap.SetMapIndex(reflect.ValueOf(key), reflect.ValueOf(value))
-					}
-					fieldValue.Set(destMap)
-				}
-			}
+		if err := cv.unmarshal(fieldName, fieldValue, getFieldInfo(field).DefaultValue); err != nil {
+			return err
 		}
 	}
-	return target, validator.Validate(target)
+
+	return validator.Validate(target)
+}
+
+// Dispatch un-marshalling functions based on value type.
+func (cv Value) unmarshal(name string, value reflect.Value, def string) error {
+	switch getBucket(value.Type()) {
+	case bucketPrimitive:
+		return cv.scalar(name, value, def)
+	case bucketObject:
+		return cv.object(name, value)
+	case bucketArray:
+	// TODO(alsam) fix array type DRI-12.
+	case bucketSlice:
+		return cv.sequence(name, value)
+	case bucketMap:
+		return cv.mapping(name, value)
+	}
+
+	return nil
 }
