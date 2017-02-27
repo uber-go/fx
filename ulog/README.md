@@ -24,7 +24,7 @@ func main() {
   logConfig := ulog.Configuration{}
 
   // Build logger from logConfig object
-  logger, err := svc.logConfig.Build(zap.Hooks(ulog.Metrics(svc.metrics)))
+  log, err := logConfig.Build(zap.Hooks(ulog.Metrics(svc.metrics)))
 
   // Use logger in your service
   log.Infow("Message describing logging reason", "key", "value")
@@ -58,7 +58,6 @@ import (
   "go.uber.org/fx/ulog"
 )
 func main() {
-
   log := ulog.Logger(context.Background())
   log.Infow("My info message")
   log.Infow("Info with context", "customer_id", 1234)
