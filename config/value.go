@@ -130,7 +130,6 @@ func (cv Value) Source() string {
 	if cv.provider == nil {
 		return ""
 	}
-
 	return cv.provider.Name()
 }
 
@@ -139,7 +138,6 @@ func (cv Value) LastUpdated() time.Time {
 	if !cv.HasValue() {
 		return time.Time{} // zero value if never updated?
 	}
-
 	return cv.Timestamp
 }
 
@@ -175,10 +173,9 @@ func (cv Value) String() string {
 // TryAsString attempts to return the configuration value as a string
 func (cv Value) TryAsString() (string, bool) {
 	v := cv.Value()
-	if val, err := convertValue(v, _typeOfString); v != nil && err == nil {
+	if val, err := convertValue(v, reflect.TypeOf("")); v != nil && err == nil {
 		return val.(string), true
 	}
-
 	return "", false
 }
 
@@ -208,7 +205,6 @@ func (cv Value) TryAsBool() (bool, bool) {
 	if val, err := convertValue(v, reflect.TypeOf(true)); v != nil && err == nil {
 		return val.(bool), true
 	}
-
 	return false, false
 
 }
@@ -219,7 +215,6 @@ func (cv Value) TryAsFloat() (float64, bool) {
 	if val, err := convertValue(v, reflect.TypeOf(_float64Zero)); v != nil && err == nil {
 		return val.(float64), true
 	}
-
 	switch val := v.(type) {
 	case int:
 		return float64(val), true
@@ -237,41 +232,41 @@ func (cv Value) TryAsFloat() (float64, bool) {
 // AsString returns the configuration value as a string, or panics if not
 // string-able
 func (cv Value) AsString() string {
-	if s, ok := cv.TryAsString(); ok {
-		return s
+	s, ok := cv.TryAsString()
+	if !ok {
+		panic(fmt.Sprintf("Can't convert to string: %v", cv.Value()))
 	}
-
-	panic(fmt.Sprintf("Can't convert to string: %v", cv.Value()))
+	return s
 }
 
 // AsInt returns the configuration value as an int, or panics if not
 // int-able
 func (cv Value) AsInt() int {
-	if s, ok := cv.TryAsInt(); ok {
-		return s
+	s, ok := cv.TryAsInt()
+	if !ok {
+		panic(fmt.Sprintf("Can't convert to int: %T %v", cv.Value(), cv.Value()))
 	}
-
-	panic(fmt.Sprintf("Can't convert to int: %T %v", cv.Value(), cv.Value()))
+	return s
 }
 
 // AsFloat returns the configuration value as an float64, or panics if not
 // float64-able
 func (cv Value) AsFloat() float64 {
-	if s, ok := cv.TryAsFloat(); ok {
-		return s
+	s, ok := cv.TryAsFloat()
+	if !ok {
+		panic(fmt.Sprintf("Can't convert to float64: %v", cv.Value()))
 	}
-
-	panic(fmt.Sprintf("Can't convert to float64: %v", cv.Value()))
+	return s
 }
 
 // AsBool returns the configuration value as an bool, or panics if not
 // bool-able
 func (cv Value) AsBool() bool {
-	if s, ok := cv.TryAsBool(); ok {
-		return s
+	s, ok := cv.TryAsBool()
+	if !ok {
+		panic(fmt.Sprintf("Can't convert to bool: %v", cv.Value()))
 	}
-
-	panic(fmt.Sprintf("Can't convert to bool: %v", cv.Value()))
+	return s
 }
 
 // IsDefault returns whether the return value is the default.
@@ -291,7 +286,6 @@ func (cv Value) Value() interface{} {
 	if cv.found {
 		return cv.value
 	}
-
 	return cv.defaultValue
 }
 
