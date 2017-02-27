@@ -1,16 +1,15 @@
 # Logging package
 
 `package ulog` provides an API wrapper around the logging library
-[zap](https://github.com/uber-go/zap). `package ulog` uses the builder pattern
-to instantiate the logger. With `LogBuilder` you can perform pre-initialization
+[zap](https://github.com/uber-go/zap). `package ulog` uses zap's builder
+to instantiate the logger. With zap's `Builder` you can perform pre-initialization
 setup by injecting configuration, custom logger, and log level prior to building
-the usable `ulog.Log` object.
+the usable `zapcore.Log` object.
 
-`ulog.Log` interface provides a few benefits:
+`ulog` provides a few benefits:
 
-- Decouple services from the logger used underneath the framework
-- Easy to use API for logging
-- Easily swappable backend logger without changing the service
+- Coupling with zap's Logger APIs.
+- Context based logging access via ulog.Logger(ctx)
 
 ## Sample usage
 
@@ -97,58 +96,3 @@ logging:
   level: debug
 ```
 
-### Benchmarks
-
-Current performance benchmark data with `ulog interface`,
-`ulog baseLogger struct`, and `zap.Logger`
-
-```
-BenchmarkUlogWithoutFields-8                    10000000               223 ns/op               0 B/op          0 allocs/op
-BenchmarkUlogWithFieldsLogIFace-8                1000000              1237 ns/op            1005 B/op         18 allocs/op
-BenchmarkUlogWithFieldsBaseLoggerStruct-8        1000000              1096 ns/op             748 B/op         17 allocs/op
-BenchmarkUlogWithFieldsZapLogger-8               2000000               664 ns/op             514 B/op          1 allocs/op
-BenchmarkUlogLiteWithFields-8                    3000000               489 ns/op             249 B/op          6 allocs/op
-BenchmarkUlogSentry-8                            3000000               407 ns/op             128 B/op          4 allocs/op
-BenchmarkUlogSentryWith-8                        1000000              1535 ns/op            1460 B/op         12 allocs/op
-```
-
-## Sentry
-
-`ulog` has a seamless integration with Sentry. For out-of-the-box usage
-just include this in your configuration yaml:
-
-```yaml
-logging:
-  sentry:
-    dsn: http://user:secret@your.sentry.dsn/project
-```
-
-If you'd like to take more control over the Sentry integration, see
-`sentry.Configuration`
-
-For example, to turn off Stacktrace generation:
-
-```yaml
-logging:
-  sentry:
-    dsn: http://user:secret@your.sentry.dsn/project
-    trace:
-      disabled: true
-```
-
-To set up Sentry in code use `sentry.Hook`. For example:
-
-```go
-import (
-  "go.uber.org/zap"
-  "go.uber.org/fx/ulog/ulog"
-  "go.uber.org/fx/ulog/sentry"
-  "go.uber.org/fx/service"
-)
-
-func main() {
-  h := sentry.New(MY_DSN, MinLevel(zap.InfoLevel), DisableTraces())
-  l := ulog.Builder().WithSentryHook(h).Build()
-  svc, err := service.WithLogger(l).Build()
-}
-```
