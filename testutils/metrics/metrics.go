@@ -114,14 +114,7 @@ func NewTestStatsReporter() *TestStatsReporter {
 // NewTestScope returns a pair of scope and reporter that can be used for testing
 func NewTestScope() (tally.Scope, *TestStatsReporter) {
 	r := NewTestStatsReporter()
-	opts := tally.ScopeOptions{
-		Tags:           nil,
-		Prefix:         "",
-		Reporter:       r,
-		CachedReporter: nil,
-		Separator:      tally.DefaultSeparator,
-		DefaultBuckets: tally.DefaultBuckets,
-	}
+	opts := tally.ScopeOptions{Reporter: r}
 
 	scope, _ := tally.NewRootScope(opts, 100*time.Millisecond)
 	return scope, r

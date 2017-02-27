@@ -46,13 +46,13 @@ func (c *capabilities) Tagging() bool {
 	return c.tagging
 }
 
-// NopCachedStatsReporter is an implementatin of tally.CachedStatsReporter than simply does nothing.
+// NopCachedStatsReporter is an implementation of tally.CachedStatsReporter that simply does nothing
+// and should be used for testing purposes only.
 // TODO:(anup) This should exist in tally. https://github.com/uber-go/tally/issues/23
-// Remove and replace metrics.NopCachedStatsReporter with tally.NopCachedStatsRepor once issue is resolved
+// Remove and replace metrics.NopCachedStatsReporter with tally.NopCachedStatsReporter once issue is resolved
 var NopCachedStatsReporter tally.CachedStatsReporter = nopCachedStatsReporter{}
 
-type nopCachedStatsReporter struct {
-}
+type nopCachedStatsReporter struct{}
 
 func (nopCachedStatsReporter) AllocateCounter(name string, tags map[string]string) tally.CachedCount {
 	return NopCachedCount
@@ -74,10 +74,10 @@ func (r nopCachedStatsReporter) Capabilities() tally.Capabilities {
 	return capabilitiesReportingNoTagging
 }
 
-func (r nopCachedStatsReporter) Flush() {
-}
+func (r nopCachedStatsReporter) Flush() {}
 
-// NopCachedCount is an implementation of tally.CachedCount
+// NopCachedCount is an implementation of tally.CachedCount and same as other Nop types don't do anything and
+// should be used for testing purposes only.
 var NopCachedCount tally.CachedCount = nopCachedCount{}
 
 type nopCachedCount struct {
@@ -86,47 +86,45 @@ type nopCachedCount struct {
 func (nopCachedCount) ReportCount(value int64) {
 }
 
-// NopCachedGauge is an implementation of tally.CachedGauge
+// NopCachedGauge is an implementation of tally.CachedGauge and same as other Nop types don't do anything and
+// should be used for testing purposes only.
 var NopCachedGauge tally.CachedGauge = nopCachedGauge{}
 
-type nopCachedGauge struct {
-}
+type nopCachedGauge struct{}
 
-func (nopCachedGauge) ReportGauge(value float64) {
-}
+func (nopCachedGauge) ReportGauge(value float64) {}
 
 // NopCachedTimer is an implementation of tally.CachedTimer
 var NopCachedTimer tally.CachedTimer = nopCachedTimer{}
 
-type nopCachedTimer struct {
-}
+type nopCachedTimer struct{}
 
-func (nopCachedTimer) ReportTimer(interval time.Duration) {
-}
+func (nopCachedTimer) ReportTimer(interval time.Duration) {}
 
-// NopCachedHistogram is an implementation of tally.CachedHistogram
+// NopCachedHistogram is an implementation of tally.CachedHistogram and same as other Nop types don't do anything and
+// should be used for testing purposes only.
 var NopCachedHistogram tally.CachedHistogram = nopCachedHistogram{}
 
-type nopCachedHistogram struct {
-}
+type nopCachedHistogram struct{}
 
 func (nopCachedHistogram) ValueBucket(
-	bucketLowerBound, bucketUpperBound float64,
+	bucketLowerBound float64,
+	bucketUpperBound float64,
 ) tally.CachedHistogramBucket {
 	return nopCachedHistogramBucket{}
 }
 
 func (nopCachedHistogram) DurationBucket(
-	bucketLowerBound, bucketUpperBound time.Duration,
+	bucketLowerBound time.Duration,
+	bucketUpperBound time.Duration,
 ) tally.CachedHistogramBucket {
 	return nopCachedHistogramBucket{}
 }
 
-// NopCachedHistogramBucket is an implementation of tally.CachedHistogramBucket
+// NopCachedHistogramBucket is an implementation of tally.CachedHistogramBucket and same as other Nop types
+// don't do anything and should be used for testing purposes only.
 var NopCachedHistogramBucket tally.CachedHistogramBucket = nopCachedHistogramBucket{}
 
-type nopCachedHistogramBucket struct {
-}
+type nopCachedHistogramBucket struct{}
 
-func (nopCachedHistogramBucket) ReportSamples(value int64) {
-}
+func (nopCachedHistogramBucket) ReportSamples(value int64) {}
