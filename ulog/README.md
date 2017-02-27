@@ -24,7 +24,7 @@ func main() {
   logConfig := ulog.Configuration{}
 
   // Build logger from logConfig object
-  log, err := logConfig.Build(zap.Hooks(ulog.Metrics(svc.metrics)))
+  log, err := logConfig.Build()
 
   // Use logger in your service
   log.Infow("Message describing logging reason", "key", "value")
