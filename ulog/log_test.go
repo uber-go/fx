@@ -37,7 +37,12 @@ func TestDefaultLogger(t *testing.T) {
 
 func TestSetLogger(t *testing.T) {
 	zaplogger := zapcore.NewNopCore()
-	SetLogger(zap.New(zaplogger))
+	undoFunc := SetLogger(zap.New(zaplogger))
+	defer undoFunc()
+
 	log := Logger(context.Background())
 	assert.Equal(t, zaplogger, log.Core())
+
+	sugarlog := Sugar(context.Background())
+	assert.Equal(t, zaplogger, sugarlog.Desugar().Core())
 }

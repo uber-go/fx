@@ -1,15 +1,21 @@
 # Logging package
 
 `package ulog` provides an API wrapper around the logging library
-[zap](https://github.com/uber-go/zap). `package ulog` uses zap's builder
-to instantiate the logger. With zap's `Builder` you can perform pre-initialization
-setup by injecting configuration, custom logger, and log level prior to building
-the usable `zapcore.Log` object.
+[zap](https://github.com/uber-go/zap). `package ulog` uses zap's configuration wrapped with
+`ulog.Configuration` to instantiate the logger. With the configuration object, you
+can perform pre-initialization setup by injecting configuration,
+custom logger, and log level prior to building the usable `zap.Logger`.
 
 `ulog` provides a few benefits:
 
 - Coupling with zap's Logger APIs.
-- Context based logging access via ulog.Logger(ctx)
+- Context based logging access via `ulog.Logger(ctx)` for `zap.Logger` and `ulog.Sugar(ctx)` for Sugared logger
+- `ulog.Trace` creates a zap field that extracts tracing information from a context
+
+`ulog.Logger` vs `ulog.Sugar`
+
+`ulog.Logger(ctx)` provides `zap.Logger`, with high performance API's that requires `zap.Field`s as values.
+`ulog.Sugar(ctx)` provides sugared implementation of logging APIs that accept values as `interface{}`
 
 ## Sample usage
 
@@ -56,8 +62,9 @@ import (
 
   "go.uber.org/fx/ulog"
 )
-func main() {
-  log := ulog.Logger(context.Background())
+
+func handleRequest(ctx context.Context) {
+  log := ulog.Sugar(ctx)
   log.Infow("My info message")
   log.Infow("Info with context", "customer_id", 1234)
 
@@ -96,3 +103,14 @@ logging:
   level: debug
 ```
 
+
+## Sentry
+
+`ulog` has a seamless integration with Sentry. For out-of-the-box usage
+just include this in your configuration yaml:
+
+```yaml
+logging:
+  sentry:
+    dsn: http://user:secret@your.sentry.dsn/project
+```
