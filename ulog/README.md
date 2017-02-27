@@ -22,13 +22,12 @@ import "go.uber.org/fx/ulog"
 func main() {
   // Configure logger with configuration preferred by your service
   logConfig := ulog.Configuration{}
-  logBuilder := ulog.Builder().WithConfiguration(&logConfig)
 
-  // Build ulog.Log from logBuilder
-  log := lobBuilder.Build()
+  // Build logger from logConfig object
+  logger, err := svc.logConfig.Build(zap.Hooks(ulog.Metrics(svc.metrics)))
 
   // Use logger in your service
-  log.Info("Message describing logging reason", "key", "value")
+  log.Infow("Message describing logging reason", "key", "value")
 }
 ```
 
@@ -53,16 +52,20 @@ For example, the following piece of code:
 ```go
 package main
 
-import "go.uber.org/fx/ulog"
+import (
+  "context"
 
+  "go.uber.org/fx/ulog"
+)
 func main() {
-  log := ulog.Logger()
-  log.Info("My info message")
-  log.Info("Info with context", "customer_id", 1234)
+
+  log := ulog.Logger(context.Background())
+  log.Infow("My info message")
+  log.Infow("Info with context", "customer_id", 1234)
 
   richLog := log.With("shard_id", 3, "levitation", true)
-  richLog.Info("Rich info message")
-  richLog.Info("Even richer", "more_info", []int{1, 2, 3})
+  richLog.Infow("Rich info message")
+  richLog.Infow("Even richer", "more_info", []int{1, 2, 3})
 }
 ```
 
