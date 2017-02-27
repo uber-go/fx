@@ -36,7 +36,6 @@ func TestDefaultLogger(t *testing.T) {
 }
 
 func TestSetLogger(t *testing.T) {
-
 	zaplogger := zapcore.NewNopCore()
 	SetLogger(zap.New(zaplogger))
 	log := Logger(context.Background())
