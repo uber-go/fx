@@ -34,7 +34,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"gopkg.in/yaml.v2"
 )
 
 var yamlConfig1 = []byte(`
@@ -435,8 +434,8 @@ func TestNilYAMLProviderSetDefaultTagValue(t *testing.T) {
 		ID3 []Inner         `yaml:"id3"`
 		ID4 map[Inner]Inner `yaml:"id4"`
 		ID5 *Inner          `yaml:"id5"`
-		//ID6 [6]Inner        `yaml:"id6"`
-		ID7 [7]*Inner `yaml:"id7"`
+		ID6 [6]Inner        `yaml:"id6"`
+		ID7 [7]*Inner       `yaml:"id7"`
 	}{}
 
 	p := NewYAMLProviderFromBytes(nil)
@@ -448,8 +447,7 @@ func TestNilYAMLProviderSetDefaultTagValue(t *testing.T) {
 	assert.Nil(t, data.ID3)
 	assert.Nil(t, data.ID4)
 	assert.Nil(t, data.ID5)
-	// TODO (yutong) uncomment following assert after DRI-12.
-	// assert.True(t, data.ID6[0].Set)
+	assert.True(t, data.ID6[0].Set)
 	assert.Nil(t, data.ID7[0])
 }
 
@@ -485,22 +483,73 @@ func TestMapOfStructs(t *testing.T) {
 	type Bag struct {
 		S string
 		I int
+		P *string
 	}
 	type Map struct {
 		M map[string]Bag
 	}
 
-	v := Map{M: map[string]Bag{
-		"first":  {S: "one", I: 1},
-		"second": {S: "two", I: 2},
-	}}
-
-	b, err := yaml.Marshal(v)
-	require.NoError(t, err)
+	b := []byte(`
+m:
+  first:
+    s: one
+    i: 1
+  second:
+    s: two
+    i: 2
+    p: Pointer
+`)
 
 	p := NewYAMLProviderFromBytes(b)
 	var r Map
-	if err := p.Get(Root).PopulateStruct(&r); err != nil {
-		assert.Fail(t, err.Error())
+	require.NoError(t, p.Get(Root).PopulateStruct(&r))
+	assert.Equal(t, Bag{S: "one", I: 1, P: nil}, r.M["first"])
+
+	snd := r.M["second"]
+	assert.Equal(t, 2, snd.I)
+	assert.Equal(t, "two", snd.S)
+	assert.Equal(t, "Pointer", *snd.P)
+}
+
+func TestMapOfSlices(t *testing.T) {
+	t.Parallel()
+	type Map struct {
+		S map[string][]time.Duration
 	}
+
+	b := []byte(`
+s:
+  first:
+    - 1s
+  second:
+    - 2m
+    - 3h
+`)
+	p := NewYAMLProviderFromBytes(b)
+	var r Map
+	require.NoError(t, p.Get(Root).PopulateStruct(&r))
+	assert.Equal(t, []time.Duration{time.Second}, r.S["first"])
+	assert.Equal(t, []time.Duration{2 * time.Minute, 3 * time.Hour}, r.S["second"])
+}
+
+func TestMapOfArrays(t *testing.T) {
+	t.Parallel()
+	type Map struct {
+		S map[string][2]time.Duration
+	}
+
+	b := []byte(`
+s:
+  first:
+    - 1s
+    - 4m
+  second:
+    - 2m
+    - 3h
+`)
+	p := NewYAMLProviderFromBytes(b)
+	var r Map
+	require.NoError(t, p.Get(Root).PopulateStruct(&r))
+	assert.Equal(t, [2]time.Duration{time.Second, 4*time.Minute}, r.S["first"])
+	assert.Equal(t, [2]time.Duration{2 * time.Minute, 3 * time.Hour}, r.S["second"])
 }

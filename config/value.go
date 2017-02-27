@@ -25,7 +25,6 @@ import (
 	"fmt"
 	"reflect"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/go-validator/validator"
@@ -485,13 +484,13 @@ func (cv Value) scalar(childKey string, value reflect.Value, def string) error {
 
 // Set value for a sequence type
 // TODO(alsam) We stop populating sequence on a first nil value. Can we do better?
-func (cv Value) sequence(childKey string, fieldValue reflect.Value) error {
-	fieldType := fieldValue.Type()
+func (cv Value) sequence(childKey string, value reflect.Value) error {
+	valueType := value.Type()
 	global := cv.getGlobalProvider()
-	destSlice := reflect.MakeSlice(fieldType, 0, 4)
+	destSlice := reflect.MakeSlice(valueType, 0, 4)
 
 	// start looking for child values.
-	elementType := derefType(fieldType).Elem()
+	elementType := derefType(valueType).Elem()
 	childKey += _separator
 
 	for ai := 0; ; ai++ {
@@ -518,14 +517,46 @@ func (cv Value) sequence(childKey string, fieldValue reflect.Value) error {
 	}
 
 	if destSlice.Len() > 0 {
-		fieldValue.Set(destSlice)
+		value.Set(destSlice)
+	}
+
+	return nil
+}
+
+// Set value for the array type
+func (cv Value) array(childKey string, value reflect.Value) error {
+	valueType := value.Type()
+	global := cv.getGlobalProvider()
+
+	// start looking for child values.
+	elementType := derefType(valueType).Elem()
+	childKey += _separator
+
+	for ai := 0; ai < value.Len(); ai++ {
+		arrayKey := childKey + strconv.Itoa(ai)
+
+		// Iterate until we find first missing value.
+		if v2 := global.Get(arrayKey); v2.HasValue() {
+			val := reflect.New(elementType).Elem()
+
+			// Unmarshal current element.
+			if err := cv.unmarshal(arrayKey, val, ""); err != nil {
+				return err
+			}
+
+			value.Index(ai).Set(val)
+		} else if value.Index(ai).Kind() == reflect.Struct {
+			if err := cv.PopulateStruct(value.Index(ai).Addr().Interface()); err != nil {
+				return err
+			}
+		}
 	}
 
 	return nil
 }
 
 // Sets value to a map type.
-func (cv Value) mapping(childKey string, value reflect.Value) error {
+func (cv Value) mapping(childKey string, value reflect.Value, def string) error {
 	valueType := value.Type()
 	global := cv.getGlobalProvider()
 
@@ -552,7 +583,7 @@ func (cv Value) mapping(childKey string, value reflect.Value) error {
 			itemValue := reflect.New(valueType.Elem()).Elem()
 
 			// Try to unmarshal value and save it in the map.
-			if err := cv.unmarshal(mapKey, itemValue, ""); err != nil {
+			if err := cv.unmarshal(mapKey, itemValue, def); err != nil {
 				return err
 			}
 
@@ -608,11 +639,6 @@ func (cv Value) valueStruct(key string, target interface{}) error {
 	for i := 0; i < targetType.NumField(); i++ {
 		field := targetType.Field(i)
 		fieldName := field.Name
-		if fieldName[0] != strings.ToUpper(fieldName)[0] {
-			// Skip un-exported fields
-			continue
-		}
-
 		fieldInfo := getFieldInfo(field)
 		if fieldInfo.FieldName != "" {
 			fieldName = fieldInfo.FieldName
@@ -633,17 +659,22 @@ func (cv Value) valueStruct(key string, target interface{}) error {
 
 // Dispatch un-marshalling functions based on value type.
 func (cv Value) unmarshal(name string, value reflect.Value, def string) error {
+	// Skip values that can't be set
+	if !value.CanSet() {
+		return nil
+	}
+
 	switch getBucket(value.Type()) {
 	case bucketPrimitive:
 		return cv.scalar(name, value, def)
 	case bucketObject:
 		return cv.object(name, value)
 	case bucketArray:
-	// TODO(alsam) fix array type DRI-12.
+		return cv.array(name, value)
 	case bucketSlice:
 		return cv.sequence(name, value)
 	case bucketMap:
-		return cv.mapping(name, value)
+		return cv.mapping(name, value, def)
 	}
 
 	return nil
