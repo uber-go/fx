@@ -94,7 +94,7 @@ func TestNilStaticProviderSetDefaultTagValue(t *testing.T) {
 		ID4 map[Inner]Inner `yaml:"id4"`
 		ID5 *Inner          `yaml:"id5"`
 		ID6 [6]Inner        `yaml:"id6"`
-		ID7 [7]*Inner `yaml:"id7"`
+		ID7 [7]*Inner       `yaml:"id7"`
 	}{}
 
 	p := NewStaticProvider(nil)

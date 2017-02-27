@@ -550,6 +550,6 @@ s:
 	p := NewYAMLProviderFromBytes(b)
 	var r Map
 	require.NoError(t, p.Get(Root).PopulateStruct(&r))
-	assert.Equal(t, [2]time.Duration{time.Second, 4*time.Minute}, r.S["first"])
+	assert.Equal(t, [2]time.Duration{time.Second, 4 * time.Minute}, r.S["first"])
 	assert.Equal(t, [2]time.Duration{2 * time.Minute, 3 * time.Hour}, r.S["second"])
 }
