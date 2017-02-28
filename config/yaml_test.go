@@ -581,7 +581,6 @@ func TestLoops(t *testing.T) {
 	assert.Contains(t, p.Get(Root).PopulateStruct(&b).Error(), "cycles")
 }
 
-
 func TestInternalFieldsAreNotSet(t *testing.T) {
 	t.Parallel()
 	type External struct {
