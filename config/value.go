@@ -412,7 +412,7 @@ type decoder struct {
 	m map[interface{}]struct{}
 }
 
-func (d decoder) getGlobalProvider() Provider {
+func (d *decoder) getGlobalProvider() Provider {
 	if d.root == nil {
 		return d.provider
 	}
