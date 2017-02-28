@@ -181,13 +181,13 @@ Note that any fields you wish to deserialize into must be exported, just like
 Current performance benchmark data:
 
 ```
-BenchmarkYAMLCreateSingleFile-8                       50000     31269 ns/op   11136 B/op     121 allocs/op
-BenchmarkYAMLCreateMultiFile-8                        30000     52378 ns/op   20064 B/op     205 allocs/op
-BenchmarkYAMLSimpleGetLevel1-8                     50000000      27.1 ns/op       0 B/op       0 allocs/op
-BenchmarkYAMLSimpleGetLevel3-8                     50000000      26.8 ns/op       0 B/op       0 allocs/op
-BenchmarkYAMLSimpleGetLevel7-8                     50000000      26.3 ns/op       0 B/op       0 allocs/op
-BenchmarkYAMLPopulateStruct-8                       2000000       861 ns/op     192 B/op      10 allocs/op
-BenchmarkYAMLPopulateStructNested-8                  500000      2616 ns/op     616 B/op      34 allocs/op
-BenchmarkYAMLPopulateStructNestedMultipleFiles-8     500000      3330 ns/op     744 B/op      42 allocs/op
-BenchmarkYAMLPopulateNestedTextUnmarshaler-8         100000     16775 ns/op    3201 B/op     209 allocs/op
+BenchmarkYAMLCreateSingleFile-8                    	   50000	     31345 ns/op	   11144 B/op	     122 allocs/op
+BenchmarkYAMLCreateMultiFile-8                     	   30000	     51927 ns/op	   20080 B/op	     207 allocs/op
+BenchmarkYAMLSimpleGetLevel1-8                     	50000000	        26.8 ns/op	       0 B/op	       0 allocs/op
+BenchmarkYAMLSimpleGetLevel3-8                     	50000000	        27.3 ns/op	       0 B/op	       0 allocs/op
+BenchmarkYAMLSimpleGetLevel7-8                     	50000000	        26.2 ns/op	       0 B/op	       0 allocs/op
+BenchmarkYAMLPopulateStruct-8                      	 1000000	      1598 ns/op	     576 B/op	      16 allocs/op
+BenchmarkYAMLPopulateStructNested-8                	  300000	      3972 ns/op	    1056 B/op	      42 allocs/op
+BenchmarkYAMLPopulateStructNestedMultipleFiles-8   	  300000	      5013 ns/op	    1248 B/op	      52 allocs/op
+BenchmarkYAMLPopulateNestedTextUnmarshaler-8       	  100000	     18209 ns/op	    3368 B/op	     211 allocs/op
 ```

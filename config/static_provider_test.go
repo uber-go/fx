@@ -25,6 +25,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestStaticProvider_Name(t *testing.T) {
@@ -93,12 +94,12 @@ func TestNilStaticProviderSetDefaultTagValue(t *testing.T) {
 		ID3 []Inner         `yaml:"id3"`
 		ID4 map[Inner]Inner `yaml:"id4"`
 		ID5 *Inner          `yaml:"id5"`
-		//ID6 [6]Inner        `yaml:"id6"`
-		ID7 [7]*Inner `yaml:"id7"`
+		ID6 [6]Inner        `yaml:"id6"`
+		ID7 [7]*Inner       `yaml:"id7"`
 	}{}
 
 	p := NewStaticProvider(nil)
-	p.Get("hello").PopulateStruct(&data)
+	require.NoError(t, p.Get("hello").PopulateStruct(&data))
 
 	assert.Equal(t, 10, data.ID0)
 	assert.Equal(t, "string", data.ID1)
@@ -106,7 +107,6 @@ func TestNilStaticProviderSetDefaultTagValue(t *testing.T) {
 	assert.Nil(t, data.ID3)
 	assert.Nil(t, data.ID4)
 	assert.Nil(t, data.ID5)
-	// TODO (yutong) uncomment following assert after DRI-12.
-	// assert.True(t, data.ID6[0].Set)
+	assert.True(t, data.ID6[0].Set)
 	assert.Nil(t, data.ID7[0])
 }
