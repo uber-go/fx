@@ -1,10 +1,12 @@
 hash: f5c7c493baa0a29039c147f7244c37d573f95eee31ee448577a64024dabd6770
-updated: 2017-02-23T17:37:32.832575-08:00
+updated: 2017-02-27T09:12:47.84121939-08:00
 imports:
 - name: github.com/apache/thrift
   version: 9549b25c77587b29be4e0b5c258221a4ed85d37a
   subpackages:
   - lib/go/thrift
+- name: github.com/certifi/gocertifi
+  version: 03be5e6bb9874570ea7fb0961225d193cbc374c5
 - name: github.com/codahale/hdrhistogram
   version: 3a0bb77429bd3a61596f5e8a3172445844342120
 - name: github.com/davecgh/go-spew
@@ -124,12 +126,12 @@ imports:
   - testutils
   - zapcore
 - name: golang.org/x/net
-  version: dd2d9a67c97da0afa00d5726e28086007a0acce5
+  version: bb807669a61aca6092d8137da1fab2150bb96ad7
   subpackages:
   - context
   - context/ctxhttp
 - name: golang.org/x/tools
-  version: 219e654bb7266d3b73c4610ed24c33d12560826a
+  version: 496819729719f9d07692195e0a94d6edd2251389
   subpackages:
   - go/ast/astutil
 - name: gopkg.in/yaml.v2
@@ -158,7 +160,7 @@ testImports:
 - name: github.com/mattn/goveralls
   version: 8482d0ebd2a64f95ce02d2b9b7065b0d6fe9151b
 - name: github.com/mvdan/interfacer
-  version: e2f2db5bb7b0f89a41d2e1d905ff7b78fc09c88d
+  version: 588bd9940e912b1b2760d41bd836ef28ff97164d
   subpackages:
   - cmd/interfacer
 - name: github.com/pborman/uuid
