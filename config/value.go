@@ -27,8 +27,8 @@ import (
 	"strconv"
 	"time"
 
+	"bytes"
 	"github.com/go-validator/validator"
-	"github.com/pkg/errors"
 )
 
 // A ValueType is a type-description of a configuration value
@@ -400,26 +400,30 @@ func convertValue(value interface{}, targetType reflect.Type) (interface{}, erro
 }
 
 // PopulateStruct fills in a struct from configuration
-// TODO(alsam) add check for cycles
 // TODO(alsam) now we can populate not only structs. Provide a generic function.
 func (cv Value) PopulateStruct(target interface{}) error {
-	return cv.valueStruct(cv.key, target)
+	d := decoder{Value: &cv, m: make(map[interface{}]struct{})}
+
+	return d.unmarshal(cv.key, reflect.Indirect(reflect.ValueOf(target)), "")
 }
 
-func (cv Value) getGlobalProvider() Provider {
-	if cv.root == nil {
-		return cv.provider
+type decoder struct {
+	*Value
+	m map[interface{}]struct{}
+}
+
+func (d decoder) getGlobalProvider() Provider {
+	if d.root == nil {
+		return d.provider
 	}
 
-	return cv.root
+	return d.root
 }
 
 // Sets value to a primitive type.
-func (cv Value) scalar(childKey string, value reflect.Value, def string) error {
+func (d *decoder) scalar(childKey string, value reflect.Value, def string) error {
 	valueType := value.Type()
-
-	global := cv.getGlobalProvider()
-
+	global := d.getGlobalProvider()
 	var val interface{}
 
 	if valueType.Kind() == reflect.Ptr {
@@ -484,9 +488,9 @@ func (cv Value) scalar(childKey string, value reflect.Value, def string) error {
 
 // Set value for a sequence type
 // TODO(alsam) We stop populating sequence on a first nil value. Can we do better?
-func (cv Value) sequence(childKey string, value reflect.Value) error {
+func (d *decoder) sequence(childKey string, value reflect.Value) error {
 	valueType := value.Type()
-	global := cv.getGlobalProvider()
+	global := d.getGlobalProvider()
 	destSlice := reflect.MakeSlice(valueType, 0, 4)
 
 	// start looking for child values.
@@ -501,7 +505,7 @@ func (cv Value) sequence(childKey string, value reflect.Value) error {
 			val := reflect.New(elementType).Elem()
 
 			// Unmarshal current element.
-			if err := cv.unmarshal(arrayKey, val, ""); err != nil {
+			if err := d.unmarshal(arrayKey, val, ""); err != nil {
 				return err
 			}
 
@@ -524,9 +528,9 @@ func (cv Value) sequence(childKey string, value reflect.Value) error {
 }
 
 // Set value for the array type
-func (cv Value) array(childKey string, value reflect.Value) error {
+func (d *decoder) array(childKey string, value reflect.Value) error {
 	valueType := value.Type()
-	global := cv.getGlobalProvider()
+	global := d.getGlobalProvider()
 
 	// start looking for child values.
 	elementType := derefType(valueType).Elem()
@@ -540,13 +544,13 @@ func (cv Value) array(childKey string, value reflect.Value) error {
 			val := reflect.New(elementType).Elem()
 
 			// Unmarshal current element.
-			if err := cv.unmarshal(arrayKey, val, ""); err != nil {
+			if err := d.unmarshal(arrayKey, val, ""); err != nil {
 				return err
 			}
 
 			value.Index(ai).Set(val)
 		} else if value.Index(ai).Kind() == reflect.Struct {
-			if err := cv.PopulateStruct(value.Index(ai).Addr().Interface()); err != nil {
+			if err := d.valueStruct(arrayKey, value.Index(ai).Addr().Interface()); err != nil {
 				return err
 			}
 		}
@@ -556,9 +560,9 @@ func (cv Value) array(childKey string, value reflect.Value) error {
 }
 
 // Sets value to a map type.
-func (cv Value) mapping(childKey string, value reflect.Value, def string) error {
+func (d *decoder) mapping(childKey string, value reflect.Value, def string) error {
 	valueType := value.Type()
-	global := cv.getGlobalProvider()
+	global := d.getGlobalProvider()
 
 	val := global.Get(childKey).Value()
 
@@ -583,7 +587,7 @@ func (cv Value) mapping(childKey string, value reflect.Value, def string) error 
 			itemValue := reflect.New(valueType.Elem()).Elem()
 
 			// Try to unmarshal value and save it in the map.
-			if err := cv.unmarshal(mapKey, itemValue, def); err != nil {
+			if err := d.unmarshal(mapKey, itemValue, def); err != nil {
 				return err
 			}
 
@@ -597,12 +601,10 @@ func (cv Value) mapping(childKey string, value reflect.Value, def string) error 
 }
 
 // Sets value to an object type.
-func (cv Value) object(childKey string, value reflect.Value) error {
+func (d *decoder) object(childKey string, value reflect.Value) error {
 	valueType := value.Type()
-	global := cv.getGlobalProvider()
+	global := d.getGlobalProvider()
 
-	ntt := derefType(valueType)
-	newTarget := reflect.New(ntt)
 	v2 := global.Get(childKey)
 
 	if !v2.HasValue() && valueType.Kind() == reflect.Ptr {
@@ -610,21 +612,21 @@ func (cv Value) object(childKey string, value reflect.Value) error {
 		return nil
 	}
 
-	if err := v2.PopulateStruct(newTarget.Interface()); err != nil {
-		return errors.Wrap(err, "unable to populate struct of object target")
+	if !value.CanSet() {
+		return nil
 	}
 
-	// if the target is not a pointer, deref the value
-	// for copy semantics
 	if valueType.Kind() != reflect.Ptr {
-		newTarget = newTarget.Elem()
+		value = value.Addr()
 	}
 
-	if value.CanSet() {
-		value.Set(newTarget)
+	if value.IsNil() {
+		tmp := reflect.New(value.Type().Elem())
+		value.Set(tmp)
+		//return nil
 	}
 
-	return nil
+	return d.valueStruct(childKey, value.Interface())
 }
 
 // Walk through the struct and start asking the providers for values at each key.
@@ -632,12 +634,17 @@ func (cv Value) object(childKey string, value reflect.Value) error {
 // - for individual values, we terminate
 // - for array values, we start asking for indexes
 // - for object values, we recurse.
-func (cv Value) valueStruct(key string, target interface{}) error {
+func (d *decoder) valueStruct(key string, target interface{}) error {
 	tarGet := reflect.Indirect(reflect.ValueOf(target))
 	targetType := tarGet.Type()
-
 	for i := 0; i < targetType.NumField(); i++ {
 		field := targetType.Field(i)
+
+		// Check for the private field
+		if field.PkgPath != "" && !field.Anonymous {
+			continue
+		}
+
 		fieldName := field.Name
 		fieldInfo := getFieldInfo(field)
 		if fieldInfo.FieldName != "" {
@@ -649,7 +656,11 @@ func (cv Value) valueStruct(key string, target interface{}) error {
 		}
 
 		fieldValue := tarGet.Field(i)
-		if err := cv.unmarshal(fieldName, fieldValue, getFieldInfo(field).DefaultValue); err != nil {
+		if fieldValue.Kind() == reflect.Ptr && fieldValue.IsNil() {
+			fieldValue.Set(reflect.New(fieldValue.Type()).Elem())
+		}
+
+		if err := d.unmarshal(fieldName, fieldValue, getFieldInfo(field).DefaultValue); err != nil {
 			return err
 		}
 	}
@@ -657,24 +668,37 @@ func (cv Value) valueStruct(key string, target interface{}) error {
 	return validator.Validate(target)
 }
 
-// Dispatch un-marshalling functions based on value type.
-func (cv Value) unmarshal(name string, value reflect.Value, def string) error {
-	// Skip values that can't be set
-	if !value.CanSet() {
-		return nil
+// Dispatch un-marshalling functions based on the value type.
+func (d *decoder) unmarshal(name string, value reflect.Value, def string) error {
+	if value.Type().Comparable() {
+		val := value.Interface()
+		kind := value.Kind()
+		if _, ok := d.m[val]; ok {
+			if kind == reflect.Ptr && !value.IsNil() {
+				buf := &bytes.Buffer{}
+				for k := range d.m {
+					fmt.Fprintf(buf, "%+v -> ", k)
+				}
+
+				fmt.Fprintf(buf, "%+v", value.Interface())
+				return fmt.Errorf("cycles detected: %s", buf.String())
+			}
+		}
+
+		d.m[val] = struct{}{}
 	}
 
 	switch getBucket(value.Type()) {
 	case bucketPrimitive:
-		return cv.scalar(name, value, def)
+		return d.scalar(name, value, def)
 	case bucketObject:
-		return cv.object(name, value)
+		return d.object(name, value)
 	case bucketArray:
-		return cv.array(name, value)
+		return d.array(name, value)
 	case bucketSlice:
-		return cv.sequence(name, value)
+		return d.sequence(name, value)
 	case bucketMap:
-		return cv.mapping(name, value, def)
+		return d.mapping(name, value, def)
 	}
 
 	return nil

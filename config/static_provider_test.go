@@ -25,6 +25,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestStaticProvider_Name(t *testing.T) {
@@ -98,7 +99,7 @@ func TestNilStaticProviderSetDefaultTagValue(t *testing.T) {
 	}{}
 
 	p := NewStaticProvider(nil)
-	p.Get("hello").PopulateStruct(&data)
+	require.NoError(t, p.Get("hello").PopulateStruct(&data))
 
 	assert.Equal(t, 10, data.ID0)
 	assert.Equal(t, "string", data.ID1)

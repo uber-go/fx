@@ -337,7 +337,7 @@ func TestGrumpyTextUnMarshallerParsing(t *testing.T) {
 	withYamlBytes(grumpyTextUnmarshallerYaml, func(provider Provider) {
 		ds := duckTales{}
 		err := provider.Get("darkwingDuck").PopulateStruct(&ds)
-		assert.EqualError(t, err, "Unknown character: DarkwingDuck")
+		assert.Contains(t, err.Error(), "Unknown character: DarkwingDuck")
 	})
 }
 
@@ -552,4 +552,31 @@ s:
 	require.NoError(t, p.Get(Root).PopulateStruct(&r))
 	assert.Equal(t, [2]time.Duration{time.Second, 4 * time.Minute}, r.S["first"])
 	assert.Equal(t, [2]time.Duration{2 * time.Minute, 3 * time.Hour}, r.S["second"])
+}
+
+type cycle struct {
+	A *cycle
+}
+
+type testProvider struct {
+	staticProvider
+	a cycle
+}
+
+func (s *testProvider) Get(key string) Value {
+	val, found := s.a, true
+	return NewValue(s, key, val, found, GetType(val), nil)
+}
+
+func TestLoops(t *testing.T) {
+	t.Parallel()
+
+	a := cycle{}
+	a.A = &a
+
+	b := cycle{&a}
+	require.Equal(t, b, a)
+
+	p := testProvider{}
+	assert.Contains(t, p.Get(Root).PopulateStruct(&b).Error(), "cycles")
 }
