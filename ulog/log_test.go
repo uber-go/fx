@@ -30,15 +30,16 @@ import (
 )
 
 func TestDefaultLogger(t *testing.T) {
+	t.Parallel()
 	cfg := DefaultConfiguration()
 	assert.NotNil(t, cfg)
 	assert.Equal(t, []string{"stdout"}, cfg.OutputPaths)
 }
 
 func TestSetLogger(t *testing.T) {
+	t.Parallel()
 	zaplogger := zapcore.NewNopCore()
-	undoFunc := SetLogger(zap.New(zaplogger))
-	defer undoFunc()
+	defer SetLogger(zap.New(zaplogger))()
 
 	log := Logger(context.Background())
 	assert.Equal(t, zaplogger, log.Core())

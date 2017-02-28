@@ -21,7 +21,7 @@
 // Package ulog is the Logging package.
 //
 // package ulog provides access to the logging library zap (https://github.com/uber-go/zap)for the framework.
-// package ulog uses zap's configuration wrapped
+// package ulog uses Zap's configuration wrapped
 // with
 // ulog.Configuration to instantiate the logger. With the
 // configuration object, you can perform pre-initialization setup by injecting
@@ -30,9 +30,7 @@
 //
 // ulog provides a few benefits:
 //
-// • Coupling with zap's Logger APIs.
-//
-// • Context based logging access via ulog.Logger(ctx) for zap.Logger and ulog.Sugar(ctx) for Sugared logger
+// • Context aware logging access via ulog.Logger(ctx) for zap.Logger and ulog.Sugar(ctx) for Sugared logger
 //
 // • ulog.Trace creates a zap field that extracts tracing information from a context
 //
@@ -55,7 +53,7 @@
 //     log, err := logConfig.Build()
 //
 //     // Use logger in your service
-//     log.Infow("Message describing logging reason", "key", "value")
+//     log.Info("Message describing logging reason", zap.String("key", "value"))
 //   }
 //
 // Context
