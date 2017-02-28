@@ -20,21 +20,24 @@
 
 // Package ulog is the Logging package.
 //
-// package ulog provides an API wrapper around the logging library
-// zap (https://github.com/uber-go/zap). package ulog uses the builder pattern
-// to instantiate the logger. With
-// LogBuilder you can perform pre-initialization
-// setup by injecting configuration, custom logger, and log level prior to building
-// the usable
-// ulog.Log object.
+// package ulog provides access to the logging library zap (https://github.com/uber-go/zap)for the framework.
+// package ulog uses Zap's configuration wrapped
+// with
+// ulog.Configuration to instantiate the logger. With the
+// configuration object, you can perform pre-initialization setup by injecting
+// configuration, custom logger, and log level prior to building the usable
+// zap.Logger.
 //
-// ulog.Log interface provides a few benefits:
+// ulog provides a few benefits:
 //
-// • Decouple services from the logger used underneath the framework
+// • Context aware logging access via ulog.Logger(ctx) for zap.Logger and ulog.Sugar(ctx) for Sugared logger
 //
-// • Easy to use API for logging
+// • ulog.Trace creates a zap field that extracts tracing information from a context
 //
-// • Easily swappable backend logger without changing the service
+// ulog.Logger vs ulog.Sugar:
+//
+// ulog.Logger(ctx)- provides zap.Logger, with high performance API's that requires zap.Fields as values.
+// ulog.Sugar(ctx)- provides sugared implementation of logging APIs that accept values as interface{}
 //
 // Sample usage
 //
@@ -45,13 +48,12 @@
 //   func main() {
 //     // Configure logger with configuration preferred by your service
 //     logConfig := ulog.Configuration{}
-//     logBuilder := ulog.Builder().WithConfiguration(&logConfig)
 //
-//     // Build ulog.Log from logBuilder
-//     log := lobBuilder.Build()
+//     // Build logger from logConfig object
+//     log, err := logConfig.Build()
 //
 //     // Use logger in your service
-//     log.Info("Message describing logging reason", "key", "value")
+//     log.Info("Message describing logging reason", zap.String("key", "value"))
 //   }
 //
 // Context
@@ -77,16 +79,20 @@
 //
 //   package main
 //
-//   import "go.uber.org/fx/ulog"
+//   import (
+//     "context"
 //
-//   func main() {
-//     log := ulog.Logger()
-//     log.Info("My info message")
-//     log.Info("Info with context", "customer_id", 1234)
+//     "go.uber.org/fx/ulog"
+//   )
+//
+//   func handleRequest(ctx context.Context) {
+//     log := ulog.Sugar(ctx)
+//     log.Infow("My info message")
+//     log.Infow("Info with context", "customer_id", 1234)
 //
 //     richLog := log.With("shard_id", 3, "levitation", true)
-//     richLog.Info("Rich info message")
-//     richLog.Info("Even richer", "more_info", []int{1, 2, 3})
+//     richLog.Infow("Rich info message")
+//     richLog.Infow("Even richer", "more_info", []int{1, 2, 3})
 //   }
 //
 // Produces this output:
@@ -112,19 +118,6 @@
 //     stdout: true
 //     level: debug
 //
-// Benchmarks
-//
-// Current performance benchmark data with ulog interface,
-// ulog baseLogger struct, and zap.Logger
-//
-//   BenchmarkUlogWithoutFields-8                    10000000               223 ns/op               0 B/op          0 allocs/op
-//   BenchmarkUlogWithFieldsLogIFace-8                1000000              1237 ns/op            1005 B/op         18 allocs/op
-//   BenchmarkUlogWithFieldsBaseLoggerStruct-8        1000000              1096 ns/op             748 B/op         17 allocs/op
-//   BenchmarkUlogWithFieldsZapLogger-8               2000000               664 ns/op             514 B/op          1 allocs/op
-//   BenchmarkUlogLiteWithFields-8                    3000000               489 ns/op             249 B/op          6 allocs/op
-//   BenchmarkUlogSentry-8                            3000000               407 ns/op             128 B/op          4 allocs/op
-//   BenchmarkUlogSentryWith-8                        1000000              1535 ns/op            1460 B/op         12 allocs/op
-//
 // Sentry
 //
 // ulog has a seamless integration with Sentry. For out-of-the-box usage
@@ -134,32 +127,6 @@
 //   logging:
 //     sentry:
 //       dsn: http://user:secret@your.sentry.dsn/project
-//
-// If you'd like to take more control over the Sentry integration, see
-// sentry.Configuration
-//
-// For example, to turn off Stacktrace generation:
-//
-//   logging:
-//     sentry:
-//       dsn: http://user:secret@your.sentry.dsn/project
-//       trace:
-//         disabled: true
-//
-// To set up Sentry in code use sentry.Hook. For example:
-//
-//   import (
-//     "go.uber.org/zap"
-//     "go.uber.org/fx/ulog/ulog"
-//     "go.uber.org/fx/ulog/sentry"
-//     "go.uber.org/fx/service"
-//   )
-//
-//   func main() {
-//     h := sentry.New(MY_DSN, MinLevel(zap.InfoLevel), DisableTraces())
-//     l := ulog.Builder().WithSentryHook(h).Build()
-//     svc, err := service.WithLogger(l).Build()
-//   }
 //
 //
 package ulog
