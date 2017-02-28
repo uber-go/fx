@@ -580,3 +580,19 @@ func TestLoops(t *testing.T) {
 	p := testProvider{}
 	assert.Contains(t, p.Get(Root).PopulateStruct(&b).Error(), "cycles")
 }
+
+
+func TestInternalFieldsAreNotSet(t *testing.T) {
+	t.Parallel()
+	type External struct {
+		internal string
+	}
+
+	b := []byte(`
+internal: set
+`)
+	p := NewYAMLProviderFromBytes(b)
+	var r External
+	require.NoError(t, p.Get(Root).PopulateStruct(&r))
+	assert.Equal(t, "", r.internal)
+}
