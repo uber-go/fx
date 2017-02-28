@@ -32,7 +32,7 @@ func main() {
   log, err := logConfig.Build()
 
   // Use logger in your service
-  log.Infow("Message describing logging reason", "key", "value")
+  log.Info("Message describing logging reason", zap.String("key", "value"))
 }
 ```
 
