@@ -57,3 +57,5 @@ testImport:
 - package: github.com/shurcooL/sanitized_anchor_name
 - package: github.com/mvdan/interfacer/cmd/interfacer
 - package: github.com/kyoh86/richgo
+- package: github.com/golang/protobuf
+- package: google.golang.org/grpc

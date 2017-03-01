@@ -1,0 +1,23 @@
+syntax = "proto3";
+
+package kv;
+
+message Key {
+  string key = 1;
+}
+
+message Value {
+  string value = 1;
+}
+
+message KeyValue {
+  string key = 1;
+  string value = 2;
+}
+
+message Void {}
+
+service API {
+    rpc Get(Key) returns (Value);
+    rpc Set(KeyValue) returns (Void);
+}

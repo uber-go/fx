@@ -1,0 +1,107 @@
+// Copyright (c) 2017 Uber Technologies, Inc.
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included in
+// all copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+// THE SOFTWARE.
+
+package ugrpc
+
+import (
+	"context"
+	"fmt"
+	"net"
+
+	"go.uber.org/fx/service"
+	"go.uber.org/fx/ulog"
+	"go.uber.org/zap"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/grpclog"
+)
+
+func init() {
+	grpclog.SetLogger(newLogger(zap.S()))
+}
+
+// Module returns a new ModuleCreateFunc for the given registration functions.
+func Module(registerFuncs ...func(*grpc.Server)) service.ModuleCreateFunc {
+	return func(host service.Host) (service.Module, error) {
+		return newModule(host, registerFuncs...)
+	}
+}
+
+type config struct {
+	Port uint16
+}
+
+type module struct {
+	config *config
+	server *grpc.Server
+}
+
+func newModule(host service.Host, registerFuncs ...func(*grpc.Server)) (service.Module, error) {
+	config := &config{}
+	if err := host.Config().Scope("modules").Get(host.Name()).PopulateStruct(config); err != nil {
+		return nil, err
+	}
+	server := grpc.NewServer()
+	for _, registerFunc := range registerFuncs {
+		registerFunc(server)
+	}
+	return &module{config, server}, nil
+}
+
+func (m *module) Start() error {
+	listener, err := net.Listen("tcp", fmt.Sprintf(":%d", m.config.Port))
+	if err != nil {
+		return err
+	}
+	go func() {
+		if err := m.server.Serve(listener); err != nil {
+			ulog.Logger(context.Background()).Error("grpc serve error", zap.Error(err))
+		}
+	}()
+	return nil
+}
+
+func (m *module) Stop() error {
+	m.server.Stop()
+	return nil
+}
+
+type logger struct {
+	*zap.SugaredLogger
+}
+
+func newLogger(sugaredLogger *zap.SugaredLogger) *logger {
+	return &logger{sugaredLogger}
+}
+
+func (l *logger) Print(args ...interface{}) {
+	l.Info(args...)
+}
+
+func (l *logger) Printf(format string, args ...interface{}) {
+	l.Infof(format, args...)
+}
+
+func (l *logger) Println(args ...interface{}) {
+	l.Info(args...)
+}
+
+func (l *logger) Fatalln(args ...interface{}) {
+	l.Fatal(args...)
+}

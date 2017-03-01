@@ -1,5 +1,5 @@
-hash: f5c7c493baa0a29039c147f7244c37d573f95eee31ee448577a64024dabd6770
-updated: 2017-02-27T09:12:47.84121939-08:00
+hash: 4e8f3aa47685831420bf1a9af3ce8bd500a90b65e92a5c0922b32e7279e68af3
+updated: 2017-03-01T16:00:59.368112+01:00
 imports:
 - name: github.com/apache/thrift
   version: 9549b25c77587b29be4e0b5c258221a4ed85d37a
@@ -48,7 +48,7 @@ imports:
 - name: github.com/uber-go/tally
   version: 43c1379c0577ac1eb74f9f3869cea07191c9992b
 - name: github.com/uber/jaeger-client-go
-  version: a1c7be77e82c1ccd832ace5c4c04b25700d90b1f
+  version: 2505ffc229cbe642a1af9387e8251f7e699c2f6e
   subpackages:
   - config
   - internal/spanlog
@@ -126,7 +126,7 @@ imports:
   - testutils
   - zapcore
 - name: golang.org/x/net
-  version: bb807669a61aca6092d8137da1fab2150bb96ad7
+  version: 906cda9512f77671ab44f8c8563b13a8e707b230
   subpackages:
   - context
   - context/ctxhttp
@@ -149,6 +149,8 @@ testImports:
   version: b8599f7d71e7fead76b25aeb919c0e2558672f4a
   subpackages:
   - golint
+- name: github.com/golang/protobuf
+  version: 69b215d01a5606c843240eab4937eab3acee6530
 - name: github.com/jessevdk/go-flags
   version: 460c7bb0abd6e927f2767cadc91aa6ef776a98b4
 - name: github.com/kisielk/errcheck
@@ -173,3 +175,5 @@ testImports:
   version: 1dba4b3954bc059efc3991ec364f9f9a35f597d2
 - name: github.com/yookoala/realpath
   version: c416d99ab5ed256fa30c1f3bab73152deb59bb69
+- name: google.golang.org/grpc
+  version: aefc96d792e01c7be09afa69b8c1cbfe3a21e2fc
