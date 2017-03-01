@@ -33,9 +33,8 @@ func main() {
 	manager, err := service.WithModule(
 		"keyvalue",
 		ugrpc.Module(
-			func(server *grpc.Server) {
-				kv.RegisterAPIServer(server, newAPIServer())
-			},
+			func(server *grpc.Server) { kv.RegisterAPIServer(server, newAPIServer()) },
+			grpc.UnaryInterceptor(ugrpc.LoggingUnaryServerInterceptor),
 		),
 	).Build()
 	if err != nil {

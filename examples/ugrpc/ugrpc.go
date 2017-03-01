@@ -21,15 +21,22 @@
 package ugrpc
 
 import (
-	"context"
 	"fmt"
 	"net"
+	"time"
 
 	"go.uber.org/fx/service"
 	"go.uber.org/fx/ulog"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
+	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/grpclog"
+)
+
+var (
+	// LoggingUnaryServerInterceptor is a UnaryServerInterceptor that logs a request and response.
+	LoggingUnaryServerInterceptor grpc.UnaryServerInterceptor = logUnaryRequest
 )
 
 func init() {
@@ -102,4 +109,28 @@ func (l *logger) Println(args ...interface{}) {
 
 func (l *logger) Fatalln(args ...interface{}) {
 	l.Fatal(args...)
+}
+
+func logUnaryRequest(
+	ctx context.Context,
+	request interface{},
+	unaryServerInfo *grpc.UnaryServerInfo,
+	unaryHandler grpc.UnaryHandler,
+) (interface{}, error) {
+	start := time.Now()
+	response, err := unaryHandler(ctx, request)
+	duration := time.Since(start)
+	fields := []zapcore.Field{
+		zap.String("method", unaryServerInfo.FullMethod),
+		zap.Any("request", request),
+		zap.Duration("duration", duration),
+	}
+	if response != nil {
+		fields = append(fields, zap.Any("response", response))
+	}
+	if err != nil {
+		fields = append(fields, zap.Error(err))
+	}
+	ulog.Logger(ctx).Info("", fields...)
+	return response, err
 }
