@@ -27,7 +27,7 @@ import (
 	"github.com/uber-go/tally"
 )
 
-// A ModuleConfig holds configuration for a mobule
+// A ModuleConfig holds configuration for a module
 type ModuleConfig struct {
 	Roles []string `yaml:"roles"`
 }
