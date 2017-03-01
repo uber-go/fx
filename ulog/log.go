@@ -39,6 +39,7 @@ type Configuration struct {
 
 // Configure initializes logging configuration struct from config provider
 func (c *Configuration) Configure(cfg config.Value) error {
+	// TODO: Fix after GFM-415
 	// Uhhh... this process is not the most elegant.
 	//
 	// Because log.Configuration embeds zap, the PopulateStruct
