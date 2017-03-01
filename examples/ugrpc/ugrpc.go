@@ -36,10 +36,10 @@ func init() {
 	grpclog.SetLogger(newLogger(zap.S()))
 }
 
-// Module returns a new ModuleCreateFunc for the given registration functions.
-func Module(registerFuncs ...func(*grpc.Server)) service.ModuleCreateFunc {
+// Module returns a new ModuleCreateFunc for the given registration function.
+func Module(registerFunc func(*grpc.Server), options ...grpc.ServerOption) service.ModuleCreateFunc {
 	return func(host service.Host) (service.Module, error) {
-		return newModule(host, registerFuncs...)
+		return newModule(host, registerFunc, options...)
 	}
 }
 
@@ -52,15 +52,13 @@ type module struct {
 	server *grpc.Server
 }
 
-func newModule(host service.Host, registerFuncs ...func(*grpc.Server)) (service.Module, error) {
+func newModule(host service.Host, registerFunc func(*grpc.Server), options ...grpc.ServerOption) (service.Module, error) {
 	config := &config{}
 	if err := host.Config().Scope("modules").Get(host.Name()).PopulateStruct(config); err != nil {
 		return nil, err
 	}
-	server := grpc.NewServer()
-	for _, registerFunc := range registerFuncs {
-		registerFunc(server)
-	}
+	server := grpc.NewServer(options...)
+	registerFunc(server)
 	return &module{config, server}, nil
 }
 
