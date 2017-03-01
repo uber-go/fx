@@ -60,4 +60,4 @@
 // This will spin up the service.
 //
 //
-package rpc
+package yarpc
