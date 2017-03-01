@@ -10,6 +10,7 @@
   themselves according to our code search tool.
 * Log `traceID` and `spanID` in hex format to match Jaeger UI. Upgrade Jaeger to min version 2.1.0
   and use jaeger's adapters for jaeger and tally initialization.
+* [Breaking] Rename `modules/rpc` to `modules/yarpc`
 
 ## v1.0.0-beta1 (20 Feb 2017)
 

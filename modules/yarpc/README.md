@@ -1,4 +1,4 @@
-# RPC Module
+# YARPC Module
 
 The RPC module wraps [YARPC](https://github.com/yarpc/yarpc-go) and exposes
 creators for both JSON- and Thrift-encoded messages.
@@ -11,7 +11,7 @@ This module works in a way that's pretty similar to existing RPC projects:
 * Implement the service interface handlers as method receivers on a struct
 
 * Implement a top-level function, conforming to the
-  `rpc.CreateThriftServiceFunc` signature (`fx/modules/rpc/thrift.go` that
+  `yarpc.CreateThriftServiceFunc` signature (`fx/modules/yarpc/thrift.go` that
   returns a `[]transport.Registrant` YARPC implementation from the handler:
 
 ```go
@@ -26,7 +26,7 @@ func NewMyServiceHandler(svc service.Host) ([]transport.Registrant, error) {
 func main() {
   svc, err := service.WithModule(
     "example",
-    rpc.ThriftModule(rpc.CreateThriftServiceFunc(NewMyServiceHandler)),
+    yarpc.ThriftModule(yarpc.CreateThriftServiceFunc(NewMyServiceHandler)),
     service.WithModuleRole("service"),
   ).Build()
 
