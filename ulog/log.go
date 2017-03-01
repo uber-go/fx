@@ -37,7 +37,7 @@ type Configuration struct {
 	Sentry *sentry.Configuration `yaml:"sentry"`
 }
 
-// Initialize from config
+// Configure initializes logging configuration struct from config provider
 func (c *Configuration) Configure(cfg config.Value) error {
 	// Uhhh... this process is not the most elegant.
 	//
