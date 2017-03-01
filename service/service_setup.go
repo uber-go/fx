@@ -34,21 +34,27 @@ import (
 	"go.uber.org/zap"
 )
 
-func (svc *serviceCore) setupLogging() {
-	err := svc.configProvider.Get("logging").PopulateStruct(&svc.logConfig)
-	if err != nil {
-		zap.L().Info("Logging configuration is not provided, using UberFX defaults", zap.Error(err))
+func (svc *serviceCore) setupLogging() error {
+	cfg := svc.configProvider.Get("logging")
+	if cfg.HasValue() {
+		// populate struct if config was provided
+		if err := cfg.PopulateStruct(&svc.logConfig); err != nil {
+			return errors.Wrap(err, "unable to parse logging config")
+		}
+	} else {
+		// if no config - default to the regular one
 		svc.logConfig = ulog.DefaultConfiguration()
 	}
 
 	logger, err := svc.logConfig.Build(zap.Hooks(ulog.Metrics(svc.metrics)))
 	if err != nil {
-		// Typically, this means that we're trying to log to files that don't
-		// exist or don't have appropriate permissions set.
-		zap.L().Info("Failed to configure logger", zap.Error(err))
-		return
+		return errors.Wrap(err, "Failed to configure logging")
 	}
+
+	// TODO(glib): SetLogger returns a deferral to clean up global log which is not used
 	ulog.SetLogger(logger)
+
+	return nil
 }
 
 func (svc *serviceCore) setupStandardConfig() error {
