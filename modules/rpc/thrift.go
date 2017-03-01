@@ -21,7 +21,6 @@
 package rpc
 
 import (
-	"github.com/pkg/errors"
 	"go.uber.org/fx/service"
 	"go.uber.org/yarpc/api/transport"
 )
@@ -32,10 +31,6 @@ type CreateThriftServiceFunc func(svc service.Host) ([]transport.Procedure, erro
 // ThriftModule creates a Thrift Module from a service func
 func ThriftModule(hookup CreateThriftServiceFunc, options ...ModuleOption) service.ModuleCreateFunc {
 	return func(host service.Host) (service.Module, error) {
-		mod, err := newYARPCModule(host, hookup, options...)
-		if err != nil {
-			return nil, errors.Wrap(err, "unable to instantiate Thrift module")
-		}
-		return mod, nil
+		return newYARPCModule(host, hookup, options...)
 	}
 }

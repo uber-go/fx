@@ -32,5 +32,6 @@ func main() {
 	if err != nil {
 		log.Fatal("Unable to initialize service", "error", err)
 	}
+
 	svc.Start()
 }
