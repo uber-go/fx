@@ -20,25 +20,17 @@
 
 package uhttp
 
-import "go.uber.org/fx/service"
+// ModuleOption is a function that configures module creation.
+type ModuleOption func(*moduleOptions) error
 
-const _middlewareKey = "uhttpInboundMiddleware"
-
-// WithInboundMiddleware adds inbound middleware to uhttp Module that will be applied to all incoming http requests.
-func WithInboundMiddleware(m ...InboundMiddleware) service.ModuleOption {
-	return service.WithModuleItem(_middlewareKey, func(existing interface{}) interface{} {
-		var middleware []InboundMiddleware
-		if existing != nil {
-			middleware = existing.([]InboundMiddleware)
-		}
-		return append(middleware, m...)
-	})
+type moduleOptions struct {
+	inboundMiddleware []InboundMiddleware
 }
 
-func inboundMiddlewareFromModuleInfo(mi service.ModuleInfo) []InboundMiddleware {
-	if items, ok := mi.Item(_middlewareKey); ok {
-		// Intentionally panic if programmer adds non-middleware slice to the data
-		return items.([]InboundMiddleware)
+// WithInboundMiddleware adds inbound middleware to uhttp Module that will be applied to all incoming http requests.
+func WithInboundMiddleware(m ...InboundMiddleware) ModuleOption {
+	return func(moduleOptions *moduleOptions) error {
+		moduleOptions.inboundMiddleware = append(moduleOptions.inboundMiddleware, m...)
+		return nil
 	}
-	return nil
 }

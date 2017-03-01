@@ -84,16 +84,23 @@ type Config struct {
 type GetHandlersFunc func(service service.Host) []RouteHandler
 
 // New returns a new HTTP module
-func New(hookup GetHandlersFunc) service.ModuleCreateFunc {
+func New(hookup GetHandlersFunc, options ...ModuleOption) service.ModuleCreateFunc {
 	return func(mi service.ModuleInfo) (service.Module, error) {
-		return newModule(mi, hookup)
+		return newModule(mi, hookup, options...)
 	}
 }
 
 func newModule(
 	mi service.ModuleInfo,
 	getHandlers GetHandlersFunc,
+	options ...ModuleOption,
 ) (*Module, error) {
+	moduleOptions := &moduleOptions{}
+	for _, option := range options {
+		if err := option(moduleOptions); err != nil {
+			return nil, err
+		}
+	}
 	// setup config defaults
 	cfg := Config{
 		Port:    defaultPort,
@@ -110,8 +117,7 @@ func newModule(
 		config:     cfg,
 		log:        log,
 	}
-	middleware := inboundMiddlewareFromModuleInfo(mi)
-	module.mcb = module.mcb.AddMiddleware(middleware...)
+	module.mcb = module.mcb.AddMiddleware(moduleOptions.inboundMiddleware...)
 	return module, nil
 }
 

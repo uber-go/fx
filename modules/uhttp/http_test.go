@@ -52,7 +52,7 @@ func TestHTTPModule_WithInboundMiddleware(t *testing.T) {
 	withModule(
 		t,
 		registerPanic,
-		[]service.ModuleOption{WithInboundMiddleware(fakeInbound())},
+		[]ModuleOption{WithInboundMiddleware(fakeInbound())},
 		"hello",
 		false,
 		func(m *Module) {
@@ -70,7 +70,7 @@ func TestHTTPModule_WithUserPanicInboundMiddleware(t *testing.T) {
 	withModule(
 		t,
 		registerTracerCheckHandler,
-		[]service.ModuleOption{WithInboundMiddleware(userPanicInbound())},
+		[]ModuleOption{WithInboundMiddleware(userPanicInbound())},
 		"hello",
 		false,
 		func(m *Module) {
@@ -144,14 +144,14 @@ func configOption() service.Option {
 func withModule(
 	t testing.TB,
 	hookup GetHandlersFunc,
-	moduleOptions []service.ModuleOption,
+	moduleOptions []ModuleOption,
 	moduleName string,
 	expectError bool,
 	fn func(*Module),
 ) {
-	mi, err := service.NewModuleInfo(service.NopHost(), moduleName, moduleOptions...)
+	mi, err := service.NewModuleInfo(service.NopHost(), moduleName)
 	require.NoError(t, err)
-	mod, err := newModule(mi, hookup)
+	mod, err := newModule(mi, hookup, moduleOptions...)
 	if expectError {
 		require.Error(t, err, "Expected error instantiating module")
 		fn(nil)
