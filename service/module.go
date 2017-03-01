@@ -41,7 +41,6 @@ type Module interface {
 // This can be stored inside the module for use.
 type ModuleInfo interface {
 	Host
-	Item(key string) (interface{}, bool)
 }
 
 // NewModuleInfo returns a new ModuleInfo. This should generally be used for testing.
@@ -72,29 +71,11 @@ func WithModuleRole(role string) ModuleOption {
 	}
 }
 
-// WithModuleItem adds the value to the Module. If there is an existing value,
-// it will be passed as the argument to the population function.
-func WithModuleItem(key string, f func(interface{}) interface{}) ModuleOption {
-	return func(o *moduleOptions) error {
-		if value, ok := o.items[key]; ok {
-			o.items[key] = f(value)
-			return nil
-		}
-		o.items[key] = f(nil)
-		return nil
-	}
-}
-
 // ModuleCreateFunc handles instantiating modules from creation configuration.
 type ModuleCreateFunc func(ModuleInfo) (Module, error)
 
 type moduleOptions struct {
 	roles []string
-	items map[string]interface{}
-}
-
-func newModuleOptions() *moduleOptions {
-	return &moduleOptions{nil, make(map[string]interface{})}
 }
 
 type moduleWrapper struct {
@@ -166,13 +147,12 @@ type moduleInfo struct {
 	Host
 	name  string
 	roles []string
-	items map[string]interface{}
 
 	metrics tally.Scope
 }
 
 func newModuleInfo(host Host, name string, options ...ModuleOption) (*moduleInfo, error) {
-	moduleOptions := newModuleOptions()
+	moduleOptions := &moduleOptions{}
 	for _, option := range options {
 		if err := option(moduleOptions); err != nil {
 			return nil, err
@@ -182,7 +162,6 @@ func newModuleInfo(host Host, name string, options ...ModuleOption) (*moduleInfo
 		host,
 		name,
 		moduleOptions.roles,
-		moduleOptions.items,
 		// TODO(pedge): scope to the modules if we remove the global stats in the various packages
 		host.Metrics(),
 		//host.Metrics().SubScope("modules").SubScope(name),
@@ -200,10 +179,4 @@ func (mi *moduleInfo) Roles() []string {
 
 func (mi *moduleInfo) Metrics() tally.Scope {
 	return mi.metrics
-}
-
-// TODO(pedge): merge with concept of resources?
-func (mi *moduleInfo) Item(key string) (interface{}, bool) {
-	item, ok := mi.items[key]
-	return item, ok
 }

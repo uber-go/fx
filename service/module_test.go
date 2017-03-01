@@ -37,9 +37,7 @@ func TestNewModuleInfo(t *testing.T) {
 		description   string
 		name          string
 		roles         []string
-		items         []keyValue
 		expectedRoles []string
-		expectedItems map[string]interface{}
 	}{
 		{
 			description: "TestNewModuleInfoNoOptions",
@@ -81,89 +79,18 @@ func TestNewModuleInfo(t *testing.T) {
 				"role2",
 			},
 		},
-		{
-			description: "TestNewModuleInfoWithItem",
-			name:        "hello",
-			items: []keyValue{
-				{
-					key:   "key1",
-					value: 1,
-				},
-			},
-			expectedItems: map[string]interface{}{
-				"key1": 1,
-			},
-		},
-		{
-			description: "TestNewModuleInfoWithItems",
-			name:        "hello",
-			items: []keyValue{
-				{
-					key:   "key1",
-					value: 1,
-				},
-				{
-					key:   "key2",
-					value: "two",
-				},
-			},
-			expectedItems: map[string]interface{}{
-				"key1": 1,
-				"key2": "two",
-			},
-		},
-		{
-			description: "TestNewModuleInfoWithDuplicateItems",
-			name:        "hello",
-			items: []keyValue{
-				{
-					key:   "key1",
-					value: 1,
-				},
-				{
-					key:   "key2",
-					value: "two",
-				},
-				{
-					key:   "key1",
-					value: 3,
-				},
-				{
-					key:   "key2",
-					value: "four",
-				},
-			},
-			expectedItems: map[string]interface{}{
-				"key1": 3,
-				"key2": "four",
-			},
-		},
 	} {
 		test := test
 		t.Run(test.description, func(t *testing.T) {
 			t.Parallel()
-			if test.expectedItems == nil {
-				test.expectedItems = make(map[string]interface{})
-			}
 			var moduleOptions []ModuleOption
 			for _, role := range test.roles {
 				moduleOptions = append(moduleOptions, WithModuleRole(role))
-			}
-			for _, keyValue := range test.items {
-				keyValue := keyValue
-				moduleOptions = append(moduleOptions, WithModuleItem(keyValue.key, func(_ interface{}) interface{} {
-					return keyValue.value
-				}))
 			}
 			moduleInfo, err := NewModuleInfo(NopHost(), test.name, moduleOptions...)
 			require.NoError(t, err)
 			assert.Equal(t, test.name, moduleInfo.Name())
 			assert.Equal(t, test.expectedRoles, moduleInfo.Roles())
-			for key, expectedValue := range test.expectedItems {
-				value, ok := moduleInfo.Item(key)
-				assert.True(t, ok)
-				assert.Equal(t, expectedValue, value)
-			}
 		})
 	}
 }
