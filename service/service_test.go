@@ -104,6 +104,7 @@ func TestServiceWithSentryHook(t *testing.T) {
 name: name
 owner: owner
 logging:
+  encoding: json
   sentry:
     dsn: http://user:secret@your.sentry.dsn/project
 `)
@@ -114,6 +115,28 @@ logging:
 	// Note: Sentry is not accessible so we cannot directly test it here. Just invoking the code
 	// path to make sure there is no panic
 	zap.L().Info("Testing sentry call")
+}
+
+func TestLoggingConfigDeserialization(t *testing.T) {
+	data := []byte(`
+name: name
+owner: owner
+logging:
+  encoding: console
+  sampling:
+    initial: 777
+  sentry:
+    dsn: http://user:secret@your.sentry.dsn/project
+`)
+
+	c := serviceCore{metricsCore: metricsCore{metrics: tally.NoopScope}}
+	c.configProvider = config.NewYAMLProviderFromBytes(data)
+
+	require.NoError(t, c.setupLogging())
+	require.NotNil(t, c.logConfig.Sentry)
+	require.Equal(t, "http://user:secret@your.sentry.dsn/project", c.logConfig.Sentry.DSN)
+	require.Equal(t, 777, c.logConfig.Sampling.Initial)
+	require.Equal(t, "console", c.logConfig.Encoding)
 }
 
 func TestBadOption_Panics(t *testing.T) {
