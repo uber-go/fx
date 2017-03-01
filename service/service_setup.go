@@ -38,8 +38,12 @@ func (svc *serviceCore) setupLogging() error {
 	cfg := svc.configProvider.Get("logging")
 	if cfg.HasValue() {
 		// populate struct if config was provided
-		if err := cfg.PopulateStruct(&svc.logConfig); err != nil {
+		zapCfg := zap.Config{Level: zap.NewAtomicLevel()}
+		if err := cfg.PopulateStruct(&zapCfg); err != nil {
 			return errors.Wrap(err, "unable to parse logging config")
+		}
+		svc.logConfig = ulog.Configuration{
+			Config: zapCfg,
 		}
 	} else {
 		// if no config - default to the regular one

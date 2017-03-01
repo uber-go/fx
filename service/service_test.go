@@ -104,6 +104,7 @@ func TestServiceWithSentryHook(t *testing.T) {
 name: name
 owner: owner
 logging:
+  encoding: json
   sentry:
     dsn: http://user:secret@your.sentry.dsn/project
 `)
