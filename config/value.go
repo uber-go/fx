@@ -564,15 +564,16 @@ func (d *decoder) mapping(childKey string, value reflect.Value, def string) erro
 	valueType := value.Type()
 	global := d.getGlobalProvider()
 
-	val := global.Get(childKey).Value()
+	v := global.Get(childKey)
+	if !v.HasValue() || v.Value() == nil {
+		return nil
+	}
+
+	val := v.Value()
 
 	// We fallthrough for interface to maps
 	if valueType.Kind() == reflect.Interface {
 		value.Set(reflect.ValueOf(val))
-		return nil
-	}
-
-	if val == nil {
 		return nil
 	}
 
@@ -623,7 +624,6 @@ func (d *decoder) object(childKey string, value reflect.Value) error {
 	if value.IsNil() {
 		tmp := reflect.New(value.Type().Elem())
 		value.Set(tmp)
-		//return nil
 	}
 
 	return d.valueStruct(childKey, value.Interface())
