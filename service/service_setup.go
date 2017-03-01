@@ -67,7 +67,7 @@ func (svc *serviceCore) setupLogging() error {
 
 	logger, err := svc.logConfig.Build(zap.Hooks(ulog.Metrics(svc.metrics)))
 	if err != nil {
-		return errors.Wrap(err, "Failed to configure logging")
+		return errors.Wrap(err, "failed to configure logging")
 	}
 
 	// TODO(glib): SetLogger returns a deferral to clean up global log which is not used
