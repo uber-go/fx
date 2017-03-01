@@ -97,7 +97,7 @@ func (svc *serviceCore) setupTracer() error {
 		&svc.tracerConfig,
 		svc.standardConfig.Name,
 		zap.L(),
-		svc.statsReporter,
+		svc.metrics,
 	)
 	if err != nil {
 		return errors.Wrap(err, "unable to initialize global tracer")

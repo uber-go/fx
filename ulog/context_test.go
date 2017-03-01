@@ -53,7 +53,7 @@ func TestLogger(t *testing.T) {
 			for _, line := range output {
 				assert.Regexp(
 					t,
-					`{"level":"info","msg":"","trace":{"span":\d+,"trace":\d+,"parent":\d+}}`,
+					`{"level":"info","msg":"","trace":{"span":\"[a-zA-Z0-9]+\","trace":\"[a-zA-Z0-9]+\"}}`,
 					line,
 					"Expected output to contain tracing info.",
 				)
@@ -80,7 +80,7 @@ func TestTraceField(t *testing.T) {
 		// but that just copies the production code.
 		assert.Equal(
 			t,
-			map[string]struct{}{"span": {}, "trace": {}, "parent": {}},
+			map[string]struct{}{"span": {}, "trace": {}},
 			keys,
 			"Expected to log span and trace IDs.",
 		)

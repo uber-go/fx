@@ -18,21 +18,10 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package kafka
-
-// HandlerCreateFunc creates a handler for a topic name
-type HandlerCreateFunc func(topic string) (Handler, error)
-
-// Handler handles a single transport-level request.
-type Handler interface {
-	// Handle the given request, writing the response to the given
-	// ResponseWriter.
-	//
-	// An error may be returned in case of failures. BadRequestError must be
-	// returned for invalid requests. All other failures are treated as
-	// UnexpectedErrors.
-	// Handle(
-	// 	ctx context.Context,
-	// 	message consumer.Message,
-	// ) error
-}
+// Package sentry integrates the exception-tracking service Sentry with
+// application logging.
+//
+// Note that this increases the CPU and allocation cost of logging by 5-10x. If
+// your application logs are already being aggregated (in Splunk,
+// ElasticSearch, or something similar), consider using those tools instead.
+package sentry

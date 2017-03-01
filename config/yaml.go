@@ -264,8 +264,9 @@ func (n *yamlNode) Children() []*yamlNode {
 			for k, v := range n.value.(map[interface{}]interface{}) {
 				n2 := &yamlNode{
 					nodeType: getNodeType(v),
-					key:      fmt.Sprintf("%s", k),
-					value:    v,
+					// We need to use a default format, because key may be not a string.
+					key:   fmt.Sprintf("%v", k),
+					value: v,
 				}
 
 				n.children = append(n.children, n2)

@@ -23,7 +23,6 @@ package task
 import (
 	"context"
 
-	"go.uber.org/fx/modules/task/internal/stats"
 	"go.uber.org/fx/service"
 )
 
@@ -74,8 +73,9 @@ type inMemBackend struct {
 
 // NewInMemBackend creates a new in memory backend, designed for use in tests
 func NewInMemBackend(moduleInfo service.ModuleInfo) Backend {
-	stats.SetupTaskMetrics(moduleInfo.Metrics())
-	return &inMemBackend{moduleInfo, make(chan []byte, 2), make(chan error, 1)}
+	return &inMemBackend{
+		bufQueue: make(chan []byte, 2),
+	}
 }
 
 // Encoder implements the Backend interface

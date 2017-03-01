@@ -27,7 +27,6 @@ import (
 	"strings"
 	"testing"
 
-	"go.uber.org/fx/metrics"
 	"go.uber.org/fx/service"
 	"go.uber.org/fx/testutils"
 	"go.uber.org/fx/tracing"
@@ -136,7 +135,7 @@ func testTracingInboundWithLogs(t *testing.T) {
 			Reporter: &config.ReporterConfig{LogSpans: true},
 		}
 		tracer, closer, err := tracing.InitGlobalTracer(
-			jConfig, "serviceName", loggerWithZap, metrics.NopCachedStatsReporter,
+			jConfig, "serviceName", loggerWithZap, tally.NoopScope,
 		)
 		assert.NoError(t, err)
 		defer closer.Close()

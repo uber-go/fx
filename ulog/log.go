@@ -20,12 +20,35 @@
 
 package ulog
 
-import "go.uber.org/zap"
+import (
+	"go.uber.org/fx/ulog/sentry"
+
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
+)
 
 // Configuration defines the desired logging options.
 type Configuration struct {
 	zap.Config
-	// Leave space for non-core config, like Sentry.
+
+	Sentry *sentry.Configuration `yaml:"sentry"`
+}
+
+// Build constructs a *zap.Logger with the configured parameters.
+func (c Configuration) Build(opts ...zap.Option) (*zap.Logger, error) {
+	logger, err := c.Config.Build(opts...)
+	if err != nil || c.Sentry == nil {
+		// If there's an error or there's no Sentry config, we don't need to do
+		// anything but delegate.
+		return logger, err
+	}
+	sentry, err := c.Sentry.Build()
+	if err != nil {
+		return logger, err
+	}
+	return logger.WithOptions(zap.WrapCore(func(core zapcore.Core) zapcore.Core {
+		return zapcore.NewTee(core, sentry)
+	})), nil
 }
 
 // DefaultConfiguration returns a fallback configuration for applications that

@@ -74,8 +74,7 @@ func (t trace) MarshalLogObject(enc zapcore.ObjectEncoder) error {
 	if !j.IsValid() {
 		return fmt.Errorf("invalid span: %v", j.SpanID())
 	}
-	enc.AddUint64("span", j.SpanID())
-	enc.AddUint64("trace", j.TraceID())
-	enc.AddUint64("parent", j.ParentID())
+	enc.AddString("span", j.SpanID().String())
+	enc.AddString("trace", j.TraceID().String())
 	return nil
 }

@@ -3,7 +3,7 @@ LINT_EXCLUDES = examples
 # converted to a grep -v pipeline. If there are no filters, cat is used.
 FILTER_LINT := $(if $(LINT_EXCLUDES), grep -v $(foreach file, $(LINT_EXCLUDES),-e $(file)),cat)
 
-FILTER_LOG := grep -v "fx/examples"
+FILTER_LOG := grep -v "fx/examples" | grep -v "go.uber.org/fx/vendor/"
 
 LINT_LOG := lint.log
 

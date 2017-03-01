@@ -18,4 +18,32 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package kafka
+package ulog
+
+import (
+	"context"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
+)
+
+func TestDefaultLogger(t *testing.T) {
+	t.Parallel()
+	cfg := DefaultConfiguration()
+	assert.NotNil(t, cfg)
+	assert.Equal(t, []string{"stdout"}, cfg.OutputPaths)
+}
+
+func TestSetLogger(t *testing.T) {
+	t.Parallel()
+	zaplogger := zapcore.NewNopCore()
+	defer SetLogger(zap.New(zaplogger))()
+
+	log := Logger(context.Background())
+	assert.Equal(t, zaplogger, log.Core())
+
+	sugarlog := Sugar(context.Background())
+	assert.Equal(t, zaplogger, sugarlog.Desugar().Core())
+}
