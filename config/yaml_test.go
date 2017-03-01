@@ -595,3 +595,70 @@ internal: set
 	require.NoError(t, p.Get(Root).PopulateStruct(&r))
 	assert.Equal(t, "", r.internal)
 }
+
+func TestEmbeddedStructs(t *testing.T) {
+	t.Skip("TODO(alsam) GFM(415)")
+	t.Parallel()
+	type Config struct {
+		Foo string
+	}
+
+	type Sentry struct {
+		DSN string
+	}
+
+	type Logging struct {
+		Config
+		Sentry
+	}
+
+	b := []byte(`
+logging:
+   foo: bar
+   sentry:
+      dsn: asdf
+`)
+	p := NewYAMLProviderFromBytes(b)
+	var r Config
+	require.NoError(t, p.Get(Root).PopulateStruct(&r))
+	assert.Equal(t, "bar", r.Foo)
+}
+
+func TestEmptyValuesSetForMaps(t *testing.T) {
+	t.Parallel()
+	type Hello interface {
+		Hello()
+	}
+
+	type Foo struct {
+		M map[string]Hello
+	}
+
+	b := []byte(`
+M:
+   sayHello:
+`)
+	p := NewYAMLProviderFromBytes(b)
+	var r Foo
+	require.NoError(t, p.Get(Root).PopulateStruct(&r))
+	assert.Equal(t, r.M, map[string]Hello{"sayHello": Hello(nil)})
+}
+
+func TestEmptyValuesSetForStructs(t *testing.T) {
+	t.Parallel()
+	type Hello interface {
+		Hello()
+	}
+
+	type Foo struct {
+		Say Hello
+	}
+
+	b := []byte(`
+Say:
+`)
+	p := NewYAMLProviderFromBytes(b)
+	var r Foo
+	require.NoError(t, p.Get(Root).PopulateStruct(&r))
+	assert.Nil(t, r.Say)
+}
