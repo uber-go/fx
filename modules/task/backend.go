@@ -75,6 +75,7 @@ type inMemBackend struct {
 func NewInMemBackend(moduleInfo service.ModuleInfo) Backend {
 	return &inMemBackend{
 		bufQueue: make(chan []byte, 2),
+		errorCh:  make(chan error, 1),
 	}
 }
 
