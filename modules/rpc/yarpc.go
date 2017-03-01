@@ -258,7 +258,14 @@ func (c *dispatcherController) mergeConfigs(name string) (conf yarpc.Config, err
 func newYARPCModule(
 	mi service.ModuleInfo,
 	reg CreateThriftServiceFunc,
+	options ...ModuleOption,
 ) (*YARPCModule, error) {
+	moduleOptions := &moduleOptions{}
+	for _, option := range options {
+		if err := option(moduleOptions); err != nil {
+			return nil, err
+		}
+	}
 	module := &YARPCModule{
 		moduleInfo:  mi,
 		statsClient: newStatsClient(mi.Metrics()),
@@ -274,8 +281,8 @@ func newYARPCModule(
 		return nil, errs.Wrap(err, "can't process inbounds")
 	}
 	module.config.transports.inbounds = transportsIn
-	module.config.inboundMiddleware = inboundMiddlewareFromModuleInfo(mi)
-	module.config.onewayInboundMiddleware = onewayInboundMiddlewareFromModuleInfo(mi)
+	module.config.inboundMiddleware = moduleOptions.unaryInbounds
+	module.config.onewayInboundMiddleware = moduleOptions.onewayInbounds
 
 	// Try to resolve a controller first
 	// TODO(alsam) use dig options when available, because we can overwrite the controller in case of multiple

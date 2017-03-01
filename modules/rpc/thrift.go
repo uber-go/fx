@@ -30,9 +30,9 @@ import (
 type CreateThriftServiceFunc func(svc service.Host) ([]transport.Procedure, error)
 
 // ThriftModule creates a Thrift Module from a service func
-func ThriftModule(hookup CreateThriftServiceFunc) service.ModuleCreateFunc {
+func ThriftModule(hookup CreateThriftServiceFunc, options ...ModuleOption) service.ModuleCreateFunc {
 	return func(mi service.ModuleInfo) (service.Module, error) {
-		mod, err := newYARPCModule(mi, hookup)
+		mod, err := newYARPCModule(mi, hookup, options...)
 		if err != nil {
 			return nil, errors.Wrap(err, "unable to instantiate Thrift module")
 		}
