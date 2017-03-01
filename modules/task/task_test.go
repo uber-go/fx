@@ -36,13 +36,15 @@ import (
 var (
 	_nopBackend   = &NopBackend{}
 	_nopBackendFn = func(host service.Host) (Backend, error) { return _nopBackend, nil }
-	_memBackend   = NewInMemBackend(service.NopHost())
+	_memBackend   *inMemBackend
 	_memBackendFn = func(host service.Host) (Backend, error) { return _memBackend, nil }
 	_errBackendFn = func(host service.Host) (Backend, error) { return nil, errors.New("bknd err") }
-	_mi           = service.ModuleCreateInfo{
-		Host: service.NopHost(),
-	}
 )
+
+func init() {
+	host, _ := service.NewScopedHost(service.NopHost(), "hello")
+	_memBackend = NewInMemBackend(host).(*inMemBackend)
+}
 
 func TestNewModule(t *testing.T) {
 	b := createModule(t, _memBackendFn) // Singleton modules get saved
@@ -52,29 +54,28 @@ func TestNewModule(t *testing.T) {
 }
 
 func TestNewModuleError(t *testing.T) {
-	mod, err := newAsyncModule(_mi, _errBackendFn)
+	mod, err := newAsyncModule(newTestHost(t), _errBackendFn)
 	require.Error(t, err)
 	require.Nil(t, mod)
 }
 
 func TestMemBackendModuleWorkflowWithContext(t *testing.T) {
 	b := createModule(t, _memBackendFn) // we will just get the singleton in mem backend here
-	errChan := b.Start(make(chan struct{}))
+	require.NoError(t, b.Start())
 	fn := func(ctx context.Context) error {
 		fmt.Printf("Hello")
 		return errors.New("hello error")
 	}
 	require.NoError(t, Register(fn))
 	require.NoError(t, Enqueue(fn, context.Background()))
-	require.Error(t, <-errChan)
+	require.Error(t, <-_memBackend.ErrorCh())
 }
 
 func createModule(t *testing.T, b BackendCreateFunc) Backend {
 	createFn := NewModule(b)
 	assert.NotNil(t, createFn)
-	mods, err := createFn(_mi)
-	assert.NotNil(t, mods)
+	mod, err := createFn(newTestHost(t))
+	assert.NotNil(t, mod)
 	assert.NoError(t, err)
-	assert.Equal(t, 1, len(mods))
-	return mods[0].(*AsyncModule).Backend
+	return _globalBackend
 }

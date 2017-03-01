@@ -26,7 +26,6 @@ import (
 
 	"go.uber.org/fx/config"
 	"go.uber.org/fx/dig"
-	"go.uber.org/fx/modules"
 	"go.uber.org/fx/service"
 
 	"github.com/stretchr/testify/assert"
@@ -47,12 +46,11 @@ func (h testHost) Config() config.Provider {
 
 func TestThriftModule_OK(t *testing.T) {
 	dig.Reset()
-
-	chip := ThriftModule(okCreate, modules.WithRoles("rescue"))
-	dale := ThriftModule(okCreate, modules.WithRoles("ranges"))
+	chip := ThriftModule(okCreate)
+	dale := ThriftModule(okCreate)
 	cfg := []byte(`
 modules:
-  rpc:
+  hello:
     inbounds:
      - tchannel:
          port: 0
@@ -60,24 +58,25 @@ modules:
          port: 0
 `)
 
-	mci := service.ModuleCreateInfo{
-		Name: "RPC",
-		Host: testHost{
+	mi := newHost(
+		t,
+		testHost{
 			Host:   service.NopHost(),
 			config: config.NewYAMLProviderFromBytes(cfg),
 		},
-	}
-
-	goofy, err := chip(mci)
+		"hello",
+	)
+	goofy, err := chip(mi)
 	require.NoError(t, err)
-	assert.NotEmpty(t, goofy)
+	assert.NotNil(t, goofy)
+	assert.Equal(t, "hello", goofy.(*YARPCModule).host.Name())
 
-	gopher, err := dale(mch())
+	gopher, err := dale(mih(t, "hello"))
 	require.NoError(t, err)
-	assert.NotEmpty(t, gopher)
+	assert.NotNil(t, gopher)
 
-	testInitRunModule(t, goofy[0], mci)
-	testInitRunModule(t, gopher[0], mci)
+	testInitRunModule(t, goofy)
+	testInitRunModule(t, gopher)
 
 	// Dispatcher must be resolved in the default graph
 	var dispatcher *yarpc.Dispatcher
@@ -85,48 +84,28 @@ modules:
 	assert.Equal(t, 2, len(dispatcher.Inbounds()))
 }
 
-func TestThriftModule_BadOptions(t *testing.T) {
-	modCreate := ThriftModule(okCreate, errorOption)
-	_, err := modCreate(mch())
-	assert.Error(t, err)
-}
-
-func TestThriftModule_Error(t *testing.T) {
+func TestThrfitModule_Error(t *testing.T) {
 	dig.Reset()
 	modCreate := ThriftModule(badCreateService)
-	mods, err := modCreate(service.ModuleCreateInfo{Host: testHost{
-		Host:   service.NopHost(),
-		config: config.NewYAMLProviderFromBytes([]byte(``)),
-	}})
-
+	mod, err := modCreate(mih(t, "hello"))
 	assert.NoError(t, err)
-	ready := make(chan struct{})
-	assert.EqualError(t, <-mods[0].Start(ready), "unable to start dispatcher: can't create service")
+	assert.EqualError(t, mod.Start(), "unable to start dispatcher: can't create service")
 }
 
-func testInitRunModule(t *testing.T, mod service.Module, mci service.ModuleCreateInfo) {
-	readyCh := make(chan struct{}, 1)
+func testInitRunModule(t *testing.T, mod service.Module) {
+	assert.NoError(t, mod.Start())
 	assert.NoError(t, mod.Stop())
-	errs := mod.Start(readyCh)
-	defer func() {
-		assert.NoError(t, mod.Stop())
-	}()
-	assert.True(t, mod.IsRunning())
-	assert.NoError(t, <-errs)
-
-	c := mod.Start(make(chan struct{}))
-	assert.Error(t, <-c)
 }
 
-func mch() service.ModuleCreateInfo {
-	return service.ModuleCreateInfo{
-		Host:  service.NopHost(),
-		Items: make(map[string]interface{}),
-	}
+func mih(t *testing.T, moduleName string) service.Host {
+	return newHost(t, service.NopHost(), moduleName)
 }
 
-func errorOption(_ *service.ModuleCreateInfo) error {
-	return errors.New("bad option")
+func newHost(t *testing.T, host service.Host, moduleName string) service.Host {
+	// need to add name since we are not fully instantiating Host
+	mi, err := service.NewScopedHost(host, moduleName)
+	require.NoError(t, err)
+	return mi
 }
 
 func okCreate(_ service.Host) ([]transport.Procedure, error) {

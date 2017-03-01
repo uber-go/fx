@@ -44,11 +44,10 @@
 // • Pass that method into the module initialization:
 //
 //   func main() {
-//     svc, err := service.WithModules(
-//       rpc.ThriftModule(
-//         rpc.CreateThriftServiceFunc(NewMyServiceHandler),
-//         modules.WithRoles("service"),
-//       ),
+//     svc, err := service.WithModule(
+//       "example",
+//       rpc.ThriftModule(rpc.CreateThriftServiceFunc(NewMyServiceHandler)),
+//       service.WithModuleRole("service"),
 //     ).Build()
 //
 //     if err != nil {

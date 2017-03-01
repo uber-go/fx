@@ -41,13 +41,11 @@
 //
 //   func main() {
 //     // Create the service object
-//     svc, err := service.WithModules(
+//     svc, err := service.WithModule(
 //       // The list of module creators for this service, in this case
 //       // creates a Thrift RPC module called "keyvalue"
-//       rpc.ThriftModule(
-//         rpc.CreateThriftServiceFunc(NewYarpcThriftHandler),
-//         modules.WithName("keyvalue"),
-//       ),
+//       "keyvalue",
+//       rpc.ThriftModule(rpc.CreateThriftServiceFunc(NewYarpcThriftHandler)),
 //     ).Build()
 //
 //     if err != nil {
@@ -76,13 +74,13 @@
 //
 //
 //   func main() {
-//     svc, err := service.WithModules(
+//     svc, err := service.WithModule(
+//       "kafka",
 //       kafka.Module("kakfa_topic1", []string{"worker"}),
-//       rpc.ThriftModule(
-//         rpc.CreateThriftServiceFunc(NewYarpcThriftHandler),
-//         modules.WithName("keyvalue"),
-//         modules.WithRoles("service"),
-//       ),
+//     ).WithModule(
+//       "keyvalue",
+//       rpc.ThriftModule(rpc.CreateThriftServiceFunc(NewYarpcThriftHandler)),
+//       service.WithModuleRole("service"),
 //     ).Build()
 //
 //     if err != nil {

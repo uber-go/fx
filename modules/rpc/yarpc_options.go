@@ -20,54 +20,28 @@
 
 package rpc
 
-import (
-	"go.uber.org/fx/modules"
-	"go.uber.org/fx/service"
-	"go.uber.org/yarpc/api/middleware"
-)
+import "go.uber.org/yarpc/api/middleware"
 
-const (
-	_interceptorKey       = "yarpcUnaryInboundMiddleware"
-	_onewayInterceptorKey = "yarpcOnewayInboundMiddleware"
-)
+// ModuleOption is a function that configures module creation.
+type ModuleOption func(*moduleOptions) error
+
+type moduleOptions struct {
+	unaryInbounds  []middleware.UnaryInbound
+	onewayInbounds []middleware.OnewayInbound
+}
 
 // WithInboundMiddleware adds custom YARPC inboundMiddleware to the module
-func WithInboundMiddleware(i ...middleware.UnaryInbound) modules.Option {
-	return func(mci *service.ModuleCreateInfo) error {
-		inboundMiddleware := inboundMiddlewareFromCreateInfo(*mci)
-		inboundMiddleware = append(inboundMiddleware, i...)
-		mci.Items[_interceptorKey] = inboundMiddleware
-
+func WithInboundMiddleware(i ...middleware.UnaryInbound) ModuleOption {
+	return func(moduleOptions *moduleOptions) error {
+		moduleOptions.unaryInbounds = append(moduleOptions.unaryInbounds, i...)
 		return nil
 	}
 }
 
 // WithOnewayInboundMiddleware adds custom YARPC inboundMiddleware to the module
-func WithOnewayInboundMiddleware(i ...middleware.OnewayInbound) modules.Option {
-	return func(mci *service.ModuleCreateInfo) error {
-		inboundMiddleware := onewayInboundMiddlewareFromCreateInfo(*mci)
-		inboundMiddleware = append(inboundMiddleware, i...)
-		mci.Items[_onewayInterceptorKey] = inboundMiddleware
+func WithOnewayInboundMiddleware(i ...middleware.OnewayInbound) ModuleOption {
+	return func(moduleOptions *moduleOptions) error {
+		moduleOptions.onewayInbounds = append(moduleOptions.onewayInbounds, i...)
 		return nil
 	}
-}
-
-func inboundMiddlewareFromCreateInfo(mci service.ModuleCreateInfo) []middleware.UnaryInbound {
-	items, ok := mci.Items[_interceptorKey]
-	if !ok {
-		return nil
-	}
-
-	// Intentionally panic if programmer adds non-middleware slice to the data
-	return items.([]middleware.UnaryInbound)
-}
-
-func onewayInboundMiddlewareFromCreateInfo(mci service.ModuleCreateInfo) []middleware.OnewayInbound {
-	items, ok := mci.Items[_onewayInterceptorKey]
-	if !ok {
-		return nil
-	}
-
-	// Intentionally panic if programmer adds non-middleware slice to the data
-	return items.([]middleware.OnewayInbound)
 }

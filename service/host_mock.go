@@ -32,7 +32,12 @@ import (
 
 // NopHost is to be used in tests
 func NopHost() Host {
-	return NopHostConfigured(auth.NopClient, zap.NewNop(), opentracing.NoopTracer{})
+	return NopHostWithConfig(nil)
+}
+
+// NopHostWithConfig is to be used in tests and allows setting of config.
+func NopHostWithConfig(configProvider config.Provider) Host {
+	return nopHostConfigured(auth.NopClient, zap.NewNop(), opentracing.NoopTracer{}, configProvider)
 }
 
 // NopHostAuthFailure is nop manager with failure auth client
@@ -45,9 +50,16 @@ func NopHostAuthFailure() Host {
 
 // NopHostConfigured is a nop manager with set logger and tracer for tests
 func NopHostConfigured(client auth.Client, logger *zap.Logger, tracer opentracing.Tracer) Host {
+	return nopHostConfigured(client, logger, tracer, nil)
+}
+
+func nopHostConfigured(client auth.Client, logger *zap.Logger, tracer opentracing.Tracer, configProvider config.Provider) Host {
+	if configProvider == nil {
+		configProvider = config.NewStaticProvider(nil)
+	}
 	return &serviceCore{
 		authClient:     client,
-		configProvider: config.NewStaticProvider(nil),
+		configProvider: configProvider,
 		standardConfig: serviceConfig{
 			Name:        "dummy",
 			Owner:       "root@example.com",

@@ -4,9 +4,11 @@ The async task module presents a distributed task execution framework
 for services to execute a function asynchronously and durably.
 
 ## Backend
+
 Backends are messaging transports used by the framework to guarantee durability.
 
 ## Usage
+
 To use the module, initialize it at service startup and register any functions
 that will be invoked asynchronously. Call task.Enqueue on a function and the
 execution framework will send it to the backend implementation. Workers are
@@ -25,7 +27,8 @@ import (
 )
 
 func main() {
-  svc, err := service.WithModules(
+  svc, err := service.WithModule(
+    "example",
     task.NewModule(newBackend),
   ).Build()
   if err := task.Register(updateCache); err != nil {
@@ -51,14 +54,16 @@ func updateCache(ctx context.Context, input string, results string) error {
 }
 ```
 
-The async task module is a singleton and a service can initialize only one at this time.
-Users are free to define their own backends and encodings for message passing.
+The async task module is a singleton and a service can initialize
+only one at this time. Users are free to define their own backends
+and encodings for message passing.
 
 ## Async function requirements
 
 For the function to be invoked asynchronously, the following criteria must be met:
+
 * The first input argument should be of type [context.Context](https://golang.org/pkg/context/#Context)
-* The function should return only one value, which should be an error. The caller does not receive a
-return value from the called function.
-* The function should not take variadic arguments as input (support for this is coming soon).
+* The function should return only one value, which should be an error.
+* The caller does not receive a return value from the called function.
+* The function should not take variadic arguments as input (support coming soon).
 * If functions take in an interface, the implementation must be registered on startup.

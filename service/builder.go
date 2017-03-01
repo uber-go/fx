@@ -22,22 +22,27 @@ package service
 
 import "github.com/pkg/errors"
 
-// WithModules is a helper to create a service without any options
-func WithModules(modules ...ModuleCreateFunc) *Builder {
-	b := &Builder{}
-	return b.WithModules(modules...)
+type moduleCreateInfo struct {
+	name             string
+	moduleCreateFunc ModuleCreateFunc
+	options          []ModuleOption
 }
 
 // A Builder is a helper to create a service
 type Builder struct {
 	options []Option
-	modules []ModuleCreateFunc
+	modules []*moduleCreateInfo
 }
 
-// WithModules adds the given modules to the service
-func (b *Builder) WithModules(modules ...ModuleCreateFunc) *Builder {
-	b.modules = append(b.modules, modules...)
+// WithModule is a helper to create a service without any options
+func WithModule(name string, module ModuleCreateFunc, options ...ModuleOption) *Builder {
+	b := &Builder{}
+	return b.WithModule(name, module, options...)
+}
 
+// WithModule adds the given module to the service with the given name
+func (b *Builder) WithModule(name string, module ModuleCreateFunc, options ...ModuleOption) *Builder {
+	b.modules = append(b.modules, &moduleCreateInfo{name, module, options})
 	return b
 }
 
@@ -49,7 +54,7 @@ func (b *Builder) WithOptions(options ...Option) *Builder {
 
 // Build returns the service, or any errors encountered during build phase.
 func (b *Builder) Build() (Manager, error) {
-	svc, err := newManager(b.modules, b.options...)
+	svc, err := newManager(b)
 	if err != nil {
 		return nil, errors.Wrap(err, "service instantiation failed")
 	}

@@ -48,7 +48,8 @@
 //   )
 //
 //   func main() {
-//     svc, err := service.WithModules(
+//     svc, err := service.WithModule(
+//       "example",
 //       task.NewModule(newBackend),
 //     ).Build()
 //     if err := task.Register(updateCache); err != nil {
@@ -73,19 +74,24 @@
 //     return nil
 //   }
 //
-// The async task module is a singleton and a service can initialize only one at this time.
-// Users are free to define their own backends and encodings for message passing.
+// The async task module is a singleton and a service can initialize
+// only one at this time. Users are free to define their own backends
+// and encodings for message passing.
 //
 //
 // Async function requirements
 //
 // For the function to be invoked asynchronously, the following criteria must be met:
-// * The first input argument should be of type
-// context.Context (https://golang.org/pkg/context/#Context)* The function should return only one value, which should be an error. The caller does not receive a
-// return value from the called function.
-// * The function should not take variadic arguments as input (support for this is coming soon).
-// * If functions take in an interface, the implementation must be registered on startup.
 //
+// • The first input argument should be of type context.Context (https://golang.org/pkg/context/#Context)
+//
+// • The function should return only one value, which should be an error.
+//
+// • The caller does not receive a return value from the called function.
+//
+// • The function should not take variadic arguments as input (support coming soon).
+//
+// • If functions take in an interface, the implementation must be registered on startup.
 //
 //
 package task

@@ -43,11 +43,11 @@ const (
 // Implements Manager interface
 type manager struct {
 	serviceCore
-	locked   bool
-	observer Observer
-	modules  []Module
-	roles    map[string]bool
-	stateMu  sync.Mutex
+	locked         bool
+	observer       Observer
+	moduleWrappers []*moduleWrapper
+	roles          map[string]bool
+	stateMu        sync.Mutex
 
 	// Shutdown fields.
 	shutdownMu     sync.Mutex
@@ -61,11 +61,8 @@ type manager struct {
 var _ Host = &manager{}
 var _ Manager = &manager{}
 
-func (s *manager) addModule(module Module) error {
-	if s.locked {
-		return fmt.Errorf("can't add module: service already started")
-	}
-	s.modules = append(s.modules, module)
+func (s *manager) addModuleWrapper(moduleWrapper *moduleWrapper) error {
+	s.moduleWrappers = append(s.moduleWrappers, moduleWrapper)
 	return nil
 }
 
@@ -80,12 +77,6 @@ func (s *manager) supportsRole(roles ...string) bool {
 		}
 	}
 	return false
-}
-
-func (s *manager) Modules() []Module {
-	mods := make([]Module, len(s.modules))
-	copy(mods, s.modules)
-	return mods
 }
 
 func (s *manager) IsRunning() bool {
@@ -148,11 +139,8 @@ func (s *manager) shutdown(err error, reason string, exitCode *int) (bool, error
 	// Log the module shutdown errors
 	errs := s.stopModules()
 	if len(errs) > 0 {
-		for k, v := range errs {
-			zap.L().Error("Failure to shut down module",
-				zap.String("name", k.Name()),
-				zap.Error(v),
-			)
+		for _, err := range errs {
+			zap.L().Error("Failure to shut down module", zap.Error(err))
 		}
 	}
 
@@ -189,32 +177,24 @@ func (s *manager) shutdown(err error, reason string, exitCode *int) (bool, error
 	return true, err
 }
 
-// addModules adds the given modules to a service manager
-func (s *manager) addModules(modules ...ModuleCreateFunc) error {
-	for _, mcf := range modules {
-		mi := ModuleCreateInfo{
-			Host:  s,
-			Items: make(map[string]interface{}),
-		}
-
-		mods, err := mcf(mi)
-		if err != nil {
-			return err
-		}
-
-		if !s.supportsRole(mi.Roles...) {
-			zap.L().Info(
-				"module will not be added due to selected roles",
-				zap.Any("roles", mi.Roles),
-			)
-		}
-
-		for _, mod := range mods {
-			err = s.addModule(mod)
-		}
+func (s *manager) addModule(name string, module ModuleCreateFunc, options ...ModuleOption) error {
+	if s.locked {
+		return fmt.Errorf("can't add module: service already started")
 	}
-
-	return nil
+	moduleWrapper, err := newModuleWrapper(s, name, module, options...)
+	if err != nil {
+		return err
+	}
+	if moduleWrapper == nil {
+		return nil
+	}
+	if !s.supportsRole(moduleWrapper.scopedHost.Roles()...) {
+		zap.L().Info(
+			"module will not be added due to selected roles",
+			zap.Any("roles", moduleWrapper.scopedHost.Roles()),
+		)
+	}
+	return s.addModuleWrapper(moduleWrapper)
 }
 
 // StartAsync service is used as a non-blocking the call on service start. StartAsync will
@@ -332,29 +312,33 @@ func (s *manager) Stop(reason string, exitCode int) error {
 	return err
 }
 
-func (s *manager) startModules() map[Module]error {
-	results := map[Module]error{}
+func (s *manager) startModules() []error {
+	var results []error
+	var lock sync.Mutex
 	wg := sync.WaitGroup{}
 
 	// make sure we wait for all the start
 	// calls to return
-	wg.Add(len(s.modules))
-	for _, mod := range s.modules {
-		go func(m Module) {
+	wg.Add(len(s.moduleWrappers))
+	for _, mod := range s.moduleWrappers {
+		go func(m *moduleWrapper) {
 			if !m.IsRunning() {
-				readyCh := make(chan struct{}, 1)
-				startResult := m.Start(readyCh)
-
+				errC := make(chan error, 1)
+				go func() { errC <- m.Start() }()
 				select {
-				case <-readyCh:
-					zap.L().Info("Module started up cleanly", zap.String("module", m.Name()))
+				case err := <-errC:
+					if err != nil {
+						zap.L().Error("Error received while starting module", zap.String("module", m.Name()), zap.Error(err))
+						lock.Lock()
+						results = append(results, err)
+						lock.Unlock()
+					} else {
+						zap.L().Info("Module started up cleanly", zap.String("module", m.Name()))
+					}
 				case <-time.After(defaultStartupWait):
-					results[m] = fmt.Errorf("module didn't start after %v", defaultStartupWait)
-				}
-
-				if startError := <-startResult; startError != nil {
-					zap.L().Error("Error received while starting module", zap.String("module", m.Name()), zap.Error(startError))
-					results[m] = startError
+					lock.Lock()
+					results = append(results, fmt.Errorf("module didn't start after %v", defaultStartupWait))
+					lock.Unlock()
 				}
 			}
 			wg.Done()
@@ -366,17 +350,20 @@ func (s *manager) startModules() map[Module]error {
 	return results
 }
 
-func (s *manager) stopModules() map[Module]error {
-	results := map[Module]error{}
+func (s *manager) stopModules() []error {
+	var results []error
+	var lock sync.Mutex
 	wg := sync.WaitGroup{}
-	wg.Add(len(s.modules))
-	for _, mod := range s.modules {
-		go func(m Module) {
+	wg.Add(len(s.moduleWrappers))
+	for _, mod := range s.moduleWrappers {
+		go func(m *moduleWrapper) {
 			if !m.IsRunning() {
 				// TODO: have a timeout here so a bad shutdown
 				// doesn't block everyone
 				if err := m.Stop(); err != nil {
-					results[m] = err
+					lock.Lock()
+					results = append(results, err)
+					lock.Unlock()
 				}
 			}
 			wg.Done()

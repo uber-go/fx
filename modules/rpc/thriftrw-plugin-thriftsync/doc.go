@@ -18,11 +18,14 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-// Package main is the Overview.
+// Package main is the thriftsync.
 //
-// [thriftsync] is a thriftrw plugin to identify and generate handlers for the given input
-//  *.thrift file. With the use of the thriftsync plugin, a user building a service should be able
-//  to autogenerate the code and write service-specific logic without worrying about the underlying platform.
+// Overview
+//
+// [thriftsync] is a thriftrw plugin to identify and generate handlers for the
+// given input *.thrift file. With the use of the thriftsync plugin, a user
+// building a service should be able to autogenerate the code and write
+// service-specific logic without worrying about the underlying platform.
 //
 //
 // Usage
@@ -30,13 +33,16 @@
 // Run thriftsync to sync your handler code with the methods in the Thrift file.
 //
 // • Install thriftsync from vendor
+//
 // go install ./vendor/go.uber.org/fx/modules/rpc/thriftrw-plugin-thriftsync
 //
 // • Run thriftrw code genration with thriftsync
+//
 // thriftrw --plugin="thriftsync" <thrift filepath>
 //
-// Update your makefile with the following lines, and run make thriftsync3. Update makefile
+// Update your makefile with the following lines, and run make thriftsync
 //
+// • Update makefile
 //
 //   deps:
 //     @echo "Installing thriftrw..."
@@ -50,9 +56,11 @@
 //
 // Example
 //
-// The following examples show how thriftsync syncs handler code with the updated Thrift file:
+// The following examples show how thriftsync syncs handler code with
+// the updated Thrift file:
 //
-// **New handler generation**
+//
+// New handler generation
 //
 //   testservice.thrift
 //   service TestService {
@@ -80,12 +88,15 @@
 //     return testserviceserver.New(handler), nil
 //   }
 //
-//   func (h *YARPCHandler) TestFunction(ctx context.Context, param *string) (string, error) {
+//   func (h *YARPCHandler) TestFunction(
+//     ctx context.Context,
+//     param *string,
+//   ) (string, error) {
 //     // TODO: write your code here
 //     panic("To be implemented")
 //   }
 //
-// **New function added to Thrift file**
+// New function added to Thrift file
 //
 //   service TestService {
 //     string testFunction(1: string param)
@@ -114,15 +125,21 @@
 //     return testserviceserver.New(handler), nil
 //   }
 //
-//   func (h *YARPCHandler) testFunction(ctx context.Context, param string) (string, error) {
+//   func (h *YARPCHandler) testFunction(
+//     ctx context.Context,
+//     param string,
+//   ) (string, error) {
 //     panic("To be implemented")
 //   }
 //
-//   func (h *YARPCHandler) newtestFunction(ctx context.Context, param string) (string, error) {
+//   func (h *YARPCHandler) newtestFunction(
+//     ctx context.Context,
+//     param string,
+//   ) (string, error) {
 //     panic("To be implemented")
 //   }
 //
-// **New parameter added to a function**
+// New parameter added to a function
 //
 //   service TestService {
 //     string testFunction(1: string param)
@@ -151,15 +168,23 @@
 //     return testserviceserver.New(handler), nil
 //   }
 //
-//   func (h *YARPCHandler) testFunction(ctx context.Context, param string) (string, error) {
+//   func (h *YARPCHandler) testFunction(
+//     ctx context.Context,
+//     param string,
+//   ) (string, error) {
 //     panic("To be implemented")
 //   }
 //
-//   func (h *YARPCHandler) newtestFunction(ctx context.Context, param string, parameter2 string) (string, error) {
+//   func (h *YARPCHandler) newtestFunction(
+//     ctx context.Context,
+//     param string,
+//     parameter2 string,
+//   ) (string, error) {
 //     panic("To be implemented")
 //   }
 //
-// **Updated parameter names and return types**
+//
+// Updated parameter names and return types
 //
 //   service TestService {
 //     i64 testFunction(1: string newparameterName)
@@ -188,11 +213,18 @@
 //     return testserviceserver.New(handler), nil
 //   }
 //
-//   func (h *YARPCHandler) testFunction(ctx context.Context, newparameterName string) (int64, error) {
+//   func (h *YARPCHandler) testFunction(
+//     ctx context.Context,
+//     newparameterName string,
+//   ) (int64, error) {
 //     panic("To be implemented")
 //   }
 //
-//   func (h *YARPCHandler) newtestFunction(ctx context.Context, param string, parameter2 string) (string, error) {
+//   func (h *YARPCHandler) newtestFunction(
+//     ctx context.Context,
+//     param string,
+//     parameter2 string,
+//   ) (string, error) {
 //     panic("To be implemented")
 //   }
 //
