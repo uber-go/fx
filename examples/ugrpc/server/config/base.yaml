@@ -1,0 +1,6 @@
+name: grpc
+description: grpc usage example
+owner: owner@service.com
+modules:
+  keyvalue:
+    port: 8080
