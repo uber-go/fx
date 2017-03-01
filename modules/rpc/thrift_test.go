@@ -58,7 +58,7 @@ modules:
          port: 0
 `)
 
-	mi := newModuleInfo(
+	mi := newHost(
 		t,
 		testHost{
 			Host:   service.NopHost(),
@@ -69,7 +69,7 @@ modules:
 	goofy, err := chip(mi)
 	require.NoError(t, err)
 	assert.NotNil(t, goofy)
-	assert.Equal(t, "hello", goofy.(*YARPCModule).moduleInfo.Name())
+	assert.Equal(t, "hello", goofy.(*YARPCModule).host.Name())
 
 	gopher, err := dale(mih(t, "hello"))
 	require.NoError(t, err)
@@ -97,13 +97,13 @@ func testInitRunModule(t *testing.T, mod service.Module) {
 	assert.NoError(t, mod.Stop())
 }
 
-func mih(t *testing.T, moduleName string) service.ModuleInfo {
-	return newModuleInfo(t, service.NopHost(), moduleName)
+func mih(t *testing.T, moduleName string) service.Host {
+	return newHost(t, service.NopHost(), moduleName)
 }
 
-func newModuleInfo(t *testing.T, host service.Host, moduleName string) service.ModuleInfo {
-	// need to add name since we are not fully instantiating ModuleInfo
-	mi, err := service.NewModuleInfo(host, moduleName)
+func newHost(t *testing.T, host service.Host, moduleName string) service.Host {
+	// need to add name since we are not fully instantiating Host
+	mi, err := service.NewHost(host, moduleName)
 	require.NoError(t, err)
 	return mi
 }

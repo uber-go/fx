@@ -256,7 +256,7 @@ func TestAddModule_NotLocked(t *testing.T) {
 	sh := &manager{}
 	require.NoError(t, sh.addModule("hello", DefaultStubModuleCreateFunc))
 	require.Len(t, sh.moduleWrappers, 1)
-	require.Equal(t, sh, sh.moduleWrappers[0].module.(*StubModule).Host.(*moduleInfo).Host)
+	require.Equal(t, sh, sh.moduleWrappers[0].module.(*StubModule).Host.(*scopedHost).Host)
 }
 
 func TestStartStopRegressionDeadlock(t *testing.T) {

@@ -36,8 +36,8 @@ var DefaultStubModuleCreateFunc = NewStubModuleCreateFunc(StubModule{})
 // NewStubModuleCreateFunc returns a new ModuleCreateFunc for a new StubModule.
 // Host will be overwritten.
 func NewStubModuleCreateFunc(stubModule StubModule) ModuleCreateFunc {
-	return func(moduleInfo ModuleInfo) (Module, error) {
-		stubModule.Host = moduleInfo
+	return func(host Host) (Module, error) {
+		stubModule.Host = host
 		return &stubModule, nil
 	}
 }

@@ -83,7 +83,7 @@
 //   }
 //
 //   // NewYARPCThriftHandler for your service
-//   func NewYARPCThriftHandler(service.ModuleInfo) ([]transport.Procedure, error) {
+//   func NewYARPCThriftHandler(service.Host) ([]transport.Procedure, error) {
 //     handler := &YARPCHandler{}
 //     return testserviceserver.New(handler), nil
 //   }
@@ -120,7 +120,7 @@
 //   }
 //
 //   // NewYARPCThriftHandler for your service
-//   func NewYARPCThriftHandler(service.ModuleInfo) ([]transport.Procedure, error) {
+//   func NewYARPCThriftHandler(service.Host) ([]transport.Procedure, error) {
 //     handler := &YARPCHandler{}
 //     return testserviceserver.New(handler), nil
 //   }
@@ -163,7 +163,7 @@
 //   }
 //
 //   // NewYARPCThriftHandler for your service
-//   func NewYARPCThriftHandler(service.ModuleInfo) ([]transport.Procedure, error) {
+//   func NewYARPCThriftHandler(service.Host) ([]transport.Procedure, error) {
 //     handler := &YARPCHandler{}
 //     return testserviceserver.New(handler), nil
 //   }
@@ -208,7 +208,7 @@
 //   }
 //
 //   // NewYARPCThriftHandler for your service
-//   func NewYARPCThriftHandler(service.ModuleInfo) ([]transport.Procedure, error) {
+//   func NewYARPCThriftHandler(service.Host) ([]transport.Procedure, error) {
 //     handler := &YARPCHandler{}
 //     return testserviceserver.New(handler), nil
 //   }

@@ -40,14 +40,14 @@ package <$pkgname>
 <$service   := import "go.uber.org/fx/service">
 
 type YARPCHandler struct{
-  moduleInfo <$service>.ModuleInfo
+  host <$service>.Host
   // TODO: modify the <.Service.Name> handler with your suitable structure
 }
 
 // NewYARPCThriftHandler for your service
-func NewYARPCThriftHandler(moduleInfo <$service>.ModuleInfo) ([]<$transport>.Procedure, error) {
+func NewYARPCThriftHandler(host <$service>.Host) ([]<$transport>.Procedure, error) {
   handler := &YARPCHandler{
-    moduleInfo: moduleInfo,
+    host: host,
   }
   <$yarpcserver := import $yarpcServerPath>
   return <$yarpcserver>.New(handler), nil

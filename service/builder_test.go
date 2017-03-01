@@ -51,10 +51,10 @@ func TestWithModules_SkipsModulesBadInit(t *testing.T) {
 	assert.Error(t, err, "Expected service name to be provided")
 }
 
-func nopModule(_ ModuleInfo) (Module, error) {
+func nopModule(_ Host) (Module, error) {
 	return nil, nil
 }
 
-func errModule(_ ModuleInfo) (Module, error) {
+func errModule(_ Host) (Module, error) {
 	return nil, errors.New("intentional module creation failure")
 }

@@ -47,7 +47,7 @@ import (
 // the lifecycle of all of the in/out bound traffic, so we will
 // register it in a dig.Graph provided with options/default graph.
 type YARPCModule struct {
-	moduleInfo  service.ModuleInfo
+	host        service.Host
 	statsClient *statsClient
 	config      yarpcConfig
 	log         *zap.Logger
@@ -256,7 +256,7 @@ func (c *dispatcherController) mergeConfigs(name string) (conf yarpc.Config, err
 // Creates a new YARPC module and adds a common middleware to the global config collection.
 // The first created module defines the service name.
 func newYARPCModule(
-	mi service.ModuleInfo,
+	host service.Host,
 	reg CreateThriftServiceFunc,
 	options ...ModuleOption,
 ) (*YARPCModule, error) {
@@ -267,16 +267,16 @@ func newYARPCModule(
 		}
 	}
 	module := &YARPCModule{
-		moduleInfo:  mi,
-		statsClient: newStatsClient(mi.Metrics()),
-		log:         ulog.Logger(context.Background()).With(zap.String("module", mi.Name())),
+		host:        host,
+		statsClient: newStatsClient(host.Metrics()),
+		log:         ulog.Logger(context.Background()).With(zap.String("module", host.Name())),
 	}
-	if err := mi.Config().Scope("modules").Get(mi.Name()).PopulateStruct(&module.config); err != nil {
+	if err := host.Config().Scope("modules").Get(host.Name()).PopulateStruct(&module.config); err != nil {
 		return nil, errs.Wrap(err, "can't read inbounds")
 	}
 
 	// iterate over inbounds
-	transportsIn, err := prepareInbounds(module.config.Inbounds, mi.Name())
+	transportsIn, err := prepareInbounds(module.config.Inbounds, host.Name())
 	if err != nil {
 		return nil, errs.Wrap(err, "can't process inbounds")
 	}
@@ -303,7 +303,7 @@ func newYARPCModule(
 
 	module.controller.addConfig(module.config)
 	module.controller.appendHandler(func(dispatcher *yarpc.Dispatcher) error {
-		t, err := reg(mi)
+		t, err := reg(host)
 		if err != nil {
 			return err
 		}
@@ -345,7 +345,7 @@ func prepareInbounds(inbounds []Inbound, serviceName string) (transportsIn []tra
 // Start begins serving requests with YARPC.
 func (m *YARPCModule) Start() error {
 	// TODO(alsam) allow services to advertise with a name separate from the host name.
-	if err := m.controller.Start(m.moduleInfo, m.statsClient); err != nil {
+	if err := m.controller.Start(m.host, m.statsClient); err != nil {
 		return errs.Wrap(err, "unable to start dispatcher")
 	}
 	m.log.Info("Module started")

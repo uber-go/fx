@@ -55,10 +55,10 @@ func TestNewOwner_WithTracingOK(t *testing.T) {
 	})
 }
 
-func successModuleCreate(_ ModuleInfo) (Module, error) {
+func successModuleCreate(_ Host) (Module, error) {
 	return nil, nil
 }
 
-func errorModuleCreate(_ ModuleInfo) (Module, error) {
+func errorModuleCreate(_ Host) (Module, error) {
 	return nil, errors.New("can't create module")
 }

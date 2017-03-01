@@ -188,10 +188,10 @@ func (s *manager) addModule(name string, module ModuleCreateFunc, options ...Mod
 	if moduleWrapper == nil {
 		return nil
 	}
-	if !s.supportsRole(moduleWrapper.moduleInfo.Roles()...) {
+	if !s.supportsRole(moduleWrapper.scopedHost.Roles()...) {
 		zap.L().Info(
 			"module will not be added due to selected roles",
-			zap.Any("roles", moduleWrapper.moduleInfo.Roles()),
+			zap.Any("roles", moduleWrapper.scopedHost.Roles()),
 		)
 	}
 	return s.addModuleWrapper(moduleWrapper)

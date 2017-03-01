@@ -37,17 +37,6 @@ type Module interface {
 	Stop() error
 }
 
-// ModuleInfo is the information passed to a Module on creation.
-// This can be stored inside the module for use.
-type ModuleInfo interface {
-	Host
-}
-
-// NewModuleInfo returns a new ModuleInfo. This should generally be used for testing.
-func NewModuleInfo(host Host, name string, options ...ModuleOption) (ModuleInfo, error) {
-	return newModuleInfo(host, name, options...)
-}
-
 // ModuleOption is a function that configures module creation.
 type ModuleOption func(*moduleOptions) error
 
@@ -72,7 +61,12 @@ func WithModuleRole(role string) ModuleOption {
 }
 
 // ModuleCreateFunc handles instantiating modules from creation configuration.
-type ModuleCreateFunc func(ModuleInfo) (Module, error)
+type ModuleCreateFunc func(Host) (Module, error)
+
+// NewScopedHost returns a new Host scoped to a module. This should generally be used for testing.
+func NewScopedHost(host Host, name string, options ...ModuleOption) (Host, error) {
+	return newScopedHost(host, name, options...)
+}
 
 type moduleOptions struct {
 	roles []string
@@ -80,7 +74,7 @@ type moduleOptions struct {
 
 type moduleWrapper struct {
 	module     Module
-	moduleInfo *moduleInfo
+	scopedHost *scopedHost
 	isRunning  bool
 	lock       sync.RWMutex
 }
@@ -94,22 +88,22 @@ func newModuleWrapper(
 	if moduleCreateFunc == nil {
 		return nil, nil
 	}
-	moduleInfo, err := newModuleInfo(host, name, options...)
+	scopedHost, err := newScopedHost(host, name, options...)
 	if err != nil {
 		return nil, err
 	}
-	module, err := moduleCreateFunc(moduleInfo)
+	module, err := moduleCreateFunc(scopedHost)
 	if err != nil {
 		return nil, err
 	}
 	if module == nil {
 		return nil, nil
 	}
-	return &moduleWrapper{module: module, moduleInfo: moduleInfo}, nil
+	return &moduleWrapper{module: module, scopedHost: scopedHost}, nil
 }
 
 func (m *moduleWrapper) Name() string {
-	return m.moduleInfo.name
+	return m.scopedHost.name
 }
 
 func (m *moduleWrapper) Start() error {
@@ -143,7 +137,7 @@ func (m *moduleWrapper) IsRunning() bool {
 
 // TODO(pedge): we probably want to use service core to cache this stuff
 // under the hood, as oppoed to making all these calls for scoping every time
-type moduleInfo struct {
+type scopedHost struct {
 	Host
 	name  string
 	roles []string
@@ -151,14 +145,14 @@ type moduleInfo struct {
 	metrics tally.Scope
 }
 
-func newModuleInfo(host Host, name string, options ...ModuleOption) (*moduleInfo, error) {
+func newScopedHost(host Host, name string, options ...ModuleOption) (*scopedHost, error) {
 	moduleOptions := &moduleOptions{}
 	for _, option := range options {
 		if err := option(moduleOptions); err != nil {
 			return nil, err
 		}
 	}
-	return &moduleInfo{
+	return &scopedHost{
 		host,
 		name,
 		moduleOptions.roles,
@@ -168,15 +162,15 @@ func newModuleInfo(host Host, name string, options ...ModuleOption) (*moduleInfo
 	}, nil
 }
 
-func (mi *moduleInfo) Name() string {
-	return mi.name
+func (sh *scopedHost) Name() string {
+	return sh.name
 }
 
 // TODO(pedge): what about the Host's roles?
-func (mi *moduleInfo) Roles() []string {
-	return mi.roles
+func (sh *scopedHost) Roles() []string {
+	return sh.roles
 }
 
-func (mi *moduleInfo) Metrics() tally.Scope {
-	return mi.metrics
+func (sh *scopedHost) Metrics() tally.Scope {
+	return sh.metrics
 }

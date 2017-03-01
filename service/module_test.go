@@ -27,12 +27,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-type keyValue struct {
-	key   string
-	value interface{}
-}
-
-func TestNewModuleInfo(t *testing.T) {
+func TestNewScopedHost(t *testing.T) {
 	for _, test := range []struct {
 		description   string
 		name          string
@@ -40,11 +35,11 @@ func TestNewModuleInfo(t *testing.T) {
 		expectedRoles []string
 	}{
 		{
-			description: "TestNewModuleInfoNoOptions",
+			description: "TestNewScopedHostNoOptions",
 			name:        "hello",
 		},
 		{
-			description: "TestNewModuleInfoWithRole",
+			description: "TestNewScopedHostWithRole",
 			name:        "hello",
 			roles: []string{
 				"role1",
@@ -54,7 +49,7 @@ func TestNewModuleInfo(t *testing.T) {
 			},
 		},
 		{
-			description: "TestNewModuleInfoWithRoles",
+			description: "TestNewScopedHostWithRoles",
 			name:        "hello",
 			roles: []string{
 				"role1",
@@ -66,7 +61,7 @@ func TestNewModuleInfo(t *testing.T) {
 			},
 		},
 		{
-			description: "TestNewModuleInfoWithDuplicateRoles",
+			description: "TestNewScopedHostWithDuplicateRoles",
 			name:        "hello",
 			roles: []string{
 				"role1",
@@ -87,10 +82,10 @@ func TestNewModuleInfo(t *testing.T) {
 			for _, role := range test.roles {
 				moduleOptions = append(moduleOptions, WithModuleRole(role))
 			}
-			moduleInfo, err := NewModuleInfo(NopHost(), test.name, moduleOptions...)
+			scopedHost, err := NewScopedHost(NopHost(), test.name, moduleOptions...)
 			require.NoError(t, err)
-			assert.Equal(t, test.name, moduleInfo.Name())
-			assert.Equal(t, test.expectedRoles, moduleInfo.Roles())
+			assert.Equal(t, test.name, scopedHost.Name())
+			assert.Equal(t, test.expectedRoles, scopedHost.Roles())
 		})
 	}
 }
@@ -99,8 +94,8 @@ func TestModuleWrapper(t *testing.T) {
 	moduleWrapper, err := newModuleWrapper(
 		NopHost(),
 		"hello",
-		func(moduleInfo ModuleInfo) (Module, error) {
-			return NewStubModule(moduleInfo), nil
+		func(host Host) (Module, error) {
+			return NewStubModule(host), nil
 		},
 	)
 	require.NoError(t, err)
@@ -120,7 +115,7 @@ func TestModuleWrapper(t *testing.T) {
 	moduleWrapper, err = newModuleWrapper(
 		NopHost(),
 		"hello",
-		func(moduleInfo ModuleInfo) (Module, error) {
+		func(host Host) (Module, error) {
 			return nil, nil
 		},
 	)
