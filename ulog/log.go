@@ -56,7 +56,6 @@ func (c Configuration) Build(opts ...zap.Option) (*zap.Logger, error) {
 func DefaultConfiguration() Configuration {
 	cfg := zap.NewProductionConfig()
 	cfg.OutputPaths = []string{"stdout"}
-	cfg.Encoding = "json"
 
 	return Configuration{
 		Config: cfg,
