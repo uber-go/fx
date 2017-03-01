@@ -117,6 +117,23 @@ logging:
 	zap.L().Info("Testing sentry call")
 }
 
+func TestLoggingSerialization(t *testing.T) {
+	data := []byte(`
+name: name
+owner: owner
+logging:
+  sentry:
+    dsn: http://user:secret@your.sentry.dsn/project
+`)
+
+	c := serviceCore{metricsCore: metricsCore{metrics: tally.NoopScope}}
+	c.configProvider = config.NewYAMLProviderFromBytes(data)
+
+	require.NoError(t, c.setupLogging())
+	require.NotNil(t, c.logConfig.Sentry)
+	require.Equal(t, "http://user:secret@your.sentry.dsn/project", c.logConfig.Sentry.DSN)
+}
+
 func TestBadOption_Panics(t *testing.T) {
 	opt := func(_ *manager) error {
 		return errors.New("nope")

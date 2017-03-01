@@ -37,13 +37,28 @@ import (
 func (svc *serviceCore) setupLogging() error {
 	cfg := svc.configProvider.Get("logging")
 	if cfg.HasValue() {
-		// populate struct if config was provided
-		zapCfg := zap.Config{Level: zap.NewAtomicLevel()}
+		// Uhhh... this process is not the most elegant.
+		// Becuase log.Configuration embeds zap, the PopulateStruct
+		// does not work properly as it's unable to serialize fields directly
+		// into the embedded struct, so inner struct has to be treated as a
+		// separate object
+		//
+		// first, use the default zap configuration
+		zapCfg := ulog.DefaultConfiguration().Config
+
+		// override the embedded zap.Config stuct from config
 		if err := cfg.PopulateStruct(&zapCfg); err != nil {
 			return errors.Wrap(err, "unable to parse logging config")
 		}
+
+		// use the overriden zap config
 		svc.logConfig = ulog.Configuration{
 			Config: zapCfg,
+		}
+
+		// override any remaining things fom config, i.e. Sentry
+		if err := cfg.PopulateStruct(&svc.logConfig); err != nil {
+			return errors.Wrap(err, "unable to parse logging config")
 		}
 	} else {
 		// if no config - default to the regular one
