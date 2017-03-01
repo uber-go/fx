@@ -61,7 +61,7 @@ var _ service.Module = &Module{}
 
 // A Module is a module to handle HTTP requests
 type Module struct {
-	service.ModuleInfo
+	service.Host
 	config   Config
 	log      *zap.Logger
 	srv      *http.Server
@@ -85,13 +85,13 @@ type GetHandlersFunc func(service service.Host) []RouteHandler
 
 // New returns a new HTTP module
 func New(hookup GetHandlersFunc, options ...ModuleOption) service.ModuleCreateFunc {
-	return func(mi service.ModuleInfo) (service.Module, error) {
+	return func(mi service.Host) (service.Module, error) {
 		return newModule(mi, hookup, options...)
 	}
 }
 
 func newModule(
-	mi service.ModuleInfo,
+	mi service.Host,
 	getHandlers GetHandlersFunc,
 	options ...ModuleOption,
 ) (*Module, error) {
@@ -111,11 +111,11 @@ func newModule(
 		log.Error("Error loading http module configuration", zap.Error(err))
 	}
 	module := &Module{
-		ModuleInfo: mi,
-		handlers:   addHealth(getHandlers(mi)),
-		mcb:        defaultInboundMiddlewareChainBuilder(log, mi.AuthClient(), newStatsClient(mi.Metrics())),
-		config:     cfg,
-		log:        log,
+		Host:     mi,
+		handlers: addHealth(getHandlers(mi)),
+		mcb:      defaultInboundMiddlewareChainBuilder(log, mi.AuthClient(), newStatsClient(mi.Metrics())),
+		config:   cfg,
+		log:      log,
 	}
 	module.mcb = module.mcb.AddMiddleware(moduleOptions.inboundMiddleware...)
 	return module, nil
@@ -125,7 +125,7 @@ func newModule(
 func (m *Module) Start() error {
 	mux := http.NewServeMux()
 	// Do something unrelated to annotations
-	router := NewRouter(m.ModuleInfo)
+	router := NewRouter(m.Host)
 
 	mux.Handle("/", router)
 

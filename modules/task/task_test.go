@@ -35,15 +35,15 @@ import (
 
 var (
 	_nopBackend   = &NopBackend{}
-	_nopBackendFn = func(moduleInfo service.ModuleInfo) (Backend, error) { return _nopBackend, nil }
+	_nopBackendFn = func(host service.Host) (Backend, error) { return _nopBackend, nil }
 	_memBackend   *inMemBackend
-	_memBackendFn = func(moduleInfo service.ModuleInfo) (Backend, error) { return _memBackend, nil }
-	_errBackendFn = func(moduleInfo service.ModuleInfo) (Backend, error) { return nil, errors.New("bknd err") }
+	_memBackendFn = func(host service.Host) (Backend, error) { return _memBackend, nil }
+	_errBackendFn = func(host service.Host) (Backend, error) { return nil, errors.New("bknd err") }
 )
 
 func init() {
-	moduleInfo, _ := service.NewModuleInfo(service.NopHost(), "hello")
-	_memBackend = NewInMemBackend(moduleInfo).(*inMemBackend)
+	host, _ := service.NewScopedHost(service.NopHost(), "hello")
+	_memBackend = NewInMemBackend(host).(*inMemBackend)
 }
 
 func TestNewModule(t *testing.T) {
@@ -54,7 +54,7 @@ func TestNewModule(t *testing.T) {
 }
 
 func TestNewModuleError(t *testing.T) {
-	mod, err := newAsyncModule(newTestModuleInfo(t), _errBackendFn)
+	mod, err := newAsyncModule(newTestHost(t), _errBackendFn)
 	require.Error(t, err)
 	require.Nil(t, mod)
 }
@@ -74,7 +74,7 @@ func TestMemBackendModuleWorkflowWithContext(t *testing.T) {
 func createModule(t *testing.T, b BackendCreateFunc) Backend {
 	createFn := NewModule(b)
 	assert.NotNil(t, createFn)
-	mod, err := createFn(newTestModuleInfo(t))
+	mod, err := createFn(newTestHost(t))
 	assert.NotNil(t, mod)
 	assert.NoError(t, err)
 	return _globalBackend

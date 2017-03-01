@@ -40,7 +40,7 @@ func TestNopBackend(t *testing.T) {
 }
 
 func TestInMemBackend(t *testing.T) {
-	b := NewInMemBackend(newTestModuleInfo(t)).(*inMemBackend)
+	b := NewInMemBackend(newTestHost(t)).(*inMemBackend)
 	assert.NotNil(t, b.Encoder())
 	assert.NoError(t, b.Start())
 	publishEncodedVal(t, b)
@@ -49,7 +49,7 @@ func TestInMemBackend(t *testing.T) {
 }
 
 func TestInMemBackendStartTimeout(t *testing.T) {
-	b := NewInMemBackend(newTestModuleInfo(t))
+	b := NewInMemBackend(newTestHost(t))
 	_ = b.Start()
 	defer b.Stop()
 	time.Sleep(time.Millisecond)
@@ -68,8 +68,8 @@ func publishEncodedVal(t *testing.T, b *inMemBackend) {
 	}
 }
 
-func newTestModuleInfo(t *testing.T) service.ModuleInfo {
-	mi, err := service.NewModuleInfo(service.NopHost(), "hello")
+func newTestHost(t *testing.T) service.Host {
+	mi, err := service.NewScopedHost(service.NopHost(), "hello")
 	require.NoError(t, err)
 	return mi
 }

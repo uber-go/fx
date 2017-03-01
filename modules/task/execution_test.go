@@ -41,9 +41,9 @@ var (
 )
 
 func init() {
-	moduleInfo, _ := service.NewModuleInfo(service.NopHost(), "hello")
-	_testScope = moduleInfo.Metrics()
-	_globalBackend = NewInMemBackend(moduleInfo)
+	host, _ := service.NewScopedHost(service.NopHost(), "hello")
+	_testScope = host.Metrics()
+	_globalBackend = NewInMemBackend(host)
 	_ = _globalBackend.Start()
 	_errorCh = _globalBackend.(*inMemBackend).ErrorCh()
 	_globalBackend.Encoder().Register(context.Background())

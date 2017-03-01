@@ -53,13 +53,13 @@ func globalBackendStatsClient() *statsClient {
 
 // NewModule creates an async task queue module
 func NewModule(createFunc BackendCreateFunc) service.ModuleCreateFunc {
-	return func(mi service.ModuleInfo) (service.Module, error) {
+	return func(mi service.Host) (service.Module, error) {
 		return newAsyncModuleSingleton(mi, createFunc)
 	}
 }
 
 func newAsyncModuleSingleton(
-	mi service.ModuleInfo,
+	mi service.Host,
 	createFunc BackendCreateFunc,
 ) (service.Module, error) {
 	_once.Do(func() {
@@ -69,7 +69,7 @@ func newAsyncModuleSingleton(
 }
 
 func newAsyncModule(
-	mi service.ModuleInfo,
+	mi service.Host,
 	createFunc BackendCreateFunc,
 ) (service.Module, error) {
 	backend, err := createFunc(mi)
@@ -84,4 +84,4 @@ func newAsyncModule(
 }
 
 // BackendCreateFunc creates a backend implementation
-type BackendCreateFunc func(moduleInfo service.ModuleInfo) (Backend, error)
+type BackendCreateFunc func(host service.Host) (Backend, error)

@@ -149,7 +149,7 @@ func withModule(
 	expectError bool,
 	fn func(*Module),
 ) {
-	mi, err := service.NewModuleInfo(service.NopHost(), moduleName)
+	mi, err := service.NewScopedHost(service.NopHost(), moduleName)
 	require.NoError(t, err)
 	mod, err := newModule(mi, hookup, moduleOptions...)
 	if expectError {

@@ -103,7 +103,7 @@ func mih(t *testing.T, moduleName string) service.Host {
 
 func newHost(t *testing.T, host service.Host, moduleName string) service.Host {
 	// need to add name since we are not fully instantiating Host
-	mi, err := service.NewHost(host, moduleName)
+	mi, err := service.NewScopedHost(host, moduleName)
 	require.NoError(t, err)
 	return mi
 }
