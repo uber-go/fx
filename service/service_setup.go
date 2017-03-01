@@ -37,28 +37,8 @@ import (
 func (svc *serviceCore) setupLogging() error {
 	cfg := svc.configProvider.Get("logging")
 	if cfg.HasValue() {
-		// Uhhh... this process is not the most elegant.
-		// Becuase log.Configuration embeds zap, the PopulateStruct
-		// does not work properly as it's unable to serialize fields directly
-		// into the embedded struct, so inner struct has to be treated as a
-		// separate object
-		//
-		// first, use the default zap configuration
-		zapCfg := ulog.DefaultConfiguration().Config
-
-		// override the embedded zap.Config stuct from config
-		if err := cfg.PopulateStruct(&zapCfg); err != nil {
-			return errors.Wrap(err, "unable to parse logging config")
-		}
-
-		// use the overriden zap config
-		svc.logConfig = ulog.Configuration{
-			Config: zapCfg,
-		}
-
-		// override any remaining things fom config, i.e. Sentry
-		if err := cfg.PopulateStruct(&svc.logConfig); err != nil {
-			return errors.Wrap(err, "unable to parse logging config")
+		if err := svc.logConfig.Configure(cfg); err != nil {
+			return errors.Wrap(err, "failed to initialize logging from config")
 		}
 	} else {
 		// if no config - default to the regular one
@@ -67,7 +47,7 @@ func (svc *serviceCore) setupLogging() error {
 
 	logger, err := svc.logConfig.Build(zap.Hooks(ulog.Metrics(svc.metrics)))
 	if err != nil {
-		return errors.Wrap(err, "failed to configure logging")
+		return errors.Wrap(err, "failed to build the logger")
 	}
 
 	// TODO(glib): SetLogger returns a deferral to clean up global log which is not used

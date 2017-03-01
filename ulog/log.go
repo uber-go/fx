@@ -21,6 +21,9 @@
 package ulog
 
 import (
+	"errors"
+
+	"go.uber.org/fx/config"
 	"go.uber.org/fx/ulog/sentry"
 
 	"go.uber.org/zap"
@@ -32,6 +35,34 @@ type Configuration struct {
 	zap.Config
 
 	Sentry *sentry.Configuration `yaml:"sentry"`
+}
+
+// Initialize from config
+func (c *Configuration) Configure(cfg config.Value) error {
+	// Uhhh... this process is not the most elegant.
+	//
+	// Because log.Configuration embeds zap, the PopulateStruct
+	// does not work properly as it's unable to serialize fields directly
+	// into the embedded struct, so inner struct has to be treated as a
+	// separate object
+	//
+	// first, use the default zap configuration
+	zapCfg := DefaultConfiguration().Config
+
+	// override the embedded zap.Config stuct from config
+	if err := cfg.PopulateStruct(&zapCfg); err != nil {
+		return errors.New("unable to parse logging config")
+	}
+
+	// use the overriden zap config
+	c.Config = zapCfg
+
+	// override any remaining things fom config, i.e. Sentry
+	if err := cfg.PopulateStruct(&c); err != nil {
+		return errors.New("unable to parse logging config")
+	}
+
+	return nil
 }
 
 // Build constructs a *zap.Logger with the configured parameters.
