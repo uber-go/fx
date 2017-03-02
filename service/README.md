@@ -56,8 +56,8 @@ func main() {
     "kafka",
     kafka.Module("kakfa_topic1", []string{"worker"}),
   ).WithModule(
-    "keyvalue",
-    yarpc.New(rpc.CreateThriftServiceFunc(NewYarpcThriftHandler)),
+    "yarpc",
+    yarpc.New(yarpc.CreateThriftServiceFunc(NewYarpcThriftHandler)),
     service.WithModuleRole("service"),
   ).Build()
 
