@@ -45,7 +45,6 @@ logging:
       disabled: true
       skip_frames: 10
       context_lines: 15
-
 `)
 )
 
