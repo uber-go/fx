@@ -69,7 +69,7 @@ modules:
 	goofy, err := chip(mi)
 	require.NoError(t, err)
 	assert.NotNil(t, goofy)
-	assert.Equal(t, "hello", goofy.(*YARPCModule).host.Name())
+	assert.Equal(t, "hello", goofy.(*Module).host.Name())
 
 	gopher, err := dale(mih(t, "hello"))
 	require.NoError(t, err)
