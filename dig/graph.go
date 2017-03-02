@@ -29,24 +29,33 @@ import (
 	"github.com/pkg/errors"
 )
 
-type graph struct {
-	fmt.Stringer
+var (
+	errParamType   = errors.New("graph injection must be done through a pointer or a function")
+	errReturnCount = errors.New("constructor function must return exactly one value")
+	errReturnKind  = errors.New("constructor return type must be a pointer")
+	errArgKind     = errors.New("constructor arguments must be pointers")
+	errCycle       = errors.New("cycle dependencies detected")
+)
+
+// New returns a new Dependency Injection Graph
+func New() *Graph {
+	return &Graph{
+		nodes: make(map[interface{}]graphNode),
+	}
+}
+
+// Graph facilitates automated dependency resolution
+type Graph struct {
 	sync.Mutex
 
 	nodes map[interface{}]graphNode
-}
-
-func newGraph() *graph {
-	return &graph{
-		nodes: make(map[interface{}]graphNode),
-	}
 }
 
 // Register an object in the dependency graph
 //
 // Provided argument must be a function that returns exactly one pointer argument
 // All arguments to the function must be pointers
-func (g *graph) Register(c interface{}) error {
+func (g *Graph) Register(c interface{}) error {
 	g.Lock()
 	defer g.Unlock()
 
@@ -78,7 +87,7 @@ func (g *graph) Register(c interface{}) error {
 // Constructor with return value *object will be called
 //
 // TODO(glib): catch any and all panics from this method, as there is a lot of reflect going on
-func (g *graph) Resolve(obj interface{}) error {
+func (g *Graph) Resolve(obj interface{}) error {
 	g.Lock()
 	defer g.Unlock()
 
@@ -109,7 +118,7 @@ func (g *graph) Resolve(obj interface{}) error {
 
 // ResolveAll the dependencies of each provided object
 // Returns the first error encountered
-func (g *graph) ResolveAll(objs ...interface{}) error {
+func (g *Graph) ResolveAll(objs ...interface{}) error {
 	for _, o := range objs {
 		if err := g.Resolve(o); err != nil {
 			return err
@@ -119,7 +128,7 @@ func (g *graph) ResolveAll(objs ...interface{}) error {
 }
 
 // RegisterAll registers all the provided args in the dependency graph
-func (g *graph) RegisterAll(cs ...interface{}) error {
+func (g *Graph) RegisterAll(cs ...interface{}) error {
 	for _, c := range cs {
 		if err := g.Register(c); err != nil {
 			return err
@@ -129,14 +138,14 @@ func (g *graph) RegisterAll(cs ...interface{}) error {
 }
 
 // Reset the graph by removing all the registered nodes
-func (g *graph) Reset() {
+func (g *Graph) Reset() {
 	g.Lock()
 	defer g.Unlock()
 
 	g.nodes = make(map[interface{}]graphNode)
 }
 
-func (g *graph) String() string {
+func (g *Graph) String() string {
 	b := &bytes.Buffer{}
 	fmt.Fprintln(b, "{nodes:")
 	for key, reg := range g.nodes {
@@ -146,7 +155,7 @@ func (g *graph) String() string {
 	return b.String()
 }
 
-func (g *graph) registerObject(o interface{}) error {
+func (g *Graph) registerObject(o interface{}) error {
 	otype := reflect.TypeOf(o)
 
 	n := objNode{
@@ -161,7 +170,7 @@ func (g *graph) registerObject(o interface{}) error {
 	return nil
 }
 
-func (g *graph) registerConstructor(c interface{}) error {
+func (g *Graph) registerConstructor(c interface{}) error {
 	ctype := reflect.TypeOf(c)
 	objType := ctype.Out(0)
 
@@ -195,13 +204,13 @@ func (g *graph) registerConstructor(c interface{}) error {
 }
 
 // When a new constructor is being inserted, detect any present cycles
-func (g *graph) detectCycles(n *funcNode) error {
+func (g *Graph) detectCycles(n *funcNode) error {
 	visited := make(map[string]bool)
 	return g.recursiveDetectCycles(n, visited)
 }
 
 // DFS and tracking if same node is visited twice
-func (g *graph) recursiveDetectCycles(n graphNode, visited map[string]bool) error {
+func (g *Graph) recursiveDetectCycles(n graphNode, visited map[string]bool) error {
 	if visited[n.id()] {
 		return errCycle
 	}
