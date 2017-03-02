@@ -3,7 +3,7 @@ sudo: false
 go:
   - 1.7
   - 1.8
-  - tip
+  # TODO(aiden) re-enable tip once "gimme tip" works in travis again
 
 go_import_path: go.uber.org/fx
 
