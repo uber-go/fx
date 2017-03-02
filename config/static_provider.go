@@ -20,16 +20,21 @@
 
 package config
 
+import "gopkg.in/yaml.v2"
+
 type staticProvider struct {
-	data map[string]interface{}
+	Provider
 }
 
 // NewStaticProvider should only be used in tests to isolate config from your environment
-// It is not race free, because underlying map can be accessed with Value().
+// It is not race free, because underlying objects can be accessed with Value().
 func NewStaticProvider(data map[string]interface{}) Provider {
-	return &staticProvider{
-		data: data,
+	b, err := yaml.Marshal(data)
+	if err != nil {
+		panic(err)
 	}
+
+	return staticProvider{NewYAMLProviderFromBytes(b)}
 }
 
 // StaticProvider returns function to create StaticProvider during configuration initialization
@@ -39,31 +44,8 @@ func StaticProvider(data map[string]interface{}) ProviderFunc {
 	}
 }
 
-func (*staticProvider) Name() string {
+func (staticProvider) Name() string {
 	return "static"
-}
-
-func (s *staticProvider) Get(key string) Value {
-	if key == "" {
-		return NewValue(s, key, s.data, true, GetType(s.data), nil)
-	}
-
-	val, found := s.data[key]
-	return NewValue(s, key, val, found, GetType(val), nil)
-}
-
-func (s *staticProvider) Scope(prefix string) Provider {
-	return NewScopedProvider(prefix, s)
-}
-
-func (s *staticProvider) RegisterChangeCallback(key string, callback ChangeCallback) error {
-	// Static provider don't receive callback events
-	return nil
-}
-
-func (s *staticProvider) UnregisterChangeCallback(token string) error {
-	// Nothing to Unregister
-	return nil
 }
 
 var _ Provider = &staticProvider{}

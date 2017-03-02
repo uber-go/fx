@@ -40,7 +40,7 @@ func TestProviderGroup(t *testing.T) {
 
 func TestProviderGroupScope(t *testing.T) {
 	t.Parallel()
-	data := map[string]interface{}{"hello.world": 42}
+	data := map[string]interface{}{"hello": map[string]int{"world": 42}}
 	pg := NewProviderGroup("test-group", NewStaticProvider(data))
 	assert.Equal(t, 42, pg.Scope("hello").Get("world").AsInt())
 }
