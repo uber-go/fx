@@ -145,6 +145,7 @@ func (g *Graph) Reset() {
 	g.nodes = make(map[interface{}]graphNode)
 }
 
+// String representation of the entire graph
 func (g *Graph) String() string {
 	b := &bytes.Buffer{}
 	fmt.Fprintln(b, "{nodes:")
