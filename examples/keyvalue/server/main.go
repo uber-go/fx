@@ -31,7 +31,7 @@ func main() {
 	svc, err := service.WithModule(
 		"yarpc",
 		yarpc.New(
-			yarpc.CreateThriftServiceFunc(NewYARPCThriftHandler),
+			yarpc.ServiceCreateFunc(NewYARPCThriftHandler),
 		),
 		service.WithModuleRole("service"),
 	).WithOptions(
