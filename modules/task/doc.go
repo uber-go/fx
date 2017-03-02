@@ -49,7 +49,7 @@
 //
 //   func main() {
 //     svc, err := service.WithModule(
-//       "example",
+//       "task",
 //       task.New(newBackend),
 //     ).Build()
 //     if err := task.Register(updateCache); err != nil {
