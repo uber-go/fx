@@ -22,6 +22,7 @@ package config
 
 import (
 	"bytes"
+	"fmt"
 	"io/ioutil"
 	"os"
 	"path"
@@ -45,6 +46,7 @@ modules:
 `)
 
 func TestYamlSimple(t *testing.T) {
+	t.Parallel()
 	provider := NewYAMLProviderFromBytes(yamlConfig1)
 
 	c := provider.Get("modules.rpc.bind")
@@ -61,6 +63,7 @@ type configStruct struct {
 }
 
 func TestYamlStructRoot(t *testing.T) {
+	t.Parallel()
 	provider := NewYAMLProviderFromBytes(yamlConfig1)
 
 	cs := &configStruct{}
@@ -76,6 +79,8 @@ type rpcStruct struct {
 }
 
 func TestYamlStructChild(t *testing.T) {
+	t.Parallel()
+
 	provider := NewYAMLProviderFromBytes(yamlConfig1)
 
 	cs := &rpcStruct{}
@@ -86,6 +91,7 @@ func TestYamlStructChild(t *testing.T) {
 }
 
 func TestExtends(t *testing.T) {
+	t.Parallel()
 	provider := NewYAMLProviderFromFiles(false, NewRelativeResolver("./testdata"), "base.yaml", "dev.yaml", "secrets.yaml")
 
 	baseValue := provider.Get("value").AsString()
@@ -99,6 +105,7 @@ func TestExtends(t *testing.T) {
 }
 
 func TestAppRoot(t *testing.T) {
+	t.Parallel()
 	cwd, err := os.Getwd()
 	assert.NoError(t, err)
 
@@ -116,6 +123,7 @@ func TestAppRoot(t *testing.T) {
 }
 
 func TestNewYAMLProviderFromReader(t *testing.T) {
+	t.Parallel()
 	buff := bytes.NewBuffer([]byte(yamlConfig1))
 	provider := NewYAMLProviderFromReader(ioutil.NopCloser(buff))
 	cs := &configStruct{}
@@ -126,6 +134,7 @@ func TestNewYAMLProviderFromReader(t *testing.T) {
 }
 
 func TestYAMLNode(t *testing.T) {
+	t.Parallel()
 	buff := bytes.NewBuffer([]byte("a: b"))
 	node := &yamlNode{value: make(map[interface{}]interface{})}
 	err := unmarshalYAMLValue(ioutil.NopCloser(buff), &node.value)
@@ -135,6 +144,7 @@ func TestYAMLNode(t *testing.T) {
 }
 
 func TestYamlNodeWithNil(t *testing.T) {
+	t.Parallel()
 	provider := NewYAMLProviderFromFiles(false, nil)
 	assert.NotNil(t, provider)
 	assert.Panics(t, func() {
@@ -143,18 +153,20 @@ func TestYamlNodeWithNil(t *testing.T) {
 }
 
 func TestYamlNode_Callbacks(t *testing.T) {
+	t.Parallel()
 	p := NewYAMLProviderFromFiles(false, nil)
 	assert.NoError(t, p.RegisterChangeCallback("test", nil))
 	assert.NoError(t, p.UnregisterChangeCallback("token"))
 }
 
-func withYamlBytes(t *testing.T, yamlBytes []byte, f func(Provider)) {
+func withYamlBytes(yamlBytes []byte, f func(Provider)) {
 	provider := NewProviderGroup("global", NewYAMLProviderFromBytes(yamlBytes))
 	f(provider)
 }
 
 func TestMatchEmptyStruct(t *testing.T) {
-	withYamlBytes(t, []byte(``), func(provider Provider) {
+	t.Parallel()
+	withYamlBytes([]byte(``), func(provider Provider) {
 		es := emptystruct{}
 		provider.Get("emptystruct").PopulateStruct(&es)
 		empty := reflect.New(reflect.TypeOf(es)).Elem().Interface()
@@ -163,7 +175,8 @@ func TestMatchEmptyStruct(t *testing.T) {
 }
 
 func TestMatchPopulatedEmptyStruct(t *testing.T) {
-	withYamlBytes(t, emptyyaml, func(provider Provider) {
+	t.Parallel()
+	withYamlBytes(emptyyaml, func(provider Provider) {
 		es := emptystruct{}
 		provider.Get("emptystruct").PopulateStruct(&es)
 		empty := reflect.New(reflect.TypeOf(es)).Elem().Interface()
@@ -172,7 +185,8 @@ func TestMatchPopulatedEmptyStruct(t *testing.T) {
 }
 
 func TestPopulateStructWithPointers(t *testing.T) {
-	withYamlBytes(t, pointerYaml, func(provider Provider) {
+	t.Parallel()
+	withYamlBytes(pointerYaml, func(provider Provider) {
 		ps := pointerStruct{}
 		provider.Get("pointerStruct").PopulateStruct(&ps)
 		assert.True(t, *ps.MyTrueBool)
@@ -182,7 +196,8 @@ func TestPopulateStructWithPointers(t *testing.T) {
 }
 
 func TestNonExistingPopulateStructWithPointers(t *testing.T) {
-	withYamlBytes(t, []byte(``), func(provider Provider) {
+	t.Parallel()
+	withYamlBytes([]byte(``), func(provider Provider) {
 		ps := pointerStruct{}
 		provider.Get("pointerStruct").PopulateStruct(&ps)
 		assert.Nil(t, ps.MyTrueBool)
@@ -192,7 +207,8 @@ func TestNonExistingPopulateStructWithPointers(t *testing.T) {
 }
 
 func TestMapParsing(t *testing.T) {
-	withYamlBytes(t, complexMapYaml, func(provider Provider) {
+	t.Parallel()
+	withYamlBytes(complexMapYaml, func(provider Provider) {
 		ms := mapStruct{}
 		provider.Get("mapStruct").PopulateStruct(&ms)
 
@@ -212,7 +228,8 @@ func TestMapParsing(t *testing.T) {
 }
 
 func TestMapParsingSimpleMap(t *testing.T) {
-	withYamlBytes(t, simpleMapYaml, func(provider Provider) {
+	t.Parallel()
+	withYamlBytes(simpleMapYaml, func(provider Provider) {
 		ms := mapStruct{}
 		provider.Get("mapStruct").PopulateStruct(&ms)
 		assert.Equal(t, 1, ms.MyMap["one"])
@@ -223,7 +240,8 @@ func TestMapParsingSimpleMap(t *testing.T) {
 }
 
 func TestMapParsingMapWithNonStringKeys(t *testing.T) {
-	withYamlBytes(t, intKeyMapYaml, func(provider Provider) {
+	t.Parallel()
+	withYamlBytes(intKeyMapYaml, func(provider Provider) {
 		ik := intKeyMapStruct{}
 		err := provider.Get("intKeyMapStruct").PopulateStruct(&ik)
 		assert.NoError(t, err)
@@ -232,7 +250,8 @@ func TestMapParsingMapWithNonStringKeys(t *testing.T) {
 }
 
 func TestDurationParsing(t *testing.T) {
-	withYamlBytes(t, durationYaml, func(provider Provider) {
+	t.Parallel()
+	withYamlBytes(durationYaml, func(provider Provider) {
 		ds := durationStruct{}
 		err := provider.Get("durationStruct").PopulateStruct(&ds)
 		assert.NoError(t, err)
@@ -243,7 +262,8 @@ func TestDurationParsing(t *testing.T) {
 }
 
 func TestParsingUnparsableDuration(t *testing.T) {
-	withYamlBytes(t, unparsableDurationYaml, func(provider Provider) {
+	t.Parallel()
+	withYamlBytes(unparsableDurationYaml, func(provider Provider) {
 		ds := durationStruct{}
 		err := provider.Get("durationStruct").PopulateStruct(&ds)
 		assert.Error(t, err)
@@ -251,7 +271,8 @@ func TestParsingUnparsableDuration(t *testing.T) {
 }
 
 func TestTypeOfTypes(t *testing.T) {
-	withYamlBytes(t, typeStructYaml, func(provider Provider) {
+	t.Parallel()
+	withYamlBytes(typeStructYaml, func(provider Provider) {
 		tts := typeStructStruct{}
 		err := provider.Get(Root).PopulateStruct(&tts)
 		assert.NoError(t, err)
@@ -267,7 +288,8 @@ func TestTypeOfTypes(t *testing.T) {
 }
 
 func TestTypeOfTypesPtr(t *testing.T) {
-	withYamlBytes(t, typeStructYaml, func(provider Provider) {
+	t.Parallel()
+	withYamlBytes(typeStructYaml, func(provider Provider) {
 		tts := typeStructStructPtr{}
 		err := provider.Get(Root).PopulateStruct(&tts)
 		assert.NoError(t, err)
@@ -283,7 +305,8 @@ func TestTypeOfTypesPtr(t *testing.T) {
 }
 
 func TestTypeOfTypesPtrPtr(t *testing.T) {
-	withYamlBytes(t, typeStructYaml, func(provider Provider) {
+	t.Parallel()
+	withYamlBytes(typeStructYaml, func(provider Provider) {
 		tts := typeStructStructPtrPtr{}
 		err := provider.Get(Root).PopulateStruct(&tts)
 		assert.NoError(t, err)
@@ -299,7 +322,8 @@ func TestTypeOfTypesPtrPtr(t *testing.T) {
 }
 
 func TestHappyTextUnMarshallerParsing(t *testing.T) {
-	withYamlBytes(t, happyTextUnmarshallerYaml, func(provider Provider) {
+	t.Parallel()
+	withYamlBytes(happyTextUnmarshallerYaml, func(provider Provider) {
 		ds := duckTales{}
 		err := provider.Get("duckTales").PopulateStruct(&ds)
 		assert.NoError(t, err)
@@ -309,10 +333,11 @@ func TestHappyTextUnMarshallerParsing(t *testing.T) {
 }
 
 func TestGrumpyTextUnMarshallerParsing(t *testing.T) {
-	withYamlBytes(t, grumpyTextUnmarshallerYaml, func(provider Provider) {
+	t.Parallel()
+	withYamlBytes(grumpyTextUnmarshallerYaml, func(provider Provider) {
 		ds := duckTales{}
 		err := provider.Get("darkwingDuck").PopulateStruct(&ds)
-		assert.EqualError(t, err, "Unknown character: DarkwingDuck")
+		assert.Contains(t, err.Error(), "Unknown character: DarkwingDuck")
 	})
 }
 
@@ -350,4 +375,290 @@ func TestMerge(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestMergePanics(t *testing.T) {
+	t.Parallel()
+	src := []byte(`
+map:
+  key: value
+`)
+	dst := []byte(`
+map:
+  - array
+`)
+
+	defer func() {
+		if e := recover(); e != nil {
+			assert.Contains(t, e, `can't merge map[interface{}]interface{} and []interface {}. Source: map["key":"value"]. Destination: ["array"]`)
+			return
+		}
+		assert.Fail(t, "expected a panic")
+	}()
+
+	NewYAMLProviderFromBytes(dst, src)
+}
+
+func TestYamlProviderFmtPrintOnValueNoPanic(t *testing.T) {
+	t.Parallel()
+	provider := NewYAMLProviderFromBytes(yamlConfig1)
+	c := provider.Get("modules.rpc.bind")
+
+	f := func() {
+		assert.Contains(t, fmt.Sprintf("%v", c), "")
+	}
+	assert.NotPanics(t, f)
+}
+
+func TestArrayTypeNoPanic(t *testing.T) {
+	t.Parallel()
+	// This test will panic if we treat array the same as slice.
+	provider := NewYAMLProviderFromBytes(yamlConfig1)
+
+	cs := struct {
+		ID [6]int `yaml:"id"`
+	}{}
+
+	assert.NoError(t, provider.Get(Root).PopulateStruct(&cs))
+}
+
+func TestNilYAMLProviderSetDefaultTagValue(t *testing.T) {
+	t.Parallel()
+	type Inner struct {
+		Set bool `yaml:"set" default:"true"`
+	}
+	data := struct {
+		ID0 int             `yaml:"id0" default:"10"`
+		ID1 string          `yaml:"id1" default:"string"`
+		ID2 Inner           `yaml:"id2"`
+		ID3 []Inner         `yaml:"id3"`
+		ID4 map[Inner]Inner `yaml:"id4"`
+		ID5 *Inner          `yaml:"id5"`
+		ID6 [6]Inner        `yaml:"id6"`
+		ID7 [7]*Inner       `yaml:"id7"`
+	}{}
+
+	p := NewYAMLProviderFromBytes(nil)
+	p.Get("hello").PopulateStruct(&data)
+
+	assert.Equal(t, 10, data.ID0)
+	assert.Equal(t, "string", data.ID1)
+	assert.True(t, data.ID2.Set)
+	assert.Nil(t, data.ID3)
+	assert.Nil(t, data.ID4)
+	assert.Nil(t, data.ID5)
+	assert.True(t, data.ID6[0].Set)
+	assert.Nil(t, data.ID7[0])
+}
+
+func TestDefaultWithMergeConfig(t *testing.T) {
+	t.Parallel()
+	base := []byte(`
+abc:
+  str: "base"
+  int: 1
+`)
+
+	prod := []byte(`
+abc:
+  str: "prod"
+`)
+	cfg := struct {
+		Str     string `yaml:"str" default:"nope"`
+		Int     int    `yaml:"int" default:"0"`
+		Bool    bool   `yaml:"bool" default:"true"`
+		BoolPtr *bool  `yaml:"bool_ptr"`
+	}{}
+	p := NewYAMLProviderFromBytes(base, prod)
+	p.Get("abc").PopulateStruct(&cfg)
+
+	assert.Equal(t, "prod", cfg.Str)
+	assert.Equal(t, 1, cfg.Int)
+	assert.Equal(t, true, cfg.Bool)
+	assert.Nil(t, cfg.BoolPtr)
+}
+
+func TestMapOfStructs(t *testing.T) {
+	t.Parallel()
+	type Bag struct {
+		S string
+		I int
+		P *string
+	}
+	type Map struct {
+		M map[string]Bag
+	}
+
+	b := []byte(`
+m:
+  first:
+    s: one
+    i: 1
+  second:
+    s: two
+    i: 2
+    p: Pointer
+`)
+
+	p := NewYAMLProviderFromBytes(b)
+	var r Map
+	require.NoError(t, p.Get(Root).PopulateStruct(&r))
+	assert.Equal(t, Bag{S: "one", I: 1, P: nil}, r.M["first"])
+
+	snd := r.M["second"]
+	assert.Equal(t, 2, snd.I)
+	assert.Equal(t, "two", snd.S)
+	assert.Equal(t, "Pointer", *snd.P)
+}
+
+func TestMapOfSlices(t *testing.T) {
+	t.Parallel()
+	type Map struct {
+		S map[string][]time.Duration
+	}
+
+	b := []byte(`
+s:
+  first:
+    - 1s
+  second:
+    - 2m
+    - 3h
+`)
+	p := NewYAMLProviderFromBytes(b)
+	var r Map
+	require.NoError(t, p.Get(Root).PopulateStruct(&r))
+	assert.Equal(t, []time.Duration{time.Second}, r.S["first"])
+	assert.Equal(t, []time.Duration{2 * time.Minute, 3 * time.Hour}, r.S["second"])
+}
+
+func TestMapOfArrays(t *testing.T) {
+	t.Parallel()
+	type Map struct {
+		S map[string][2]time.Duration
+	}
+
+	b := []byte(`
+s:
+  first:
+    - 1s
+    - 4m
+  second:
+    - 2m
+    - 3h
+`)
+	p := NewYAMLProviderFromBytes(b)
+	var r Map
+	require.NoError(t, p.Get(Root).PopulateStruct(&r))
+	assert.Equal(t, [2]time.Duration{time.Second, 4 * time.Minute}, r.S["first"])
+	assert.Equal(t, [2]time.Duration{2 * time.Minute, 3 * time.Hour}, r.S["second"])
+}
+
+type cycle struct {
+	A *cycle
+}
+
+type testProvider struct {
+	staticProvider
+	a cycle
+}
+
+func (s *testProvider) Get(key string) Value {
+	val, found := s.a, true
+	return NewValue(s, key, val, found, GetType(val), nil)
+}
+
+func TestLoops(t *testing.T) {
+	t.Parallel()
+
+	a := cycle{}
+	a.A = &a
+
+	b := cycle{&a}
+	require.Equal(t, b, a)
+
+	p := testProvider{}
+	assert.Contains(t, p.Get(Root).PopulateStruct(&b).Error(), "cycles")
+}
+
+func TestInternalFieldsAreNotSet(t *testing.T) {
+	t.Parallel()
+	type External struct {
+		internal string
+	}
+
+	b := []byte(`
+internal: set
+`)
+	p := NewYAMLProviderFromBytes(b)
+	var r External
+	require.NoError(t, p.Get(Root).PopulateStruct(&r))
+	assert.Equal(t, "", r.internal)
+}
+
+func TestEmbeddedStructs(t *testing.T) {
+	t.Skip("TODO(alsam) GFM(415)")
+	t.Parallel()
+	type Config struct {
+		Foo string
+	}
+
+	type Sentry struct {
+		DSN string
+	}
+
+	type Logging struct {
+		Config
+		Sentry
+	}
+
+	b := []byte(`
+logging:
+   foo: bar
+   sentry:
+      dsn: asdf
+`)
+	p := NewYAMLProviderFromBytes(b)
+	var r Config
+	require.NoError(t, p.Get(Root).PopulateStruct(&r))
+	assert.Equal(t, "bar", r.Foo)
+}
+
+func TestEmptyValuesSetForMaps(t *testing.T) {
+	t.Parallel()
+	type Hello interface {
+		Hello()
+	}
+
+	type Foo struct {
+		M map[string]Hello
+	}
+
+	b := []byte(`
+M:
+   sayHello:
+`)
+	p := NewYAMLProviderFromBytes(b)
+	var r Foo
+	require.NoError(t, p.Get(Root).PopulateStruct(&r))
+	assert.Equal(t, r.M, map[string]Hello{"sayHello": Hello(nil)})
+}
+
+func TestEmptyValuesSetForStructs(t *testing.T) {
+	t.Parallel()
+	type Hello interface {
+		Hello()
+	}
+
+	type Foo struct {
+		Say Hello
+	}
+
+	b := []byte(`
+Say:
+`)
+	p := NewYAMLProviderFromBytes(b)
+	var r Foo
+	require.NoError(t, p.Get(Root).PopulateStruct(&r))
+	assert.Nil(t, r.Say)
 }

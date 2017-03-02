@@ -22,29 +22,28 @@ package service
 
 import "github.com/pkg/errors"
 
+type moduleCreateInfo struct {
+	name             string
+	moduleCreateFunc ModuleCreateFunc
+	options          []ModuleOption
+}
+
 // A Builder is a helper to create a service
 type Builder struct {
 	options []Option
-	modules []ModuleCreateFunc
+	modules []*moduleCreateInfo
 }
 
-// NewBuilder returns a new Builder for instantiating services
-func NewBuilder(options ...Option) *Builder {
+// WithModule is a helper to create a service without any options
+func WithModule(name string, module ModuleCreateFunc, options ...ModuleOption) *Builder {
 	b := &Builder{}
-	return b.WithOptions(options...)
+	return b.WithModule(name, module, options...)
 }
 
-// WithModules adds the given modules to the service
-func (b *Builder) WithModules(modules ...ModuleCreateFunc) *Builder {
-	b.modules = append(b.modules, modules...)
-
+// WithModule adds the given module to the service with the given name
+func (b *Builder) WithModule(name string, module ModuleCreateFunc, options ...ModuleOption) *Builder {
+	b.modules = append(b.modules, &moduleCreateInfo{name, module, options})
 	return b
-}
-
-// WithModules is a helper to create a service without any options
-func WithModules(modules ...ModuleCreateFunc) *Builder {
-	b := NewBuilder()
-	return b.WithModules(modules...)
 }
 
 // WithOptions adds service Options to the builder
@@ -54,15 +53,10 @@ func (b *Builder) WithOptions(options ...Option) *Builder {
 }
 
 // Build returns the service, or any errors encountered during build phase.
-func (b *Builder) Build() (Owner, error) {
-	svc, err := New(b.options...)
+func (b *Builder) Build() (Manager, error) {
+	svc, err := newManager(b)
 	if err != nil {
-		return nil, errors.Wrap(err, "service instantiation failed due to options")
+		return nil, errors.Wrap(err, "service instantiation failed")
 	}
-
-	if err := svc.AddModules(b.modules...); err != nil {
-		return nil, errors.Wrap(err, "service modules failed to initialize")
-	}
-
 	return svc, nil
 }

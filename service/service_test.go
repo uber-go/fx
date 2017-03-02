@@ -28,7 +28,7 @@ import (
 
 	"go.uber.org/fx/config"
 	"go.uber.org/fx/testutils/metrics"
-	"go.uber.org/fx/ulog"
+	"go.uber.org/zap"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -40,9 +40,12 @@ func TestServiceCreation(t *testing.T) {
 	r.CountersWG.Add(1)
 	scope, closer := tally.NewRootScope("", nil, r, 50*time.Millisecond, tally.DefaultSeparator)
 	defer closer.Close()
-	svc, err := New(
-		withConfig(validServiceConfig),
-		WithMetrics(scope, nil),
+	svc, err := newManager(
+		WithModule("hello", successModuleCreate).
+			WithOptions(
+				withConfig(validServiceConfig),
+				WithMetrics(scope, nil),
+			),
 	)
 	require.NoError(t, err)
 	assert.NotNil(t, svc, "Service should be created")
@@ -52,9 +55,12 @@ func TestServiceCreation(t *testing.T) {
 }
 
 func TestWithObserver_Nil(t *testing.T) {
-	svc, err := New(
-		withConfig(validServiceConfig),
-		WithObserver(nil),
+	svc, err := newManager(
+		WithModule("hello", successModuleCreate).
+			WithOptions(
+				withConfig(validServiceConfig),
+				WithObserver(nil),
+			),
 	)
 	require.NoError(t, err)
 
@@ -62,20 +68,30 @@ func TestWithObserver_Nil(t *testing.T) {
 }
 
 func TestServiceCreation_MissingRequiredParams(t *testing.T) {
-	_, err := New(withConfig(nil))
+	_, err := newManager(
+		WithModule("hello", successModuleCreate).
+			WithOptions(
+				withConfig(nil),
+			),
+	)
 	assert.Error(t, err, "should fail with missing service name")
 	assert.Contains(t, err.Error(), "zero value")
 }
 
 func TestServiceWithRoles(t *testing.T) {
 	data := map[string]interface{}{
-		"name":    "name",
-		"owner":   "owner",
-		"roles.0": "foo",
+		"name":  "name",
+		"owner": "owner",
+		"roles": []string{"foo"},
 	}
 	cfgOpt := withConfig(data)
 
-	svc, err := New(cfgOpt)
+	svc, err := newManager(
+		WithModule("hello", successModuleCreate).
+			WithOptions(
+				cfgOpt,
+			),
+	)
 	require.NoError(t, err)
 
 	assert.Contains(t, svc.Roles(), "foo")
@@ -91,7 +107,12 @@ metrics:
 `)
 	cfgOpt := WithConfiguration(config.NewYAMLProviderFromBytes(data))
 
-	svc, err := New(cfgOpt)
+	svc, err := newManager(
+		WithModule("hello", successModuleCreate).
+			WithOptions(
+				cfgOpt,
+			),
+	)
 	require.NoError(t, err)
 
 	assert.Nil(t, svc.RuntimeMetricsCollector())
@@ -102,31 +123,70 @@ func TestServiceWithSentryHook(t *testing.T) {
 name: name
 owner: owner
 logging:
+  encoding: json
   sentry:
     dsn: http://user:secret@your.sentry.dsn/project
 `)
 	cfgOpt := WithConfiguration(config.NewYAMLProviderFromBytes(data))
 
-	svc, err := New(cfgOpt)
+	_, err := newManager(
+		WithModule("hello", successModuleCreate).
+			WithOptions(
+				cfgOpt,
+			),
+	)
 	require.NoError(t, err)
-	assert.NotNil(t, svc.Logger())
 	// Note: Sentry is not accessible so we cannot directly test it here. Just invoking the code
 	// path to make sure there is no panic
-	svc.Logger().Info("Testing sentry call")
+	zap.L().Info("Testing sentry call")
+}
+
+func TestLoggingConfigDeserialization(t *testing.T) {
+	data := []byte(`
+name: name
+owner: owner
+logging:
+  encoding: console
+  sampling:
+    initial: 777
+  sentry:
+    dsn: http://user:secret@your.sentry.dsn/project
+`)
+
+	c := serviceCore{metricsCore: metricsCore{metrics: tally.NoopScope}}
+	c.configProvider = config.NewYAMLProviderFromBytes(data)
+
+	require.NoError(t, c.setupLogging())
+	require.NotNil(t, c.logConfig.Sentry)
+	require.Equal(t, "http://user:secret@your.sentry.dsn/project", c.logConfig.Sentry.DSN)
+	require.Equal(t, 777, c.logConfig.Sampling.Initial)
+	require.Equal(t, "console", c.logConfig.Encoding)
 }
 
 func TestBadOption_Panics(t *testing.T) {
-	opt := func(_ Host) error {
+	opt := func(_ *manager) error {
 		return errors.New("nope")
 	}
 
-	_, err := New(withConfig(validServiceConfig), opt)
+	_, err := newManager(
+		WithModule("hello", successModuleCreate).
+			WithOptions(
+				withConfig(validServiceConfig),
+				opt,
+			),
+	)
 	assert.Error(t, err, "should fail with invalid option")
 }
 
 func TestNew_WithObserver(t *testing.T) {
 	o := observerStub()
-	svc, err := New(withConfig(validServiceConfig), WithObserver(o))
+	svc, err := newManager(
+		WithModule("hello", successModuleCreate).
+			WithOptions(
+				withConfig(validServiceConfig),
+				WithObserver(o),
+			),
+	)
 	require.NoError(t, err)
 	assert.Equal(t, o, svc.Observer())
 }
@@ -144,12 +204,8 @@ func TestAfterStartObserver(t *testing.T) {
 	t.Parallel()
 	wg := sync.WaitGroup{}
 	wg.Add(1)
-	h := &host{
-		serviceCore: serviceCore{
-			loggingCore: loggingCore{
-				log: ulog.NopLogger,
-			},
-		},
+	h := &manager{
+		serviceCore: serviceCore{},
 		observer: AfterStart(func() {
 			wg.Done()
 		}),

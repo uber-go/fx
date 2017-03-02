@@ -11,13 +11,17 @@ application logic.
 
 ## Status
 
-Alpha. Expect minor API changes and bug fixes. (Beta release coming soon)
+Beta. Expect minor API changes and bug fixes. See [our changelog](CHANGELOG.md)
+for more.
 
 ## What's included
+
 UberFx builds the following into your service:
-* Configuration, logging, metrics, and tracing setup by default
+
+* Logging backed by the zap logger
 * Configuration provider that seamlessly merges static and dynamic config
 * Application-level as well as runtime metrics for effective monitoring
+* Request tracing for application-level instrumentation
 * Context-aware logging for easy debugging
 * RPC module with Thrift interfaces for microservices
 * HTTP module with intelligent defaults for web applications
@@ -87,8 +91,8 @@ modules:
     timeout: 60s
 ```
 
-In this example, a module named: "rpc" would look up its advertise name as
-`modules.rpc.advertiseName`.
+In this example, a module named: "yarpc" would look up its advertise name as
+`modules.yarpc.advertiseName`.
 
 ## Metrics
 

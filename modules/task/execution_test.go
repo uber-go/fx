@@ -27,10 +27,11 @@ import (
 	"sync"
 	"testing"
 
+	"go.uber.org/fx/service"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/uber-go/tally"
-	"go.uber.org/fx/service"
 )
 
 var (
@@ -40,10 +41,11 @@ var (
 )
 
 func init() {
-	host := service.NopHost()
+	host, _ := service.NewScopedHost(service.NopHost(), "hello")
 	_testScope = host.Metrics()
 	_globalBackend = NewInMemBackend(host)
-	_errorCh = _globalBackend.Start(make(chan struct{}))
+	_ = _globalBackend.Start()
+	_errorCh = _globalBackend.(*inMemBackend).ErrorCh()
 	_globalBackend.Encoder().Register(context.Background())
 }
 

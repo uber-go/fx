@@ -27,57 +27,34 @@ import (
 	. "go.uber.org/fx/testutils"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
-func TestNewBuilder_NoConfig(t *testing.T) {
-	_, err := NewBuilder().Build()
-	assert.Error(t, err)
-}
-
-func TestNewBuilder_WithConfig(t *testing.T) {
-	b := NewBuilder(
-		WithConfiguration(StaticAppData(nil)),
-	)
-
-	svc, err := b.Build()
-	require.NoError(t, err)
-	assert.NotEmpty(t, svc.Name())
-}
-
-func TestBuilder_WithModules(t *testing.T) {
-	_, err := NewBuilder(
-		WithConfiguration(StaticAppData(nil)),
-	).WithModules(nopModule).Build()
-	assert.NoError(t, err)
-}
-
-func TestBuilder_WithErrModule(t *testing.T) {
-	_, err := NewBuilder(
-		WithConfiguration(StaticAppData(nil)),
-	).WithModules(errModule).Build()
-	assert.Error(t, err)
-}
-
-func TestBuilder_SkipsModulesBadInit(t *testing.T) {
-	empty := ""
-	_, err := NewBuilder(
-		WithConfiguration(StaticAppData(&empty)),
-	).WithModules(nopModule).Build()
-	assert.Error(t, err, "Expected service name to be provided")
-}
-
 func TestWithModules_OK(t *testing.T) {
-	_, err := WithModules(nopModule).WithOptions(
+	_, err := WithModule("hello", nopModule).WithOptions(
 		WithConfiguration(StaticAppData(nil)),
 	).Build()
 	assert.NoError(t, err)
 }
 
-func nopModule(_ ModuleCreateInfo) ([]Module, error) {
+func TestWithModules_Err(t *testing.T) {
+	_, err := WithModule("hello", errModule).WithOptions(
+		WithConfiguration(StaticAppData(nil)),
+	).Build()
+	assert.Error(t, err)
+}
+
+func TestWithModules_SkipsModulesBadInit(t *testing.T) {
+	empty := ""
+	_, err := WithModule("hello", nopModule).WithOptions(
+		WithConfiguration(StaticAppData(&empty)),
+	).Build()
+	assert.Error(t, err, "Expected service name to be provided")
+}
+
+func nopModule(_ Host) (Module, error) {
 	return nil, nil
 }
 
-func errModule(_ ModuleCreateInfo) ([]Module, error) {
+func errModule(_ Host) (Module, error) {
 	return nil, errors.New("intentional module creation failure")
 }

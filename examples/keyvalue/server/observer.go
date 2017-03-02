@@ -20,7 +20,10 @@
 
 package main
 
-import "go.uber.org/fx/service"
+import (
+	"go.uber.org/fx/service"
+	"go.uber.org/zap"
+)
 
 // Observer receives callbacks during various service lifecycle events
 type Observer struct {
@@ -32,7 +35,7 @@ type Observer struct {
 
 // OnInit is called during service init process. Returning an error halts the init?
 func (o *Observer) OnInit(svc service.Host) error {
-	svc.Logger().Info(
+	zap.S().Info(
 		"Received service init callback",
 		"service_name", o.Name(),
 		"some_number", o.ServiceConfig.SomeNumber,

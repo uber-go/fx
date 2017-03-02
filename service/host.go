@@ -21,7 +21,6 @@
 package service
 
 import (
-	"context"
 	"fmt"
 	"os"
 	"os/signal"
@@ -32,7 +31,7 @@ import (
 
 	"go.uber.org/fx/config"
 	"go.uber.org/fx/internal/util"
-	"go.uber.org/fx/ulog"
+	"go.uber.org/zap"
 
 	"github.com/pkg/errors"
 )
@@ -41,13 +40,14 @@ const (
 	defaultStartupWait = time.Second
 )
 
-type host struct {
+// Implements Manager interface
+type manager struct {
 	serviceCore
-	locked   bool
-	observer Observer
-	modules  []Module
-	roles    map[string]bool
-	stateMu  sync.Mutex
+	locked         bool
+	observer       Observer
+	moduleWrappers []*moduleWrapper
+	roles          map[string]bool
+	stateMu        sync.Mutex
 
 	// Shutdown fields.
 	shutdownMu     sync.Mutex
@@ -57,19 +57,16 @@ type host struct {
 	started        bool
 }
 
-// TODO(glib): host is both an Owner and a Host?
-var _ Host = &host{}
-var _ Owner = &host{}
+// TODO(glib): manager is both an Manager and a Host?
+var _ Host = &manager{}
+var _ Manager = &manager{}
 
-func (s *host) addModule(module Module) error {
-	if s.locked {
-		return fmt.Errorf("can't add module: service already started")
-	}
-	s.modules = append(s.modules, module)
+func (s *manager) addModuleWrapper(moduleWrapper *moduleWrapper) error {
+	s.moduleWrappers = append(s.moduleWrappers, moduleWrapper)
 	return nil
 }
 
-func (s *host) supportsRole(roles ...string) bool {
+func (s *manager) supportsRole(roles ...string) bool {
 	if len(s.roles) == 0 || len(roles) == 0 {
 		return true
 	}
@@ -82,22 +79,16 @@ func (s *host) supportsRole(roles ...string) bool {
 	return false
 }
 
-func (s *host) Modules() []Module {
-	mods := make([]Module, len(s.modules))
-	copy(mods, s.modules)
-	return mods
-}
-
-func (s *host) IsRunning() bool {
+func (s *manager) IsRunning() bool {
 	return s.closeChan != nil
 }
 
-func (s *host) OnCriticalError(err error) {
+func (s *manager) OnCriticalError(err error) {
 	shutdown := true
 	if s.observer == nil {
-		s.Logger().Warn(
+		zap.L().Warn(
 			"No observer set to handle lifecycle events. Shutting down.",
-			"event", "OnCriticalError",
+			zap.String("event", "OnCriticalError"),
 		)
 	} else {
 		shutdown = !s.observer.OnCriticalError(err)
@@ -106,12 +97,15 @@ func (s *host) OnCriticalError(err error) {
 	if shutdown {
 		if ok, err := s.shutdown(err, "", nil); !ok || err != nil {
 			// TODO(ai) verify we flush logs
-			s.Logger().Info("Problem shutting down module", "success", ok, "error", err)
+			zap.L().Info("Problem shutting down module",
+				zap.Bool("success", ok),
+				zap.Error(err),
+			)
 		}
 	}
 }
 
-func (s *host) shutdown(err error, reason string, exitCode *int) (bool, error) {
+func (s *manager) shutdown(err error, reason string, exitCode *int) (bool, error) {
 	s.shutdownMu.Lock()
 	s.inShutdown = true
 	defer func() {
@@ -145,8 +139,8 @@ func (s *host) shutdown(err error, reason string, exitCode *int) (bool, error) {
 	// Log the module shutdown errors
 	errs := s.stopModules()
 	if len(errs) > 0 {
-		for k, v := range errs {
-			s.Logger().Error("Failure to shut down module", "name", k.Name(), "error", v.Error())
+		for _, err := range errs {
+			zap.L().Error("Failure to shut down module", zap.Error(err))
 		}
 	}
 
@@ -158,15 +152,15 @@ func (s *host) shutdown(err error, reason string, exitCode *int) (bool, error) {
 	// Stop the metrics reporting
 	if s.metricsCloser != nil {
 		if err = s.metricsCloser.Close(); err != nil {
-			s.Logger().Error("Failure to close metrics", "error", err)
+			zap.L().Error("Failure to close metrics", zap.Error(err))
 		}
 	}
 
 	// Flush tracing buffers
 	if s.tracerCloser != nil {
-		s.Logger().Debug("Closing tracer")
+		zap.L().Debug("Closing tracer")
 		if err = s.tracerCloser.Close(); err != nil {
-			s.Logger().Error("Failure to close tracer", "error", err)
+			zap.L().Error("Failure to close tracer", zap.Error(err))
 		}
 	}
 
@@ -183,52 +177,44 @@ func (s *host) shutdown(err error, reason string, exitCode *int) (bool, error) {
 	return true, err
 }
 
-// AddModules adds the given modules to a service host
-func (s *host) AddModules(modules ...ModuleCreateFunc) error {
-	for _, mcf := range modules {
-		mi := ModuleCreateInfo{
-			Host:  s,
-			Items: make(map[string]interface{}),
-		}
-
-		mods, err := mcf(mi)
-		if err != nil {
-			return err
-		}
-
-		if !s.supportsRole(mi.Roles...) {
-			s.Logger().Info(
-				"module will not be added due to selected roles",
-				"roles", mi.Roles,
-			)
-		}
-
-		for _, mod := range mods {
-			err = s.addModule(mod)
-		}
+func (s *manager) addModule(name string, module ModuleCreateFunc, options ...ModuleOption) error {
+	if s.locked {
+		return fmt.Errorf("can't add module: service already started")
 	}
-
-	return nil
+	moduleWrapper, err := newModuleWrapper(s, name, module, options...)
+	if err != nil {
+		return err
+	}
+	if moduleWrapper == nil {
+		return nil
+	}
+	if !s.supportsRole(moduleWrapper.scopedHost.Roles()...) {
+		zap.L().Info(
+			"module will not be added due to selected roles",
+			zap.Any("roles", moduleWrapper.scopedHost.Roles()),
+		)
+	}
+	return s.addModuleWrapper(moduleWrapper)
 }
 
 // StartAsync service is used as a non-blocking the call on service start. StartAsync will
 // return the call to the caller with a Control to listen on channels
 // and trigger manual shutdowns.
-func (s *host) StartAsync() Control {
+func (s *manager) StartAsync() Control {
 	return s.start()
 }
 
 // Start service is used for blocking the call on service start. Start will block the
 // call and yield the control to the service lifecyce manager. Start will not yield back
 // the control to the caller, so no code will be executed after calling Start()
-func (s *host) Start() {
+func (s *manager) Start() {
 	s.start()
 
 	// block until forced exit
 	s.WaitForShutdown(nil)
 }
 
-func (s *host) start() Control {
+func (s *manager) start() Control {
 	var err error
 	s.locked = true
 	s.shutdownMu.Lock()
@@ -278,9 +264,12 @@ func (s *host) start() Control {
 
 				s.shutdownMu.Unlock()
 				if _, err := s.shutdown(e, "", nil); err != nil {
-					s.Logger().Error("Unable to shut down modules", "initialError", e, "shutdownError", err)
+					zap.L().Error("Unable to shut down modules",
+						zap.NamedError("initialError", e),
+						zap.NamedError("shutdownError", err),
+					)
 				}
-				s.Logger().Error("Error starting the module", "error", e)
+				zap.L().Error("Error starting the module", zap.Error(e))
 				// return first service error
 				if serviceErr == nil {
 					serviceErr = e
@@ -304,48 +293,52 @@ func (s *host) start() Control {
 	}
 }
 
-func (s *host) registerSignalHandlers() {
+func (s *manager) registerSignalHandlers() {
 	ch := make(chan os.Signal)
 	signal.Notify(ch, syscall.SIGINT, syscall.SIGTERM)
 	go func() {
 		sig := <-ch
-		s.Logger().Warn("Received shutdown signal", "signal", sig.String())
+		zap.L().Warn("Received shutdown signal", zap.String("signal", sig.String()))
 		if err := s.Stop("Received syscall", 0); err != nil {
-			s.Logger().Error("Error shutting down", "error", err.Error())
+			zap.L().Error("Error shutting down", zap.Error(err))
 		}
 	}()
 }
 
 // Stop shuts down the service.
-func (s *host) Stop(reason string, exitCode int) error {
+func (s *manager) Stop(reason string, exitCode int) error {
 	ec := &exitCode
 	_, err := s.shutdown(nil, reason, ec)
 	return err
 }
 
-func (s *host) startModules() map[Module]error {
-	results := map[Module]error{}
+func (s *manager) startModules() []error {
+	var results []error
+	var lock sync.Mutex
 	wg := sync.WaitGroup{}
 
 	// make sure we wait for all the start
 	// calls to return
-	wg.Add(len(s.modules))
-	for _, mod := range s.modules {
-		go func(m Module) {
+	wg.Add(len(s.moduleWrappers))
+	for _, mod := range s.moduleWrappers {
+		go func(m *moduleWrapper) {
 			if !m.IsRunning() {
-				readyCh := make(chan struct{}, 1)
-				startResult := m.Start(readyCh)
-
+				errC := make(chan error, 1)
+				go func() { errC <- m.Start() }()
 				select {
-				case <-readyCh:
-					s.Logger().Info("Module started up cleanly", "module", m.Name())
+				case err := <-errC:
+					if err != nil {
+						zap.L().Error("Error received while starting module", zap.String("module", m.Name()), zap.Error(err))
+						lock.Lock()
+						results = append(results, err)
+						lock.Unlock()
+					} else {
+						zap.L().Info("Module started up cleanly", zap.String("module", m.Name()))
+					}
 				case <-time.After(defaultStartupWait):
-					results[m] = fmt.Errorf("module didn't start after %v", defaultStartupWait)
-				}
-
-				if startError := <-startResult; startError != nil {
-					s.Logger().Error("Error received while starting module", "module", m.Name(), "error", startError)
-					results[m] = startError
+					lock.Lock()
+					results = append(results, fmt.Errorf("module didn't start after %v", defaultStartupWait))
+					lock.Unlock()
 				}
 			}
 			wg.Done()
@@ -357,17 +350,20 @@ func (s *host) startModules() map[Module]error {
 	return results
 }
 
-func (s *host) stopModules() map[Module]error {
-	results := map[Module]error{}
+func (s *manager) stopModules() []error {
+	var results []error
+	var lock sync.Mutex
 	wg := sync.WaitGroup{}
-	wg.Add(len(s.modules))
-	for _, mod := range s.modules {
-		go func(m Module) {
+	wg.Add(len(s.moduleWrappers))
+	for _, mod := range s.moduleWrappers {
+		go func(m *moduleWrapper) {
 			if !m.IsRunning() {
 				// TODO: have a timeout here so a bad shutdown
 				// doesn't block everyone
 				if err := m.Stop(); err != nil {
-					results[m] = err
+					lock.Lock()
+					results = append(results, err)
+					lock.Unlock()
 				}
 			}
 			wg.Done()
@@ -381,9 +377,9 @@ func (s *host) stopModules() map[Module]error {
 // an exit code
 type ExitCallback func(shutdown Exit) int
 
-func (s *host) WaitForShutdown(exitCallback ExitCallback) {
+func (s *manager) WaitForShutdown(exitCallback ExitCallback) {
 	shutdown := <-s.closeChan
-	s.Logger().Info("Shutting down", "reason", shutdown.Reason)
+	zap.L().Info("Shutting down", zap.String("reason", shutdown.Reason))
 
 	exit := 0
 	if exitCallback != nil {
@@ -394,13 +390,17 @@ func (s *host) WaitForShutdown(exitCallback ExitCallback) {
 	os.Exit(exit)
 }
 
-func (s *host) transitionState(to State) {
+func (s *manager) transitionState(to State) {
 	s.stateMu.Lock()
 	defer s.stateMu.Unlock()
 
 	// TODO(ai) this isn't used yet
 	if to < s.state {
-		s.Logger().Fatal("Can't down from state", "from", s.state, "to", to, "service", s.Name())
+		zap.L().Fatal("Can't down from state",
+			zap.Any("from", s.state),
+			zap.Any("to", to),
+			zap.String("service", s.Name()),
+		)
 	}
 
 	for s.state < to {
@@ -437,7 +437,7 @@ func loadInstanceConfig(cfg config.Provider, key string, instance interface{}) b
 		// Try to load the service config
 		err := cfg.Get(key).PopulateStruct(configValue.Interface())
 		if err != nil {
-			ulog.Logger(context.Background()).Error("Unable to load instance config", "error", err)
+			zap.L().Error("Unable to load instance config", zap.Error(err))
 			return false
 		}
 		instanceValue := reflect.ValueOf(instance).Elem()

@@ -28,68 +28,48 @@ import (
 	"go.uber.org/fx/service"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestNopBackend(t *testing.T) {
 	b := &NopBackend{}
-	testBackendMethods(t, b)
+	assert.NotNil(t, b.Encoder())
+	assert.NoError(t, b.Start())
 	assert.NoError(t, b.Publish(nil, nil))
 	assert.NoError(t, b.Stop())
 }
 
 func TestInMemBackend(t *testing.T) {
-	b := NewInMemBackend(service.NopHost())
-	errorCh := testBackendMethods(t, b)
-	publishEncodedVal(t, b, errorCh)
-	publishEncodedVal(t, b, errorCh)
-
+	b := NewInMemBackend(newTestHost(t)).(*inMemBackend)
+	assert.NotNil(t, b.Encoder())
+	assert.NoError(t, b.Start())
+	publishEncodedVal(t, b)
+	publishEncodedVal(t, b)
 	assert.NoError(t, b.Stop())
-	assert.False(t, b.IsRunning())
-}
-
-func TestInMemBackendStartAfterStart(t *testing.T) {
-	b := NewInMemBackend(service.NopHost())
-	_ = b.Start(make(chan struct{}))
-	errorCh := b.Start(make(chan struct{}))
-	err := <-errorCh
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "already running")
-}
-
-func TestInMemBackendStartAfterStop(t *testing.T) {
-	b := NewInMemBackend(service.NopHost())
-	_ = b.Stop()
-	errorCh := b.Start(make(chan struct{}))
-	err := <-errorCh
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "been stopped")
 }
 
 func TestInMemBackendStartTimeout(t *testing.T) {
-	b := NewInMemBackend(service.NopHost())
-	_ = b.Start(make(chan struct{}))
+	b := NewInMemBackend(newTestHost(t))
+	_ = b.Start()
 	defer b.Stop()
 	time.Sleep(time.Millisecond)
 }
 
-func testBackendMethods(t *testing.T, b Backend) <-chan error {
-	assert.NotEmpty(t, b.Name())
-	assert.NotNil(t, b.Encoder())
-
-	errorCh := b.Start(make(chan struct{}))
-	assert.True(t, b.IsRunning())
-	return errorCh
-}
-
-func publishEncodedVal(t *testing.T, b Backend, errorCh <-chan error) {
+func publishEncodedVal(t *testing.T, b *inMemBackend) {
 	bytes, err := b.Encoder().Marshal("Hello")
 	assert.NoError(t, err)
 
 	// Publish a non FnSignature value that results in error
 	err = b.Publish(context.Background(), bytes)
 	assert.NoError(t, err)
-	if err, ok := <-errorCh; ok {
+	if err, ok := <-b.ErrorCh(); ok {
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "type mismatch")
 	}
+}
+
+func newTestHost(t *testing.T) service.Host {
+	mi, err := service.NewScopedHost(service.NopHost(), "hello")
+	require.NoError(t, err)
+	return mi
 }

@@ -44,11 +44,9 @@ const (
 	Stopped
 )
 
-// A Owner encapsulates service ownership
-type Owner interface {
+// A Manager encapsulates service ownership
+type Manager interface {
 	Host
-
-	AddModules(modules ...ModuleCreateFunc) error
 
 	// Start service is used for blocking the call on service start. Start will block the
 	// call and yield the control to the service lifecyce manager. No code will be executed
@@ -83,15 +81,12 @@ type serviceConfig struct {
 	Roles       []string `yaml:"roles"`
 }
 
-// New creates a service owner from a set of service instances and options
-// TODO(glib): Something is fishy here... `service.New` returns a service.Owner -_-
-func New(options ...Option) (Owner, error) {
-	svc := &host{
+// newManager creates a service Manager from a Builder.
+func newManager(builder *Builder) (Manager, error) {
+	svc := &manager{
 		// TODO: get these out of config struct instead
-		modules: []Module{},
-		serviceCore: serviceCore{
-			resources: map[string]interface{}{},
-		},
+		moduleWrappers: []*moduleWrapper{},
+		serviceCore:    serviceCore{},
 	}
 
 	// hash up the roles
@@ -101,7 +96,7 @@ func New(options ...Option) (Owner, error) {
 	}
 
 	// Run the rest of the options
-	for _, opt := range options {
+	for _, opt := range builder.options {
 		if optionErr := opt(svc); optionErr != nil {
 			return nil, errors.Wrap(optionErr, "option failed to apply")
 		}
@@ -123,7 +118,9 @@ func New(options ...Option) (Owner, error) {
 	// TODO(glib): add a logging reporter and use it by default, rather than nop
 	svc.setupMetrics()
 
-	svc.setupLogging()
+	if err := svc.setupLogging(); err != nil {
+		return nil, err
+	}
 
 	svc.setupAuthClient()
 
@@ -143,6 +140,12 @@ func New(options ...Option) (Owner, error) {
 	svc.transitionState(Initialized)
 
 	svc.Metrics().Counter("boot").Inc(1)
+
+	for _, module := range builder.modules {
+		if err := svc.addModule(module.name, module.moduleCreateFunc, module.options...); err != nil {
+			return nil, err
+		}
+	}
 
 	return svc, nil
 }

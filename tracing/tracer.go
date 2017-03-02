@@ -21,82 +21,48 @@
 package tracing
 
 import (
-	"fmt"
 	"io"
-	"time"
-
-	"go.uber.org/fx/ulog"
 
 	"github.com/opentracing/opentracing-go"
 	"github.com/uber-go/tally"
 	"github.com/uber/jaeger-client-go/config"
+	jzap "github.com/uber/jaeger-client-go/log/zap"
+	jtally "github.com/uber/jaeger-lib/metrics/tally"
+	"go.uber.org/zap"
 )
 
 // InitGlobalTracer instantiates a new global tracer
 func InitGlobalTracer(
 	cfg *config.Configuration,
 	serviceName string,
-	logger ulog.Log,
-	statsReporter tally.CachedStatsReporter,
+	logger *zap.Logger,
+	scope tally.Scope,
 ) (opentracing.Tracer, io.Closer, error) {
-	var reporter *jaegerReporter
-	if cfg == nil || !cfg.Disabled {
-		cfg = loadAppConfig(cfg, logger)
-		// TODO: Change to use the right stats reporter
-		reporter = &jaegerReporter{
-			reporter: statsReporter,
-		}
-	}
-	tracer, closer, err := cfg.New(serviceName, reporter)
+	tracer, closer, err := CreateTracer(cfg, serviceName, logger, scope)
 	if err == nil {
 		opentracing.InitGlobalTracer(tracer)
 	}
 	return tracer, closer, err
 }
 
-func loadAppConfig(cfg *config.Configuration, logger ulog.Log) *config.Configuration {
+// CreateTracer creates a tracer
+func CreateTracer(
+	cfg *config.Configuration,
+	serviceName string,
+	logger *zap.Logger,
+	scope tally.Scope,
+) (opentracing.Tracer, io.Closer, error) {
+	if cfg == nil || !cfg.Disabled {
+		cfg = loadAppConfig(cfg)
+	}
+	jaegerMetrics := jtally.Wrap(scope)
+	jaegerLogger := jzap.NewLogger(logger)
+	return cfg.New(serviceName, config.Metrics(jaegerMetrics), config.Logger(jaegerLogger))
+}
+
+func loadAppConfig(cfg *config.Configuration) *config.Configuration {
 	if cfg == nil {
 		cfg = &config.Configuration{}
 	}
-	if cfg.Logger == nil {
-		jaegerlogger := &jaegerLogger{
-			log: logger,
-		}
-		cfg.Logger = jaegerlogger
-	}
 	return cfg
-}
-
-type jaegerLogger struct {
-	log ulog.Log
-}
-
-// Error logs an error message
-func (jl *jaegerLogger) Error(msg string) {
-	jl.log.Error(msg)
-}
-
-// Infof logs an info message with args as key value pairs
-func (jl *jaegerLogger) Infof(msg string, args ...interface{}) {
-	logMsg := fmt.Sprintf(msg, args...)
-	jl.log.Info(logMsg)
-}
-
-type jaegerReporter struct {
-	reporter tally.CachedStatsReporter
-}
-
-// IncCounter increments metrics counter TODO: Change to use scope with tally functions to increment/update
-func (jr *jaegerReporter) IncCounter(name string, tags map[string]string, value int64) {
-	jr.reporter.AllocateCounter(name, tags).ReportCount(value)
-}
-
-// UpdateGauge updates metrics gauge
-func (jr *jaegerReporter) UpdateGauge(name string, tags map[string]string, value int64) {
-	jr.reporter.AllocateGauge(name, tags).ReportGauge(float64(value))
-}
-
-// RecordTimer records the metrics timer
-func (jr *jaegerReporter) RecordTimer(name string, tags map[string]string, d time.Duration) {
-	jr.reporter.AllocateTimer(name, tags).ReportTimer(d)
 }

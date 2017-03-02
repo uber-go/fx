@@ -21,262 +21,140 @@
 package sentry
 
 import (
-	"compress/zlib"
-	"encoding/base64"
-	"encoding/json"
-	"fmt"
-	"io"
-	"net/http"
-	"net/http/httptest"
-	"strings"
+	"sync"
 	"testing"
+	"time"
 
 	raven "github.com/getsentry/raven-go"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/uber-go/zap"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 )
 
-type fakeClient raven.Client
-
-func TestBadDSN(t *testing.T) {
-	_, err := New("123http://whoops")
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "failed to create sentry client")
+type spy struct {
+	sync.Mutex
+	packets []*raven.Packet
+	waits   int
 }
 
-func TestEmptyDSN(t *testing.T) {
-	l, err := New("")
-	assert.NoError(t, err)
-	assert.NotNil(t, l)
-}
-
-func TestWithLevels(t *testing.T) {
-	l, err := New("", MinLevel(zap.InfoLevel))
-	assert.NoError(t, err)
-	assert.NotNil(t, l)
-	assert.Equal(t, l.minLevel, zap.InfoLevel)
-}
-
-func TestExtra(t *testing.T) {
-	f := map[string]interface{}{
-		"requestID":         "123h2eor2039423",
-		"someInt":           123,
-		"arrayOfManyThings": []int{1, 2, 3},
+func (s *spy) Capture(p *raven.Packet, tags map[string]string) (string, chan error) {
+	if len(tags) > 0 {
+		panic("Sentry integration shouldn't depend on capture-site tags.")
 	}
-	s, err := New("", Fields(f))
-	s.CheckAndFire(zap.ErrorLevel, "error log", "foo", "bar")
-	assert.NoError(t, err)
-	assert.Equal(t, f, s.Fields())
+	s.Lock()
+	defer s.Unlock()
+	s.packets = append(s.packets, p)
+	return "", nil
 }
 
-func TestWith(t *testing.T) {
-	sh, err := New("", Fields(map[string]interface{}{
-		"someInt": 123,
-	}))
-	assert.NoError(t, err)
-	expected := map[string]interface{}{"someInt": 123, "someFloat": float64(10)}
-	sh.AppendFields("someFloat", float64(10))
-	assert.Equal(t, expected, sh.Fields())
+func (s *spy) Wait() {
+	s.Lock()
+	s.waits++
+	s.Unlock()
 }
 
-func TestCopy(t *testing.T) {
-	sh, err := New("", Fields(map[string]interface{}{
-		"someInt": 123,
-	}))
-	assert.NoError(t, err)
-	shCopy := sh.Copy()
-	for k, v := range sh.Fields() {
-		assert.Equal(t, v, shCopy.Fields()[k])
+func (s *spy) Packets() []*raven.Packet {
+	s.Lock()
+	defer s.Unlock()
+	if len(s.packets) == 0 {
+		return nil
 	}
-	assert.Equal(t, sh.Capturer, shCopy.Capturer)
-	assert.Equal(t, sh.minLevel, shCopy.minLevel)
-	assert.Equal(t, sh.traceEnabled, shCopy.traceEnabled)
-	assert.Equal(t, sh.traceSkipFrames, shCopy.traceSkipFrames)
-	assert.Equal(t, sh.traceContextLines, shCopy.traceContextLines)
-	assert.Equal(t, sh.traceAppPrefixes, shCopy.traceAppPrefixes)
+	return append([]*raven.Packet{}, s.packets...)
 }
 
-func TestWithTraceDisabled(t *testing.T) {
-	_, ps := capturePackets(func(sh *Hook) {
-		sh.CheckAndFire(zap.ErrorLevel, "some error message", "foo", "bar")
-		sh.CheckAndFire(zap.ErrorLevel, "another error message")
-	}, DisableTraces())
-
-	for _, p := range ps {
-		assert.Empty(t, p.Interfaces)
-	}
+func asCore(t testing.TB, iface zapcore.Core) *core {
+	c, ok := iface.(*core)
+	require.True(t, ok, "Failed to cast Core to sentry *core.")
+	return c
 }
 
-func TestTraceCfg(t *testing.T) {
-	l, err := New(
-		"",
-		TraceSkipFrames(1),
-		TraceContextLines(7),
-		TraceAppPrefixes([]string{"github.com/uber-go/unicorns"}),
-	)
-	assert.NoError(t, err)
-	assert.Equal(t, l.traceSkipFrames, 1)
-	assert.Equal(t, l.traceContextLines, 7)
-	assert.Equal(t, l.traceAppPrefixes, []string{"github.com/uber-go/unicorns"})
-}
-
-func TestLevels(t *testing.T) {
-	_, ps := capturePackets(func(sh *Hook) {
-		sh.CheckAndFire(zap.DebugLevel, "debug level log")
-		sh.CheckAndFire(zap.InfoLevel, "info level log")
-		sh.CheckAndFire(zap.WarnLevel, "warn level log")
-		sh.CheckAndFire(zap.ErrorLevel, "error level log")
-	}, MinLevel(zap.WarnLevel))
-
-	assert.Equal(t, len(ps), 2, "only Warn and Error packets should be collected")
-}
-
-func TestErrorCapture(t *testing.T) {
-	_, p := capturePacket(func(sh *Hook) {
-		sh.CheckAndFire(zap.ErrorLevel, "some error message", "foo", "bar")
-	})
-
-	assert.Equal(t, p.Message, "some error message")
-	assert.Equal(t, p.Extra, map[string]interface{}{"foo": "bar"})
-
-	trace := p.Interfaces[0].(*raven.Stacktrace)
-	assert.NotNil(t, trace.Frames)
-}
-
-func TestPacketSending(t *testing.T) {
-	withTestSentry(func(dsn string, ch <-chan *raven.Packet) {
-		sh, err := New(dsn)
-		defer sh.Close()
-		assert.NoError(t, err)
-
-		sh.CheckAndFire(zap.ErrorLevel, "my error message", "mykey1", "myvalue1")
-		sh.CheckAndFire(zap.ErrorLevel, "my error message", "mykey1", "myvalue1")
-		p := <-ch
-
-		assert.Equal(t, p.Message, "my error message")
-		assert.Equal(t, map[string]interface{}{"mykey1": "myvalue1"}, p.Extra)
-	})
-}
-
-func TestConfigure(t *testing.T) {
-	one := 1
-	two := 2
-	debug := zap.DebugLevel.String()
-	str := "random string"
-	trace := struct {
-		Disabled     bool
-		SkipFrames   *int `yaml:"skip_frames"`
-		ContextLines *int `yaml:"context_lines"`
+func TestRavenSeverityMap(t *testing.T) {
+	tests := []struct {
+		z zapcore.Level
+		r raven.Severity
 	}{
-		Disabled:     true,
-		SkipFrames:   &one,
-		ContextLines: &two,
+		{zap.DebugLevel, raven.INFO},
+		{zap.InfoLevel, raven.INFO},
+		{zap.WarnLevel, raven.WARNING},
+		{zap.ErrorLevel, raven.ERROR},
+		{zap.DPanicLevel, raven.FATAL},
+		{zap.PanicLevel, raven.FATAL},
+		{zap.FatalLevel, raven.FATAL},
+		{zapcore.Level(-42), raven.FATAL},
+		{zapcore.Level(100), raven.FATAL},
 	}
 
-	testCases := []struct {
-		name  string
-		conf  Configuration
-		res   *Hook
-		isErr bool
-	}{
-		{"Empty",
-			Configuration{},
-			&Hook{
-				traceEnabled:      true,
-				minLevel:          zap.ErrorLevel,
-				traceContextLines: _traceContextLines,
-				traceSkipFrames:   _traceSkipFrames,
-				fields:            map[string]interface{}{},
-			}, false},
-		{"SomeValues",
-			Configuration{
-				MinLevel: &debug,
-				Trace:    &trace,
-				Fields:   map[string]interface{}{"mickey": "mouse"},
-			},
-			&Hook{
-				minLevel:          zap.DebugLevel,
-				traceEnabled:      false,
-				traceSkipFrames:   one,
-				traceContextLines: two,
-				fields:            map[string]interface{}{"mickey": "mouse"},
-			}, false},
-		{"ParseError", Configuration{MinLevel: &str}, nil, true},
-	}
-
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			conf, err := Configure(tc.conf)
-			if tc.isErr {
-				assert.Error(t, err)
-				return
-			}
-
-			require.NoError(t, err)
-			r := tc.res
-			assert.Equal(t, r.traceEnabled, conf.traceEnabled)
-			assert.Equal(t, r.minLevel, conf.minLevel)
-			assert.Equal(t, r.traceContextLines, conf.traceContextLines)
-			assert.Equal(t, r.traceSkipFrames, conf.traceSkipFrames)
-			assert.Equal(t, r.fields, conf.fields)
-		})
+	for _, tt := range tests {
+		assert.Equal(
+			t,
+			tt.r,
+			ravenSeverity(tt.z),
+			"Unexpected output converting zap Level %s to raven Severity.", tt.z,
+		)
 	}
 }
 
-func capturePacket(f func(sh *Hook), options ...Option) (*Hook, *raven.Packet) {
-	l, ps := capturePackets(f, options...)
-	if len(ps) != 1 {
-		panic("Expected to capture a packet, but didn't")
-	}
-	return l, ps[0]
+func TestCoreWith(t *testing.T) {
+	// Ensure that we're not sharing map references across generations.
+	parent := newCore(nil, zapcore.ErrorLevel).With([]zapcore.Field{zap.String("parent", "parent")})
+	elder := parent.With([]zapcore.Field{zap.String("elder", "elder")})
+	younger := parent.With([]zapcore.Field{zap.String("younger", "younger")})
+
+	parentC := asCore(t, parent)
+	elderC := asCore(t, elder)
+	youngerC := asCore(t, younger)
+
+	assert.Equal(t, map[string]interface{}{
+		"parent": "parent",
+	}, parentC.fields, "Unexpected fields on parent.")
+	assert.Equal(t, map[string]interface{}{
+		"parent": "parent",
+		"elder":  "elder",
+	}, elderC.fields, "Unexpected fields on first child core.")
+	assert.Equal(t, map[string]interface{}{
+		"parent":  "parent",
+		"younger": "younger",
+	}, youngerC.fields, "Unexpected fields on second child core.")
 }
 
-func capturePackets(f func(sh *Hook), options ...Option) (*Hook, []*raven.Packet) {
-	sh, err := New("", options...)
-	if err != nil {
-		panic("Failed to create the logger")
-	}
-
-	c := &MemCapturer{}
-	sh.Capturer = c
-
-	f(sh)
-
-	return sh, c.Packets
+func TestCoreCheck(t *testing.T) {
+	core := newCore(nil, zapcore.ErrorLevel)
+	assert.Nil(t, core.Check(zapcore.Entry{}, nil), "Expected nil CheckedEntry for disabled levels.")
+	ent := zapcore.Entry{Level: zapcore.ErrorLevel}
+	assert.NotNil(t, core.Check(ent, nil), "Expected non-nil CheckedEntry for enabled levels.")
 }
 
-func withTestSentry(f func(string, <-chan *raven.Packet)) {
-	ch := make(chan *raven.Packet)
-	h := http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
-		defer req.Body.Close()
+func TestConfigWrite(t *testing.T) {
+	s := &spy{}
+	core := newCore(s, zapcore.ErrorLevel)
 
-		contentType := req.Header.Get("Content-Type")
-		var bodyReader io.Reader = req.Body
-		// underlying client will compress and encode payload above certain size
-		if contentType == "application/octet-stream" {
-			bodyReader = base64.NewDecoder(base64.StdEncoding, bodyReader)
-			bodyReader, _ = zlib.NewReader(bodyReader)
-		}
+	// Write a panic-level message, which should also fire a Sentry event.
+	ent := zapcore.Entry{Message: "oh no", Level: zapcore.PanicLevel, Time: time.Now()}
+	ce := core.With([]zapcore.Field{zap.String("foo", "bar")}).Check(ent, nil)
+	require.NotNil(t, ce, "Expected Check to return non-nil CheckedEntry at enabled levels.")
+	ce.Write(zap.String("bar", "baz"))
 
-		d := json.NewDecoder(bodyReader)
-		p := &raven.Packet{}
-		err := d.Decode(p)
-		if err != nil {
-			ch <- nil
-			panic(err.Error())
-		}
-		ch <- p
-	})
-	s := httptest.NewServer(h)
-	defer s.Close()
+	// Assert that we wrote and flushed a packet.
+	require.Equal(t, 1, len(s.packets), "Expected to write one Sentry packet.")
+	assert.Equal(t, 1, s.waits, "Expected to flush buffered events before crashing.")
 
-	fragments := strings.SplitN(s.URL, "://", 2)
-	dsn := fmt.Sprintf(
-		"%s://public:secret@%s/sentry/project-id",
-		fragments[0],
-		fragments[1],
-	)
+	// Assert that the captured packet is shaped correctly.
+	p := s.packets[0]
+	assert.Equal(t, "oh no", p.Message, "Unexpected message in captured packet.")
+	assert.Equal(t, raven.FATAL, p.Level, "Unexpected severity in captured packet.")
+	require.Equal(t, 1, len(p.Interfaces), "Expected a stacktrace in packet interfaces.")
+	trace, ok := p.Interfaces[0].(*raven.Stacktrace)
+	require.True(t, ok, "Expected only interface in packet to be a stacktrace.")
+	// Trace should contain this test and testing harness main.
+	require.Equal(t, 2, len(trace.Frames), "Expected stacktrace to contain at least two frame.")
 
-	f(dsn, ch)
+	frame := trace.Frames[len(trace.Frames)-1]
+	assert.Equal(t, "TestConfigWrite", frame.Function, "Expected frame to point to this test function.")
+}
+
+func TestConfigBuild(t *testing.T) {
+	broken := Configuration{DSN: "invalid"}
+	_, err := broken.Build()
+	assert.Error(t, err, "Expected invalid DSN to make config building fail.")
 }

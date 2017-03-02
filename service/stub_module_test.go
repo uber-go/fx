@@ -30,16 +30,11 @@ import (
 func TestStubModule_StartError(t *testing.T) {
 	s := NewStubModule(NopHost())
 	s.StartError = errors.New("blargh")
-	readyCh := make(chan struct{}, 1)
-
-	assert.Error(t, <-s.Start(readyCh))
+	assert.Error(t, s.Start())
 }
 
 func TestStubModule_Accessors(t *testing.T) {
 	s := NewStubModule(NopHost())
 	assert := assert.New(t)
-
-	assert.Empty(s.Name())
-	assert.False(s.IsRunning())
 	assert.NoError(s.Stop())
 }

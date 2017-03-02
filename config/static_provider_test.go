@@ -21,9 +21,11 @@
 package config
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestStaticProvider_Name(t *testing.T) {
@@ -52,12 +54,12 @@ func TestStaticProvider_WithData(t *testing.T) {
 
 func TestStaticProvider_WithScope(t *testing.T) {
 	data := map[string]interface{}{
-		"hello.world": 42,
+		"hello": map[string]int{"world": 42},
 	}
 	p := NewStaticProvider(data)
 
 	val := p.Get("hello")
-	assert.False(t, val.HasValue())
+	assert.True(t, val.HasValue())
 
 	sub := p.Scope("hello")
 	val = sub.Get("world")
@@ -69,4 +71,42 @@ func TestStaticProvider_Callbacks(t *testing.T) {
 	p := NewStaticProvider(nil)
 	assert.NoError(t, p.RegisterChangeCallback("test", nil))
 	assert.NoError(t, p.UnregisterChangeCallback("token"))
+}
+
+func TestStaticProviderFmtPrintOnValueNoPanic(t *testing.T) {
+	p := NewStaticProvider(nil)
+	val := p.Get("something")
+
+	f := func() {
+		assert.Contains(t, fmt.Sprintf("%v", val), "")
+	}
+	assert.NotPanics(t, f)
+}
+
+func TestNilStaticProviderSetDefaultTagValue(t *testing.T) {
+	type Inner struct {
+		Set bool `yaml:"set" default:"true"`
+	}
+	data := struct {
+		ID0 int             `yaml:"id0" default:"10"`
+		ID1 string          `yaml:"id1" default:"string"`
+		ID2 Inner           `yaml:"id2"`
+		ID3 []Inner         `yaml:"id3"`
+		ID4 map[Inner]Inner `yaml:"id4"`
+		ID5 *Inner          `yaml:"id5"`
+		ID6 [6]Inner        `yaml:"id6"`
+		ID7 [7]*Inner       `yaml:"id7"`
+	}{}
+
+	p := NewStaticProvider(nil)
+	require.NoError(t, p.Get("hello").PopulateStruct(&data))
+
+	assert.Equal(t, 10, data.ID0)
+	assert.Equal(t, "string", data.ID1)
+	assert.True(t, data.ID2.Set)
+	assert.Nil(t, data.ID3)
+	assert.Nil(t, data.ID4)
+	assert.Nil(t, data.ID5)
+	assert.True(t, data.ID6[0].Set)
+	assert.Nil(t, data.ID7[0])
 }

@@ -21,7 +21,6 @@
 package service
 
 import (
-	"context"
 	"time"
 
 	"go.uber.org/fx/auth"
@@ -32,21 +31,29 @@ import (
 
 	"github.com/go-validator/validator"
 	"github.com/pkg/errors"
+	"go.uber.org/zap"
 )
 
-func (svc *serviceCore) setupLogging() {
-	if svc.log == nil {
-		err := svc.configProvider.Get("logging").PopulateStruct(&svc.logConfig)
-		if err != nil {
-			ulog.Logger(context.Background()).Info("Logging configuration is not provided, setting to default logger", "error", err)
+func (svc *serviceCore) setupLogging() error {
+	cfg := svc.configProvider.Get("logging")
+	if cfg.HasValue() {
+		if err := svc.logConfig.Configure(cfg); err != nil {
+			return errors.Wrap(err, "failed to initialize logging from config")
 		}
-
-		logBuilder := ulog.Builder().WithScope(svc.metrics)
-		svc.log = logBuilder.WithConfiguration(svc.logConfig).Build()
-		ulog.SetLogger(svc.log)
 	} else {
-		svc.log.Debug("Using custom log provider due to service.WithLogger option")
+		// if no config - default to the regular one
+		svc.logConfig = ulog.DefaultConfiguration()
 	}
+
+	logger, err := svc.logConfig.Build(zap.Hooks(ulog.Metrics(svc.metrics)))
+	if err != nil {
+		return errors.Wrap(err, "failed to build the logger")
+	}
+
+	// TODO(glib): SetLogger returns a deferral to clean up global log which is not used
+	ulog.SetLogger(logger)
+
+	return nil
 }
 
 func (svc *serviceCore) setupStandardConfig() error {
@@ -55,7 +62,7 @@ func (svc *serviceCore) setupStandardConfig() error {
 	}
 
 	if errs := validator.Validate(svc.standardConfig); errs != nil {
-		svc.Logger().Error("Invalid service configuration", "error", errs)
+		zap.L().Error("Invalid service configuration", zap.Error(errs))
 		return errors.Wrap(errs, "service configuration failed validation")
 	}
 	return nil
@@ -94,8 +101,8 @@ func (svc *serviceCore) setupTracer() error {
 	tracer, closer, err := tracing.InitGlobalTracer(
 		&svc.tracerConfig,
 		svc.standardConfig.Name,
-		svc.log,
-		svc.statsReporter,
+		zap.L(),
+		svc.metrics,
 	)
 	if err != nil {
 		return errors.Wrap(err, "unable to initialize global tracer")

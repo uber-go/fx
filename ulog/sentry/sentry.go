@@ -21,12 +21,8 @@
 package sentry
 
 import (
-	"time"
-
-	"github.com/uber-go/zap"
-
 	raven "github.com/getsentry/raven-go"
-	"github.com/pkg/errors"
+	"go.uber.org/zap/zapcore"
 )
 
 const (
@@ -35,230 +31,122 @@ const (
 	_traceSkipFrames   = 2
 )
 
-var _zapToRavenMap = map[zap.Level]raven.Severity{
-	zap.DebugLevel: raven.INFO,
-	zap.InfoLevel:  raven.INFO,
-	zap.WarnLevel:  raven.WARNING,
-	zap.ErrorLevel: raven.ERROR,
-	zap.PanicLevel: raven.FATAL,
-	zap.FatalLevel: raven.FATAL,
+func ravenSeverity(lvl zapcore.Level) raven.Severity {
+	switch lvl {
+	case zapcore.DebugLevel:
+		return raven.INFO
+	case zapcore.InfoLevel:
+		return raven.INFO
+	case zapcore.WarnLevel:
+		return raven.WARNING
+	case zapcore.ErrorLevel:
+		return raven.ERROR
+	case zapcore.DPanicLevel:
+		return raven.FATAL
+	case zapcore.PanicLevel:
+		return raven.FATAL
+	case zapcore.FatalLevel:
+		return raven.FATAL
+	default:
+		// Unrecognized levels are fatal.
+		return raven.FATAL
+	}
 }
 
-// Configuration provides sentry DSN and other optional parameters for logging
+type client interface {
+	Capture(*raven.Packet, map[string]string) (string, chan error)
+	Wait()
+}
+
+// Configuration is a minimal set of parameters for Sentry integration.
 type Configuration struct {
-	DSN      string
-	MinLevel *string `yaml:"min_level"`
-	Fields   map[string]interface{}
-	Trace    *struct {
-		Disabled     bool
-		SkipFrames   *int `yaml:"skip_frames"`
-		ContextLines *int `yaml:"context_lines"`
-	}
+	DSN string `yaml:"DSN"`
 }
 
-// Hook wraps the default raven-go client for some out-of-box awesomeness
-// and tight integration with ulog
-type Hook struct {
-	Capturer
-
-	// This is pretty expensive as far as allocations go.
-	// No need to copy maps around, especially if they are not going to be used
-	// TODO(glib): make this better. We should be able to have an efficient
-	// marshaler of this data that won't have us copy maps around
-	fields map[string]interface{}
-
-	// Minimum level threshold for sending a Sentry event
-	minLevel zap.Level
-
-	// Controls if stack trace should be automatically generated, and how many frames to skip
-	traceEnabled      bool
-	traceSkipFrames   int
-	traceContextLines int
-	traceAppPrefixes  []string
-}
-
-// Option pattern for Hook creation.
-type Option func(sh *Hook)
-
-// New Sentry Hook.
-func New(dsn string, options ...Option) (*Hook, error) {
-	sh := &Hook{
-		minLevel:          zap.ErrorLevel,
-		traceEnabled:      true,
-		traceSkipFrames:   _traceSkipFrames,
-		traceContextLines: _traceContextLines,
-		fields:            make(map[string]interface{}),
-	}
-
-	for _, option := range options {
-		option(sh)
-	}
-
-	client, err := raven.New(dsn)
+// Build uses the provided configuration to construct a Sentry-backed logging
+// core.
+func (c Configuration) Build() (zapcore.Core, error) {
+	client, err := raven.New(c.DSN)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to create sentry client")
+		return zapcore.NewNopCore(), err
 	}
-
-	sh.Capturer = &nonBlockingCapturer{Client: client}
-
-	return sh, nil
+	return newCore(client, zapcore.ErrorLevel), nil
 }
 
-// Configure returns a new Sentry Hook based on SentryConfiguration.
-func Configure(c Configuration) (*Hook, error) {
-	o := make([]Option, 0, 5)
+type core struct {
+	client
+	zapcore.LevelEnabler
 
-	if c.MinLevel != nil {
-		l := zap.ErrorLevel
-		if err := l.UnmarshalText([]byte(*c.MinLevel)); err != nil {
-			return nil, err
-		}
-
-		o = append(o, MinLevel(l))
-	}
-
-	t := c.Trace
-	if t == nil {
-		return New(c.DSN, o...)
-	}
-
-	if t.Disabled {
-		o = append(o, DisableTraces())
-	}
-
-	if t.SkipFrames != nil {
-		o = append(o, TraceSkipFrames(*t.SkipFrames))
-	}
-
-	if t.ContextLines != nil {
-		o = append(o, TraceContextLines(*t.ContextLines))
-	}
-
-	if len(c.Fields) != 0 {
-		o = append(o, Fields(c.Fields))
-	}
-
-	return New(c.DSN, o...)
+	fields map[string]interface{}
 }
 
-// Fields returns the currently accumulated context fields
-func (sh *Hook) Fields() map[string]interface{} {
-	return sh.fields
-}
-
-// MinLevel provides a minimum level threshold.
-// All log messages above the set level are sent to Sentry.
-func MinLevel(level zap.Level) Option {
-	return func(sh *Hook) {
-		sh.minLevel = level
+func newCore(c client, enab zapcore.LevelEnabler) *core {
+	return &core{
+		client:       c,
+		LevelEnabler: enab,
+		fields:       make(map[string]interface{}),
 	}
 }
 
-// DisableTraces allows to turn off Stacktrace for sentry packets.
-func DisableTraces() Option {
-	return func(sh *Hook) {
-		sh.traceEnabled = false
-	}
+func (c *core) With(fs []zapcore.Field) zapcore.Core {
+	return c.with(fs)
 }
 
-// TraceContextLines sets how many lines of code (in on direction) are sent
-// with the Sentry packet.
-func TraceContextLines(lines int) Option {
-	return func(sh *Hook) {
-		sh.traceContextLines = lines
+func (c *core) Check(ent zapcore.Entry, ce *zapcore.CheckedEntry) *zapcore.CheckedEntry {
+	if c.Enabled(ent.Level) {
+		return ce.AddCore(ent, c)
 	}
+	return ce
 }
 
-// TraceAppPrefixes sets a list of go import prefixes that are considered "in app".
-func TraceAppPrefixes(prefixes []string) Option {
-	return func(sh *Hook) {
-		sh.traceAppPrefixes = prefixes
-	}
-}
-
-// TraceSkipFrames sets how many stacktrace frames to skip when sending a
-// sentry packet. This is very useful when helper functions are involved.
-func TraceSkipFrames(skip int) Option {
-	return func(sh *Hook) {
-		sh.traceSkipFrames = skip
-	}
-}
-
-// Fields stores additional information for each Sentry event.
-func Fields(fields map[string]interface{}) Option {
-	return func(sh *Hook) {
-		// TODO(glib): yuck!
-		f := make(map[string]interface{})
-		for k, v := range fields {
-			f[k] = v
-		}
-		sh.fields = f
-	}
-}
-
-// AppendFields expands the currently stored context of the hook
-func (sh *Hook) AppendFields(keyvals ...interface{}) {
-	for idx := 0; idx < len(keyvals); idx += 2 {
-		if key, ok := keyvals[idx].(string); ok {
-			val := keyvals[idx+1]
-			sh.fields[key] = val
-		}
-	}
-}
-
-// Copy returns... well, what do you think it returns?
-func (sh *Hook) Copy() *Hook {
-	// another map copy...
-	f := make(map[string]interface{}, len(sh.fields))
-	for k, v := range sh.fields {
-		f[k] = v
-	}
-
-	return &Hook{
-		Capturer:          sh.Capturer,
-		fields:            f,
-		minLevel:          sh.minLevel,
-		traceEnabled:      sh.traceEnabled,
-		traceSkipFrames:   sh.traceSkipFrames,
-		traceContextLines: sh.traceContextLines,
-		traceAppPrefixes:  sh.traceAppPrefixes,
-	}
-}
-
-// CheckAndFire check to see if logging level is above Sentry threshold
-// and if so, fires off a Sentry packet
-func (sh *Hook) CheckAndFire(lvl zap.Level, msg string, keyvals ...interface{}) {
-	if lvl < sh.minLevel {
-		return
-	}
-
-	// append all the fields from the current log message to the stored ones
-	f := make(map[string]interface{}, len(sh.fields)+len(keyvals)/2)
-	for k, v := range sh.fields {
-		f[k] = v
-	}
-
-	for idx := 0; idx < len(keyvals); idx += 2 {
-		if key, ok := keyvals[idx].(string); ok {
-			val := keyvals[idx+1]
-			f[key] = val
-		}
-	}
+func (c *core) Write(ent zapcore.Entry, fs []zapcore.Field) error {
+	clone := c.with(fs)
 
 	packet := &raven.Packet{
-		Message:   msg,
-		Timestamp: raven.Timestamp(time.Now()),
-		Level:     _zapToRavenMap[lvl],
+		Message:   ent.Message,
+		Timestamp: raven.Timestamp(ent.Time),
+		Level:     ravenSeverity(ent.Level),
 		Platform:  _platform,
-		Extra:     f,
+		Extra:     clone.fields,
 	}
 
-	if sh.traceEnabled {
-		trace := raven.NewStacktrace(sh.traceSkipFrames, sh.traceContextLines, sh.traceAppPrefixes)
-		if trace != nil {
-			packet.Interfaces = append(packet.Interfaces, trace)
-		}
+	trace := raven.NewStacktrace(_traceSkipFrames, _traceContextLines, nil /* app prefixes */)
+	if trace != nil {
+		packet.Interfaces = append(packet.Interfaces, trace)
 	}
 
-	sh.Capture(packet)
+	// TODO: Consume the errors channel in the background, incrementing a
+	// counter on each failure.
+	_, _ = c.Capture(packet, nil)
+
+	// We may be crashing the program, so should flush any buffered events.
+	if ent.Level > zapcore.ErrorLevel {
+		c.Wait()
+	}
+	return nil
+}
+
+func (c *core) with(fs []zapcore.Field) *core {
+	// Copy our map.
+	m := make(map[string]interface{}, len(c.fields))
+	for k, v := range c.fields {
+		m[k] = v
+	}
+
+	// Add fields to an in-memory encoder.
+	enc := zapcore.NewMapObjectEncoder()
+	for _, f := range fs {
+		f.AddTo(enc)
+	}
+
+	// Merge the two maps.
+	for k, v := range enc.Fields {
+		m[k] = v
+	}
+
+	return &core{
+		client:       c.client,
+		LevelEnabler: c.LevelEnabler,
+		fields:       m,
+	}
 }

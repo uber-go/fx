@@ -22,60 +22,44 @@ package service
 
 import (
 	"go.uber.org/fx/config"
-	"go.uber.org/fx/ulog"
 
 	"github.com/opentracing/opentracing-go"
 	"github.com/uber-go/tally"
 )
 
-// A Option configures a service host
-type Option func(Host) error
+// A Option configures a manager
+type Option func(*manager) error
 
-// WithConfiguration adds configuration to a service host
+// WithConfiguration adds configuration to a manager
 func WithConfiguration(config config.Provider) Option {
-	return func(svc Host) error {
-		// TODO(ai) verify type assertion is correct
-		svc2 := svc.(*host)
-		svc2.configProvider = config
+	return func(m *manager) error {
+		m.configProvider = config
 		return nil
 	}
 }
 
-// WithLogger adds ulog to a service host
-func WithLogger(log ulog.Log) Option {
-	return func(svc Host) error {
-		// TODO(ai) verify type assertion is correct
-		svc2 := svc.(*host)
-		svc2.log = log
-		return nil
-	}
-}
-
-// WithMetrics configures a service host with metrics and stats reporter
+// WithMetrics configures a manager with metrics and stats reporter
 func WithMetrics(scope tally.Scope, reporter tally.CachedStatsReporter) Option {
-	return func(svc Host) error {
-		svc2 := svc.(*host)
-		svc2.metrics = scope
-		svc2.statsReporter = reporter
+	return func(m *manager) error {
+		m.metrics = scope
+		m.statsReporter = reporter
 		return nil
 	}
 }
 
-// WithTracer configures a service host with a tracer
+// WithTracer configures a manager with a tracer
 func WithTracer(tracer opentracing.Tracer) Option {
-	return func(svc Host) error {
-		svc2 := svc.(*host)
-		svc2.tracer = tracer
+	return func(m *manager) error {
+		m.tracer = tracer
 		return nil
 	}
 }
 
-// WithObserver configures a service with an instance lifecycle observer
+// WithObserver configures a manager with an instance lifecycle observer
 func WithObserver(observer Observer) Option {
-	return func(svc Host) error {
-		service := svc.(*host)
-		service.observer = observer
-		service.serviceCore.observer = observer
+	return func(m *manager) error {
+		m.observer = observer
+		m.serviceCore.observer = observer
 		return nil
 	}
 }

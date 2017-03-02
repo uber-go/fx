@@ -25,7 +25,6 @@ import (
 	"testing"
 
 	"go.uber.org/fx/metrics"
-	"go.uber.org/fx/ulog"
 
 	"github.com/opentracing/opentracing-go"
 	"github.com/stretchr/testify/assert"
@@ -33,41 +32,33 @@ import (
 	"github.com/uber-go/tally"
 )
 
-func TestAddModules_OK(t *testing.T) {
-	sh := &host{}
-	require.NoError(t, sh.AddModules(successModuleCreate))
-	assert.Empty(t, sh.Modules())
+func TestNewOwner_ModulesOK(t *testing.T) {
+	_, err := newManager(WithModule("hello", successModuleCreate).WithOptions(withConfig(validServiceConfig)))
+	require.NoError(t, err)
 }
 
-func TestAddModules_Errors(t *testing.T) {
-	sh := &host{}
-	assert.Error(t, sh.AddModules(errorModuleCreate))
+func TestNewOwner_ModulesErr(t *testing.T) {
+	_, err := newManager(WithModule("hello", errorModuleCreate).WithOptions(withConfig(validServiceConfig)))
+	assert.Error(t, err)
 }
 
-func TestWithLogger_OK(t *testing.T) {
-	logger := ulog.New()
+func TestNewOwner_WithMetricsOK(t *testing.T) {
 	assert.NotPanics(t, func() {
-		New(WithLogger(logger))
+		newManager(WithModule("hello", successModuleCreate).WithOptions(WithMetrics(tally.NoopScope, metrics.NopCachedStatsReporter)))
 	})
 }
 
-func TestWithMetrics_OK(t *testing.T) {
-	assert.NotPanics(t, func() {
-		New(WithMetrics(tally.NoopScope, metrics.NopCachedStatsReporter))
-	})
-}
-
-func TestWithTracing_OK(t *testing.T) {
+func TestNewOwner_WithTracingOK(t *testing.T) {
 	tracer := &opentracing.NoopTracer{}
 	assert.NotPanics(t, func() {
-		New(WithTracer(tracer))
+		newManager(WithModule("hello", successModuleCreate).WithOptions(WithTracer(tracer)))
 	})
 }
 
-func successModuleCreate(_ ModuleCreateInfo) ([]Module, error) {
+func successModuleCreate(_ Host) (Module, error) {
 	return nil, nil
 }
 
-func errorModuleCreate(_ ModuleCreateInfo) ([]Module, error) {
+func errorModuleCreate(_ Host) (Module, error) {
 	return nil, errors.New("can't create module")
 }
