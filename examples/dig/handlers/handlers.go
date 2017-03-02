@@ -22,10 +22,8 @@ package handlers
 
 import (
 	"io"
-	"log"
 	"net/http"
 
-	"go.uber.org/fx/dig"
 	"go.uber.org/fx/examples/dig/hello"
 )
 
@@ -33,13 +31,6 @@ type HelloHandler struct {
 	hello.Sayer
 
 	name string
-}
-
-func init() {
-	err := dig.Register(NewHandler)
-	if err != nil {
-		log.Fatalf("Failed to inject new handler: %v", err)
-	}
 }
 
 // DIG injection function
