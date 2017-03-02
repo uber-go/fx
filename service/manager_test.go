@@ -36,7 +36,7 @@ import (
 
 func TestOnCriticalError_NoObserver(t *testing.T) {
 	err := errors.New("Blargh")
-	sh := makeHost()
+	sh := makeManager()
 	control := sh.StartAsync()
 	require.NoError(t, control.ServiceError, "Expected no error starting up")
 	select {
@@ -150,7 +150,7 @@ foo:
 	assert.Equal(t, instance.ServiceConfig.Bar[1], "baz")
 }
 
-func TestHostStop_NoError(t *testing.T) {
+func TestManagerStop_NoError(t *testing.T) {
 	sh := &manager{}
 	assert.NoError(t, sh.Stop("testing", 1))
 }
@@ -167,20 +167,20 @@ func TestOnCriticalError_ObserverShutdown(t *testing.T) {
 }
 
 func TestShutdownWithError_ReturnsError(t *testing.T) {
-	sh := makeRunningHost()
+	sh := makeRunningManager()
 	exitCode := 1
 	shutdown, err := sh.shutdown(errors.New("simulated"), "testing", &exitCode)
 	assert.True(t, shutdown)
 	assert.Error(t, err)
 }
 
-func TestHostShutdown_RunningService(t *testing.T) {
-	sh := makeRunningHost()
+func TestManagerShutdown_RunningService(t *testing.T) {
+	sh := makeRunningManager()
 	checkShutdown(t, sh, false)
 }
 
-func TestHostShutdown_CloseSuccessful(t *testing.T) {
-	sh := makeRunningHost()
+func TestManagerShutdown_CloseSuccessful(t *testing.T) {
+	sh := makeRunningManager()
 	sh.serviceCore.metricsCore = metricsCore{
 		metrics:          tally.NoopScope,
 		metricsCloser:    testutils.NopCloser{},
@@ -192,8 +192,8 @@ func TestHostShutdown_CloseSuccessful(t *testing.T) {
 	checkShutdown(t, sh, false)
 }
 
-func TestHostShutdown_MetricsCloserError(t *testing.T) {
-	sh := makeRunningHost()
+func TestManagerShutdown_MetricsCloserError(t *testing.T) {
+	sh := makeRunningManager()
 	sh.serviceCore.metricsCore = metricsCore{
 		metrics:       tally.NoopScope,
 		metricsCloser: testutils.ErrorCloser{},
@@ -201,8 +201,8 @@ func TestHostShutdown_MetricsCloserError(t *testing.T) {
 	checkShutdown(t, sh, true)
 }
 
-func TestHostShutdown_TracerCloserError(t *testing.T) {
-	sh := makeRunningHost()
+func TestManagerShutdown_TracerCloserError(t *testing.T) {
+	sh := makeRunningManager()
 	sh.serviceCore.tracerCore = tracerCore{
 		tracerCloser: testutils.ErrorCloser{},
 	}
@@ -220,7 +220,7 @@ func checkShutdown(t *testing.T, h *manager, expectedErr bool) {
 	}
 }
 
-func TestHostStart_InShutdown(t *testing.T) {
+func TestManagerStart_InShutdown(t *testing.T) {
 	sh := &manager{
 		inShutdown: true,
 	}
@@ -228,8 +228,8 @@ func TestHostStart_InShutdown(t *testing.T) {
 	assert.Error(t, control.ServiceError)
 }
 
-func TestHostStart_AlreadyRunning(t *testing.T) {
-	sh := makeRunningHost()
+func TestManagerStart_AlreadyRunning(t *testing.T) {
+	sh := makeRunningManager()
 	control := sh.StartAsync()
 	assert.Error(t, control.ServiceError)
 }
@@ -262,7 +262,7 @@ func TestAddModule_NotLocked(t *testing.T) {
 func TestStartStopRegressionDeadlock(t *testing.T) {
 	// TODO(glib): sort out this test
 	t.Skip("Fix me when Start/Stop functions are refactored")
-	sh := makeHost()
+	sh := makeManager()
 	go func() {
 		time.Sleep(50 * time.Millisecond)
 		sh.Stop("stop nao!", 1)
@@ -271,7 +271,7 @@ func TestStartStopRegressionDeadlock(t *testing.T) {
 }
 
 func TestStartModule_NoErrors(t *testing.T) {
-	s := makeHost()
+	s := makeManager()
 	require.NoError(t, s.addModule("hello", DefaultStubModuleCreateFunc))
 
 	control := s.StartAsync()
@@ -287,8 +287,8 @@ func TestStartModule_NoErrors(t *testing.T) {
 	assert.Equal(t, s.state, Running)
 }
 
-func TestStartHost_WithErrors(t *testing.T) {
-	s := makeHost()
+func TestStartManager_WithErrors(t *testing.T) {
+	s := makeManager()
 	require.NoError(t, s.addModule("hello", NewStubModuleCreateFunc(StubModule{
 		StartError: errors.New("can't start this"),
 	})))
@@ -300,13 +300,13 @@ func TestStartHost_WithErrors(t *testing.T) {
 	assert.Error(t, control.ServiceError)
 }
 
-func makeRunningHost() *manager {
-	h := makeHost()
+func makeRunningManager() *manager {
+	h := makeManager()
 	h.closeChan = make(chan Exit, 1) // Indicates service is running
 	return h
 }
 
-func makeHost() *manager {
+func makeManager() *manager {
 	return &manager{
 		serviceCore: serviceCore{},
 	}

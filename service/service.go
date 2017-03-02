@@ -21,9 +21,12 @@
 package service
 
 import (
+	"go.uber.org/fx/auth"
 	"go.uber.org/fx/config"
+	"go.uber.org/fx/metrics"
 
-	"github.com/pkg/errors"
+	opentracing "github.com/opentracing/opentracing-go"
+	"github.com/uber-go/tally"
 )
 
 // A State represents the state of a service
@@ -43,6 +46,37 @@ const (
 	// Stopped represents a service that has been shut down
 	Stopped
 )
+
+// A Host represents the hosting environment for a service instance
+type Host interface {
+	AuthClient() auth.Client
+	Name() string
+	Description() string
+	Roles() []string
+	State() State
+	Metrics() tally.Scope
+	RuntimeMetricsCollector() *metrics.RuntimeCollector
+	Observer() Observer
+	Config() config.Provider
+	Tracer() opentracing.Tracer
+}
+
+// A HostContainer is meant to be embedded in a LifecycleObserver
+// if you want access to the underlying Host
+type HostContainer struct {
+	Host
+}
+
+// SetContainer sets the Host instance on the container.
+// NOTE: This is not thread-safe, and should only be called once during startup.
+func (s *HostContainer) SetContainer(sh Host) {
+	s.Host = sh
+}
+
+// SetContainerer is the interface for anything that you can call SetContainer on
+type SetContainerer interface {
+	SetContainer(Host)
+}
 
 // A Manager encapsulates service ownership
 type Manager interface {
@@ -72,82 +106,6 @@ type Exit struct {
 	Reason   string
 	Error    error
 	ExitCode int
-}
-
-type serviceConfig struct {
-	Name        string   `yaml:"name" validate:"nonzero"`
-	Owner       string   `yaml:"owner"  validate:"nonzero"`
-	Description string   `yaml:"description"`
-	Roles       []string `yaml:"roles"`
-}
-
-// newManager creates a service Manager from a Builder.
-func newManager(builder *Builder) (Manager, error) {
-	svc := &manager{
-		// TODO: get these out of config struct instead
-		moduleWrappers: []*moduleWrapper{},
-		serviceCore:    serviceCore{},
-	}
-
-	// hash up the roles
-	svc.roles = map[string]bool{}
-	for _, r := range svc.standardConfig.Roles {
-		svc.roles[r] = true
-	}
-
-	// Run the rest of the options
-	for _, opt := range builder.options {
-		if optionErr := opt(svc); optionErr != nil {
-			return nil, errors.Wrap(optionErr, "option failed to apply")
-		}
-	}
-
-	if svc.configProvider == nil {
-		// If the user didn't pass in a configuration provider, load the standard.
-		// Bypassing standard config load is pretty much only used for tests, although it could be
-		// useful in certain circumstances.
-		svc.configProvider = config.Load()
-	}
-
-	// load standard config
-	if err := svc.setupStandardConfig(); err != nil {
-		return nil, err
-	}
-
-	// Initialize metrics. If no metrics reporters were Registered, do nop
-	// TODO(glib): add a logging reporter and use it by default, rather than nop
-	svc.setupMetrics()
-
-	if err := svc.setupLogging(); err != nil {
-		return nil, err
-	}
-
-	svc.setupAuthClient()
-
-	if err := svc.setupRuntimeMetricsCollector(); err != nil {
-		return nil, err
-	}
-
-	if err := svc.setupTracer(); err != nil {
-		return nil, err
-	}
-
-	// if we have an observer, look for a property called "config" and load the service
-	// node into that config.
-	svc.setupObserver()
-
-	// Put service into Initialized state
-	svc.transitionState(Initialized)
-
-	svc.Metrics().Counter("boot").Inc(1)
-
-	for _, module := range builder.modules {
-		if err := svc.addModule(module.name, module.moduleCreateFunc, module.options...); err != nil {
-			return nil, err
-		}
-	}
-
-	return svc, nil
 }
 
 type niladicStart func()
