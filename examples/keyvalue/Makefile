@@ -18,7 +18,7 @@ deps:
 	$(ECHO_V)go install ../../vendor/go.uber.org/yarpc/encoding/thrift/thriftrw-plugin-yarpc
 
 	@echo "Installing thriftrw-plugin-thriftsync..."
-	$(ECHO_V)go install ../../modules/rpc/thriftrw-plugin-thriftsync
+	$(ECHO_V)go install ../../modules/yarpc/thriftrw-plugin-thriftsync
 
 .PHONY: thriftsync
 thriftsync: deps

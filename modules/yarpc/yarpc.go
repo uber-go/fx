@@ -18,7 +18,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package rpc
+package yarpc
 
 import (
 	"context"
@@ -40,13 +40,13 @@ import (
 	"go.uber.org/zap"
 )
 
-// YARPCModule is an implementation of a core RPC module using YARPC.
+// Module is an implementation of a core RPC module using YARPC.
 // All the YARPC modules share the same dispatcher and middleware.
 // Dispatcher will start when any created module calls Start().
 // The YARPC team advised dispatcher to be a 'singleton' to control
 // the lifecycle of all of the in/out bound traffic, so we will
 // register it in a dig.Graph provided with options/default graph.
-type YARPCModule struct {
+type Module struct {
 	host        service.Host
 	statsClient *statsClient
 	config      yarpcConfig
@@ -63,7 +63,7 @@ var (
 	// Function to start a dispatcher
 	_starterFn = defaultYARPCStarter
 
-	_ service.Module = &YARPCModule{}
+	_ service.Module = &Module{}
 )
 
 type transports struct {
@@ -259,14 +259,14 @@ func newYARPCModule(
 	host service.Host,
 	reg CreateThriftServiceFunc,
 	options ...ModuleOption,
-) (*YARPCModule, error) {
+) (*Module, error) {
 	moduleOptions := &moduleOptions{}
 	for _, option := range options {
 		if err := option(moduleOptions); err != nil {
 			return nil, err
 		}
 	}
-	module := &YARPCModule{
+	module := &Module{
 		host:        host,
 		statsClient: newStatsClient(host.Metrics()),
 		log:         ulog.Logger(context.Background()).With(zap.String("module", host.Name())),
@@ -343,7 +343,7 @@ func prepareInbounds(inbounds []Inbound, serviceName string) (transportsIn []tra
 }
 
 // Start begins serving requests with YARPC.
-func (m *YARPCModule) Start() error {
+func (m *Module) Start() error {
 	// TODO(alsam) allow services to advertise with a name separate from the host name.
 	if err := m.controller.Start(m.host, m.statsClient); err != nil {
 		return errs.Wrap(err, "unable to start dispatcher")
@@ -353,7 +353,7 @@ func (m *YARPCModule) Start() error {
 }
 
 // Stop shuts down the YARPC module: stops the dispatcher.
-func (m *YARPCModule) Stop() error {
+func (m *Module) Stop() error {
 	return m.controller.Stop()
 }
 

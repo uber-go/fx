@@ -18,7 +18,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-// Package rpc is the RPC Module.
+// Package yarpc is the YARPC Module.
 //
 // The RPC module wraps YARPC (https://github.com/yarpc/yarpc-go) and exposes
 // creators for both JSON- and Thrift-encoded messages.
@@ -33,7 +33,7 @@
 // • Implement the service interface handlers as method receivers on a struct
 //
 // • Implement a top-level function, conforming to the
-// rpc.CreateThriftServiceFunc signature (fx/modules/rpc/thrift.go that
+// yarpc.CreateThriftServiceFunc signature (fx/modules/yarpc/thrift.go that
 // returns a
 // []transport.Registrant YARPC implementation from the handler:
 //
@@ -46,7 +46,7 @@
 //   func main() {
 //     svc, err := service.WithModule(
 //       "example",
-//       rpc.ThriftModule(rpc.CreateThriftServiceFunc(NewMyServiceHandler)),
+//       yarpc.ThriftModule(yarpc.CreateThriftServiceFunc(NewMyServiceHandler)),
 //       service.WithModuleRole("service"),
 //     ).Build()
 //
@@ -60,4 +60,4 @@
 // This will spin up the service.
 //
 //
-package rpc
+package yarpc

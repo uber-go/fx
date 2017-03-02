@@ -18,19 +18,30 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package rpc
+package yarpc
 
-import (
-	"go.uber.org/fx/service"
-	"go.uber.org/yarpc/api/transport"
-)
+import "go.uber.org/yarpc/api/middleware"
 
-// CreateThriftServiceFunc creates a Thrift service from a service host
-type CreateThriftServiceFunc func(svc service.Host) ([]transport.Procedure, error)
+// ModuleOption is a function that configures module creation.
+type ModuleOption func(*moduleOptions) error
 
-// ThriftModule creates a Thrift Module from a service func
-func ThriftModule(hookup CreateThriftServiceFunc, options ...ModuleOption) service.ModuleCreateFunc {
-	return func(host service.Host) (service.Module, error) {
-		return newYARPCModule(host, hookup, options...)
+type moduleOptions struct {
+	unaryInbounds  []middleware.UnaryInbound
+	onewayInbounds []middleware.OnewayInbound
+}
+
+// WithInboundMiddleware adds custom YARPC inboundMiddleware to the module
+func WithInboundMiddleware(i ...middleware.UnaryInbound) ModuleOption {
+	return func(moduleOptions *moduleOptions) error {
+		moduleOptions.unaryInbounds = append(moduleOptions.unaryInbounds, i...)
+		return nil
+	}
+}
+
+// WithOnewayInboundMiddleware adds custom YARPC inboundMiddleware to the module
+func WithOnewayInboundMiddleware(i ...middleware.OnewayInbound) ModuleOption {
+	return func(moduleOptions *moduleOptions) error {
+		moduleOptions.onewayInbounds = append(moduleOptions.onewayInbounds, i...)
+		return nil
 	}
 }

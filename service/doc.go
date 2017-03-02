@@ -35,7 +35,7 @@
 //
 //   import (
 //     "go.uber.org/fx/config"
-//     "go.uber.org/fx/modules/rpc"
+//     "go.uber.org/fx/modules/yarpc"
 //     "go.uber.org/fx/service"
 //   )
 //
@@ -45,7 +45,7 @@
 //       // The list of module creators for this service, in this case
 //       // creates a Thrift RPC module called "keyvalue"
 //       "keyvalue",
-//       rpc.ThriftModule(rpc.CreateThriftServiceFunc(NewYarpcThriftHandler)),
+//       yarpc.ThriftModule(yarpc.CreateThriftServiceFunc(NewYarpcThriftHandler)),
 //     ).Build()
 //
 //     if err != nil {

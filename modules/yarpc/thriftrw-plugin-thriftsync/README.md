@@ -13,7 +13,7 @@ Run `thriftsync` to sync your handler code with the methods in the Thrift file.
 
 * Install thriftsync from vendor
 
-`go install ./vendor/go.uber.org/fx/modules/rpc/thriftrw-plugin-thriftsync`
+`go install ./vendor/go.uber.org/fx/modules/yarpc/thriftrw-plugin-thriftsync`
 
 * Run thriftrw code genration with thriftsync
 
@@ -29,7 +29,7 @@ deps:
   go install ./vendor/go.uber.org/thriftrw
 
   @echo "Installing thriftrw-plugin-thriftsync..."
-  go install ./vendor/go.uber.org/fx/modules/rpc/thriftrw-plugin-thriftsync
+  go install ./vendor/go.uber.org/fx/modules/yarpc/thriftrw-plugin-thriftsync
 
 thriftsync: deps
   thriftrw --plugin="thriftsync" <thrift filepath>
