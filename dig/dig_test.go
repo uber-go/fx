@@ -252,4 +252,5 @@ func TestPanicConstructor(t *testing.T) {
 	var v *Type1
 	err := g.Resolve(&v)
 	require.Contains(t, err.Error(), "panic during Resolve")
+	require.Contains(t, err.Error(), "RUH ROH")
 }
