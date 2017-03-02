@@ -24,9 +24,10 @@ import (
 	"context"
 	"testing"
 
+	"go.uber.org/fx/config"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.uber.org/fx/config"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
