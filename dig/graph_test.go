@@ -186,14 +186,15 @@ func TestConcurrentAccess(t *testing.T) {
 }
 
 func TestCycles(t *testing.T) {
+	t.Parallel()
+	g := New()
+
 	type Type1 interface{}
 	type Type2 interface{}
 	type Type3 interface{}
 	c1 := func(t2 Type2) Type1 { return nil }
 	c2 := func(t3 Type3) Type2 { return nil }
 	c3 := func(t1 Type1) Type3 { return nil }
-
-	g := New()
 
 	require.NoError(t, g.Register(c1))
 	require.NoError(t, g.Register(c2))
