@@ -24,7 +24,7 @@ func main() {
     // The list of module creators for this service, in this case
     // creates a Thrift RPC module called "keyvalue"
     "keyvalue",
-    yarpc.ThriftModule(yarpc.CreateThriftServiceFunc(NewYarpcThriftHandler)),
+    yarpc.New(yarpc.CreateThriftServiceFunc(NewYarpcThriftHandler)),
   ).Build()
 
   if err != nil {
