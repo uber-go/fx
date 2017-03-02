@@ -46,14 +46,14 @@ func init() {
 	_memBackend = NewInMemBackend(host).(*inMemBackend)
 }
 
-func TestNewModule(t *testing.T) {
+func TestNew(t *testing.T) {
 	b := createModule(t, _memBackendFn) // Singleton modules get saved
 	require.Equal(t, _memBackend, b)
 	b = createModule(t, _nopBackendFn) // Singleton returns nop even though mem backend is input
 	require.Equal(t, _memBackend, b)
 }
 
-func TestNewModuleError(t *testing.T) {
+func TestNewError(t *testing.T) {
 	mod, err := newAsyncModule(newTestHost(t), _errBackendFn)
 	require.Error(t, err)
 	require.Nil(t, mod)
@@ -72,7 +72,7 @@ func TestMemBackendModuleWorkflowWithContext(t *testing.T) {
 }
 
 func createModule(t *testing.T, b BackendCreateFunc) Backend {
-	createFn := NewModule(b)
+	createFn := New(b)
 	assert.NotNil(t, createFn)
 	mod, err := createFn(newTestHost(t))
 	assert.NotNil(t, mod)
