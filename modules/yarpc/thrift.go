@@ -28,8 +28,8 @@ import (
 // CreateThriftServiceFunc creates a Thrift service from a service host
 type CreateThriftServiceFunc func(svc service.Host) ([]transport.Procedure, error)
 
-// ThriftModule creates a Thrift Module from a service func
-func ThriftModule(hookup CreateThriftServiceFunc, options ...ModuleOption) service.ModuleCreateFunc {
+// New creates a Thrift Module from a service func
+func New(hookup CreateThriftServiceFunc, options ...ModuleOption) service.ModuleCreateFunc {
 	return func(host service.Host) (service.Module, error) {
 		return newYARPCModule(host, hookup, options...)
 	}

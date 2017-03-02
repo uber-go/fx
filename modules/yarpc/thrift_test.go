@@ -44,10 +44,10 @@ func (h testHost) Config() config.Provider {
 	return h.config
 }
 
-func TestThriftModule_OK(t *testing.T) {
+func TestNew_OK(t *testing.T) {
 	dig.Reset()
-	chip := ThriftModule(okCreate)
-	dale := ThriftModule(okCreate)
+	chip := New(okCreate)
+	dale := New(okCreate)
 	cfg := []byte(`
 modules:
   hello:
@@ -86,7 +86,7 @@ modules:
 
 func TestThrfitModule_Error(t *testing.T) {
 	dig.Reset()
-	modCreate := ThriftModule(badCreateService)
+	modCreate := New(badCreateService)
 	mod, err := modCreate(mih(t, "hello"))
 	assert.NoError(t, err)
 	assert.EqualError(t, mod.Start(), "unable to start dispatcher: can't create service")

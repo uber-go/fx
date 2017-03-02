@@ -24,7 +24,7 @@ func main() {
     // The list of module creators for this service, in this case
     // creates a Thrift RPC module called "keyvalue"
     "keyvalue",
-    yarpc.ThriftModule(yarpc.CreateThriftServiceFunc(NewYarpcThriftHandler)),
+    yarpc.New(yarpc.CreateThriftServiceFunc(NewYarpcThriftHandler)),
   ).Build()
 
   if err != nil {
@@ -56,8 +56,8 @@ func main() {
     "kafka",
     kafka.Module("kakfa_topic1", []string{"worker"}),
   ).WithModule(
-    "keyvalue",
-    rpc.ThriftModule(rpc.CreateThriftServiceFunc(NewYarpcThriftHandler)),
+    "yarpc",
+    yarpc.New(yarpc.CreateThriftServiceFunc(NewYarpcThriftHandler)),
     service.WithModuleRole("service"),
   ).Build()
 

@@ -50,7 +50,7 @@
 //   func main() {
 //     svc, err := service.WithModule(
 //       "example",
-//       task.NewModule(newBackend),
+//       task.New(newBackend),
 //     ).Build()
 //     if err := task.Register(updateCache); err != nil {
 //       ulog.Logger().Fatal("could not register task", "error", err)

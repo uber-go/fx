@@ -11,6 +11,8 @@
 * Log `traceID` and `spanID` in hex format to match Jaeger UI. Upgrade Jaeger to min version 2.1.0
   and use jaeger's adapters for jaeger and tally initialization.
 * [Breaking] Rename `modules/rpc` to `modules/yarpc`
+* [Breaking] Make new module naming consistent `yarpc.ThriftModule` to `yarpc.New`, `task.NewModule`
+  to `task.New`
 
 ## v1.0.0-beta1 (20 Feb 2017)
 
