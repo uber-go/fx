@@ -22,9 +22,11 @@ package service
 
 import (
 	"errors"
+	"io"
 	"testing"
 
 	"go.uber.org/fx/metrics"
+	"go.uber.org/fx/testutils"
 
 	"github.com/opentracing/opentracing-go"
 	"github.com/stretchr/testify/assert"
@@ -48,6 +50,12 @@ func TestNewOwner_WithMetricsOK(t *testing.T) {
 	})
 }
 
+func TestNewOwner_WithRootScopeOK(t *testing.T) {
+	assert.NotPanics(t, func() {
+		newManager([]ModuleCreateFunc{successModuleCreate}, WithRootScope(goodScope))
+	})
+}
+
 func TestNewOwner_WithTracingOK(t *testing.T) {
 	tracer := &opentracing.NoopTracer{}
 	assert.NotPanics(t, func() {
@@ -61,4 +69,8 @@ func successModuleCreate(_ Host) (Module, error) {
 
 func errorModuleCreate(_ Host) (Module, error) {
 	return nil, errors.New("can't create module")
+}
+
+func goodScope(i metrics.ScopeInit) (tally.Scope, tally.CachedStatsReporter, io.Closer, error) {
+	return tally.NoopScope, metrics.NopCachedStatsReporter, testutils.NopCloser{}, nil
 }

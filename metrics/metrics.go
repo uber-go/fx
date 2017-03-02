@@ -31,16 +31,6 @@ import (
 	"github.com/uber-go/tally"
 )
 
-var (
-	_scopeFunc ScopeFunc
-	_mu        sync.Mutex
-	_frozen    bool
-
-	// DefaultReporter does not do anything
-	// TODO(glib): add a logging reporter and use it by default, rather than noop
-	DefaultReporter = NopCachedStatsReporter
-)
-
 // ScopeInit interface provides necessary data to properly initialize root metrics scope
 // service.Host conforms to this, but can't be used directly since it causes an import cycle
 type ScopeInit interface {
@@ -51,49 +41,58 @@ type ScopeInit interface {
 // ScopeFunc is used during service init time to register the reporter
 type ScopeFunc func(i ScopeInit) (tally.Scope, tally.CachedStatsReporter, io.Closer, error)
 
-// Freeze ensures that after service is started, no other metrics manipulations can be done
-//
-// This has to do with the fact that modules inherit sub-scopes of the main metrics, and the fact
-// that swapping a reporter might have unpredicted implications on already emitted metrics.
-//
-// No, really, metrics must be set up before starting the service.
-func Freeze() {
-	_mu.Lock()
-	defer _mu.Unlock()
-
-	_frozen = true
+// Client is the client for metrics.
+type Client interface {
+	// Freeze ensures that after service is started, no other metrics manipulations can be done
+	//
+	// This has to do with the fact that modules inherit sub-scopes of the main metrics, and the fact
+	// that swapping a reporter might have unpredicted implications on already emitted metrics.
+	//
+	// No, really, metrics must be set up before starting the service.
+	Freeze()
+	// RegisterRootScope initializes the root scope for all the service metrics
+	RegisterRootScope(scopeFunc ScopeFunc)
+	// RootScope returns the provided metrics scope and stats reporter, or nil if not provided
+	RootScope(i ScopeInit) (tally.Scope, tally.CachedStatsReporter, io.Closer)
 }
 
-func ensureNotFrozen() {
-	_mu.Lock()
-	defer _mu.Unlock()
-
-	if _frozen {
-		panic("Attempt to modify stats reporter after it's been frozen")
-	}
+// NewClient returns a new Client.
+func NewClient() Client {
+	return &client{}
 }
 
-// RegisterRootScope initializes the root scope for all the service metrics
-func RegisterRootScope(scopeFunc ScopeFunc) {
-	ensureNotFrozen()
-	_mu.Lock()
-	defer _mu.Unlock()
+type client struct {
+	scopeFunc ScopeFunc
+	frozen    bool
+	lock      sync.Mutex
+}
 
-	if _scopeFunc != nil {
+func (c *client) Freeze() {
+	c.lock.Lock()
+	defer c.lock.Unlock()
+
+	c.frozen = true
+}
+
+func (c *client) RegisterRootScope(scopeFunc ScopeFunc) {
+	c.ensureNotFrozen()
+	c.lock.Lock()
+	defer c.lock.Unlock()
+
+	if c.scopeFunc != nil {
 		// TODO(glib): consider a "force" flag, or some way to clear out and replace the reporter
 		panic("There can be only one metrics root scope")
 	}
 
-	_scopeFunc = scopeFunc
+	c.scopeFunc = scopeFunc
 }
 
-// RootScope returns the provided metrics scope and stats reporter, or nil if not provided
-func RootScope(i ScopeInit) (tally.Scope, tally.CachedStatsReporter, io.Closer) {
-	_mu.Lock()
-	defer _mu.Unlock()
+func (c *client) RootScope(i ScopeInit) (tally.Scope, tally.CachedStatsReporter, io.Closer) {
+	c.lock.Lock()
+	defer c.lock.Unlock()
 
-	if _scopeFunc != nil {
-		scope, reporter, closer, err := _scopeFunc(i)
+	if c.scopeFunc != nil {
+		scope, reporter, closer, err := c.scopeFunc(i)
 		if err != nil {
 			panic(fmt.Sprintf("Failed to initialize metrics reporter %v", err))
 		}
@@ -101,4 +100,13 @@ func RootScope(i ScopeInit) (tally.Scope, tally.CachedStatsReporter, io.Closer) 
 	}
 	// Returning all no-op values if metrics has not been configured
 	return tally.NoopScope, NopCachedStatsReporter, ioutil.NopCloser(nil)
+}
+
+func (c *client) ensureNotFrozen() {
+	c.lock.Lock()
+	defer c.lock.Unlock()
+
+	if c.frozen {
+		panic("Attempt to modify stats reporter after it's been frozen")
+	}
 }

@@ -70,8 +70,11 @@ func (svc *serviceCore) setupStandardConfig() error {
 
 func (svc *serviceCore) setupMetrics() {
 	if svc.Metrics() == nil {
-		svc.metrics, svc.statsReporter, svc.metricsCloser = metrics.RootScope(svc)
-		metrics.Freeze()
+		if svc.metricsClient == nil {
+			svc.metricsClient = metrics.NewClient()
+		}
+		svc.metrics, svc.statsReporter, svc.metricsCloser = svc.metricsClient.RootScope(svc)
+		svc.metricsClient.Freeze()
 	}
 }
 

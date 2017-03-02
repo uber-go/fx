@@ -99,6 +99,7 @@ type serviceCore struct {
 	metricsCore
 	tracerCore
 	authClient     auth.Client
+	metricsClient  metrics.Client
 	configProvider config.Provider
 	logConfig      ulog.Configuration
 	observer       Observer
