@@ -79,7 +79,7 @@
 //       kafka.Module("kakfa_topic1", []string{"worker"}),
 //     ).WithModule(
 //       "keyvalue",
-//       rpc.ThriftModule(rpc.CreateThriftServiceFunc(NewYarpcThriftHandler)),
+//       yarpc.New(rpc.CreateThriftServiceFunc(NewYarpcThriftHandler)),
 //       service.WithModuleRole("service"),
 //     ).Build()
 //
