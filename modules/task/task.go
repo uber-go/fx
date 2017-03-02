@@ -51,34 +51,44 @@ func globalBackendStatsClient() *statsClient {
 	return _globalBackendStatsClient
 }
 
-// New creates an async task queue module
-func New(createFunc BackendCreateFunc) service.ModuleCreateFunc {
-	return func(mi service.Host) (service.Module, error) {
-		return newAsyncModuleSingleton(mi, createFunc)
-	}
+// New creates an async task queue ModuleProvider.
+func New(createFunc BackendCreateFunc) service.ModuleProvider {
+	return &moduleProvider{createFunc}
+}
+
+type moduleProvider struct {
+	createFunc BackendCreateFunc
+}
+
+func (p *moduleProvider) Name() string {
+	return "task"
+}
+
+func (p *moduleProvider) Create(host service.Host) (service.Module, error) {
+	return newAsyncModuleSingleton(host, p.createFunc)
 }
 
 func newAsyncModuleSingleton(
-	mi service.Host,
+	host service.Host,
 	createFunc BackendCreateFunc,
 ) (service.Module, error) {
 	_once.Do(func() {
-		_asyncMod, _asyncModErr = newAsyncModule(mi, createFunc)
+		_asyncMod, _asyncModErr = newAsyncModule(host, createFunc)
 	})
 	return _asyncMod, _asyncModErr
 }
 
 func newAsyncModule(
-	mi service.Host,
+	host service.Host,
 	createFunc BackendCreateFunc,
 ) (service.Module, error) {
-	backend, err := createFunc(mi)
+	backend, err := createFunc(host)
 	if err != nil {
 		return nil, err
 	}
 	_globalBackendMu.Lock()
 	_globalBackend = backend
-	_globalBackendStatsClient = newStatsClient(mi.Metrics())
+	_globalBackendStatsClient = newStatsClient(host.Metrics())
 	_globalBackendMu.Unlock()
 	return backend, nil
 }

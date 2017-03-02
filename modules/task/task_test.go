@@ -72,9 +72,9 @@ func TestMemBackendModuleWorkflowWithContext(t *testing.T) {
 }
 
 func createModule(t *testing.T, b BackendCreateFunc) Backend {
-	createFn := New(b)
-	assert.NotNil(t, createFn)
-	mod, err := createFn(newTestHost(t))
+	moduleProvider := New(b)
+	assert.NotNil(t, moduleProvider)
+	mod, err := moduleProvider.Create(newTestHost(t))
 	assert.NotNil(t, mod)
 	assert.NoError(t, err)
 	return _globalBackend

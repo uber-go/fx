@@ -58,7 +58,7 @@ modules:
          port: 0
 `)
 
-	mi := newHost(
+	host := newHost(
 		t,
 		testHost{
 			Host:   service.NopHost(),
@@ -66,12 +66,12 @@ modules:
 		},
 		"hello",
 	)
-	goofy, err := chip(mi)
+	goofy, err := chip.Create(host)
 	require.NoError(t, err)
 	assert.NotNil(t, goofy)
 	assert.Equal(t, "hello", goofy.(*Module).host.Name())
 
-	gopher, err := dale(mih(t, "hello"))
+	gopher, err := dale.Create(mih(t, "hello"))
 	require.NoError(t, err)
 	assert.NotNil(t, gopher)
 
@@ -87,7 +87,7 @@ modules:
 func TestThrfitModule_Error(t *testing.T) {
 	dig.Reset()
 	modCreate := New(badCreateService)
-	mod, err := modCreate(mih(t, "hello"))
+	mod, err := modCreate.Create(mih(t, "hello"))
 	assert.NoError(t, err)
 	assert.EqualError(t, mod.Start(), "unable to start dispatcher: can't create service")
 }
@@ -103,9 +103,9 @@ func mih(t *testing.T, moduleName string) service.Host {
 
 func newHost(t *testing.T, host service.Host, moduleName string) service.Host {
 	// need to add name since we are not fully instantiating Host
-	mi, err := service.NewScopedHost(host, moduleName)
+	host, err := service.NewScopedHost(host, moduleName)
 	require.NoError(t, err)
-	return mi
+	return host
 }
 
 func okCreate(_ service.Host) ([]transport.Procedure, error) {

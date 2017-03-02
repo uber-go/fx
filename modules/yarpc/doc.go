@@ -45,7 +45,6 @@
 //
 //   func main() {
 //     svc, err := service.WithModule(
-//       "example",
 //       yarpc.New(yarpc.CreateThriftServiceFunc(NewMyServiceHandler)),
 //       service.WithModuleRole("service"),
 //     ).Build()

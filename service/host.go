@@ -177,11 +177,11 @@ func (s *manager) shutdown(err error, reason string, exitCode *int) (bool, error
 	return true, err
 }
 
-func (s *manager) addModule(name string, module ModuleCreateFunc, options ...ModuleOption) error {
+func (s *manager) addModule(provider ModuleProvider, options ...ModuleOption) error {
 	if s.locked {
 		return fmt.Errorf("can't add module: service already started")
 	}
-	moduleWrapper, err := newModuleWrapper(s, name, module, options...)
+	moduleWrapper, err := newModuleWrapper(s, provider, options...)
 	if err != nil {
 		return err
 	}

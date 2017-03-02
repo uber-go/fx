@@ -26,11 +26,22 @@ import (
 )
 
 // CreateThriftServiceFunc creates a Thrift service from a service host
-type CreateThriftServiceFunc func(svc service.Host) ([]transport.Procedure, error)
+type CreateThriftServiceFunc func(service.Host) ([]transport.Procedure, error)
 
 // New creates a Thrift Module from a service func
-func New(hookup CreateThriftServiceFunc, options ...ModuleOption) service.ModuleCreateFunc {
-	return func(host service.Host) (service.Module, error) {
-		return newYARPCModule(host, hookup, options...)
-	}
+func New(hookup CreateThriftServiceFunc, options ...ModuleOption) service.ModuleProvider {
+	return &moduleProvider{hookup, options}
+}
+
+type moduleProvider struct {
+	hookup  CreateThriftServiceFunc
+	options []ModuleOption
+}
+
+func (p *moduleProvider) Name() string {
+	return "yarpc"
+}
+
+func (p *moduleProvider) Create(host service.Host) (service.Module, error) {
+	return newYARPCModule(host, p.hookup, p.options...)
 }

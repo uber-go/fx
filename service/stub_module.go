@@ -20,10 +20,38 @@
 
 package service
 
+// StubModuleProvider implements the ModuleProvider interface for testing.
+type StubModuleProvider struct {
+	NameVal   string
+	CreateVal func(Host) (Module, error)
+}
+
+var _ ModuleProvider = &StubModuleProvider{}
+
+// NewDefaultStubModuleProvider returns a new StubModuleProvider with an empty StubModule.
+func NewDefaultStubModuleProvider(name string) *StubModuleProvider {
+	return NewStubModuleProvider(name, &StubModule{})
+}
+
+// NewStubModuleProvider returns a new StubModuleProvider with the given name
+// and create function from NewStubModuleCreateFunc.
+func NewStubModuleProvider(name string, stubModule *StubModule) *StubModuleProvider {
+	return &StubModuleProvider{name, NewStubModuleCreateFunc(stubModule)}
+}
+
+// Name returns the name.
+func (p *StubModuleProvider) Name() string {
+	return p.NameVal
+}
+
+// Create creates a new Module.
+func (p *StubModuleProvider) Create(host Host) (Module, error) {
+	return p.CreateVal(host)
+}
+
 // A StubModule implements the Module interface for testing
 type StubModule struct {
 	Host       Host
-	InitError  error
 	StartError error
 	StopError  error
 }
@@ -31,14 +59,20 @@ type StubModule struct {
 var _ Module = &StubModule{}
 
 // DefaultStubModuleCreateFunc is a ModuleCreateFunc that returns a StubModule with only Host set.
-var DefaultStubModuleCreateFunc = NewStubModuleCreateFunc(StubModule{})
+var DefaultStubModuleCreateFunc = NewStubModuleCreateFunc(&StubModule{})
 
-// NewStubModuleCreateFunc returns a new ModuleCreateFunc for a new StubModule.
+// NewStubModuleCreateFunc returns a new Module create function for a new StubModule.
+//
+// If stubModule is nil, this will return nil for the new Module.
+//
 // Host will be overwritten.
-func NewStubModuleCreateFunc(stubModule StubModule) ModuleCreateFunc {
+func NewStubModuleCreateFunc(stubModule *StubModule) func(Host) (Module, error) {
 	return func(host Host) (Module, error) {
+		if stubModule == nil {
+			return nil, nil
+		}
 		stubModule.Host = host
-		return &stubModule, nil
+		return stubModule, nil
 	}
 }
 

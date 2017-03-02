@@ -42,9 +42,7 @@
 //   func main() {
 //     // Create the service object
 //     svc, err := service.WithModule(
-//       // The list of module creators for this service, in this case
-//       // creates a Thrift RPC module called "keyvalue"
-//       "keyvalue",
+//       // The list of module creators for this service
 //       yarpc.New(yarpc.CreateThriftServiceFunc(NewYarpcThriftHandler)),
 //     ).Build()
 //
@@ -75,11 +73,9 @@
 //
 //   func main() {
 //     svc, err := service.WithModule(
-//       "kafka",
 //       kafka.Module("kakfa_topic1", []string{"worker"}),
 //     ).WithModule(
-//       "keyvalue",
-//       yarpc.New(rpc.CreateThriftServiceFunc(NewYarpcThriftHandler)),
+//       yarpc.New(yarpc.CreateThriftServiceFunc(NewYarpcThriftHandler)),
 //       service.WithModuleRole("service"),
 //     ).Build()
 //
