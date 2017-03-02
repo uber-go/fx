@@ -27,4 +27,4 @@ script:
   - make examples
 
 after_success:
-   - '[ "${TRAVIS_GO_VERSION}" != "tip" ] && make coveralls'
+   - '[ "${TRAVIS_GO_VERSION}" == "1.8" ] && make coveralls'
