@@ -25,19 +25,83 @@ import (
 	"time"
 
 	"go.uber.org/fx/auth"
+	"go.uber.org/fx/dig"
+	"go.uber.org/fx/modules"
+	"go.uber.org/fx/service"
+
+	"github.com/opentracing/opentracing-go"
 )
+
+const (
+	_middlewareKey = "httpClientMiddleware"
+	_graphKey      = "httpClientGraph"
+)
+
+// WithOutbound lets you to add a custom middleware to the client
+func WithOutbound(middleware ...OutboundMiddleware) modules.Option {
+	return func(info *service.ModuleCreateInfo) error {
+		items := info.Items
+		if m, ok := items[_middlewareKey]; ok {
+			items[_middlewareKey] = append(m.([]OutboundMiddleware), middleware...)
+		} else {
+			items[_middlewareKey] = middleware
+		}
+		return nil
+	}
+}
+
+// WithGraph allows you to use a custom dependency injection graph to resolve Tracer and AuthInfo
+func WithGraph(graph dig.Graph) modules.Option {
+	return func(info *service.ModuleCreateInfo) error {
+		info.Items[_graphKey] = graph
+		return nil
+	}
+}
 
 // New creates an http.Client that includes 2 extra outbound middleware: tracing and auth
 // they are going to be applied in following order: tracing, auth, remaining outbound middleware
 // and only if all of them passed the request is going to be send.
-// Client is safe to use by multiple go routines, if global tracer is not changed.
-func New(info auth.CreateAuthInfo, middleware ...OutboundMiddleware) *http.Client {
-	defaultMiddleware := []OutboundMiddleware{tracingOutbound(), authenticationOutbound(info)}
-	defaultMiddleware = append(defaultMiddleware, middleware...)
-	return &http.Client{
-		Transport: newExecutionChain(defaultMiddleware, http.DefaultTransport),
-		Timeout:   2 * time.Minute,
+func New(options ...modules.Option) (*http.Client, error) {
+
+	// Apply options.
+	info := service.ModuleCreateInfo{
+		Items: make(map[string]interface{}),
 	}
+
+	for _, opt := range options {
+		if err := opt(&info); err != nil {
+			return nil, err
+		}
+	}
+
+	// Resolve auth and tracer.
+	graph := dig.DefaultGraph()
+	if g, ok := info.Items[_graphKey]; ok {
+		graph = g.(dig.Graph)
+	}
+
+	var tracer *opentracing.Tracer
+	if err := graph.Resolve(&tracer); err != nil {
+		return nil, err
+	}
+
+	var auth *auth.CreateAuthInfo
+	if err := graph.Resolve(&auth); err != nil {
+		return nil, err
+	}
+
+	// Make middleware.
+	middleware := make([]OutboundMiddleware, 0, len(options)+2)
+	middleware = append(middleware, tracingOutbound(*tracer), authenticationOutbound(*auth))
+
+	if val, ok := info.Items[_middlewareKey]; ok {
+		middleware = append(middleware, val.([]OutboundMiddleware)...)
+	}
+
+	return &http.Client{
+		Transport: newExecutionChain(middleware, http.DefaultTransport),
+		Timeout:   2 * time.Minute,
+	}, nil
 }
 
 // executionChain represents a chain of outbound middleware that are being executed recursively

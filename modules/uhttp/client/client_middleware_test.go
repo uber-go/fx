@@ -55,7 +55,7 @@ func TestExecutionChain(t *testing.T) {
 
 func TestExecutionChainOutboundMiddleware(t *testing.T) {
 	execChain := newExecutionChain(
-		[]OutboundMiddleware{tracingOutbound()}, nopTransport{},
+		[]OutboundMiddleware{tracingOutbound(opentracing.NoopTracer{})}, nopTransport{},
 	)
 	resp, err := execChain.RoundTrip(_req())
 	assert.NoError(t, err)
@@ -64,7 +64,7 @@ func TestExecutionChainOutboundMiddleware(t *testing.T) {
 
 func TestExecutionChainOutboundMiddlewareError(t *testing.T) {
 	execChain := newExecutionChain(
-		[]OutboundMiddleware{tracingOutbound()}, errTransport{},
+		[]OutboundMiddleware{tracingOutbound(opentracing.NoopTracer{})}, errTransport{},
 	)
 	resp, err := execChain.RoundTrip(_req().WithContext(context.Background()))
 	assert.Error(t, err)
@@ -123,25 +123,24 @@ func getExecChainWithAuth(t *testing.T) executionChain {
 }
 
 func TestOutboundMiddlewareWithTracerErrors(t *testing.T) {
+	t.Parallel()
+	tr := &shadowTracer{
+		opentracing.NoopTracer{},
+		func(sm opentracing.SpanContext, format interface{}, carrier interface{}) error {
+			return errors.New("Very bad _tracer")
+		},
+		nil,
+	}
 	testCases := map[string]OutboundMiddleware{
 		"auth":    authenticationOutbound(fakeAuthInfo{_testYaml}),
-		"tracing": tracingOutbound(),
+		"tracing": tracingOutbound(tr),
 	}
 
 	for name, middleware := range testCases {
-		op := func(tracer opentracing.Tracer) {
-			tr := &shadowTracer{
-				tracer,
-				func(sm opentracing.SpanContext, format interface{}, carrier interface{}) error {
-					return errors.New("Very bad tracer")
-				},
-				nil,
-			}
-			opentracing.InitGlobalTracer(tr)
-
+		op := func(t *testing.T) {
 			execChain := newExecutionChain(
 				[]OutboundMiddleware{middleware}, nopTransport{})
-			span := tracer.StartSpan("test_method")
+			span := _tracer.StartSpan("test_method")
 			span.SetBaggageItem(auth.ServiceAuth, "testService")
 			sp := &shadowSpan{span, tr}
 			tr.span = sp
@@ -149,12 +148,10 @@ func TestOutboundMiddlewareWithTracerErrors(t *testing.T) {
 			ctx := opentracing.ContextWithSpan(context.Background(), sp)
 
 			_, err := execChain.RoundTrip(_req().WithContext(ctx))
-			assert.EqualError(t, err, "Very bad tracer")
-
-			opentracing.InitGlobalTracer(tracer)
+			assert.EqualError(t, err, "Very bad _tracer")
 		}
 
-		t.Run(name, func(t *testing.T) { withOpentracingSetup(t, nil, op) })
+		t.Run(name, op)
 	}
 }
 
