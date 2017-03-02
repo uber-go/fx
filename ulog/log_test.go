@@ -25,8 +25,28 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"go.uber.org/fx/config"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
+)
+
+var (
+	_logyaml = []byte(`
+logging:
+  stdout: true
+`)
+
+	_sentryyaml = []byte(`
+logging:
+  sentry:
+    dsn:
+    trace:
+      disabled: true
+      skip_frames: 10
+      context_lines: 15
+
+`)
 )
 
 func TestDefaultLogger(t *testing.T) {
@@ -46,4 +66,31 @@ func TestSetLogger(t *testing.T) {
 
 	sugarlog := Sugar(context.Background())
 	assert.Equal(t, zaplogger, sugarlog.Desugar().Core())
+}
+
+func TestConfigureLogger(t *testing.T) {
+	var logConfig Configuration
+	cfg := config.NewYAMLProviderFromBytes(_logyaml).Get("logging")
+	err := logConfig.Configure(cfg)
+	require.NoError(t, err)
+	assert.NotNil(t, logConfig)
+	logger, err := logConfig.Build()
+	require.NoError(t, err)
+	assert.NotNil(t, logger)
+}
+
+func TestConfigureSentryLogger(t *testing.T) {
+	var logConfig Configuration
+	cfg := config.NewYAMLProviderFromBytes(_sentryyaml).Get("logging")
+	err := logConfig.Configure(cfg)
+	require.NoError(t, err)
+	assert.NotNil(t, logConfig.Sentry)
+	assert.Equal(t, "", logConfig.Sentry.DSN)
+	assert.Equal(t, bool(true), logConfig.Sentry.Trace.Disabled)
+	assert.Equal(t, 10, *logConfig.Sentry.Trace.SkipFrames)
+	assert.Equal(t, 15, *logConfig.Sentry.Trace.ContextLines)
+
+	logger, err := logConfig.Build()
+	require.NoError(t, err)
+	assert.NotNil(t, logger)
 }

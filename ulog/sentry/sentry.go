@@ -60,7 +60,12 @@ type client interface {
 
 // Configuration is a minimal set of parameters for Sentry integration.
 type Configuration struct {
-	DSN string `yaml:"DSN"`
+	DSN   string `yaml:"DSN"`
+	Trace *struct {
+		Disabled     bool
+		SkipFrames   *int `yaml:"skip_frames"`
+		ContextLines *int `yaml:"context_lines"`
+	}
 }
 
 // Build uses the provided configuration to construct a Sentry-backed logging
@@ -70,22 +75,43 @@ func (c Configuration) Build() (zapcore.Core, error) {
 	if err != nil {
 		return zapcore.NewNopCore(), err
 	}
-	return newCore(client, zapcore.ErrorLevel), nil
+	return newCore(c, client, zapcore.ErrorLevel), nil
 }
 
 type core struct {
 	client
 	zapcore.LevelEnabler
 
-	fields map[string]interface{}
+	traceEnabled      bool
+	traceSkipFrames   int
+	traceContextLines int
+	fields            map[string]interface{}
 }
 
-func newCore(c client, enab zapcore.LevelEnabler) *core {
-	return &core{
-		client:       c,
-		LevelEnabler: enab,
-		fields:       make(map[string]interface{}),
+func newCore(cfg Configuration, c client, enab zapcore.LevelEnabler) *core {
+	sentryCore := &core{
+		client:            c,
+		LevelEnabler:      enab,
+		traceEnabled:      true,
+		traceSkipFrames:   _traceSkipFrames,
+		traceContextLines: _traceContextLines,
+		fields:            make(map[string]interface{}),
 	}
+	t := cfg.Trace
+	if t == nil {
+		return sentryCore
+	}
+
+	if t.Disabled {
+		sentryCore.traceEnabled = false
+	}
+	if t.SkipFrames != nil {
+		sentryCore.traceSkipFrames = *t.SkipFrames
+	}
+	if t.ContextLines != nil {
+		sentryCore.traceContextLines = *t.ContextLines
+	}
+	return sentryCore
 }
 
 func (c *core) With(fs []zapcore.Field) zapcore.Core {
@@ -110,9 +136,11 @@ func (c *core) Write(ent zapcore.Entry, fs []zapcore.Field) error {
 		Extra:     clone.fields,
 	}
 
-	trace := raven.NewStacktrace(_traceSkipFrames, _traceContextLines, nil /* app prefixes */)
-	if trace != nil {
-		packet.Interfaces = append(packet.Interfaces, trace)
+	if c.traceEnabled {
+		trace := raven.NewStacktrace(c.traceSkipFrames, c.traceContextLines, nil /* app prefixes */)
+		if trace != nil {
+			packet.Interfaces = append(packet.Interfaces, trace)
+		}
 	}
 
 	// TODO: Consume the errors channel in the background, incrementing a
@@ -145,8 +173,11 @@ func (c *core) with(fs []zapcore.Field) *core {
 	}
 
 	return &core{
-		client:       c.client,
-		LevelEnabler: c.LevelEnabler,
-		fields:       m,
+		client:            c.client,
+		LevelEnabler:      c.LevelEnabler,
+		traceEnabled:      c.traceEnabled,
+		traceSkipFrames:   c.traceSkipFrames,
+		traceContextLines: c.traceContextLines,
+		fields:            m,
 	}
 }
