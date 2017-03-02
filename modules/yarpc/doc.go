@@ -18,7 +18,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-// Package rpc is the YARPC Module.
+// Package yarpc is the YARPC Module.
 //
 // The RPC module wraps YARPC (https://github.com/yarpc/yarpc-go) and exposes
 // creators for both JSON- and Thrift-encoded messages.
