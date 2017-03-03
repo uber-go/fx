@@ -60,7 +60,12 @@ type client interface {
 
 // Configuration is a minimal set of parameters for Sentry integration.
 type Configuration struct {
-	DSN string `yaml:"DSN"`
+	DSN   string `yaml:"DSN"`
+	Trace trace
+}
+
+type trace struct {
+	Disabled bool
 }
 
 // Build uses the provided configuration to construct a Sentry-backed logging
@@ -70,22 +75,25 @@ func (c Configuration) Build() (zapcore.Core, error) {
 	if err != nil {
 		return zapcore.NewNopCore(), err
 	}
-	return newCore(client, zapcore.ErrorLevel), nil
+	return newCore(c, client, zapcore.ErrorLevel), nil
 }
 
 type core struct {
 	client
 	zapcore.LevelEnabler
+	trace
 
 	fields map[string]interface{}
 }
 
-func newCore(c client, enab zapcore.LevelEnabler) *core {
-	return &core{
+func newCore(cfg Configuration, c client, enab zapcore.LevelEnabler) *core {
+	sentryCore := &core{
 		client:       c,
 		LevelEnabler: enab,
+		trace:        cfg.Trace,
 		fields:       make(map[string]interface{}),
 	}
+	return sentryCore
 }
 
 func (c *core) With(fs []zapcore.Field) zapcore.Core {
@@ -110,9 +118,11 @@ func (c *core) Write(ent zapcore.Entry, fs []zapcore.Field) error {
 		Extra:     clone.fields,
 	}
 
-	trace := raven.NewStacktrace(_traceSkipFrames, _traceContextLines, nil /* app prefixes */)
-	if trace != nil {
-		packet.Interfaces = append(packet.Interfaces, trace)
+	if !c.trace.Disabled {
+		trace := raven.NewStacktrace(_traceSkipFrames, _traceContextLines, nil /* app prefixes */)
+		if trace != nil {
+			packet.Interfaces = append(packet.Interfaces, trace)
+		}
 	}
 
 	// TODO: Consume the errors channel in the background, incrementing a
@@ -147,6 +157,7 @@ func (c *core) with(fs []zapcore.Field) *core {
 	return &core{
 		client:       c.client,
 		LevelEnabler: c.LevelEnabler,
+		trace:        c.trace,
 		fields:       m,
 	}
 }

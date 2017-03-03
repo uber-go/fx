@@ -70,6 +70,7 @@ func asCore(t testing.TB, iface zapcore.Core) *core {
 }
 
 func TestRavenSeverityMap(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		z zapcore.Level
 		r raven.Severity
@@ -96,8 +97,12 @@ func TestRavenSeverityMap(t *testing.T) {
 }
 
 func TestCoreWith(t *testing.T) {
+	t.Parallel()
+	cfg := Configuration{
+		DSN: "testdsn",
+	}
 	// Ensure that we're not sharing map references across generations.
-	parent := newCore(nil, zapcore.ErrorLevel).With([]zapcore.Field{zap.String("parent", "parent")})
+	parent := newCore(cfg, nil, zapcore.ErrorLevel).With([]zapcore.Field{zap.String("parent", "parent")})
 	elder := parent.With([]zapcore.Field{zap.String("elder", "elder")})
 	younger := parent.With([]zapcore.Field{zap.String("younger", "younger")})
 
@@ -119,7 +124,11 @@ func TestCoreWith(t *testing.T) {
 }
 
 func TestCoreCheck(t *testing.T) {
-	core := newCore(nil, zapcore.ErrorLevel)
+	t.Parallel()
+	cfg := Configuration{
+		DSN: "testdsn",
+	}
+	core := newCore(cfg, nil, zapcore.ErrorLevel)
 	assert.Nil(t, core.Check(zapcore.Entry{}, nil), "Expected nil CheckedEntry for disabled levels.")
 	ent := zapcore.Entry{Level: zapcore.ErrorLevel}
 	assert.NotNil(t, core.Check(ent, nil), "Expected non-nil CheckedEntry for enabled levels.")
@@ -127,7 +136,10 @@ func TestCoreCheck(t *testing.T) {
 
 func TestConfigWrite(t *testing.T) {
 	s := &spy{}
-	core := newCore(s, zapcore.ErrorLevel)
+	cfg := Configuration{
+		DSN: "testdsn",
+	}
+	core := newCore(cfg, s, zapcore.ErrorLevel)
 
 	// Write a panic-level message, which should also fire a Sentry event.
 	ent := zapcore.Entry{Message: "oh no", Level: zapcore.PanicLevel, Time: time.Now()}
@@ -154,6 +166,7 @@ func TestConfigWrite(t *testing.T) {
 }
 
 func TestConfigBuild(t *testing.T) {
+	t.Parallel()
 	broken := Configuration{DSN: "invalid"}
 	_, err := broken.Build()
 	assert.Error(t, err, "Expected invalid DSN to make config building fail.")
