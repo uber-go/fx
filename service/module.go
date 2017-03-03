@@ -27,12 +27,12 @@ import (
 
 // ModuleProvider provides Modules.
 type ModuleProvider interface {
-	// Name is the name that will be used for a new Module
+	// DefaultName is the name that will be used for a new Module
 	// if no name is given as a ModuleOption.
-	Name() string
+	DefaultName() string
 	// Create a new Module. The name of the Host and the scoping
 	// of associated functions on the Host will be done using a name
-	// provided by a ModuleOption, or by the Name on this ModuleProvider.
+	// provided by a ModuleOption, or by the DefaultName on this ModuleProvider.
 	Create(Host) (Module, error)
 }
 
@@ -56,7 +56,7 @@ type moduleProviderFunc struct {
 	createFunc func(Host) (Module, error)
 }
 
-func (m *moduleProviderFunc) Name() string                     { return m.name }
+func (m *moduleProviderFunc) DefaultName() string              { return m.name }
 func (m *moduleProviderFunc) Create(host Host) (Module, error) { return m.createFunc(host) }
 
 // ModuleOption is a function that configures module creation.
@@ -120,7 +120,7 @@ func newModuleWrapper(
 		}
 	}
 	if moduleOptions.name == "" {
-		moduleOptions.name = moduleProvider.Name()
+		moduleOptions.name = moduleProvider.DefaultName()
 	}
 	scopedHost, err := newScopedHost(
 		host,

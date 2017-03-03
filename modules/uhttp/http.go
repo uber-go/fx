@@ -85,20 +85,9 @@ type GetHandlersFunc func(service service.Host) []RouteHandler
 
 // New returns a new HTTP ModuleProvider.
 func New(hookup GetHandlersFunc, options ...ModuleOption) service.ModuleProvider {
-	return &moduleProvider{hookup, options}
-}
-
-type moduleProvider struct {
-	hookup  GetHandlersFunc
-	options []ModuleOption
-}
-
-func (p *moduleProvider) Name() string {
-	return "http"
-}
-
-func (p *moduleProvider) Create(host service.Host) (service.Module, error) {
-	return newModule(host, p.hookup, p.options...)
+	return service.ModuleProviderFromFunc("http", func(host service.Host) (service.Module, error) {
+		return newModule(host, hookup, options...)
+	})
 }
 
 func newModule(
