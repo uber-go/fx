@@ -21,15 +21,68 @@
 package yarpc
 
 import (
+	"errors"
 	"fmt"
 	"testing"
 
+	"go.uber.org/fx/config"
+	"go.uber.org/fx/dig"
 	"go.uber.org/fx/service"
+	"go.uber.org/yarpc"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.uber.org/yarpc/api/transport"
 	"go.uber.org/yarpc/transport/http"
 )
+
+func TestNew_OK(t *testing.T) {
+	dig.Reset()
+	chip := New(okCreate)
+	dale := New(okCreate)
+	cfg := []byte(`
+modules:
+  hello:
+    inbounds:
+     - tchannel:
+         port: 0
+     - http:
+         port: 0
+`)
+
+	mi := newHost(
+		t,
+		testHost{
+			Host:   service.NopHost(),
+			config: config.NewYAMLProviderFromBytes(cfg),
+		},
+		"hello",
+	)
+	goofy, err := chip(mi)
+	require.NoError(t, err)
+	assert.NotNil(t, goofy)
+	assert.Equal(t, "hello", goofy.(*Module).host.Name())
+
+	gopher, err := dale(mih(t, "hello"))
+	require.NoError(t, err)
+	assert.NotNil(t, gopher)
+
+	testInitRunModule(t, goofy)
+	testInitRunModule(t, gopher)
+
+	// Dispatcher must be resolved in the default graph
+	var dispatcher *yarpc.Dispatcher
+	assert.NoError(t, dig.Resolve(&dispatcher))
+	assert.Equal(t, 2, len(dispatcher.Inbounds()))
+}
+
+func TestNew_Error(t *testing.T) {
+	dig.Reset()
+	modCreate := New(badCreateService)
+	mod, err := modCreate(mih(t, "hello"))
+	assert.NoError(t, err)
+	assert.EqualError(t, mod.Start(), "unable to start dispatcher: can't create service")
+}
 
 func TestRegisterDispatcher_OK(t *testing.T) {
 	t.Parallel()
@@ -85,4 +138,37 @@ func TestInboundPrint(t *testing.T) {
 	assert.Equal(t, "Inbound:{HTTP: 8080; TChannel: 9876}", fmt.Sprint(i))
 	i.HTTP = nil
 	assert.Equal(t, "Inbound:{HTTP: none; TChannel: 9876}", fmt.Sprint(i))
+}
+
+type testHost struct {
+	service.Host
+	config config.Provider
+}
+
+func (h testHost) Config() config.Provider {
+	return h.config
+}
+
+func testInitRunModule(t *testing.T, mod service.Module) {
+	assert.NoError(t, mod.Start())
+	assert.NoError(t, mod.Stop())
+}
+
+func mih(t *testing.T, moduleName string) service.Host {
+	return newHost(t, service.NopHost(), moduleName)
+}
+
+func newHost(t *testing.T, host service.Host, moduleName string) service.Host {
+	// need to add name since we are not fully instantiating Host
+	mi, err := service.NewScopedHost(host, moduleName)
+	require.NoError(t, err)
+	return mi
+}
+
+func okCreate(_ service.Host) ([]transport.Procedure, error) {
+	return []transport.Procedure{}, nil
+}
+
+func badCreateService(_ service.Host) ([]transport.Procedure, error) {
+	return nil, errors.New("can't create service")
 }

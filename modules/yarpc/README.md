@@ -11,7 +11,7 @@ This module works in a way that's pretty similar to existing RPC projects:
 * Implement the service interface handlers as method receivers on a struct
 
 * Implement a top-level function, conforming to the
-  `yarpc.CreateThriftServiceFunc` signature (`fx/modules/yarpc/thrift.go` that
+  `yarpc.ServiceCreateFunc` signature (`fx/modules/yarpc/yarpc.go` that
   returns a `[]transport.Registrant` YARPC implementation from the handler:
 
 ```go
@@ -26,7 +26,7 @@ func NewMyServiceHandler(svc service.Host) ([]transport.Registrant, error) {
 func main() {
   svc, err := service.WithModule(
     "example",
-    yarpc.New(yarpc.CreateThriftServiceFunc(NewMyServiceHandler)),
+    yarpc.New(yarpc.ServiceCreateFunc(NewMyServiceHandler)),
     service.WithModuleRole("service"),
   ).Build()
 
