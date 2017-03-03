@@ -85,11 +85,15 @@ func (g *Graph) Register(c interface{}) error {
 // Provided object must be a pointer
 // Any dependencies of the object will receive constructor calls, or be initialized (once)
 // Constructor with return value *object will be called
-//
-// TODO(glib): catch any and all panics from this method, as there is a lot of reflect going on
-func (g *Graph) Resolve(obj interface{}) error {
+func (g *Graph) Resolve(obj interface{}) (err error) {
 	g.Lock()
 	defer g.Unlock()
+
+	defer func() {
+		if r := recover(); r != nil {
+			err = fmt.Errorf("panic during Resolve %v", r)
+		}
+	}()
 
 	objType := reflect.TypeOf(obj)
 	if objType.Kind() != reflect.Ptr {
@@ -145,6 +149,7 @@ func (g *Graph) Reset() {
 	g.nodes = make(map[interface{}]graphNode)
 }
 
+// String representation of the entire graph
 func (g *Graph) String() string {
 	b := &bytes.Buffer{}
 	fmt.Fprintln(b, "{nodes:")

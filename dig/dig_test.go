@@ -237,3 +237,20 @@ func TestEmptyAfterReset(t *testing.T) {
 	g.Reset()
 	require.Contains(t, g.Resolve(&first).Error(), "not registered")
 }
+
+func TestPanicConstructor(t *testing.T) {
+	t.Parallel()
+	g := New()
+
+	type Type1 struct{}
+	c := func() *Type1 {
+		panic("RUH ROH")
+	}
+
+	require.NoError(t, g.Register(c))
+
+	var v *Type1
+	err := g.Resolve(&v)
+	require.Contains(t, err.Error(), "panic during Resolve")
+	require.Contains(t, err.Error(), "RUH ROH")
+}
