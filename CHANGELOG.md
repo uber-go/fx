@@ -8,11 +8,15 @@
 * Remove now-unused `config.IsDevelopmentEnv()` helper to encourage better
   testing practices. Not a breaking change as nobody is using this func
   themselves according to our code search tool.
-* Log `traceID` and `spanID` in hex format to match Jaeger UI. Upgrade Jaeger to min version 2.1.0
+* Log `traceID` and `spanID` in hex format to match Jaeger UI. Upgrade Jaeger to
+  min version 2.1.0
   and use jaeger's adapters for jaeger and tally initialization.
 * [Breaking] Rename `modules/rpc` to `modules/yarpc`
-* [Breaking] Make new module naming consistent `yarpc.ThriftModule` to `yarpc.New`, `task.NewModule`
+* [Breaking] Make new module naming consistent `yarpc.ThriftModule` to
+  `yarpc.New`, `task.NewModule`
   to `task.New`
+* [Breaking] Rename `yarpc.CreateThriftServiceFunc` to `yarpc.ServiceCreateFunc`
+  as it is not thrift-specific.
 
 ## v1.0.0-beta1 (20 Feb 2017)
 
