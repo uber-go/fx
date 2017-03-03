@@ -24,13 +24,11 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
-	"reflect"
 	"sync"
 	"syscall"
 	"time"
 
 	"go.uber.org/fx/config"
-	"go.uber.org/fx/internal/util"
 	"go.uber.org/zap"
 
 	"github.com/pkg/errors"
@@ -60,6 +58,75 @@ type manager struct {
 // TODO(glib): manager is both an Manager and a Host?
 var _ Host = &manager{}
 var _ Manager = &manager{}
+
+// newManager creates a service Manager from a Builder.
+func newManager(builder *Builder) (Manager, error) {
+	svc := &manager{
+		// TODO: get these out of config struct instead
+		moduleWrappers: []*moduleWrapper{},
+		serviceCore:    serviceCore{},
+	}
+
+	// hash up the roles
+	svc.roles = map[string]bool{}
+	for _, r := range svc.standardConfig.Roles {
+		svc.roles[r] = true
+	}
+
+	// Run the rest of the options
+	for _, opt := range builder.options {
+		if optionErr := opt(svc); optionErr != nil {
+			return nil, errors.Wrap(optionErr, "option failed to apply")
+		}
+	}
+
+	if svc.configProvider == nil {
+		// If the user didn't pass in a configuration provider, load the standard.
+		// Bypassing standard config load is pretty much only used for tests, although it could be
+		// useful in certain circumstances.
+		svc.configProvider = config.Load()
+	}
+
+	// load standard config
+	if err := svc.setupStandardConfig(); err != nil {
+		return nil, err
+	}
+
+	// Initialize metrics. If no metrics reporters were Registered, do nop
+	// TODO(glib): add a logging reporter and use it by default, rather than nop
+	svc.setupMetrics()
+
+	if err := svc.setupLogging(); err != nil {
+		return nil, err
+	}
+
+	svc.setupAuthClient()
+
+	if err := svc.setupRuntimeMetricsCollector(); err != nil {
+		return nil, err
+	}
+
+	if err := svc.setupTracer(); err != nil {
+		return nil, err
+	}
+
+	// if we have an observer, look for a property called "config" and load the service
+	// node into that config.
+	svc.setupObserver()
+
+	// Put service into Initialized state
+	svc.transitionState(Initialized)
+
+	svc.Metrics().Counter("boot").Inc(1)
+
+	for _, module := range builder.modules {
+		if err := svc.addModule(module.name, module.moduleCreateFunc, module.options...); err != nil {
+			return nil, err
+		}
+	}
+
+	return svc, nil
+}
 
 func (s *manager) addModuleWrapper(moduleWrapper *moduleWrapper) error {
 	s.moduleWrappers = append(s.moduleWrappers, moduleWrapper)
@@ -424,25 +491,4 @@ func (s *manager) transitionState(to State) {
 			s.observer.OnStateChange(old, newState)
 		}
 	}
-}
-
-const instanceConfigName = "ServiceConfig"
-
-func loadInstanceConfig(cfg config.Provider, key string, instance interface{}) bool {
-	fieldName := instanceConfigName
-	if field, found := util.FindField(instance, &fieldName, nil); found {
-
-		configValue := reflect.New(field.Type())
-
-		// Try to load the service config
-		err := cfg.Get(key).PopulateStruct(configValue.Interface())
-		if err != nil {
-			zap.L().Error("Unable to load instance config", zap.Error(err))
-			return false
-		}
-		instanceValue := reflect.ValueOf(instance).Elem()
-		instanceValue.FieldByName(fieldName).Set(configValue.Elem())
-		return true
-	}
-	return false
 }
