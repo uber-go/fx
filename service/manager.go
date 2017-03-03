@@ -119,8 +119,8 @@ func newManager(builder *Builder) (Manager, error) {
 
 	svc.Metrics().Counter("boot").Inc(1)
 
-	for _, module := range builder.modules {
-		if err := svc.addModule(module.name, module.moduleCreateFunc, module.options...); err != nil {
+	for _, moduleInfo := range builder.moduleInfos {
+		if err := svc.addModule(moduleInfo.provider, moduleInfo.options...); err != nil {
 			return nil, err
 		}
 	}

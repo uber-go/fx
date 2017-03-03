@@ -75,9 +75,6 @@ func WithModuleRole(role string) ModuleOption {
 	}
 }
 
-// ModuleCreateFunc handles instantiating modules from creation configuration.
-type ModuleCreateFunc func(Host) (Module, error)
-
 // NewScopedHost returns a new Host scoped to a module. This should generally be used for testing.
 func NewScopedHost(host Host, name string, roles ...string) (Host, error) {
 	return newScopedHost(host, name, roles...)

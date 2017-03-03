@@ -58,12 +58,12 @@ modules:
 		},
 		"hello",
 	)
-	goofy, err := chip(mi)
+	goofy, err := chip.Create(mi)
 	require.NoError(t, err)
 	assert.NotNil(t, goofy)
 	assert.Equal(t, "hello", goofy.(*Module).host.Name())
 
-	gopher, err := dale(mih(t, "hello"))
+	gopher, err := dale.Create(mih(t, "hello"))
 	require.NoError(t, err)
 	assert.NotNil(t, gopher)
 
@@ -79,7 +79,7 @@ modules:
 func TestNew_Error(t *testing.T) {
 	dig.Reset()
 	modCreate := New(badCreateService)
-	mod, err := modCreate(mih(t, "hello"))
+	mod, err := modCreate.Create(mih(t, "hello"))
 	assert.NoError(t, err)
 	assert.EqualError(t, mod.Start(), "unable to start dispatcher: can't create service")
 }
