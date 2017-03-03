@@ -46,6 +46,19 @@ type Module interface {
 	Stop() error
 }
 
+// ModuleProviderFromFunc creates a new ModuleProvider from a name and create function.
+func ModuleProviderFromFunc(name string, createFunc func(Host) (Module, error)) ModuleProvider {
+	return &moduleProviderFunc{name, createFunc}
+}
+
+type moduleProviderFunc struct {
+	name       string
+	createFunc func(Host) (Module, error)
+}
+
+func (m *moduleProviderFunc) Name() string                     { return m.name }
+func (m *moduleProviderFunc) Create(host Host) (Module, error) { return m.createFunc(host) }
+
 // ModuleOption is a function that configures module creation.
 type ModuleOption func(*moduleOptions) error
 
