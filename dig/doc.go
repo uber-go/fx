@@ -42,6 +42,8 @@
 //   type Fake struct {
 //       Name string
 //   }
+//
+//   g := dig.New()
 //   err := g.Register(&Fake{Name: "I am an injected thing"})
 //   require.NoError(t, err)
 //
@@ -61,8 +63,9 @@
 // The following example illustrates injecting a constructor function for type
 // *Object that requires *Dep to be present in the graph
 //
-//   type Dep struct{}
+//   g := dig.New()
 //
+//   type Dep struct{}
 //   type Object struct{
 //     Dep
 //   }
@@ -71,7 +74,7 @@
 //     return &Object{Dep: d}
 //   }
 //
-//   err := dig.Register(NewObject)
+//   err := g.Register(NewObject)
 //
 // Resolve
 //
@@ -81,15 +84,17 @@
 // objects of the same type in the graph.
 //
 //
+//   g := dig.New()
+//
 //   var o *Object
-//   err := dig.Resolve(&o) // notice the pointer to a pointer as param type
+//   err := g.Resolve(&o) // notice the pointer to a pointer as param type
 //   if err == nil {
 //       // o is ready to use
 //   }
 //
 //   type Do interface{}
 //   var d Do
-//   err := dig.Resolve(&d) // notice pointer to an interface
+//   err := g.Resolve(&d) // notice pointer to an interface
 //   if err == nil {
 //       // d is ready to use
 //   }

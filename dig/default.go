@@ -21,10 +21,10 @@
 package dig
 
 // Default graph is used for all the top-level calls
-var defaultGraph = newGraph()
+var defaultGraph = New()
 
 // DefaultGraph returns the graph used by top-level calls
-func DefaultGraph() Graph {
+func DefaultGraph() *Graph {
 	return defaultGraph
 }
 

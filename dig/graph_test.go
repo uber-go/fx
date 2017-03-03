@@ -70,20 +70,20 @@ func TestResolve(t *testing.T) {
 	t.Parallel()
 	tts := []struct {
 		name     string
-		register func(g *graph) error
-		resolve  func(g *graph) error
+		register func(g *Graph) error
+		resolve  func(g *Graph) error
 		es       string
 	}{
 		{
 			"non pointer resolve",
-			func(g *graph) error { return g.Register(NewParent1) },
-			func(g *graph) error { return g.Resolve(S{}) },
+			func(g *Graph) error { return g.Register(NewParent1) },
+			func(g *Graph) error { return g.Resolve(S{}) },
 			"can not resolve non-pointer object",
 		},
 		{
 			"missing dependency",
-			func(g *graph) error { return nil },
-			func(g *graph) error {
+			func(g *Graph) error { return nil },
+			func(g *Graph) error {
 				var p1 *Parent1
 				return g.Resolve(p1)
 			},
@@ -93,7 +93,7 @@ func TestResolve(t *testing.T) {
 
 	for _, tc := range tts {
 		t.Run(tc.name, func(t *testing.T) {
-			g := testGraph()
+			g := New()
 
 			err := tc.register(g)
 			require.NoError(t, err, "Register part of the test cant have errors")
@@ -136,7 +136,7 @@ func TestObjectRegister(t *testing.T) {
 
 func TestBasicRegisterResolve(t *testing.T) {
 	t.Parallel()
-	g := testGraph()
+	g := New()
 
 	err := g.Register(NewGrandchild1)
 	require.NoError(t, err)
@@ -154,7 +154,7 @@ func TestBasicRegisterResolve(t *testing.T) {
 
 func TestRegisterAll(t *testing.T) {
 	t.Parallel()
-	g := testGraph()
+	g := New()
 
 	err := g.RegisterAll(
 		NewParent1,
@@ -173,7 +173,7 @@ func TestRegisterAll(t *testing.T) {
 
 func TestConcurrentAccess(t *testing.T) {
 	t.Parallel()
-	g := testGraph()
+	g := New()
 
 	for i := 0; i < 10; i++ {
 		go func() {
@@ -186,14 +186,15 @@ func TestConcurrentAccess(t *testing.T) {
 }
 
 func TestCycles(t *testing.T) {
+	t.Parallel()
+	g := New()
+
 	type Type1 interface{}
 	type Type2 interface{}
 	type Type3 interface{}
 	c1 := func(t2 Type2) Type1 { return nil }
 	c2 := func(t3 Type3) Type2 { return nil }
 	c3 := func(t1 Type1) Type3 { return nil }
-
-	g := testGraph()
 
 	require.NoError(t, g.Register(c1))
 	require.NoError(t, g.Register(c2))
@@ -205,7 +206,7 @@ func TestCycles(t *testing.T) {
 
 func TestResolveAll(t *testing.T) {
 	t.Parallel()
-	g := testGraph()
+	g := New()
 
 	err := g.RegisterAll(
 		NewGrandchild1,
@@ -227,7 +228,7 @@ func TestResolveAll(t *testing.T) {
 
 func TestEmptyAfterReset(t *testing.T) {
 	t.Parallel()
-	g := testGraph()
+	g := New()
 
 	require.NoError(t, g.Register(NewGrandchild1))
 
@@ -235,10 +236,4 @@ func TestEmptyAfterReset(t *testing.T) {
 	require.NoError(t, g.Resolve(&first), "No error expected during first Resolve")
 	g.Reset()
 	require.Contains(t, g.Resolve(&first).Error(), "not registered")
-}
-
-func testGraph() *graph {
-	return &graph{
-		nodes: make(map[interface{}]graphNode),
-	}
 }

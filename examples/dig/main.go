@@ -25,29 +25,32 @@ import (
 
 	"go.uber.org/fx/dig"
 	"go.uber.org/fx/examples/dig/handlers"
+	"go.uber.org/fx/examples/dig/hello"
 	"go.uber.org/fx/modules/uhttp"
 	"go.uber.org/fx/service"
 )
 
 func main() {
-	svc, err := service.WithModule(uhttp.New(router)).Build()
+	g := dig.New()
+	if err := g.RegisterAll(handlers.NewHandler, hello.NewPoliteSayer); err != nil {
+		log.Fatal("Failed to register DIG constructors")
+	}
 
+	getHandler := func(service.Host) []uhttp.RouteHandler {
+		var h *handlers.HelloHandler
+		if err := g.Resolve(&h); err != nil {
+			log.Fatal("Failed to resolve the Handler object")
+		}
+
+		return []uhttp.RouteHandler{
+			uhttp.NewRouteHandler("/", h),
+		}
+	}
+
+	svc, err := service.WithModule(uhttp.New(getHandler)).Build()
 	if err != nil {
 		log.Fatal("Unable to initialize service", "error", err)
 	}
 
 	svc.Start()
-}
-
-func router(_ service.Host) []uhttp.RouteHandler {
-	// when service calls us to provide a handler, we simply grab one from DIG
-	var h *handlers.HelloHandler
-	err := dig.Resolve(&h)
-	if err != nil {
-		panic(err)
-	}
-
-	return []uhttp.RouteHandler{
-		uhttp.NewRouteHandler("/", h),
-	}
 }

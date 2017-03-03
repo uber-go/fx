@@ -80,9 +80,9 @@ func TestServiceCreation_MissingRequiredParams(t *testing.T) {
 
 func TestServiceWithRoles(t *testing.T) {
 	data := map[string]interface{}{
-		"name":    "name",
-		"owner":   "owner",
-		"roles.0": "foo",
+		"name":  "name",
+		"owner": "owner",
+		"roles": []string{"foo"},
 	}
 	cfgOpt := withConfig(data)
 

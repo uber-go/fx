@@ -40,6 +40,16 @@ import (
 	"go.uber.org/zap"
 )
 
+// ServiceCreateFunc creates a YARPC service from a service host
+type ServiceCreateFunc func(svc service.Host) ([]transport.Procedure, error)
+
+// New creates a YARPC Module from a service func
+func New(hookup ServiceCreateFunc, options ...ModuleOption) service.ModuleCreateFunc {
+	return func(host service.Host) (service.Module, error) {
+		return newYARPCModule(host, hookup, options...)
+	}
+}
+
 // Module is an implementation of a core RPC module using YARPC.
 // All the YARPC modules share the same dispatcher and middleware.
 // Dispatcher will start when any created module calls Start().
@@ -257,7 +267,7 @@ func (c *dispatcherController) mergeConfigs(name string) (conf yarpc.Config, err
 // The first created module defines the service name.
 func newYARPCModule(
 	host service.Host,
-	reg CreateThriftServiceFunc,
+	reg ServiceCreateFunc,
 	options ...ModuleOption,
 ) (*Module, error) {
 	moduleOptions := &moduleOptions{}

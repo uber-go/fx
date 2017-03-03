@@ -33,7 +33,7 @@
 // • Implement the service interface handlers as method receivers on a struct
 //
 // • Implement a top-level function, conforming to the
-// yarpc.CreateThriftServiceFunc signature (fx/modules/yarpc/thrift.go that
+// yarpc.ServiceCreateFunc signature (fx/modules/yarpc/yarpc.go that
 // returns a
 // []transport.Registrant YARPC implementation from the handler:
 //
@@ -45,7 +45,7 @@
 //
 //   func main() {
 //     svc, err := service.WithModule(
-//       yarpc.New(yarpc.CreateThriftServiceFunc(NewMyServiceHandler)),
+//       yarpc.New(yarpc.ServiceCreateFunc(NewMyServiceHandler)),
 //       service.WithModuleRole("service"),
 //     ).Build()
 //
