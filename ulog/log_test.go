@@ -44,8 +44,6 @@ logging:
     dsn:
     trace:
       disabled: true
-      skip_frames: 10
-      context_lines: 15
 `)
 )
 
@@ -69,6 +67,7 @@ func TestSetLogger(t *testing.T) {
 }
 
 func TestConfigureLogger(t *testing.T) {
+	t.Parallel()
 	var logConfig Configuration
 	cfg := config.NewYAMLProviderFromBytes(_logyaml).Get("logging")
 	err := logConfig.Configure(cfg)
@@ -80,15 +79,14 @@ func TestConfigureLogger(t *testing.T) {
 }
 
 func TestConfigureSentryLogger(t *testing.T) {
+	t.Parallel()
 	var logConfig Configuration
 	cfg := config.NewYAMLProviderFromBytes(_sentryyaml).Get("logging")
 	err := logConfig.Configure(cfg)
 	require.NoError(t, err)
 	assert.NotNil(t, logConfig.Sentry)
 	assert.Equal(t, "", logConfig.Sentry.DSN)
-	assert.Equal(t, bool(true), logConfig.Sentry.Trace.Disabled)
-	assert.Equal(t, 10, *logConfig.Sentry.Trace.SkipFrames)
-	assert.Equal(t, 15, *logConfig.Sentry.Trace.ContextLines)
+	assert.Equal(t, true, logConfig.Sentry.Trace.Disabled)
 
 	logger, err := logConfig.Build()
 	require.NoError(t, err)

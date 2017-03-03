@@ -70,6 +70,7 @@ func asCore(t testing.TB, iface zapcore.Core) *core {
 }
 
 func TestRavenSeverityMap(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		z zapcore.Level
 		r raven.Severity
@@ -96,6 +97,7 @@ func TestRavenSeverityMap(t *testing.T) {
 }
 
 func TestCoreWith(t *testing.T) {
+	t.Parallel()
 	cfg := Configuration{
 		DSN: "testdsn",
 	}
@@ -122,6 +124,7 @@ func TestCoreWith(t *testing.T) {
 }
 
 func TestCoreCheck(t *testing.T) {
+	t.Parallel()
 	cfg := Configuration{
 		DSN: "testdsn",
 	}
@@ -163,6 +166,7 @@ func TestConfigWrite(t *testing.T) {
 }
 
 func TestConfigBuild(t *testing.T) {
+	t.Parallel()
 	broken := Configuration{DSN: "invalid"}
 	_, err := broken.Build()
 	assert.Error(t, err, "Expected invalid DSN to make config building fail.")

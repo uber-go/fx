@@ -61,11 +61,11 @@ type client interface {
 // Configuration is a minimal set of parameters for Sentry integration.
 type Configuration struct {
 	DSN   string `yaml:"DSN"`
-	Trace *struct {
-		Disabled     bool
-		SkipFrames   *int `yaml:"skip_frames"`
-		ContextLines *int `yaml:"context_lines"`
-	}
+	Trace trace
+}
+
+type trace struct {
+	Disabled bool
 }
 
 // Build uses the provided configuration to construct a Sentry-backed logging
@@ -81,35 +81,17 @@ func (c Configuration) Build() (zapcore.Core, error) {
 type core struct {
 	client
 	zapcore.LevelEnabler
+	trace
 
-	traceEnabled      bool
-	traceSkipFrames   int
-	traceContextLines int
-	fields            map[string]interface{}
+	fields map[string]interface{}
 }
 
 func newCore(cfg Configuration, c client, enab zapcore.LevelEnabler) *core {
 	sentryCore := &core{
-		client:            c,
-		LevelEnabler:      enab,
-		traceEnabled:      true,
-		traceSkipFrames:   _traceSkipFrames,
-		traceContextLines: _traceContextLines,
-		fields:            make(map[string]interface{}),
-	}
-	t := cfg.Trace
-	if t == nil {
-		return sentryCore
-	}
-
-	if t.Disabled {
-		sentryCore.traceEnabled = false
-	}
-	if t.SkipFrames != nil {
-		sentryCore.traceSkipFrames = *t.SkipFrames
-	}
-	if t.ContextLines != nil {
-		sentryCore.traceContextLines = *t.ContextLines
+		client:       c,
+		LevelEnabler: enab,
+		trace:        cfg.Trace,
+		fields:       make(map[string]interface{}),
 	}
 	return sentryCore
 }
@@ -136,8 +118,8 @@ func (c *core) Write(ent zapcore.Entry, fs []zapcore.Field) error {
 		Extra:     clone.fields,
 	}
 
-	if c.traceEnabled {
-		trace := raven.NewStacktrace(c.traceSkipFrames, c.traceContextLines, nil /* app prefixes */)
+	if !c.trace.Disabled {
+		trace := raven.NewStacktrace(_traceSkipFrames, _traceContextLines, nil /* app prefixes */)
 		if trace != nil {
 			packet.Interfaces = append(packet.Interfaces, trace)
 		}
@@ -173,11 +155,9 @@ func (c *core) with(fs []zapcore.Field) *core {
 	}
 
 	return &core{
-		client:            c.client,
-		LevelEnabler:      c.LevelEnabler,
-		traceEnabled:      c.traceEnabled,
-		traceSkipFrames:   c.traceSkipFrames,
-		traceContextLines: c.traceContextLines,
-		fields:            m,
+		client:       c.client,
+		LevelEnabler: c.LevelEnabler,
+		trace:        c.trace,
+		fields:       m,
 	}
 }
