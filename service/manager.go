@@ -218,7 +218,9 @@ func (s *manager) shutdown(err error, reason string, exitCode *int) (bool, error
 		s.runtimeCollector.Close()
 	}
 
-	s.versionEmitter.close()
+	if s.versionEmitter != nil {
+		s.versionEmitter.close()
+	}
 
 	// Stop the metrics reporting
 	if s.metricsCloser != nil {

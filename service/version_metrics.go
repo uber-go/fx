@@ -35,9 +35,9 @@ type versionMetricsEmitter struct {
 	ticker  *time.Ticker
 }
 
-func newVersionMetricsEmitter(scope tally.Scope) versionMetricsEmitter {
+func newVersionMetricsEmitter(scope tally.Scope) *versionMetricsEmitter {
 	t := time.NewTicker(reportingTime)
-	return versionMetricsEmitter{
+	return &versionMetricsEmitter{
 		counter: scope.Tagged(map[string]string{
 			"uberfx-v": fx.Version,
 			"go-v":     runtime.Version(),
@@ -55,5 +55,7 @@ func (v versionMetricsEmitter) start() {
 }
 
 func (v versionMetricsEmitter) close() {
-	v.ticker.Stop()
+	if v.ticker != nil {
+		v.ticker.Stop()
+	}
 }

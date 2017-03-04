@@ -48,7 +48,7 @@ type metricsCore struct {
 	statsReporter    tally.CachedStatsReporter
 	metricsCloser    io.Closer
 	runtimeCollector *metrics.RuntimeCollector
-	versionEmitter   versionMetricsEmitter
+	versionEmitter   *versionMetricsEmitter
 }
 
 func (mc *metricsCore) Metrics() tally.Scope {
