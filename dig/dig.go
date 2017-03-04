@@ -228,7 +228,7 @@ func (g *Graph) recursiveDetectCycles(n graphNode, visited map[string]bool, l *l
 					fmt.Fprint(b, curr.Value, " -> ")
 				}
 				fmt.Fprint(b, node.id())
-				return fmt.Errorf("deteceted cycle %s", b.String())
+				return fmt.Errorf("detected cycle %s", b.String())
 			}
 
 			return g.recursiveDetectCycles(node, visited, l)
