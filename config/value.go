@@ -285,60 +285,6 @@ func (cv Value) Value() interface{} {
 	return cv.defaultValue
 }
 
-const (
-	bucketPrimitive = iota
-	bucketArray
-	bucketObject
-	bucketMap
-	bucketSlice
-)
-
-func getBucket(t reflect.Type) int {
-	kind := t.Kind()
-	if kind == reflect.Ptr {
-		kind = t.Elem().Kind()
-	}
-
-	switch kind {
-	case reflect.Chan:
-		fallthrough
-	case reflect.Interface:
-		fallthrough
-	case reflect.Func:
-		fallthrough
-	case reflect.Map:
-		return bucketMap
-	case reflect.Array:
-		return bucketArray
-	case reflect.Slice:
-		return bucketSlice
-	case reflect.Struct:
-		return bucketObject
-	}
-	return bucketPrimitive
-}
-
-type fieldInfo struct {
-	FieldName    string
-	DefaultValue string
-	Required     bool
-}
-
-func getFieldInfo(field reflect.StructField) fieldInfo {
-	return fieldInfo{
-		FieldName:    field.Tag.Get("yaml"),
-		DefaultValue: field.Tag.Get("default"),
-	}
-}
-
-func derefType(t reflect.Type) reflect.Type {
-	if t.Kind() == reflect.Ptr {
-		t = t.Elem()
-	}
-
-	return t
-}
-
 // this is a quick-and-dirty conversion method that only handles
 // a couple of cases and complains if it finds one it doesn't like.
 // needs a bunch more cases.

@@ -29,6 +29,82 @@ import (
 	"github.com/go-validator/validator"
 )
 
+const (
+	bucketPrimitive = iota
+	bucketArray
+	bucketObject
+	bucketMap
+	bucketSlice
+)
+
+type fieldInfo struct {
+	FieldName    string
+	DefaultValue string
+	Required     bool
+}
+
+func getFieldInfo(field reflect.StructField) fieldInfo {
+	return fieldInfo{
+		FieldName:    field.Tag.Get("yaml"),
+		DefaultValue: field.Tag.Get("default"),
+	}
+}
+
+func derefType(t reflect.Type) reflect.Type {
+	if t.Kind() == reflect.Ptr {
+		t = t.Elem()
+	}
+
+	return t
+}
+
+func convertValueFromStruct(value interface{}, targetType reflect.Type, fieldType reflect.Type, fieldValue reflect.Value) error {
+	// The fieldType is probably a custom type here. We will try and set the fieldValue by
+	// the custom type
+	// TODO: refactor switch cases into isType functions
+	// TODO(alsam) Fix overflows/negatives for unsigned types...
+	switch fieldType.Kind() {
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		fieldValue.SetInt(int64(value.(int)))
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr:
+		fieldValue.SetUint(uint64(value.(int)))
+	case reflect.Float32, reflect.Float64:
+		fieldValue.SetFloat(value.(float64))
+	case reflect.Bool:
+		fieldValue.SetBool(value.(bool))
+	case reflect.String:
+		fieldValue.SetString(value.(string))
+	default:
+		return fmt.Errorf("can't convert %v to %v", reflect.TypeOf(value).String(), targetType)
+	}
+	return nil
+}
+
+func getBucket(t reflect.Type) int {
+	kind := t.Kind()
+	if kind == reflect.Ptr {
+		kind = t.Elem().Kind()
+	}
+
+	switch kind {
+	case reflect.Chan:
+		fallthrough
+	case reflect.Interface:
+		fallthrough
+	case reflect.Func:
+		fallthrough
+	case reflect.Map:
+		return bucketMap
+	case reflect.Array:
+		return bucketArray
+	case reflect.Slice:
+		return bucketSlice
+	case reflect.Struct:
+		return bucketObject
+	}
+	return bucketPrimitive
+}
+
 type decoder struct {
 	*Value
 	m map[interface{}]struct{}
@@ -323,27 +399,5 @@ func (d *decoder) unmarshal(name string, value reflect.Value, def string) error 
 		return d.mapping(name, value, def)
 	}
 
-	return nil
-}
-
-func convertValueFromStruct(value interface{}, targetType reflect.Type, fieldType reflect.Type, fieldValue reflect.Value) error {
-	// The fieldType is probably a custom type here. We will try and set the fieldValue by
-	// the custom type
-	// TODO: refactor switch cases into isType functions
-	// TODO(alsam) Fix overflows/negatives for unsigned types...
-	switch fieldType.Kind() {
-	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-		fieldValue.SetInt(int64(value.(int)))
-	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr:
-		fieldValue.SetUint(uint64(value.(int)))
-	case reflect.Float32, reflect.Float64:
-		fieldValue.SetFloat(value.(float64))
-	case reflect.Bool:
-		fieldValue.SetBool(value.(bool))
-	case reflect.String:
-		fieldValue.SetString(value.(string))
-	default:
-		return fmt.Errorf("can't convert %v to %v", reflect.TypeOf(value).String(), targetType)
-	}
 	return nil
 }
