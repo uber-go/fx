@@ -17,6 +17,7 @@
   to `task.New`
 * [Breaking] Rename `yarpc.CreateThriftServiceFunc` to `yarpc.ServiceCreateFunc`
   as it is not thrift-specific.
+* Report version metrics for company-wide version usage information.
 
 ## v1.0.0-beta1 (20 Feb 2017)
 
