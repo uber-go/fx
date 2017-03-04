@@ -201,7 +201,7 @@ func TestCycles(t *testing.T) {
 
 	err := g.Register(c3)
 	require.Contains(t, err.Error(), "unable to register dig.Type3")
-	require.Contains(t, err.Error(), "cycle")
+	require.Contains(t, err.Error(), "dig.Type3 -> dig.Type1 -> dig.Type2 -> dig.Type3")
 }
 
 func TestResolveAll(t *testing.T) {
