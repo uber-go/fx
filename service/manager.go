@@ -106,6 +106,8 @@ func newManager(builder *Builder) (Manager, error) {
 		return nil, err
 	}
 
+	svc.setupVersionMetricsEmitter()
+
 	if err := svc.setupTracer(); err != nil {
 		return nil, err
 	}
@@ -215,6 +217,8 @@ func (s *manager) shutdown(err error, reason string, exitCode *int) (bool, error
 	if s.runtimeCollector != nil {
 		s.runtimeCollector.Close()
 	}
+
+	s.versionEmitter.close()
 
 	// Stop the metrics reporting
 	if s.metricsCloser != nil {
