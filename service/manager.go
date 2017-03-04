@@ -106,6 +106,8 @@ func newManager(builder *Builder) (Manager, error) {
 		return nil, err
 	}
 
+	svc.setupVersionMetricsEmitter()
+
 	if err := svc.setupTracer(); err != nil {
 		return nil, err
 	}
@@ -214,6 +216,10 @@ func (s *manager) shutdown(err error, reason string, exitCode *int) (bool, error
 	// Stop runtime metrics collection. Uses scope, should be closed before scope is closed.
 	if s.runtimeCollector != nil {
 		s.runtimeCollector.Close()
+	}
+
+	if s.versionEmitter != nil {
+		s.versionEmitter.close()
 	}
 
 	// Stop the metrics reporting

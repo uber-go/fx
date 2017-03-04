@@ -48,6 +48,7 @@ type metricsCore struct {
 	statsReporter    tally.CachedStatsReporter
 	metricsCloser    io.Closer
 	runtimeCollector *metrics.RuntimeCollector
+	versionEmitter   *versionMetricsEmitter
 }
 
 func (mc *metricsCore) Metrics() tally.Scope {
@@ -184,6 +185,11 @@ func (s *serviceCore) setupRuntimeMetricsCollector() error {
 		s.metrics.SubScope("runtime"), time.Second, runtimeMetricsConfig,
 	)
 	return nil
+}
+
+func (s *serviceCore) setupVersionMetricsEmitter() {
+	s.versionEmitter = newVersionMetricsEmitter(s.metrics)
+	s.versionEmitter.start()
 }
 
 func (s *serviceCore) setupTracer() error {
