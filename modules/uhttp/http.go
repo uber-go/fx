@@ -83,15 +83,15 @@ type Config struct {
 // GetHandlersFunc returns a slice of registrants from a service host
 type GetHandlersFunc func(service service.Host) []RouteHandler
 
-// New returns a new HTTP module
-func New(hookup GetHandlersFunc, options ...ModuleOption) service.ModuleCreateFunc {
-	return func(mi service.Host) (service.Module, error) {
-		return newModule(mi, hookup, options...)
-	}
+// New returns a new HTTP ModuleProvider.
+func New(hookup GetHandlersFunc, options ...ModuleOption) service.ModuleProvider {
+	return service.ModuleProviderFromFunc("http", func(host service.Host) (service.Module, error) {
+		return newModule(host, hookup, options...)
+	})
 }
 
 func newModule(
-	mi service.Host,
+	host service.Host,
 	getHandlers GetHandlersFunc,
 	options ...ModuleOption,
 ) (*Module, error) {
@@ -106,14 +106,14 @@ func newModule(
 		Port:    defaultPort,
 		Timeout: defaultTimeout,
 	}
-	log := ulog.Logger(context.Background()).With(zap.String("module", mi.Name()))
-	if err := mi.Config().Scope("modules").Get(mi.Name()).PopulateStruct(&cfg); err != nil {
+	log := ulog.Logger(context.Background()).With(zap.String("module", host.Name()))
+	if err := host.Config().Scope("modules").Get(host.Name()).PopulateStruct(&cfg); err != nil {
 		log.Error("Error loading http module configuration", zap.Error(err))
 	}
 	module := &Module{
-		Host:     mi,
-		handlers: addHealth(getHandlers(mi)),
-		mcb:      defaultInboundMiddlewareChainBuilder(log, mi.AuthClient(), newStatsClient(mi.Metrics())),
+		Host:     host,
+		handlers: addHealth(getHandlers(host)),
+		mcb:      defaultInboundMiddlewareChainBuilder(log, host.AuthClient(), newStatsClient(host.Metrics())),
 		config:   cfg,
 		log:      log,
 	}

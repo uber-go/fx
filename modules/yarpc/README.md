@@ -25,7 +25,6 @@ func NewMyServiceHandler(svc service.Host) ([]transport.Registrant, error) {
 ```go
 func main() {
   svc, err := service.WithModule(
-    "example",
     yarpc.New(yarpc.ServiceCreateFunc(NewMyServiceHandler)),
     service.WithModuleRole("service"),
   ).Build()

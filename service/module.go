@@ -23,9 +23,18 @@ package service
 import (
 	"fmt"
 	"sync"
-
-	"github.com/uber-go/tally"
 )
+
+// ModuleProvider provides Modules.
+type ModuleProvider interface {
+	// DefaultName is the name that will be used for a new Module
+	// if no name is given as a ModuleOption.
+	DefaultName() string
+	// Create a new Module. The name of the Host and the scoping
+	// of associated functions on the Host will be done using a name
+	// provided by a ModuleOption, or by the DefaultName on this ModuleProvider.
+	Create(Host) (Module, error)
+}
 
 // Module is the basic building block of an UberFx service.
 type Module interface {
@@ -37,19 +46,38 @@ type Module interface {
 	Stop() error
 }
 
+// ModuleProviderFromFunc creates a new ModuleProvider from a name and create function.
+func ModuleProviderFromFunc(name string, createFunc func(Host) (Module, error)) ModuleProvider {
+	return &moduleProviderFunc{name, createFunc}
+}
+
+type moduleProviderFunc struct {
+	name       string
+	createFunc func(Host) (Module, error)
+}
+
+func (m *moduleProviderFunc) DefaultName() string              { return m.name }
+func (m *moduleProviderFunc) Create(host Host) (Module, error) { return m.createFunc(host) }
+
 // ModuleOption is a function that configures module creation.
 type ModuleOption func(*moduleOptions) error
 
+// WithModuleName will override the name given by the ModuleProvider.
+func WithModuleName(name string) ModuleOption {
+	return func(o *moduleOptions) error {
+		o.name = name
+		return nil
+	}
+}
+
 // WithModuleRole will add a role to the Module.
 //
-// If the role was already added, this will be a no-op
+// If the role was already added, this will be a no-op.
 func WithModuleRole(role string) ModuleOption {
 	return func(o *moduleOptions) error {
-		// TODO(pedge): is this desired? return an error?
 		if role == "" {
 			return nil
 		}
-		// TODO(pedge): is this desired? return an error?
 		for _, elem := range o.roles {
 			if role == elem {
 				return nil
@@ -60,15 +88,13 @@ func WithModuleRole(role string) ModuleOption {
 	}
 }
 
-// ModuleCreateFunc handles instantiating modules from creation configuration.
-type ModuleCreateFunc func(Host) (Module, error)
-
 // NewScopedHost returns a new Host scoped to a module. This should generally be used for testing.
-func NewScopedHost(host Host, name string, options ...ModuleOption) (Host, error) {
-	return newScopedHost(host, name, options...)
+func NewScopedHost(host Host, name string, roles ...string) (Host, error) {
+	return newScopedHost(host, name, roles...)
 }
 
 type moduleOptions struct {
+	name  string
 	roles []string
 }
 
@@ -81,18 +107,30 @@ type moduleWrapper struct {
 
 func newModuleWrapper(
 	host Host,
-	name string,
-	moduleCreateFunc ModuleCreateFunc,
+	moduleProvider ModuleProvider,
 	options ...ModuleOption,
 ) (*moduleWrapper, error) {
-	if moduleCreateFunc == nil {
+	if moduleProvider == nil {
 		return nil, nil
 	}
-	scopedHost, err := newScopedHost(host, name, options...)
+	moduleOptions := &moduleOptions{}
+	for _, option := range options {
+		if err := option(moduleOptions); err != nil {
+			return nil, err
+		}
+	}
+	if moduleOptions.name == "" {
+		moduleOptions.name = moduleProvider.DefaultName()
+	}
+	scopedHost, err := newScopedHost(
+		host,
+		moduleOptions.name,
+		moduleOptions.roles...,
+	)
 	if err != nil {
 		return nil, err
 	}
-	module, err := moduleCreateFunc(scopedHost)
+	module, err := moduleProvider.Create(scopedHost)
 	if err != nil {
 		return nil, err
 	}
@@ -135,30 +173,17 @@ func (m *moduleWrapper) IsRunning() bool {
 	return m.isRunning
 }
 
-// TODO(pedge): we probably want to use service core to cache this stuff
-// under the hood, as oppoed to making all these calls for scoping every time
 type scopedHost struct {
 	Host
 	name  string
 	roles []string
-
-	metrics tally.Scope
 }
 
-func newScopedHost(host Host, name string, options ...ModuleOption) (*scopedHost, error) {
-	moduleOptions := &moduleOptions{}
-	for _, option := range options {
-		if err := option(moduleOptions); err != nil {
-			return nil, err
-		}
-	}
+func newScopedHost(host Host, name string, roles ...string) (*scopedHost, error) {
 	return &scopedHost{
 		host,
 		name,
-		moduleOptions.roles,
-		// TODO(pedge): scope to the modules if we remove the global stats in the various packages
-		host.Metrics(),
-		//host.Metrics().SubScope("modules").SubScope(name),
+		roles,
 	}, nil
 }
 
@@ -166,11 +191,6 @@ func (sh *scopedHost) Name() string {
 	return sh.name
 }
 
-// TODO(pedge): what about the Host's roles?
 func (sh *scopedHost) Roles() []string {
 	return sh.roles
-}
-
-func (sh *scopedHost) Metrics() tally.Scope {
-	return sh.metrics
 }

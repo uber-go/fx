@@ -44,10 +44,10 @@ import (
 type ServiceCreateFunc func(svc service.Host) ([]transport.Procedure, error)
 
 // New creates a YARPC Module from a service func
-func New(hookup ServiceCreateFunc, options ...ModuleOption) service.ModuleCreateFunc {
-	return func(host service.Host) (service.Module, error) {
+func New(hookup ServiceCreateFunc, options ...ModuleOption) service.ModuleProvider {
+	return service.ModuleProviderFromFunc("yarpc", func(host service.Host) (service.Module, error) {
 		return newYARPCModule(host, hookup, options...)
-	}
+	})
 }
 
 // Module is an implementation of a core RPC module using YARPC.

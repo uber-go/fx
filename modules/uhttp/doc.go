@@ -36,10 +36,7 @@
 //   )
 //
 //   func main() {
-//     svc, err := service.WithModule(
-//       "example",
-//       uhttp.New(registerHTTP),
-//     ).Build()
+//     svc, err := service.WithModule(uhttp.New(registerHTTP)).Build()
 //
 //     if err != nil {
 //       log.Fatal("Could not initialize service: ", err)

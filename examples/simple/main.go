@@ -29,7 +29,7 @@ import (
 
 func main() {
 	svc, err := service.WithModule(
-		"http", uhttp.New(registerHTTPers, uhttp.WithInboundMiddleware(simpleInboundMiddleware{})),
+		uhttp.New(registerHTTPers, uhttp.WithInboundMiddleware(simpleInboundMiddleware{})),
 	).Build()
 
 	if err != nil {

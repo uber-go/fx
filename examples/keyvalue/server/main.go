@@ -29,10 +29,7 @@ import (
 
 func main() {
 	svc, err := service.WithModule(
-		"yarpc",
-		yarpc.New(
-			yarpc.ServiceCreateFunc(NewYARPCThriftHandler),
-		),
+		yarpc.New(yarpc.ServiceCreateFunc(NewYARPCThriftHandler)),
 		service.WithModuleRole("service"),
 	).WithOptions(
 		service.WithObserver(&Observer{}),

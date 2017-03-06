@@ -29,15 +29,20 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+var (
+	nopModuleProvider = &StubModuleProvider{"hello", nopModule}
+	errModuleProvider = &StubModuleProvider{"hello", errModule}
+)
+
 func TestWithModules_OK(t *testing.T) {
-	_, err := WithModule("hello", nopModule).WithOptions(
+	_, err := WithModule(nopModuleProvider).WithOptions(
 		WithConfiguration(StaticAppData(nil)),
 	).Build()
 	assert.NoError(t, err)
 }
 
 func TestWithModules_Err(t *testing.T) {
-	_, err := WithModule("hello", errModule).WithOptions(
+	_, err := WithModule(errModuleProvider).WithOptions(
 		WithConfiguration(StaticAppData(nil)),
 	).Build()
 	assert.Error(t, err)
@@ -45,7 +50,7 @@ func TestWithModules_Err(t *testing.T) {
 
 func TestWithModules_SkipsModulesBadInit(t *testing.T) {
 	empty := ""
-	_, err := WithModule("hello", nopModule).WithOptions(
+	_, err := WithModule(nopModuleProvider).WithOptions(
 		WithConfiguration(StaticAppData(&empty)),
 	).Build()
 	assert.Error(t, err, "Expected service name to be provided")

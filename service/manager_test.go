@@ -249,12 +249,12 @@ func TestAddModule_Locked(t *testing.T) {
 	sh := &manager{
 		locked: true,
 	}
-	assert.Error(t, sh.addModule("hello", nil))
+	assert.Error(t, sh.addModule(nil))
 }
 
 func TestAddModule_NotLocked(t *testing.T) {
 	sh := &manager{}
-	require.NoError(t, sh.addModule("hello", DefaultStubModuleCreateFunc))
+	require.NoError(t, sh.addModule(NewDefaultStubModuleProvider("hello")))
 	require.Len(t, sh.moduleWrappers, 1)
 	require.Equal(t, sh, sh.moduleWrappers[0].module.(*StubModule).Host.(*scopedHost).Host)
 }
@@ -272,7 +272,7 @@ func TestStartStopRegressionDeadlock(t *testing.T) {
 
 func TestStartModule_NoErrors(t *testing.T) {
 	s := makeManager()
-	require.NoError(t, s.addModule("hello", DefaultStubModuleCreateFunc))
+	require.NoError(t, s.addModule(NewDefaultStubModuleProvider("hello")))
 
 	control := s.StartAsync()
 	go func() {
@@ -289,9 +289,16 @@ func TestStartModule_NoErrors(t *testing.T) {
 
 func TestStartManager_WithErrors(t *testing.T) {
 	s := makeManager()
-	require.NoError(t, s.addModule("hello", NewStubModuleCreateFunc(StubModule{
-		StartError: errors.New("can't start this"),
-	})))
+	moduleProvider := &StubModuleProvider{
+		NameVal: "hello",
+		CreateVal: func(host Host) (Module, error) {
+			return &StubModule{
+				Host:       host,
+				StartError: errors.New("can't start this"),
+			}, nil
+		},
+	}
+	require.NoError(t, s.addModule(moduleProvider))
 
 	control := s.StartAsync()
 	go func() {

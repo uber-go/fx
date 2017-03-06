@@ -21,7 +21,6 @@
 package service
 
 import (
-	"errors"
 	"testing"
 
 	"go.uber.org/fx/metrics"
@@ -33,32 +32,24 @@ import (
 )
 
 func TestNewOwner_ModulesOK(t *testing.T) {
-	_, err := newManager(WithModule("hello", successModuleCreate).WithOptions(withConfig(validServiceConfig)))
+	_, err := newManager(WithModule(nopModuleProvider).WithOptions(withConfig(validServiceConfig)))
 	require.NoError(t, err)
 }
 
 func TestNewOwner_ModulesErr(t *testing.T) {
-	_, err := newManager(WithModule("hello", errorModuleCreate).WithOptions(withConfig(validServiceConfig)))
+	_, err := newManager(WithModule(errModuleProvider).WithOptions(withConfig(validServiceConfig)))
 	assert.Error(t, err)
 }
 
 func TestNewOwner_WithMetricsOK(t *testing.T) {
 	assert.NotPanics(t, func() {
-		newManager(WithModule("hello", successModuleCreate).WithOptions(WithMetrics(tally.NoopScope, metrics.NopCachedStatsReporter)))
+		newManager(WithModule(nopModuleProvider).WithOptions(WithMetrics(tally.NoopScope, metrics.NopCachedStatsReporter)))
 	})
 }
 
 func TestNewOwner_WithTracingOK(t *testing.T) {
 	tracer := &opentracing.NoopTracer{}
 	assert.NotPanics(t, func() {
-		newManager(WithModule("hello", successModuleCreate).WithOptions(WithTracer(tracer)))
+		newManager(WithModule(nopModuleProvider).WithOptions(WithTracer(tracer)))
 	})
-}
-
-func successModuleCreate(_ Host) (Module, error) {
-	return nil, nil
-}
-
-func errorModuleCreate(_ Host) (Module, error) {
-	return nil, errors.New("can't create module")
 }
