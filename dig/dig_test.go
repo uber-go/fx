@@ -189,19 +189,25 @@ func TestCycles(t *testing.T) {
 	t.Parallel()
 	g := New()
 
+	//    Type1
+	//    /    \
+	// Type2  Type 3
+	//   /       \
+	// Type4    Type 1
 	type Type1 interface{}
 	type Type2 interface{}
 	type Type3 interface{}
-	c1 := func(t2 Type2) Type1 { return nil }
-	c2 := func(t3 Type3) Type2 { return nil }
-	c3 := func(t1 Type1) Type3 { return nil }
+	type Type4 interface{}
+	c1 := func(t2 Type2, t3 Type3) Type1 { return nil }
+	c2 := func(t4 Type4) Type2 { return nil }
+	c3 := func(t3 Type1) Type3 { return nil }
 
 	require.NoError(t, g.Register(c1))
 	require.NoError(t, g.Register(c2))
-
 	err := g.Register(c3)
+
 	require.Contains(t, err.Error(), "unable to register dig.Type3")
-	require.Contains(t, err.Error(), "cycle")
+	require.Contains(t, err.Error(), "dig.Type3 -> dig.Type1 -> dig.Type3")
 }
 
 func TestResolveAll(t *testing.T) {

@@ -34,7 +34,6 @@ var (
 	errReturnCount = errors.New("constructor function must return exactly one value")
 	errReturnKind  = errors.New("constructor return type must be a pointer")
 	errArgKind     = errors.New("constructor arguments must be pointers")
-	errCycle       = errors.New("cycle dependencies detected")
 )
 
 // New returns a new Dependency Injection Graph
@@ -210,24 +209,28 @@ func (g *Graph) registerConstructor(c interface{}) error {
 
 // When a new constructor is being inserted, detect any present cycles
 func (g *Graph) detectCycles(n *funcNode) error {
-	visited := make(map[string]bool)
-	return g.recursiveDetectCycles(n, visited)
+	l := []string{}
+	return g.recursiveDetectCycles(n, l)
 }
 
 // DFS and tracking if same node is visited twice
-func (g *Graph) recursiveDetectCycles(n graphNode, visited map[string]bool) error {
-	if visited[n.id()] {
-		return errCycle
+func (g *Graph) recursiveDetectCycles(n graphNode, l []string) error {
+	for _, el := range l {
+		if n.id() == el {
+			b := &bytes.Buffer{}
+			for _, curr := range l {
+				fmt.Fprint(b, curr, " -> ")
+			}
+			fmt.Fprint(b, n.id())
+			return fmt.Errorf("detected cycle %s", b.String())
+		}
 	}
 
-	visited[n.id()] = true
+	l = append(l, n.id())
 
 	for _, dep := range n.dependencies() {
 		if node, ok := g.nodes[dep]; ok {
-			if err := g.recursiveDetectCycles(node, visited); err != nil {
-				// TODO(glib): rework the returned error to include the cycle
-				// i.e. Type1 -> Type3 -> Type2 -> Type1
-				// this will likely require `visited` map to be [string]reflect.Type
+			if err := g.recursiveDetectCycles(node, l); err != nil {
 				return err
 			}
 		}
