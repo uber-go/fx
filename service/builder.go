@@ -20,13 +20,6 @@
 
 package service
 
-import "github.com/pkg/errors"
-
-type moduleInfo struct {
-	provider ModuleProvider
-	options  []ModuleOption
-}
-
 // A Builder is a helper to create a service
 type Builder struct {
 	options     []Option
@@ -53,9 +46,10 @@ func (b *Builder) WithOptions(options ...Option) *Builder {
 
 // Build returns the service, or any errors encountered during build phase.
 func (b *Builder) Build() (Manager, error) {
-	svc, err := newManager(b)
-	if err != nil {
-		return nil, errors.Wrap(err, "service instantiation failed")
-	}
-	return svc, nil
+	return newManager(b)
+}
+
+type moduleInfo struct {
+	provider ModuleProvider
+	options  []ModuleOption
 }
