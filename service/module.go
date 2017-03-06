@@ -51,14 +51,6 @@ func ModuleProviderFromFunc(name string, createFunc func(Host) (Module, error)) 
 	return &moduleProviderFunc{name, createFunc}
 }
 
-type moduleProviderFunc struct {
-	name       string
-	createFunc func(Host) (Module, error)
-}
-
-func (m *moduleProviderFunc) DefaultName() string              { return m.name }
-func (m *moduleProviderFunc) Create(host Host) (Module, error) { return m.createFunc(host) }
-
 // ModuleOption is a function that configures module creation.
 type ModuleOption func(*moduleOptions) error
 
@@ -92,6 +84,14 @@ func WithModuleRole(role string) ModuleOption {
 func NewScopedHost(host Host, name string, roles ...string) (Host, error) {
 	return newScopedHost(host, name, roles...)
 }
+
+type moduleProviderFunc struct {
+	name       string
+	createFunc func(Host) (Module, error)
+}
+
+func (m *moduleProviderFunc) DefaultName() string              { return m.name }
+func (m *moduleProviderFunc) Create(host Host) (Module, error) { return m.createFunc(host) }
 
 type moduleOptions struct {
 	name  string

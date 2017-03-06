@@ -38,6 +38,10 @@ const (
 	defaultStartupWait = time.Second
 )
 
+// A ExitCallback is a function to handle a service shutdown and provide
+// an exit code
+type ExitCallback func(shutdown Exit) int
+
 // Implements Manager interface
 type manager struct {
 	serviceCore
@@ -61,91 +65,54 @@ var _ Manager = &manager{}
 
 // newManager creates a service Manager from a Builder.
 func newManager(builder *Builder) (Manager, error) {
-	svc := &manager{
+	m := &manager{
 		// TODO: get these out of config struct instead
 		moduleWrappers: []*moduleWrapper{},
 		serviceCore:    serviceCore{},
 	}
-
-	// hash up the roles
-	svc.roles = map[string]bool{}
-	for _, r := range svc.standardConfig.Roles {
-		svc.roles[r] = true
+	m.roles = map[string]bool{}
+	for _, r := range m.standardConfig.Roles {
+		m.roles[r] = true
 	}
-
-	// Run the rest of the options
 	for _, opt := range builder.options {
-		if optionErr := opt(svc); optionErr != nil {
+		if optionErr := opt(m); optionErr != nil {
 			return nil, errors.Wrap(optionErr, "option failed to apply")
 		}
 	}
-
-	if svc.configProvider == nil {
+	if m.configProvider == nil {
 		// If the user didn't pass in a configuration provider, load the standard.
 		// Bypassing standard config load is pretty much only used for tests, although it could be
 		// useful in certain circumstances.
-		svc.configProvider = config.Load()
+		m.configProvider = config.Load()
 	}
-
-	// load standard config
-	if err := svc.setupStandardConfig(); err != nil {
+	if err := m.setupStandardConfig(); err != nil {
 		return nil, err
 	}
-
 	// Initialize metrics. If no metrics reporters were Registered, do nop
 	// TODO(glib): add a logging reporter and use it by default, rather than nop
-	svc.setupMetrics()
-
-	if err := svc.setupLogging(); err != nil {
+	m.setupMetrics()
+	if err := m.setupLogging(); err != nil {
 		return nil, err
 	}
-
-	svc.setupAuthClient()
-
-	if err := svc.setupRuntimeMetricsCollector(); err != nil {
+	m.setupAuthClient()
+	if err := m.setupRuntimeMetricsCollector(); err != nil {
 		return nil, err
 	}
-
-	svc.setupVersionMetricsEmitter()
-
-	if err := svc.setupTracer(); err != nil {
+	m.setupVersionMetricsEmitter()
+	if err := m.setupTracer(); err != nil {
 		return nil, err
 	}
-
 	// if we have an observer, look for a property called "config" and load the service
 	// node into that config.
-	svc.setupObserver()
-
-	// Put service into Initialized state
-	svc.transitionState(Initialized)
-
-	svc.Metrics().Counter("boot").Inc(1)
-
+	m.setupObserver()
+	m.transitionState(Initialized)
+	m.Metrics().Counter("boot").Inc(1)
 	for _, moduleInfo := range builder.moduleInfos {
-		if err := svc.addModule(moduleInfo.provider, moduleInfo.options...); err != nil {
+		if err := m.addModule(moduleInfo.provider, moduleInfo.options...); err != nil {
 			return nil, err
 		}
 	}
-
-	return svc, nil
-}
-
-func (s *manager) addModuleWrapper(moduleWrapper *moduleWrapper) error {
-	s.moduleWrappers = append(s.moduleWrappers, moduleWrapper)
-	return nil
-}
-
-func (s *manager) supportsRole(roles ...string) bool {
-	if len(s.roles) == 0 || len(roles) == 0 {
-		return true
-	}
-
-	for _, role := range roles {
-		if found, ok := s.roles[role]; found && ok {
-			return true
-		}
-	}
-	return false
+	return m, nil
 }
 
 func (s *manager) IsRunning() bool {
@@ -172,6 +139,55 @@ func (s *manager) OnCriticalError(err error) {
 			)
 		}
 	}
+}
+
+// StartAsync service is used as a non-blocking the call on service start. StartAsync will
+// return the call to the caller with a Control to listen on channels
+// and trigger manual shutdowns.
+func (s *manager) StartAsync() Control {
+	return s.start()
+}
+
+// Start service is used for blocking the call on service start. Start will block the
+// call and yield the control to the service lifecyce manager. Start will not yield back
+// the control to the caller, so no code will be executed after calling Start()
+func (s *manager) Start() {
+	s.start()
+	// block until forced exit
+	s.WaitForShutdown(nil)
+}
+
+// Stop shuts down the service.
+func (s *manager) Stop(reason string, exitCode int) error {
+	ec := &exitCode
+	_, err := s.shutdown(nil, reason, ec)
+	return err
+}
+
+func (s *manager) WaitForShutdown(exitCallback ExitCallback) {
+	shutdown := <-s.closeChan
+	zap.L().Info("Shutting down", zap.String("reason", shutdown.Reason))
+
+	exit := 0
+	if exitCallback != nil {
+		exit = exitCallback(shutdown)
+	} else if shutdown.Error != nil {
+		exit = 1
+	}
+	os.Exit(exit)
+}
+
+func (s *manager) supportsRole(roles ...string) bool {
+	if len(s.roles) == 0 || len(roles) == 0 {
+		return true
+	}
+
+	for _, role := range roles {
+		if found, ok := s.roles[role]; found && ok {
+			return true
+		}
+	}
+	return false
 }
 
 func (s *manager) shutdown(err error, reason string, exitCode *int) (bool, error) {
@@ -267,24 +283,8 @@ func (s *manager) addModule(provider ModuleProvider, options ...ModuleOption) er
 			zap.Any("roles", moduleWrapper.scopedHost.Roles()),
 		)
 	}
-	return s.addModuleWrapper(moduleWrapper)
-}
-
-// StartAsync service is used as a non-blocking the call on service start. StartAsync will
-// return the call to the caller with a Control to listen on channels
-// and trigger manual shutdowns.
-func (s *manager) StartAsync() Control {
-	return s.start()
-}
-
-// Start service is used for blocking the call on service start. Start will block the
-// call and yield the control to the service lifecyce manager. Start will not yield back
-// the control to the caller, so no code will be executed after calling Start()
-func (s *manager) Start() {
-	s.start()
-
-	// block until forced exit
-	s.WaitForShutdown(nil)
+	s.moduleWrappers = append(s.moduleWrappers, moduleWrapper)
+	return nil
 }
 
 func (s *manager) start() Control {
@@ -378,13 +378,6 @@ func (s *manager) registerSignalHandlers() {
 	}()
 }
 
-// Stop shuts down the service.
-func (s *manager) Stop(reason string, exitCode int) error {
-	ec := &exitCode
-	_, err := s.shutdown(nil, reason, ec)
-	return err
-}
-
 func (s *manager) startModules() []error {
 	var results []error
 	var lock sync.Mutex
@@ -444,23 +437,6 @@ func (s *manager) stopModules() []error {
 	}
 	wg.Wait()
 	return results
-}
-
-// A ExitCallback is a function to handle a service shutdown and provide
-// an exit code
-type ExitCallback func(shutdown Exit) int
-
-func (s *manager) WaitForShutdown(exitCallback ExitCallback) {
-	shutdown := <-s.closeChan
-	zap.L().Info("Shutting down", zap.String("reason", shutdown.Reason))
-
-	exit := 0
-	if exitCallback != nil {
-		exit = exitCallback(shutdown)
-	} else if shutdown.Error != nil {
-		exit = 1
-	}
-	os.Exit(exit)
 }
 
 func (s *manager) transitionState(to State) {

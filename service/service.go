@@ -108,6 +108,11 @@ type Exit struct {
 	ExitCode int
 }
 
+// AfterStart will create an observer that will execute f() immediately after service starts.
+func AfterStart(f func()) Observer {
+	return niladicStart(f)
+}
+
 type niladicStart func()
 
 func (n niladicStart) OnInit(service Host) error      { return nil }
@@ -117,9 +122,4 @@ func (n niladicStart) OnStateChange(old State, curr State) {
 	if old == Starting && curr == Running {
 		n()
 	}
-}
-
-// AfterStart will create an observer that will execute f() immediately after service starts.
-func AfterStart(f func()) Observer {
-	return niladicStart(f)
 }
