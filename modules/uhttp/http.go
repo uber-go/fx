@@ -152,6 +152,11 @@ func (m *Module) Start() error {
 		m.lock.RLock()
 		listener := m.listener
 		m.lock.RUnlock()
+		if listener == nil {
+			m.log.Error("listener is nil, module was stopped before server is able to start")
+			return
+		}
+
 		// TODO(pedge): what to do about error?
 		if err := m.srv.Serve(listener); err != nil {
 			m.log.Error("HTTP Serve error", zap.Error(err))
