@@ -410,7 +410,10 @@ func (s *manager) startModules() []error {
 					}
 				case <-time.After(defaultStartupWait):
 					lock.Lock()
-					results = append(results, fmt.Errorf("module didn't start after %v", defaultStartupWait))
+					results = append(
+						results,
+						fmt.Errorf("module: %s didn't start after %v", m.Name(), defaultStartupWait),
+					)
 					lock.Unlock()
 				}
 			}
