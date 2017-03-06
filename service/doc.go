@@ -43,7 +43,7 @@
 //     // Create the service object
 //     svc, err := service.WithModule(
 //       // The list of module creators for this service
-//       yarpc.New(yarpc.CreateThriftServiceFunc(NewYarpcThriftHandler)),
+//       yarpc.New(yarpc.ServiceCreateFunc(NewYarpcThriftHandler)),
 //     ).Build()
 //
 //     if err != nil {
@@ -75,7 +75,7 @@
 //     svc, err := service.WithModule(
 //       kafka.Module("kakfa_topic1", []string{"worker"}),
 //     ).WithModule(
-//       yarpc.New(yarpc.CreateThriftServiceFunc(NewYarpcThriftHandler)),
+//       yarpc.New(yarpc.ServiceCreateFunc(NewYarpcThriftHandler)),
 //       service.WithModuleRole("service"),
 //     ).Build()
 //
