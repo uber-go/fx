@@ -33,7 +33,7 @@ import (
 	"go.uber.org/yarpc"
 	"go.uber.org/yarpc/api/middleware"
 	"go.uber.org/yarpc/api/transport"
-	cfg "go.uber.org/yarpc/x/config"
+	yconfig "go.uber.org/yarpc/x/config"
 	"go.uber.org/zap"
 )
 
@@ -104,25 +104,25 @@ type dispatcherController struct {
 }
 
 // Adds the config to the controller.
-func (controller *dispatcherController) addConfig(config configWrapper) {
-	controller.Lock()
-	defer controller.Unlock()
+func (c *dispatcherController) addConfig(config configWrapper) {
+	c.Lock()
+	defer c.Unlock()
 
-	controller.configs = append(controller.configs, &config)
+	c.configs = append(c.configs, &config)
 }
 
 // Adds the config to the controller.
-func (controller *dispatcherController) appendHandler(handler handlerWithDispatcher) {
-	controller.Lock()
-	defer controller.Unlock()
+func (c *dispatcherController) appendHandler(handler handlerWithDispatcher) {
+	c.Lock()
+	defer c.Unlock()
 
-	controller.handlers = append(controller.handlers, handler)
+	c.handlers = append(c.handlers, handler)
 }
 
 // Apply handlers to the dispatcher.
-func (controller *dispatcherController) applyHandlers() error {
-	for _, h := range controller.handlers {
-		if err := h(&controller.dispatcher); err != nil {
+func (c *dispatcherController) applyHandlers() error {
+	for _, h := range c.handlers {
+		if err := h(&c.dispatcher); err != nil {
 			return err
 		}
 	}
@@ -131,7 +131,7 @@ func (controller *dispatcherController) applyHandlers() error {
 }
 
 // Adds the default middleware: context propagation and auth.
-func (controller *dispatcherController) addDefaultMiddleware(host service.Host, statsClient *statsClient) {
+func (c *dispatcherController) addDefaultMiddleware(host service.Host, statsClient *statsClient) {
 	cfg := configWrapper{
 		inboundMiddleware: []middleware.UnaryInbound{
 			contextInboundMiddleware{host, statsClient},
@@ -145,7 +145,7 @@ func (controller *dispatcherController) addDefaultMiddleware(host service.Host, 
 		},
 	}
 
-	controller.addConfig(cfg)
+	c.addConfig(cfg)
 }
 
 // Starts the dispatcher:
@@ -155,14 +155,14 @@ func (controller *dispatcherController) addDefaultMiddleware(host service.Host, 
 // 4. Start the dispatcher
 //
 // Once started the controller will not start the dispatcher again.
-func (controller *dispatcherController) Start(host service.Host, statsClient *statsClient) error {
-	controller.start.Do(func() {
-		controller.addDefaultMiddleware(host, statsClient)
+func (c *dispatcherController) Start(host service.Host, statsClient *statsClient) error {
+	c.start.Do(func() {
+		c.addDefaultMiddleware(host, statsClient)
 
 		var cfg yarpc.Config
 		var err error
-		if cfg, err = controller.mergeConfigs(host.Name()); err != nil {
-			controller.startError = err
+		if cfg, err = c.mergeConfigs(host.Name()); err != nil {
+			c.startError = err
 			return
 		}
 
@@ -171,41 +171,41 @@ func (controller *dispatcherController) Start(host service.Host, statsClient *st
 
 		var d *yarpc.Dispatcher
 		if d, err = _dispatcherFn(host, cfg); err != nil {
-			controller.startError = err
+			c.startError = err
 			return
 		}
 
-		controller.dispatcher = *d
-		if err := controller.applyHandlers(); err != nil {
-			controller.startError = err
+		c.dispatcher = *d
+		if err := c.applyHandlers(); err != nil {
+			c.startError = err
 			return
 		}
 
-		controller.startError = _starterFn(&controller.dispatcher)
+		c.startError = _starterFn(&c.dispatcher)
 	})
 
-	return controller.startError
+	return c.startError
 }
 
 // Return the result of the dispatcher Stop() on the first call.
 // No-op on subsequent calls.
 // TODO: update readme/docs/examples GFM(339)
-func (controller *dispatcherController) Stop() error {
-	controller.stop.Do(func() {
-		controller.stopError = controller.dispatcher.Stop()
+func (c *dispatcherController) Stop() error {
+	c.stop.Do(func() {
+		c.stopError = c.dispatcher.Stop()
 	})
 
-	return controller.stopError
+	return c.stopError
 }
 
 // Merge all the YARPC configs in the collection: transports and middleware are going to be shared.
 // The name comes from the first config in the collection and is the same among all configs.
-func (controller *dispatcherController) mergeConfigs(name string) (conf yarpc.Config, err error) {
-	controller.RLock()
-	defer controller.RUnlock()
+func (c *dispatcherController) mergeConfigs(name string) (conf yarpc.Config, err error) {
+	c.RLock()
+	defer c.RUnlock()
 
 	// Config collection should always have an additional config with the default middleware.
-	if len(controller.configs) <= 1 {
+	if len(c.configs) <= 1 {
 		return conf, errors.New("unable to merge empty configs")
 	}
 
@@ -214,10 +214,10 @@ func (controller *dispatcherController) mergeConfigs(name string) (conf yarpc.Co
 	// Collect all Inbounds and middleware from all configs
 	var inboundMiddleware []middleware.UnaryInbound
 	var onewayInboundMiddleware []middleware.OnewayInbound
-	for _, c := range controller.configs {
-		conf.Inbounds = append(conf.Inbounds, c.cfg.Inbounds...)
-		inboundMiddleware = append(inboundMiddleware, c.inboundMiddleware...)
-		onewayInboundMiddleware = append(onewayInboundMiddleware, c.onewayInboundMiddleware...)
+	for _, cWrapper := range c.configs {
+		conf.Inbounds = append(conf.Inbounds, cWrapper.cfg.Inbounds...)
+		inboundMiddleware = append(inboundMiddleware, cWrapper.inboundMiddleware...)
+		onewayInboundMiddleware = append(onewayInboundMiddleware, cWrapper.onewayInboundMiddleware...)
 	}
 
 	// Build the inbound middleware
@@ -251,7 +251,7 @@ func newYARPCModule(
 	val := host.Config().Scope("modules").Get(host.Name()).Value()
 
 	// iterate over inbounds
-	c, err := cfg.New().LoadConfig(val)
+	c, err := yconfig.New().LoadConfig(val)
 	if err != nil {
 		module.log.Error("failed to load config", zap.Error(err))
 		return nil, err
