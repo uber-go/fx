@@ -22,7 +22,6 @@ package dig
 
 import (
 	"bytes"
-	"container/list"
 	"fmt"
 	"reflect"
 	"sync"
@@ -210,28 +209,30 @@ func (g *Graph) registerConstructor(c interface{}) error {
 
 // When a new constructor is being inserted, detect any present cycles
 func (g *Graph) detectCycles(n *funcNode) error {
-	visited := make(map[string]bool)
-	l := list.New()
-	return g.recursiveDetectCycles(n, visited, l)
+	l := []string{}
+	return g.recursiveDetectCycles(n, l)
 }
 
 // DFS and tracking if same node is visited twice
-func (g *Graph) recursiveDetectCycles(n graphNode, visited map[string]bool, l *list.List) error {
-	visited[n.id()] = true
-	l.PushBack(n.id())
+func (g *Graph) recursiveDetectCycles(n graphNode, l []string) error {
+	for _, el := range l {
+		if n.id() == el {
+			b := &bytes.Buffer{}
+			for _, curr := range l {
+				fmt.Fprint(b, curr, " -> ")
+			}
+			fmt.Fprint(b, n.id())
+			return fmt.Errorf("detected cycle %s", b.String())
+		}
+	}
+
+	l = append(l, n.id())
 
 	for _, dep := range n.dependencies() {
 		if node, ok := g.nodes[dep]; ok {
-			if visited[node.id()] {
-				b := &bytes.Buffer{}
-				for curr := l.Front(); curr != nil; curr = curr.Next() {
-					fmt.Fprint(b, curr.Value, " -> ")
-				}
-				fmt.Fprint(b, node.id())
-				return fmt.Errorf("detected cycle %s", b.String())
+			if err := g.recursiveDetectCycles(node, l); err != nil {
+				return err
 			}
-
-			return g.recursiveDetectCycles(node, visited, l)
 		}
 	}
 
