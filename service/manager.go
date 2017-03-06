@@ -35,7 +35,7 @@ import (
 )
 
 const (
-	defaultStartupWait = 20 * time.Second
+	defaultStartupWait = 10 * time.Second
 )
 
 // Implements Manager interface
