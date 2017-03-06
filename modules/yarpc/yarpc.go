@@ -37,6 +37,7 @@ import (
 	"go.uber.org/yarpc/api/transport"
 	"go.uber.org/yarpc/transport/http"
 	tch "go.uber.org/yarpc/transport/tchannel"
+	cfg "go.uber.org/yarpc/x/config"
 	"go.uber.org/zap"
 )
 
@@ -84,38 +85,7 @@ type yarpcConfig struct {
 	inboundMiddleware       []middleware.UnaryInbound
 	onewayInboundMiddleware []middleware.OnewayInbound
 
-	transports transports
-	Inbounds   []Inbound
-}
-
-// Inbound is a union that configures how to configure a single inbound.
-type Inbound struct {
-	TChannel *Address
-	HTTP     *Address
-}
-
-func (i *Inbound) String() string {
-	if i == nil {
-		return ""
-	}
-
-	http := "none"
-	if i.HTTP != nil {
-		http = strconv.Itoa(i.HTTP.Port)
-	}
-
-	tchannel := "none"
-	if i.TChannel != nil {
-		tchannel = strconv.Itoa(i.TChannel.Port)
-	}
-
-	return fmt.Sprintf("Inbound:{HTTP: %s; TChannel: %s}", http, tchannel)
-}
-
-// Address is a struct that have a required port for tchannel/http transports.
-// TODO(alsam) make it optional
-type Address struct {
-	Port int
+	cfg *yarpc.Config
 }
 
 type handlerWithDispatcher func(dispatcher *yarpc.Dispatcher) error
@@ -249,7 +219,7 @@ func (c *dispatcherController) mergeConfigs(name string) (conf yarpc.Config, err
 	var inboundMiddleware []middleware.UnaryInbound
 	var onewayInboundMiddleware []middleware.OnewayInbound
 	for _, cfg := range c.configs {
-		conf.Inbounds = append(conf.Inbounds, cfg.transports.inbounds...)
+		conf.Inbounds = append(conf.Inbounds, cfg.cfg.Inbounds)
 		inboundMiddleware = append(inboundMiddleware, cfg.inboundMiddleware...)
 		onewayInboundMiddleware = append(onewayInboundMiddleware, cfg.onewayInboundMiddleware...)
 	}
@@ -286,10 +256,12 @@ func newYARPCModule(
 	}
 
 	// iterate over inbounds
+	c, err := cfg.New().LoadConfig(host.Config().Scope("modules").Get(host.Name()).Value())
 	transportsIn, err := prepareInbounds(module.config.Inbounds, host.Name())
 	if err != nil {
 		return nil, errs.Wrap(err, "can't process inbounds")
 	}
+
 	module.config.transports.inbounds = transportsIn
 	module.config.inboundMiddleware = moduleOptions.unaryInbounds
 	module.config.onewayInboundMiddleware = moduleOptions.onewayInbounds
