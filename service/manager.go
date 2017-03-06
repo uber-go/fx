@@ -35,7 +35,7 @@ import (
 )
 
 const (
-	defaultStartupWait = time.Second
+	defaultStartupWait = 10 * time.Second
 )
 
 // A ExitCallback is a function to handle a service shutdown and provide
@@ -401,7 +401,10 @@ func (m *manager) startModules() []error {
 					}
 				case <-time.After(defaultStartupWait):
 					lock.Lock()
-					results = append(results, fmt.Errorf("module didn't start after %v", defaultStartupWait))
+					results = append(
+						results,
+						fmt.Errorf("module: %s didn't start after %v", m.Name(), defaultStartupWait),
+					)
 					lock.Unlock()
 				}
 			}
