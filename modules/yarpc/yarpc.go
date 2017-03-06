@@ -104,25 +104,25 @@ type dispatcherController struct {
 }
 
 // Adds the config to the controller.
-func (c *dispatcherController) addConfig(config configWrapper) {
-	c.Lock()
-	defer c.Unlock()
+func (controller *dispatcherController) addConfig(config configWrapper) {
+	controller.Lock()
+	defer controller.Unlock()
 
-	c.configs = append(c.configs, &config)
+	controller.configs = append(controller.configs, &config)
 }
 
 // Adds the config to the controller.
-func (c *dispatcherController) appendHandler(handler handlerWithDispatcher) {
-	c.Lock()
-	defer c.Unlock()
+func (controller *dispatcherController) appendHandler(handler handlerWithDispatcher) {
+	controller.Lock()
+	defer controller.Unlock()
 
-	c.handlers = append(c.handlers, handler)
+	controller.handlers = append(controller.handlers, handler)
 }
 
 // Apply handlers to the dispatcher.
-func (c *dispatcherController) applyHandlers() error {
-	for _, h := range c.handlers {
-		if err := h(&c.dispatcher); err != nil {
+func (controller *dispatcherController) applyHandlers() error {
+	for _, h := range controller.handlers {
+		if err := h(&controller.dispatcher); err != nil {
 			return err
 		}
 	}
@@ -131,7 +131,7 @@ func (c *dispatcherController) applyHandlers() error {
 }
 
 // Adds the default middleware: context propagation and auth.
-func (c *dispatcherController) addDefaultMiddleware(host service.Host, statsClient *statsClient) {
+func (controller *dispatcherController) addDefaultMiddleware(host service.Host, statsClient *statsClient) {
 	cfg := configWrapper{
 		inboundMiddleware: []middleware.UnaryInbound{
 			contextInboundMiddleware{host, statsClient},
@@ -145,7 +145,7 @@ func (c *dispatcherController) addDefaultMiddleware(host service.Host, statsClie
 		},
 	}
 
-	c.addConfig(cfg)
+	controller.addConfig(cfg)
 }
 
 // Starts the dispatcher:
@@ -155,14 +155,14 @@ func (c *dispatcherController) addDefaultMiddleware(host service.Host, statsClie
 // 4. Start the dispatcher
 //
 // Once started the controller will not start the dispatcher again.
-func (c *dispatcherController) Start(host service.Host, statsClient *statsClient) error {
-	c.start.Do(func() {
-		c.addDefaultMiddleware(host, statsClient)
+func (controller *dispatcherController) Start(host service.Host, statsClient *statsClient) error {
+	controller.start.Do(func() {
+		controller.addDefaultMiddleware(host, statsClient)
 
 		var cfg yarpc.Config
 		var err error
-		if cfg, err = c.mergeConfigs(host.Name()); err != nil {
-			c.startError = err
+		if cfg, err = controller.mergeConfigs(host.Name()); err != nil {
+			controller.startError = err
 			return
 		}
 
@@ -171,31 +171,31 @@ func (c *dispatcherController) Start(host service.Host, statsClient *statsClient
 
 		var d *yarpc.Dispatcher
 		if d, err = _dispatcherFn(host, cfg); err != nil {
-			c.startError = err
+			controller.startError = err
 			return
 		}
 
-		c.dispatcher = *d
-		if err := c.applyHandlers(); err != nil {
-			c.startError = err
+		controller.dispatcher = *d
+		if err := controller.applyHandlers(); err != nil {
+			controller.startError = err
 			return
 		}
 
-		c.startError = _starterFn(&c.dispatcher)
+		controller.startError = _starterFn(&controller.dispatcher)
 	})
 
-	return c.startError
+	return controller.startError
 }
 
 // Return the result of the dispatcher Stop() on the first call.
 // No-op on subsequent calls.
 // TODO: update readme/docs/examples GFM(339)
-func (c *dispatcherController) Stop() error {
-	c.stop.Do(func() {
-		c.stopError = c.dispatcher.Stop()
+func (controller *dispatcherController) Stop() error {
+	controller.stop.Do(func() {
+		controller.stopError = controller.dispatcher.Stop()
 	})
 
-	return c.stopError
+	return controller.stopError
 }
 
 // Merge all the YARPC configs in the collection: transports and middleware are going to be shared.
@@ -248,12 +248,10 @@ func newYARPCModule(
 		log:         ulog.Logger(context.Background()).With(zap.String("module", host.Name())),
 	}
 
-	if err := host.Config().Scope("modules").Get(host.Name()).PopulateStruct(&module.config); err != nil {
-		return nil, errs.Wrap(err, "can't read inbounds")
-	}
+	val := host.Config().Scope("modules").Get(host.Name()).Value()
 
 	// iterate over inbounds
-	c, err := cfg.New().LoadConfig(host.Config().Scope("modules").Get(host.Name()).Value())
+	c, err := cfg.New().LoadConfig(val)
 	if err != nil {
 		module.log.Error("failed to load config", zap.Error(err))
 		return nil, err
