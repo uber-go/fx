@@ -99,7 +99,8 @@ func TestResolve(t *testing.T) {
 			require.NoError(t, err, "Register part of the test cant have errors")
 
 			err = tc.resolve(g)
-			if err != nil {
+			if tc.es != "" {
+				require.Error(t, err)
 				require.Contains(t, err.Error(), tc.es, "Unexpected error message")
 			} else {
 				require.NoError(t, err, "Did not expect a resolve error")
