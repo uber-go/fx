@@ -149,9 +149,6 @@ func (m *Module) Start() error {
 	m.listener = listener
 	m.srv = &http.Server{Handler: mux}
 	go func() {
-		m.lock.RLock()
-		listener := m.listener
-		m.lock.RUnlock()
 		// TODO(pedge): what to do about error?
 		if err := m.srv.Serve(listener); err != nil {
 			m.log.Error("HTTP Serve error", zap.Error(err))
