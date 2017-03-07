@@ -23,8 +23,6 @@ package yarpc
 import (
 	"context"
 	"errors"
-	"fmt"
-	"strconv"
 	"sync"
 
 	"go.uber.org/fx/service"
@@ -35,8 +33,7 @@ import (
 	"go.uber.org/yarpc"
 	"go.uber.org/yarpc/api/middleware"
 	"go.uber.org/yarpc/api/transport"
-	"go.uber.org/yarpc/transport/http"
-	tch "go.uber.org/yarpc/transport/tchannel"
+	yconfig "go.uber.org/yarpc/x/config"
 	"go.uber.org/zap"
 )
 
@@ -59,7 +56,7 @@ func New(hookup ServiceCreateFunc, options ...ModuleOption) service.ModuleProvid
 type Module struct {
 	host        service.Host
 	statsClient *statsClient
-	config      yarpcConfig
+	config      configWrapper
 	log         *zap.Logger
 	controller  *dispatcherController
 }
@@ -80,42 +77,11 @@ type transports struct {
 	inbounds []transport.Inbound
 }
 
-type yarpcConfig struct {
+type configWrapper struct {
 	inboundMiddleware       []middleware.UnaryInbound
 	onewayInboundMiddleware []middleware.OnewayInbound
 
-	transports transports
-	Inbounds   []Inbound
-}
-
-// Inbound is a union that configures how to configure a single inbound.
-type Inbound struct {
-	TChannel *Address
-	HTTP     *Address
-}
-
-func (i *Inbound) String() string {
-	if i == nil {
-		return ""
-	}
-
-	http := "none"
-	if i.HTTP != nil {
-		http = strconv.Itoa(i.HTTP.Port)
-	}
-
-	tchannel := "none"
-	if i.TChannel != nil {
-		tchannel = strconv.Itoa(i.TChannel.Port)
-	}
-
-	return fmt.Sprintf("Inbound:{HTTP: %s; TChannel: %s}", http, tchannel)
-}
-
-// Address is a struct that have a required port for tchannel/http transports.
-// TODO(alsam) make it optional
-type Address struct {
-	Port int
+	cfg yarpc.Config
 }
 
 type handlerWithDispatcher func(dispatcher *yarpc.Dispatcher) error
@@ -132,13 +98,13 @@ type dispatcherController struct {
 	stopError  error
 	startError error
 
-	configs    []*yarpcConfig
+	configs    []*configWrapper
 	handlers   []handlerWithDispatcher
 	dispatcher yarpc.Dispatcher
 }
 
 // Adds the config to the controller.
-func (c *dispatcherController) addConfig(config yarpcConfig) {
+func (c *dispatcherController) addConfig(config configWrapper) {
 	c.Lock()
 	defer c.Unlock()
 
@@ -166,7 +132,7 @@ func (c *dispatcherController) applyHandlers() error {
 
 // Adds the default middleware: context propagation and auth.
 func (c *dispatcherController) addDefaultMiddleware(host service.Host, statsClient *statsClient) {
-	cfg := yarpcConfig{
+	cfg := configWrapper{
 		inboundMiddleware: []middleware.UnaryInbound{
 			contextInboundMiddleware{host, statsClient},
 			panicInboundMiddleware{statsClient},
@@ -248,10 +214,10 @@ func (c *dispatcherController) mergeConfigs(name string) (conf yarpc.Config, err
 	// Collect all Inbounds and middleware from all configs
 	var inboundMiddleware []middleware.UnaryInbound
 	var onewayInboundMiddleware []middleware.OnewayInbound
-	for _, cfg := range c.configs {
-		conf.Inbounds = append(conf.Inbounds, cfg.transports.inbounds...)
-		inboundMiddleware = append(inboundMiddleware, cfg.inboundMiddleware...)
-		onewayInboundMiddleware = append(onewayInboundMiddleware, cfg.onewayInboundMiddleware...)
+	for _, cWrapper := range c.configs {
+		conf.Inbounds = append(conf.Inbounds, cWrapper.cfg.Inbounds...)
+		inboundMiddleware = append(inboundMiddleware, cWrapper.inboundMiddleware...)
+		onewayInboundMiddleware = append(onewayInboundMiddleware, cWrapper.onewayInboundMiddleware...)
 	}
 
 	// Build the inbound middleware
@@ -281,16 +247,17 @@ func newYARPCModule(
 		statsClient: newStatsClient(host.Metrics()),
 		log:         ulog.Logger(context.Background()).With(zap.String("module", host.Name())),
 	}
-	if err := host.Config().Scope("modules").Get(host.Name()).PopulateStruct(&module.config); err != nil {
-		return nil, errs.Wrap(err, "can't read inbounds")
-	}
+
+	val := host.Config().Scope("modules").Get(host.Name()).Value()
 
 	// iterate over inbounds
-	transportsIn, err := prepareInbounds(module.config.Inbounds, host.Name())
+	c, err := yconfig.New().LoadConfig(val)
 	if err != nil {
-		return nil, errs.Wrap(err, "can't process inbounds")
+		module.log.Error("failed to load config", zap.Error(err))
+		return nil, err
 	}
-	module.config.transports.inbounds = transportsIn
+
+	module.config.cfg = c
 	module.config.inboundMiddleware = moduleOptions.unaryInbounds
 	module.config.onewayInboundMiddleware = moduleOptions.onewayInbounds
 
@@ -322,34 +289,8 @@ func newYARPCModule(
 		return nil
 	})
 
-	module.log.Info("Module successfuly created", zap.Any("inbounds", module.config.Inbounds))
+	module.log.Info("Module successfuly created", zap.Reflect("config", c))
 	return module, nil
-}
-
-// Iterate over all inbounds and prepare corresponding transports
-func prepareInbounds(inbounds []Inbound, serviceName string) (transportsIn []transport.Inbound, err error) {
-	transportsIn = make([]transport.Inbound, 0, 2*len(inbounds))
-	for _, in := range inbounds {
-		if h := in.HTTP; h != nil {
-			transportsIn = append(
-				transportsIn,
-				http.NewTransport().NewInbound(fmt.Sprintf(":%d", h.Port)))
-		}
-
-		if t := in.TChannel; t != nil {
-			chn, err := tch.NewChannelTransport(
-				tch.ServiceName(serviceName),
-				tch.ListenAddr(fmt.Sprintf(":%d", t.Port)))
-
-			if err != nil {
-				return nil, errs.Wrap(err, "can't create tchannel transport")
-			}
-
-			transportsIn = append(transportsIn, chn.NewInbound())
-		}
-	}
-
-	return transportsIn, nil
 }
 
 // Start begins serving requests with YARPC.
