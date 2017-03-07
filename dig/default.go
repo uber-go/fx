@@ -33,9 +33,19 @@ func Register(i interface{}) error {
 	return defaultGraph.Register(i)
 }
 
+// MustRegister calls Register and panics if an error is encountered
+func MustRegister(i interface{}) {
+	defaultGraph.MustRegister(i)
+}
+
 // RegisterAll into the default graph
 func RegisterAll(is ...interface{}) error {
 	return defaultGraph.RegisterAll(is...)
+}
+
+// MustRegisterAll into the default graph
+func MustRegisterAll(is ...interface{}) {
+	defaultGraph.MustRegisterAll(is...)
 }
 
 // Resolve an object through the default graph
@@ -43,9 +53,19 @@ func Resolve(i interface{}) error {
 	return defaultGraph.Resolve(i)
 }
 
-// ResolveAll the passed in pointers through the dependency graph
+// MustResolve through the default graph
+func MustResolve(i interface{}) {
+	defaultGraph.MustResolve(i)
+}
+
+// ResolveAll through the default graph
 func ResolveAll(is ...interface{}) error {
 	return defaultGraph.ResolveAll(is...)
+}
+
+// MustResolveAll on the default graph
+func MustResolveAll(is ...interface{}) {
+	defaultGraph.MustResolveAll(is...)
 }
 
 // Reset the default graph

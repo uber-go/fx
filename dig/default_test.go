@@ -42,23 +42,35 @@ func TestDefaultGraph(t *testing.T) {
 	defer Reset()
 
 	t1 := &Type1{t: 42}
-	require.NoError(t, Register(t1))
+	require.NotPanics(t, func() {
+		MustRegister(t1)
+	})
 
 	t2 := &Type2{s: "42"}
 	t3 := &Type3{f: 4.2}
-	require.NoError(t, RegisterAll(t2, t3))
+	require.NoError(t, RegisterAll(t2))
+	require.NotPanics(t, func() {
+		MustRegisterAll(t3)
+	})
 
 	var t1g *Type1
-	require.NoError(t, Resolve(&t1g))
+	require.NotPanics(t, func() {
+		MustResolve(&t1g)
+	})
 	require.True(t, t1g == t1)
 
 	var t2g *Type2
 	var t3g *Type3
-	require.NoError(t, ResolveAll(&t2g, &t3g))
+	require.NotPanics(t, func() {
+		MustResolveAll(&t2g, &t3g)
+	})
 	require.True(t, t2g == t2)
 	require.True(t, t3g == t3)
 
 	var t2g2 *Type2
 	require.NoError(t, DefaultGraph().Resolve(&t2g2))
+	require.NotPanics(t, func() {
+		MustResolve(&t2g2)
+	})
 	require.Equal(t, t2, t2g2)
 }
