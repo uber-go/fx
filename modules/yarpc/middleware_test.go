@@ -40,25 +40,9 @@ import (
 	ztest "go.uber.org/zap/testutils"
 )
 
-type fakeEnveloper struct {
-	serviceName string
-}
-
-func (f fakeEnveloper) MethodName() string {
-	return f.serviceName
-}
-
-func (f fakeEnveloper) EnvelopeType() wire.EnvelopeType {
-	return wire.Reply
-}
-
-func (f fakeEnveloper) ToWire() (wire.Value, error) {
-	return wire.NewValueStruct(wire.Struct{}), nil
-}
-
 func TestInboundMiddleware_Context(t *testing.T) {
 	host := service.NopHost()
-	unary := contextInboundMiddleware{host, newStatsClient(host.Metrics())}
+	unary := contextInboundMiddleware{newStatsClient(host.Metrics())}
 	testutils.WithInMemoryLogger(t, nil, func(loggerWithZap *zap.Logger, buf *ztest.Buffer) {
 		defer ulog.SetLogger(loggerWithZap)()
 		tracing.WithSpan(t, loggerWithZap, func(span opentracing.Span) {
@@ -71,9 +55,7 @@ func TestInboundMiddleware_Context(t *testing.T) {
 }
 
 func TestOnewayInboundMiddleware_Context(t *testing.T) {
-	oneway := contextOnewayInboundMiddleware{
-		Host: service.NopHost(),
-	}
+	oneway := contextOnewayInboundMiddleware{}
 	testutils.WithInMemoryLogger(t, nil, func(loggerWithZap *zap.Logger, buf *ztest.Buffer) {
 		defer ulog.SetLogger(loggerWithZap)()
 		tracing.WithSpan(t, loggerWithZap, func(span opentracing.Span) {
@@ -151,6 +133,22 @@ func testPanicHandler(t *testing.T, testScope tally.Scope) {
 	snapshot := testScope.(tally.TestScope).Snapshot()
 	counters := snapshot.Counters()
 	assert.True(t, counters["panic"].Value() > 0)
+}
+
+type fakeEnveloper struct {
+	serviceName string
+}
+
+func (f fakeEnveloper) MethodName() string {
+	return f.serviceName
+}
+
+func (f fakeEnveloper) EnvelopeType() wire.EnvelopeType {
+	return wire.Reply
+}
+
+func (f fakeEnveloper) ToWire() (wire.Value, error) {
+	return wire.NewValueStruct(wire.Struct{}), nil
 }
 
 type fakeUnary struct {

@@ -35,7 +35,6 @@ import (
 const _panicResponse = "Server Error"
 
 type contextInboundMiddleware struct {
-	service.Host
 	statsClient *statsClient
 }
 
@@ -54,9 +53,7 @@ func (f contextInboundMiddleware) Handle(
 	return handler.Handle(ctx, req, resw)
 }
 
-type contextOnewayInboundMiddleware struct {
-	service.Host
-}
+type contextOnewayInboundMiddleware struct{}
 
 func (f contextOnewayInboundMiddleware) HandleOneway(
 	ctx context.Context,
