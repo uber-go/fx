@@ -38,7 +38,16 @@ import (
 func TestServiceCreation(t *testing.T) {
 	r := metrics.NewTestStatsReporter()
 	r.CountersWG.Add(1)
-	scope, closer := tally.NewRootScope("", nil, r, 50*time.Millisecond, tally.DefaultSeparator)
+	opts := tally.ScopeOptions{
+		Tags:           nil,
+		Prefix:         "",
+		Reporter:       r,
+		CachedReporter: nil,
+		Separator:      tally.DefaultSeparator,
+		DefaultBuckets: tally.DefaultBuckets,
+	}
+
+	scope, closer := tally.NewRootScope(opts, 50*time.Millisecond)
 	defer closer.Close()
 	svc, err := newManager(
 		WithModule(nopModuleProvider).

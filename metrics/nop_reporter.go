@@ -62,6 +62,10 @@ func (nopCachedStatsReporter) AllocateGauge(name string, tags map[string]string)
 	return NopCachedGauge
 }
 
+func (nopCachedStatsReporter) AllocateHistogram(name string, tags map[string]string, buckets tally.Buckets) tally.CachedHistogram {
+	return NopCachedHistogram
+}
+
 func (nopCachedStatsReporter) AllocateTimer(name string, tags map[string]string) tally.CachedTimer {
 	return NopCachedTimer
 }
@@ -98,4 +102,32 @@ type nopCachedTimer struct {
 }
 
 func (nopCachedTimer) ReportTimer(interval time.Duration) {
+}
+
+// NopCachedHistogram is an implementation of tally.CachedHistogram
+var NopCachedHistogram tally.CachedHistogram = nopCachedHistogram{}
+
+type nopCachedHistogram struct {
+}
+
+func (nopCachedHistogram) ValueBucket(
+	bucketLowerBound, bucketUpperBound float64,
+) tally.CachedHistogramBucket {
+	return nopCachedHistogramBucket{}
+}
+
+func (nopCachedHistogram) DurationBucket(
+	bucketLowerBound, bucketUpperBound time.Duration,
+) tally.CachedHistogramBucket {
+	return nopCachedHistogramBucket{}
+}
+
+// NopCachedHistogramBucket is an implementation of tally.CachedHistogramBucket
+var NopCachedHistogramBucket tally.CachedHistogramBucket = nopCachedHistogramBucket{}
+
+type nopCachedHistogramBucket struct {
+}
+
+func (nopCachedHistogramBucket) ReportSamples(value int64) {
+
 }

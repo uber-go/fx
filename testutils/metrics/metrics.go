@@ -35,9 +35,11 @@ type TestStatsReporter struct {
 	GaugesWG   sync.WaitGroup
 	TimersWG   sync.WaitGroup
 
-	Counters map[string]int64
-	Gauges   map[string]float64
-	Timers   map[string]time.Duration
+	Counters           map[string]int64
+	Gauges             map[string]float64
+	Timers             map[string]time.Duration
+	HistogramSamples   map[string]tally.Buckets
+	HistogramDurations map[string]tally.Buckets
 }
 
 // ReportCounter collects all the counters into a map
@@ -53,6 +55,34 @@ func (r *TestStatsReporter) ReportGauge(name string, tags map[string]string, val
 	r.m.Lock()
 	r.Gauges[name] = value
 	r.GaugesWG.Done()
+	r.m.Unlock()
+}
+
+// ReportHistogramValueSamples reports histogram samples for a bucket
+func (r *TestStatsReporter) ReportHistogramValueSamples(
+	name string,
+	tags map[string]string,
+	buckets tally.Buckets,
+	bucketLowerBound,
+	bucketUpperBound float64,
+	samples int64,
+) {
+	r.m.Lock()
+	r.HistogramSamples[name] = buckets
+	r.m.Unlock()
+}
+
+// ReportHistogramDurationSamples reports histogram samples for a bucket
+func (r *TestStatsReporter) ReportHistogramDurationSamples(
+	name string,
+	tags map[string]string,
+	buckets tally.Buckets,
+	bucketLowerBound,
+	bucketUpperBound time.Duration,
+	samples int64,
+) {
+	r.m.Lock()
+	r.HistogramDurations[name] = buckets
 	r.m.Unlock()
 }
 
@@ -84,6 +114,15 @@ func NewTestStatsReporter() *TestStatsReporter {
 // NewTestScope returns a pair of scope and reporter that can be used for testing
 func NewTestScope() (tally.Scope, *TestStatsReporter) {
 	r := NewTestStatsReporter()
-	scope, _ := tally.NewRootScope("", nil, r, 100*time.Millisecond, tally.DefaultSeparator)
+	opts := tally.ScopeOptions{
+		Tags:           nil,
+		Prefix:         "",
+		Reporter:       r,
+		CachedReporter: nil,
+		Separator:      tally.DefaultSeparator,
+		DefaultBuckets: tally.DefaultBuckets,
+	}
+
+	scope, _ := tally.NewRootScope(opts, 100*time.Millisecond)
 	return scope, r
 }
