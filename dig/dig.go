@@ -79,6 +79,13 @@ func (g *Graph) Register(c interface{}) error {
 	}
 }
 
+// MustRegister will attempt to register the object and panic if error is encountered
+func (g *Graph) MustRegister(c interface{}) {
+	if err := g.Register(c); err != nil {
+		panic(err)
+	}
+}
+
 // Resolve all of the dependencies of the provided class
 //
 // Provided object must be a pointer
@@ -119,6 +126,13 @@ func (g *Graph) Resolve(obj interface{}) (err error) {
 	return nil
 }
 
+// MustResolve calls Resolve and panics if an error is encountered
+func (g *Graph) MustResolve(obj interface{}) {
+	if err := g.Resolve(obj); err != nil {
+		panic(err)
+	}
+}
+
 // ResolveAll the dependencies of each provided object
 // Returns the first error encountered
 func (g *Graph) ResolveAll(objs ...interface{}) error {
@@ -130,6 +144,13 @@ func (g *Graph) ResolveAll(objs ...interface{}) error {
 	return nil
 }
 
+// MustResolveAll calls ResolveAll and panics if an error is encountered
+func (g *Graph) MustResolveAll(objs ...interface{}) {
+	if err := g.ResolveAll(objs...); err != nil {
+		panic(err)
+	}
+}
+
 // RegisterAll registers all the provided args in the dependency graph
 func (g *Graph) RegisterAll(cs ...interface{}) error {
 	for _, c := range cs {
@@ -138,6 +159,13 @@ func (g *Graph) RegisterAll(cs ...interface{}) error {
 		}
 	}
 	return nil
+}
+
+// MustRegisterAll calls RegisterAll and panics is an error is encountered
+func (g *Graph) MustRegisterAll(cs ...interface{}) {
+	if err := g.RegisterAll(cs...); err != nil {
+		panic(err)
+	}
 }
 
 // Reset the graph by removing all the registered nodes

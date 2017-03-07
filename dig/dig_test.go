@@ -260,3 +260,65 @@ func TestPanicConstructor(t *testing.T) {
 	require.Contains(t, err.Error(), "panic during Resolve")
 	require.Contains(t, err.Error(), "RUH ROH")
 }
+
+func TestMustFunctions(t *testing.T) {
+	t.Parallel()
+	tts := []struct {
+		name          string
+		f             func(g *Graph)
+		panicExpected bool
+	}{
+		{
+			"wrong register type",
+			func(g *Graph) { g.MustRegister(2) },
+			true,
+		},
+		{
+			"wrong register all types",
+			func(g *Graph) { g.MustRegisterAll("2", "3") },
+			true,
+		},
+		{
+			"unregistered type",
+			func(g *Graph) {
+				var v *Type1
+				g.MustResolve(&v)
+			},
+			true,
+		},
+		{
+			"correct register",
+			func(g *Graph) { g.MustRegister(NewChild1) },
+			false,
+		},
+		{
+			"correct register all",
+			func(g *Graph) { g.MustRegisterAll(NewChild1, NewChild2) },
+			false,
+		},
+		{
+			"unregistered types",
+			func(g *Graph) {
+				var v *Type1
+				var v2 *Type2
+				g.MustResolveAll(&v, &v2)
+			},
+			true,
+		},
+	}
+
+	for _, tc := range tts {
+		t.Run(tc.name, func(t *testing.T) {
+			g := New()
+			f := func() {
+				tc.f(g)
+			}
+
+			if tc.panicExpected {
+				require.Panics(t, f)
+			} else {
+				require.NotPanics(t, f)
+			}
+		})
+	}
+}
