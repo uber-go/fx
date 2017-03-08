@@ -1,5 +1,5 @@
-hash: 01601165cbc93d3ed44c52ca798e6b647b4c20ef929a554d753e72b12d0eb8ff
-updated: 2017-03-08T13:35:33.408205361-05:00
+hash: b9efa311b80d1b35735be4ecbf92b209f644ae61c4f43cde11d31d9ae90fdc0f
+updated: 2017-03-08T14:16:30.167876792-05:00
 imports:
 - name: github.com/apache/thrift
   version: 9549b25c77587b29be4e0b5c258221a4ed85d37a
@@ -118,10 +118,11 @@ imports:
   - transport/tchannel
   - transport/tchannel/internal
 - name: go.uber.org/zap
-  version: a03b90bc236f3def382f17743518889a31f8187c
+  version: 4e517d38b2138e59475d6468e7a6b626eecdaa66
   subpackages:
   - buffer
   - internal/bufferpool
+  - internal/color
   - internal/exit
   - internal/multierror
   - testutils
