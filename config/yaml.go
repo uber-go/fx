@@ -327,7 +327,7 @@ func unmarshalYAMLValue(reader io.ReadCloser, value interface{}) error {
 // TODO: what if someone wanted a literal ${FOO} in config? need a small escape hatch
 func interpolateEnvVars(data []byte) ([]byte, error) {
 	// ${VAR_NAME:default} or ${VAR_NAME}
-	reg := regexp.MustCompile(`\$\{\w+(:\w+)?}`)
+	reg := regexp.MustCompile(`\$\{\w+:?[\w"]*}`)
 
 	var regErr error
 	data = reg.ReplaceAllFunc(data, func(in []byte) []byte {
@@ -350,7 +350,18 @@ func interpolateEnvVars(data []byte) ([]byte, error) {
 		}
 
 		// return the default
-		return split[1]
+		def := split[1]
+		if len(def) < 1 {
+			regErr = fmt.Errorf(`default is empty for %s (use "" for empty string)`, key)
+			return in
+		}
+
+		// return empty byte slices for "" as the default
+		if bytes.Compare(def, []byte(`""`)) == 0 {
+			return nil
+		}
+
+		return def
 	})
 
 	if regErr != nil {

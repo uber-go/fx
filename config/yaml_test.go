@@ -89,6 +89,30 @@ email: ${EMAIL_ADDRESS}`)
 	})
 }
 
+func TestYAMLEnvInterpolationIncomplete(t *testing.T) {
+	t.Parallel()
+
+	cfg := []byte(`
+name: some name here
+telephone: ${SUPPORT_TEL:}`)
+
+	require.Panics(t, func() {
+		NewYAMLProviderFromBytes(cfg)
+	})
+}
+
+func TestYAMLEnvInterpolationEmptyString(t *testing.T) {
+	t.Parallel()
+
+	cfg := []byte(`
+name: ""
+fullTel: 1-800-LOLZ${TELEPHONE_EXTENSION:""}`)
+
+	p := NewYAMLProviderFromBytes(cfg)
+	require.Equal(t, "", p.Get("name").AsString())
+	require.Equal(t, "1-800-LOLZ", p.Get("fullTel").AsString())
+}
+
 type configStruct struct {
 	AppID string
 	Desc  string
