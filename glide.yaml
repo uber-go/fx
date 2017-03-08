@@ -1,7 +1,7 @@
 package: go.uber.org/fx
 import:
 - package: go.uber.org/zap
-  version: v1.0.0-rc.2
+  version: v1.0.0-rc.3
 - package: github.com/uber-go/tally
   version: ^2.1.0
 - package: github.com/gorilla/mux
