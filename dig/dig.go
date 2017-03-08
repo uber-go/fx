@@ -30,11 +30,38 @@ import (
 )
 
 var (
-	errParamType   = errors.New("graph injection must be done through a pointer or a function")
-	errReturnCount = errors.New("constructor function must return exactly one value")
-	errReturnKind  = errors.New("constructor return type must be a pointer")
-	errArgKind     = errors.New("constructor arguments must be pointers")
+	errParamType     = errors.New("graph injection must be done through a pointer or a function")
+	errReturnCount   = errors.New("constructor function must return up to two values")
+	errReturnKind    = errors.New("constructor return type must be a pointer")
+	errReturnErrKind = errors.New("second return value of constructor must be error")
+	errArgKind       = errors.New("constructor arguments must be pointers")
+
+	_typeOfError = reflect.TypeOf((*error)(nil)).Elem()
 )
+
+// Wraps a function that returns a single value to return that value and a nil
+// error.
+func addErrorReturn(c interface{}) interface{} {
+	v := reflect.ValueOf(c)
+	t := v.Type()
+
+	if t.NumOut() != 1 {
+		panic(fmt.Sprintf("addErrorReturn called with invalid function: %v", t))
+	}
+
+	returnTypes := []reflect.Type{t.Out(0), _typeOfError}
+	argTypes := make([]reflect.Type, t.NumIn())
+	for i := 0; i < t.NumIn(); i++ {
+		argTypes[i] = t.In(i)
+	}
+
+	return reflect.MakeFunc(
+		reflect.FuncOf(argTypes, returnTypes, t.IsVariadic()),
+		func(args []reflect.Value) []reflect.Value {
+			return append(v.Call(args), reflect.Zero(_typeOfError))
+		},
+	).Interface()
+}
 
 // New returns a new Dependency Injection Graph
 func New() *Graph {
@@ -62,13 +89,21 @@ func (g *Graph) Register(c interface{}) error {
 
 	switch ctype.Kind() {
 	case reflect.Func:
-		if ctype.NumOut() != 1 {
+		if ctype.NumOut() == 0 || ctype.NumOut() > 2 {
 			return errReturnCount
+		}
+
+		if ctype.NumOut() == 2 && ctype.Out(1) != _typeOfError {
+			return errReturnErrKind
 		}
 
 		objType := ctype.Out(0)
 		if objType.Kind() != reflect.Ptr && objType.Kind() != reflect.Interface {
 			return errReturnKind
+		}
+
+		if ctype.NumOut() == 1 {
+			c = addErrorReturn(c)
 		}
 
 		return g.registerConstructor(c)
@@ -202,6 +237,7 @@ func (g *Graph) registerObject(o interface{}) error {
 	return nil
 }
 
+// c must be a function that returns the result type and an error
 func (g *Graph) registerConstructor(c interface{}) error {
 	ctype := reflect.TypeOf(c)
 	objType := ctype.Out(0)

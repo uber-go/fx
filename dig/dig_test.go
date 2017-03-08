@@ -153,6 +153,47 @@ func TestBasicRegisterResolve(t *testing.T) {
 	require.True(t, first == second, "Must point to the same object")
 }
 
+func TestConstructorErrors(t *testing.T) {
+	tests := []struct {
+		desc      string
+		registers []interface{}
+		wantErr   string
+	}{
+		{
+			desc: "success",
+			registers: []interface{}{
+				NewFlakyParent,
+				NewFlakyChild,
+			},
+		},
+		{
+			desc: "failure",
+			registers: []interface{}{
+				NewFlakyParent,
+				NewFlakyChildFailure,
+			},
+			wantErr: "unable to resolve **dig.FlakyParent: " +
+				"unable to resolve *dig.FlakyChild: " +
+				"great sadness",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.desc, func(t *testing.T) {
+			g := New()
+			require.NoError(t, g.RegisterAll(tt.registers...))
+
+			var p1 *FlakyParent
+			err := g.Resolve(&p1)
+			if tt.wantErr != "" {
+				require.EqualError(t, err, tt.wantErr)
+			} else {
+				require.NoError(t, err)
+			}
+		})
+	}
+}
+
 func TestRegisterAll(t *testing.T) {
 	t.Parallel()
 	g := New()
