@@ -1,5 +1,5 @@
-hash: b9efa311b80d1b35735be4ecbf92b209f644ae61c4f43cde11d31d9ae90fdc0f
-updated: 2017-03-08T14:16:30.167876792-05:00
+hash: b6585b2bbb2c7a38e93cdc9fcefe743a1bfa17fb15ba81ae7a8f2be37dd2cfe7
+updated: 2017-03-08T17:26:10.574906043-05:00
 imports:
 - name: github.com/apache/thrift
   version: 9549b25c77587b29be4e0b5c258221a4ed85d37a
@@ -93,7 +93,7 @@ imports:
   - version
   - wire
 - name: go.uber.org/yarpc
-  version: 827220ea65d8b8c4aabcd6c877aebf8e8509b57d
+  version: 6ad92c34d7e982d4bb7299f20e6a27652116cf5d
   subpackages:
   - api/encoding
   - api/middleware
@@ -108,6 +108,7 @@ imports:
   - internal/errors
   - internal/inboundmiddleware
   - internal/introspection
+  - internal/iopool
   - internal/net
   - internal/outboundmiddleware
   - internal/request
@@ -128,7 +129,7 @@ imports:
   - testutils
   - zapcore
 - name: golang.org/x/net
-  version: 7bf7a75e312ea2853f1050e8b1057b4949f90010
+  version: a6577fac2d73be281a500b310739095313165611
   subpackages:
   - context
   - context/ctxhttp
@@ -175,5 +176,7 @@ testImports:
   version: 1dba4b3954bc059efc3991ec364f9f9a35f597d2
 - name: github.com/yookoala/realpath
   version: c416d99ab5ed256fa30c1f3bab73152deb59bb69
-- name: go.uber.org/update-license
-  version: 5163ea7841f78158c4eab8c8de2a1755699162b5
+- name: go.uber.org/tools
+  version: 214b415e51a0d9f12ead771d4336aafc73555bd2
+  subpackages:
+  - update-license
