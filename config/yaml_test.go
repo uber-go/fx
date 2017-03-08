@@ -45,7 +45,7 @@ modules:
     bind: :28941
 `)
 
-func TestYamlSimple(t *testing.T) {
+func TestYAMLSimple(t *testing.T) {
 	t.Parallel()
 	provider := NewYAMLProviderFromBytes(yamlConfig1)
 
@@ -54,6 +54,39 @@ func TestYamlSimple(t *testing.T) {
 	assert.NotNil(t, c.Value())
 
 	assert.Equal(t, ":28941", c.AsString())
+}
+
+func TestYAMLEnvInterpolation(t *testing.T) {
+	t.Parallel()
+	defer env.Override(t, "OWNER_EMAIL", "hello@there.yasss")()
+
+	cfg := []byte(`
+name: some name here
+owner: ${OWNER_EMAIL}
+module:
+  fake:
+    number: ${FAKE_NUMBER:321}`)
+
+	p := NewYAMLProviderFromBytes(cfg)
+
+	num, ok := p.Get("module.fake.number").TryAsFloat()
+	require.True(t, ok)
+	require.Equal(t, float64(321), num)
+
+	owner := p.Get("owner").AsString()
+	require.Equal(t, "hello@there.yasss", owner)
+}
+
+func TestYAMLEnvInterpolationMissingDefault(t *testing.T) {
+	t.Parallel()
+
+	cfg := []byte(`
+name: some name here
+owner: ${OWNER_EMAIL}`)
+
+	require.Panics(t, func() {
+		NewYAMLProviderFromBytes(cfg)
+	})
 }
 
 type configStruct struct {
