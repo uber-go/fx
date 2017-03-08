@@ -41,8 +41,10 @@ type yamlConfigProvider struct {
 }
 
 var (
-	_envSeparator          = []byte(":")
-	_             Provider = &yamlConfigProvider{}
+	_envSeparator = []byte(":")
+	_emptyString  = []byte(`""`)
+
+	_ Provider = &yamlConfigProvider{}
 )
 
 func newYAMLProviderCore(files ...io.ReadCloser) Provider {
@@ -357,7 +359,7 @@ func interpolateEnvVars(data []byte) ([]byte, error) {
 		}
 
 		// return empty byte slices for "" as the default
-		if bytes.Compare(def, []byte(`""`)) == 0 {
+		if bytes.Compare(def, _emptyString) == 0 {
 			return nil
 		}
 
