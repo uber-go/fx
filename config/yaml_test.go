@@ -57,7 +57,6 @@ func TestYAMLSimple(t *testing.T) {
 }
 
 func TestYAMLEnvInterpolation(t *testing.T) {
-	t.Parallel()
 	defer env.Override(t, "OWNER_EMAIL", "hello@there.yasss")()
 
 	cfg := []byte(`
@@ -77,12 +76,10 @@ module:
 	require.Equal(t, "hello@there.yasss", owner)
 }
 
-func TestYAMLEnvInterpolationMissingDefault(t *testing.T) {
-	t.Parallel()
-
+func TestYAMLEnvInterpolationMissing(t *testing.T) {
 	cfg := []byte(`
 name: some name here
-owner: ${OWNER_EMAIL}`)
+email: ${EMAIL_ADDRESS}`)
 
 	require.Panics(t, func() {
 		NewYAMLProviderFromBytes(cfg)
@@ -138,7 +135,6 @@ func TestExtends(t *testing.T) {
 }
 
 func TestAppRoot(t *testing.T) {
-	t.Parallel()
 	cwd, err := os.Getwd()
 	assert.NoError(t, err)
 
