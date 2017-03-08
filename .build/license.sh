@@ -19,7 +19,7 @@ else
   DRY_OUTPUT="$(run_update_license --dry)"
   if [ -n "${DRY_OUTPUT}" ]; then
     echo "The following files do not have correct license headers."
-    echo "Please amend your commit by running make license."
+    echo "Please run make license and amend your commit."
     echo
     echo "${DRY_OUTPUT}"
     exit 1
