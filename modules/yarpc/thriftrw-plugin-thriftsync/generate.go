@@ -33,20 +33,21 @@ const newHandlerTemplate = `
 
 <$pkgname   := .HandlerPackageName>
 <$yarpcServerPath   := .YARPCServer>
+<$handlerStructName   := .HandlerStructName>
 package <$pkgname>
 
 <$context   := import "context">
 <$transport := import "go.uber.org/yarpc/api/transport">
 <$service   := import "go.uber.org/fx/service">
 
-type YARPCHandler struct{
+type <$handlerStructName> struct{
   host <$service>.Host
   // TODO: modify the <.Service.Name> handler with your suitable structure
 }
 
 // NewYARPCThriftHandler for your service
 func NewYARPCThriftHandler(host <$service>.Host) ([]<$transport>.Procedure, error) {
-  handler := &YARPCHandler{
+  handler := &<$handlerStructName>{
     host: host,
   }
   <$yarpcserver := import $yarpcServerPath>
@@ -56,7 +57,7 @@ func NewYARPCThriftHandler(host <$service>.Host) ([]<$transport>.Procedure, erro
 <$name := lower .Service.Name>
 <range .Service.Functions>
 
-func (h *YARPCHandler)<.Name>(ctx <$context>.Context, <range .Arguments> <lowerFirst .Name> <formatType .Type>, <end>)<if .ReturnType> (<formatType .ReturnType>, error) <else> error <end> {
+func (h *<$handlerStructName>)<.Name>(ctx <$context>.Context, <range .Arguments> <lowerFirst .Name> <formatType .Type>, <end>)<if .ReturnType> (<formatType .ReturnType>, error) <else> error <end> {
   // TODO: write your code here
   panic("To be implemented")
 }
