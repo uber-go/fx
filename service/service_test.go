@@ -28,17 +28,19 @@ import (
 
 	"go.uber.org/fx/config"
 	"go.uber.org/fx/testutils/metrics"
-	"go.uber.org/zap"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/uber-go/tally"
+	"go.uber.org/zap"
 )
 
 func TestServiceCreation(t *testing.T) {
 	r := metrics.NewTestStatsReporter()
 	r.CountersWG.Add(1)
-	scope, closer := tally.NewRootScope("", nil, r, 50*time.Millisecond, tally.DefaultSeparator)
+	opts := tally.ScopeOptions{Reporter: r}
+
+	scope, closer := tally.NewRootScope(opts, 50*time.Millisecond)
 	defer closer.Close()
 	svc, err := newManager(
 		WithModule(nopModuleProvider).
