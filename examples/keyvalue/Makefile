@@ -2,9 +2,6 @@
 
 kv/types.go: deps kv.thrift
 	$(ECHO_V)go generate
-	$(ECHO_V)go get go.uber.org/update-license
-	$(ECHO_V)update-license $(shell find kv -name '*.go')
-
 
 server/server: $(wildcard server/*.go) kv/types.go
 	$(ECHO_V)go build -o $@ ./$(dir $@)

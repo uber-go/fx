@@ -145,9 +145,18 @@ gendoc:
 		-not -path "./node_modules/*" | \
 		xargs -I% md-to-godoc -input=%
 
+.PHONY: genexamples
+genexamples:
+	@$(call label,Building examples)
+	@echo
+	$(ECHO_V)$(MAKE) -C examples/keyvalue ECHO_V=$(ECHO_V)
+
 .PHONY: license
 license:
 	$(ECHO_V)./.build/license.sh
+
+.PHONY: generate
+generate: gendoc genexamples license
 
 .PHONY: clean
 clean:
@@ -155,11 +164,6 @@ clean:
 	$(ECHO_V)find $(subst /...,,$(PKGS)) -name $(COVER_OUT) -delete
 	$(ECHO_V)rm -rf .bin
 
-.PHONY: generate
-generate: gendoc
-	@$(call label,Building examples)
-	@echo
-	$(ECHO_V)$(MAKE) -C examples/keyvalue ECHO_V=$(ECHO_V)
 
 .PHONY: examples
 examples:
