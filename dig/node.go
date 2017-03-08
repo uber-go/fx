@@ -85,6 +85,8 @@ func (n objNode) String() string {
 type funcNode struct {
 	node
 
+	// constructor must be a function that returns the result type and an
+	// error
 	constructor interface{}
 	deps        []interface{}
 }
@@ -116,18 +118,26 @@ func (n *funcNode) value(g *Graph) (reflect.Value, error) {
 		if node, ok := g.nodes[arg]; ok {
 			v, err := node.value(g)
 			if err != nil {
-				return reflect.Zero(n.objType), errors.Wrap(err, "dependency resolution failed")
+				return reflect.Zero(n.objType), errors.Wrapf(err, "unable to resolve %v", arg)
 			}
 			args[idx] = v
 		}
 	}
 
 	cv := reflect.ValueOf(n.constructor)
-	v := cv.Call(args)[0]
+
+	values := cv.Call(args)
+	v := values[0]
+
+	// If the function has two return values, the second one is an error.
+	var err error
+	if len(values) > 1 {
+		err, _ = values[1].Interface().(error)
+	}
+
 	n.cached = true
 	n.cachedValue = v
-
-	return v, nil
+	return v, err
 }
 
 func (n funcNode) dependencies() []interface{} {
