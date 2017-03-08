@@ -57,6 +57,7 @@ func TestYAMLSimple(t *testing.T) {
 }
 
 func TestYAMLEnvInterpolation(t *testing.T) {
+	t.Parallel()
 	defer env.Override(t, "OWNER_EMAIL", "hello@there.yasss")()
 
 	cfg := []byte(`
@@ -77,6 +78,8 @@ module:
 }
 
 func TestYAMLEnvInterpolationMissing(t *testing.T) {
+	t.Parallel()
+
 	cfg := []byte(`
 name: some name here
 email: ${EMAIL_ADDRESS}`)
@@ -135,6 +138,8 @@ func TestExtends(t *testing.T) {
 }
 
 func TestAppRoot(t *testing.T) {
+	t.Parallel()
+
 	cwd, err := os.Getwd()
 	assert.NoError(t, err)
 
