@@ -31,37 +31,13 @@ import (
 
 var (
 	errParamType     = errors.New("graph injection must be done through a pointer or a function")
-	errReturnCount   = errors.New("constructor function must return up to two values")
+	errReturnCount   = errors.New("constructor function must one or two values")
 	errReturnKind    = errors.New("constructor return type must be a pointer")
 	errReturnErrKind = errors.New("second return value of constructor must be error")
 	errArgKind       = errors.New("constructor arguments must be pointers")
 
 	_typeOfError = reflect.TypeOf((*error)(nil)).Elem()
 )
-
-// Wraps a function that returns a single value to return that value and a nil
-// error.
-func addErrorReturn(c interface{}) interface{} {
-	v := reflect.ValueOf(c)
-	t := v.Type()
-
-	if t.NumOut() != 1 {
-		panic(fmt.Sprintf("addErrorReturn called with invalid function: %v", t))
-	}
-
-	returnTypes := []reflect.Type{t.Out(0), _typeOfError}
-	argTypes := make([]reflect.Type, t.NumIn())
-	for i := 0; i < t.NumIn(); i++ {
-		argTypes[i] = t.In(i)
-	}
-
-	return reflect.MakeFunc(
-		reflect.FuncOf(argTypes, returnTypes, t.IsVariadic()),
-		func(args []reflect.Value) []reflect.Value {
-			return append(v.Call(args), reflect.Zero(_typeOfError))
-		},
-	).Interface()
-}
 
 // New returns a new Dependency Injection Graph
 func New() *Graph {
@@ -77,10 +53,11 @@ type Graph struct {
 	nodes map[interface{}]graphNode
 }
 
-// Register an object in the dependency graph
+// Register an object in the dependency graph.
 //
-// Provided argument must be a function that returns exactly one pointer argument
-// All arguments to the function must be pointers
+// The provided argument must be a function that accepts its dependencies as
+// arguments and returns a single result, which must be a pointer type.
+// The function may optionally return an error as a second result.
 func (g *Graph) Register(c interface{}) error {
 	g.Lock()
 	defer g.Unlock()
@@ -89,23 +66,20 @@ func (g *Graph) Register(c interface{}) error {
 
 	switch ctype.Kind() {
 	case reflect.Func:
-		if ctype.NumOut() == 0 || ctype.NumOut() > 2 {
+		switch ctype.NumOut() {
+		case 2:
+			if ctype.Out(1) != _typeOfError {
+				return errReturnErrKind
+			}
+			fallthrough
+		case 1:
+			objType := ctype.Out(0)
+			if objType.Kind() != reflect.Ptr && objType.Kind() != reflect.Interface {
+				return errReturnKind
+			}
+		default:
 			return errReturnCount
 		}
-
-		if ctype.NumOut() == 2 && ctype.Out(1) != _typeOfError {
-			return errReturnErrKind
-		}
-
-		objType := ctype.Out(0)
-		if objType.Kind() != reflect.Ptr && objType.Kind() != reflect.Interface {
-			return errReturnKind
-		}
-
-		if ctype.NumOut() == 1 {
-			c = addErrorReturn(c)
-		}
-
 		return g.registerConstructor(c)
 	case reflect.Ptr:
 		return g.registerObject(c)

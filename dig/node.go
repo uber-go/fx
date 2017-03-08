@@ -126,9 +126,14 @@ func (n *funcNode) value(g *Graph) (reflect.Value, error) {
 
 	cv := reflect.ValueOf(n.constructor)
 
-	vs := cv.Call(args)
-	v := vs[0]
-	err, _ := vs[1].Interface().(error)
+	values := cv.Call(args)
+	v := values[0]
+
+	// If the function has two return values, the second one is an error.
+	var err error
+	if len(values) > 1 {
+		err, _ = values[1].Interface().(error)
+	}
 
 	n.cached = true
 	n.cachedValue = v
