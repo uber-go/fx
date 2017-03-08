@@ -145,23 +145,33 @@ gendoc:
 		-not -path "./node_modules/*" | \
 		xargs -I% md-to-godoc -input=%
 
+.PHONY: genexamples
+genexamples:
+	@$(call label,Building examples)
+	@echo
+	$(ECHO_V)$(MAKE) -C examples/keyvalue ECHO_V=$(ECHO_V)
+
 .PHONY: license
 license:
 	$(ECHO_V)./.build/license.sh
+
+.PHONY: generate
+generate: gendoc genexamples license
 
 .PHONY: clean
 clean:
 	$(ECHO_V)rm -f $(COV_REPORT) $(COV_HTML) $(LINT_LOG) $(COV_TXT)
 	$(ECHO_V)find $(subst /...,,$(PKGS)) -name $(COVER_OUT) -delete
-	$(ECHO_V)rm -rf examples/keyvalue/kv/ .bin
+	$(ECHO_V)rm -rf .bin
+
 
 .PHONY: examples
 examples:
-	@$(call label,Building examples)
-	@echo
-	$(ECHO_V)$(MAKE) -C examples/keyvalue ECHO_V=$(ECHO_V)
 	$(ECHO_V)go test ./examples/simple
 	$(ECHO_V)go test ./examples/dig
+
+.PHONY: ci
+ci: test lint examples
 
 .PHONY: vendor
 vendor:
