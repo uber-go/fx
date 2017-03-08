@@ -6,6 +6,7 @@ include $(SUPPORT_FILES)/colors.mk
 include $(SUPPORT_FILES)/deps.mk
 include $(SUPPORT_FILES)/flags.mk
 include $(SUPPORT_FILES)/verbosity.mk
+include $(SUPPORT_FILES)/lint.mk
 
 .PHONY: all
 all: lint test
@@ -137,15 +138,16 @@ dockerlint: dockerbuild
 dockertest: dockerbuild
 	docker run $(DOCKER_IMAGE) make test
 
-include $(SUPPORT_FILES)/lint.mk
-include $(SUPPORT_FILES)/licence.mk
-
 .PHONY: gendoc
 gendoc:
 	$(ECHO_V)find . -name README.md \
 		-not -path "./vendor/*" \
 		-not -path "./node_modules/*" | \
 		xargs -I% md-to-godoc -input=%
+
+.PHONY: license
+license:
+	$(ECHO_V)./.build/license.sh
 
 .PHONY: clean
 clean:
