@@ -1,5 +1,5 @@
-hash: f5c7c493baa0a29039c147f7244c37d573f95eee31ee448577a64024dabd6770
-updated: 2017-02-27T09:12:47.84121939-08:00
+hash: 01601165cbc93d3ed44c52ca798e6b647b4c20ef929a554d753e72b12d0eb8ff
+updated: 2017-03-08T13:35:33.408205361-05:00
 imports:
 - name: github.com/apache/thrift
   version: 9549b25c77587b29be4e0b5c258221a4ed85d37a
@@ -46,9 +46,9 @@ imports:
 - name: github.com/uber-go/atomic
   version: e682c1008ac17bf26d2e4b5ad6cdd08520ed0b22
 - name: github.com/uber-go/tally
-  version: 43c1379c0577ac1eb74f9f3869cea07191c9992b
+  version: 34be4a565ce6286a0ba91a54a81be3f6181ca2e2
 - name: github.com/uber/jaeger-client-go
-  version: a1c7be77e82c1ccd832ace5c4c04b25700d90b1f
+  version: 2505ffc229cbe642a1af9387e8251f7e699c2f6e
   subpackages:
   - config
   - internal/spanlog
@@ -66,7 +66,7 @@ imports:
   - metrics
   - metrics/tally
 - name: github.com/uber/tchannel-go
-  version: 79387824978f91318be3bfb43ae12e04c38cfe97
+  version: 2feb388c9d0c0303f98481d1621308d634093ffb
   subpackages:
   - internal/argreader
   - relay
@@ -93,7 +93,7 @@ imports:
   - version
   - wire
 - name: go.uber.org/yarpc
-  version: 47ebfe9337d943e637cc1748254727ec1fa89bf4
+  version: 827220ea65d8b8c4aabcd6c877aebf8e8509b57d
   subpackages:
   - api/encoding
   - api/middleware
@@ -102,6 +102,7 @@ imports:
   - encoding/thrift
   - encoding/thrift/internal
   - internal
+  - internal/buffer
   - internal/clientconfig
   - internal/encoding
   - internal/errors
@@ -126,12 +127,12 @@ imports:
   - testutils
   - zapcore
 - name: golang.org/x/net
-  version: bb807669a61aca6092d8137da1fab2150bb96ad7
+  version: 7bf7a75e312ea2853f1050e8b1057b4949f90010
   subpackages:
   - context
   - context/ctxhttp
 - name: golang.org/x/tools
-  version: 496819729719f9d07692195e0a94d6edd2251389
+  version: 03d3934baf81f2387349b58864cb98b6fe7cf85e
   subpackages:
   - go/ast/astutil
 - name: gopkg.in/yaml.v2
@@ -173,3 +174,5 @@ testImports:
   version: 1dba4b3954bc059efc3991ec364f9f9a35f597d2
 - name: github.com/yookoala/realpath
   version: c416d99ab5ed256fa30c1f3bab73152deb59bb69
+- name: go.uber.org/update-license
+  version: 5163ea7841f78158c4eab8c8de2a1755699162b5
