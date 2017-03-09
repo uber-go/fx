@@ -44,7 +44,8 @@ var (
 	_envSeparator = []byte(":")
 	_emptyString  = []byte(`""`)
 
-	_ Provider = &yamlConfigProvider{}
+	// ${VAR_NAME:default} or ${VAR_NAME}
+	_interpolationRegex = regexp.MustCompile(`\$\{\w+:?[^}]*}`)
 )
 
 func newYAMLProviderCore(files ...io.ReadCloser) Provider {
@@ -328,11 +329,8 @@ func unmarshalYAMLValue(reader io.ReadCloser, value interface{}) error {
 //
 // TODO: what if someone wanted a literal ${FOO} in config? need a small escape hatch
 func interpolateEnvVars(data []byte) ([]byte, error) {
-	// ${VAR_NAME:default} or ${VAR_NAME}
-	reg := regexp.MustCompile(`\$\{\w+:?[^}]*}`)
-
-	var regErr error
-	data = reg.ReplaceAllFunc(data, func(in []byte) []byte {
+	var errs []string
+	data = _interpolationRegex.ReplaceAllFunc(data, func(in []byte) []byte {
 		// remove ${ and }, just look inside the braces
 		valAndMaybeDefault := in[2 : len(in)-1]
 
@@ -347,14 +345,14 @@ func interpolateEnvVars(data []byte) ([]byte, error) {
 
 		// value not found in the env, lets check if there is a default
 		if len(split) < 2 {
-			regErr = fmt.Errorf("environment variable %s not found and default is not provided", key)
+			errs = append(errs, fmt.Sprintf("environment variable %s not found and default is not provided", key))
 			return in
 		}
 
 		// return the default
 		def := split[1]
-		if len(def) < 1 {
-			regErr = fmt.Errorf(`default is empty for %s (use "" for empty string)`, key)
+		if len(def) == 0 {
+			errs = append(errs, fmt.Sprintf(`default is empty for %s (use "" for empty string)`, key))
 			return in
 		}
 
@@ -366,10 +364,9 @@ func interpolateEnvVars(data []byte) ([]byte, error) {
 		return def
 	})
 
-	if regErr != nil {
-		return nil, regErr
+	if len(errs) > 0 {
+		return nil, errors.New(strings.Join(errs, ","))
 	}
-
 	return data, nil
 }
 
