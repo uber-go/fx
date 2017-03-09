@@ -254,7 +254,7 @@ func (c *dispatcherController) Start(host service.Host, statsClient *statsClient
 
 		var cfg yarpc.Config
 		var err error
-		if cfg, err = c.createConfig(host.Name()); err != nil {
+		if cfg, err = c.mergeConfig(host.Name()); err != nil {
 			c.startError = err
 			return
 		}
@@ -336,9 +336,8 @@ func (c *dispatcherController) addDefaultMiddleware(host service.Host, statsClie
 	c.addConfig(cfg)
 }
 
-// Create the YARPC config : transports and middleware are going to be shared.
-// The name comes from the first config in the collection and is the same among all configs.
-func (c *dispatcherController) createConfig(advertiseName string) (conf yarpc.Config, err error) {
+// Merge all YARPC config in the controller with the service name and middleware
+func (c *dispatcherController) mergeConfig(advertiseName string) (conf yarpc.Config, err error) {
 	c.RLock()
 	defer c.RUnlock()
 

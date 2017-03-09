@@ -27,7 +27,7 @@ import (
 
 // ModuleProvider provides Modules.
 type ModuleProvider interface {
-	// DefaultName returns the module name
+	// DefaultName returns the default module name
 	DefaultName() string
 	// Create a new Module. The name of the Host and the scoping
 	// of associated functions on the Host will be done using a name

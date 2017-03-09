@@ -385,25 +385,29 @@ func (m *manager) startModules() []error {
 	// calls to return
 	wg.Add(len(m.moduleWrappers))
 	for _, mod := range m.moduleWrappers {
-		go func(modWrapper *moduleWrapper) {
-			if !modWrapper.IsRunning() {
+		go func(mw *moduleWrapper) {
+			if !mw.IsRunning() {
 				errC := make(chan error, 1)
-				go func() { errC <- modWrapper.Start() }()
+				go func() { errC <- mw.Start() }()
 				select {
 				case err := <-errC:
 					if err != nil {
-						zap.L().Error("Error received while starting module", zap.String("module", modWrapper.Name()), zap.Error(err))
+						zap.L().Error(
+							"Error received while starting module",
+							zap.String("module", mw.Name()),
+							zap.Error(err),
+						)
 						lock.Lock()
 						results = append(results, err)
 						lock.Unlock()
 					} else {
-						zap.L().Info("Module started up cleanly", zap.String("module", modWrapper.Name()))
+						zap.L().Info("Module started up cleanly", zap.String("module", mw.Name()))
 					}
 				case <-time.After(defaultStartupWait):
 					lock.Lock()
 					results = append(
 						results,
-						fmt.Errorf("module: %s didn't start after %v", modWrapper.Name(), defaultStartupWait),
+						fmt.Errorf("module: %s didn't start after %v", mw.Name(), defaultStartupWait),
 					)
 					lock.Unlock()
 				}

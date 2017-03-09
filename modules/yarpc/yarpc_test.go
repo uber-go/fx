@@ -121,7 +121,7 @@ func TestBindToBadPortReturnsError(t *testing.T) {
 func TestMergeOfEmptyConfigCollectionReturnsError(t *testing.T) {
 	t.Parallel()
 	c := dispatcherController{}
-	_, err := c.createConfig("test")
+	_, err := c.mergeConfig("test")
 	assert.EqualError(t, err, "unable to merge empty configs")
 	host := service.NopHost()
 	assert.EqualError(t, c.Start(host, newStatsClient(host.Metrics())), err.Error())
