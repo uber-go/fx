@@ -27,8 +27,8 @@ import (
 
 // ModuleProvider provides Modules.
 type ModuleProvider interface {
-	// Name returns the module name
-	Name() string
+	// DefaultName returns the module name
+	DefaultName() string
 	// Create a new Module. The name of the Host and the scoping
 	// of associated functions on the Host will be done using a name
 	// provided by a ModuleOption, or by the DefaultName on this ModuleProvider.
@@ -79,7 +79,7 @@ func WithRole(role string) ModuleOptionFn {
 	}
 }
 
-// moduleOption specifies options for module name and role
+// moduleOption specifies options for service name and role
 type moduleOption struct {
 	ServiceName string
 	Roles       []string
@@ -95,7 +95,7 @@ type moduleProvider struct {
 	createFunc func(Host) (Module, error)
 }
 
-func (m *moduleProvider) Name() string                     { return m.name }
+func (m *moduleProvider) DefaultName() string              { return m.name }
 func (m *moduleProvider) Create(host Host) (Module, error) { return m.createFunc(host) }
 
 type moduleWrapper struct {
@@ -141,7 +141,7 @@ func newModuleWrapper(
 		return nil, nil
 	}
 	return &moduleWrapper{
-		name:       moduleProvider.Name(),
+		name:       moduleProvider.DefaultName(),
 		module:     module,
 		scopedHost: scopedHost,
 	}, nil

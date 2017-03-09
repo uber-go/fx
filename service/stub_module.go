@@ -39,8 +39,8 @@ func NewStubModuleProvider(name string, stubModule *StubModule) *StubModuleProvi
 	return &StubModuleProvider{NameVal: name, CreateVal: NewStubModuleCreateFunc(stubModule)}
 }
 
-// Name returns the module name
-func (p *StubModuleProvider) Name() string {
+// DefaultName returns the module name
+func (p *StubModuleProvider) DefaultName() string {
 	return p.NameVal
 }
 
