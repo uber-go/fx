@@ -101,6 +101,14 @@ telephone: ${SUPPORT_TEL:}`)
 	})
 }
 
+func TestYAMLEnvInterpolationWithColon(t *testing.T) {
+	t.Parallel()
+
+	cfg := []byte(`fullValue: ${MISSING_ENV:this:is:my:value}`)
+	p := NewYAMLProviderFromBytes(cfg)
+	require.Equal(t, "this:is:my:value", p.Get("fullValue").AsString())
+}
+
 func TestYAMLEnvInterpolationEmptyString(t *testing.T) {
 	t.Parallel()
 

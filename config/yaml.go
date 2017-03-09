@@ -350,7 +350,7 @@ func interpolateEnvVars(data []byte) ([]byte, error) {
 		}
 
 		// return the default
-		def := split[1]
+		def := bytes.Join(split[1:], _envSeparator)
 		if len(def) == 0 {
 			errs = append(errs, fmt.Sprintf(`default is empty for %s (use "" for empty string)`, key))
 			return in
