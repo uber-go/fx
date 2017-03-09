@@ -98,7 +98,6 @@ type Module struct {
 type ModuleOptionFn func(*moduleOption) error
 
 type moduleOption struct {
-	service.ModuleOption
 	unaryInbounds  []middleware.UnaryInbound
 	onewayInbounds []middleware.OnewayInbound
 }

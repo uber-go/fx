@@ -50,11 +50,11 @@ func ModuleProviderFromFunc(createFunc func(Host) (Module, error)) ModuleProvide
 }
 
 // ModuleOptionFn is a function that configures module creation.
-type ModuleOptionFn func(*ModuleOption) error
+type ModuleOptionFn func(*moduleOption) error
 
 // WithName will override the name given by the ModuleProvider.
 func WithName(name string) ModuleOptionFn {
-	return func(o *ModuleOption) error {
+	return func(o *moduleOption) error {
 		o.ServiceName = name
 		return nil
 	}
@@ -64,7 +64,7 @@ func WithName(name string) ModuleOptionFn {
 //
 // If the role was already added, this will be a no-op.
 func WithRole(role string) ModuleOptionFn {
-	return func(o *ModuleOption) error {
+	return func(o *moduleOption) error {
 		if role == "" {
 			return nil
 		}
@@ -78,8 +78,8 @@ func WithRole(role string) ModuleOptionFn {
 	}
 }
 
-// ModuleOption specifies options for module name and role
-type ModuleOption struct {
+// moduleOption specifies options for module name and role
+type moduleOption struct {
 	ServiceName string
 	Roles       []string
 }
@@ -98,7 +98,7 @@ func (m *moduleProvider) Create(host Host) (Module, error) { return m.createFunc
 type moduleWrapper struct {
 	name       string
 	module     Module
-	scopedHost *ScopedHost
+	scopedHost *scopedHost
 	isRunning  bool
 	lock       sync.RWMutex
 }
@@ -111,7 +111,7 @@ func newModuleWrapper(
 	if moduleProvider == nil {
 		return nil, nil
 	}
-	moduleOption := &ModuleOption{}
+	moduleOption := &moduleOption{}
 	for _, option := range options {
 		if err := option(moduleOption); err != nil {
 			return nil, err
@@ -129,7 +129,7 @@ func newModuleWrapper(
 	} else {
 		roles = host.Roles()
 	}
-	scopedHost := &ScopedHost{Host: host, name: name, roles: roles}
+	scopedHost := &scopedHost{Host: host, name: name, roles: roles}
 	module, err := moduleProvider.Create(scopedHost)
 	if err != nil {
 		return nil, err
@@ -177,15 +177,15 @@ func (m *moduleWrapper) IsRunning() bool {
 	return m.isRunning
 }
 
-// ScopedHost is a host scoped to the module
-type ScopedHost struct {
+// scopedHost is a host scoped to the module
+type scopedHost struct {
 	Host
 	name  string
 	roles []string
 }
 
-func newScopedHost(host Host, name string, roles ...string) *ScopedHost {
-	return &ScopedHost{
+func newScopedHost(host Host, name string, roles ...string) *scopedHost {
+	return &scopedHost{
 		host,
 		name,
 		roles,
@@ -193,11 +193,11 @@ func newScopedHost(host Host, name string, roles ...string) *ScopedHost {
 }
 
 // Name returns the scoped service name
-func (sh *ScopedHost) Name() string {
+func (sh *scopedHost) Name() string {
 	return sh.name
 }
 
 // Roles returns the roles for the module
-func (sh *ScopedHost) Roles() []string {
+func (sh *scopedHost) Roles() []string {
 	return sh.roles
 }
