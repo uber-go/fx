@@ -59,6 +59,7 @@ type Host interface {
 	Observer() Observer
 	Config() config.Provider
 	Tracer() opentracing.Tracer
+	ModuleName() string
 }
 
 // A HostContainer is meant to be embedded in a LifecycleObserver

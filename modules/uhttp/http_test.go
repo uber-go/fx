@@ -146,9 +146,9 @@ func withModule(
 	expectError bool,
 	fn func(*Module),
 ) {
-	host, err := service.NewScopedHost(service.NopHost(), "http")
+	host, err := service.NewScopedHost(service.NopHost(), "uhttp", "http")
 	require.NoError(t, err)
-	mod, err := newModule("uhttp", host, hookup, moduleOptions...)
+	mod, err := newModule(host, hookup, moduleOptions...)
 	if expectError {
 		require.Error(t, err, "Expected error instantiating module")
 		fn(nil)

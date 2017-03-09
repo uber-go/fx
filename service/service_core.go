@@ -92,6 +92,7 @@ type serviceCore struct {
 	scopeMux       sync.Mutex
 	standardConfig serviceConfig
 	state          State
+	moduleName     string
 }
 
 var _ Host = &serviceCore{}
@@ -102,6 +103,10 @@ func (s *serviceCore) AuthClient() auth.Client {
 
 func (s *serviceCore) Name() string {
 	return s.standardConfig.Name
+}
+
+func (s *serviceCore) ModuleName() string {
+	return s.moduleName
 }
 
 func (s *serviceCore) Description() string {

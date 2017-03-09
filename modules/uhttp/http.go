@@ -85,14 +85,12 @@ type GetHandlersFunc func(service service.Host) []RouteHandler
 
 // New returns a new HTTP ModuleProvider.
 func New(hookup GetHandlersFunc, options ...ModuleOption) service.ModuleProvider {
-	modName := "uhttp"
-	return service.ModuleProviderFromFunc(modName, func(host service.Host) (service.Module, error) {
-		return newModule(modName, host, hookup, options...)
+	return service.ModuleProviderFromFunc("uhttp", func(host service.Host) (service.Module, error) {
+		return newModule(host, hookup, options...)
 	})
 }
 
 func newModule(
-	modName string,
 	host service.Host,
 	getHandlers GetHandlersFunc,
 	options ...ModuleOption,
@@ -108,8 +106,8 @@ func newModule(
 		Port:    defaultPort,
 		Timeout: defaultTimeout,
 	}
-	log := ulog.Logger(context.Background()).With(zap.String("module", modName))
-	if err := host.Config().Scope("modules").Get(modName).PopulateStruct(&cfg); err != nil {
+	log := ulog.Logger(context.Background()).With(zap.String("module", host.ModuleName()))
+	if err := host.Config().Scope("modules").Get(host.ModuleName()).PopulateStruct(&cfg); err != nil {
 		log.Error("Error loading http module configuration", zap.Error(err))
 	}
 	module := &Module{

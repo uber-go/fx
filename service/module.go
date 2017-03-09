@@ -81,13 +81,14 @@ func WithRole(role string) ModuleOption {
 
 // moduleOptions specifies options for service name and role
 type moduleOptions struct {
+	ModuleName  string
 	ServiceName string
 	Roles       []string
 }
 
 // NewScopedHost returns a new Host scoped to a module. This should generally be used for testing.
-func NewScopedHost(host Host, name string, roles ...string) (Host, error) {
-	return newScopedHost(host, name, roles...), nil
+func NewScopedHost(host Host, moduleName, serviceName string, roles ...string) (Host, error) {
+	return newScopedHost(host, moduleName, serviceName, roles...), nil
 }
 
 type moduleProvider struct {
@@ -122,6 +123,9 @@ func newModuleWrapper(
 	}
 	var name string
 	var roles []string
+	if moduleOptions.ModuleName == "" {
+		moduleOptions.ModuleName = moduleProvider.DefaultName()
+	}
 	if moduleOptions.ServiceName != "" {
 		name = moduleOptions.ServiceName
 	} else {
@@ -141,7 +145,7 @@ func newModuleWrapper(
 		return nil, nil
 	}
 	return &moduleWrapper{
-		name:       moduleProvider.DefaultName(),
+		name:       moduleOptions.ModuleName,
 		module:     module,
 		scopedHost: scopedHost,
 	}, nil
@@ -185,13 +189,14 @@ type scopedHost struct {
 	Host
 	serviceName string
 	roles       []string
-	modName     string
+	moduleName  string
 }
 
-func newScopedHost(host Host, serviceName string, roles ...string) *scopedHost {
+func newScopedHost(host Host, moduleName string, serviceName string, roles ...string) *scopedHost {
 	return &scopedHost{
 		Host:        host,
 		serviceName: serviceName,
+		moduleName:  moduleName,
 		roles:       roles,
 	}
 }
@@ -199,6 +204,11 @@ func newScopedHost(host Host, serviceName string, roles ...string) *scopedHost {
 // Name returns the scoped service name
 func (sh *scopedHost) Name() string {
 	return sh.serviceName
+}
+
+// Name returns the scoped module name
+func (sh *scopedHost) ModuleName() string {
+	return sh.moduleName
 }
 
 // Roles returns the roles for the module
