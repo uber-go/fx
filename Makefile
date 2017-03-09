@@ -135,7 +135,7 @@ dockerbuild:
 
 .PHONY: dockerrun
 dockerrun: dockerbuild
-	docker run $(DOCKER_IMAGE) make $(DOCKER_MAKE_CMD)
+	docker run -e V -e COVERMODE $(DOCKER_IMAGE) make $(DOCKER_MAKE_CMD)
 
 .PHONY: gendoc
 gendoc:
