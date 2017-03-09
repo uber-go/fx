@@ -14,7 +14,10 @@ all: lint test
 
 COV_REPORT := overalls.coverprofile
 
-DOCKER_IMAGE := uber/fx
+DOCKER_MAKE_CMD ?= test
+DOCKER_GO_VERSION ?= 1.8
+DOCKER_IMAGE := uber/fx-$(DOCKER_GO_VERSION)
+DOCKERFILE := Dockerfile.$(DOCKER_GO_VERSION)
 
 # all .go files that don't exist in hidden directories
 ALL_SRC := $(shell find . -name "*.go" | grep -v -e vendor \
@@ -128,15 +131,11 @@ benchreset:
 
 .PHONY: dockerbuild
 dockerbuild:
-	docker build -t $(DOCKER_IMAGE) .
+	docker build -t $(DOCKER_IMAGE) -f $(DOCKERFILE) .
 
-.PHONY: dockerlint
-dockerlint: dockerbuild
-	docker run $(DOCKER_IMAGE) make lint
-
-.PHONY: dockertest
-dockertest: dockerbuild
-	docker run $(DOCKER_IMAGE) make test
+.PHONY: dockerrun
+dockerrun: dockerbuild
+	docker run $(DOCKER_IMAGE) make $(DOCKER_MAKE_CMD)
 
 .PHONY: gendoc
 gendoc:
