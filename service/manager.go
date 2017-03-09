@@ -266,7 +266,7 @@ func (m *manager) shutdown(err error, reason string, exitCode *int) (bool, error
 	return true, err
 }
 
-func (m *manager) addModule(provider ModuleProvider, options ...ModuleOption) error {
+func (m *manager) addModule(provider ModuleProvider, options ...ModuleOptionFn) error {
 	if m.locked {
 		return fmt.Errorf("can't add module: service already started")
 	}
@@ -385,25 +385,25 @@ func (m *manager) startModules() []error {
 	// calls to return
 	wg.Add(len(m.moduleWrappers))
 	for _, mod := range m.moduleWrappers {
-		go func(m *moduleWrapper) {
-			if !m.IsRunning() {
+		go func(modWrapper *moduleWrapper) {
+			if !modWrapper.IsRunning() {
 				errC := make(chan error, 1)
-				go func() { errC <- m.Start() }()
+				go func() { errC <- modWrapper.Start() }()
 				select {
 				case err := <-errC:
 					if err != nil {
-						zap.L().Error("Error received while starting module", zap.String("module", m.Name()), zap.Error(err))
+						zap.L().Error("Error received while starting module", zap.String("module", modWrapper.Name()), zap.Error(err))
 						lock.Lock()
 						results = append(results, err)
 						lock.Unlock()
 					} else {
-						zap.L().Info("Module started up cleanly", zap.String("module", m.Name()))
+						zap.L().Info("Module started up cleanly", zap.String("module", modWrapper.Name()))
 					}
 				case <-time.After(defaultStartupWait):
 					lock.Lock()
 					results = append(
 						results,
-						fmt.Errorf("module: %s didn't start after %v", m.Name(), defaultStartupWait),
+						fmt.Errorf("module: %s didn't start after %v", modWrapper.Name(), defaultStartupWait),
 					)
 					lock.Unlock()
 				}

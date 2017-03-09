@@ -42,7 +42,7 @@ func TestNew_OK(t *testing.T) {
 	dale := New(okCreate)
 	cfg := []byte(`
 modules:
-  hello:
+  yarpc:
     inbounds:
      - tchannel:
          port: 0
@@ -119,7 +119,7 @@ func TestBindToBadPortReturnsError(t *testing.T) {
 func TestMergeOfEmptyConfigCollectionReturnsError(t *testing.T) {
 	t.Parallel()
 	c := dispatcherController{}
-	_, err := c.mergeConfigs("test")
+	_, err := c.createConfig("test")
 	assert.EqualError(t, err, "unable to merge empty configs")
 	host := service.NopHost()
 	assert.EqualError(t, c.Start(host, newStatsClient(host.Metrics())), err.Error())

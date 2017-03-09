@@ -55,6 +55,8 @@ const (
 
 	// default healthcheck endpoint
 	healthPath = "/health"
+
+	_modName = "uhttp"
 )
 
 var _ service.Module = &Module{}
@@ -84,8 +86,8 @@ type Config struct {
 type GetHandlersFunc func(service service.Host) []RouteHandler
 
 // New returns a new HTTP ModuleProvider.
-func New(hookup GetHandlersFunc, options ...ModuleOption) service.ModuleProvider {
-	return service.ModuleProviderFromFunc("http", func(host service.Host) (service.Module, error) {
+func New(hookup GetHandlersFunc, options ...ModuleOptionFn) service.ModuleProvider {
+	return service.ModuleProviderFromFunc(func(host service.Host) (service.Module, error) {
 		return newModule(host, hookup, options...)
 	})
 }
@@ -93,11 +95,11 @@ func New(hookup GetHandlersFunc, options ...ModuleOption) service.ModuleProvider
 func newModule(
 	host service.Host,
 	getHandlers GetHandlersFunc,
-	options ...ModuleOption,
+	options ...ModuleOptionFn,
 ) (*Module, error) {
-	moduleOptions := &moduleOptions{}
+	moduleOption := &moduleOption{}
 	for _, option := range options {
-		if err := option(moduleOptions); err != nil {
+		if err := option(moduleOption); err != nil {
 			return nil, err
 		}
 	}
@@ -106,8 +108,8 @@ func newModule(
 		Port:    defaultPort,
 		Timeout: defaultTimeout,
 	}
-	log := ulog.Logger(context.Background()).With(zap.String("module", host.Name()))
-	if err := host.Config().Scope("modules").Get(host.Name()).PopulateStruct(&cfg); err != nil {
+	log := ulog.Logger(context.Background()).With(zap.String("module", _modName))
+	if err := host.Config().Scope("modules").Get(_modName).PopulateStruct(&cfg); err != nil {
 		log.Error("Error loading http module configuration", zap.Error(err))
 	}
 	module := &Module{
@@ -117,7 +119,7 @@ func newModule(
 		config:   cfg,
 		log:      log,
 	}
-	module.mcb = module.mcb.AddMiddleware(moduleOptions.inboundMiddleware...)
+	module.mcb = module.mcb.AddMiddleware(moduleOption.inboundMiddleware...)
 	return module, nil
 }
 

@@ -47,6 +47,7 @@ var (
 	// Function to start a dispatcher
 	_starterFn                = defaultYARPCStarter
 	_          service.Module = &Module{}
+	_modName                  = "yarpc"
 )
 
 // DispatcherFn allows override a dispatcher creation, e.g. if it is embedded in another struct.
@@ -73,8 +74,8 @@ func RegisterStarter(startFn StarterFn) {
 type ServiceCreateFunc func(svc service.Host) ([]transport.Procedure, error)
 
 // New creates a YARPC Module from a service func
-func New(hookup ServiceCreateFunc, options ...ModuleOption) service.ModuleProvider {
-	return service.ModuleProviderFromFunc("yarpc", func(host service.Host) (service.Module, error) {
+func New(hookup ServiceCreateFunc, options ...ModuleOptionFn) service.ModuleProvider {
+	return service.ModuleProviderFromFunc(func(host service.Host) (service.Module, error) {
 		return newModule(host, hookup, options...)
 	})
 }
@@ -93,21 +94,27 @@ type Module struct {
 	controller  *dispatcherController
 }
 
-// ModuleOption is a function that configures module creation.
-type ModuleOption func(*moduleOptions) error
+// ModuleOptionFn is a function that configures module creation.
+type ModuleOptionFn func(*moduleOption) error
+
+type moduleOption struct {
+	service.ModuleOption
+	unaryInbounds  []middleware.UnaryInbound
+	onewayInbounds []middleware.OnewayInbound
+}
 
 // WithInboundMiddleware adds custom YARPC inboundMiddleware to the module
-func WithInboundMiddleware(i ...middleware.UnaryInbound) ModuleOption {
-	return func(moduleOptions *moduleOptions) error {
-		moduleOptions.unaryInbounds = append(moduleOptions.unaryInbounds, i...)
+func WithInboundMiddleware(i ...middleware.UnaryInbound) ModuleOptionFn {
+	return func(moduleOption *moduleOption) error {
+		moduleOption.unaryInbounds = append(moduleOption.unaryInbounds, i...)
 		return nil
 	}
 }
 
 // WithOnewayInboundMiddleware adds custom YARPC inboundMiddleware to the module
-func WithOnewayInboundMiddleware(i ...middleware.OnewayInbound) ModuleOption {
-	return func(moduleOptions *moduleOptions) error {
-		moduleOptions.onewayInbounds = append(moduleOptions.onewayInbounds, i...)
+func WithOnewayInboundMiddleware(i ...middleware.OnewayInbound) ModuleOptionFn {
+	return func(moduleOption *moduleOption) error {
+		moduleOption.onewayInbounds = append(moduleOption.onewayInbounds, i...)
 		return nil
 	}
 }
@@ -117,20 +124,20 @@ func WithOnewayInboundMiddleware(i ...middleware.OnewayInbound) ModuleOption {
 func newModule(
 	host service.Host,
 	reg ServiceCreateFunc,
-	options ...ModuleOption,
+	options ...ModuleOptionFn,
 ) (*Module, error) {
-	moduleOptions := &moduleOptions{}
+	moduleOption := &moduleOption{}
 	for _, option := range options {
-		if err := option(moduleOptions); err != nil {
+		if err := option(moduleOption); err != nil {
 			return nil, err
 		}
 	}
 	module := &Module{
 		host:        host,
 		statsClient: newStatsClient(host.Metrics()),
-		log:         ulog.Logger(context.Background()).With(zap.String("module", host.Name())),
+		log:         ulog.Logger(context.Background()).With(zap.String("module", _modName)),
 	}
-	if err := host.Config().Scope("modules").Get(host.Name()).PopulateStruct(&module.config); err != nil {
+	if err := host.Config().Scope("modules").Get(_modName).PopulateStruct(&module.config); err != nil {
 		return nil, errs.Wrap(err, "can't read inbounds")
 	}
 
@@ -140,8 +147,8 @@ func newModule(
 		return nil, errs.Wrap(err, "can't process inbounds")
 	}
 	module.config.transports.inbounds = transportsIn
-	module.config.inboundMiddleware = moduleOptions.unaryInbounds
-	module.config.onewayInboundMiddleware = moduleOptions.onewayInbounds
+	module.config.inboundMiddleware = moduleOption.unaryInbounds
+	module.config.onewayInboundMiddleware = moduleOption.onewayInbounds
 
 	// Try to resolve a controller first
 	// TODO(alsam) use dig options when available, because we can overwrite the controller in case of multiple
@@ -249,7 +256,7 @@ func (c *dispatcherController) Start(host service.Host, statsClient *statsClient
 
 		var cfg yarpc.Config
 		var err error
-		if cfg, err = c.mergeConfigs(host.Name()); err != nil {
+		if cfg, err = c.createConfig(host.Name()); err != nil {
 			c.startError = err
 			return
 		}
@@ -331,9 +338,9 @@ func (c *dispatcherController) addDefaultMiddleware(host service.Host, statsClie
 	c.addConfig(cfg)
 }
 
-// Merge all the YARPC configs in the collection: transports and middleware are going to be shared.
+// Create the YARPC config : transports and middleware are going to be shared.
 // The name comes from the first config in the collection and is the same among all configs.
-func (c *dispatcherController) mergeConfigs(name string) (conf yarpc.Config, err error) {
+func (c *dispatcherController) createConfig(advertiseName string) (conf yarpc.Config, err error) {
 	c.RLock()
 	defer c.RUnlock()
 
@@ -342,7 +349,7 @@ func (c *dispatcherController) mergeConfigs(name string) (conf yarpc.Config, err
 		return conf, errors.New("unable to merge empty configs")
 	}
 
-	conf.Name = name
+	conf.Name = advertiseName
 
 	// Collect all Inbounds and middleware from all configs
 	var inboundMiddleware []middleware.UnaryInbound
@@ -406,9 +413,4 @@ type yarpcConfig struct {
 
 	transports transports
 	Inbounds   []Inbound
-}
-
-type moduleOptions struct {
-	unaryInbounds  []middleware.UnaryInbound
-	onewayInbounds []middleware.OnewayInbound
 }

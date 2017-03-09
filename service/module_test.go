@@ -27,10 +27,11 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+var _nopHostName = "dummy"
+
 func TestModuleOptions(t *testing.T) {
 	for _, test := range []struct {
 		description   string
-		name          string
 		nameOption    string
 		expectedName  string
 		roles         []string
@@ -38,19 +39,16 @@ func TestModuleOptions(t *testing.T) {
 	}{
 		{
 			description:  "TestNewScopedHostNoOptions",
-			name:         "hello",
-			expectedName: "hello",
+			expectedName: _nopHostName,
 		},
 		{
 			description:  "TestNewScopedHostWithName",
-			name:         "hello",
-			nameOption:   "hello2",
-			expectedName: "hello2",
+			nameOption:   "hello",
+			expectedName: "hello",
 		},
 		{
 			description:  "TestNewScopedHostWithRole",
-			name:         "hello",
-			expectedName: "hello",
+			expectedName: _nopHostName,
 			roles: []string{
 				"role1",
 			},
@@ -60,7 +58,7 @@ func TestModuleOptions(t *testing.T) {
 		},
 		{
 			description:  "TestNewScopedHostWithRoles",
-			name:         "hello",
+			nameOption:   "hello",
 			expectedName: "hello",
 			roles: []string{
 				"role1",
@@ -73,7 +71,7 @@ func TestModuleOptions(t *testing.T) {
 		},
 		{
 			description:  "TestNewScopedHostWithDuplicateRoles",
-			name:         "hello",
+			nameOption:   "hello",
 			expectedName: "hello",
 			roles: []string{
 				"role1",
@@ -90,29 +88,33 @@ func TestModuleOptions(t *testing.T) {
 		test := test
 		t.Run(test.description, func(t *testing.T) {
 			t.Parallel()
-			var moduleOptions []ModuleOption
+			var moduleOptions []ModuleOptionFn
 			if test.nameOption != "" {
-				moduleOptions = append(moduleOptions, WithModuleName(test.nameOption))
+				moduleOptions = append(moduleOptions, WithName(test.nameOption))
 			}
 			for _, role := range test.roles {
-				moduleOptions = append(moduleOptions, WithModuleRole(role))
+				moduleOptions = append(moduleOptions, WithRole(role))
 			}
 			moduleWrapper, err := newModuleWrapper(
 				NopHost(),
-				NewDefaultStubModuleProvider(test.name),
+				NewDefaultStubModuleProvider(),
 				moduleOptions...,
 			)
 			require.NoError(t, err)
-			assert.Equal(t, test.expectedName, moduleWrapper.Name())
+			assert.Equal(t, test.expectedName, moduleWrapper.scopedHost.Name())
 			assert.Equal(t, test.expectedRoles, moduleWrapper.scopedHost.Roles())
 		})
 	}
 }
 
 func TestModuleWrapper(t *testing.T) {
-	moduleWrapper, err := newModuleWrapper(NopHost(), NewDefaultStubModuleProvider("hello"))
+	moduleWrapper, err := newModuleWrapper(
+		NopHost(),
+		NewDefaultStubModuleProvider(),
+		WithName("hello"),
+	)
 	require.NoError(t, err)
-	assert.Equal(t, "hello", moduleWrapper.Name())
+	assert.Equal(t, "hello", moduleWrapper.scopedHost.Name())
 	assert.False(t, moduleWrapper.IsRunning())
 	assert.NoError(t, moduleWrapper.Start())
 	assert.True(t, moduleWrapper.IsRunning())
@@ -122,7 +124,7 @@ func TestModuleWrapper(t *testing.T) {
 	assert.Error(t, moduleWrapper.Stop())
 	assert.NoError(t, moduleWrapper.Start())
 	assert.NoError(t, moduleWrapper.Stop())
-	moduleWrapper, err = newModuleWrapper(NopHost(), NewStubModuleProvider("hello", nil))
+	moduleWrapper, err = newModuleWrapper(NopHost(), NewStubModuleProvider(nil))
 	assert.NoError(t, err)
 	assert.Nil(t, moduleWrapper)
 	moduleWrapper, err = newModuleWrapper(NopHost(), nil)
