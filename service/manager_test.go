@@ -290,6 +290,7 @@ func TestStartModule_NoErrors(t *testing.T) {
 func TestStartManager_WithErrors(t *testing.T) {
 	s := makeManager()
 	moduleProvider := &StubModuleProvider{
+		NameVal: "stubModule",
 		CreateVal: func(host Host) (Module, error) {
 			return &StubModule{
 				Host:       host,

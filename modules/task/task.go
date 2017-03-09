@@ -53,7 +53,7 @@ func globalBackendStatsClient() *statsClient {
 
 // New creates an async task queue ModuleProvider.
 func New(createFunc BackendCreateFunc) service.ModuleProvider {
-	return service.ModuleProviderFromFunc(func(host service.Host) (service.Module, error) {
+	return service.ModuleProviderFromFunc("task", func(host service.Host) (service.Module, error) {
 		return newAsyncModuleSingleton(host, createFunc)
 	})
 }

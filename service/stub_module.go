@@ -22,6 +22,7 @@ package service
 
 // StubModuleProvider implements the ModuleProvider interface for testing.
 type StubModuleProvider struct {
+	NameVal   string
 	CreateVal func(Host) (Module, error)
 }
 
@@ -29,13 +30,18 @@ var _ ModuleProvider = &StubModuleProvider{}
 
 // NewDefaultStubModuleProvider returns a new StubModuleProvider with an empty StubModule.
 func NewDefaultStubModuleProvider() *StubModuleProvider {
-	return NewStubModuleProvider(&StubModule{})
+	return NewStubModuleProvider("stubModule", &StubModule{})
 }
 
 // NewStubModuleProvider returns a new StubModuleProvider with the given name
 // and create function from NewStubModuleCreateFunc.
-func NewStubModuleProvider(stubModule *StubModule) *StubModuleProvider {
-	return &StubModuleProvider{NewStubModuleCreateFunc(stubModule)}
+func NewStubModuleProvider(name string, stubModule *StubModule) *StubModuleProvider {
+	return &StubModuleProvider{NameVal: name, CreateVal: NewStubModuleCreateFunc(stubModule)}
+}
+
+// Name returns the module name
+func (p *StubModuleProvider) Name() string {
+	return p.NameVal
 }
 
 // Create creates a new Module.

@@ -47,7 +47,6 @@ var (
 	// Function to start a dispatcher
 	_starterFn                = defaultYARPCStarter
 	_          service.Module = &Module{}
-	_modName                  = "yarpc"
 )
 
 // DispatcherFn allows override a dispatcher creation, e.g. if it is embedded in another struct.
@@ -75,8 +74,9 @@ type ServiceCreateFunc func(svc service.Host) ([]transport.Procedure, error)
 
 // New creates a YARPC Module from a service func
 func New(hookup ServiceCreateFunc, options ...ModuleOptionFn) service.ModuleProvider {
-	return service.ModuleProviderFromFunc(func(host service.Host) (service.Module, error) {
-		return newModule(host, hookup, options...)
+	modName := "yarpc"
+	return service.ModuleProviderFromFunc(modName, func(host service.Host) (service.Module, error) {
+		return newModule(modName, host, hookup, options...)
 	})
 }
 
@@ -121,6 +121,7 @@ func WithOnewayInboundMiddleware(i ...middleware.OnewayInbound) ModuleOptionFn {
 // Creates a new YARPC module and adds a common middleware to the global config collection.
 // The first created module defines the service name.
 func newModule(
+	modName string,
 	host service.Host,
 	reg ServiceCreateFunc,
 	options ...ModuleOptionFn,
@@ -134,9 +135,9 @@ func newModule(
 	module := &Module{
 		host:        host,
 		statsClient: newStatsClient(host.Metrics()),
-		log:         ulog.Logger(context.Background()).With(zap.String("module", _modName)),
+		log:         ulog.Logger(context.Background()).With(zap.String("module", modName)),
 	}
-	if err := host.Config().Scope("modules").Get(_modName).PopulateStruct(&module.config); err != nil {
+	if err := host.Config().Scope("modules").Get(modName).PopulateStruct(&module.config); err != nil {
 		return nil, errs.Wrap(err, "can't read inbounds")
 	}
 

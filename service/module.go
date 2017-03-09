@@ -22,12 +22,13 @@ package service
 
 import (
 	"fmt"
-	"reflect"
 	"sync"
 )
 
 // ModuleProvider provides Modules.
 type ModuleProvider interface {
+	// Name returns the module name
+	Name() string
 	// Create a new Module. The name of the Host and the scoping
 	// of associated functions on the Host will be done using a name
 	// provided by a ModuleOption, or by the DefaultName on this ModuleProvider.
@@ -45,8 +46,8 @@ type Module interface {
 }
 
 // ModuleProviderFromFunc creates a new ModuleProvider from a name and create function.
-func ModuleProviderFromFunc(createFunc func(Host) (Module, error)) ModuleProvider {
-	return &moduleProvider{createFunc: createFunc}
+func ModuleProviderFromFunc(name string, createFunc func(Host) (Module, error)) ModuleProvider {
+	return &moduleProvider{name: name, createFunc: createFunc}
 }
 
 // ModuleOptionFn is a function that configures module creation.
@@ -90,9 +91,11 @@ func NewScopedHost(host Host, name string, roles ...string) (Host, error) {
 }
 
 type moduleProvider struct {
+	name       string
 	createFunc func(Host) (Module, error)
 }
 
+func (m *moduleProvider) Name() string                     { return m.name }
 func (m *moduleProvider) Create(host Host) (Module, error) { return m.createFunc(host) }
 
 type moduleWrapper struct {
@@ -129,7 +132,7 @@ func newModuleWrapper(
 	} else {
 		roles = host.Roles()
 	}
-	scopedHost := &scopedHost{Host: host, name: name, roles: roles}
+	scopedHost := &scopedHost{Host: host, serviceName: name, roles: roles}
 	module, err := moduleProvider.Create(scopedHost)
 	if err != nil {
 		return nil, err
@@ -138,7 +141,7 @@ func newModuleWrapper(
 		return nil, nil
 	}
 	return &moduleWrapper{
-		name:       reflect.TypeOf(module).PkgPath(),
+		name:       moduleProvider.Name(),
 		module:     module,
 		scopedHost: scopedHost,
 	}, nil
@@ -180,21 +183,22 @@ func (m *moduleWrapper) IsRunning() bool {
 // scopedHost is a host scoped to the module
 type scopedHost struct {
 	Host
-	name  string
-	roles []string
+	serviceName string
+	roles       []string
+	modName     string
 }
 
-func newScopedHost(host Host, name string, roles ...string) *scopedHost {
+func newScopedHost(host Host, serviceName string, roles ...string) *scopedHost {
 	return &scopedHost{
-		host,
-		name,
-		roles,
+		Host:        host,
+		serviceName: serviceName,
+		roles:       roles,
 	}
 }
 
 // Name returns the scoped service name
 func (sh *scopedHost) Name() string {
-	return sh.name
+	return sh.serviceName
 }
 
 // Roles returns the roles for the module

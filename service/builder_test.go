@@ -30,8 +30,8 @@ import (
 )
 
 var (
-	nopModuleProvider = &StubModuleProvider{nopModule}
-	errModuleProvider = &StubModuleProvider{errModule}
+	nopModuleProvider = &StubModuleProvider{"nop", nopModule}
+	errModuleProvider = &StubModuleProvider{"err", errModule}
 )
 
 func TestWithModules_OK(t *testing.T) {

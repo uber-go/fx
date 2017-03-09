@@ -55,8 +55,6 @@ const (
 
 	// default healthcheck endpoint
 	healthPath = "/health"
-
-	_modName = "uhttp"
 )
 
 var _ service.Module = &Module{}
@@ -87,12 +85,14 @@ type GetHandlersFunc func(service service.Host) []RouteHandler
 
 // New returns a new HTTP ModuleProvider.
 func New(hookup GetHandlersFunc, options ...ModuleOptionFn) service.ModuleProvider {
-	return service.ModuleProviderFromFunc(func(host service.Host) (service.Module, error) {
-		return newModule(host, hookup, options...)
+	modName := "uhttp"
+	return service.ModuleProviderFromFunc(modName, func(host service.Host) (service.Module, error) {
+		return newModule(modName, host, hookup, options...)
 	})
 }
 
 func newModule(
+	modName string,
 	host service.Host,
 	getHandlers GetHandlersFunc,
 	options ...ModuleOptionFn,
@@ -108,8 +108,8 @@ func newModule(
 		Port:    defaultPort,
 		Timeout: defaultTimeout,
 	}
-	log := ulog.Logger(context.Background()).With(zap.String("module", _modName))
-	if err := host.Config().Scope("modules").Get(_modName).PopulateStruct(&cfg); err != nil {
+	log := ulog.Logger(context.Background()).With(zap.String("module", modName))
+	if err := host.Config().Scope("modules").Get(modName).PopulateStruct(&cfg); err != nil {
 		log.Error("Error loading http module configuration", zap.Error(err))
 	}
 	module := &Module{

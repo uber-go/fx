@@ -124,7 +124,7 @@ func TestModuleWrapper(t *testing.T) {
 	assert.Error(t, moduleWrapper.Stop())
 	assert.NoError(t, moduleWrapper.Start())
 	assert.NoError(t, moduleWrapper.Stop())
-	moduleWrapper, err = newModuleWrapper(NopHost(), NewStubModuleProvider(nil))
+	moduleWrapper, err = newModuleWrapper(NopHost(), NewStubModuleProvider("stub", nil))
 	assert.NoError(t, err)
 	assert.Nil(t, moduleWrapper)
 	moduleWrapper, err = newModuleWrapper(NopHost(), nil)
