@@ -21,8 +21,7 @@
 * [Breaking] Rename `yarpc.CreateThriftServiceFunc` to `yarpc.ServiceCreateFunc`
   as it is not thrift-specific.
 * Report version metrics for company-wide version usage information.
-* [Breaking] Use default config name as service name and allow both service name and module name
-  to be configurable via options.
+* Allow configurable service name and module name via service options.
 
 ## v1.0.0-beta1 (20 Feb 2017)
 
