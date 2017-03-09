@@ -53,7 +53,7 @@ func ModuleProviderFromFunc(name string, createFunc func(Host) (Module, error)) 
 // ModuleOption is a function that configures module creation.
 type ModuleOption func(*moduleOptions) error
 
-// WithName will override the name given by the ModuleProvider.
+// WithName will override the root service name specified in config.
 func WithName(name string) ModuleOption {
 	return func(o *moduleOptions) error {
 		o.ServiceName = name
@@ -75,6 +75,14 @@ func WithRole(role string) ModuleOption {
 			}
 		}
 		o.Roles = append(o.Roles, role)
+		return nil
+	}
+}
+
+// WithModuleName will override the name given by the ModuleProvider.
+func WithModuleName(name string) ModuleOption {
+	return func(o *moduleOptions) error {
+		o.ModuleName = name
 		return nil
 	}
 }
@@ -136,7 +144,12 @@ func newModuleWrapper(
 	} else {
 		roles = host.Roles()
 	}
-	scopedHost := &scopedHost{Host: host, serviceName: name, roles: roles}
+	scopedHost := &scopedHost{
+		Host:        host,
+		serviceName: name,
+		moduleName:  moduleOptions.ModuleName,
+		roles:       roles,
+	}
 	module, err := moduleProvider.Create(scopedHost)
 	if err != nil {
 		return nil, err

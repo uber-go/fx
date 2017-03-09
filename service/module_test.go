@@ -27,28 +27,37 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-var _nopHostName = "dummy"
+const (
+	_nopHostName      = "dummy"
+	_stubProviderName = "stubModule"
+)
 
 func TestModuleOptions(t *testing.T) {
 	for _, test := range []struct {
-		description   string
-		nameOption    string
-		expectedName  string
-		roles         []string
-		expectedRoles []string
+		description        string
+		nameOption         string
+		expectedName       string
+		moduleNameOption   string
+		expectedModuleName string
+		roles              []string
+		expectedRoles      []string
 	}{
 		{
-			description:  "TestNewScopedHostNoOptions",
-			expectedName: _nopHostName,
+			description:        "TestNewScopedHostNoOptions",
+			expectedName:       _nopHostName,
+			expectedModuleName: _stubProviderName,
 		},
 		{
-			description:  "TestNewScopedHostWithName",
-			nameOption:   "hello",
-			expectedName: "hello",
+			description:        "TestNewScopedHostWithName",
+			nameOption:         "hello",
+			expectedName:       "hello",
+			moduleNameOption:   "yarpc",
+			expectedModuleName: "yarpc",
 		},
 		{
-			description:  "TestNewScopedHostWithRole",
-			expectedName: _nopHostName,
+			description:        "TestNewScopedHostWithRole",
+			expectedName:       _nopHostName,
+			expectedModuleName: _stubProviderName,
 			roles: []string{
 				"role1",
 			},
@@ -57,9 +66,10 @@ func TestModuleOptions(t *testing.T) {
 			},
 		},
 		{
-			description:  "TestNewScopedHostWithRoles",
-			nameOption:   "hello",
-			expectedName: "hello",
+			description:        "TestNewScopedHostWithRoles",
+			nameOption:         "hello",
+			expectedName:       "hello",
+			expectedModuleName: _stubProviderName,
 			roles: []string{
 				"role1",
 				"role2",
@@ -70,9 +80,10 @@ func TestModuleOptions(t *testing.T) {
 			},
 		},
 		{
-			description:  "TestNewScopedHostWithDuplicateRoles",
-			nameOption:   "hello",
-			expectedName: "hello",
+			description:        "TestNewScopedHostWithDuplicateRoles",
+			nameOption:         "hello",
+			expectedName:       "hello",
+			expectedModuleName: _stubProviderName,
 			roles: []string{
 				"role1",
 				"role2",
@@ -92,6 +103,9 @@ func TestModuleOptions(t *testing.T) {
 			if test.nameOption != "" {
 				moduleOptions = append(moduleOptions, WithName(test.nameOption))
 			}
+			if test.moduleNameOption != "" {
+				moduleOptions = append(moduleOptions, WithModuleName(test.moduleNameOption))
+			}
 			for _, role := range test.roles {
 				moduleOptions = append(moduleOptions, WithRole(role))
 			}
@@ -102,6 +116,7 @@ func TestModuleOptions(t *testing.T) {
 			)
 			require.NoError(t, err)
 			assert.Equal(t, test.expectedName, moduleWrapper.scopedHost.Name())
+			assert.Equal(t, test.expectedModuleName, moduleWrapper.scopedHost.ModuleName())
 			assert.Equal(t, test.expectedRoles, moduleWrapper.scopedHost.Roles())
 		})
 	}
