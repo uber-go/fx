@@ -27,7 +27,6 @@ import (
 	"io/ioutil"
 	"os"
 	"reflect"
-	"regexp"
 	"strconv"
 	"strings"
 
@@ -41,11 +40,8 @@ type yamlConfigProvider struct {
 }
 
 var (
-	_envSeparator = []byte(":")
-	_emptyString  = []byte(`""`)
-
-	// ${VAR_NAME:default} or ${VAR_NAME}
-	_interpolationRegex = regexp.MustCompile(`\$\{\w+:?[^}]*}`)
+	_envSeparator = ":"
+	_emptyDefault = `""`
 )
 
 func newYAMLProviderCore(files ...io.ReadCloser) Provider {
@@ -329,36 +325,34 @@ func unmarshalYAMLValue(reader io.ReadCloser, value interface{}) error {
 //
 // TODO: what if someone wanted a literal ${FOO} in config? need a small escape hatch
 func interpolateEnvVars(data []byte) ([]byte, error) {
-	var errs []string
-	data = _interpolationRegex.ReplaceAllFunc(data, func(in []byte) []byte {
-		// remove ${ and }, just look inside the braces
-		valAndMaybeDefault := in[2 : len(in)-1]
+	// Is this conversion ok?
+	str := string(data)
+	errs := []string{}
 
-		// ${VALUE:DEFAULT} -> VALUE, DEFAULT
-		// ${VALUE} -> VALUE, empty default
-		split := bytes.Split(valAndMaybeDefault, _envSeparator)
-		key := string(split[0])
+	str = os.Expand(str, func(in string) string {
+		sep := strings.Index(in, _envSeparator)
+
+		var key string
+		var def string
+
+		if sep == -1 {
+			// separator missing - everything is the key ${KEY}
+			key = in
+		} else {
+			// ${KEY:DEFAULT}
+			key = in[:sep]
+			def = in[sep+1:]
+		}
 
 		if envVal, ok := os.LookupEnv(key); ok {
-			return []byte(envVal)
+			return envVal
 		}
 
-		// value not found in the env, lets check if there is a default
-		if len(split) < 2 {
-			errs = append(errs, fmt.Sprintf("environment variable %s not found and default is not provided", key))
-			return in
-		}
-
-		// return the default
-		def := bytes.Join(split[1:], _envSeparator)
-		if len(def) == 0 {
+		if def == "" {
 			errs = append(errs, fmt.Sprintf(`default is empty for %s (use "" for empty string)`, key))
 			return in
-		}
-
-		// return empty byte slices for "" as the default
-		if bytes.Compare(def, _emptyString) == 0 {
-			return nil
+		} else if def == _emptyDefault {
+			return ""
 		}
 
 		return def
@@ -367,7 +361,8 @@ func interpolateEnvVars(data []byte) ([]byte, error) {
 	if len(errs) > 0 {
 		return nil, errors.New(strings.Join(errs, ","))
 	}
-	return data, nil
+
+	return []byte(str), nil
 }
 
 func getNodeType(val interface{}) nodeType {
