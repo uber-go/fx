@@ -1,7 +1,7 @@
 .PHONY: libdeps
 libdeps:
 	@$(call label,Installing Glide and locked dependencies...)
-	$(ECHO_V)glide --version ||	go get -v github.com/Masterminds/glide
+	$(ECHO_V)glide --version || go get -v github.com/Masterminds/glide && glide --version
 	$(ECHO_V)glide install
 
 .PHONY: deps
