@@ -50,12 +50,12 @@ func ModuleProviderFromFunc(name string, createFunc func(Host) (Module, error)) 
 	return &moduleProvider{name: name, createFunc: createFunc}
 }
 
-// ModuleOptionFn is a function that configures module creation.
-type ModuleOptionFn func(*moduleOption) error
+// ModuleOption is a function that configures module creation.
+type ModuleOption func(*moduleOptions) error
 
 // WithName will override the name given by the ModuleProvider.
-func WithName(name string) ModuleOptionFn {
-	return func(o *moduleOption) error {
+func WithName(name string) ModuleOption {
+	return func(o *moduleOptions) error {
 		o.ServiceName = name
 		return nil
 	}
@@ -64,8 +64,8 @@ func WithName(name string) ModuleOptionFn {
 // WithRole will add a role to the Module.
 //
 // If the role was already added, this will be a no-op.
-func WithRole(role string) ModuleOptionFn {
-	return func(o *moduleOption) error {
+func WithRole(role string) ModuleOption {
+	return func(o *moduleOptions) error {
 		if role == "" {
 			return nil
 		}
@@ -79,8 +79,8 @@ func WithRole(role string) ModuleOptionFn {
 	}
 }
 
-// moduleOption specifies options for service name and role
-type moduleOption struct {
+// moduleOptions specifies options for service name and role
+type moduleOptions struct {
 	ServiceName string
 	Roles       []string
 }
@@ -109,26 +109,26 @@ type moduleWrapper struct {
 func newModuleWrapper(
 	host Host,
 	moduleProvider ModuleProvider,
-	options ...ModuleOptionFn,
+	options ...ModuleOption,
 ) (*moduleWrapper, error) {
 	if moduleProvider == nil {
 		return nil, nil
 	}
-	moduleOption := &moduleOption{}
+	moduleOptions := &moduleOptions{}
 	for _, option := range options {
-		if err := option(moduleOption); err != nil {
+		if err := option(moduleOptions); err != nil {
 			return nil, err
 		}
 	}
 	var name string
 	var roles []string
-	if moduleOption.ServiceName != "" {
-		name = moduleOption.ServiceName
+	if moduleOptions.ServiceName != "" {
+		name = moduleOptions.ServiceName
 	} else {
 		name = host.Name()
 	}
-	if len(moduleOption.Roles) > 0 {
-		roles = moduleOption.Roles
+	if len(moduleOptions.Roles) > 0 {
+		roles = moduleOptions.Roles
 	} else {
 		roles = host.Roles()
 	}

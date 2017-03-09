@@ -20,17 +20,17 @@
 
 package uhttp
 
-// ModuleOptionFn is a function that configures module creation.
-type ModuleOptionFn func(*moduleOption) error
+// ModuleOption is a function that configures module creation.
+type ModuleOption func(*moduleOptions) error
 
-type moduleOption struct {
+type moduleOptions struct {
 	inboundMiddleware []InboundMiddleware
 }
 
 // WithInboundMiddleware adds inbound middleware to uhttp Module that will be applied to all incoming http requests.
-func WithInboundMiddleware(m ...InboundMiddleware) ModuleOptionFn {
-	return func(moduleOption *moduleOption) error {
-		moduleOption.inboundMiddleware = append(moduleOption.inboundMiddleware, m...)
+func WithInboundMiddleware(m ...InboundMiddleware) ModuleOption {
+	return func(moduleOptions *moduleOptions) error {
+		moduleOptions.inboundMiddleware = append(moduleOptions.inboundMiddleware, m...)
 		return nil
 	}
 }

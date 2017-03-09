@@ -266,7 +266,7 @@ func (m *manager) shutdown(err error, reason string, exitCode *int) (bool, error
 	return true, err
 }
 
-func (m *manager) addModule(provider ModuleProvider, options ...ModuleOptionFn) error {
+func (m *manager) addModule(provider ModuleProvider, options ...ModuleOption) error {
 	if m.locked {
 		return fmt.Errorf("can't add module: service already started")
 	}

@@ -73,7 +73,7 @@ func RegisterStarter(startFn StarterFn) {
 type ServiceCreateFunc func(svc service.Host) ([]transport.Procedure, error)
 
 // New creates a YARPC Module from a service func
-func New(hookup ServiceCreateFunc, options ...ModuleOptionFn) service.ModuleProvider {
+func New(hookup ServiceCreateFunc, options ...ModuleOption) service.ModuleProvider {
 	modName := "yarpc"
 	return service.ModuleProviderFromFunc(modName, func(host service.Host) (service.Module, error) {
 		return newModule(modName, host, hookup, options...)
@@ -94,26 +94,26 @@ type Module struct {
 	controller  *dispatcherController
 }
 
-// ModuleOptionFn is a function that configures module creation.
-type ModuleOptionFn func(*moduleOption) error
+// ModuleOption is a function that configures module creation.
+type ModuleOption func(*moduleOptions) error
 
-type moduleOption struct {
+type moduleOptions struct {
 	unaryInbounds  []middleware.UnaryInbound
 	onewayInbounds []middleware.OnewayInbound
 }
 
 // WithInboundMiddleware adds custom YARPC inboundMiddleware to the module
-func WithInboundMiddleware(i ...middleware.UnaryInbound) ModuleOptionFn {
-	return func(moduleOption *moduleOption) error {
-		moduleOption.unaryInbounds = append(moduleOption.unaryInbounds, i...)
+func WithInboundMiddleware(i ...middleware.UnaryInbound) ModuleOption {
+	return func(moduleOptions *moduleOptions) error {
+		moduleOptions.unaryInbounds = append(moduleOptions.unaryInbounds, i...)
 		return nil
 	}
 }
 
 // WithOnewayInboundMiddleware adds custom YARPC inboundMiddleware to the module
-func WithOnewayInboundMiddleware(i ...middleware.OnewayInbound) ModuleOptionFn {
-	return func(moduleOption *moduleOption) error {
-		moduleOption.onewayInbounds = append(moduleOption.onewayInbounds, i...)
+func WithOnewayInboundMiddleware(i ...middleware.OnewayInbound) ModuleOption {
+	return func(moduleOptions *moduleOptions) error {
+		moduleOptions.onewayInbounds = append(moduleOptions.onewayInbounds, i...)
 		return nil
 	}
 }
@@ -124,11 +124,11 @@ func newModule(
 	modName string,
 	host service.Host,
 	reg ServiceCreateFunc,
-	options ...ModuleOptionFn,
+	options ...ModuleOption,
 ) (*Module, error) {
-	moduleOption := &moduleOption{}
+	moduleOptions := &moduleOptions{}
 	for _, option := range options {
-		if err := option(moduleOption); err != nil {
+		if err := option(moduleOptions); err != nil {
 			return nil, err
 		}
 	}
@@ -147,8 +147,8 @@ func newModule(
 		return nil, errs.Wrap(err, "can't process inbounds")
 	}
 	module.config.transports.inbounds = transportsIn
-	module.config.inboundMiddleware = moduleOption.unaryInbounds
-	module.config.onewayInboundMiddleware = moduleOption.onewayInbounds
+	module.config.inboundMiddleware = moduleOptions.unaryInbounds
+	module.config.onewayInboundMiddleware = moduleOptions.onewayInbounds
 
 	// Try to resolve a controller first
 	// TODO(alsam) use dig options when available, because we can overwrite the controller in case of multiple

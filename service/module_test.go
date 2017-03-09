@@ -88,7 +88,7 @@ func TestModuleOptions(t *testing.T) {
 		test := test
 		t.Run(test.description, func(t *testing.T) {
 			t.Parallel()
-			var moduleOptions []ModuleOptionFn
+			var moduleOptions []ModuleOption
 			if test.nameOption != "" {
 				moduleOptions = append(moduleOptions, WithName(test.nameOption))
 			}

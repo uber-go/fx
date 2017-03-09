@@ -52,7 +52,7 @@ func TestHTTPModule_WithInboundMiddleware(t *testing.T) {
 	withModule(
 		t,
 		registerPanic,
-		[]ModuleOptionFn{WithInboundMiddleware(fakeInbound())},
+		[]ModuleOption{WithInboundMiddleware(fakeInbound())},
 		false,
 		func(m *Module) {
 			assert.NotNil(t, m)
@@ -69,7 +69,7 @@ func TestHTTPModule_WithUserPanicInboundMiddleware(t *testing.T) {
 	withModule(
 		t,
 		registerTracerCheckHandler,
-		[]ModuleOptionFn{WithInboundMiddleware(userPanicInbound())},
+		[]ModuleOption{WithInboundMiddleware(userPanicInbound())},
 		false,
 		func(m *Module) {
 			assert.NotNil(t, m)
@@ -142,7 +142,7 @@ func configOption() service.Option {
 func withModule(
 	t testing.TB,
 	hookup GetHandlersFunc,
-	moduleOptions []ModuleOptionFn,
+	moduleOptions []ModuleOption,
 	expectError bool,
 	fn func(*Module),
 ) {

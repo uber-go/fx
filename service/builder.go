@@ -27,13 +27,13 @@ type Builder struct {
 }
 
 // WithModule is a helper to create a service without any options
-func WithModule(provider ModuleProvider, options ...ModuleOptionFn) *Builder {
+func WithModule(provider ModuleProvider, options ...ModuleOption) *Builder {
 	b := &Builder{}
 	return b.WithModule(provider, options...)
 }
 
 // WithModule adds the given module to the service with the given name
-func (b *Builder) WithModule(provider ModuleProvider, options ...ModuleOptionFn) *Builder {
+func (b *Builder) WithModule(provider ModuleProvider, options ...ModuleOption) *Builder {
 	b.moduleInfos = append(b.moduleInfos, &moduleInfo{provider, options})
 	return b
 }
@@ -51,5 +51,5 @@ func (b *Builder) Build() (Manager, error) {
 
 type moduleInfo struct {
 	provider ModuleProvider
-	options  []ModuleOptionFn
+	options  []ModuleOption
 }

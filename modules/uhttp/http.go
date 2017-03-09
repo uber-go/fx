@@ -84,7 +84,7 @@ type Config struct {
 type GetHandlersFunc func(service service.Host) []RouteHandler
 
 // New returns a new HTTP ModuleProvider.
-func New(hookup GetHandlersFunc, options ...ModuleOptionFn) service.ModuleProvider {
+func New(hookup GetHandlersFunc, options ...ModuleOption) service.ModuleProvider {
 	modName := "uhttp"
 	return service.ModuleProviderFromFunc(modName, func(host service.Host) (service.Module, error) {
 		return newModule(modName, host, hookup, options...)
@@ -95,11 +95,11 @@ func newModule(
 	modName string,
 	host service.Host,
 	getHandlers GetHandlersFunc,
-	options ...ModuleOptionFn,
+	options ...ModuleOption,
 ) (*Module, error) {
-	moduleOption := &moduleOption{}
+	moduleOptions := &moduleOptions{}
 	for _, option := range options {
-		if err := option(moduleOption); err != nil {
+		if err := option(moduleOptions); err != nil {
 			return nil, err
 		}
 	}
@@ -119,7 +119,7 @@ func newModule(
 		config:   cfg,
 		log:      log,
 	}
-	module.mcb = module.mcb.AddMiddleware(moduleOption.inboundMiddleware...)
+	module.mcb = module.mcb.AddMiddleware(moduleOptions.inboundMiddleware...)
 	return module, nil
 }
 
