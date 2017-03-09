@@ -146,7 +146,7 @@ func withModule(
 	expectError bool,
 	fn func(*Module),
 ) {
-	host, err := service.NewScopedHost(service.NopHost(), "uhttp", "serviceName")
+	host, err := service.NewScopedHost(service.NopHost(), "uhttp", "hello")
 	require.NoError(t, err)
 	mod, err := newModule(host, hookup, moduleOptions...)
 	if expectError {
