@@ -27,30 +27,37 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+const (
+	_nopHostName      = "dummy"
+	_stubProviderName = "stubModule"
+)
+
 func TestModuleOptions(t *testing.T) {
 	for _, test := range []struct {
-		description   string
-		name          string
-		nameOption    string
-		expectedName  string
-		roles         []string
-		expectedRoles []string
+		description        string
+		nameOption         string
+		expectedName       string
+		moduleNameOption   string
+		expectedModuleName string
+		roles              []string
+		expectedRoles      []string
 	}{
 		{
-			description:  "TestNewScopedHostNoOptions",
-			name:         "hello",
-			expectedName: "hello",
+			description:        "TestNewScopedHostNoOptions",
+			expectedName:       _nopHostName,
+			expectedModuleName: _stubProviderName,
 		},
 		{
-			description:  "TestNewScopedHostWithName",
-			name:         "hello",
-			nameOption:   "hello2",
-			expectedName: "hello2",
+			description:        "TestNewScopedHostWithName",
+			nameOption:         "hello",
+			expectedName:       "hello",
+			moduleNameOption:   "yarpc",
+			expectedModuleName: "yarpc",
 		},
 		{
-			description:  "TestNewScopedHostWithRole",
-			name:         "hello",
-			expectedName: "hello",
+			description:        "TestNewScopedHostWithRole",
+			expectedName:       _nopHostName,
+			expectedModuleName: _stubProviderName,
 			roles: []string{
 				"role1",
 			},
@@ -59,9 +66,10 @@ func TestModuleOptions(t *testing.T) {
 			},
 		},
 		{
-			description:  "TestNewScopedHostWithRoles",
-			name:         "hello",
-			expectedName: "hello",
+			description:        "TestNewScopedHostWithRoles",
+			nameOption:         "hello",
+			expectedName:       "hello",
+			expectedModuleName: _stubProviderName,
 			roles: []string{
 				"role1",
 				"role2",
@@ -72,9 +80,10 @@ func TestModuleOptions(t *testing.T) {
 			},
 		},
 		{
-			description:  "TestNewScopedHostWithDuplicateRoles",
-			name:         "hello",
-			expectedName: "hello",
+			description:        "TestNewScopedHostWithDuplicateRoles",
+			nameOption:         "hello",
+			expectedName:       "hello",
+			expectedModuleName: _stubProviderName,
 			roles: []string{
 				"role1",
 				"role2",
@@ -92,27 +101,35 @@ func TestModuleOptions(t *testing.T) {
 			t.Parallel()
 			var moduleOptions []ModuleOption
 			if test.nameOption != "" {
-				moduleOptions = append(moduleOptions, WithModuleName(test.nameOption))
+				moduleOptions = append(moduleOptions, WithName(test.nameOption))
+			}
+			if test.moduleNameOption != "" {
+				moduleOptions = append(moduleOptions, WithModuleName(test.moduleNameOption))
 			}
 			for _, role := range test.roles {
-				moduleOptions = append(moduleOptions, WithModuleRole(role))
+				moduleOptions = append(moduleOptions, WithRole(role))
 			}
 			moduleWrapper, err := newModuleWrapper(
 				NopHost(),
-				NewDefaultStubModuleProvider(test.name),
+				NewDefaultStubModuleProvider(),
 				moduleOptions...,
 			)
 			require.NoError(t, err)
-			assert.Equal(t, test.expectedName, moduleWrapper.Name())
+			assert.Equal(t, test.expectedName, moduleWrapper.scopedHost.Name())
+			assert.Equal(t, test.expectedModuleName, moduleWrapper.scopedHost.ModuleName())
 			assert.Equal(t, test.expectedRoles, moduleWrapper.scopedHost.Roles())
 		})
 	}
 }
 
 func TestModuleWrapper(t *testing.T) {
-	moduleWrapper, err := newModuleWrapper(NopHost(), NewDefaultStubModuleProvider("hello"))
+	moduleWrapper, err := newModuleWrapper(
+		NopHost(),
+		NewDefaultStubModuleProvider(),
+		WithName("hello"),
+	)
 	require.NoError(t, err)
-	assert.Equal(t, "hello", moduleWrapper.Name())
+	assert.Equal(t, "hello", moduleWrapper.scopedHost.Name())
 	assert.False(t, moduleWrapper.IsRunning())
 	assert.NoError(t, moduleWrapper.Start())
 	assert.True(t, moduleWrapper.IsRunning())
@@ -122,7 +139,7 @@ func TestModuleWrapper(t *testing.T) {
 	assert.Error(t, moduleWrapper.Stop())
 	assert.NoError(t, moduleWrapper.Start())
 	assert.NoError(t, moduleWrapper.Stop())
-	moduleWrapper, err = newModuleWrapper(NopHost(), NewStubModuleProvider("hello", nil))
+	moduleWrapper, err = newModuleWrapper(NopHost(), NewStubModuleProvider("stub", nil))
 	assert.NoError(t, err)
 	assert.Nil(t, moduleWrapper)
 	moduleWrapper, err = newModuleWrapper(NopHost(), nil)

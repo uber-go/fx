@@ -69,7 +69,7 @@ func publishEncodedVal(t *testing.T, b *inMemBackend) {
 }
 
 func newTestHost(t *testing.T) service.Host {
-	mi, err := service.NewScopedHost(service.NopHost(), "hello")
+	mi, err := service.NewScopedHost(service.NopHost(), "task", "hello")
 	require.NoError(t, err)
 	return mi
 }

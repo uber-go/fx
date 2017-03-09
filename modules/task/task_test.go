@@ -42,7 +42,7 @@ var (
 )
 
 func init() {
-	host, _ := service.NewScopedHost(service.NopHost(), "hello")
+	host, _ := service.NewScopedHost(service.NopHost(), "task", "hello")
 	_memBackend = NewInMemBackend(host).(*inMemBackend)
 }
 
