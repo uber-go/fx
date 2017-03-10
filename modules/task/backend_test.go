@@ -33,7 +33,7 @@ import (
 
 func withBackendSetup(t *testing.T, backend Backend) func() {
 	_globalBackend = backend
-	_ = _globalBackend.Start()
+	require.NoError(t, _globalBackend.Start())
 	return func() {
 		assert.NoError(t, _globalBackend.Stop())
 		_globalBackend = NopBackend{}
