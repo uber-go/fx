@@ -5,6 +5,8 @@
 ## v1.0.0-beta2 (09 Mar 2017)
 
 * [Breaking] Remove `ulog.Logger` interface and expose `*zap.Logger` directly.
+* [Breaking] Config for `modules/rpc` was renamed to `modules/yarpc`
+* [Breaking] Config for `modules.http` was renamed to `modules.uhttp`
 * [Breaking] Upgrade `zap` to `v1.0.0-rc.3` (now go.uber.org/zap, was
     github.com/uber-go/zap)
 * Remove now-unused `config.IsDevelopmentEnv()` helper to encourage better
@@ -14,7 +16,6 @@
   min version 2.1.0
   and use jaeger's adapters for jaeger and tally initialization.
 * Tally now supports reporting histogram samples for a bucket. Upgrade Tally to 2.1.0
-* [Breaking] Rename `modules/rpc` to `modules/yarpc`
 * [Breaking] Make new module naming consistent `yarpc.ThriftModule` to
   `yarpc.New`, `task.NewModule`
   to `task.New`
@@ -22,8 +23,6 @@
   as it is not thrift-specific.
 * Report version metrics for company-wide version usage information.
 * Allow configurable service name and module name via service options.
-* [Breaking] Use "modules.uhttp" config block rather than "modules.http" to match
-  the module name.
 
 ## v1.0.0-beta1 (20 Feb 2017)
 
