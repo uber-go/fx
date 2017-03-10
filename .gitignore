@@ -10,3 +10,4 @@
 coverage.txt
 *.pprof
 /.bin
+/.cache

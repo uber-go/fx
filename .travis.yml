@@ -1,14 +1,15 @@
 sudo: required
 services:
   - docker
+cache:
+  directories:
+    - .cache/docker
 env:
-  - DOCKER_GO_VERSION=1.7 V=1 COVERMODE=atomic
-  - DOCKER_GO_VERSION=1.8 V=1 COVERMODE=atomic
-matrix:
-  fast_finish: true
+  - DOCKER_GO_VERSION=1.7
+  - DOCKER_GO_VERSION=1.8 CI_TEST_CMD=coveralls
 before_install:
-  - make dockerbuild
+  - make dockerload
 script:
-  - make dockerrun DOCKER_MAKE_CMD=ci
+  - make dockerci
 after_success:
-   - '[ "${TRAVIS_GO_VERSION}" == "1.8" ] && make dockerrun DOCKER_MAKE_CMD=coveralls'
+  - if [[ "${TRAVIS_BRANCH}" == "master" ]] && [[ "${TRAVIS_PULL_REQUEST}" == "false" ]]; then make dockersave; fi
