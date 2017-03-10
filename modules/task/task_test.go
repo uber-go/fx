@@ -22,7 +22,6 @@ package task
 
 import (
 	"errors"
-	"fmt"
 	"testing"
 
 	"golang.org/x/net/context"
@@ -63,7 +62,6 @@ func TestMemBackendModuleWorkflowWithContext(t *testing.T) {
 	b := createModule(t, _memBackendFn) // we will just get the singleton in mem backend here
 	require.NoError(t, b.Start())
 	fn := func(ctx context.Context) error {
-		fmt.Printf("Hello")
 		return errors.New("hello error")
 	}
 	require.NoError(t, Register(fn))

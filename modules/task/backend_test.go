@@ -31,6 +31,15 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func withBackendSetup(t *testing.T, backend Backend) func() {
+	_globalBackend = backend
+	_ = _globalBackend.Start()
+	return func() {
+		assert.NoError(t, _globalBackend.Stop())
+		_globalBackend = NopBackend{}
+	}
+}
+
 func TestNopBackend(t *testing.T) {
 	b := &NopBackend{}
 	assert.NotNil(t, b.Encoder())
@@ -41,11 +50,11 @@ func TestNopBackend(t *testing.T) {
 
 func TestInMemBackend(t *testing.T) {
 	b := NewInMemBackend(newTestHost(t)).(*inMemBackend)
+	defer withBackendSetup(t, b)()
 	assert.NotNil(t, b.Encoder())
 	assert.NoError(t, b.Start())
 	publishEncodedVal(t, b)
 	publishEncodedVal(t, b)
-	assert.NoError(t, b.Stop())
 }
 
 func TestInMemBackendStartTimeout(t *testing.T) {
