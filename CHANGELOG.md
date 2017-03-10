@@ -5,8 +5,8 @@
 ## v1.0.0-beta2 (09 Mar 2017)
 
 * [Breaking] Remove `ulog.Logger` interface and expose `*zap.Logger` directly.
-* [Breaking] Config for `modules/rpc` was renamed to `modules/yarpc`
-* [Breaking] Config for `modules.http` was renamed to `modules.uhttp`
+* [Breaking] Config and module was renamed from `modules.rpc` to `modules.yarpc`
+* [Breaking] Config key was renamed from `modules.http` to `modules.uhttp` to match the module
 * [Breaking] Upgrade `zap` to `v1.0.0-rc.3` (now go.uber.org/zap, was
     github.com/uber-go/zap)
 * Remove now-unused `config.IsDevelopmentEnv()` helper to encourage better
