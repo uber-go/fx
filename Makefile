@@ -19,7 +19,11 @@ DOCKER_IMAGE := uber/fx-$(DOCKER_GO_VERSION)
 DOCKERFILE := Dockerfile.$(DOCKER_GO_VERSION)
 DOCKER_FLAGS := -e V -e COVERMODE -e CI_TEST_CMD -e TRAVIS_JOB_ID -e TRAVIS_PULL_REQUEST
 
+COVERMODE ?= set
 CI_TEST_CMD ?= test
+ifeq ($(CI_TEST_CMD),coveralls)
+COVERMODE := atomic
+endif
 
 # all .go files that don't exist in hidden directories
 ALL_SRC := $(shell find . -name "*.go" | grep -v -e vendor \
@@ -34,8 +38,6 @@ test: $(COV_REPORT)
 
 TEST_IGNORES = vendor .git
 COVER_IGNORES = $(TEST_IGNORES) examples testutils
-
-COVERMODE ?= set
 
 comma := ,
 null :=
