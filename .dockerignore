@@ -1,2 +1,5 @@
-vendor
 .cache
+examples/dig/dig
+examples/keyvalue/server/server
+examples/simple/simple
+vendor
