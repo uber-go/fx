@@ -1,6 +1,6 @@
 # Changelog
 
-## v1.0.0-beta2 (unreleased)
+## v1.0.0-beta2 (09 Mar 2017)
 
 * [Breaking] Remove `ulog.Logger` interface and expose `*zap.Logger` directly.
 * [Breaking] Upgrade `zap` to `v1.0.0-rc.3` (now go.uber.org/zap, was
