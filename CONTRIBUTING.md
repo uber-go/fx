@@ -74,6 +74,16 @@ The race detector makes the tests run way slower. To disable it:
 make test
 ```
 
+### Docker
+
+You can run the same steps as we do in continuous integration:
+
+```bash
+make dockerci
+```
+
+If this passes, you can expect continuous integration to pass.
+
 TODO(ai) come up with something better for this.
 
 ### Viewing HTML coverage
