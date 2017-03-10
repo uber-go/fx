@@ -22,11 +22,12 @@ lint:
 	@echo "Checking formatting..."
 	$(ECHO_V)gofmt -d -s $(PKG_FILES) 2>&1 | tee $(LINT_LOG)
 	@echo "Checking vet..."
-	$(ECHO_V)$(foreach dir,$(PKG_FILES),go tool vet $(VET_RULES) $(dir) 2>&1 | $(FILTER_LINT) | tee -a $(LINT_LOG);)
+	$(ECHO_V)go tool vet $(VET_RULES) $(ROOT_PKG_FILES) 2>&1 | $(FILTER_LINT) | tee -a $(LINT_LOG)
+	$(ECHO_V)go tool vet $(VET_RULES) $(PKG_NAMES) 2>&1 | $(FILTER_LINT) | tee -a $(LINT_LOG)
 	@echo "Checking lint..."
 	$(ECHO_V)$(foreach dir,$(PKGS),golint $(dir) 2>&1 | $(FILTER_LINT) | tee -a $(LINT_LOG);)
 	@echo "Checking unchecked errors..."
-	$(ECHO_V)$(foreach dir,$(PKGS),errcheck $(ERRCHECK_FLAGS) $(dir) 2>&1 | $(FILTER_LINT) | tee -a $(LINT_LOG);)
+	$(ECHO_V)errcheck $(ERRCHECK_FLAGS) $(PKGS) 2>&1 | $(FILTER_LINT) | tee -a $(LINT_LOG)
 	@echo "Checking for unresolved FIXMEs..."
 	$(ECHO_V)git grep -i fixme | grep -v -e vendor -e $(_THIS_MAKEFILE) -e CONTRIBUTING.md | tee -a $(LINT_LOG)
 	@echo "Checking for license headers..."
