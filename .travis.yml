@@ -11,5 +11,4 @@ before_install:
   - make dockerload
 script:
   - make dockerci
-after_success:
   - if [[ "${TRAVIS_BRANCH}" == "master" ]] && [[ "${TRAVIS_PULL_REQUEST}" == "false" ]]; then make dockersave; fi
