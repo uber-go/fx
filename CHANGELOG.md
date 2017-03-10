@@ -22,6 +22,8 @@
   as it is not thrift-specific.
 * Report version metrics for company-wide version usage information.
 * Allow configurable service name and module name via service options.
+* [Breaking] Use "modules.uhttp" config block rather than "modules.http" to match
+  the module name.
 
 ## v1.0.0-beta1 (20 Feb 2017)
 
