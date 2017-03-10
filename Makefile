@@ -14,10 +14,12 @@ all: lint test
 
 COV_REPORT := overalls.coverprofile
 
-DOCKER_MAKE_CMD ?= test
 DOCKER_GO_VERSION ?= 1.8
 DOCKER_IMAGE := uber/fx-$(DOCKER_GO_VERSION)
 DOCKERFILE := Dockerfile.$(DOCKER_GO_VERSION)
+DOCKER_FLAGS := -e V -e COVERMODE
+
+CI_TEST_CMD ?= test
 
 # all .go files that don't exist in hidden directories
 ALL_SRC := $(shell find . -name "*.go" | grep -v -e vendor \
@@ -133,17 +135,16 @@ benchreset:
 dockerbuild:
 	docker build -t $(DOCKER_IMAGE) -f $(DOCKERFILE) .
 
-.PHONY: dockerrun
-dockerrun: dockerbuild
-	docker run -e V -e COVERMODE $(DOCKER_IMAGE) make $(DOCKER_MAKE_CMD)
+.PHONY: dockertest
+dockertest: dockerbuild
+	docker run $(DOCKER_FLAGS) $(DOCKER_IMAGE) make test
 
-.PHONY: travis
-travis: dockerbuild
-	if [ "$(DOCKER_GO_VERSION)" == "1.8" ]; then \
-		docker run -e V -e COVERMODE $(DOCKER_IMAGE) make coveralls lint examples; \
-	else \
-		docker run -e V -e COVERMODE $(DOCKER_IMAGE) make test lint examples; \
-	fi
+.PHONY: dockerci
+dockerci: dockerbuild
+	docker run $(DOCKER_FLAGS) $(DOCKER_IMAGE) make ci
+
+.PHONY: ci
+ci: lint examples $(CI_TEST_CMD)
 
 .PHONY: gendoc
 gendoc:
