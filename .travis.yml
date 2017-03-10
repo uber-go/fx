@@ -4,7 +4,5 @@ services:
 env:
   - DOCKER_GO_VERSION=1.7 V=1 COVERMODE=atomic
   - DOCKER_GO_VERSION=1.8 V=1 COVERMODE=atomic CI_TEST_CMD=coveralls
-matrix:
-  fast_finish: true
 script:
-  - make travis
+  - make dockerci
