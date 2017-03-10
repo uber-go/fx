@@ -5,4 +5,5 @@ env:
   - DOCKER_GO_VERSION=1.7 V=1 COVERMODE=atomic
   - DOCKER_GO_VERSION=1.8 V=1 COVERMODE=atomic CI_TEST_CMD=coveralls
 script:
+  - env
   - make dockerci
