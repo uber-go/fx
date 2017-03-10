@@ -153,7 +153,7 @@ dockerload:
 
 .PHONY: dockersave
 dockersave:
-	mkdir -p $(shell dirname $(DOCKER_CACHE_FILE))
+	mkdir -p $(DOCKER_CACHE_DIR)
 	docker save $(shell docker history -q $(DOCKER_IMAGE) | grep -v '<missing>') | gzip > $(DOCKER_CACHE_FILE)
 
 .PHONY: ci
