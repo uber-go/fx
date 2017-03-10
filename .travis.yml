@@ -1,8 +1,15 @@
 sudo: required
 services:
   - docker
+cache:
+  directories:
+    - .cache/docker
 env:
   - DOCKER_GO_VERSION=1.7
   - DOCKER_GO_VERSION=1.8 CI_TEST_CMD=coveralls
+before_install:
+  - make dockerload
 script:
   - make dockerci
+after_success:
+  - make dockersave
