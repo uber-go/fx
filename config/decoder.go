@@ -29,14 +29,6 @@ import (
 	"github.com/go-validator/validator"
 )
 
-const (
-	bucketPrimitive = iota
-	bucketArray
-	bucketObject
-	bucketMap
-	bucketSlice
-)
-
 type fieldInfo struct {
 	FieldName    string
 	DefaultValue string
@@ -80,31 +72,6 @@ func convertValueFromStruct(value interface{}, targetType reflect.Type, fieldTyp
 	return nil
 }
 
-func getBucket(t reflect.Type) int {
-	kind := t.Kind()
-	if kind == reflect.Ptr {
-		kind = t.Elem().Kind()
-	}
-
-	switch kind {
-	case reflect.Chan:
-		fallthrough
-	case reflect.Interface:
-		fallthrough
-	case reflect.Func:
-		fallthrough
-	case reflect.Map:
-		return bucketMap
-	case reflect.Array:
-		return bucketArray
-	case reflect.Slice:
-		return bucketSlice
-	case reflect.Struct:
-		return bucketObject
-	}
-	return bucketPrimitive
-}
-
 type decoder struct {
 	*Value
 	m map[interface{}]struct{}
@@ -123,25 +90,6 @@ func (d *decoder) scalar(childKey string, value reflect.Value, def string) error
 	valueType := value.Type()
 	global := d.getGlobalProvider()
 	var val interface{}
-
-	if valueType.Kind() == reflect.Ptr {
-		if v1 := global.Get(childKey); v1.HasValue() {
-			val = v1.Value()
-			if val != nil {
-				// We cannot assign reflect.ValueOf(Val) to it as is to value.
-				// value is a pointer, which currently points to non address.
-				// We need to set a new reflect.Value with field type same as the field we are populating
-				// before assigning the value (val) parsed from yaml
-				if value.IsNil() {
-					value.Set(reflect.New(valueType.Elem()))
-				}
-
-				return d.scalar(childKey, value.Elem(), def)
-			}
-		}
-
-		return nil
-	}
 
 	// For primitive values, just get the value and set it into the field
 	if v2 := global.Get(childKey); v2.HasValue() {
@@ -284,23 +232,7 @@ func (d *decoder) mapping(childKey string, value reflect.Value, def string) erro
 
 // Sets value to an object type.
 func (d *decoder) object(childKey string, value reflect.Value) error {
-	valueType := value.Type()
-	global := d.getGlobalProvider()
-
-	v2 := global.Get(childKey)
-
-	if !v2.HasValue() && valueType.Kind() == reflect.Ptr {
-		// in this case we will keep the pointer value as not defined.
-		return nil
-	}
-
-	if !value.CanSet() {
-		return nil
-	}
-
-	if valueType.Kind() != reflect.Ptr {
-		value = value.Addr()
-	}
+	value = value.Addr()
 
 	if value.IsNil() {
 		tmp := reflect.New(value.Type().Elem())
@@ -349,8 +281,22 @@ func (d *decoder) valueStruct(key string, target interface{}) error {
 	return validator.Validate(target)
 }
 
-// Dispatch un-marshalling functions based on the value type.
-func (d *decoder) unmarshal(name string, value reflect.Value, def string) error {
+// If there is no value with name - leave it nil, otherwise allocate memory and set the value.
+func (d *decoder) pointer(name string, value reflect.Value, def string) error {
+	if !d.getGlobalProvider().Get(name).HasValue() {
+		return nil
+	}
+
+	if value.IsNil() {
+		value.Set(reflect.New(value.Type().Elem()))
+	}
+
+	return d.unmarshal(name, value.Elem(), def)
+}
+
+// Check if a value is a pointer and decoder set it before.
+// TODO(alsam) print only elements in the loop, not all elements.
+func (d *decoder) checkCycles(value reflect.Value) error {
 	if value.Type().Comparable() {
 		val := value.Interface()
 		kind := value.Kind()
@@ -369,18 +315,35 @@ func (d *decoder) unmarshal(name string, value reflect.Value, def string) error 
 		d.m[val] = struct{}{}
 	}
 
-	switch getBucket(value.Type()) {
-	case bucketPrimitive:
-		return d.scalar(name, value, def)
-	case bucketObject:
-		return d.object(name, value)
-	case bucketArray:
-		return d.array(name, value)
-	case bucketSlice:
-		return d.sequence(name, value)
-	case bucketMap:
-		return d.mapping(name, value, def)
+	return nil
+}
+
+// Dispatch un-marshalling functions based on the value type.
+func (d *decoder) unmarshal(name string, value reflect.Value, def string) error {
+	if err := d.checkCycles(value); err != nil {
+		return err
 	}
 
-	return nil
+	switch value.Kind() {
+	case reflect.Invalid:
+		return fmt.Errorf("invalid value type for key %s", name)
+	case reflect.Ptr:
+		return d.pointer(name, value, def)
+	case reflect.Struct:
+		return d.object(name, value)
+	case reflect.Array:
+		return d.array(name, value)
+	case reflect.Slice:
+		return d.sequence(name, value)
+	case reflect.Map:
+		return d.mapping(name, value, def)
+	case reflect.Interface:
+		return d.mapping(name, value, def)
+	case reflect.Chan:
+		return nil
+	case reflect.Func:
+		return nil
+	default:
+		return d.scalar(name, value, def)
+	}
 }
