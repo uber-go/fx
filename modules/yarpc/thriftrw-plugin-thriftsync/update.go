@@ -35,13 +35,14 @@ import (
 )
 
 const funcOnlyTemplate = `
+<$handlerStructName   := .HandlerStructName>
 package discardme
 
 <$name := lower .Service.Name>
 
 <range .Functions>
 
-  func (h *YARPCHandler)<.Name>(ctx context.Context, <range .Arguments> <lowerFirst .Name> <formatType .Type>, <end>)<if .ReturnType> (<formatType .ReturnType>, error) <else> error <end> {
+  func (h *<$handlerStructName>)<.Name>(ctx context.Context, <range .Arguments> <lowerFirst .Name> <formatType .Type>, <end>)<if .ReturnType> (<formatType .ReturnType>, error) <else> error <end> {
     // TODO: write your code here
     panic("To be implemented")
   }
@@ -62,8 +63,9 @@ func NewUpdater(opts Options) Updater {
 }
 
 type updatedData struct {
-	Service   *api.Service
-	Functions []*api.Function
+	Service           *api.Service
+	Functions         []*api.Function
+	HandlerStructName string
 }
 
 // UpdateExistingHandlerFile sync existing handler file with the thrift idl
@@ -71,12 +73,14 @@ type updatedData struct {
 func (u *Updater) UpdateExistingHandlerFile(
 	service *api.Service,
 	goFilePath string,
-	handlerDir string) error {
+	handlerDir string,
+	handlerStructName string) error {
 
 	newFuncs, err := u.compare(service, goFilePath, handlerDir)
 	if err != nil {
 		return err
 	}
+	newFuncs.HandlerStructName = handlerStructName
 	appendBytes, err := u.generate(goFilePath, newFuncs)
 	if err != nil {
 		return err
@@ -183,11 +187,13 @@ func (u *Updater) generateSingleFunction(goFilePath string, service *api.Service
 
 func (u *Updater) generate(goFilePath string, newData *updatedData) ([]byte, error) {
 	funcData := struct {
-		Service   *api.Service
-		Functions []*api.Function
+		Service           *api.Service
+		Functions         []*api.Function
+		HandlerStructName string
 	}{
-		Service:   newData.Service,
-		Functions: newData.Functions,
+		Service:           newData.Service,
+		Functions:         newData.Functions,
+		HandlerStructName: newData.HandlerStructName,
 	}
 
 	return plugin.GoFileFromTemplate(
