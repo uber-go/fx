@@ -4,8 +4,8 @@ LIST_PKGS ?= $(shell go list ./... | grep -v /vendor/)
 
 # Many Go tools take file globs or directories as arguments instead of packages.
 ROOT_PKG_FILES := $(wildcard *.go)
-# Get all the directories in fx root that are not vendor, hidden, or examples, join into one line
-PKG_NAMES := $(shell find . -d 1 -type d | cut -f 2 -d"/" | grep -ve "vendor\|\.\|examples" | paste -sd " " -)
+# Get all the go packages, ignore vendor and take fx/* directories
+PKG_NAMES := $(shell go list ./... | grep -v "vendor\|examples" |  cut -d"/" -f 3 | uniq | paste -sd " " -)
 PKG_FILES ?= $(ROOT_PACKAGE_FILES) $(PKG_NAMES)
 
 # The linting tools evolve with each Go version, so run them only on the latest
