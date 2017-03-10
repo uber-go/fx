@@ -19,6 +19,8 @@
 * [Breaking] Rename `yarpc.CreateThriftServiceFunc` to `yarpc.ServiceCreateFunc`
   as it is not thrift-specific.
 * Report version metrics for company-wide version usage information.
+* DIG constructors now support returning a tuple with the second argument being
+  an error.
 
 ## v1.0.0-beta1 (20 Feb 2017)
 
