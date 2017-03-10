@@ -40,13 +40,16 @@ var (
 	_ctx       = context.Background()
 )
 
-func init() {
+func globalBackendSetup(t *testing.T) func() {
 	host, _ := service.NewScopedHost(service.NopHost(), "task", "hello")
 	_testScope = host.Metrics()
 	_globalBackend = NewInMemBackend(host)
-	_ = _globalBackend.Start()
+	require.NoError(t, _globalBackend.Start())
 	_errorCh = _globalBackend.(*inMemBackend).ErrorCh()
-	_globalBackend.Encoder().Register(context.Background())
+	return func() {
+		assert.NoError(t, _globalBackend.Stop())
+		_globalBackend = NopBackend{}
+	}
 }
 
 func TestRegisterNonFunction(t *testing.T) {
@@ -114,21 +117,33 @@ func TestEnqueueWithoutRegister(t *testing.T) {
 }
 
 func TestConsumeWithoutRegister(t *testing.T) {
+	host, _ := service.NewScopedHost(service.NopHost(), "task", "hello")
+	_testScope = host.Metrics()
+	_globalBackend = NewInMemBackend(host)
+	_errorCh = _globalBackend.(*inMemBackend).ErrorCh()
+	defer func() {
+		assert.NoError(t, _globalBackend.Stop())
+		_globalBackend = NopBackend{}
+	}()
 	fn := func(ctx context.Context, num float64) error { return nil }
 	err := Register(fn)
 	require.NoError(t, err)
 	err = Enqueue(fn, _ctx, float64(1.0))
 	require.NoError(t, err)
+	// This clears the previous register
 	fnLookup.setFnNameMap(make(map[string]interface{}))
+	// Start after clearing the register to avoid race condition where consume happens before clearing
+	require.NoError(t, _globalBackend.Start())
 	err = <-_errorCh
 	require.Error(t, err)
 	assert.Contains(
-		t, err.Error(), "\"go.uber.org/fx/modules/task.TestConsumeWithoutRegister.func1\""+
+		t, err.Error(), "\"go.uber.org/fx/modules/task.TestConsumeWithoutRegister.func2\""+
 			" not found",
 	)
 }
 
 func TestEnqueueEncodingError(t *testing.T) {
+	defer globalBackendSetup(t)()
 	// Struct with all private members cannot be encoded
 	type prStr struct {
 		a int
@@ -143,12 +158,14 @@ func TestEnqueueEncodingError(t *testing.T) {
 }
 
 func TestRunDecodeError(t *testing.T) {
+	defer globalBackendSetup(t)()
 	err := Run(context.Background(), []byte{})
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "unable to decode the message")
 }
 
 func TestEnqueueNoArgsFn(t *testing.T) {
+	defer globalBackendSetup(t)()
 	err := Register(OnlyContext)
 	require.NoError(t, err)
 	err = Enqueue(OnlyContext, _ctx)
@@ -158,6 +175,7 @@ func TestEnqueueNoArgsFn(t *testing.T) {
 }
 
 func TestEnqueueSimpleFn(t *testing.T) {
+	defer globalBackendSetup(t)()
 	err := Register(SimpleWithError)
 	require.NoError(t, err)
 	err = Enqueue(SimpleWithError, _ctx, "hello")
@@ -176,6 +194,7 @@ func TestEnqueueSimpleFn(t *testing.T) {
 }
 
 func TestEnqueueMapFn(t *testing.T) {
+	defer globalBackendSetup(t)()
 	fn := func(ctx context.Context, arg map[string]string) error { return nil }
 	err := Register(fn)
 	require.NoError(t, err)
@@ -186,6 +205,7 @@ func TestEnqueueMapFn(t *testing.T) {
 }
 
 func TestEnqueueFnClosure(t *testing.T) {
+	defer globalBackendSetup(t)()
 	var wg sync.WaitGroup
 	fn := func(ctx context.Context) error { return nil }
 	wg.Add(1)
@@ -210,6 +230,7 @@ func TestEnqueueFnClosure(t *testing.T) {
 }
 
 func TestEnqueueWithStructFnWithError(t *testing.T) {
+	defer globalBackendSetup(t)()
 	require.NoError(t, Register(WithStruct))
 	err := Enqueue(WithStruct, _ctx, Car{Brand: "infinity", Year: 2017})
 	require.NoError(t, err)
