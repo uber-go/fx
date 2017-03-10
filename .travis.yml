@@ -12,4 +12,4 @@ before_install:
 script:
   - make dockerci
 after_success:
-  - make dockersave
+  - if [[ "${TRAVIS_BRANCH}" == "master" ]] && [[ "${TRAVIS_PULL_REQUEST}" == "false" ]]; then make dockersave; fi
