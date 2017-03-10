@@ -136,24 +136,7 @@ func (d *decoder) scalar(childKey string, value reflect.Value, def string) error
 					value.Set(reflect.New(valueType.Elem()))
 				}
 
-				// We cannot assign reflect.ValueOf(val) to value as is, when field is a user defined type
-				// We need to find the Kind of the custom type and set the value to the specific type
-				// that user defined type is defined with.
-				kind := valueType.Elem().Kind()
-				switch kind {
-				case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-					value.Elem().SetInt(int64(val.(int)))
-				case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr:
-					value.Elem().SetUint(uint64(val.(int)))
-				case reflect.Float32, reflect.Float64:
-					value.Elem().SetFloat(val.(float64))
-				case reflect.Bool:
-					value.Elem().SetBool(val.(bool))
-				case reflect.String:
-					value.Elem().SetString(val.(string))
-				default:
-					value.Elem().Set(reflect.ValueOf(val))
-				}
+				return d.scalar(childKey, value.Elem(), def)
 			}
 		}
 
