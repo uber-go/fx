@@ -140,9 +140,9 @@ dockerrun: dockerbuild
 .PHONY: travis
 travis: dockerbuild
 	if [ "$(DOCKER_GO_VERSION)" == "1.8" ]; then \
-		docker run -e V -e COVERMODE $(DOCKER_IMAGE) make coveralls; \
+		docker run -e V -e COVERMODE $(DOCKER_IMAGE) make coveralls lint examples; \
 	else \
-		docker run -e V -e COVERMODE $(DOCKER_IMAGE) make ci; \
+		docker run -e V -e COVERMODE $(DOCKER_IMAGE) make test lint examples; \
 	fi
 
 .PHONY: gendoc
@@ -171,14 +171,10 @@ clean:
 	$(ECHO_V)find $(subst /...,,$(PKGS)) -name $(COVER_OUT) -delete
 	$(ECHO_V)rm -rf .bin
 
-
 .PHONY: examples
 examples:
 	$(ECHO_V)go test ./examples/simple
 	$(ECHO_V)go test ./examples/dig
-
-.PHONY: ci
-ci: test lint examples
 
 .PHONY: vendor
 vendor:
