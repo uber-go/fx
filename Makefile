@@ -139,9 +139,10 @@ dockerrun: dockerbuild
 
 .PHONY: travis
 travis: dockerbuild
-	docker run -e V -e COVERMODE $(DOCKER_IMAGE) make ci
 	if [ "$(DOCKER_GO_VERSION)" == "1.8" ]; then \
 		docker run -e V -e COVERMODE $(DOCKER_IMAGE) make coveralls; \
+	else; \
+		docker run -e V -e COVERMODE $(DOCKER_IMAGE) make ci; \
 	fi
 
 .PHONY: gendoc
