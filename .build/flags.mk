@@ -4,7 +4,7 @@ LIST_PKGS ?= $(shell go list ./... | grep -v /vendor/)
 
 # Many Go tools take file globs or directories as arguments instead of packages.
 ROOT_PKG_FILES := $(wildcard *.go)
-PKG_NAMES := auth config dig internal metrics modules service testutils tracing ulog
+PKG_NAMES := $(shell find . -d 1 -type d | cut -f 2 -d"/" | grep -ve "vendor\|\.\|examples" | paste -sd " " -)
 PKG_FILES ?= $(ROOT_PACKAGE_FILES) $(PKG_NAMES)
 
 # The linting tools evolve with each Go version, so run them only on the latest
