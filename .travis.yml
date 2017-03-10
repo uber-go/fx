@@ -6,9 +6,5 @@ env:
   - DOCKER_GO_VERSION=1.8 V=1 COVERMODE=atomic
 matrix:
   fast_finish: true
-before_install:
-  - make dockerbuild
 script:
-  - make dockerci
-after_success:
-  - make dockercoveralls
+  - make travis

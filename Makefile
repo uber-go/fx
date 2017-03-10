@@ -137,12 +137,9 @@ dockerbuild:
 dockerrun: dockerbuild
 	docker run -e V -e COVERMODE $(DOCKER_IMAGE) make $(DOCKER_MAKE_CMD)
 
-.PHONY: dockerci
-dockerci:
+.PHONY: travis
+travis: dockerbuild
 	docker run -e V -e COVERMODE $(DOCKER_IMAGE) make ci
-
-.PHONY: dockercoveralls
-dockercoveralls:
 	if [ "$(DOCKER_GO_VERSION)" == "1.8" ]; then \
 		docker run -e V -e COVERMODE $(DOCKER_IMAGE) make coveralls \
 	fi
