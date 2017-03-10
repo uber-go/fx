@@ -37,6 +37,9 @@ var (
 	_baseDir = flag.String("base-dir",
 		"server",
 		"Path from root where handlers should live")
+	_handlerStructName = flag.String("handler-struct",
+		"YARPCHandler",
+		"Struct name of the handler")
 	_handlerPackageName = flag.String("handler-package",
 		"server",
 		"Handler package name, defaults to 'main'")
@@ -77,6 +80,7 @@ func (generator) Generate(req *api.GenerateServiceRequest) (*api.GenerateService
 			Service            *api.Service
 			Parent             *api.Service
 			ParentModule       *api.Module
+			HandlerStructName  string
 			HandlerPackageName string
 			YARPCServer        string
 		}{
@@ -84,6 +88,7 @@ func (generator) Generate(req *api.GenerateServiceRequest) (*api.GenerateService
 			Service:            service,
 			Parent:             parent,
 			ParentModule:       parentModule,
+			HandlerStructName:  *_handlerStructName,
 			HandlerPackageName: *_handlerPackageName,
 			YARPCServer:        fmt.Sprintf("%s/%sserver", module.ImportPath, strings.ToLower(service.Name)),
 		}
@@ -100,7 +105,7 @@ func (generator) Generate(req *api.GenerateServiceRequest) (*api.GenerateService
 			files[gofilePath] = handlerContents
 		} else {
 			f := NewUpdater(opts)
-			if err := f.UpdateExistingHandlerFile(service, gofilePath, *_baseDir); err != nil {
+			if err := f.UpdateExistingHandlerFile(service, gofilePath, *_baseDir, *_handlerStructName); err != nil {
 				return nil, err
 			} else if err = f.RefreshAll(service, gofilePath); err != nil {
 				return nil, err
