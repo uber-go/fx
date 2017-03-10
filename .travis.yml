@@ -9,6 +9,6 @@ matrix:
 before_install:
   - make dockerbuild
 script:
-  - make dockerrun DOCKER_MAKE_CMD=ci
+  - make dockerci
 after_success:
-   - '[ "${TRAVIS_GO_VERSION}" == "1.8" ] && make dockerrun DOCKER_MAKE_CMD=coveralls'
+  - make dockercoveralls
