@@ -141,7 +141,7 @@ dockerrun: dockerbuild
 travis: dockerbuild
 	if [ "$(DOCKER_GO_VERSION)" == "1.8" ]; then \
 		docker run -e V -e COVERMODE $(DOCKER_IMAGE) make coveralls; \
-	else; \
+	else \
 		docker run -e V -e COVERMODE $(DOCKER_IMAGE) make ci; \
 	fi
 
