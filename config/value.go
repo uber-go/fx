@@ -287,15 +287,7 @@ func (cv Value) Value() interface{} {
 
 // Get returns a value scoped in the current value
 func (cv Value) Get(key string) Value {
-	if cv.key == "" {
-		return cv.provider.Get(key)
-	}
-
-	if key == "" {
-		return cv
-	}
-
-	return cv.provider.Get(cv.key + _separator + key)
+	return NewScopedProvider(cv.key, cv.provider).Get(key)
 }
 
 // this is a quick-and-dirty conversion method that only handles
