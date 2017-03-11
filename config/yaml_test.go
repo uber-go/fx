@@ -23,6 +23,7 @@ package config
 import (
 	"bytes"
 	"fmt"
+	"errors"
 	"io/ioutil"
 	"os"
 	"path"
@@ -661,4 +662,94 @@ Say:
 	var r Foo
 	require.NoError(t, p.Get(Root).PopulateStruct(&r))
 	assert.Nil(t, r.Say)
+}
+
+type unmarshallerChan chan string
+
+func (m *unmarshallerChan) UnmarshalText(text []byte) error{
+	name := string(text)
+	if name == "error" {
+		return errors.New("unmarshaller channel error")
+	}
+	*m = make(chan string, 1)
+	*m <- "Hello " + name
+	return nil
+}
+
+type unmarshallerFunc func(string) error
+
+func (m *unmarshallerFunc) UnmarshalText(text []byte) error{
+	str := string(text)
+	if str == "error" {
+		return errors.New("unmarshaller function error")
+	}
+	*m = func(message string) error {
+		return errors.New(message + str)
+	}
+
+	return nil
+}
+
+func TestHappyUnmarshallerChannelFunction(t *testing.T) {
+	t.Parallel()
+	type Chart struct {
+		Band unmarshallerChan `default:"Beatles"`
+		Song unmarshallerFunc `default:"back"`
+	}
+
+	f := func(src []byte, band, song string) {
+		var r Chart
+		p := NewYAMLProviderFromBytes(src)
+		require.NoError(t, p.Get(Root).PopulateStruct(&r))
+		require.Equal(t, band, <- r.Band)
+		assert.EqualError(t, r.Song("Get "), song)
+	}
+
+	b := []byte(`
+Band: Rolling Stones
+Song: off my cloud
+`)
+
+	tests := map[string]func(){
+		"defaults":func(){f([]byte(``), "Hello Beatles", "Get back")},
+		"custom values":func(){f(b, "Hello Rolling Stones", "Get off my cloud")},
+	}
+
+	for k, v := range tests {
+		t.Run(k, func(*testing.T){v()})
+	}
+}
+
+func TestGrumpyUnmarshallerChannelFunction(t *testing.T) {
+	t.Parallel()
+	type S struct {
+		C unmarshallerChan
+		F unmarshallerFunc
+	}
+
+	f := func(src []byte, message string) {
+		var r S
+		p := NewYAMLProviderFromBytes(src)
+		e := p.Get(Root).PopulateStruct(&r)
+		require.EqualError(t, e, message)
+	}
+
+	chanError := []byte(`
+C: error
+F: something
+`)
+
+	funcError := []byte(`
+C: something
+F: error
+`)
+
+	tests := map[string]func(){
+		"channel error":func(){f(chanError, "unmarshaller channel error")},
+		"function error":func(){f(funcError, "unmarshaller function error")},
+	}
+
+	for k, v := range tests {
+		t.Run(k, func(*testing.T){v()})
+	}
 }

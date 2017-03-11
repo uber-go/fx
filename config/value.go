@@ -161,9 +161,9 @@ func (cv Value) ChildKeys() []string {
 	return nil
 }
 
-// String prints out underline value in Value with fmt.Srpintf.
+// String prints out underline value in Value with fmt.Sprintf.
 func (cv Value) String() string {
-	return fmt.Sprintf("%v", cv.value)
+	return fmt.Sprintf("%v", cv.Value())
 }
 
 // TryAsString attempts to return the configuration value as a string
