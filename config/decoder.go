@@ -237,8 +237,13 @@ func (d *decoder) iface(key string, value reflect.Value, def string) error {
 		return nil
 	}
 
-	value.Set(reflect.ValueOf(v.Value()))
-	return nil
+	src := reflect.ValueOf(v.Value())
+	if src.Type().Implements(value.Type()) {
+		value.Set(src)
+		return nil
+	}
+
+	return fmt.Errorf("%v doesn't implement to %v", src.Type(), value.Type())
 }
 
 // Sets value to an object type.
