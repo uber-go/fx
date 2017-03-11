@@ -22,8 +22,8 @@ package config
 
 import (
 	"bytes"
-	"fmt"
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"os"
 	"path"
@@ -666,7 +666,7 @@ Say:
 
 type unmarshallerChan chan string
 
-func (m *unmarshallerChan) UnmarshalText(text []byte) error{
+func (m *unmarshallerChan) UnmarshalText(text []byte) error {
 	name := string(text)
 	if name == "error" {
 		return errors.New("unmarshaller channel error")
@@ -678,7 +678,7 @@ func (m *unmarshallerChan) UnmarshalText(text []byte) error{
 
 type unmarshallerFunc func(string) error
 
-func (m *unmarshallerFunc) UnmarshalText(text []byte) error{
+func (m *unmarshallerFunc) UnmarshalText(text []byte) error {
 	str := string(text)
 	if str == "error" {
 		return errors.New("unmarshaller function error")
@@ -701,7 +701,7 @@ func TestHappyUnmarshallerChannelFunction(t *testing.T) {
 		var r Chart
 		p := NewYAMLProviderFromBytes(src)
 		require.NoError(t, p.Get(Root).PopulateStruct(&r))
-		require.Equal(t, band, <- r.Band)
+		require.Equal(t, band, <-r.Band)
 		assert.EqualError(t, r.Song("Get "), song)
 	}
 
@@ -711,12 +711,12 @@ Song: off my cloud
 `)
 
 	tests := map[string]func(){
-		"defaults":func(){f([]byte(``), "Hello Beatles", "Get back")},
-		"custom values":func(){f(b, "Hello Rolling Stones", "Get off my cloud")},
+		"defaults":      func() { f([]byte(``), "Hello Beatles", "Get back") },
+		"custom values": func() { f(b, "Hello Rolling Stones", "Get off my cloud") },
 	}
 
 	for k, v := range tests {
-		t.Run(k, func(*testing.T){v()})
+		t.Run(k, func(*testing.T) { v() })
 	}
 }
 
@@ -745,11 +745,11 @@ F: error
 `)
 
 	tests := map[string]func(){
-		"channel error":func(){f(chanError, "unmarshaller channel error")},
-		"function error":func(){f(funcError, "unmarshaller function error")},
+		"channel error":  func() { f(chanError, "unmarshaller channel error") },
+		"function error": func() { f(funcError, "unmarshaller function error") },
 	}
 
 	for k, v := range tests {
-		t.Run(k, func(*testing.T){v()})
+		t.Run(k, func(*testing.T) { v() })
 	}
 }

@@ -22,8 +22,8 @@ package config
 
 import (
 	"bytes"
-	"fmt"
 	"encoding"
+	"fmt"
 	"reflect"
 	"strconv"
 
@@ -309,7 +309,7 @@ func (d *decoder) textUnmarshaller(key string, value reflect.Value, str string) 
 	v := d.getGlobalProvider().Get(key)
 	if v.HasValue() {
 		str = v.String()
-	} else  if str == "" {
+	} else if str == "" {
 		return nil
 	}
 
@@ -318,7 +318,7 @@ func (d *decoder) textUnmarshaller(key string, value reflect.Value, str string) 
 	}
 
 	// Value has to have a pointer receiver to be able to modify itself with TextUnmarshaller
-	switch t := value.Addr().Interface().(type){
+	switch t := value.Addr().Interface().(type) {
 	case encoding.TextUnmarshaler:
 		return t.UnmarshalText([]byte(str))
 	}
