@@ -232,7 +232,6 @@ func (d *decoder) mapping(childKey string, value reflect.Value, def string) erro
 // Sets value to an interface type.
 func (d *decoder) iface(key string, value reflect.Value, def string) error {
 	v := d.getGlobalProvider().Get(key)
-
 	if !v.HasValue() || v.Value() == nil {
 		return nil
 	}
@@ -243,7 +242,7 @@ func (d *decoder) iface(key string, value reflect.Value, def string) error {
 		return nil
 	}
 
-	return fmt.Errorf("%v doesn't implement to %v", src.Type(), value.Type())
+	return fmt.Errorf("%v doesn't implement %v", src.Type(), value.Type())
 }
 
 // Sets value to an object type.
