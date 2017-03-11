@@ -24,6 +24,7 @@ import (
 	"bytes"
 	"encoding"
 	"fmt"
+	"encoding"
 	"reflect"
 	"strconv"
 
@@ -309,7 +310,11 @@ func (d *decoder) textUnmarshaller(key string, value reflect.Value, str string) 
 	v := d.getGlobalProvider().Get(key)
 	if v.HasValue() {
 		str = v.String()
+<<<<<<< HEAD
 	} else if str == "" {
+=======
+	} else  if str == "" {
+>>>>>>> Add ability to unmarshal channel and functional fields
 		return nil
 	}
 
@@ -318,11 +323,15 @@ func (d *decoder) textUnmarshaller(key string, value reflect.Value, str string) 
 	}
 
 	// Value has to have a pointer receiver to be able to modify itself with TextUnmarshaller
+<<<<<<< HEAD
 	if !value.CanAddr() {
 		return fmt.Errorf("can't use TextUnmarshaller because %q is not addressable", key)
 	}
 
 	switch t := value.Addr().Interface().(type) {
+=======
+	switch t := value.Addr().Interface().(type){
+>>>>>>> Add ability to unmarshal channel and functional fields
 	case encoding.TextUnmarshaler:
 		return t.UnmarshalText([]byte(str))
 	}
