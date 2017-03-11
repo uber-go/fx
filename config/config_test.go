@@ -197,6 +197,21 @@ func TestSimpleConfigValues(t *testing.T) {
 	assert.NoError(t, v.PopulateStruct(nested))
 }
 
+func TestPopulateStructIntToFloat64(t *testing.T) {
+	provider := NewProviderGroup(
+		"test",
+		NewYAMLProviderFromBytes([]byte("foo: 1")),
+	)
+
+	myStruct := struct {
+		Foo float64
+	}{}
+
+	require.NoError(t, provider.Get(Root).PopulateStruct(&myStruct))
+
+	assert.Equal(t, float64(1), myStruct.Foo)
+}
+
 func TestGetAsIntegerValue(t *testing.T) {
 	testCases := []struct {
 		value interface{}

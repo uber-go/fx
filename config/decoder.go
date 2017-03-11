@@ -61,7 +61,15 @@ func convertValueFromStruct(value interface{}, targetType reflect.Type, fieldTyp
 	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr:
 		fieldValue.SetUint(uint64(value.(int)))
 	case reflect.Float32, reflect.Float64:
-		fieldValue.SetFloat(value.(float64))
+		var valueToSet float64
+
+		switch value := value.(type) {
+		case int:
+			valueToSet = float64(value)
+		default:
+			valueToSet = value.(float64)
+		}
+		fieldValue.SetFloat(valueToSet)
 	case reflect.Bool:
 		fieldValue.SetBool(value.(bool))
 	case reflect.String:
