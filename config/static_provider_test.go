@@ -52,7 +52,7 @@ func TestStaticProvider_WithData(t *testing.T) {
 	assert.Equal(t, "world", val.AsString())
 }
 
-func TestStaticProvider_WithScope(t *testing.T) {
+func TestStaticProvider_WithGet(t *testing.T) {
 	data := map[string]interface{}{
 		"hello": map[string]int{"world": 42},
 	}
@@ -61,7 +61,7 @@ func TestStaticProvider_WithScope(t *testing.T) {
 	val := p.Get("hello")
 	assert.True(t, val.HasValue())
 
-	sub := p.Scope("hello")
+	sub := p.Get("hello")
 	val = sub.Get("world")
 	assert.True(t, val.HasValue())
 	assert.Equal(t, 42, val.AsInt())

@@ -285,6 +285,19 @@ func (cv Value) Value() interface{} {
 	return cv.defaultValue
 }
 
+// Get returns a value scoped in the current value
+func (cv Value) Get(key string) Value {
+	if cv.key == "" {
+		return cv.provider.Get(key)
+	}
+
+	if key == "" {
+		return cv
+	}
+
+	return cv.provider.Get(cv.key + _separator + key)
+}
+
 // this is a quick-and-dirty conversion method that only handles
 // a couple of cases and complains if it finds one it doesn't like.
 // needs a bunch more cases.

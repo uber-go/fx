@@ -1,6 +1,7 @@
 # Changelog
 
 ## v1.0.0-beta3 (unreleased)
+* Remove `Scope` method from the `config.Provider` interface.
 
 ## v1.0.0-beta2 (09 Mar 2017)
 

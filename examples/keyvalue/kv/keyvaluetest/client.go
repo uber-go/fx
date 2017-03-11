@@ -25,9 +25,9 @@ package keyvaluetest
 
 import (
 	"context"
+	"github.com/golang/mock/gomock"
 	"go.uber.org/fx/examples/keyvalue/kv/keyvalueclient"
 	"go.uber.org/yarpc"
-	"github.com/golang/mock/gomock"
 )
 
 // MockClient implements a gomock-compatible mock client for service
