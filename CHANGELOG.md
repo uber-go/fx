@@ -1,7 +1,8 @@
 # Changelog
 
 ## v1.0.0-beta3 (unreleased)
-* Remove `Scope` method from the `config.Provider` interface.
+* [Breaking] Simplify Provider interface: remove `Scope` method from the `config.Provider` interface, one can
+  use either ScopedProvider and Value.Get() to access sub fields.
 
 ## v1.0.0-beta2 (09 Mar 2017)
 
