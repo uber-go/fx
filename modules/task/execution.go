@@ -133,6 +133,15 @@ func Register(fn interface{}) error {
 	return nil
 }
 
+// MustRegister registers a function for an async task or panics
+// Since Task registration is performed in main() we want to fail-fast and
+// reduce the amount of error-checking
+func MustRegister(fn interface{}) {
+	if err := Register(fn); err != nil {
+		panic(err)
+	}
+}
+
 // Run decodes the message and executes as a task
 func Run(ctx context.Context, message []byte) error {
 	stopwatch := globalBackendStatsClient().TaskExecutionTime().Start()
