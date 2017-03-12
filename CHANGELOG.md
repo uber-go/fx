@@ -2,7 +2,7 @@
 
 ## v1.0.0-beta3 (unreleased)
 
-* Add `task.MustRegister` convenience function which fails fast by panic-ing
+* Add `task.MustRegister` convenience function which fails fast by panicking
   Note that this should only be used during app initialization, and is provided
   to avoid repetetive error checking for services which register many tasks.
 
