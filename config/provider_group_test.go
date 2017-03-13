@@ -119,6 +119,19 @@ func TestScope_WithGetFromValue(t *testing.T) {
 	require.False(t, fx.Get("fx").HasValue())
 }
 
+func TestProviderGroupScopingValue(t *testing.T) {
+	t.Parallel()
+	fst := []byte(`
+logging:`)
+
+	snd := []byte(`
+logging:
+  enabled: true
+`)
+	pg := NewProviderGroup("group", NewYAMLProviderFromBytes(snd), NewYAMLProviderFromBytes(fst))
+	assert.True(t, pg.Get("logging").Get("enabled").AsBool())
+}
+
 type mockDynamicProvider struct {
 	data      map[string]interface{}
 	callBacks map[string]ChangeCallback
