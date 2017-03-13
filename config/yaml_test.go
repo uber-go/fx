@@ -718,10 +718,6 @@ Song: off my cloud
 	for k, v := range tests {
 		t.Run(k, func(*testing.T) { v() })
 	}
-
-	for k, v := range tests {
-		t.Run(k, func(*testing.T) { v() })
-	}
 }
 
 func TestGrumpyUnmarshallerChannelFunction(t *testing.T) {
