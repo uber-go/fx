@@ -22,11 +22,6 @@ package config
 
 import (
 	"bytes"
-<<<<<<< HEAD
-	"errors"
-	"fmt"
-=======
->>>>>>> Fix fmt
 	"errors"
 	"fmt"
 	"io/ioutil"
@@ -671,15 +666,7 @@ Say:
 
 type unmarshallerChan chan string
 
-<<<<<<< HEAD
-<<<<<<< HEAD
 func (m *unmarshallerChan) UnmarshalText(text []byte) error {
-=======
-func (m *unmarshallerChan) UnmarshalText(text []byte) error{
->>>>>>> Add ability to unmarshal channel and functional fields
-=======
-func (m *unmarshallerChan) UnmarshalText(text []byte) error {
->>>>>>> Fix fmt
 	name := string(text)
 	if name == "error" {
 		return errors.New("unmarshaller channel error")
@@ -691,15 +678,7 @@ func (m *unmarshallerChan) UnmarshalText(text []byte) error {
 
 type unmarshallerFunc func(string) error
 
-<<<<<<< HEAD
-<<<<<<< HEAD
 func (m *unmarshallerFunc) UnmarshalText(text []byte) error {
-=======
-func (m *unmarshallerFunc) UnmarshalText(text []byte) error{
->>>>>>> Add ability to unmarshal channel and functional fields
-=======
-func (m *unmarshallerFunc) UnmarshalText(text []byte) error {
->>>>>>> Fix fmt
 	str := string(text)
 	if str == "error" {
 		return errors.New("unmarshaller function error")
@@ -722,15 +701,7 @@ func TestHappyUnmarshallerChannelFunction(t *testing.T) {
 		var r Chart
 		p := NewYAMLProviderFromBytes(src)
 		require.NoError(t, p.Get(Root).PopulateStruct(&r))
-<<<<<<< HEAD
-<<<<<<< HEAD
 		require.Equal(t, band, <-r.Band)
-=======
-		require.Equal(t, band, <- r.Band)
->>>>>>> Add ability to unmarshal channel and functional fields
-=======
-		require.Equal(t, band, <-r.Band)
->>>>>>> Fix fmt
 		assert.EqualError(t, r.Song("Get "), song)
 	}
 
@@ -740,30 +711,16 @@ Song: off my cloud
 `)
 
 	tests := map[string]func(){
-<<<<<<< HEAD
-<<<<<<< HEAD
 		"defaults":      func() { f([]byte(``), "Hello Beatles", "Get back") },
 		"custom values": func() { f(b, "Hello Rolling Stones", "Get off my cloud") },
 	}
 
 	for k, v := range tests {
 		t.Run(k, func(*testing.T) { v() })
-=======
-		"defaults":func(){f([]byte(``), "Hello Beatles", "Get back")},
-		"custom values":func(){f(b, "Hello Rolling Stones", "Get off my cloud")},
-	}
-
-	for k, v := range tests {
-		t.Run(k, func(*testing.T){v()})
->>>>>>> Add ability to unmarshal channel and functional fields
-=======
-		"defaults":      func() { f([]byte(``), "Hello Beatles", "Get back") },
-		"custom values": func() { f(b, "Hello Rolling Stones", "Get off my cloud") },
 	}
 
 	for k, v := range tests {
 		t.Run(k, func(*testing.T) { v() })
->>>>>>> Fix fmt
 	}
 }
 
@@ -792,8 +749,6 @@ F: error
 `)
 
 	tests := map[string]func(){
-<<<<<<< HEAD
-<<<<<<< HEAD
 		"channel error":  func() { f(chanError, "unmarshaller channel error") },
 		"function error": func() { f(funcError, "unmarshaller function error") },
 	}
@@ -802,20 +757,3 @@ F: error
 		t.Run(k, func(*testing.T) { v() })
 	}
 }
-=======
-		"channel error":func(){f(chanError, "unmarshaller channel error")},
-		"function error":func(){f(funcError, "unmarshaller function error")},
-=======
-		"channel error":  func() { f(chanError, "unmarshaller channel error") },
-		"function error": func() { f(funcError, "unmarshaller function error") },
->>>>>>> Fix fmt
-	}
-
-	for k, v := range tests {
-		t.Run(k, func(*testing.T) { v() })
-	}
-}
-<<<<<<< HEAD
->>>>>>> Add ability to unmarshal channel and functional fields
-=======
->>>>>>> Fix fmt
