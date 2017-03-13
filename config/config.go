@@ -41,7 +41,6 @@ const (
 const (
 	_appRoot     = "APP_ROOT"
 	_environment = "_ENVIRONMENT"
-	_datacenter  = "_DATACENTER"
 	_configDir   = "_CONFIG_DIR"
 	_configRoot  = "./config"
 	_baseFile    = "base"
@@ -54,6 +53,7 @@ var (
 	_envPrefix            = "APP"
 	_staticProviderFuncs  = []ProviderFunc{YamlProvider(), EnvProvider()}
 	_dynamicProviderFuncs []DynamicProviderFunc
+	_configFiles          []string
 )
 
 var (
@@ -87,24 +87,21 @@ func ResolvePath(relative string) (string, error) {
 	return abs, nil
 }
 
-func getConfigFiles() []string {
-	env := Environment()
-	dc := os.Getenv(EnvironmentPrefix() + _datacenter)
-
-	baseFiles := []string{_baseFile, env, _secretsFile}
-	if dc != "" && env != "" {
-		baseFiles = append(baseFiles, fmt.Sprintf("%s-%s", env, dc))
-	}
-
+func getConfigFiles(fileSet ...string) []string {
 	var files []string
+
 	dirs := []string{".", _configRoot}
 	for _, dir := range dirs {
-		for _, baseFile := range baseFiles {
+		for _, baseFile := range fileSet {
 			files = append(files, fmt.Sprintf("%s/%s.yaml", dir, baseFile))
 		}
 	}
-
 	return files
+}
+
+func baseFiles() []string {
+	env := Environment()
+	return []string{_baseFile, env, _secretsFile}
 }
 
 func getResolver() FileResolver {
@@ -119,7 +116,7 @@ func getResolver() FileResolver {
 // YamlProvider returns function to create Yaml based configuration provider
 func YamlProvider() ProviderFunc {
 	return func() (Provider, error) {
-		return NewYAMLProviderFromFiles(false, getResolver(), getConfigFiles()...), nil
+		return NewYAMLProviderFromFiles(false, getResolver(), getConfigFiles(_configFiles...)...), nil
 	}
 }
 
@@ -146,6 +143,12 @@ func Path() string {
 		configPath = _configRoot
 	}
 	return configPath
+}
+
+// SetConfigFiles overrides the set of available config files
+// for the service
+func SetConfigFiles(files ...string) {
+	_configFiles = files
 }
 
 // SetEnvironmentPrefix sets environment prefix for the application
@@ -201,6 +204,10 @@ func UnregisterProviders() {
 // Load creates a Provider for use in a service
 func Load() Provider {
 	var static []Provider
+
+	if len(_configFiles) == 0 {
+		_configFiles = getConfigFiles(baseFiles()...)
+	}
 	for _, providerFunc := range _staticProviderFuncs {
 		cp, err := providerFunc()
 		if err != nil {
