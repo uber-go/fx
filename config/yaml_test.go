@@ -129,7 +129,6 @@ func TestNewYAMLProviderFromReader(t *testing.T) {
 	provider := NewYAMLProviderFromReader(ioutil.NopCloser(buff))
 	cs := &configStruct{}
 	assert.NoError(t, provider.Get(Root).PopulateStruct(cs))
-	assert.Equal(t, "yaml", provider.Scope(Root).Name())
 	assert.Equal(t, "keyvalue", cs.AppID)
 	assert.Equal(t, "owner@service.com", cs.Owner)
 }

@@ -1,6 +1,8 @@
 # Changelog
 
 ## v1.0.0-beta3 (unreleased)
+* [Breaking] Simplify Provider interface: remove `Scope` method from the `config.Provider` interface, one can
+  use either ScopedProvider and Value.Get() to access sub fields.
 
 * Add `task.MustRegister` convenience function which fails fast by panicking
   Note that this should only be used during app initialization, and is provided

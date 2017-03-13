@@ -82,7 +82,3 @@ func (p providerGroup) UnregisterChangeCallback(token string) error {
 	}
 	return nil
 }
-
-func (p providerGroup) Scope(prefix string) Provider {
-	return NewScopedProvider(prefix, p)
-}

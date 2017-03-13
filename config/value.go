@@ -285,6 +285,11 @@ func (cv Value) Value() interface{} {
 	return cv.defaultValue
 }
 
+// Get returns a value scoped in the current value
+func (cv Value) Get(key string) Value {
+	return NewScopedProvider(cv.key, cv.provider).Get(key)
+}
+
 // this is a quick-and-dirty conversion method that only handles
 // a couple of cases and complains if it finds one it doesn't like.
 // needs a bunch more cases.

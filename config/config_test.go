@@ -153,10 +153,10 @@ func TestScopedAccess(t *testing.T) {
 		NewEnvProvider(defaultEnvPrefix, mapEnvironmentProvider{values: envValues}),
 	)
 
-	provider = provider.Scope("n1")
+	p1 := provider.Get("n1")
 
-	v1 := provider.Get("id1")
-	v2 := provider.Get("idx").WithDefault("nope")
+	v1 := p1.Get("id1")
+	v2 := p1.Get("idx").WithDefault("nope")
 
 	assert.True(t, v1.HasValue())
 	assert.Equal(t, 111, v1.AsInt())
@@ -402,8 +402,8 @@ func TestResolvePathAbs(t *testing.T) {
 func TestEnvProviderWithEmptyPrefix(t *testing.T) {
 	p := NewEnvProvider("", mapEnvironmentProvider{map[string]string{"key": "value"}})
 	require.Equal(t, "value", p.Get("key").AsString())
-	emptyScope := p.Scope("")
+	emptyScope := p.Get("")
 	require.Equal(t, "value", emptyScope.Get("key").AsString())
-	scope := emptyScope.Scope("key")
+	scope := emptyScope.Get("key")
 	require.Equal(t, "value", scope.Get("").AsString())
 }

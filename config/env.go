@@ -76,10 +76,6 @@ func (p envConfigProvider) Get(key string) Value {
 	return cv
 }
 
-func (p envConfigProvider) Scope(prefix string) Provider {
-	return NewScopedProvider(prefix, p)
-}
-
 func (p envConfigProvider) RegisterChangeCallback(key string, callback ChangeCallback) error {
 	// Environments don't receive callback events
 	return nil

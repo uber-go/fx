@@ -33,7 +33,6 @@ type Provider interface {
 	Name() string
 	// Get pulls a config value
 	Get(key string) Value
-	Scope(prefix string) Provider
 
 	// A RegisterChangeCallback provides callback registration for config providers.
 	// These callbacks are nop if a dynamic provider is not configured for the service.
@@ -71,15 +70,6 @@ func (sp scopedProvider) addPrefix(key string) string {
 // Get returns configuration value
 func (sp scopedProvider) Get(key string) Value {
 	return sp.Provider.Get(sp.addPrefix(key))
-}
-
-// Scope returns new scoped provider, given a prefix
-func (sp scopedProvider) Scope(prefix string) Provider {
-	if prefix == "" {
-		return sp
-	}
-
-	return NewScopedProvider(sp.addPrefix(prefix), sp.Provider)
 }
 
 // RegisterChangeCallback registers the callback in the underlying provider
