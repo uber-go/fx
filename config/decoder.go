@@ -227,7 +227,7 @@ func (d *decoder) mapping(childKey string, value reflect.Value, def string) erro
 // Sets value to an interface type.
 func (d *decoder) iface(key string, value reflect.Value, def string) error {
 	v := d.getGlobalProvider().Get(key)
-  
+
 	if !v.HasValue() || v.Value() == nil {
 		return nil
 	}
