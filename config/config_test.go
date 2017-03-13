@@ -26,8 +26,6 @@ import (
 	"path"
 	"testing"
 
-	"go.uber.org/fx/testutils/env"
-
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -100,8 +98,6 @@ bool: true
 int: 123
 string: test string
 `)
-
-var testDatacenter = "TEST_DATACENTER"
 
 type arrayOfStructs struct {
 	Things []nested `yaml:"things"`
@@ -361,7 +357,6 @@ func TestEnvProvider_Callbacks(t *testing.T) {
 
 func TestGetConfigFiles(t *testing.T) {
 	SetEnvironmentPrefix("TEST")
-	defer env.Override(t, testDatacenter, "dc")()
 
 	files := getConfigFiles(baseFiles()...)
 	assert.Contains(t, files, "./base.yaml")
