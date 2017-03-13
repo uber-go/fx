@@ -44,8 +44,8 @@ const (
 	_environment        = "_ENVIRONMENT"
 	_datacenter         = "_DATACENTER"
 	_mesosContainerName = "MESOS_CONTAINER_NAME"
+	_configDir          = "_CONFIG_DIR"
 
-	_configDir        = "_CONFIG_DIR"
 	_configRoot       = "./config"
 	_baseFile         = "base"
 	_deploymentPrefix = "deployment"
