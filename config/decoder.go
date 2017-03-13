@@ -319,7 +319,7 @@ func (d *decoder) textUnmarshaller(key string, value reflect.Value, str string) 
 
 	// Value has to have a pointer receiver to be able to modify itself with TextUnmarshaller
 	if !value.CanAddr() {
-		return fmt.Errorf("can't use TextUnmarshaller because %s is not addressable", key)
+		return fmt.Errorf("can't use TextUnmarshaller because %q is not addressable", key)
 	}
 
 	switch t := value.Addr().Interface().(type) {
