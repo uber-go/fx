@@ -200,13 +200,6 @@ func (d *decoder) mapping(childKey string, value reflect.Value, def string) erro
 	}
 
 	val := v.Value()
-
-	// We fallthrough for interface to maps
-	if valueType.Kind() == reflect.Interface {
-		value.Set(reflect.ValueOf(val))
-		return nil
-	}
-
 	destMap := reflect.ValueOf(reflect.MakeMap(valueType).Interface())
 
 	// child yamlNode parsed from yaml file is of type map[interface{}]interface{}
@@ -229,6 +222,22 @@ func (d *decoder) mapping(childKey string, value reflect.Value, def string) erro
 	}
 
 	return nil
+}
+
+// Sets value to an interface type.
+func (d *decoder) iface(key string, value reflect.Value, def string) error {
+	v := d.getGlobalProvider().Get(key)
+	if !v.HasValue() || v.Value() == nil {
+		return nil
+	}
+
+	src := reflect.ValueOf(v.Value())
+	if src.Type().Implements(value.Type()) {
+		value.Set(src)
+		return nil
+	}
+
+	return fmt.Errorf("%q doesn't implement %q", src.Type(), value.Type())
 }
 
 // Sets value to an object type.
@@ -374,7 +383,7 @@ func (d *decoder) unmarshal(name string, value reflect.Value, def string) error 
 	case reflect.Map:
 		return d.mapping(name, value, def)
 	case reflect.Interface:
-		return d.mapping(name, value, def)
+		return d.iface(name, value, def)
 	case reflect.Chan:
 		return d.channel(name, value, def)
 	case reflect.Func:
