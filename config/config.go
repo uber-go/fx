@@ -25,6 +25,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"strings"
 	"sync"
 )
 
@@ -39,21 +40,39 @@ const (
 )
 
 const (
-	_appRoot     = "APP_ROOT"
-	_environment = "_ENVIRONMENT"
-	_datacenter  = "_DATACENTER"
-	_configDir   = "_CONFIG_DIR"
-	_configRoot  = "./config"
-	_baseFile    = "base"
-	_secretsFile = "secrets"
+	_appRoot            = "APP_ROOT"
+	_environment        = "_ENVIRONMENT"
+	_datacenter         = "_DATACENTER"
+	_mesosContainerName = "MESOS_CONTAINER_NAME"
+
+	_configDir        = "_CONFIG_DIR"
+	_configRoot       = "./config"
+	_baseFile         = "base"
+	_deploymentPrefix = "deployment"
+	_monopod          = "monopod"
+	_secretsFile      = "secrets"
 )
 
 var (
 	_setupMux sync.Mutex
 
 	_envPrefix            = "APP"
+	_deploymentEnv        = "APP_DEPLOYMENT_NAME"
 	_staticProviderFuncs  = []ProviderFunc{YamlProvider(), EnvProvider()}
 	_dynamicProviderFuncs []DynamicProviderFunc
+
+	_digitRemover = strings.NewReplacer(
+		"0", "",
+		"1", "",
+		"2", "",
+		"3", "",
+		"4", "",
+		"5", "",
+		"6", "",
+		"7", "",
+		"8", "",
+		"9", "",
+	)
 )
 
 var (
@@ -88,23 +107,57 @@ func ResolvePath(relative string) (string, error) {
 }
 
 func getConfigFiles() []string {
+	var files []string
+	dirs := []string{".", _configRoot}
+	for _, dir := range dirs {
+		for _, baseFile := range baseFiles() {
+			files = append(files, fmt.Sprintf("%s/%s.yaml", dir, baseFile))
+		}
+	}
+	return files
+}
+
+func baseFiles() []string {
 	env := Environment()
 	dc := os.Getenv(EnvironmentPrefix() + _datacenter)
 
-	baseFiles := []string{_baseFile, env, _secretsFile}
+	baseFiles := []string{_baseFile, env}
 	if dc != "" && env != "" {
 		baseFiles = append(baseFiles, fmt.Sprintf("%s-%s", env, dc))
 	}
 
-	var files []string
-	dirs := []string{".", _configRoot}
-	for _, dir := range dirs {
-		for _, baseFile := range baseFiles {
-			files = append(files, fmt.Sprintf("%s/%s.yaml", dir, baseFile))
-		}
+	if deployment() != "" {
+		baseFiles = append(
+			baseFiles,
+			fmt.Sprintf("%s-%s", _deploymentPrefix, _digitRemover.Replace(deployment())),
+			fmt.Sprintf("%s-%s-%s", _deploymentPrefix, _digitRemover.Replace(deployment()), dc),
+		)
 	}
 
-	return files
+	if strings.Contains(deployment(), _monopod) {
+		baseFiles = append(
+			baseFiles, _monopod, fmt.Sprintf("%s-%s", _monopod, dc),
+		)
+	}
+
+	if os.Getenv(_mesosContainerName) != "" {
+		baseFiles = append(
+			baseFiles,
+			"mesos",
+			fmt.Sprintf("mesos-%s", env),
+			fmt.Sprintf("mesos-%s-%s", env, dc),
+		)
+	}
+
+	baseFiles = append(
+		baseFiles, _secretsFile, fmt.Sprintf("%s-%s", _secretsFile, dc),
+	)
+
+	return baseFiles
+}
+
+func deployment() string {
+	return os.Getenv(_deploymentEnv)
 }
 
 func getResolver() FileResolver {
@@ -151,6 +204,11 @@ func Path() string {
 // SetEnvironmentPrefix sets environment prefix for the application
 func SetEnvironmentPrefix(envPrefix string) {
 	_envPrefix = envPrefix
+}
+
+// SetDeploymentEnvKey sets the deployment environment variable name for the application
+func SetDeploymentEnvKey(deploymentEnv string) {
+	_deploymentEnv = deploymentEnv
 }
 
 // EnvironmentPrefix returns environment prefix for the application

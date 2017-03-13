@@ -361,17 +361,27 @@ func TestEnvProvider_Callbacks(t *testing.T) {
 
 func TestGetConfigFiles(t *testing.T) {
 	SetEnvironmentPrefix("TEST")
+	SetDeploymentEnvKey("TEST_DEPLOYMENT")
 	defer env.Override(t, testDatacenter, "dc")()
+	defer env.Override(t, "TEST_DEPLOYMENT", "monopod")()
+	defer env.Override(t, "MESOS_CONTAINER_NAME", "test")()
 
 	files := getConfigFiles()
 	assert.Contains(t, files, "./base.yaml")
-	assert.Contains(t, files, "./development.yaml")
-	assert.Contains(t, files, "./secrets.yaml")
-	assert.Contains(t, files, "./development-dc.yaml")
 	assert.Contains(t, files, "./config/base.yaml")
+	assert.Contains(t, files, "./development.yaml")
+	assert.Contains(t, files, "./development-dc.yaml")
 	assert.Contains(t, files, "./config/development.yaml")
-	assert.Contains(t, files, "./config/secrets.yaml")
 	assert.Contains(t, files, "./config/development-dc.yaml")
+	assert.Contains(t, files, "./deployment-monopod.yaml")
+	assert.Contains(t, files, "./deployment-monopod-dc.yaml")
+	assert.Contains(t, files, "./monopod.yaml")
+	assert.Contains(t, files, "./monopod-dc.yaml")
+	assert.Contains(t, files, "./mesos.yaml")
+	assert.Contains(t, files, "./mesos-development.yaml")
+	assert.Contains(t, files, "./mesos-development-dc.yaml")
+	assert.Contains(t, files, "./secrets.yaml")
+	assert.Contains(t, files, "./config/secrets.yaml")
 }
 
 func expectedResolvePath(t *testing.T) string {
