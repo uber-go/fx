@@ -227,7 +227,7 @@ func (d *decoder) mapping(childKey string, value reflect.Value, def string) erro
 // Sets value to an interface type.
 func (d *decoder) iface(key string, value reflect.Value, def string) error {
 	v := d.getGlobalProvider().Get(key)
-
+  
 	if !v.HasValue() || v.Value() == nil {
 		return nil
 	}
@@ -238,7 +238,7 @@ func (d *decoder) iface(key string, value reflect.Value, def string) error {
 		return nil
 	}
 
-	return fmt.Errorf("%v doesn't implement to %v", src.Type(), value.Type())
+	return fmt.Errorf("%q doesn't implement %q", src.Type(), value.Type())
 }
 
 // Sets value to an object type.
@@ -328,6 +328,10 @@ func (d *decoder) textUnmarshaller(key string, value reflect.Value, str string) 
 	}
 
 	// Value has to have a pointer receiver to be able to modify itself with TextUnmarshaller
+	if !value.CanAddr() {
+		return fmt.Errorf("can't use TextUnmarshaller because %q is not addressable", key)
+	}
+
 	switch t := value.Addr().Interface().(type) {
 	case encoding.TextUnmarshaler:
 		return t.UnmarshalText([]byte(str))

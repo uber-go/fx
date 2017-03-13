@@ -4,11 +4,16 @@
 * [Breaking] Simplify Provider interface: remove `Scope` method from the `config.Provider` interface, one can
   use either ScopedProvider and Value.Get() to access sub fields.
 
+* Add `task.MustRegister` convenience function which fails fast by panicking
+  Note that this should only be used during app initialization, and is provided
+  to avoid repetetive error checking for services which register many tasks.
+
 ## v1.0.0-beta2 (09 Mar 2017)
 
 * [Breaking] Remove `ulog.Logger` interface and expose `*zap.Logger` directly.
 * [Breaking] Rename config and module from `modules.rpc` to `modules.yarpc`
-* [Breaking] Rename config key from `modules.http` to `modules.uhttp` to match the module name
+* [Breaking] Rename config key from `modules.http` to `modules.uhttp` to match
+  the module name
 * [Breaking] Upgrade `zap` to `v1.0.0-rc.3` (now go.uber.org/zap, was
     github.com/uber-go/zap)
 * Remove now-unused `config.IsDevelopmentEnv()` helper to encourage better
@@ -25,7 +30,8 @@
   as it is not thrift-specific.
 * Report version metrics for company-wide version usage information.
 * Allow configurable service name and module name via service options.
-* DIG constructors now support returning a tuple with the second argument being an error.
+* DIG constructors now support returning a tuple with the second argument being
+  an error.
 
 ## v1.0.0-beta1 (20 Feb 2017)
 

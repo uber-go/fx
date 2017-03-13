@@ -95,11 +95,22 @@ func TestRegisterFnWithMismatchedArgCount(t *testing.T) {
 	assert.Contains(t, err.Error(), "2 function arg(s) but found 0")
 }
 
+func TestMustRegisterPanicsOnBadType(t *testing.T) {
+	assert.Panics(t, func() {
+		MustRegister("not a function")
+	})
+}
+
+func TestMustRegisterOkOnGoodFunc(t *testing.T) {
+	assert.NotPanics(t, func() {
+		MustRegister(validTaskFunc)
+	})
+}
+
 func TestEnqueueFnWithMismatchedArgType(t *testing.T) {
-	fn := func(ctx context.Context, s string) error { return nil }
-	err := Register(fn)
+	err := Register(validTaskFunc)
 	require.NoError(t, err)
-	err = Enqueue(fn, _ctx, 1)
+	err = Enqueue(validTaskFunc, _ctx, 1)
 	require.Error(t, err)
 	assert.Contains(
 		t, err.Error(), "argument: 2 from type: int to type: string",
@@ -268,4 +279,8 @@ func TestCastToError(t *testing.T) {
 	err := castToError(reflect.ValueOf(s))
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "be error but found")
+}
+
+func validTaskFunc(ctx context.Context, s string) error {
+	return nil
 }
