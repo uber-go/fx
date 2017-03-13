@@ -22,6 +22,7 @@ package config
 
 import (
 	"bytes"
+	"encoding"
 	"fmt"
 	"reflect"
 	"strconv"
@@ -294,6 +295,41 @@ func (d *decoder) pointer(name string, value reflect.Value, def string) error {
 	return d.unmarshal(name, value.Elem(), def)
 }
 
+// Sets value to a channel type.
+func (d *decoder) channel(key string, value reflect.Value, def string) error {
+	return d.textUnmarshaller(key, value, def)
+}
+
+// Sets value to a function type.
+func (d *decoder) function(key string, value reflect.Value, def string) error {
+	return d.textUnmarshaller(key, value, def)
+}
+
+func (d *decoder) textUnmarshaller(key string, value reflect.Value, str string) error {
+	v := d.getGlobalProvider().Get(key)
+	if v.HasValue() {
+		str = v.String()
+	} else if str == "" {
+		return nil
+	}
+
+	if value.IsNil() {
+		value.Set(reflect.New(value.Type()).Elem())
+	}
+
+	// Value has to have a pointer receiver to be able to modify itself with TextUnmarshaller
+	if !value.CanAddr() {
+		return fmt.Errorf("can't use TextUnmarshaller because %q is not addressable", key)
+	}
+
+	switch t := value.Addr().Interface().(type) {
+	case encoding.TextUnmarshaler:
+		return t.UnmarshalText([]byte(str))
+	}
+
+	return nil
+}
+
 // Check if a value is a pointer and decoder set it before.
 // TODO(alsam) print only elements in the loop, not all elements.
 func (d *decoder) checkCycles(value reflect.Value) error {
@@ -340,9 +376,9 @@ func (d *decoder) unmarshal(name string, value reflect.Value, def string) error 
 	case reflect.Interface:
 		return d.mapping(name, value, def)
 	case reflect.Chan:
-		return nil
+		return d.channel(name, value, def)
 	case reflect.Func:
-		return nil
+		return d.function(name, value, def)
 	default:
 		return d.scalar(name, value, def)
 	}
