@@ -206,7 +206,7 @@ func Load() Provider {
 	var static []Provider
 
 	if len(_configFiles) == 0 {
-		_configFiles = getConfigFiles(baseFiles()...)
+		SetConfigFiles(baseFiles()...)
 	}
 	for _, providerFunc := range _staticProviderFuncs {
 		cp, err := providerFunc()
