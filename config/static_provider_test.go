@@ -29,11 +29,13 @@ import (
 )
 
 func TestStaticProvider_Name(t *testing.T) {
+	t.Parallel()
 	p := NewStaticProvider(nil)
 	assert.Equal(t, "static", p.Name())
 }
 
 func TestNewStaticProvider_NilData(t *testing.T) {
+	t.Parallel()
 	p := NewStaticProvider(nil)
 
 	val := p.Get("something")
@@ -41,6 +43,7 @@ func TestNewStaticProvider_NilData(t *testing.T) {
 }
 
 func TestStaticProvider_WithData(t *testing.T) {
+	t.Parallel()
 	data := map[string]interface{}{
 		"hello": "world",
 	}
@@ -53,6 +56,7 @@ func TestStaticProvider_WithData(t *testing.T) {
 }
 
 func TestStaticProvider_WithGet(t *testing.T) {
+	t.Parallel()
 	data := map[string]interface{}{
 		"hello": map[string]int{"world": 42},
 	}
@@ -68,12 +72,14 @@ func TestStaticProvider_WithGet(t *testing.T) {
 }
 
 func TestStaticProvider_Callbacks(t *testing.T) {
+	t.Parallel()
 	p := NewStaticProvider(nil)
 	assert.NoError(t, p.RegisterChangeCallback("test", nil))
 	assert.NoError(t, p.UnregisterChangeCallback("token"))
 }
 
 func TestStaticProviderFmtPrintOnValueNoPanic(t *testing.T) {
+	t.Parallel()
 	p := NewStaticProvider(nil)
 	val := p.Get("something")
 
@@ -84,6 +90,7 @@ func TestStaticProviderFmtPrintOnValueNoPanic(t *testing.T) {
 }
 
 func TestNilStaticProviderSetDefaultTagValue(t *testing.T) {
+	t.Parallel()
 	type Inner struct {
 		Set bool `yaml:"set" default:"true"`
 	}

@@ -115,6 +115,7 @@ func TestGlobalConfig(t *testing.T) {
 }
 
 func TestRootNodeConfig(t *testing.T) {
+	t.Parallel()
 	txt := []byte(`
 one:
   two: hello
@@ -177,7 +178,7 @@ func TestOverrideSimple(t *testing.T) {
 }
 
 func TestSimpleConfigValues(t *testing.T) {
-
+	t.Parallel()
 	provider := NewProviderGroup(
 		"test",
 		NewYAMLProviderFromBytes(yamlConfig3),
@@ -194,6 +195,7 @@ func TestSimpleConfigValues(t *testing.T) {
 }
 
 func TestGetAsIntegerValue(t *testing.T) {
+	t.Parallel()
 	testCases := []struct {
 		value interface{}
 	}{
@@ -210,6 +212,7 @@ func TestGetAsIntegerValue(t *testing.T) {
 }
 
 func TestGetAsFloatValue(t *testing.T) {
+	t.Parallel()
 	testCases := []struct {
 		value interface{}
 	}{
@@ -298,6 +301,7 @@ func TestDefaultValue(t *testing.T) {
 }
 
 func TestInvalidConfigFailures(t *testing.T) {
+	t.Parallel()
 	valueType := []byte(`
 id: xyz
 boolean:
