@@ -32,13 +32,14 @@ import (
 	"go.uber.org/fx/metrics"
 	"go.uber.org/fx/tracing"
 	"go.uber.org/fx/ulog"
-	"go.uber.org/zap"
 
 	"github.com/go-validator/validator"
 	"github.com/opentracing/opentracing-go"
 	"github.com/pkg/errors"
 	"github.com/uber-go/tally"
 	jaegerconfig "github.com/uber/jaeger-client-go/config"
+	"go.uber.org/dig"
+	"go.uber.org/zap"
 )
 
 const instanceConfigName = "ServiceConfig"
@@ -93,6 +94,7 @@ type serviceCore struct {
 	standardConfig serviceConfig
 	state          State
 	moduleName     string
+	graph          *dig.Graph
 }
 
 var _ Host = &serviceCore{}
@@ -133,6 +135,10 @@ func (s *serviceCore) Observer() Observer {
 
 func (s *serviceCore) Config() config.Provider {
 	return s.configProvider
+}
+
+func (s *serviceCore) Graph() *dig.Graph {
+	return s.graph
 }
 
 func (s *serviceCore) setupLogging() error {

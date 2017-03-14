@@ -63,3 +63,11 @@ func WithObserver(observer Observer) Option {
 		return nil
 	}
 }
+
+// WithDependencies ...
+func WithDependencies(deps ...interface{}) Option {
+	return func(m *manager) error {
+		m.graph.MustRegisterAll(deps...)
+		return nil
+	}
+}

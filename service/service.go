@@ -27,6 +27,7 @@ import (
 
 	opentracing "github.com/opentracing/opentracing-go"
 	"github.com/uber-go/tally"
+	"go.uber.org/dig"
 )
 
 // A State represents the state of a service
@@ -61,6 +62,7 @@ type Host interface {
 	Tracer() opentracing.Tracer
 	// TODO: Will be removed once log/metrics scoping is moved to the module provider
 	ModuleName() string
+	Graph() *dig.Graph
 }
 
 // A HostContainer is meant to be embedded in a LifecycleObserver

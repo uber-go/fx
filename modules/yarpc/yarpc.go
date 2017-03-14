@@ -31,7 +31,6 @@ import (
 	"go.uber.org/fx/ulog"
 
 	errs "github.com/pkg/errors"
-	"go.uber.org/dig"
 	"go.uber.org/yarpc"
 	"go.uber.org/yarpc/api/middleware"
 	"go.uber.org/yarpc/api/transport"
@@ -148,19 +147,20 @@ func newModule(
 	module.config.inboundMiddleware = moduleOptions.unaryInbounds
 	module.config.onewayInboundMiddleware = moduleOptions.onewayInbounds
 
+	g := host.Graph()
 	// Try to resolve a controller first
 	// TODO(alsam) use dig options when available, because we can overwrite the controller in case of multiple
 	// modules registering a controller.
-	if err := dig.Resolve(&module.controller); err != nil {
+	if err := g.Resolve(&module.controller); err != nil {
 
 		// Try to register it then
 		module.controller = &dispatcherController{}
-		if errCr := dig.Register(module.controller); errCr != nil {
+		if errCr := g.Register(module.controller); errCr != nil {
 			return nil, errs.Wrap(errCr, "can't register a dispatcher controller")
 		}
 
 		// Register dispatcher
-		if err := dig.Register(&module.controller.dispatcher); err != nil {
+		if err := g.Register(&module.controller.dispatcher); err != nil {
 			return nil, errs.Wrap(err, "unable to register the dispatcher")
 		}
 	}
