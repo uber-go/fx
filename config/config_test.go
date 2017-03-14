@@ -26,8 +26,6 @@ import (
 	"path"
 	"testing"
 
-	"go.uber.org/fx/testutils/env"
-
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -100,8 +98,6 @@ bool: true
 int: 123
 string: test string
 `)
-
-var testDatacenter = "TEST_DATACENTER"
 
 type arrayOfStructs struct {
 	Things []nested `yaml:"things"`
@@ -361,17 +357,23 @@ func TestEnvProvider_Callbacks(t *testing.T) {
 
 func TestGetConfigFiles(t *testing.T) {
 	SetEnvironmentPrefix("TEST")
-	defer env.Override(t, testDatacenter, "dc")()
 
-	files := getConfigFiles()
+	files := getConfigFiles(baseFiles()...)
 	assert.Contains(t, files, "./base.yaml")
 	assert.Contains(t, files, "./development.yaml")
 	assert.Contains(t, files, "./secrets.yaml")
-	assert.Contains(t, files, "./development-dc.yaml")
 	assert.Contains(t, files, "./config/base.yaml")
 	assert.Contains(t, files, "./config/development.yaml")
 	assert.Contains(t, files, "./config/secrets.yaml")
-	assert.Contains(t, files, "./config/development-dc.yaml")
+}
+
+func TestSetConfigFiles(t *testing.T) {
+	SetConfigFiles("x", "y")
+	files := getConfigFiles(_configFiles...)
+	assert.Contains(t, files, "./x.yaml")
+	assert.Contains(t, files, "./y.yaml")
+	assert.Contains(t, files, "./config/x.yaml")
+	assert.Contains(t, files, "./config/y.yaml")
 }
 
 func expectedResolvePath(t *testing.T) string {
