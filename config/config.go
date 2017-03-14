@@ -52,8 +52,8 @@ var (
 
 	_envPrefix            = "APP"
 	_staticProviderFuncs  = []ProviderFunc{YamlProvider(), EnvProvider()}
+	_configFiles          = baseFiles()
 	_dynamicProviderFuncs []DynamicProviderFunc
-	_configFiles          []string
 )
 
 var (
@@ -205,9 +205,6 @@ func UnregisterProviders() {
 func Load() Provider {
 	var static []Provider
 
-	if len(_configFiles) == 0 {
-		SetConfigFiles(baseFiles()...)
-	}
 	for _, providerFunc := range _staticProviderFuncs {
 		cp, err := providerFunc()
 		if err != nil {
