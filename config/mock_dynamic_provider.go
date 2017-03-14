@@ -21,8 +21,9 @@
 package config
 
 import (
-	"errors"
 	"sync"
+
+	"github.com/pkg/errors"
 )
 
 // MockDynamicProvider is simple implementation of Provider that can be used to test dynamic features.
