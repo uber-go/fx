@@ -90,14 +90,20 @@ func TestMockDynamicProvider_UnregisterChangeCallback(t *testing.T) {
 	})
 
 	errChan := make(chan error, 1)
+	wg := sync.WaitGroup{}
+	wg.Add(2)
+
 	unregister := func() {
 		if err := p.UnregisterChangeCallback("goofy"); err != nil {
 			errChan <- err
 		}
+
+		wg.Done()
 	}
 
 	go unregister()
 	go unregister()
 
+	wg.Wait()
 	assert.EqualError(t, <-errChan, "there is no registered callback for token: goofy")
 }
