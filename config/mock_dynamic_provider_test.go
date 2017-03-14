@@ -22,9 +22,9 @@ package config
 
 import (
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"sync"
 	"testing"
-	"github.com/stretchr/testify/require"
 )
 
 func TestMockDynamicProvider_GetAndSet(t *testing.T) {
@@ -56,7 +56,7 @@ func TestMockDynamicProvider_RegisterChangeCallback(t *testing.T) {
 
 	wg := sync.WaitGroup{}
 	wg.Add(4)
-	p.RegisterChangeCallback("goofy", func(key string, provider string, data interface{}){
+	p.RegisterChangeCallback("goofy", func(key string, provider string, data interface{}) {
 		require.Equal(t, "goofy", key)
 		require.Equal(t, p.Name(), provider)
 		assert.NotEqual(t, "empty", data)
@@ -76,7 +76,6 @@ func TestMockDynamicProvider_RegisterChangeCallback(t *testing.T) {
 	wg.Wait()
 }
 
-
 func TestMockDynamicProvider_UnregisterChangeCallback(t *testing.T) {
 	t.Parallel()
 
@@ -86,12 +85,12 @@ func TestMockDynamicProvider_UnregisterChangeCallback(t *testing.T) {
 		p.UnregisterChangeCallback("goofy"),
 		"there is no registered callback for token: goofy")
 
-	p.RegisterChangeCallback("goofy", func(key string, provider string, data interface{}){
+	p.RegisterChangeCallback("goofy", func(key string, provider string, data interface{}) {
 		require.Fail(t, "should not be called")
 	})
 
 	errChan := make(chan error, 1)
-	unregister := func(){
+	unregister := func() {
 		if err := p.UnregisterChangeCallback("goofy"); err != nil {
 			errChan <- err
 		}
