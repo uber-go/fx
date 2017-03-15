@@ -37,7 +37,7 @@ import (
 	"github.com/uber-go/tally"
 	"github.com/uber/jaeger-client-go/config"
 	"go.uber.org/zap"
-	ztest "go.uber.org/zap/testutils"
+	"go.uber.org/zap/zaptest"
 )
 
 func TestDefaultInboundMiddlewareWithNopHost(t *testing.T) {
@@ -127,7 +127,7 @@ func testInboundMiddlewareChain(t *testing.T, host service.Host) {
 }
 
 func testTracingInboundWithLogs(t *testing.T) {
-	testutils.WithInMemoryLogger(t, nil, func(loggerWithZap *zap.Logger, buf *ztest.Buffer) {
+	testutils.WithInMemoryLogger(t, nil, func(loggerWithZap *zap.Logger, buf *zaptest.Buffer) {
 		defer ulog.SetLogger(loggerWithZap)()
 		// Create a Jaeger tracer.
 		jConfig := &config.Configuration{

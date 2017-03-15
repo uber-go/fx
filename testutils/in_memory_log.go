@@ -25,14 +25,14 @@ import (
 	"testing"
 
 	"go.uber.org/zap"
-	"go.uber.org/zap/testutils"
 	"go.uber.org/zap/zapcore"
+	"go.uber.org/zap/zaptest"
 )
 
 // WithInMemoryLogger creates an in-memory *zap.Logger that can be used in
 // tests.
-func WithInMemoryLogger(t *testing.T, opts []zap.Option, f func(*zap.Logger, *testutils.Buffer)) {
-	sink := &testutils.Buffer{}
+func WithInMemoryLogger(t *testing.T, opts []zap.Option, f func(*zap.Logger, *zaptest.Buffer)) {
+	sink := &zaptest.Buffer{}
 	errSink := zapcore.AddSync(ioutil.Discard)
 
 	allOpts := make([]zap.Option, 0, len(opts)+1)

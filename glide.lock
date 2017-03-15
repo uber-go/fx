@@ -1,5 +1,5 @@
-hash: b6585b2bbb2c7a38e93cdc9fcefe743a1bfa17fb15ba81ae7a8f2be37dd2cfe7
-updated: 2017-03-08T17:26:10.574906043-05:00
+hash: d2d2354a3e57996dece4e3b6aed8b469855e15ae23d6ad29b799c4bc04c25b46
+updated: 2017-03-14T17:12:37.328331594-07:00
 imports:
 - name: github.com/apache/thrift
   version: 9549b25c77587b29be4e0b5c258221a4ed85d37a
@@ -8,7 +8,7 @@ imports:
 - name: github.com/certifi/gocertifi
   version: 03be5e6bb9874570ea7fb0961225d193cbc374c5
 - name: github.com/codahale/hdrhistogram
-  version: 3a0bb77429bd3a61596f5e8a3172445844342120
+  version: f8ad88b59a584afeee9d334eff879b104439117b
 - name: github.com/davecgh/go-spew
   version: 04cdfd42973bb9c8589fd6a731800cf222fde1a9
   subpackages:
@@ -16,7 +16,7 @@ imports:
 - name: github.com/facebookgo/clock
   version: 600d898af40aa09a7a93ecb9265d87b0504b6f03
 - name: github.com/getsentry/raven-go
-  version: 3f7439d3e74d88e21d196ba20eb61a5a958bc118
+  version: b68337dbf03e7fbb53d9fd9b63fd09b28e8f13f7
 - name: github.com/go-validator/validator
   version: 0a9835d809fb647a62611d30cb792e0b5dd65b11
 - name: github.com/golang/mock
@@ -48,7 +48,7 @@ imports:
 - name: github.com/uber-go/tally
   version: 34be4a565ce6286a0ba91a54a81be3f6181ca2e2
 - name: github.com/uber/jaeger-client-go
-  version: 2505ffc229cbe642a1af9387e8251f7e699c2f6e
+  version: 81280be4110ac49c4c2094eeffd409a0043d51c0
   subpackages:
   - config
   - internal/spanlog
@@ -74,7 +74,7 @@ imports:
   - trand
   - typed
 - name: go.uber.org/atomic
-  version: 0c9e689d64f004564b79d9a663634756df322902
+  version: 3b8db5e93c4c02efbc313e17b2e796b0914a01fb
 - name: go.uber.org/thriftrw
   version: c98a13058faa5dd41584a77221a268d2c72d832d
   subpackages:
@@ -119,26 +119,26 @@ imports:
   - transport/tchannel
   - transport/tchannel/internal
 - name: go.uber.org/zap
-  version: 4e517d38b2138e59475d6468e7a6b626eecdaa66
+  version: 4257c7cf05477d92ec25c31cfd3d60e89575f18a
   subpackages:
   - buffer
   - internal/bufferpool
   - internal/color
   - internal/exit
   - internal/multierror
-  - testutils
   - zapcore
+  - zaptest
 - name: golang.org/x/net
   version: a6577fac2d73be281a500b310739095313165611
   subpackages:
   - context
   - context/ctxhttp
 - name: golang.org/x/tools
-  version: 03d3934baf81f2387349b58864cb98b6fe7cf85e
+  version: ab34c5f581f90acc47c03ceeb38c51f3153833a2
   subpackages:
   - go/ast/astutil
 - name: gopkg.in/yaml.v2
-  version: a3f3340b5840cee44f372bddb5880fcbc419b46a
+  version: a83829b6f1293c91addabc89d0571c246397bbf4
 testImports:
 - name: github.com/anmitsu/go-shlex
   version: 648efa622239a2f6ff949fed78ee37b48d499ba4
@@ -177,6 +177,6 @@ testImports:
 - name: github.com/yookoala/realpath
   version: c416d99ab5ed256fa30c1f3bab73152deb59bb69
 - name: go.uber.org/tools
-  version: 214b415e51a0d9f12ead771d4336aafc73555bd2
+  version: fb05033aaa266ee0674167682d3da91bef95d02a
   subpackages:
   - update-license
