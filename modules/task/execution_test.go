@@ -43,9 +43,9 @@ var (
 func globalBackendSetup(t *testing.T) func() {
 	host, _ := service.NewScopedHost(service.NopHost(), "task", "hello")
 	_testScope = host.Metrics()
-	_globalBackend = NewInMemBackend(host)
+	_globalBackend = NewManagedInMemBackend(host, Config{DisableExecution: true})
 	require.NoError(t, _globalBackend.Start())
-	_errorCh = _globalBackend.(*inMemBackend).ErrorCh()
+	_errorCh = _globalBackend.ExecuteAsync()
 	return func() {
 		assert.NoError(t, _globalBackend.Stop())
 		_globalBackend = NopBackend{}
@@ -130,8 +130,8 @@ func TestEnqueueWithoutRegister(t *testing.T) {
 func TestConsumeWithoutRegister(t *testing.T) {
 	host, _ := service.NewScopedHost(service.NopHost(), "task", "hello")
 	_testScope = host.Metrics()
-	_globalBackend = NewInMemBackend(host)
-	_errorCh = _globalBackend.(*inMemBackend).ErrorCh()
+	_globalBackend = NewManagedInMemBackend(host, Config{DisableExecution: true})
+	_errorCh = _globalBackend.ExecuteAsync()
 	defer func() {
 		assert.NoError(t, _globalBackend.Stop())
 		_globalBackend = NopBackend{}

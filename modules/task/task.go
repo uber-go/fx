@@ -23,9 +23,14 @@ package task
 import (
 	"sync"
 
+	"golang.org/x/net/context"
+
+	"github.com/pkg/errors"
 	"github.com/uber-go/tally"
 
 	"go.uber.org/fx/service"
+	"go.uber.org/fx/ulog"
+	"go.uber.org/zap"
 )
 
 var (
@@ -80,19 +85,42 @@ func newAsyncModule(
 			return nil, err
 		}
 	}
-	backend, err := createFunc(host, *config)
+	b, err := createFunc(host)
 	if err != nil {
 		return nil, err
 	}
+	mBackend := &managedBackend{b, *config}
 	_globalBackendMu.Lock()
-	_globalBackend = backend
+	_globalBackend = mBackend
 	_globalBackendStatsClient = newStatsClient(host.Metrics())
 	_globalBackendMu.Unlock()
-	return backend, nil
+	return mBackend, nil
+}
+
+// managedBackend is the root for all backends and controls execution
+type managedBackend struct {
+	Backend
+	config Config
+}
+
+// Start implements the Module interface
+func (b *managedBackend) Start() error {
+	if err := b.Backend.Start(); err != nil {
+		return errors.Wrap(err, "unable to start backend")
+	}
+	if !b.config.DisableExecution {
+		errorCh := b.ExecuteAsync()
+		go func() {
+			for err := range errorCh {
+				ulog.Logger(context.Background()).Error("task execute error", zap.Error(err))
+			}
+		}()
+	}
+	return nil
 }
 
 // BackendCreateFunc creates a backend implementation
-type BackendCreateFunc func(service.Host, Config) (Backend, error)
+type BackendCreateFunc func(service.Host) (Backend, error)
 
 // ModuleOption is a function that configures module creation.
 type ModuleOption func(*Config) error
@@ -102,7 +130,7 @@ type Config struct {
 	DisableExecution bool
 }
 
-// DisableExecution adds custom YARPC inboundMiddleware to the module
+// DisableExecution disables task execution and only allows enqueuing
 func DisableExecution() ModuleOption {
 	return func(config *Config) error {
 		config.DisableExecution = true

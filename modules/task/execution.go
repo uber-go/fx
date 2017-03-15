@@ -102,7 +102,7 @@ func Enqueue(fn interface{}, args ...interface{}) error {
 		return errors.Wrap(err, "unable to encode the function or args")
 	}
 	globalBackendStatsClient().TaskPublishCount().Inc(1)
-	return GlobalBackend().Publish(ctx, sBytes)
+	return GlobalBackend().Enqueue(ctx, sBytes)
 }
 
 // Register registers a function for async tasks

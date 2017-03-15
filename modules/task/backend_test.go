@@ -44,17 +44,20 @@ func TestNopBackend(t *testing.T) {
 	b := &NopBackend{}
 	assert.NotNil(t, b.Encoder())
 	assert.NoError(t, b.Start())
-	assert.NoError(t, b.Publish(nil, nil))
+	assert.NoError(t, b.Enqueue(nil, nil))
 	assert.NoError(t, b.Stop())
 }
 
 func TestInMemBackend(t *testing.T) {
-	b := NewInMemBackend(newTestHost(t)).(*inMemBackend)
+	b := NewInMemBackend(newTestHost(t))
 	defer withBackendSetup(t, b)()
-	assert.NotNil(t, b.Encoder())
-	assert.NoError(t, b.Start())
-	publishEncodedVal(t, b)
-	publishEncodedVal(t, b)
+	require.NotNil(t, b.Encoder())
+	require.NoError(t, b.Start())
+	errorCh := b.ExecuteAsync()
+	require.NotNil(t, errorCh)
+	memB := b.(*inMemBackend)
+	publishEncodedVal(t, memB, errorCh)
+	publishEncodedVal(t, memB, errorCh)
 }
 
 func TestInMemBackendStartTimeout(t *testing.T) {
@@ -64,14 +67,14 @@ func TestInMemBackendStartTimeout(t *testing.T) {
 	time.Sleep(time.Millisecond)
 }
 
-func publishEncodedVal(t *testing.T, b *inMemBackend) {
+func publishEncodedVal(t *testing.T, b Backend, errorCh chan error) {
 	bytes, err := b.Encoder().Marshal("Hello")
 	assert.NoError(t, err)
 
 	// Publish a non FnSignature value that results in error
-	err = b.Publish(context.Background(), bytes)
+	err = b.Enqueue(context.Background(), bytes)
 	assert.NoError(t, err)
-	if err, ok := <-b.ErrorCh(); ok {
+	if err, ok := <-errorCh; ok {
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "type mismatch")
 	}

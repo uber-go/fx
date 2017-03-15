@@ -38,14 +38,20 @@ const (
 type Backend interface {
 	service.Module
 	Encoder() Encoding
-	Publish(ctx context.Context, message []byte) error
+	Enqueue(ctx context.Context, message []byte) error
+	ExecuteAsync() chan error
 }
 
 // NopBackend is a noop implementation of the Backend interface
 type NopBackend struct{}
 
-// Publish implements the Backend interface
-func (b NopBackend) Publish(ctx context.Context, message []byte) error {
+// Enqueue implements the Backend interface
+func (b NopBackend) Enqueue(ctx context.Context, message []byte) error {
+	return nil
+}
+
+// ExecuteAsync implements the Backend interface
+func (b NopBackend) ExecuteAsync() chan error {
 	return nil
 }
 
@@ -71,6 +77,12 @@ type inMemBackend struct {
 	errorCh  chan error
 }
 
+// NewManagedInMemBackend creates a new in memory backend, designed for use in tests
+func NewManagedInMemBackend(host service.Host, cfg Config) Backend {
+	b := NewInMemBackend(host)
+	return &managedBackend{b, cfg}
+}
+
 // NewInMemBackend creates a new in memory backend, designed for use in tests
 func NewInMemBackend(host service.Host) Backend {
 	return &inMemBackend{
@@ -86,35 +98,36 @@ func (b *inMemBackend) Encoder() Encoding {
 
 // Start implements the Module interface
 func (b *inMemBackend) Start() error {
-	go b.consumeFromQueue()
 	return nil
 }
 
-// ErrorCh returns the error channel for problems with running
-func (b *inMemBackend) ErrorCh() <-chan error {
-	return b.errorCh
-}
-
-func (b *inMemBackend) consumeFromQueue() {
-	for msg := range b.bufQueue {
-		// TODO(pedge): this was effectively not being handled and was a bug
-		// The error channel passed in is the error channel used for start, which was
-		// only read from once in host.startModules(), and this error was put into
-		// the queue as a second error
-		b.errorCh <- Run(context.Background(), msg)
-	}
-}
-
-// Publish implements the Backend interface
-func (b *inMemBackend) Publish(ctx context.Context, message []byte) error {
+// Enqueue implements the Backend interface
+func (b *inMemBackend) Enqueue(ctx context.Context, message []byte) error {
 	go func() {
 		b.bufQueue <- message
 	}()
 	return nil
 }
 
+// ExecuteAsync implements the Backend interface
+func (b *inMemBackend) ExecuteAsync() chan error {
+	go func() {
+		for msg := range b.bufQueue {
+			// TODO(pedge): this was effectively not being handled and was a bug
+			// The error channel passed in is the error channel used for start, which was
+			// only read from once in host.startModules(), and this error was put into
+			// the queue as a second error
+			b.errorCh <- Run(context.Background(), msg)
+		}
+	}()
+	return b.errorCh
+}
+
 // Stop implements the Module interface
 func (b *inMemBackend) Stop() error {
 	close(b.bufQueue)
+	if b.errorCh != nil {
+		close(b.errorCh)
+	}
 	return nil
 }

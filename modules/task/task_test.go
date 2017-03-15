@@ -34,10 +34,10 @@ import (
 
 var (
 	_nopBackend   = &NopBackend{}
-	_nopBackendFn = func(service.Host, Config) (Backend, error) { return _nopBackend, nil }
+	_nopBackendFn = func(service.Host) (Backend, error) { return _nopBackend, nil }
 	_memBackend   *inMemBackend
-	_memBackendFn = func(service.Host, Config) (Backend, error) { return _memBackend, nil }
-	_errBackendFn = func(service.Host, Config) (Backend, error) { return nil, errors.New("bknd err") }
+	_memBackendFn = func(service.Host) (Backend, error) { return _memBackend, nil }
+	_errBackendFn = func(service.Host) (Backend, error) { return nil, errors.New("bknd err") }
 )
 
 func init() {
@@ -47,9 +47,26 @@ func init() {
 
 func TestNew(t *testing.T) {
 	b := createModule(t, _memBackendFn) // Singleton modules get saved
-	require.Equal(t, _memBackend, b)
+	require.Equal(t, _memBackend, b.(*managedBackend).Backend)
 	b = createModule(t, _nopBackendFn) // Singleton returns nop even though mem backend is input
-	require.Equal(t, _memBackend, b)
+	require.Equal(t, _memBackend, b.(*managedBackend).Backend)
+}
+
+func TestMemBackendModuleWorkflowWithContext(t *testing.T) {
+	mod, err := newAsyncModule(newTestHost(t), _memBackendFn, DisableExecution()) // we will just get the singleton in mem backend here
+	require.NoError(t, err)
+	require.NotNil(t, mod)
+	b := mod.(Backend)
+	require.True(t, b.(*managedBackend).config.DisableExecution)
+	require.NoError(t, b.Start())
+	fn := func(ctx context.Context) error {
+		return errors.New("hello error")
+	}
+	errorCh := b.ExecuteAsync()
+	require.NotNil(t, errorCh)
+	require.NoError(t, Register(fn))
+	require.NoError(t, Enqueue(fn, context.Background()))
+	require.Error(t, <-errorCh)
 }
 
 func TestNewError(t *testing.T) {
@@ -58,32 +75,8 @@ func TestNewError(t *testing.T) {
 	require.Nil(t, mod)
 }
 
-func TestMemBackendModuleWorkflowWithContext(t *testing.T) {
-	b := createModule(t, _memBackendFn) // we will just get the singleton in mem backend here
-	require.NoError(t, b.Start())
-	fn := func(ctx context.Context) error {
-		return errors.New("hello error")
-	}
-	require.NoError(t, Register(fn))
-	require.NoError(t, Enqueue(fn, context.Background()))
-	require.Error(t, <-_memBackend.ErrorCh())
-}
-
-func TestBackendWithOptions(t *testing.T) {
-	mod, err := newAsyncModule(
-		newTestHost(t),
-		func(host service.Host, cfg Config) (Backend, error) {
-			require.True(t, cfg.DisableExecution)
-			return _nopBackend, nil
-		},
-		DisableExecution(),
-	)
-	require.NoError(t, err)
-	require.NotNil(t, mod)
-}
-
-func createModule(t *testing.T, b BackendCreateFunc) Backend {
-	moduleProvider := New(b)
+func createModule(t *testing.T, b BackendCreateFunc, options ...ModuleOption) Backend {
+	moduleProvider := New(b, options...)
 	assert.NotNil(t, moduleProvider)
 	mod, err := moduleProvider.Create(newTestHost(t))
 	assert.NotNil(t, mod)
