@@ -34,10 +34,10 @@ import (
 
 var (
 	_nopBackend   = &NopBackend{}
-	_nopBackendFn = func(host service.Host) (Backend, error) { return _nopBackend, nil }
+	_nopBackendFn = func(service.Host, Config) (Backend, error) { return _nopBackend, nil }
 	_memBackend   *inMemBackend
-	_memBackendFn = func(host service.Host) (Backend, error) { return _memBackend, nil }
-	_errBackendFn = func(host service.Host) (Backend, error) { return nil, errors.New("bknd err") }
+	_memBackendFn = func(service.Host, Config) (Backend, error) { return _memBackend, nil }
+	_errBackendFn = func(service.Host, Config) (Backend, error) { return nil, errors.New("bknd err") }
 )
 
 func init() {
@@ -67,6 +67,19 @@ func TestMemBackendModuleWorkflowWithContext(t *testing.T) {
 	require.NoError(t, Register(fn))
 	require.NoError(t, Enqueue(fn, context.Background()))
 	require.Error(t, <-_memBackend.ErrorCh())
+}
+
+func TestBackendWithOptions(t *testing.T) {
+	mod, err := newAsyncModule(
+		newTestHost(t),
+		func(host service.Host, cfg Config) (Backend, error) {
+			require.True(t, cfg.DisableExecution)
+			return _nopBackend, nil
+		},
+		DisableExecution(),
+	)
+	require.NoError(t, err)
+	require.NotNil(t, mod)
 }
 
 func createModule(t *testing.T, b BackendCreateFunc) Backend {

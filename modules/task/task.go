@@ -52,18 +52,19 @@ func globalBackendStatsClient() *statsClient {
 }
 
 // New creates an async task queue ModuleProvider.
-func New(createFunc BackendCreateFunc) service.ModuleProvider {
+func New(createFunc BackendCreateFunc, options ...ModuleOption) service.ModuleProvider {
 	return service.ModuleProviderFromFunc("task", func(host service.Host) (service.Module, error) {
-		return newAsyncModuleSingleton(host, createFunc)
+		return newAsyncModuleSingleton(host, createFunc, options...)
 	})
 }
 
 func newAsyncModuleSingleton(
 	host service.Host,
 	createFunc BackendCreateFunc,
+	options ...ModuleOption,
 ) (service.Module, error) {
 	_once.Do(func() {
-		_asyncMod, _asyncModErr = newAsyncModule(host, createFunc)
+		_asyncMod, _asyncModErr = newAsyncModule(host, createFunc, options...)
 	})
 	return _asyncMod, _asyncModErr
 }
@@ -71,8 +72,15 @@ func newAsyncModuleSingleton(
 func newAsyncModule(
 	host service.Host,
 	createFunc BackendCreateFunc,
+	options ...ModuleOption,
 ) (service.Module, error) {
-	backend, err := createFunc(host)
+	config := &Config{}
+	for _, option := range options {
+		if err := option(config); err != nil {
+			return nil, err
+		}
+	}
+	backend, err := createFunc(host, *config)
 	if err != nil {
 		return nil, err
 	}
@@ -84,4 +92,20 @@ func newAsyncModule(
 }
 
 // BackendCreateFunc creates a backend implementation
-type BackendCreateFunc func(host service.Host) (Backend, error)
+type BackendCreateFunc func(service.Host, Config) (Backend, error)
+
+// ModuleOption is a function that configures module creation.
+type ModuleOption func(*Config) error
+
+// Config represents the options for the task module
+type Config struct {
+	DisableExecution bool
+}
+
+// DisableExecution adds custom YARPC inboundMiddleware to the module
+func DisableExecution() ModuleOption {
+	return func(config *Config) error {
+		config.DisableExecution = true
+		return nil
+	}
+}
