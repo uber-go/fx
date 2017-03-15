@@ -37,13 +37,13 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/uber-go/tally"
 	"go.uber.org/zap"
-	ztest "go.uber.org/zap/testutils"
+	"go.uber.org/zap/zaptest"
 )
 
 func TestInboundMiddleware_Context(t *testing.T) {
 	host := service.NopHost()
 	unary := contextInboundMiddleware{newStatsClient(host.Metrics())}
-	testutils.WithInMemoryLogger(t, nil, func(loggerWithZap *zap.Logger, buf *ztest.Buffer) {
+	testutils.WithInMemoryLogger(t, nil, func(loggerWithZap *zap.Logger, buf *zaptest.Buffer) {
 		defer ulog.SetLogger(loggerWithZap)()
 		tracing.WithSpan(t, loggerWithZap, func(span opentracing.Span) {
 			ctx := opentracing.ContextWithSpan(context.Background(), span)
@@ -56,7 +56,7 @@ func TestInboundMiddleware_Context(t *testing.T) {
 
 func TestOnewayInboundMiddleware_Context(t *testing.T) {
 	oneway := contextOnewayInboundMiddleware{}
-	testutils.WithInMemoryLogger(t, nil, func(loggerWithZap *zap.Logger, buf *ztest.Buffer) {
+	testutils.WithInMemoryLogger(t, nil, func(loggerWithZap *zap.Logger, buf *zaptest.Buffer) {
 		defer ulog.SetLogger(loggerWithZap)()
 		tracing.WithSpan(t, loggerWithZap, func(span opentracing.Span) {
 			ctx := opentracing.ContextWithSpan(context.Background(), span)
@@ -67,7 +67,7 @@ func TestOnewayInboundMiddleware_Context(t *testing.T) {
 	})
 }
 
-func checkLogForTrace(t *testing.T, buf *ztest.Buffer) {
+func checkLogForTrace(t *testing.T, buf *zaptest.Buffer) {
 	require.True(t, len(buf.Lines()) > 0)
 	for _, line := range buf.Lines() {
 		assert.Contains(t, line, "trace")

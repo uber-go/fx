@@ -31,8 +31,8 @@ import (
 	"github.com/stretchr/testify/require"
 	jaeger "github.com/uber/jaeger-client-go"
 	"go.uber.org/zap"
-	ztest "go.uber.org/zap/testutils"
 	"go.uber.org/zap/zapcore"
+	"go.uber.org/zap/zaptest"
 )
 
 func TestLogger(t *testing.T) {
@@ -42,7 +42,7 @@ func TestLogger(t *testing.T) {
 	})
 
 	t.Run("Non-nil context", func(t *testing.T) {
-		testutils.WithInMemoryLogger(t, nil, func(logger *zap.Logger, buf *ztest.Buffer) {
+		testutils.WithInMemoryLogger(t, nil, func(logger *zap.Logger, buf *zaptest.Buffer) {
 			defer zap.ReplaceGlobals(logger)()
 			withTracedContext(func(ctx context.Context) {
 				Logger(ctx).Info("")
