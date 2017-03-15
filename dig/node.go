@@ -60,17 +60,11 @@ func (n node) id() string {
 
 type objNode struct {
 	node
-
-	obj interface{}
 }
 
 // Return the earlier provided instance
 func (n *objNode) value(g *Graph) (reflect.Value, error) {
-	v := reflect.ValueOf(n.obj)
-	if n.objType.Kind() == reflect.Interface {
-		v = v.Elem()
-	}
-	return v, nil
+	return n.cachedValue, nil
 }
 
 func (n objNode) dependencies() []interface{} {
