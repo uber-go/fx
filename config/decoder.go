@@ -24,6 +24,7 @@ import (
 	"bytes"
 	"encoding"
 	"fmt"
+	"math"
 	"reflect"
 	"strconv"
 
@@ -51,24 +52,273 @@ func derefType(t reflect.Type) reflect.Type {
 	return t
 }
 
-func convertValueFromStruct(value interface{}, targetType reflect.Type, fieldType reflect.Type, fieldValue reflect.Value) error {
+func convertSignedInts(src interface{}, dst *reflect.Value) error {
+	switch t := src.(type) {
+	case int:
+		v := int64(t)
+		if !dst.OverflowInt(v) {
+			dst.SetInt(v)
+			return nil
+		}
+	case uint:
+		v := int64(t)
+		if !dst.OverflowInt(v) {
+			dst.SetInt(v)
+			return nil
+		}
+	case int8:
+		v := int64(t)
+		if !dst.OverflowInt(v) {
+			dst.SetInt(v)
+			return nil
+		}
+	case uint8:
+		v := int64(t)
+		if !dst.OverflowInt(v) {
+			dst.SetInt(v)
+			return nil
+		}
+	case int16:
+		v := int64(t)
+		if !dst.OverflowInt(v) {
+			dst.SetInt(v)
+			return nil
+		}
+	case uint16:
+		v := int64(t)
+		if !dst.OverflowInt(v) {
+			dst.SetInt(v)
+			return nil
+		}
+	case int32:
+		v := int64(t)
+		if !dst.OverflowInt(v) {
+			dst.SetInt(v)
+			return nil
+		}
+	case uint32:
+		v := int64(t)
+		if !dst.OverflowInt(v) {
+			dst.SetInt(v)
+			return nil
+		}
+	case int64:
+		if !dst.OverflowInt(t) {
+			dst.SetInt(t)
+			return nil
+		}
+	case uint64:
+		if t <= math.MaxInt64 {
+			dst.SetInt(int64(t))
+			return nil
+		}
+	case float32:
+		if t >= math.MinInt64 && t <= math.MaxInt64 && !dst.OverflowInt(int64(t)) {
+			dst.SetInt(int64(t))
+			return nil
+		}
+	case float64:
+		if t >= math.MinInt64 && t <= math.MaxInt64 && !dst.OverflowInt(int64(t)) {
+			dst.SetInt(int64(t))
+			return nil
+		}
+	case uintptr:
+		if t <= math.MaxInt64 && !dst.OverflowInt(int64(t)) {
+			dst.SetInt(int64(t))
+			return nil
+		}
+	}
+
+	return fmt.Errorf("can't convert %q to integer type %q", fmt.Sprint(src), dst.Type())
+}
+
+func convertUnsignedInts(src interface{}, dst *reflect.Value) error {
+	switch t := src.(type) {
+	case int:
+		v := uint64(t)
+		if t >= 0 && !dst.OverflowUint(v) {
+			dst.SetUint(v)
+			return nil
+		}
+	case uint:
+		v := uint64(t)
+		if !dst.OverflowUint(v) {
+			dst.SetUint(v)
+			return nil
+		}
+	case int8:
+		v := uint64(t)
+		if t >= 0 && !dst.OverflowUint(v) {
+			dst.SetUint(v)
+			return nil
+		}
+	case uint8:
+		v := uint64(t)
+		if !dst.OverflowUint(v) {
+			dst.SetUint(v)
+			return nil
+		}
+	case int16:
+		v := uint64(t)
+		if t >= 0 && !dst.OverflowUint(v) {
+			dst.SetUint(v)
+			return nil
+		}
+	case uint16:
+		v := uint64(t)
+		if !dst.OverflowUint(v) {
+			dst.SetUint(v)
+			return nil
+		}
+	case int32:
+		v := uint64(t)
+		if t >= 0 && !dst.OverflowUint(v) {
+			dst.SetUint(v)
+			return nil
+		}
+	case uint32:
+		v := uint64(t)
+		if !dst.OverflowUint(v) {
+			dst.SetUint(v)
+			return nil
+		}
+	case int64:
+		if t >= 0 {
+			dst.SetUint(uint64(t))
+			return nil
+		}
+	case uint64:
+		if !dst.OverflowUint(t) {
+			dst.SetUint(t)
+			return nil
+		}
+	case float32:
+		if t >= 0 && t <= math.MaxUint64 && !dst.OverflowUint(uint64(t)) {
+			dst.SetUint(uint64(t))
+			return nil
+		}
+	case float64:
+		if t >= 0 && t <= math.MaxUint64 && !dst.OverflowUint(uint64(t)) {
+			dst.SetUint(uint64(t))
+			return nil
+		}
+	case uintptr:
+		if t <= math.MaxUint64 && !dst.OverflowUint(uint64(t)) {
+			dst.SetUint(uint64(t))
+			return nil
+		}
+	}
+
+	return fmt.Errorf("can't convert %q to unsigned integer type %q", fmt.Sprint(src), dst.Type())
+}
+
+func convertFloats(src interface{}, dst *reflect.Value) error {
+	switch t := src.(type) {
+	case int:
+		v := float64(t)
+		if !dst.OverflowFloat(v) {
+			dst.SetFloat(v)
+			return nil
+		}
+	case uint:
+		v := float64(t)
+		if !dst.OverflowFloat(v) {
+			dst.SetFloat(v)
+			return nil
+		}
+	case int8:
+		v := float64(t)
+		if !dst.OverflowFloat(v) {
+			dst.SetFloat(v)
+			return nil
+		}
+	case uint8:
+		v := float64(t)
+		if !dst.OverflowFloat(v) {
+			dst.SetFloat(v)
+			return nil
+		}
+	case int16:
+		v := float64(t)
+		if !dst.OverflowFloat(v) {
+			dst.SetFloat(v)
+			return nil
+		}
+	case uint16:
+		v := float64(t)
+		if !dst.OverflowFloat(v) {
+			dst.SetFloat(v)
+			return nil
+		}
+	case int32:
+		v := float64(t)
+		if !dst.OverflowFloat(v) {
+			dst.SetFloat(v)
+			return nil
+		}
+	case uint32:
+		v := float64(t)
+		if !dst.OverflowFloat(v) {
+			dst.SetFloat(v)
+			return nil
+		}
+	case int64:
+		v := float64(t)
+		if !dst.OverflowFloat(v) {
+			dst.SetFloat(v)
+			return nil
+		}
+	case uint64:
+		v := float64(t)
+		if !dst.OverflowFloat(v) {
+			dst.SetFloat(v)
+			return nil
+		}
+	case float32:
+		v := float64(t)
+		if !dst.OverflowFloat(v) {
+			dst.SetFloat(v)
+			return nil
+		}
+	case float64:
+		if !dst.OverflowFloat(t) {
+			dst.SetFloat(t)
+			return nil
+		}
+	case uintptr:
+		v := float64(t)
+		if !dst.OverflowFloat(v) {
+			dst.SetFloat(v)
+			return nil
+		}
+	}
+
+	return fmt.Errorf("can't convert %q to float type %q", fmt.Sprint(src), dst.Type())
+}
+
+func convertValueFromStruct(src interface{}, dst *reflect.Value) error {
 	// The fieldType is probably a custom type here. We will try and set the fieldValue by
 	// the custom type
-	// TODO: refactor switch cases into isType functions
-	// TODO(alsam) Fix overflows/negatives for unsigned types...
-	switch fieldType.Kind() {
+	switch dst.Kind() {
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-		fieldValue.SetInt(int64(value.(int)))
+		return convertSignedInts(src, dst)
+
 	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr:
-		fieldValue.SetUint(uint64(value.(int)))
+		return convertUnsignedInts(src, dst)
+
 	case reflect.Float32, reflect.Float64:
-		fieldValue.SetFloat(value.(float64))
+		return convertFloats(src, dst)
+
 	case reflect.Bool:
-		fieldValue.SetBool(value.(bool))
+		if v, err := strconv.ParseBool(fmt.Sprintf("%v", src)); err == nil {
+			dst.SetBool(v)
+		}
+
 	case reflect.String:
-		fieldValue.SetString(value.(string))
+		dst.SetString(fmt.Sprintf("%v", src))
+
 	default:
-		return fmt.Errorf("can't convert %v to %v", reflect.TypeOf(value).String(), targetType)
+		return fmt.Errorf("can't convert %q to %q", src, dst.Type())
 	}
 	return nil
 }
@@ -88,7 +338,6 @@ func (d *decoder) getGlobalProvider() Provider {
 
 // Sets value to a primitive type.
 func (d *decoder) scalar(childKey string, value reflect.Value, def string) error {
-	valueType := value.Type()
 	global := d.getGlobalProvider()
 	var val interface{}
 
@@ -102,14 +351,14 @@ func (d *decoder) scalar(childKey string, value reflect.Value, def string) error
 	if val != nil {
 		// First try to convert primitive type values, if convertValue wasn't able
 		// to convert to primitive,try converting the value as a struct value
-		if ret, err := convertValue(val, valueType); ret != nil {
+		if ret, err := convertValue(val, value.Type()); ret != nil {
 			if err != nil {
 				return err
 			}
 
 			value.Set(reflect.ValueOf(ret))
 		} else {
-			return convertValueFromStruct(val, value.Type(), valueType, value)
+			return convertValueFromStruct(val, &value)
 		}
 	}
 

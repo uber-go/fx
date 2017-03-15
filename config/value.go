@@ -177,22 +177,9 @@ func (cv Value) TryAsString() (string, bool) {
 
 // TryAsInt attempts to return the configuration value as an int
 func (cv Value) TryAsInt() (int, bool) {
-	v := cv.Value()
-	if val, err := convertValue(v, reflect.TypeOf(0)); v != nil && err == nil {
-		return val.(int), true
-	}
-	switch val := v.(type) {
-	case int32:
-		return int(val), true
-	case int64:
-		return int(val), true
-	case float32:
-		return int(val), true
-	case float64:
-		return int(val), true
-	default:
-		return 0, false
-	}
+	var res int
+	err := newValueProvider(cv.Value()).Get(Root).PopulateStruct(&res)
+	return res, err == nil
 }
 
 // TryAsBool attempts to return the configuration value as a bool
@@ -202,27 +189,13 @@ func (cv Value) TryAsBool() (bool, bool) {
 		return val.(bool), true
 	}
 	return false, false
-
 }
 
 // TryAsFloat attempts to return the configuration value as a float
 func (cv Value) TryAsFloat() (float64, bool) {
-	v := cv.Value()
-	if val, err := convertValue(v, reflect.TypeOf(_float64Zero)); v != nil && err == nil {
-		return val.(float64), true
-	}
-	switch val := v.(type) {
-	case int:
-		return float64(val), true
-	case int32:
-		return float64(val), true
-	case int64:
-		return float64(val), true
-	case float32:
-		return float64(val), true
-	default:
-		return _float64Zero, false
-	}
+	var res float64
+	err := newValueProvider(cv.Value()).Get(Root).PopulateStruct(&res)
+	return res, err == nil
 }
 
 // AsString returns the configuration value as a string, or panics if not

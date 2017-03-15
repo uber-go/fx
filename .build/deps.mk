@@ -20,6 +20,8 @@ deps: libdeps
 	$(ECHO_V)go install ./vendor/github.com/mvdan/interfacer/cmd/interfacer
 	@$(call label,Installing richgo...)
 	$(ECHO_V)go install ./vendor/github.com/kyoh86/richgo
+	@$(call label,Installing genny...)
+	$(ECHO_V)go install ./vendor/github.com/cheekybits/genny
 
 GOCOV := gocov
 OVERALLS := overalls

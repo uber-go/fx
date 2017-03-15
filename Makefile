@@ -62,7 +62,7 @@ endif
 # This is the default for overalls
 COVER_OUT := profile.coverprofile
 
-$(COV_REPORT): $(PKG_FILES) $(ALL_SRC)
+$(COV_REPORT): $(PKG_FILES) $(ALL_SRC) gogen
 	@$(call label,Cleaning old profile)
 	$(ECHO_V)rm -f $(COV_REPORT)
 
@@ -177,7 +177,12 @@ license:
 	$(ECHO_V)./.build/license.sh
 
 .PHONY: generate
-generate: gendoc genexamples license
+generate: gendoc genexamples license gogen
+
+.PHONY: gogen
+gogen:
+	@$(call label,Generating code)
+	$(ECHO_V)$(foreach pkg,$(LIST_PKGS),go generate $(pkg);)
 
 .PHONY: clean
 clean:
