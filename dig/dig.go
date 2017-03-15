@@ -133,9 +133,6 @@ func (g *Graph) Resolve(obj interface{}) (err error) {
 	}
 
 	// set the pointer value of the provided object to the instance pointer
-	if objElemType.Kind() == reflect.Interface {
-		v = v.Elem()
-	}
 	objVal.Elem().Set(v)
 
 	return nil
