@@ -1,5 +1,5 @@
-hash: d2d2354a3e57996dece4e3b6aed8b469855e15ae23d6ad29b799c4bc04c25b46
-updated: 2017-03-14T17:12:37.328331594-07:00
+hash: 48248bf1bdc47aff13a0eb0ddc6e204067069b59a08f7096392deede500f62b9
+updated: 2017-03-15T15:01:07.789840923-07:00
 imports:
 - name: github.com/apache/thrift
   version: 9549b25c77587b29be4e0b5c258221a4ed85d37a
@@ -7,10 +7,14 @@ imports:
   - lib/go/thrift
 - name: github.com/certifi/gocertifi
   version: 03be5e6bb9874570ea7fb0961225d193cbc374c5
+- name: github.com/cheekybits/genny
+  version: e8e29e67948b15c64e60d6617182c18cf7eead7f
+  subpackages:
+  - generic
 - name: github.com/codahale/hdrhistogram
   version: f8ad88b59a584afeee9d334eff879b104439117b
 - name: github.com/davecgh/go-spew
-  version: 04cdfd42973bb9c8589fd6a731800cf222fde1a9
+  version: 346938d642f2ec3594ed81d874461961cd0faa76
   subpackages:
   - spew
 - name: github.com/facebookgo/clock
@@ -35,7 +39,7 @@ imports:
 - name: github.com/pkg/errors
   version: 645ef00459ed84a119197bfb8d8205042c6df63d
 - name: github.com/pmezard/go-difflib
-  version: d8ed2627bdf02c080bf22230dbb337003b7aba2d
+  version: 792786c7400a136282c1664665ae0a8db921c6c2
   subpackages:
   - difflib
 - name: github.com/stretchr/testify
