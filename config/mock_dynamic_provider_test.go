@@ -21,10 +21,11 @@
 package config
 
 import (
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"sync"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestMockDynamicProvider_GetAndSet(t *testing.T) {
@@ -105,5 +106,7 @@ func TestMockDynamicProvider_UnregisterChangeCallback(t *testing.T) {
 	go unregister()
 
 	wg.Wait()
-	assert.EqualError(t, <-errChan, "there is no registered callback for token: goofy")
+	err := <-errChan
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "there is no registered callback for token: goofy")
 }
