@@ -21,13 +21,14 @@
 package config
 
 import (
-	"math"
-	"testing"
-	"github.com/cheekybits/genny/generic"
-	"github.com/stretchr/testify/require"
-	"reflect"
-	"github.com/stretchr/testify/assert"
 	"fmt"
+	"math"
+	"reflect"
+	"testing"
+
+	"github.com/cheekybits/genny/generic"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 type overflowType generic.Type

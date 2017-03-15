@@ -318,7 +318,7 @@ func convertValueFromStruct(src interface{}, dst *reflect.Value) error {
 		dst.SetString(fmt.Sprintf("%v", src))
 
 	default:
-		return fmt.Errorf("can't convert %q to %q", src, dst.Type())
+		return fmt.Errorf("can't convert %q to %q", fmt.Sprint(src), dst.Type())
 	}
 	return nil
 }

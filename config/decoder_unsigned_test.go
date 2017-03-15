@@ -21,11 +21,12 @@
 package config
 
 import (
-	"testing"
-	"github.com/cheekybits/genny/generic"
-	"github.com/stretchr/testify/require"
 	"reflect"
+	"testing"
+
+	"github.com/cheekybits/genny/generic"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 type unsignedType generic.Type
