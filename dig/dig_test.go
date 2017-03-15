@@ -153,6 +153,21 @@ func TestBasicRegisterResolve(t *testing.T) {
 	require.True(t, first == second, "Must point to the same object")
 }
 
+func TestInterfaceRegisterResolve(t *testing.T) {
+	t.Parallel()
+	g := New()
+
+	var gc GrandchildInt1 = NewGrandchild1()
+	err := g.Register(&gc)
+	require.NoError(t, err)
+
+	var registered GrandchildInt1
+	require.NoError(t, g.Resolve(&registered), "No error expected during Resolve")
+
+	require.NotNil(t, registered, "GrandchildInt1 must have been registered")
+	require.True(t, gc == registered, "Must point to the same object")
+}
+
 func TestConstructorErrors(t *testing.T) {
 	tests := []struct {
 		desc      string

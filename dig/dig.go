@@ -82,7 +82,10 @@ func (g *Graph) Register(c interface{}) error {
 		}
 		return g.registerConstructor(c)
 	case reflect.Ptr:
-		return g.registerObject(c)
+		if ctype.Elem().Kind() == reflect.Interface {
+			ctype = ctype.Elem()
+		}
+		return g.registerObject(c, ctype)
 	default:
 		return errParamType
 	}
@@ -130,6 +133,9 @@ func (g *Graph) Resolve(obj interface{}) (err error) {
 	}
 
 	// set the pointer value of the provided object to the instance pointer
+	if objElemType.Kind() == reflect.Interface {
+		v = v.Elem()
+	}
 	objVal.Elem().Set(v)
 
 	return nil
@@ -196,9 +202,7 @@ func (g *Graph) String() string {
 	return b.String()
 }
 
-func (g *Graph) registerObject(o interface{}) error {
-	otype := reflect.TypeOf(o)
-
+func (g *Graph) registerObject(o interface{}, otype reflect.Type) error {
 	n := objNode{
 		obj: o,
 		node: node{
