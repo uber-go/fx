@@ -28,8 +28,6 @@ import (
 	"go.uber.org/zap"
 )
 
-var gobEncoding = &GobEncoding{}
-
 const (
 	_initialized = iota
 	_running
@@ -98,7 +96,7 @@ func NewInMemBackend(host service.Host) Backend {
 
 // Encoder implements the Backend interface
 func (b *inMemBackend) Encoder() Encoding {
-	return gobEncoding
+	return &GobEncoding{}
 }
 
 // Start implements the Module interface
@@ -118,10 +116,6 @@ func (b *inMemBackend) Enqueue(ctx context.Context, message []byte) error {
 func (b *inMemBackend) ExecuteAsync() error {
 	go func() {
 		for msg := range b.bufQueue {
-			// TODO(pedge): this was effectively not being handled and was a bug
-			// The error channel passed in is the error channel used for start, which was
-			// only read from once in host.startModules(), and this error was put into
-			// the queue as a second error
 			err := Run(context.Background(), msg)
 			ulog.Logger(context.Background()).Error("unable to run task", zap.Error(err))
 			b.errorCh <- err

@@ -8,8 +8,8 @@
   to avoid repetetive error checking for services which register many tasks.
 * Expose options on task module to disable execution. This will allow users to enqueue and consume
   tasks on different clusters.
-* Rename Backend interface `Publish` to `Enqueue`. Created a new `ExecuteAsync` method that will
-  kick off workers to consume tasks and this is subsumed by module Start.
+* [Breaking] Rename Backend interface `Publish` to `Enqueue`. Created a new `ExecuteAsync` method
+  that will kick off workers to consume tasks and this is subsumed by module Start.
 
 ## v1.0.0-beta2 (09 Mar 2017)
 
