@@ -28,7 +28,7 @@ type staticProvider struct {
 
 // NewStaticProvider should only be used in tests to isolate config from your environment
 // It is not race free, because underlying objects can be accessed with Value().
-func NewStaticProvider(data map[string]interface{}) Provider {
+func NewStaticProvider(data interface{}) Provider {
 	b, err := yaml.Marshal(data)
 	if err != nil {
 		panic(err)
@@ -38,7 +38,7 @@ func NewStaticProvider(data map[string]interface{}) Provider {
 }
 
 // StaticProvider returns function to create StaticProvider during configuration initialization
-func StaticProvider(data map[string]interface{}) ProviderFunc {
+func StaticProvider(data interface{}) ProviderFunc {
 	return func() (Provider, error) {
 		return NewStaticProvider(data), nil
 	}
