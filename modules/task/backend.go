@@ -24,6 +24,8 @@ import (
 	"context"
 
 	"go.uber.org/fx/service"
+	"go.uber.org/fx/ulog"
+	"go.uber.org/zap"
 )
 
 var gobEncoding = &GobEncoding{}
@@ -37,9 +39,12 @@ const (
 // Backend represents a task backend
 type Backend interface {
 	service.Module
+	// Encoder returns the encoding used by the backend
 	Encoder() Encoding
+	// Enqueue will add a message to the backend
 	Enqueue(ctx context.Context, message []byte) error
-	ExecuteAsync() chan error
+	// ExecuteAsync kicks off workers that consume incoming messages and execute them as tasks
+	ExecuteAsync() error
 }
 
 // NopBackend is a noop implementation of the Backend interface
@@ -51,7 +56,7 @@ func (b NopBackend) Enqueue(ctx context.Context, message []byte) error {
 }
 
 // ExecuteAsync implements the Backend interface
-func (b NopBackend) ExecuteAsync() chan error {
+func (b NopBackend) ExecuteAsync() error {
 	return nil
 }
 
@@ -110,17 +115,19 @@ func (b *inMemBackend) Enqueue(ctx context.Context, message []byte) error {
 }
 
 // ExecuteAsync implements the Backend interface
-func (b *inMemBackend) ExecuteAsync() chan error {
+func (b *inMemBackend) ExecuteAsync() error {
 	go func() {
 		for msg := range b.bufQueue {
 			// TODO(pedge): this was effectively not being handled and was a bug
 			// The error channel passed in is the error channel used for start, which was
 			// only read from once in host.startModules(), and this error was put into
 			// the queue as a second error
-			b.errorCh <- Run(context.Background(), msg)
+			err := Run(context.Background(), msg)
+			ulog.Logger(context.Background()).Error("unable to run task", zap.Error(err))
+			b.errorCh <- err
 		}
 	}()
-	return b.errorCh
+	return nil
 }
 
 // Stop implements the Module interface

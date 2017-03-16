@@ -23,14 +23,10 @@ package task
 import (
 	"sync"
 
-	"golang.org/x/net/context"
-
 	"github.com/pkg/errors"
 	"github.com/uber-go/tally"
 
 	"go.uber.org/fx/service"
-	"go.uber.org/fx/ulog"
-	"go.uber.org/zap"
 )
 
 var (
@@ -109,12 +105,9 @@ func (b *managedBackend) Start() error {
 		return errors.Wrap(err, "unable to start backend")
 	}
 	if !b.config.DisableExecution {
-		errorCh := b.ExecuteAsync()
-		go func() {
-			for err := range errorCh {
-				ulog.Logger(context.Background()).Error("task execute error", zap.Error(err))
-			}
-		}()
+		if err := b.ExecuteAsync(); err != nil {
+			return errors.Wrap(err, "unable to start backend execution")
+		}
 	}
 	return nil
 }

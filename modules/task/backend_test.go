@@ -53,11 +53,10 @@ func TestInMemBackend(t *testing.T) {
 	defer withBackendSetup(t, b)()
 	require.NotNil(t, b.Encoder())
 	require.NoError(t, b.Start())
-	errorCh := b.ExecuteAsync()
-	require.NotNil(t, errorCh)
+	require.NoError(t, b.ExecuteAsync())
 	memB := b.(*inMemBackend)
-	publishEncodedVal(t, memB, errorCh)
-	publishEncodedVal(t, memB, errorCh)
+	publishEncodedVal(t, memB)
+	publishEncodedVal(t, memB)
 }
 
 func TestInMemBackendStartTimeout(t *testing.T) {
@@ -67,13 +66,15 @@ func TestInMemBackendStartTimeout(t *testing.T) {
 	time.Sleep(time.Millisecond)
 }
 
-func publishEncodedVal(t *testing.T, b Backend, errorCh chan error) {
+func publishEncodedVal(t *testing.T, b Backend) {
 	bytes, err := b.Encoder().Marshal("Hello")
 	assert.NoError(t, err)
 
 	// Publish a non FnSignature value that results in error
 	err = b.Enqueue(context.Background(), bytes)
 	assert.NoError(t, err)
+	errorCh := b.(*inMemBackend).errorCh
+	require.NotNil(t, errorCh)
 	if err, ok := <-errorCh; ok {
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "type mismatch")
