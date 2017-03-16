@@ -33,11 +33,18 @@ import (
 )
 
 var (
-	_nopBackend   = &NopBackend{}
-	_nopBackendFn = func(service.Host) (Backend, error) { return _nopBackend, nil }
-	_memBackendFn = func(host service.Host) (Backend, error) { return NewInMemBackend(host), nil }
-	_errBackendFn = func(service.Host) (Backend, error) { return nil, errors.New("bknd err") }
+	_nopBackend       = &NopBackend{}
+	_nopBackendFn     = func(service.Host) (Backend, error) { return _nopBackend, nil }
+	_memBackendFn     = func(host service.Host) (Backend, error) { return NewInMemBackend(host), nil }
+	_backendFnWithErr = func(service.Host) (Backend, error) { return nil, errors.New("bknd err") }
+	_errBackendFn     = func(service.Host) (Backend, error) { return errBackend{*_nopBackend}, nil }
 )
+
+type errBackend struct{ NopBackend }
+
+func (b errBackend) ExecuteAsync() error {
+	return errors.New("execute async error")
+}
 
 func TestNew(t *testing.T) {
 	b := NewInMemBackend(newTestHost(t))
@@ -66,8 +73,17 @@ func TestMemBackendModuleWorkflowWithContext(t *testing.T) {
 	require.Error(t, <-errorCh)
 }
 
-func TestNewError(t *testing.T) {
+func TestModuleStartWithExecuteAsyncError(t *testing.T) {
 	mod, err := newAsyncModule(newTestHost(t), _errBackendFn)
+	require.NoError(t, err)
+	require.NotNil(t, mod)
+	err = mod.Start()
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "execute async error")
+}
+
+func TestNewError(t *testing.T) {
+	mod, err := newAsyncModule(newTestHost(t), _backendFnWithErr)
 	require.Error(t, err)
 	require.Nil(t, mod)
 }
