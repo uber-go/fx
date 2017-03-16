@@ -49,9 +49,9 @@
 //
 //   func main() {
 //     svc, err := service.WithModule(task.New(newBackend)).Build()
-//   	if err != nil {
-//   		log.Fatal("Failed to initialize module", err)
-//   	}
+//     if err != nil {
+//       log.Fatal("Failed to initialize module", err)
+//     }
 //     if err := task.Register(updateCache); err != nil {
 //       ulog.Logger().Fatal("could not register task", "error", err)
 //     }
@@ -88,9 +88,9 @@
 //     svc, err := service.WithModule(
 //       task.New(newBackend, task.DisableExecution()),
 //     ).Build()
-//   	if err != nil {
-//   		log.Fatal("Failed to initialize module", err)
-//   	}
+//     if err != nil {
+//       log.Fatal("Failed to initialize module", err)
+//     }
 //
 // Async function requirements
 //
