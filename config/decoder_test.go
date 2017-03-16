@@ -25,6 +25,7 @@ import (
 	"math"
 	"testing"
 
+	"github.com/google/gofuzz"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -228,5 +229,53 @@ func TestUnsignedNumericDecodingNegatives(t *testing.T) {
 			require.Error(t, err)
 			assert.Contains(t, fmt.Sprintf("can't convert \"-1\" to unsigned integer type %q", to), err.Error())
 		}))
+	}
+}
+
+func TestIdenticalFuzzing(t *testing.T) {
+	t.Parallel()
+
+	type S struct {
+		ii      int
+		ui      uint
+		i8      int8
+		u8      uint8
+		i16     int16
+		u16     uint16
+		i32     int32
+		u32     uint32
+		i64     int64
+		u64     uint64
+		f32     float32
+		f64     float64
+		uPtr    uintptr
+		iiPtr   *int
+		uiPtr   *uint
+		i8Ptr   *int8
+		u8Ptr   *uint8
+		i16Ptr  *int16
+		u16Ptr  *uint16
+		i32Ptr  *int32
+		u32Ptr  *uint32
+		i64Ptr  *int64
+		u64Ptr  *uint64
+		f32Ptr  *float32
+		f64Ptr  *float64
+		uPtrPtr *uintptr
+
+		s    string
+		sPtr *string
+
+		b    bool
+		bPtr *bool
+	}
+
+	f := fuzz.New()
+	var a, b S
+	for i := 1; i < 1000; i++ {
+		f.Fuzz(&a)
+		p := NewStaticProvider(a)
+		require.NoError(t, p.Get(Root).PopulateStruct(&b))
+		require.Equal(t, a, b)
 	}
 }

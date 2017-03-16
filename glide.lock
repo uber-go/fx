@@ -1,5 +1,5 @@
-hash: d2d2354a3e57996dece4e3b6aed8b469855e15ae23d6ad29b799c4bc04c25b46
-updated: 2017-03-16T02:23:29.878094716-07:00
+hash: 349ddd5594cea967e2e0a32d3b2b89dfd50a14df8ab304492002ee1efae08002
+updated: 2017-03-16T02:36:27.655405042-07:00
 imports:
 - name: github.com/apache/thrift
   version: 9549b25c77587b29be4e0b5c258221a4ed85d37a
@@ -16,7 +16,7 @@ imports:
 - name: github.com/facebookgo/clock
   version: 600d898af40aa09a7a93ecb9265d87b0504b6f03
 - name: github.com/getsentry/raven-go
-  version: 3f7439d3e74d88e21d196ba20eb61a5a958bc118
+  version: b68337dbf03e7fbb53d9fd9b63fd09b28e8f13f7
 - name: github.com/go-validator/validator
   version: 0a9835d809fb647a62611d30cb792e0b5dd65b11
 - name: github.com/golang/mock
@@ -129,7 +129,7 @@ imports:
   - zapcore
   - zaptest
 - name: golang.org/x/net
-  version: 10c134ea0df15f7e34d789338c7a2d76cc7a3ab9
+  version: a6577fac2d73be281a500b310739095313165611
   subpackages:
   - context
   - context/ctxhttp
@@ -152,6 +152,8 @@ testImports:
   version: b8599f7d71e7fead76b25aeb919c0e2558672f4a
   subpackages:
   - golint
+- name: github.com/google/gofuzz
+  version: 44d81051d367757e1c7c6a5a86423ece9afcf63c
 - name: github.com/jessevdk/go-flags
   version: 460c7bb0abd6e927f2767cadc91aa6ef776a98b4
 - name: github.com/kisielk/errcheck
