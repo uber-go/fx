@@ -1,6 +1,8 @@
 # Changelog
 
 ## v1.0.0-beta3 (unreleased)
+* [Breaking] Rename `PopulateStruct` method in value to `Populate`. The method can now populate not only structs,
+  but anything slices, maps, builtin types and maps.
 * [Breaking] Simplify Provider interface: remove `Scope` method from the `config.Provider` interface, one can
   use either ScopedProvider and Value.Get() to access sub fields.
 * Add `task.MustRegister` convenience function which fails fast by panicking

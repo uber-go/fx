@@ -107,7 +107,7 @@ func newModule(
 		Timeout: defaultTimeout,
 	}
 	log := ulog.Logger(context.Background()).With(zap.String("module", host.ModuleName()))
-	if err := host.Config().Get("modules").Get(host.ModuleName()).PopulateStruct(&cfg); err != nil {
+	if err := host.Config().Get("modules").Get(host.ModuleName()).Populate(&cfg); err != nil {
 		log.Error("Error loading http module configuration", zap.Error(err))
 	}
 	module := &Module{

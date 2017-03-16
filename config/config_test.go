@@ -173,7 +173,7 @@ func TestOverrideSimple(t *testing.T) {
 	rpc := &rpcStruct{}
 	v := provider.Get("modules.rpc")
 	assert.True(t, v.HasValue())
-	v.PopulateStruct(rpc)
+	v.Populate(rpc)
 	assert.Equal(t, ":8888", rpc.Bind)
 }
 
@@ -191,7 +191,7 @@ func TestSimpleConfigValues(t *testing.T) {
 	assert.Equal(t, 1.123, provider.Get("float").AsFloat())
 	nested := &nested{}
 	v := provider.Get("nonexisting")
-	assert.NoError(t, v.PopulateStruct(nested))
+	assert.NoError(t, v.Populate(nested))
 }
 
 func TestGetAsIntegerValue(t *testing.T) {
@@ -240,7 +240,7 @@ func TestNestedStructs(t *testing.T) {
 	v := provider.Get(Root)
 
 	assert.True(t, v.HasValue())
-	err := v.PopulateStruct(str)
+	err := v.Populate(str)
 	assert.Nil(t, err)
 
 	assert.Equal(t, 1234, str.ID)
@@ -264,7 +264,7 @@ func TestArrayOfStructs(t *testing.T) {
 	v := provider.Get(Root)
 
 	assert.True(t, v.HasValue())
-	assert.NoError(t, v.PopulateStruct(target))
+	assert.NoError(t, v.Populate(target))
 	assert.Equal(t, 0, target.Things[0].ID1)
 	assert.Equal(t, -2, target.Things[2].ID1)
 }
@@ -278,7 +278,7 @@ func TestDefault(t *testing.T) {
 	target := &nested{}
 	v := provider.Get(Root)
 	assert.True(t, v.HasValue())
-	assert.NoError(t, v.PopulateStruct(target))
+	assert.NoError(t, v.Populate(target))
 	assert.Equal(t, "default_name", target.Name)
 }
 

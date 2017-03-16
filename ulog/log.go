@@ -42,7 +42,7 @@ func (c *Configuration) Configure(cfg config.Value) error {
 	// TODO: Fix after GFM-415
 	// Uhhh... this process is not the most elegant.
 	//
-	// Because log.Configuration embeds zap, the PopulateStruct
+	// Because log.Configuration embeds zap, the Populate
 	// does not work properly as it's unable to serialize fields directly
 	// into the embedded struct, so inner struct has to be treated as a
 	// separate object
@@ -51,7 +51,7 @@ func (c *Configuration) Configure(cfg config.Value) error {
 	zapCfg := DefaultConfiguration().Config
 
 	// override the embedded zap.Config stuct from config
-	if err := cfg.PopulateStruct(&zapCfg); err != nil {
+	if err := cfg.Populate(&zapCfg); err != nil {
 		return errors.New("unable to parse logging config")
 	}
 
@@ -59,7 +59,7 @@ func (c *Configuration) Configure(cfg config.Value) error {
 	c.Config = zapCfg
 
 	// override any remaining things fom config, i.e. Sentry
-	if err := cfg.PopulateStruct(&c); err != nil {
+	if err := cfg.Populate(&c); err != nil {
 		return errors.New("unable to parse logging config")
 	}
 

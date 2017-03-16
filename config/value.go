@@ -325,9 +325,8 @@ func convertValue(value interface{}, targetType reflect.Type) (interface{}, erro
 	return nil, fmt.Errorf("can't convert %v to %v", reflect.TypeOf(value).String(), targetType)
 }
 
-// PopulateStruct fills in a struct from configuration
-// TODO(alsam) now we can populate not only structs. Provide a generic function.
-func (cv Value) PopulateStruct(target interface{}) error {
+// Populate fills in an object from configuration
+func (cv Value) Populate(target interface{}) error {
 	d := decoder{Value: &cv, m: make(map[interface{}]struct{})}
 
 	return d.unmarshal(cv.key, reflect.Indirect(reflect.ValueOf(target)), "")
