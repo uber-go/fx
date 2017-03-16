@@ -62,7 +62,7 @@ endif
 # This is the default for overalls
 COVER_OUT := profile.coverprofile
 
-$(COV_REPORT): $(PKG_FILES) $(ALL_SRC) gogen
+$(COV_REPORT): $(PKG_FILES) $(ALL_SRC)
 	@$(call label,Cleaning old profile)
 	$(ECHO_V)rm -f $(COV_REPORT)
 
