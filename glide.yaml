@@ -24,7 +24,6 @@ import:
   subpackages:
   - assert
   - require
-- package: github.com/cheekybits/genny
 testImport:
 - package: golang.org/x/tools
   subpackages:

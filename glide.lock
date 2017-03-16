@@ -1,5 +1,5 @@
-hash: 48248bf1bdc47aff13a0eb0ddc6e204067069b59a08f7096392deede500f62b9
-updated: 2017-03-15T15:01:07.789840923-07:00
+hash: d2d2354a3e57996dece4e3b6aed8b469855e15ae23d6ad29b799c4bc04c25b46
+updated: 2017-03-16T02:23:29.878094716-07:00
 imports:
 - name: github.com/apache/thrift
   version: 9549b25c77587b29be4e0b5c258221a4ed85d37a
@@ -7,20 +7,16 @@ imports:
   - lib/go/thrift
 - name: github.com/certifi/gocertifi
   version: 03be5e6bb9874570ea7fb0961225d193cbc374c5
-- name: github.com/cheekybits/genny
-  version: e8e29e67948b15c64e60d6617182c18cf7eead7f
-  subpackages:
-  - generic
 - name: github.com/codahale/hdrhistogram
   version: f8ad88b59a584afeee9d334eff879b104439117b
 - name: github.com/davecgh/go-spew
-  version: 346938d642f2ec3594ed81d874461961cd0faa76
+  version: 04cdfd42973bb9c8589fd6a731800cf222fde1a9
   subpackages:
   - spew
 - name: github.com/facebookgo/clock
   version: 600d898af40aa09a7a93ecb9265d87b0504b6f03
 - name: github.com/getsentry/raven-go
-  version: b68337dbf03e7fbb53d9fd9b63fd09b28e8f13f7
+  version: 3f7439d3e74d88e21d196ba20eb61a5a958bc118
 - name: github.com/go-validator/validator
   version: 0a9835d809fb647a62611d30cb792e0b5dd65b11
 - name: github.com/golang/mock
@@ -39,7 +35,7 @@ imports:
 - name: github.com/pkg/errors
   version: 645ef00459ed84a119197bfb8d8205042c6df63d
 - name: github.com/pmezard/go-difflib
-  version: 792786c7400a136282c1664665ae0a8db921c6c2
+  version: d8ed2627bdf02c080bf22230dbb337003b7aba2d
   subpackages:
   - difflib
 - name: github.com/stretchr/testify
@@ -133,7 +129,7 @@ imports:
   - zapcore
   - zaptest
 - name: golang.org/x/net
-  version: a6577fac2d73be281a500b310739095313165611
+  version: 10c134ea0df15f7e34d789338c7a2d76cc7a3ab9
   subpackages:
   - context
   - context/ctxhttp

@@ -177,12 +177,7 @@ license:
 	$(ECHO_V)./.build/license.sh
 
 .PHONY: generate
-generate: gendoc genexamples license gogen
-
-.PHONY: gogen
-gogen:
-	@$(call label,Generating code)
-	$(ECHO_V)$(foreach pkg,$(LIST_PKGS),go generate $(pkg);)
+generate: gendoc genexamples license
 
 .PHONY: clean
 clean:

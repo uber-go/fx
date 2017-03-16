@@ -1,6 +1,6 @@
 BENCH_FLAGS ?= -cpuprofile=cpu.pprof -memprofile=mem.pprof -benchmem
 PKGS ?= $(shell glide novendor)
-LIST_PKGS ?= $(shell go list ./... | grep -v /vendor/ | grep -v /examples/)
+LIST_PKGS ?= $(shell go list ./... | grep -v /vendor/)
 
 # Many Go tools take file globs or directories as arguments instead of packages.
 ROOT_PKG_FILES := $(wildcard *.go)
