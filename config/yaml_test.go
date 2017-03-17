@@ -69,7 +69,7 @@ func TestYamlStructRoot(t *testing.T) {
 
 	cs := &configStruct{}
 
-	assert.NoError(t, provider.Get(Root).PopulateStruct(cs))
+	assert.NoError(t, provider.Get(Root).Populate(cs))
 
 	assert.Equal(t, "keyvalue", cs.AppID)
 	assert.Equal(t, "owner@service.com", cs.Owner)
@@ -86,7 +86,7 @@ func TestYamlStructChild(t *testing.T) {
 
 	cs := &rpcStruct{}
 
-	assert.NoError(t, provider.Get("modules.rpc").PopulateStruct(cs))
+	assert.NoError(t, provider.Get("modules.rpc").Populate(cs))
 
 	assert.Equal(t, ":28941", cs.Bind)
 }
@@ -128,7 +128,7 @@ func TestNewYAMLProviderFromReader(t *testing.T) {
 	buff := bytes.NewBuffer([]byte(yamlConfig1))
 	provider := NewYAMLProviderFromReader(ioutil.NopCloser(buff))
 	cs := &configStruct{}
-	assert.NoError(t, provider.Get(Root).PopulateStruct(cs))
+	assert.NoError(t, provider.Get(Root).Populate(cs))
 	assert.Equal(t, "keyvalue", cs.AppID)
 	assert.Equal(t, "owner@service.com", cs.Owner)
 }
@@ -168,7 +168,7 @@ func TestMatchEmptyStruct(t *testing.T) {
 	t.Parallel()
 	withYamlBytes([]byte(``), func(provider Provider) {
 		es := emptystruct{}
-		provider.Get("emptystruct").PopulateStruct(&es)
+		provider.Get("emptystruct").Populate(&es)
 		empty := reflect.New(reflect.TypeOf(es)).Elem().Interface()
 		assert.True(t, reflect.DeepEqual(empty, es))
 	})
@@ -178,7 +178,7 @@ func TestMatchPopulatedEmptyStruct(t *testing.T) {
 	t.Parallel()
 	withYamlBytes(emptyyaml, func(provider Provider) {
 		es := emptystruct{}
-		provider.Get("emptystruct").PopulateStruct(&es)
+		provider.Get("emptystruct").Populate(&es)
 		empty := reflect.New(reflect.TypeOf(es)).Elem().Interface()
 		assert.True(t, reflect.DeepEqual(empty, es))
 	})
@@ -188,7 +188,7 @@ func TestPopulateStructWithPointers(t *testing.T) {
 	t.Parallel()
 	withYamlBytes(pointerYaml, func(provider Provider) {
 		ps := pointerStruct{}
-		provider.Get("pointerStruct").PopulateStruct(&ps)
+		provider.Get("pointerStruct").Populate(&ps)
 		assert.True(t, *ps.MyTrueBool)
 		assert.False(t, *ps.MyFalseBool)
 		assert.Equal(t, "hello", *ps.MyString)
@@ -199,7 +199,7 @@ func TestNonExistingPopulateStructWithPointers(t *testing.T) {
 	t.Parallel()
 	withYamlBytes([]byte(``), func(provider Provider) {
 		ps := pointerStruct{}
-		provider.Get("pointerStruct").PopulateStruct(&ps)
+		provider.Get("pointerStruct").Populate(&ps)
 		assert.Nil(t, ps.MyTrueBool)
 		assert.Nil(t, ps.MyFalseBool)
 		assert.Nil(t, ps.MyString)
@@ -210,7 +210,7 @@ func TestMapParsing(t *testing.T) {
 	t.Parallel()
 	withYamlBytes(complexMapYaml, func(provider Provider) {
 		ms := mapStruct{}
-		provider.Get("mapStruct").PopulateStruct(&ms)
+		provider.Get("mapStruct").Populate(&ms)
 
 		assert.NotNil(t, ms.MyMap)
 		assert.NotZero(t, len(ms.MyMap))
@@ -231,7 +231,7 @@ func TestMapParsingSimpleMap(t *testing.T) {
 	t.Parallel()
 	withYamlBytes(simpleMapYaml, func(provider Provider) {
 		ms := mapStruct{}
-		provider.Get("mapStruct").PopulateStruct(&ms)
+		provider.Get("mapStruct").Populate(&ms)
 		assert.Equal(t, 1, ms.MyMap["one"])
 		assert.Equal(t, 2, ms.MyMap["two"])
 		assert.Equal(t, 3, ms.MyMap["three"])
@@ -243,7 +243,7 @@ func TestMapParsingMapWithNonStringKeys(t *testing.T) {
 	t.Parallel()
 	withYamlBytes(intKeyMapYaml, func(provider Provider) {
 		ik := intKeyMapStruct{}
-		err := provider.Get("intKeyMapStruct").PopulateStruct(&ik)
+		err := provider.Get("intKeyMapStruct").Populate(&ik)
 		assert.NoError(t, err)
 		assert.Equal(t, "onetwothree", ik.IntKeyMap[123])
 	})
@@ -253,7 +253,7 @@ func TestDurationParsing(t *testing.T) {
 	t.Parallel()
 	withYamlBytes(durationYaml, func(provider Provider) {
 		ds := durationStruct{}
-		err := provider.Get("durationStruct").PopulateStruct(&ds)
+		err := provider.Get("durationStruct").Populate(&ds)
 		assert.NoError(t, err)
 		assert.Equal(t, 10*time.Second, ds.Seconds)
 		assert.Equal(t, 20*time.Minute, ds.Minutes)
@@ -265,7 +265,7 @@ func TestParsingUnparsableDuration(t *testing.T) {
 	t.Parallel()
 	withYamlBytes(unparsableDurationYaml, func(provider Provider) {
 		ds := durationStruct{}
-		err := provider.Get("durationStruct").PopulateStruct(&ds)
+		err := provider.Get("durationStruct").Populate(&ds)
 		assert.Error(t, err)
 	})
 }
@@ -274,7 +274,7 @@ func TestTypeOfTypes(t *testing.T) {
 	t.Parallel()
 	withYamlBytes(typeStructYaml, func(provider Provider) {
 		tts := typeStructStruct{}
-		err := provider.Get(Root).PopulateStruct(&tts)
+		err := provider.Get(Root).Populate(&tts)
 		assert.NoError(t, err)
 		assert.Equal(t, userDefinedTypeInt(123), tts.TypeStruct.TestInt)
 		assert.Equal(t, userDefinedTypeUInt(456), tts.TypeStruct.TestUInt)
@@ -291,7 +291,7 @@ func TestTypeOfTypesPtr(t *testing.T) {
 	t.Parallel()
 	withYamlBytes(typeStructYaml, func(provider Provider) {
 		tts := typeStructStructPtr{}
-		err := provider.Get(Root).PopulateStruct(&tts)
+		err := provider.Get(Root).Populate(&tts)
 		assert.NoError(t, err)
 		assert.Equal(t, userDefinedTypeInt(123), *tts.TypeStruct.TestInt)
 		assert.Equal(t, userDefinedTypeUInt(456), *tts.TypeStruct.TestUInt)
@@ -308,7 +308,7 @@ func TestTypeOfTypesPtrPtr(t *testing.T) {
 	t.Parallel()
 	withYamlBytes(typeStructYaml, func(provider Provider) {
 		tts := typeStructStructPtrPtr{}
-		err := provider.Get(Root).PopulateStruct(&tts)
+		err := provider.Get(Root).Populate(&tts)
 		assert.NoError(t, err)
 		assert.Equal(t, userDefinedTypeInt(123), *tts.TypeStruct.TestInt)
 		assert.Equal(t, userDefinedTypeUInt(456), *tts.TypeStruct.TestUInt)
@@ -325,7 +325,7 @@ func TestHappyTextUnMarshallerParsing(t *testing.T) {
 	t.Parallel()
 	withYamlBytes(happyTextUnmarshallerYaml, func(provider Provider) {
 		ds := duckTales{}
-		err := provider.Get("duckTales").PopulateStruct(&ds)
+		err := provider.Get("duckTales").Populate(&ds)
 		assert.NoError(t, err)
 		assert.Equal(t, scrooge, ds.Protagonist)
 		assert.Equal(t, launchpadMcQuack, ds.Pilot)
@@ -336,7 +336,7 @@ func TestGrumpyTextUnMarshallerParsing(t *testing.T) {
 	t.Parallel()
 	withYamlBytes(grumpyTextUnmarshallerYaml, func(provider Provider) {
 		ds := duckTales{}
-		err := provider.Get("darkwingDuck").PopulateStruct(&ds)
+		err := provider.Get("darkwingDuck").Populate(&ds)
 		assert.Contains(t, err.Error(), "Unknown character: DarkwingDuck")
 	})
 }
@@ -346,7 +346,7 @@ func TestMergeUnmarshaller(t *testing.T) {
 	provider := NewYAMLProviderFromBytes(complexMapYaml, complexMapYamlV2)
 
 	ms := mapStruct{}
-	assert.NoError(t, provider.Get("mapStruct").PopulateStruct(&ms))
+	assert.NoError(t, provider.Get("mapStruct").Populate(&ms))
 	assert.NotNil(t, ms.MyMap)
 	assert.NotZero(t, len(ms.MyMap))
 
@@ -360,7 +360,7 @@ func TestMergeUnmarshaller(t *testing.T) {
 	s, ok := ms.MyMap["pools"].([]interface{})
 	assert.True(t, ok)
 	assert.Equal(t, []interface{}{"very", "funny"}, s)
-	assert.Equal(t, "", ms.NestedStruct.AdditionalData)
+	assert.Equal(t, "nesteddata", ms.NestedStruct.AdditionalData)
 }
 
 func TestMerge(t *testing.T) {
@@ -370,7 +370,7 @@ func TestMerge(t *testing.T) {
 			prov := NewYAMLProviderFromBytes(v.yaml...)
 			for path, exp := range v.expected {
 				res := reflect.New(reflect.ValueOf(exp).Type()).Interface()
-				assert.NoError(t, prov.Get(path).PopulateStruct(res))
+				assert.NoError(t, prov.Get(path).Populate(res))
 				assert.Equal(t, exp, reflect.ValueOf(res).Elem().Interface(), "For path: %s", path)
 			}
 		})
@@ -419,7 +419,7 @@ func TestArrayTypeNoPanic(t *testing.T) {
 		ID [6]int `yaml:"id"`
 	}{}
 
-	assert.NoError(t, provider.Get(Root).PopulateStruct(&cs))
+	assert.NoError(t, provider.Get(Root).Populate(&cs))
 }
 
 func TestNilYAMLProviderSetDefaultTagValue(t *testing.T) {
@@ -439,7 +439,7 @@ func TestNilYAMLProviderSetDefaultTagValue(t *testing.T) {
 	}{}
 
 	p := NewYAMLProviderFromBytes(nil)
-	p.Get("hello").PopulateStruct(&data)
+	p.Get("hello").Populate(&data)
 
 	assert.Equal(t, 10, data.ID0)
 	assert.Equal(t, "string", data.ID1)
@@ -470,7 +470,7 @@ abc:
 		BoolPtr *bool  `yaml:"bool_ptr"`
 	}{}
 	p := NewYAMLProviderFromBytes(base, prod)
-	p.Get("abc").PopulateStruct(&cfg)
+	p.Get("abc").Populate(&cfg)
 
 	assert.Equal(t, "prod", cfg.Str)
 	assert.Equal(t, 1, cfg.Int)
@@ -502,7 +502,7 @@ m:
 
 	p := NewYAMLProviderFromBytes(b)
 	var r Map
-	require.NoError(t, p.Get(Root).PopulateStruct(&r))
+	require.NoError(t, p.Get(Root).Populate(&r))
 	assert.Equal(t, Bag{S: "one", I: 1, P: nil}, r.M["first"])
 
 	snd := r.M["second"]
@@ -527,7 +527,7 @@ s:
 `)
 	p := NewYAMLProviderFromBytes(b)
 	var r Map
-	require.NoError(t, p.Get(Root).PopulateStruct(&r))
+	require.NoError(t, p.Get(Root).Populate(&r))
 	assert.Equal(t, []time.Duration{time.Second}, r.S["first"])
 	assert.Equal(t, []time.Duration{2 * time.Minute, 3 * time.Hour}, r.S["second"])
 }
@@ -549,7 +549,7 @@ s:
 `)
 	p := NewYAMLProviderFromBytes(b)
 	var r Map
-	require.NoError(t, p.Get(Root).PopulateStruct(&r))
+	require.NoError(t, p.Get(Root).Populate(&r))
 	assert.Equal(t, [2]time.Duration{time.Second, 4 * time.Minute}, r.S["first"])
 	assert.Equal(t, [2]time.Duration{2 * time.Minute, 3 * time.Hour}, r.S["second"])
 }
@@ -578,7 +578,7 @@ func TestLoops(t *testing.T) {
 	require.Equal(t, b, a)
 
 	p := testProvider{}
-	assert.Contains(t, p.Get(Root).PopulateStruct(&b).Error(), "cycles")
+	assert.Contains(t, p.Get(Root).Populate(&b).Error(), "cycles")
 }
 
 func TestInternalFieldsAreNotSet(t *testing.T) {
@@ -592,7 +592,7 @@ internal: set
 `)
 	p := NewYAMLProviderFromBytes(b)
 	var r External
-	require.NoError(t, p.Get(Root).PopulateStruct(&r))
+	require.NoError(t, p.Get(Root).Populate(&r))
 	assert.Equal(t, "", r.internal)
 }
 
@@ -620,7 +620,7 @@ logging:
 `)
 	p := NewYAMLProviderFromBytes(b)
 	var r Config
-	require.NoError(t, p.Get(Root).PopulateStruct(&r))
+	require.NoError(t, p.Get(Root).Populate(&r))
 	assert.Equal(t, "bar", r.Foo)
 }
 
@@ -640,7 +640,7 @@ M:
 `)
 	p := NewYAMLProviderFromBytes(b)
 	var r Foo
-	require.NoError(t, p.Get(Root).PopulateStruct(&r))
+	require.NoError(t, p.Get(Root).Populate(&r))
 	assert.Equal(t, r.M, map[string]Hello{"sayHello": Hello(nil)})
 }
 
@@ -659,7 +659,7 @@ Say:
 `)
 	p := NewYAMLProviderFromBytes(b)
 	var r Foo
-	require.NoError(t, p.Get(Root).PopulateStruct(&r))
+	require.NoError(t, p.Get(Root).Populate(&r))
 	assert.Nil(t, r.Say)
 }
 
@@ -699,7 +699,7 @@ func TestHappyUnmarshallerChannelFunction(t *testing.T) {
 	f := func(src []byte, band, song string) {
 		var r Chart
 		p := NewYAMLProviderFromBytes(src)
-		require.NoError(t, p.Get(Root).PopulateStruct(&r))
+		require.NoError(t, p.Get(Root).Populate(&r))
 		require.Equal(t, band, <-r.Band)
 		assert.EqualError(t, r.Song("Get "), song)
 	}
@@ -729,7 +729,7 @@ func TestGrumpyUnmarshallerChannelFunction(t *testing.T) {
 	f := func(src []byte, message string) {
 		var r S
 		p := NewYAMLProviderFromBytes(src)
-		e := p.Get(Root).PopulateStruct(&r)
+		e := p.Get(Root).Populate(&r)
 		require.EqualError(t, e, message)
 	}
 

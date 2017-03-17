@@ -135,7 +135,7 @@ func newModule(
 		statsClient: newStatsClient(host.Metrics()),
 		log:         ulog.Logger(context.Background()).With(zap.String("module", host.ModuleName())),
 	}
-	if err := host.Config().Get("modules").Get(host.ModuleName()).PopulateStruct(&module.config); err != nil {
+	if err := host.Config().Get("modules").Get(host.ModuleName()).Populate(&module.config); err != nil {
 		return nil, errs.Wrap(err, "can't read inbounds")
 	}
 

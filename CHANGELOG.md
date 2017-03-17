@@ -20,7 +20,10 @@
   `ExecuteAsync` method that will kick off workers to consume tasks and this is
   subsumed by module Start.
 * [Breaking] Rename package `uhttp/client` to `uhttp/uhttpclient` for clarity.
-
+* [Breaking] Rename `PopulateStruct` method in value to `Populate`.
+  The method can now populate not only structs, but anything: slices,
+  maps, builtin types and maps.
+  
 ## v1.0.0-beta2 (09 Mar 2017)
 
 * [Breaking] Remove `ulog.Logger` interface and expose `*zap.Logger` directly.
