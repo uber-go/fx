@@ -77,7 +77,7 @@
 //     "log"
 //     "net/http"
 //
-//     "go.uber.org/fx/modules/uhttp/client"
+//     "go.uber.org/fx/modules/uhttp/uhttpclient"
 //     "go.uber.org/fx/service"
 //   )
 //
@@ -88,7 +88,7 @@
 //       log.Fatal("Could not initialize service: ", err)
 //     }
 //
-//     client := client.New(svc)
+//     client := uhttpclient.New(svc)
 //     client.Get("https://www.uber.com")
 //   }
 //
