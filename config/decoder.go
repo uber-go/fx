@@ -54,61 +54,23 @@ func derefType(t reflect.Type) reflect.Type {
 
 func convertSignedInts(src interface{}, dst *reflect.Value) error {
 	switch t := src.(type) {
-	case int:
-		v := int64(t)
-		if !dst.OverflowInt(v) {
-			dst.SetInt(v)
-			return nil
+	case int, uint, int8, uint8, int16, uint16, int32, uint32, int64:
+		i, err := strconv.ParseInt(fmt.Sprint(t), 10, 64)
+		if err != nil {
+			return err
 		}
-	case uint:
-		v := int64(t)
-		if !dst.OverflowInt(v) {
-			dst.SetInt(v)
-			return nil
-		}
-	case int8:
-		v := int64(t)
-		if !dst.OverflowInt(v) {
-			dst.SetInt(v)
-			return nil
-		}
-	case uint8:
-		v := int64(t)
-		if !dst.OverflowInt(v) {
-			dst.SetInt(v)
-			return nil
-		}
-	case int16:
-		v := int64(t)
-		if !dst.OverflowInt(v) {
-			dst.SetInt(v)
-			return nil
-		}
-	case uint16:
-		v := int64(t)
-		if !dst.OverflowInt(v) {
-			dst.SetInt(v)
-			return nil
-		}
-	case int32:
-		v := int64(t)
-		if !dst.OverflowInt(v) {
-			dst.SetInt(v)
-			return nil
-		}
-	case uint32:
-		v := int64(t)
-		if !dst.OverflowInt(v) {
-			dst.SetInt(v)
-			return nil
-		}
-	case int64:
-		if !dst.OverflowInt(t) {
-			dst.SetInt(t)
+
+		if !dst.OverflowInt(i) {
+			dst.SetInt(i)
 			return nil
 		}
 	case uint64:
 		if t <= math.MaxInt64 {
+			dst.SetInt(int64(t))
+			return nil
+		}
+	case uintptr:
+		if t <= math.MaxInt64 && !dst.OverflowInt(int64(t)) {
 			dst.SetInt(int64(t))
 			return nil
 		}
@@ -119,11 +81,6 @@ func convertSignedInts(src interface{}, dst *reflect.Value) error {
 		}
 	case float64:
 		if t >= math.MinInt64 && t <= math.MaxInt64 && !dst.OverflowInt(int64(t)) {
-			dst.SetInt(int64(t))
-			return nil
-		}
-	case uintptr:
-		if t <= math.MaxInt64 && !dst.OverflowInt(int64(t)) {
 			dst.SetInt(int64(t))
 			return nil
 		}
@@ -134,62 +91,23 @@ func convertSignedInts(src interface{}, dst *reflect.Value) error {
 
 func convertUnsignedInts(src interface{}, dst *reflect.Value) error {
 	switch t := src.(type) {
-	case int:
-		v := uint64(t)
-		if t >= 0 && !dst.OverflowUint(v) {
-			dst.SetUint(v)
-			return nil
+	case int, uint, int8, uint8, int16, uint16, int32, uint32, int64:
+		i, err := strconv.ParseInt(fmt.Sprint(t), 10, 64)
+		if err != nil {
+			return err
 		}
-	case uint:
-		v := uint64(t)
-		if !dst.OverflowUint(v) {
-			dst.SetUint(v)
-			return nil
-		}
-	case int8:
-		v := uint64(t)
-		if t >= 0 && !dst.OverflowUint(v) {
-			dst.SetUint(v)
-			return nil
-		}
-	case uint8:
-		v := uint64(t)
-		if !dst.OverflowUint(v) {
-			dst.SetUint(v)
-			return nil
-		}
-	case int16:
-		v := uint64(t)
-		if t >= 0 && !dst.OverflowUint(v) {
-			dst.SetUint(v)
-			return nil
-		}
-	case uint16:
-		v := uint64(t)
-		if !dst.OverflowUint(v) {
-			dst.SetUint(v)
-			return nil
-		}
-	case int32:
-		v := uint64(t)
-		if t >= 0 && !dst.OverflowUint(v) {
-			dst.SetUint(v)
-			return nil
-		}
-	case uint32:
-		v := uint64(t)
-		if !dst.OverflowUint(v) {
-			dst.SetUint(v)
-			return nil
-		}
-	case int64:
-		if t >= 0 {
-			dst.SetUint(uint64(t))
+		if i >= 0 && !dst.OverflowUint(uint64(i)) {
+			dst.SetUint(uint64(i))
 			return nil
 		}
 	case uint64:
 		if !dst.OverflowUint(t) {
 			dst.SetUint(t)
+			return nil
+		}
+	case uintptr:
+		if t <= math.MaxUint64 && !dst.OverflowUint(uint64(t)) {
+			dst.SetUint(uint64(t))
 			return nil
 		}
 	case float32:
@@ -202,11 +120,6 @@ func convertUnsignedInts(src interface{}, dst *reflect.Value) error {
 			dst.SetUint(uint64(t))
 			return nil
 		}
-	case uintptr:
-		if t <= math.MaxUint64 && !dst.OverflowUint(uint64(t)) {
-			dst.SetUint(uint64(t))
-			return nil
-		}
 	}
 
 	return fmt.Errorf("can't convert %q to unsigned integer type %q", fmt.Sprint(src), dst.Type())
@@ -214,42 +127,10 @@ func convertUnsignedInts(src interface{}, dst *reflect.Value) error {
 
 func convertFloats(src interface{}, dst *reflect.Value) error {
 	switch t := src.(type) {
-	case int:
-		dst.SetFloat(float64(t))
-		return nil
-	case uint:
-		dst.SetFloat(float64(t))
-		return nil
-	case int8:
-		dst.SetFloat(float64(t))
-		return nil
-	case uint8:
-		dst.SetFloat(float64(t))
-		return nil
-	case int16:
-		dst.SetFloat(float64(t))
-		return nil
-	case uint16:
-		dst.SetFloat(float64(t))
-		return nil
-	case int32:
-		dst.SetFloat(float64(t))
-		return nil
-	case uint32:
-		dst.SetFloat(float64(t))
-		return nil
-	case int64:
-		dst.SetFloat(float64(t))
-		return nil
-	case uint64:
-		dst.SetFloat(float64(t))
-		return nil
-	case uintptr:
-		dst.SetFloat(float64(t))
-		return nil
-	case float32:
-		dst.SetFloat(float64(t))
-		return nil
+	case int, uint, int8, uint8, int16, uint16, int32, uint32, int64, uint64, uintptr, float32:
+		f, err := strconv.ParseFloat(fmt.Sprint(t), 64)
+		dst.SetFloat(f)
+		return err
 	case float64:
 		v := float64(t)
 		if !dst.OverflowFloat(v) {
