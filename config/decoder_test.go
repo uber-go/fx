@@ -52,67 +52,67 @@ func TestNumericConversion(t *testing.T) {
 	conversions := map[string]func(p Provider, t *testing.T){
 		"int": func(p Provider, t *testing.T) {
 			var x int
-			require.NoError(t, p.Get(Root).PopulateStruct(&x))
+			require.NoError(t, p.Get(Root).Populate(&x))
 			assert.Equal(t, int(1), x)
 		},
 		"uint": func(p Provider, t *testing.T) {
 			var x uint
-			require.NoError(t, p.Get(Root).PopulateStruct(&x))
+			require.NoError(t, p.Get(Root).Populate(&x))
 			assert.Equal(t, uint(1), x)
 		},
 		"int8": func(p Provider, t *testing.T) {
 			var x int8
-			require.NoError(t, p.Get(Root).PopulateStruct(&x))
+			require.NoError(t, p.Get(Root).Populate(&x))
 			assert.Equal(t, int8(1), x)
 		},
 		"uint8": func(p Provider, t *testing.T) {
 			var x uint8
-			require.NoError(t, p.Get(Root).PopulateStruct(&x))
+			require.NoError(t, p.Get(Root).Populate(&x))
 			assert.Equal(t, uint8(1), x)
 		},
 		"int16": func(p Provider, t *testing.T) {
 			var x int16
-			require.NoError(t, p.Get(Root).PopulateStruct(&x))
+			require.NoError(t, p.Get(Root).Populate(&x))
 			assert.Equal(t, int16(1), x)
 		},
 		"uint16": func(p Provider, t *testing.T) {
 			var x uint16
-			require.NoError(t, p.Get(Root).PopulateStruct(&x))
+			require.NoError(t, p.Get(Root).Populate(&x))
 			assert.Equal(t, uint16(1), x)
 		},
 		"int32": func(p Provider, t *testing.T) {
 			var x int32
-			require.NoError(t, p.Get(Root).PopulateStruct(&x))
+			require.NoError(t, p.Get(Root).Populate(&x))
 			assert.Equal(t, int32(1), x)
 		},
 		"uint32": func(p Provider, t *testing.T) {
 			var x uint32
-			require.NoError(t, p.Get(Root).PopulateStruct(&x))
+			require.NoError(t, p.Get(Root).Populate(&x))
 			assert.Equal(t, uint32(1), x)
 		},
 		"int64": func(p Provider, t *testing.T) {
 			var x int64
-			require.NoError(t, p.Get(Root).PopulateStruct(&x))
+			require.NoError(t, p.Get(Root).Populate(&x))
 			assert.Equal(t, int64(1), x)
 		},
 		"uint64": func(p Provider, t *testing.T) {
 			var x uint64
-			require.NoError(t, p.Get(Root).PopulateStruct(&x))
+			require.NoError(t, p.Get(Root).Populate(&x))
 			assert.Equal(t, uint64(1), x)
 		},
 		"float32": func(p Provider, t *testing.T) {
 			var x float32
-			require.NoError(t, p.Get(Root).PopulateStruct(&x))
+			require.NoError(t, p.Get(Root).Populate(&x))
 			assert.Equal(t, float32(1), x)
 		},
 		"float64": func(p Provider, t *testing.T) {
 			var x float64
-			require.NoError(t, p.Get(Root).PopulateStruct(&x))
+			require.NoError(t, p.Get(Root).Populate(&x))
 			assert.Equal(t, float64(1), x)
 		},
 		"uintptr": func(p Provider, t *testing.T) {
 			var x uintptr
-			require.NoError(t, p.Get(Root).PopulateStruct(&x))
+			require.NoError(t, p.Get(Root).Populate(&x))
 			assert.Equal(t, uintptr(1), x)
 		},
 	}
@@ -135,51 +135,51 @@ func TestNumericOverflows(t *testing.T) {
 	conversions := map[string]func(p Provider) error{
 		"int": func(p Provider) error {
 			var x int
-			return p.Get(Root).PopulateStruct(&x)
+			return p.Get(Root).Populate(&x)
 		},
 		"uint": func(p Provider) error {
 			var x uint
-			return p.Get(Root).PopulateStruct(&x)
+			return p.Get(Root).Populate(&x)
 		},
 		"int8": func(p Provider) error {
 			var x int8
-			return p.Get(Root).PopulateStruct(&x)
+			return p.Get(Root).Populate(&x)
 		},
 		"uint8": func(p Provider) error {
 			var x uint8
-			return p.Get(Root).PopulateStruct(&x)
+			return p.Get(Root).Populate(&x)
 		},
 		"int16": func(p Provider) error {
 			var x int16
-			return p.Get(Root).PopulateStruct(&x)
+			return p.Get(Root).Populate(&x)
 		},
 		"uint16": func(p Provider) error {
 			var x uint16
-			return p.Get(Root).PopulateStruct(&x)
+			return p.Get(Root).Populate(&x)
 		},
 		"int32": func(p Provider) error {
 			var x int32
-			return p.Get(Root).PopulateStruct(&x)
+			return p.Get(Root).Populate(&x)
 		},
 		"uint32": func(p Provider) error {
 			var x uint32
-			return p.Get(Root).PopulateStruct(&x)
+			return p.Get(Root).Populate(&x)
 		},
 		"int64": func(p Provider) error {
 			var x int64
-			return p.Get(Root).PopulateStruct(&x)
+			return p.Get(Root).Populate(&x)
 		},
 		"uint64": func(p Provider) error {
 			var x uint64
-			return p.Get(Root).PopulateStruct(&x)
+			return p.Get(Root).Populate(&x)
 		},
 		"float32": func(p Provider) error {
 			var x float32
-			return p.Get(Root).PopulateStruct(&x)
+			return p.Get(Root).Populate(&x)
 		},
 		"uintptr": func(p Provider) error {
 			var x uintptr
-			return p.Get(Root).PopulateStruct(&x)
+			return p.Get(Root).Populate(&x)
 		},
 	}
 
@@ -199,27 +199,27 @@ func TestUnsignedNumericDecodingNegatives(t *testing.T) {
 	conversions := map[string]func(p Provider) error{
 		"uint": func(p Provider) error {
 			var x uint
-			return p.Get(Root).PopulateStruct(&x)
+			return p.Get(Root).Populate(&x)
 		},
 		"uint8": func(p Provider) error {
 			var x uint8
-			return p.Get(Root).PopulateStruct(&x)
+			return p.Get(Root).Populate(&x)
 		},
 		"uint16": func(p Provider) error {
 			var x uint16
-			return p.Get(Root).PopulateStruct(&x)
+			return p.Get(Root).Populate(&x)
 		},
 		"uint32": func(p Provider) error {
 			var x uint32
-			return p.Get(Root).PopulateStruct(&x)
+			return p.Get(Root).Populate(&x)
 		},
 		"uint64": func(p Provider) error {
 			var x uint64
-			return p.Get(Root).PopulateStruct(&x)
+			return p.Get(Root).Populate(&x)
 		},
 		"uintptr": func(p Provider) error {
 			var x uintptr
-			return p.Get(Root).PopulateStruct(&x)
+			return p.Get(Root).Populate(&x)
 		},
 	}
 
@@ -275,7 +275,7 @@ func TestIdenticalFuzzing(t *testing.T) {
 	for i := 1; i < 1000; i++ {
 		f.Fuzz(&a)
 		p := NewStaticProvider(a)
-		require.NoError(t, p.Get(Root).PopulateStruct(&b))
+		require.NoError(t, p.Get(Root).Populate(&b))
 		require.Equal(t, a, b)
 	}
 }
@@ -287,14 +287,14 @@ func TestFloatInAccuracy(t *testing.T) {
 	i32 := 1 << 24
 	p := newValueProvider(i32)
 	var f32 float32
-	require.NoError(t, p.Get(Root).PopulateStruct(&f32))
+	require.NoError(t, p.Get(Root).Populate(&f32))
 	require.Equal(t, f32, float32(i32))
 	require.Equal(t, f32, float32(i32+1))
 
 	var i64 int64 = 1 << 53
 	p = newValueProvider(i64)
 	var f64 float64
-	require.NoError(t, p.Get(Root).PopulateStruct(&f64))
+	require.NoError(t, p.Get(Root).Populate(&f64))
 	require.Equal(t, f64, float64(i64))
 	require.Equal(t, f64, float64(i64+1))
 }

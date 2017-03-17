@@ -178,7 +178,7 @@ func (cv Value) TryAsString() (string, bool) {
 // TryAsInt attempts to return the configuration value as an int
 func (cv Value) TryAsInt() (int, bool) {
 	var res int
-	err := newValueProvider(cv.Value()).Get(Root).PopulateStruct(&res)
+	err := newValueProvider(cv.Value()).Get(Root).Populate(&res)
 	return res, err == nil
 }
 
@@ -194,7 +194,7 @@ func (cv Value) TryAsBool() (bool, bool) {
 // TryAsFloat attempts to return the configuration value as a float
 func (cv Value) TryAsFloat() (float64, bool) {
 	var res float64
-	err := newValueProvider(cv.Value()).Get(Root).PopulateStruct(&res)
+	err := newValueProvider(cv.Value()).Get(Root).Populate(&res)
 	return res, err == nil
 }
 

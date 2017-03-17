@@ -314,7 +314,7 @@ func (d *decoder) mapping(childKey string, value reflect.Value, def string) erro
 			if subKey == "" {
 				return fmt.Errorf("empty key leads to ambiguity for path: %q", childKey)
 			}
-      
+
 			itemValue := reflect.New(valueType.Elem()).Elem()
 
 			// Try to unmarshal value and save it in the map.
