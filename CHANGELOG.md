@@ -7,7 +7,7 @@
   to access sub fields.
 * Add `task.MustRegister` convenience function which fails fast by panicking
   Note that this should only be used during app initialization, and is provided
-  to avoid repetetive error checking for services which register many tasks.
+  to avoid repetitive error checking for services which register many tasks.
 * Expose options on task module to disable execution. This will allow users to
   enqueue and consume tasks on different clusters.
 * [Breaking] Rename Backend interface `Publish` to `Enqueue`. Created a new
