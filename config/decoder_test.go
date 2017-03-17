@@ -279,3 +279,22 @@ func TestIdenticalFuzzing(t *testing.T) {
 		require.Equal(t, a, b)
 	}
 }
+
+// Floating points have 23/52 bits for accuracy and we expect some accuracy loss when provider returns integers.
+func TestFloatInAccuracy(t *testing.T) {
+	t.Parallel()
+
+	i32 := 1 << 24
+	p := newValueProvider(i32)
+	var f32 float32
+	require.NoError(t, p.Get(Root).PopulateStruct(&f32))
+	require.Equal(t, f32, float32(i32))
+	require.Equal(t, f32, float32(i32+1))
+
+	var i64 int64 = 1 << 53
+	p = newValueProvider(i64)
+	var f64 float64
+	require.NoError(t, p.Get(Root).PopulateStruct(&f64))
+	require.Equal(t, f64, float64(i64))
+	require.Equal(t, f64, float64(i64+1))
+}

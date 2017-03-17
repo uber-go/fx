@@ -215,77 +215,42 @@ func convertUnsignedInts(src interface{}, dst *reflect.Value) error {
 func convertFloats(src interface{}, dst *reflect.Value) error {
 	switch t := src.(type) {
 	case int:
-		v := float64(t)
-		if !dst.OverflowFloat(v) {
-			dst.SetFloat(v)
-			return nil
-		}
+		dst.SetFloat(float64(t))
+		return nil
 	case uint:
-		v := float64(t)
-		if !dst.OverflowFloat(v) {
-			dst.SetFloat(v)
-			return nil
-		}
+		dst.SetFloat(float64(t))
+		return nil
 	case int8:
-		v := float64(t)
-		if !dst.OverflowFloat(v) {
-			dst.SetFloat(v)
-			return nil
-		}
+		dst.SetFloat(float64(t))
+		return nil
 	case uint8:
-		v := float64(t)
-		if !dst.OverflowFloat(v) {
-			dst.SetFloat(v)
-			return nil
-		}
+		dst.SetFloat(float64(t))
+		return nil
 	case int16:
-		v := float64(t)
-		if !dst.OverflowFloat(v) {
-			dst.SetFloat(v)
-			return nil
-		}
+		dst.SetFloat(float64(t))
+		return nil
 	case uint16:
-		v := float64(t)
-		if !dst.OverflowFloat(v) {
-			dst.SetFloat(v)
-			return nil
-		}
+		dst.SetFloat(float64(t))
+		return nil
 	case int32:
-		v := float64(t)
-		if !dst.OverflowFloat(v) {
-			dst.SetFloat(v)
-			return nil
-		}
+		dst.SetFloat(float64(t))
+		return nil
 	case uint32:
-		v := float64(t)
-		if !dst.OverflowFloat(v) {
-			dst.SetFloat(v)
-			return nil
-		}
+		dst.SetFloat(float64(t))
+		return nil
 	case int64:
-		v := float64(t)
-		if !dst.OverflowFloat(v) {
-			dst.SetFloat(v)
-			return nil
-		}
+		dst.SetFloat(float64(t))
+		return nil
 	case uint64:
-		v := float64(t)
-		if !dst.OverflowFloat(v) {
-			dst.SetFloat(v)
-			return nil
-		}
-	case float32:
-		v := float64(t)
-		if !dst.OverflowFloat(v) {
-			dst.SetFloat(v)
-			return nil
-		}
-	case float64:
-		if !dst.OverflowFloat(t) {
-			dst.SetFloat(t)
-			return nil
-		}
+		dst.SetFloat(float64(t))
+		return nil
 	case uintptr:
+		dst.SetFloat(float64(t))
+		return nil
+	case float32:
+		dst.SetFloat(float64(t))
+		return nil
+	case float64:
 		v := float64(t)
 		if !dst.OverflowFloat(v) {
 			dst.SetFloat(v)
