@@ -156,12 +156,12 @@ func convertValueFromStruct(src interface{}, dst *reflect.Value) error {
 		return convertFloats(src, dst)
 
 	case reflect.Bool:
-		if v, err := strconv.ParseBool(fmt.Sprintf("%v", src)); err == nil {
+		if v, err := strconv.ParseBool(fmt.Sprint(src)); err == nil {
 			dst.SetBool(v)
 		}
 
 	case reflect.String:
-		dst.SetString(fmt.Sprintf("%v", src))
+		dst.SetString(fmt.Sprint(src))
 
 	default:
 		return fmt.Errorf("can't convert %q to %q", fmt.Sprint(src), dst.Type())
@@ -302,7 +302,7 @@ func (d *decoder) mapping(childKey string, value reflect.Value, def string) erro
 	if v, ok := val.(map[interface{}]interface{}); ok {
 		childKey += _separator
 		for key := range v {
-			mapKey := childKey + fmt.Sprintf("%v", key)
+			mapKey := childKey + fmt.Sprint(key)
 			itemValue := reflect.New(valueType.Elem()).Elem()
 
 			// Try to unmarshal value and save it in the map.

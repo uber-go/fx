@@ -161,9 +161,9 @@ func (cv Value) ChildKeys() []string {
 	return nil
 }
 
-// String prints out underline value in Value with fmt.Sprintf.
+// String prints out underline value in Value with fmt.Sprint.
 func (cv Value) String() string {
-	return fmt.Sprintf("%v", cv.Value())
+	return fmt.Sprint(cv.Value())
 }
 
 // TryAsString attempts to return the configuration value as a string
@@ -275,7 +275,7 @@ func convertValue(value interface{}, targetType reflect.Type) (interface{}, erro
 	if valueType.AssignableTo(targetType) {
 		return value, nil
 	} else if targetType == _typeOfString {
-		return fmt.Sprintf("%v", value), nil
+		return fmt.Sprint(value), nil
 	}
 
 	switch v := value.(type) {
