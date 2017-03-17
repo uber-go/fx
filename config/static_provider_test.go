@@ -120,29 +120,24 @@ func TestNilStaticProviderSetDefaultTagValue(t *testing.T) {
 
 func TestPopulateForSimpleMap(t *testing.T) {
 	t.Parallel()
-	p := NewStaticProvider(map[string]int{"one": 1, "": -1})
+	p := NewStaticProvider(map[string]int{"one": 1, "b": -1})
 
-	var m map[string]int
+	var m map[string]interface{}
 	require.NoError(t, p.Get(Root).Populate(&m))
 	assert.Equal(t, 1, m["one"])
-	if _, ok := m[""]; ok {
-		assert.Fail(t, "should not contain an empty key")
-	}
 }
 
 func TestPopulateForNestedMap(t *testing.T) {
 	t.Parallel()
-	p := NewStaticProvider(map[string]map[string]int{
-		"top": {"one": 1, "": -1},
-		"":    {}})
+	p := NewStaticProvider(map[string]interface{}{
+		"top":    map[string]int{"one": 1, "": -1},
+		"bottom": "value"})
 
-	var m map[string]map[string]int
+	var m map[string]interface{}
 	require.NoError(t, p.Get(Root).Populate(&m))
-	assert.Equal(t, 2, len(m["top"]))
-	assert.Equal(t, 1, m["top"]["one"])
-	if _, ok := m[""]; ok {
-		assert.Fail(t, "should not contain an empty key")
-	}
+	assert.Equal(t, 2, len(m["top"].(map[interface{}]interface{})))
+	assert.Equal(t, 1, m["top"].(map[interface{}]interface{})["one"])
+	assert.Equal(t, "value", m["bottom"])
 }
 
 func TestPopulateForSimpleSlice(t *testing.T) {
@@ -200,4 +195,15 @@ func TestPopulateForBuiltins(t *testing.T) {
 		assert.True(t, b)
 		assert.True(t, p.Get(Root).AsBool())
 	})
+}
+
+func TestPopulateForNestedMaps(t *testing.T) {
+	t.Parallel()
+	p := NewStaticProvider(map[string]map[string]string{
+		"a": {"one": "1", "": ""}})
+
+	var m map[string]map[string]string
+	err := p.Get("a").Populate(&m)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), `empty key leads to ambiguity for path: "a."`)
 }
