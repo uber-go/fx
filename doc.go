@@ -118,7 +118,7 @@
 //     yarpc:
 //       bind: :28941
 //       advertiseName: kvserver
-//     http:
+//     uhttp:
 //       port: 8080
 //       timeout: 60s
 //
