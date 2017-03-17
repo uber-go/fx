@@ -215,21 +215,18 @@ func (d *decoder) mapping(childKey string, value reflect.Value, def string) erro
 		childKey = addSeparator(childKey)
 
 		for key := range v {
-			mapKey := childKey + fmt.Sprintf("%v", key)
 
 			// Skip empty keys, because lookups in provider can toggle infinite loops/spill internals.
-			if mapKey == "" {
-				continue
+			if mapKey := childKey + fmt.Sprintf("%v", key); mapKey != "" {
+				itemValue := reflect.New(valueType.Elem()).Elem()
+
+				// Try to unmarshal value and save it in the map.
+				if err := d.unmarshal(mapKey, itemValue, def); err != nil {
+					return err
+				}
+
+				destMap.SetMapIndex(reflect.ValueOf(key), itemValue)
 			}
-
-			itemValue := reflect.New(valueType.Elem()).Elem()
-
-			// Try to unmarshal value and save it in the map.
-			if err := d.unmarshal(mapKey, itemValue, def); err != nil {
-				return err
-			}
-
-			destMap.SetMapIndex(reflect.ValueOf(key), itemValue)
 		}
 
 		value.Set(destMap)
