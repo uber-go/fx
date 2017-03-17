@@ -73,6 +73,13 @@ func convertValueFromStruct(value interface{}, targetType reflect.Type, fieldTyp
 	return nil
 }
 
+func addSeparator(key string) string {
+	if key != "" {
+		key += _separator
+	}
+	return key
+}
+
 type decoder struct {
 	*Value
 	m map[interface{}]struct{}
@@ -125,9 +132,7 @@ func (d *decoder) sequence(childKey string, value reflect.Value) error {
 
 	// start looking for child values.
 	elementType := derefType(valueType).Elem()
-	if childKey != "" {
-		childKey += _separator
-	}
+	childKey = addSeparator(childKey)
 
 	for ai := 0; ; ai++ {
 		arrayKey := childKey + strconv.Itoa(ai)
@@ -166,9 +171,7 @@ func (d *decoder) array(childKey string, value reflect.Value) error {
 
 	// start looking for child values.
 	elementType := derefType(valueType).Elem()
-	if childKey != "" {
-		childKey += _separator
-	}
+	childKey = addSeparator(childKey)
 
 	for ai := 0; ai < value.Len(); ai++ {
 		arrayKey := childKey + strconv.Itoa(ai)
@@ -209,9 +212,7 @@ func (d *decoder) mapping(childKey string, value reflect.Value, def string) erro
 	// child yamlNode parsed from yaml file is of type map[interface{}]interface{}
 	// type casting here makes sure that we are iterating over a parsed map.
 	if v, ok := val.(map[interface{}]interface{}); ok {
-		if childKey != "" {
-			childKey += _separator
-		}
+		childKey = addSeparator(childKey)
 
 		for key := range v {
 			mapKey := childKey + fmt.Sprintf("%v", key)
