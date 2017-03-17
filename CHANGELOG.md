@@ -1,13 +1,29 @@
 # Changelog
 
 ## v1.0.0-beta3 (unreleased)
-* [Breaking] Simplify Provider interface: remove `Scope` method from the `config.Provider` interface, one can
-  use either ScopedProvider and Value.Get() to access sub fields.
 
+* [Breaking] Simplify Provider interface: remove `Scope` method from the
+  `config.Provider` interface, one can use either ScopedProvider and Value.Get()
+  to access sub fields.
 * Add `task.MustRegister` convenience function which fails fast by panicking
   Note that this should only be used during app initialization, and is provided
   to avoid repetetive error checking for services which register many tasks.
-
+* Expose options on task module to disable execution. This will allow users to
+  enqueue and consume tasks on different clusters.
+* Rename Backend interface `Publish` to `Enqueue`. Created a new `ExecuteAsync`
+  method that will kick off workers to consume tasks and this is subsumed by
+  module Start.  to avoid repetitive error checking for services which register
+  many tasks.
+* Expose options on task module to disable execution. This will allow users to
+  enqueue and consume tasks on different clusters.
+* [Breaking] Rename Backend interface `Publish` to `Enqueue`. Created a new
+  `ExecuteAsync` method that will kick off workers to consume tasks and this is
+  subsumed by module Start.
+* [Breaking] Rename package `uhttp/client` to `uhttp/uhttpclient` for clarity.
+* [Breaking] Rename `PopulateStruct` method in value to `Populate`.
+  The method can now populate not only structs, but anything: slices,
+  maps, builtin types and maps.
+  
 ## v1.0.0-beta2 (09 Mar 2017)
 
 * [Breaking] Remove `ulog.Logger` interface and expose `*zap.Logger` directly.

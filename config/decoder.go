@@ -169,6 +169,13 @@ func convertValueFromStruct(src interface{}, dst *reflect.Value) error {
 	return nil
 }
 
+func addSeparator(key string) string {
+	if key != "" {
+		key += _separator
+	}
+	return key
+}
+
 type decoder struct {
 	*Value
 	m map[interface{}]struct{}
@@ -220,7 +227,7 @@ func (d *decoder) sequence(childKey string, value reflect.Value) error {
 
 	// start looking for child values.
 	elementType := derefType(valueType).Elem()
-	childKey += _separator
+	childKey = addSeparator(childKey)
 
 	for ai := 0; ; ai++ {
 		arrayKey := childKey + strconv.Itoa(ai)
@@ -259,7 +266,7 @@ func (d *decoder) array(childKey string, value reflect.Value) error {
 
 	// start looking for child values.
 	elementType := derefType(valueType).Elem()
-	childKey += _separator
+	childKey = addSeparator(childKey)
 
 	for ai := 0; ai < value.Len(); ai++ {
 		arrayKey := childKey + strconv.Itoa(ai)
@@ -300,13 +307,18 @@ func (d *decoder) mapping(childKey string, value reflect.Value, def string) erro
 	// child yamlNode parsed from yaml file is of type map[interface{}]interface{}
 	// type casting here makes sure that we are iterating over a parsed map.
 	if v, ok := val.(map[interface{}]interface{}); ok {
-		childKey += _separator
+		childKey = addSeparator(childKey)
+
 		for key := range v {
-			mapKey := childKey + fmt.Sprint(key)
+			subKey := fmt.Sprintf("%v", key)
+			if subKey == "" {
+				return fmt.Errorf("empty key leads to ambiguity for path: %q", childKey)
+			}
+      
 			itemValue := reflect.New(valueType.Elem()).Elem()
 
 			// Try to unmarshal value and save it in the map.
-			if err := d.unmarshal(mapKey, itemValue, def); err != nil {
+			if err := d.unmarshal(childKey+subKey, itemValue, def); err != nil {
 				return err
 			}
 

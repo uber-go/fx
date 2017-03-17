@@ -82,7 +82,7 @@ func (g *Graph) Register(c interface{}) error {
 		}
 		return g.registerConstructor(c)
 	case reflect.Ptr:
-		return g.registerObject(c)
+		return g.registerObject(c, ctype)
 	default:
 		return errParamType
 	}
@@ -196,14 +196,17 @@ func (g *Graph) String() string {
 	return b.String()
 }
 
-func (g *Graph) registerObject(o interface{}) error {
-	otype := reflect.TypeOf(o)
-
+func (g *Graph) registerObject(o interface{}, otype reflect.Type) error {
+	v := reflect.ValueOf(o)
+	if otype.Elem().Kind() == reflect.Interface {
+		otype = otype.Elem()
+		v = v.Elem()
+	}
 	n := objNode{
-		obj: o,
 		node: node{
-			objType: otype,
-			cached:  true,
+			objType:     otype,
+			cached:      true,
+			cachedValue: v,
 		},
 	}
 

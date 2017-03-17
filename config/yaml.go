@@ -40,9 +40,9 @@ type yamlConfigProvider struct {
 var _ Provider = &yamlConfigProvider{}
 
 func newYAMLProviderCore(files ...io.ReadCloser) Provider {
-	var root interface{} = make(map[interface{}]interface{})
+	var root interface{}
 	for _, v := range files {
-		curr := make(map[interface{}]interface{})
+		var curr interface{}
 		if err := unmarshalYAMLValue(v, &curr); err != nil {
 			panic(err)
 		}
@@ -52,7 +52,7 @@ func newYAMLProviderCore(files ...io.ReadCloser) Provider {
 
 	return &yamlConfigProvider{
 		root: &yamlNode{
-			nodeType: objectNode,
+			nodeType: getNodeType(root),
 			key:      Root,
 			value:    root,
 		},
@@ -74,11 +74,11 @@ func newYAMLProviderCore(files ...io.ReadCloser) Provider {
 // * in all the remaining cases B will overwrite A.
 func mergeMaps(dst interface{}, src interface{}) interface{} {
 	if dst == nil {
-		panic("Destination node is nil")
+		return src
 	}
 
 	if src == nil {
-		return src
+		return dst
 	}
 
 	switch s := src.(type) {
