@@ -19,6 +19,7 @@
 * [Breaking] Rename Backend interface `Publish` to `Enqueue`. Created a new
   `ExecuteAsync` method that will kick off workers to consume tasks and this is
   subsumed by module Start.
+* [Breaking] Rename package `uhttp/client` to `uhttp/uhttpclient` for clarity.
 
 ## v1.0.0-beta2 (09 Mar 2017)
 
