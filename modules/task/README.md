@@ -22,12 +22,13 @@ import (
   "context"
 
   "go.uber.org/fx/modules/task"
+  "go.uber.org/fx/modules/task/cherami"
   "go.uber.org/fx/service"
   "go.uber.org/fx/ulog"
 )
 
 func main() {
-  svc, err := service.WithModule(task.New(newBackend)).Build()
+  svc, err := service.WithModule(task.New(cherami.NewBackend)).Build()
   if err != nil {
     log.Fatal("Failed to initialize module", err)
   }
@@ -65,7 +66,7 @@ initialize the module as follows:
 
 ```go
   svc, err := service.WithModule(
-    task.New(newBackend, task.DisableExecution()),
+    task.New(cherami.NewBackend, task.DisableExecution()),
   ).Build()
   if err != nil {
     log.Fatal("Failed to initialize module", err)
