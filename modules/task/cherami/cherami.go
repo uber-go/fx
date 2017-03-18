@@ -98,7 +98,7 @@ func createClientConfig(host service.Host) (clientConfig, error) {
 	config.ConsumerGroup = _pathPrefix + host.Name() + "_cg"
 	// Preference to keys specified in config, they will be over-written
 	// TODO: Might change based on module naming decision from fx public
-	err := host.Config().Get("modules.task.cherami").PopulateStruct(&config)
+	err := host.Config().Get("modules.task.cherami").Populate(&config)
 	return config, err
 }
 

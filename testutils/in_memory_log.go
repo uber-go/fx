@@ -65,6 +65,7 @@ type LockedBuffer struct {
 	sync.RWMutex
 }
 
+// Lines returns the lines that were logged
 func (b *LockedBuffer) Lines() []string {
 	b.RLock()
 	defer b.RUnlock()
@@ -72,12 +73,14 @@ func (b *LockedBuffer) Lines() []string {
 	return output[:len(output)-1]
 }
 
+// Write writes to the log
 func (b *LockedBuffer) Write(p []byte) (n int, err error) {
 	b.Lock()
 	defer b.Unlock()
 	return b.Buffer.Write(p)
 }
 
+// Sync syncs the log
 func (b *LockedBuffer) Sync() error {
 	b.Lock()
 	defer b.Unlock()
