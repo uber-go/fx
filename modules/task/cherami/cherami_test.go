@@ -192,6 +192,7 @@ modules:
 	cg := "/my_dest_cg/"
 	provider := config.NewYAMLProviderFromBytes(data)
 	host := service.NopHostWithConfig(provider)
+	RegisterHyperbahnBootstrapFile("hyperbahn-filename")
 
 	// Setup mock and function calls
 	m := newMock()
@@ -200,6 +201,7 @@ modules:
 		serviceName string, bootstrapFile string, options *cherami.ClientOptions,
 	) (cherami.Client, error) {
 		require.Equal(t, "dev", options.DeploymentStr)
+		require.Equal(t, "hyperbahn-filename", bootstrapFile)
 		return m.Client, nil
 	}
 	setupDest(m, path, &cherami_gen.EntityAlreadyExistsError{})

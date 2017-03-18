@@ -41,12 +41,13 @@ const (
 	_initialized = iota
 	_running
 	_stopped
-	_hyperbahnHostsFile = "/etc/uber/hyperbahn/hosts.json"
-	_pathPrefix         = "/uberfx_async/"
-	_errChanCount       = 50
+	_pathPrefix   = "/uberfx_async/"
+	_errChanCount = 50
 )
 
 var (
+	_hyperbahnMu         sync.RWMutex
+	_hyperbahnHostsFile  string
 	_cheramiClientFunc   = cherami.NewHyperbahnClient
 	_defaultClientConfig = clientConfig{
 		ConsumerName:       "uberfx-async",
@@ -82,6 +83,13 @@ type Backend struct {
 	taskFailure tally.Counter
 }
 
+// RegisterHyperbahnBootstrapFile registers the hyperbahn bootstrap filename required for cherami
+func RegisterHyperbahnBootstrapFile(filename string) {
+	_hyperbahnMu.Lock()
+	defer _hyperbahnMu.Unlock()
+	_hyperbahnHostsFile = filename
+}
+
 // NewBackend creates a Cherami client backend
 func NewBackend(host service.Host) (task.Backend, error) {
 	config, err := createClientConfig(host)
@@ -105,10 +113,12 @@ func createClientConfig(host service.Host) (clientConfig, error) {
 // newBackendWithConfig creates a Cherami client backend with specified config
 func newBackendWithConfig(host service.Host, config clientConfig) (task.Backend, error) {
 	// Create Cherami client TODO: Configure with reporter
+	_hyperbahnMu.RLock()
 	client, err := _cheramiClientFunc(
 		host.Name(), _hyperbahnHostsFile,
 		&cherami.ClientOptions{DeploymentStr: config.DeploymentCluster, Timeout: config.Timeout},
 	)
+	defer _hyperbahnMu.RUnlock()
 	if err != nil {
 		return nil, errors.Wrapf(
 			err, "unable to initialize cherami client for service: %s", host.Name(),
