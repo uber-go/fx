@@ -1,5 +1,5 @@
-hash: d2d2354a3e57996dece4e3b6aed8b469855e15ae23d6ad29b799c4bc04c25b46
-updated: 2017-03-14T17:12:37.328331594-07:00
+hash: 349ddd5594cea967e2e0a32d3b2b89dfd50a14df8ab304492002ee1efae08002
+updated: 2017-03-16T02:36:27.655405042-07:00
 imports:
 - name: github.com/apache/thrift
   version: 9549b25c77587b29be4e0b5c258221a4ed85d37a
@@ -152,6 +152,8 @@ testImports:
   version: b8599f7d71e7fead76b25aeb919c0e2558672f4a
   subpackages:
   - golint
+- name: github.com/google/gofuzz
+  version: 44d81051d367757e1c7c6a5a86423ece9afcf63c
 - name: github.com/jessevdk/go-flags
   version: 460c7bb0abd6e927f2767cadc91aa6ef776a98b4
 - name: github.com/kisielk/errcheck

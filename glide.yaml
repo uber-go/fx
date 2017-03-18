@@ -60,3 +60,4 @@ testImport:
 - package: go.uber.org/tools
   subpackages:
   - update-license
+- package: github.com/google/gofuzz
