@@ -304,16 +304,30 @@ func convertValue(value interface{}, targetType reflect.Type) (interface{}, erro
 	case string:
 		target := reflect.New(targetType).Interface()
 		switch t := target.(type) {
-		case *int:
-			return strconv.Atoi(v)
-		case *bool:
-			return strconv.ParseBool(v)
+		// case *int:
+		// 	return strconv.Atoi(v)
+		// case *bool:
+		// 	return strconv.ParseBool(v)
 		case *time.Duration:
 			return time.ParseDuration(v)
 		case encoding.TextUnmarshaler:
 			err := t.UnmarshalText([]byte(v))
 			// target should have a pointer receiver to be able to change itself based on text
 			return reflect.ValueOf(target).Elem().Interface(), err
+		default:
+			// for standard types, we check the Kind rather than the type,
+			// because this works for user defined types based
+			// on primative types.
+			kind := targetType.Kind()
+			if kind >= reflect.Int && kind <= reflect.Uint64 {
+				return strconv.Atoi(v)
+			} else if kind >= reflect.Float32 && kind <= reflect.Float64 {
+				if f, err := strconv.ParseFloat(v, 64); err == nil {
+					return f, nil
+				}
+			} else if kind == reflect.Bool {
+				return strconv.ParseBool(v)
+			}
 		}
 	}
 

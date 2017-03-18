@@ -119,13 +119,23 @@ func (d *decoder) getGlobalProvider() Provider {
 }
 
 // Sets value to a primitive type.
-func (d *decoder) scalar(childKey string, value reflect.Value, def string) error {
+func (d *decoder) scalar(childKey string, value reflect.Value, def string) (err error) {
 	valueType := value.Type()
 	global := d.getGlobalProvider()
 	var val interface{}
 
+	defer func() {
+		if r := recover(); r != nil {
+			err = fmt.Errorf("Error setting field %q, field type: %v, value: %T, Error: %v", childKey, valueType, val, r)
+			//fmt.Println(err)
+		}
+	}()
+
+	// If the target value is a pointer, we need to get the target value from
+	// the provider, then coerce it into the right thing then set it in.
 	if valueType.Kind() == reflect.Ptr {
 		if v1 := global.Get(childKey); v1.HasValue() {
+
 			val = v1.Value()
 			if val != nil {
 				// We cannot assign reflect.ValueOf(Val) to it as is to value.
@@ -140,6 +150,14 @@ func (d *decoder) scalar(childKey string, value reflect.Value, def string) error
 				// We need to find the Kind of the custom type and set the value to the specific type
 				// that user defined type is defined with.
 				kind := valueType.Elem().Kind()
+
+				// see if we need to can convert the value to the target type
+				if v2, err2 := convertValue(val, valueType.Elem()); err2 == nil {
+					val = v2
+				}
+
+				// Here we let the runtime set the actual value, since it wil lh andle many
+				// types of coersion for us.
 				switch kind {
 				case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
 					value.Elem().SetInt(int64(val.(int)))

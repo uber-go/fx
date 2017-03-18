@@ -407,3 +407,127 @@ func TestEnvProviderWithEmptyPrefix(t *testing.T) {
 	scope := emptyScope.Scope("key")
 	require.Equal(t, "value", scope.Get("").AsString())
 }
+
+type pointerFieldStruct struct {
+	Name  string
+	Value *int
+}
+
+var ptrYaml = `
+ps:
+  name: Hello
+  value: 123
+`
+
+func TestPointerIntField(t *testing.T) {
+	p := NewYAMLProviderFromBytes([]byte(ptrYaml))
+
+	cfg := &pointerFieldStruct{Name: "xxx"}
+	v := p.Get("ps")
+
+	require.NoError(t, v.PopulateStruct(cfg))
+}
+
+type Port int
+type portFieldStruct struct {
+	Name string
+	Port *Port
+}
+
+var ptrPort = `
+ps:
+  name: Hello
+  port: 123
+`
+
+func TestPointerTypedField(t *testing.T) {
+	p := NewYAMLProviderFromBytes([]byte(ptrPort))
+
+	cfg := &pointerFieldStruct{Name: "xxx"}
+	v := p.Get("ps")
+
+	require.NoError(t, v.PopulateStruct(cfg))
+}
+
+type portChildStruct struct {
+	Name     string
+	Child    *childPort
+	Children []childPort
+}
+type childPort struct {
+	Port *Port
+}
+
+var ptrChildPort = `
+ps:
+  name: Hello
+  child:
+    port: 123
+  children:
+    - port: 321
+`
+
+func TestPointerChildTypedField(t *testing.T) {
+	p := NewYAMLProviderFromBytes([]byte(ptrChildPort))
+
+	cfg := &portChildStruct{Name: "xxx"}
+	v := p.Get("ps")
+
+	require.NoError(t, v.PopulateStruct(cfg))
+	require.Equal(t, 123, int(*cfg.Child.Port))
+}
+
+// Config is the RPC YAML configuration.
+type Config struct {
+	// Name of the service.
+	Name string `yaml:"name"`
+	// TODO(abg): Make Name optional in the YAML; accept an option in
+	// NewDispatcher instead.
+
+	Stuff int `yaml:"stuff"`
+
+	// Outbounds specifies how this service sends requests to other services.
+	Outbounds Outbounds `yaml:"outbounds"`
+}
+
+type Outbounds []Outbound
+
+type Outbound struct {
+
+	// Only one of the following must be set.
+	TChannel *TChannelOutbound `yaml:"tchannel"`
+}
+
+type TChannelOutbound struct {
+	Port *Port `yaml:"port"`
+}
+
+var rpc = `
+rpc:
+  name: my-cool-service
+  stuff: 999
+  outbounds:
+    - services:
+        - buffetpushgateway
+      tchannel:
+        host: 127.0.0.1
+        port: 123
+`
+
+func TestRPCPortField(t *testing.T) {
+
+	p := NewProviderGroup(
+		"test",
+		NewYAMLProviderFromBytes([]byte(rpc)),
+		NewEnvProvider(defaultEnvPrefix, mapEnvironmentProvider{
+			values: map[string]string{
+				toEnvString(defaultEnvPrefix, "rpc.outbounds.0.tchannel.port"): "4324",
+			}}),
+	)
+
+	cfg := &Config{}
+	v := p.Get("rpc")
+
+	require.NoError(t, v.PopulateStruct(cfg))
+	require.Equal(t, 4324, int(*cfg.Outbounds[0].TChannel.Port))
+}
