@@ -119,12 +119,10 @@ func TestNumericConversion(t *testing.T) {
 
 	for from, provider := range providers {
 		for to, test := range conversions {
-			assert.True(t, t.Run(
-				fmt.Sprintf("From %q to %q", from, to),
+			t.Run(fmt.Sprintf("From %q to %q", from, to),
 				func(t *testing.T) {
 					test(provider, t)
-				}),
-			)
+				})
 		}
 	}
 }
@@ -184,12 +182,12 @@ func TestNumericOverflows(t *testing.T) {
 	}
 
 	for to, f := range conversions {
-		assert.True(t, t.Run(fmt.Sprintf("%q overflow", to), func(t *testing.T) {
+		t.Run(fmt.Sprintf("%q overflow", to), func(t *testing.T) {
 			err := f(p)
 			require.Error(t, err)
 			assert.Contains(t, err.Error(), fmt.Sprintf(`can't convert %q`, fmt.Sprint(math.MaxFloat64)))
 			assert.Contains(t, err.Error(), to)
-		}))
+		})
 	}
 }
 
@@ -224,11 +222,11 @@ func TestUnsignedNumericDecodingNegatives(t *testing.T) {
 	}
 
 	for to, f := range conversions {
-		assert.True(t, t.Run(fmt.Sprintf("%q convert negative", to), func(t *testing.T) {
+		t.Run(fmt.Sprintf("%q convert negative", to), func(t *testing.T) {
 			err := f(p)
 			require.Error(t, err)
 			assert.Contains(t, fmt.Sprintf("can't convert \"-1\" to unsigned integer type %q", to), err.Error())
-		}))
+		})
 	}
 }
 
