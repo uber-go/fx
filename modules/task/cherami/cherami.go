@@ -41,8 +41,7 @@ const (
 	_initialized = iota
 	_running
 	_stopped
-	_pathPrefix   = "/uberfx_async/"
-	_errChanCount = 50
+	_pathPrefix = "/uberfx_async/"
 )
 
 var (
@@ -230,6 +229,7 @@ func (b *Backend) ExecuteAsync() error {
 func (b *Backend) consumeAndExecute() {
 	defer func() {
 		if r := recover(); r != nil {
+			b.taskFailure.Inc(1)
 			ulog.Logger(context.Background()).Error(
 				"ExecuteAsync recovered from panic",
 				zap.Any("msg", r),
