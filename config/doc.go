@@ -196,16 +196,16 @@
 //
 // Current performance benchmark data:
 //
-//   BenchmarkYAMLCreateSingleFile-8                    	   50000	     33002 ns/op	   10784 B/op	     119 allocs/op
-//   BenchmarkYAMLCreateMultiFile-8                     	   30000	     52414 ns/op	   19696 B/op	     203 allocs/op
-//   BenchmarkYAMLSimpleGetLevel1-8                     	50000000	        29.7 ns/op	       0 B/op	       0 allocs/op
-//   BenchmarkYAMLSimpleGetLevel3-8                     	50000000	        28.8 ns/op	       0 B/op	       0 allocs/op
-//   BenchmarkYAMLSimpleGetLevel7-8                     	50000000	        28.3 ns/op	       0 B/op	       0 allocs/op
-//   BenchmarkYAMLPopulateStruct-8                      	 1000000	      1668 ns/op	     576 B/op	      16 allocs/op
-//   BenchmarkYAMLPopulateStructNested-8                	  300000	      4414 ns/op	    1056 B/op	      42 allocs/op
-//   BenchmarkYAMLPopulateStructNestedMultipleFiles-8   	  300000	      5373 ns/op	    1248 B/op	      52 allocs/op
-//   BenchmarkYAMLPopulateNestedTextUnmarshaler-8       	  100000	     18810 ns/op	    3368 B/op	     211 allocs/op
-//   BenchmarkZapConfigLoad-8                           	  100000	     23148 ns/op	    3441 B/op	     188 allocs/op
+//   BenchmarkYAMLCreateSingleFile-8                    119 allocs/op
+//   BenchmarkYAMLCreateMultiFile-8                     203 allocs/op
+//   BenchmarkYAMLSimpleGetLevel1-8                       0 allocs/op
+//   BenchmarkYAMLSimpleGetLevel3-8                       0 allocs/op
+//   BenchmarkYAMLSimpleGetLevel7-8                       0 allocs/op
+//   BenchmarkYAMLPopulateStruct-8                       16 allocs/op
+//   BenchmarkYAMLPopulateStructNested-8                 42 allocs/op
+//   BenchmarkYAMLPopulateStructNestedMultipleFiles-8    52 allocs/op
+//   BenchmarkYAMLPopulateNestedTextUnmarshaler-8       211 allocs/op
+//   BenchmarkZapConfigLoad-8                           188 allocs/op
 //
 //
 package config
