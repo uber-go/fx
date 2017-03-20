@@ -47,6 +47,7 @@ func TestNumericConversion(t *testing.T) {
 		"float32": newValueProvider(float32(1)),
 		"float64": newValueProvider(float64(1)),
 		"uintptr": newValueProvider(uintptr(1)),
+		"string":  newValueProvider("1"),
 	}
 
 	conversions := map[string]func(p Provider, t *testing.T){
