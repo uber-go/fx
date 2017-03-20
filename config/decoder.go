@@ -29,6 +29,7 @@ import (
 	"strconv"
 
 	"github.com/go-validator/validator"
+	"github.com/pkg/errors"
 )
 
 type fieldInfo struct {
@@ -206,6 +207,10 @@ func addSeparator(key string) string {
 	return key
 }
 
+func addKeyToError(key string, err error) error {
+	return errors.Wrap(err, fmt.Sprintf("for key %q", key))
+}
+
 type decoder struct {
 	*Value
 	m map[interface{}]struct{}
@@ -236,12 +241,12 @@ func (d *decoder) scalar(childKey string, value reflect.Value, def string) error
 		// to convert to primitive,try converting the value as a struct value
 		if ret, err := convertValue(val, value.Type()); ret != nil {
 			if err != nil {
-				return err
+				return addKeyToError(childKey, err)
 			}
 
 			value.Set(reflect.ValueOf(ret))
 		} else {
-			return convertValueFromStruct(val, &value)
+			return addKeyToError(childKey, convertValueFromStruct(val, &value))
 		}
 	}
 
@@ -342,7 +347,8 @@ func (d *decoder) mapping(childKey string, value reflect.Value, def string) erro
 		for key := range v {
 			subKey := fmt.Sprintf("%v", key)
 			if subKey == "" {
-				return fmt.Errorf("empty key leads to ambiguity for path: %q", childKey)
+				// We can confuse an empty map key with a root element.
+				return addKeyToError(childKey, errors.New("empty map key is ambigious"))
 			}
 
 			itemValue := reflect.New(valueType.Elem()).Elem()
@@ -375,7 +381,7 @@ func (d *decoder) iface(key string, value reflect.Value, def string) error {
 		return nil
 	}
 
-	return fmt.Errorf("%q doesn't implement %q", src.Type(), value.Type())
+	return addKeyToError(key, fmt.Errorf("%q doesn't implement %q", src.Type(), value.Type()))
 }
 
 // Sets value to an object type.
@@ -426,7 +432,7 @@ func (d *decoder) valueStruct(key string, target interface{}) error {
 		}
 	}
 
-	return validator.Validate(target)
+	return addKeyToError(key, validator.Validate(target))
 }
 
 // If there is no value with name - leave it nil, otherwise allocate memory and set the value.
@@ -466,12 +472,12 @@ func (d *decoder) textUnmarshaller(key string, value reflect.Value, str string) 
 
 	// Value has to have a pointer receiver to be able to modify itself with TextUnmarshaller
 	if !value.CanAddr() {
-		return fmt.Errorf("can't use TextUnmarshaller because %q is not addressable", key)
+		return addKeyToError(key, errors.New("can't use TextUnmarshaller because value is not addressable"))
 	}
 
 	switch t := value.Addr().Interface().(type) {
 	case encoding.TextUnmarshaler:
-		return t.UnmarshalText([]byte(str))
+		return addKeyToError(key, t.UnmarshalText([]byte(str)))
 	}
 
 	return nil
@@ -504,7 +510,7 @@ func (d *decoder) checkCycles(value reflect.Value) error {
 // Dispatch un-marshalling functions based on the value type.
 func (d *decoder) unmarshal(name string, value reflect.Value, def string) error {
 	if err := d.checkCycles(value); err != nil {
-		return err
+		return addKeyToError(name, err)
 	}
 
 	switch value.Kind() {

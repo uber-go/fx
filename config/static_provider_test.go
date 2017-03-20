@@ -205,5 +205,6 @@ func TestPopulateForNestedMaps(t *testing.T) {
 	var m map[string]map[string]string
 	err := p.Get("a").Populate(&m)
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), `empty key leads to ambiguity for path: "a."`)
+	assert.Contains(t, err.Error(), `empty map key is ambigious`)
+	assert.Contains(t, err.Error(), `a.`)
 }
