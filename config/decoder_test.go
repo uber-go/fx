@@ -296,3 +296,248 @@ func TestFloatInAccuracy(t *testing.T) {
 	require.Equal(t, f64, float64(i64))
 	require.Equal(t, f64, float64(i64+1))
 }
+
+func TestNumericParsingErrors(t *testing.T) {
+	t.Parallel()
+	providerErrors := map[string]Provider{
+		"This can't be parsed as a number": newValueProvider("This can't be parsed as a number"),
+
+		//1.797693134862315708145274237317043567981e+308 is the math.MaxFloat64
+		"1.797693134862315708145274237317043567981e+309": newValueProvider("1.797693134862315708145274237317043567981e+309"),
+	}
+
+	conversions := map[string]func(p Provider) error{
+		"int": func(p Provider) error {
+			var x int
+			return p.Get(Root).Populate(&x)
+		},
+		"uint": func(p Provider) error {
+			var x uint
+			return p.Get(Root).Populate(&x)
+		},
+		"int8": func(p Provider) error {
+			var x int8
+			return p.Get(Root).Populate(&x)
+		},
+		"uint8": func(p Provider) error {
+			var x uint8
+			return p.Get(Root).Populate(&x)
+		},
+		"int16": func(p Provider) error {
+			var x int16
+			return p.Get(Root).Populate(&x)
+		},
+		"uint16": func(p Provider) error {
+			var x uint16
+			return p.Get(Root).Populate(&x)
+		},
+		"int32": func(p Provider) error {
+			var x int32
+			return p.Get(Root).Populate(&x)
+		},
+		"uint32": func(p Provider) error {
+			var x uint32
+			return p.Get(Root).Populate(&x)
+		},
+		"int64": func(p Provider) error {
+			var x int64
+			return p.Get(Root).Populate(&x)
+		},
+		"uint64": func(p Provider) error {
+			var x uint64
+			return p.Get(Root).Populate(&x)
+		},
+		"float32": func(p Provider) error {
+			var x float32
+			return p.Get(Root).Populate(&x)
+		},
+		"float64": func(p Provider) error {
+			var x float64
+			return p.Get(Root).Populate(&x)
+		},
+		"uintptr": func(p Provider) error {
+			var x uintptr
+			return p.Get(Root).Populate(&x)
+		},
+		"int alias": func(p Provider) error {
+			type intAlias int
+			var x intAlias
+			return p.Get(Root).Populate(&x)
+		},
+		"uint alias": func(p Provider) error {
+			type uintAlias uint
+			var x uintAlias
+			return p.Get(Root).Populate(&x)
+		},
+		"int8 alias": func(p Provider) error {
+			type int8Alias int8
+			var x int8Alias
+			return p.Get(Root).Populate(&x)
+		},
+		"uint8 alias": func(p Provider) error {
+			type uint8Alias uint8
+			var x uint8Alias
+			return p.Get(Root).Populate(&x)
+		},
+		"int16 alias": func(p Provider) error {
+			type uint16Alias uint16
+			var x uint16Alias
+			return p.Get(Root).Populate(&x)
+		},
+		"uint16 alias": func(p Provider) error {
+			type uint16Alias uint16
+			var x uint16Alias
+			return p.Get(Root).Populate(&x)
+		},
+		"int32 alias": func(p Provider) error {
+			type int32Alias int32
+			var x int32Alias
+			return p.Get(Root).Populate(&x)
+		},
+		"uint32 alias": func(p Provider) error {
+			type uint32Alias uint32
+			var x uint32Alias
+			return p.Get(Root).Populate(&x)
+		},
+		"int64 alias": func(p Provider) error {
+			type int64Alias int64
+			var x int64Alias
+			return p.Get(Root).Populate(&x)
+		},
+		"uint64 alias": func(p Provider) error {
+			type uint64Alias uint64
+			var x uint64Alias
+			return p.Get(Root).Populate(&x)
+		},
+		"float32 alias": func(p Provider) error {
+			type float32Alias float32
+			var x float32Alias
+			return p.Get(Root).Populate(&x)
+		},
+		"float64 alias": func(p Provider) error {
+			type float64Alias float64
+			var x float64Alias
+			return p.Get(Root).Populate(&x)
+		},
+		"uintptr alias": func(p Provider) error {
+			type uintptrAlias uintptr
+			var x uintptrAlias
+			return p.Get(Root).Populate(&x)
+		},
+	}
+
+	for to, f := range conversions {
+		for errMsg, provider := range providerErrors {
+			t.Run(fmt.Sprintf("%q parse error for value %q", to, errMsg), func(t *testing.T) {
+				err := f(provider)
+				require.Error(t, err)
+				assert.Contains(t, err.Error(), errMsg)
+			})
+		}
+	}
+}
+
+func TestIntegerOverflowParsingErrors(t *testing.T) {
+	t.Parallel()
+
+	// Can't use math.MaxUint64 directly because numerical constants in Go has to have type int
+	maxUint64 := fmt.Sprint(uint64(math.MaxUint64))
+	p := newValueProvider(maxUint64)
+
+	conversions := map[string]func(p Provider) error{
+		"int": func(p Provider) error {
+			var x int
+			return p.Get(Root).Populate(&x)
+		},
+		"int8": func(p Provider) error {
+			var x int8
+			return p.Get(Root).Populate(&x)
+		},
+		"uint8": func(p Provider) error {
+			var x uint8
+			return p.Get(Root).Populate(&x)
+		},
+		"int16": func(p Provider) error {
+			var x int16
+			return p.Get(Root).Populate(&x)
+		},
+		"uint16": func(p Provider) error {
+			var x uint16
+			return p.Get(Root).Populate(&x)
+		},
+		"int32": func(p Provider) error {
+			var x int32
+			return p.Get(Root).Populate(&x)
+		},
+		"uint32": func(p Provider) error {
+			var x uint32
+			return p.Get(Root).Populate(&x)
+		},
+		"int64": func(p Provider) error {
+			var x int64
+			return p.Get(Root).Populate(&x)
+		},
+		"int alias": func(p Provider) error {
+			type intAlias int
+			var x intAlias
+			return p.Get(Root).Populate(&x)
+		},
+		"int8 alias": func(p Provider) error {
+			type int8Alias int8
+			var x int8Alias
+			return p.Get(Root).Populate(&x)
+		},
+		"uint8 alias": func(p Provider) error {
+			type uint8Alias uint8
+			var x uint8Alias
+			return p.Get(Root).Populate(&x)
+		},
+		"int16 alias": func(p Provider) error {
+			type uint16Alias uint16
+			var x uint16Alias
+			return p.Get(Root).Populate(&x)
+		},
+		"uint16 alias": func(p Provider) error {
+			type uint16Alias uint16
+			var x uint16Alias
+			return p.Get(Root).Populate(&x)
+		},
+		"int32 alias": func(p Provider) error {
+			type int32Alias int32
+			var x int32Alias
+			return p.Get(Root).Populate(&x)
+		},
+		"uint32 alias": func(p Provider) error {
+			type uint32Alias uint32
+			var x uint32Alias
+			return p.Get(Root).Populate(&x)
+		},
+		"int64 alias": func(p Provider) error {
+			type int64Alias int64
+			var x int64Alias
+			return p.Get(Root).Populate(&x)
+		},
+	}
+
+	for to, f := range conversions {
+		t.Run(fmt.Sprintf("%q parse error for value %q", to, maxUint64), func(t *testing.T) {
+			err := f(p)
+			require.Error(t, err)
+			assert.Contains(t, err.Error(), maxUint64)
+		})
+	}
+}
+
+func TestBoolParsing(t *testing.T) {
+	t.Parallel()
+
+	p := newValueProvider("true")
+	var b bool
+	require.NoError(t, p.Get(Root).Populate(&b))
+	assert.True(t, b)
+
+	type boolAlias bool
+	var alias boolAlias
+	require.NoError(t, p.Get(Root).Populate(&alias))
+	assert.Equal(t, boolAlias(true), alias)
+}
