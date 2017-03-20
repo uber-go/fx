@@ -127,12 +127,12 @@ fmt.Println(foo)
 ```
 
 To get an access to the root element use `config.Root`:
+
 ```go
 root := provider.Get(config.Root).AsString()
 fmt.Println(root)
 // Output: map[one:map[two:hello]]
 ```
-
 
 * Populate a struct (`PopulateStruct(&myStruct)`)
 
@@ -175,20 +175,19 @@ fmt.Println(m.World)
 Note that any fields you wish to deserialize into must be exported, just like
 `json.Unmarshal` and friends.
 
-
 ### Benchmarks
 
 Current performance benchmark data:
 
 ```
-BenchmarkYAMLCreateSingleFile-8                    	   50000	     30528 ns/op	   11112 B/op	     121 allocs/op
-BenchmarkYAMLCreateMultiFile-8                     	   30000	     50135 ns/op	   20016 B/op	     205 allocs/op
-BenchmarkYAMLSimpleGetLevel1-8                     	50000000	        28.4 ns/op	       0 B/op	       0 allocs/op
-BenchmarkYAMLSimpleGetLevel3-8                     	50000000	        27.2 ns/op	       0 B/op	       0 allocs/op
-BenchmarkYAMLSimpleGetLevel7-8                     	50000000	        26.9 ns/op	       0 B/op	       0 allocs/op
-BenchmarkYAMLPopulateStruct-8                      	 1000000	      1544 ns/op	     576 B/op	      16 allocs/op
-BenchmarkYAMLPopulateStructNested-8                	  300000	      3903 ns/op	    1056 B/op	      42 allocs/op
-BenchmarkYAMLPopulateStructNestedMultipleFiles-8   	  300000	      5007 ns/op	    1248 B/op	      52 allocs/op
-BenchmarkYAMLPopulateNestedTextUnmarshaler-8       	  100000	     17747 ns/op	    3368 B/op	     211 allocs/op
-BenchmarkZapConfigLoad-8                           	  100000	     20968 ns/op	    3289 B/op	     178 allocs/op
+BenchmarkYAMLCreateSingleFile-8                    119 allocs/op
+BenchmarkYAMLCreateMultiFile-8                     203 allocs/op
+BenchmarkYAMLSimpleGetLevel1-8                       0 allocs/op
+BenchmarkYAMLSimpleGetLevel3-8                       0 allocs/op
+BenchmarkYAMLSimpleGetLevel7-8                       0 allocs/op
+BenchmarkYAMLPopulateStruct-8                       16 allocs/op
+BenchmarkYAMLPopulateStructNested-8                 42 allocs/op
+BenchmarkYAMLPopulateStructNestedMultipleFiles-8    52 allocs/op
+BenchmarkYAMLPopulateNestedTextUnmarshaler-8       211 allocs/op
+BenchmarkZapConfigLoad-8                           188 allocs/op
 ```
