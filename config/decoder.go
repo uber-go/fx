@@ -84,6 +84,16 @@ func convertSignedInts(src interface{}, dst *reflect.Value) error {
 			dst.SetInt(int64(t))
 			return nil
 		}
+	case string:
+		i, err := strconv.ParseInt(t, 10, 64)
+		if err != nil {
+			return err
+		}
+
+		if !dst.OverflowInt(i) {
+			dst.SetInt(i)
+			return nil
+		}
 	}
 
 	return fmt.Errorf("can't convert %q to integer type %q", fmt.Sprint(src), dst.Type())
@@ -120,6 +130,16 @@ func convertUnsignedInts(src interface{}, dst *reflect.Value) error {
 			dst.SetUint(uint64(t))
 			return nil
 		}
+	case string:
+		i, err := strconv.ParseUint(t, 10, 64)
+		if err != nil {
+			return err
+		}
+
+		if !dst.OverflowUint(i) {
+			dst.SetUint(i)
+			return nil
+		}
 	}
 
 	return fmt.Errorf("can't convert %q to unsigned integer type %q", fmt.Sprint(src), dst.Type())
@@ -135,6 +155,16 @@ func convertFloats(src interface{}, dst *reflect.Value) error {
 		v := float64(t)
 		if !dst.OverflowFloat(v) {
 			dst.SetFloat(v)
+			return nil
+		}
+	case string:
+		f, err := strconv.ParseFloat(t, 64)
+		if err != nil {
+			return err
+		}
+
+		if !dst.OverflowFloat(f) {
+			dst.SetFloat(f)
 			return nil
 		}
 	}

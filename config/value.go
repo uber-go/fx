@@ -24,7 +24,6 @@ import (
 	"encoding"
 	"fmt"
 	"reflect"
-	"strconv"
 	"time"
 )
 
@@ -282,10 +281,6 @@ func convertValue(value interface{}, targetType reflect.Type) (interface{}, erro
 	case string:
 		target := reflect.New(targetType).Interface()
 		switch t := target.(type) {
-		case *int:
-			return strconv.Atoi(v)
-		case *bool:
-			return strconv.ParseBool(v)
 		case *time.Duration:
 			return time.ParseDuration(v)
 		case encoding.TextUnmarshaler:
