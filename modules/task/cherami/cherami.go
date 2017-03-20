@@ -36,9 +36,10 @@ import (
 	"go.uber.org/zap"
 )
 
-// TODO: Most of these will be fetched from host configuration instead of being hardcoded
+type state int32
+
 const (
-	_initialized = iota
+	_initialized state = iota
 	_running
 	_stopped
 	_pathPrefix = "/uberfx_async/"
@@ -76,7 +77,7 @@ type Backend struct {
 	config      clientConfig
 	logger      *zap.Logger
 	scope       tally.Scope
-	state       int
+	state       state
 	stateMu     sync.RWMutex
 	taskSuccess tally.Counter
 	taskFailure tally.Counter
@@ -187,7 +188,7 @@ func alreadyExistsError(err error) bool {
 	return ok
 }
 
-func (b *Backend) setState(state int) {
+func (b *Backend) setState(state state) {
 	b.stateMu.Lock()
 	defer b.stateMu.Unlock()
 	b.state = state

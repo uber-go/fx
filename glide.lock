@@ -1,5 +1,5 @@
-hash: 2c858465a8b8e5f645d83b70950fdbd48deabed9fe3e8ca1ac1eeeb1b6d3f700
-updated: 2017-03-17T15:34:52.657232831-07:00
+hash: 3d5dd8dc7f7b2d1cb3a7f5a898ca6fcdf047e9ee046ddcf35922530d6d870c59
+updated: 2017-03-20T11:09:57.488424566-07:00
 imports:
 - name: github.com/apache/thrift
   version: 9549b25c77587b29be4e0b5c258221a4ed85d37a
@@ -14,7 +14,7 @@ imports:
 - name: github.com/codahale/hdrhistogram
   version: f8ad88b59a584afeee9d334eff879b104439117b
 - name: github.com/davecgh/go-spew
-  version: 6d212800a42e8ab5c146b8ace3490ee17e5225f9
+  version: 04cdfd42973bb9c8589fd6a731800cf222fde1a9
   subpackages:
   - spew
 - name: github.com/facebookgo/clock
@@ -76,7 +76,7 @@ imports:
   subpackages:
   - .generated/go/cherami
 - name: github.com/uber/jaeger-client-go
-  version: 81280be4110ac49c4c2094eeffd409a0043d51c0
+  version: bcc801808ce11db4f05a09e2af61698ffe3f5f38
   subpackages:
   - config
   - internal/spanlog

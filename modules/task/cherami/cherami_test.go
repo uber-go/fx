@@ -223,7 +223,7 @@ func checkNewBackendError(t *testing.T, errStr string) {
 }
 
 func TestStartBackendInvalidStateError(t *testing.T) {
-	stateToError := map[int]string{_running: "already running", _stopped: "has been stopped"}
+	stateToError := map[state]string{_running: "already running", _stopped: "has been stopped"}
 	for state, errStr := range stateToError {
 		m := newMock()
 		bknd := createNewBackend(t, m)
