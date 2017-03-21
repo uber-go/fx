@@ -26,6 +26,8 @@ import (
 	"path"
 	"testing"
 
+	"go.uber.org/fx/testutils/env"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -437,7 +439,7 @@ ps:
 }
 
 func TestRPCPortField(t *testing.T) {
-	t.Parallel()
+	defer env.Override(t, "COMPANY_TCHANNEL_PORT", "4324")()
 
 	type Port int
 	type TChannelOutbound struct {
@@ -469,7 +471,7 @@ rpc:
         - buffetpushgateway
       tchannel:
         host: 127.0.0.1
-        port: 123
+        port: ${COMPANY_TCHANNEL_PORT:321}
 `
 	p := NewProviderGroup(
 		"test",
