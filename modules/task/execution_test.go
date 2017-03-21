@@ -242,7 +242,7 @@ func TestEnqueueFnClosure(t *testing.T) {
 	require.NoError(t, err)
 }
 
-func TestEnqueueFnWithStructArgReturnsError(t *testing.T) {
+func TestEnqueueFnWithStructArg(t *testing.T) {
 	defer globalBackendSetup(t)()
 	require.NoError(t, Register(WithStruct))
 	err := Enqueue(WithStruct, _ctx, Car{Brand: "infinity", Year: 2017})
@@ -256,7 +256,7 @@ func TestEnqueueFnWithStructArgReturnsError(t *testing.T) {
 	require.NoError(t, err)
 }
 
-func TestEnqueueFnOnStructArgReturnsError(t *testing.T) {
+func TestEnqueueFnOnStructArg(t *testing.T) {
 	s := StructWithFn{Car{Brand: "Hello"}, &Impl{}}
 	defer globalBackendSetup(t)()
 	require.NoError(t, Register(s.Check))
@@ -279,7 +279,7 @@ func TestEnqueueFnWithInterface(t *testing.T) {
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "gob: type not registered for interface")
 
-	// Register the implementation
+	// Register the implementation and voila
 	i := &Impl{}
 	require.NoError(t, GlobalBackend().Encoder().Register(i))
 	require.NoError(t, Enqueue(fn, _ctx, i, "Hello"))
