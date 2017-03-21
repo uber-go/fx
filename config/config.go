@@ -51,7 +51,7 @@ var (
 	_setupMux sync.Mutex
 
 	_envPrefix            = "APP"
-	_staticProviderFuncs  = []ProviderFunc{YamlProvider(), EnvProvider()}
+	_staticProviderFuncs  = []ProviderFunc{YamlProvider()}
 	_configFiles          = baseFiles()
 	_dynamicProviderFuncs []DynamicProviderFunc
 )
@@ -117,13 +117,6 @@ func getResolver() FileResolver {
 func YamlProvider() ProviderFunc {
 	return func() (Provider, error) {
 		return NewYAMLProviderFromFiles(false, getResolver(), getConfigFiles(_configFiles...)...), nil
-	}
-}
-
-// EnvProvider returns function to create environment based config provider
-func EnvProvider() ProviderFunc {
-	return func() (Provider, error) {
-		return NewEnvProvider(defaultEnvPrefix, nil), nil
 	}
 }
 

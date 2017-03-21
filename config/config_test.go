@@ -30,16 +30,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-var envValues = map[string]string{
-	toEnvString(defaultEnvPrefix, "modules.rpc.bind"): ":8888",
-	toEnvString(defaultEnvPrefix, "n1.name"):          "struct_name",
-	toEnvString(defaultEnvPrefix, "nptr.name"):        "ptr_name",
-	toEnvString(defaultEnvPrefix, "nptr.id1"):         "999",
-	toEnvString(defaultEnvPrefix, "n1.id2"):           "-1",
-	toEnvString(defaultEnvPrefix, "names.0"):          "ai",
-	toEnvString(defaultEnvPrefix, "things.2.id1"):     "-2",
-}
-
 type nested struct {
 	Name string `yaml:"name" default:"default_name"`
 	ID1  int    `yaml:"id1"`
@@ -126,28 +116,23 @@ one:
 }
 
 func TestDirectAccess(t *testing.T) {
+	t.Parallel()
 	provider := NewProviderGroup(
 		"test",
 		NewYAMLProviderFromBytes(nestedYaml),
-		NewEnvProvider(defaultEnvPrefix, mapEnvironmentProvider{values: envValues}),
 	)
 
 	v := provider.Get("n1.id1").WithDefault("xxx")
 
 	assert.True(t, v.HasValue())
 	assert.Equal(t, 111, v.Value())
-
-	v2 := provider.Get("n1.id2").WithDefault("xxx")
-
-	assert.True(t, v2.HasValue())
-	assert.Equal(t, "-1", v2.Value())
 }
 
 func TestScopedAccess(t *testing.T) {
+	t.Parallel()
 	provider := NewProviderGroup(
 		"test",
 		NewYAMLProviderFromBytes(nestedYaml),
-		NewEnvProvider(defaultEnvPrefix, mapEnvironmentProvider{values: envValues}),
 	)
 
 	p1 := provider.Get("n1")
@@ -162,33 +147,20 @@ func TestScopedAccess(t *testing.T) {
 	assert.Equal(t, v2.AsString(), "nope")
 }
 
-func TestOverrideSimple(t *testing.T) {
-
-	provider := NewProviderGroup(
-		"test",
-		NewYAMLProviderFromBytes(yamlConfig2),
-		NewEnvProvider(defaultEnvPrefix, mapEnvironmentProvider{values: envValues}),
-	)
-
-	rpc := &rpcStruct{}
-	v := provider.Get("modules.rpc")
-	assert.True(t, v.HasValue())
-	v.Populate(rpc)
-	assert.Equal(t, ":8888", rpc.Bind)
-}
-
 func TestSimpleConfigValues(t *testing.T) {
 	t.Parallel()
 	provider := NewProviderGroup(
 		"test",
 		NewYAMLProviderFromBytes(yamlConfig3),
 	)
+
 	assert.Equal(t, 123, provider.Get("int").AsInt())
 	assert.Equal(t, "test string", provider.Get("string").AsString())
 	_, ok := provider.Get("nonexisting").TryAsString()
 	assert.False(t, ok)
 	assert.Equal(t, true, provider.Get("bool").AsBool())
 	assert.Equal(t, 1.123, provider.Get("float").AsFloat())
+
 	nested := &nested{}
 	v := provider.Get("nonexisting")
 	assert.NoError(t, v.Populate(nested))
@@ -232,7 +204,6 @@ func TestNestedStructs(t *testing.T) {
 	provider := NewProviderGroup(
 		"test",
 		NewYAMLProviderFromBytes(nestedYaml),
-		NewEnvProvider(defaultEnvPrefix, mapEnvironmentProvider{values: envValues}),
 	)
 
 	str := &root{}
@@ -244,11 +215,10 @@ func TestNestedStructs(t *testing.T) {
 	assert.Nil(t, err)
 
 	assert.Equal(t, 1234, str.ID)
-	assert.Equal(t, 999, str.NestedPtr.ID1)
+	assert.Equal(t, 1111, str.NestedPtr.ID1)
 	assert.Equal(t, "2222", str.NestedPtr.ID2)
 	assert.Equal(t, 111, str.Nested.ID1)
-	assert.Equal(t, "-1", str.Nested.ID2)
-	assert.Equal(t, "ai", str.Names[0])
+	assert.Equal(t, "aiden", str.Names[0])
 	assert.Equal(t, "shawn", str.Names[1])
 }
 
@@ -256,7 +226,6 @@ func TestArrayOfStructs(t *testing.T) {
 	provider := NewProviderGroup(
 		"test",
 		NewYAMLProviderFromBytes(structArrayYaml),
-		NewEnvProvider(defaultEnvPrefix, mapEnvironmentProvider{values: envValues}),
 	)
 
 	target := &arrayOfStructs{}
@@ -266,38 +235,19 @@ func TestArrayOfStructs(t *testing.T) {
 	assert.True(t, v.HasValue())
 	assert.NoError(t, v.Populate(target))
 	assert.Equal(t, 0, target.Things[0].ID1)
-	assert.Equal(t, -2, target.Things[2].ID1)
+	assert.Equal(t, 2, target.Things[2].ID1)
 }
 
 func TestDefault(t *testing.T) {
 	provider := NewProviderGroup(
 		"test",
 		NewYAMLProviderFromBytes(nest1),
-		NewEnvProvider(defaultEnvPrefix, mapEnvironmentProvider{values: envValues}),
 	)
 	target := &nested{}
 	v := provider.Get(Root)
 	assert.True(t, v.HasValue())
 	assert.NoError(t, v.Populate(target))
 	assert.Equal(t, "default_name", target.Name)
-}
-
-func TestDefaultValue(t *testing.T) {
-	provider := NewProviderGroup(
-		"test",
-		NewEnvProvider(defaultEnvPrefix, mapEnvironmentProvider{values: envValues}),
-	)
-	v := provider.Get("stuff")
-	assert.False(t, v.HasValue())
-
-	v = v.WithDefault("ok")
-
-	assert.True(t, v.HasValue())
-	assert.True(t, v.IsDefault())
-	assert.Equal(t, "ok", v.Value())
-
-	v2 := provider.Get("other_stuff")
-	assert.False(t, v2.HasValue())
 }
 
 func TestInvalidConfigFailures(t *testing.T) {
@@ -353,12 +303,6 @@ func TestNilProvider(t *testing.T) {
 	assert.Nil(t, _staticProviderFuncs)
 }
 
-func TestEnvProvider_Callbacks(t *testing.T) {
-	p := NewEnvProvider("", nil)
-	assert.NoError(t, p.RegisterChangeCallback("test", nil))
-	assert.NoError(t, p.UnregisterChangeCallback("token"))
-}
-
 func TestGetConfigFiles(t *testing.T) {
 	SetEnvironmentPrefix("TEST")
 
@@ -403,15 +347,6 @@ func TestResolvePathAbs(t *testing.T) {
 	res, err := ResolvePath(abs)
 	assert.NoError(t, err)
 	assert.Equal(t, abs, res)
-}
-
-func TestEnvProviderWithEmptyPrefix(t *testing.T) {
-	p := NewEnvProvider("", mapEnvironmentProvider{map[string]string{"key": "value"}})
-	require.Equal(t, "value", p.Get("key").AsString())
-	emptyScope := p.Get("")
-	require.Equal(t, "value", emptyScope.Get("key").AsString())
-	scope := emptyScope.Get("key")
-	require.Equal(t, "value", scope.Get("").AsString())
 }
 
 func TestNopProvider_Get(t *testing.T) {
@@ -539,10 +474,6 @@ rpc:
 	p := NewProviderGroup(
 		"test",
 		NewYAMLProviderFromBytes([]byte(rpc)),
-		NewEnvProvider(defaultEnvPrefix, mapEnvironmentProvider{
-			values: map[string]string{
-				toEnvString(defaultEnvPrefix, "rpc.outbounds.0.tchannel.port"): "4324",
-			}}),
 	)
 
 	cfg := &YARPCConfig{}
