@@ -76,7 +76,7 @@ func TestCachedProvider_ErrorToSetCallback(t *testing.T) {
 	require.False(t, v.HasValue())
 }
 
-func TestCachedProviderConcurrentUse(t *testing.T){
+func TestCachedProviderConcurrentUse(t *testing.T) {
 	t.Parallel()
 
 	wg := sync.WaitGroup{}
@@ -89,13 +89,13 @@ func TestCachedProviderConcurrentUse(t *testing.T){
 
 	m.Set("cartoon", "Simpsons")
 	wg.Add(4)
-	get := func () {
+	get := func() {
 		x := v.Get(Root)
 		require.True(t, x.HasValue())
 		wg.Done()
 	}
 
-	set := func () {
+	set := func() {
 		m.Set("cartoon", "Jetsons")
 		wg.Done()
 	}
@@ -104,7 +104,6 @@ func TestCachedProviderConcurrentUse(t *testing.T){
 	go get()
 	go set()
 	go get()
-
 
 	wg.Wait()
 }
