@@ -46,7 +46,7 @@ modules:
     bind: :28941
 `)
 
-func TestYamlSimple(t *testing.T) {
+func TestYAMLSimple(t *testing.T) {
 	t.Parallel()
 	provider := NewYAMLProviderFromBytes(yamlConfig1)
 
@@ -55,6 +55,71 @@ func TestYamlSimple(t *testing.T) {
 	assert.NotNil(t, c.Value())
 
 	assert.Equal(t, ":28941", c.AsString())
+}
+
+func TestYAMLEnvInterpolation(t *testing.T) {
+	t.Parallel()
+	defer env.Override(t, "OWNER_EMAIL", "hello@there.yasss")()
+
+	cfg := []byte(`
+name: some name here
+owner: ${OWNER_EMAIL}
+module:
+  fake:
+    number: ${FAKE_NUMBER:321}`)
+
+	p := NewYAMLProviderFromBytes(cfg)
+
+	num, ok := p.Get("module.fake.number").TryAsFloat()
+	require.True(t, ok)
+	require.Equal(t, float64(321), num)
+
+	owner := p.Get("owner").AsString()
+	require.Equal(t, "hello@there.yasss", owner)
+}
+
+func TestYAMLEnvInterpolationMissing(t *testing.T) {
+	t.Parallel()
+
+	cfg := []byte(`
+name: some name here
+email: ${EMAIL_ADDRESS}`)
+
+	require.Panics(t, func() {
+		NewYAMLProviderFromBytes(cfg)
+	})
+}
+
+func TestYAMLEnvInterpolationIncomplete(t *testing.T) {
+	t.Parallel()
+
+	cfg := []byte(`
+name: some name here
+telephone: ${SUPPORT_TEL:}`)
+
+	require.Panics(t, func() {
+		NewYAMLProviderFromBytes(cfg)
+	})
+}
+
+func TestYAMLEnvInterpolationWithColon(t *testing.T) {
+	t.Parallel()
+
+	cfg := []byte(`fullValue: ${MISSING_ENV:this:is:my:value}`)
+	p := NewYAMLProviderFromBytes(cfg)
+	require.Equal(t, "this:is:my:value", p.Get("fullValue").AsString())
+}
+
+func TestYAMLEnvInterpolationEmptyString(t *testing.T) {
+	t.Parallel()
+
+	cfg := []byte(`
+name: ${APP_NAME:my shiny app}
+fullTel: 1-800-LOLZ${TELEPHONE_EXTENSION:""}`)
+
+	p := NewYAMLProviderFromBytes(cfg)
+	require.Equal(t, "my shiny app", p.Get("name").AsString())
+	require.Equal(t, "1-800-LOLZ", p.Get("fullTel").AsString())
 }
 
 type configStruct struct {
@@ -107,6 +172,7 @@ func TestExtends(t *testing.T) {
 
 func TestAppRoot(t *testing.T) {
 	t.Parallel()
+
 	cwd, err := os.Getwd()
 	assert.NoError(t, err)
 

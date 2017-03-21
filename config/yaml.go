@@ -25,11 +25,14 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"os"
 	"reflect"
+	"regexp"
+	"strconv"
 	"strings"
 
+	"github.com/pkg/errors"
 	"gopkg.in/yaml.v2"
-	"strconv"
 )
 
 type yamlConfigProvider struct {
@@ -37,7 +40,13 @@ type yamlConfigProvider struct {
 	vCache map[string]Value
 }
 
-var _ Provider = &yamlConfigProvider{}
+var (
+	_envSeparator = []byte(":")
+	_emptyString  = []byte(`""`)
+
+	// ${VAR_NAME:default} or ${VAR_NAME}
+	_interpolationRegex = regexp.MustCompile(`\$\{\w+:?[^}]*}`)
+)
 
 func newYAMLProviderCore(files ...io.ReadCloser) Provider {
 	var root interface{}
@@ -285,13 +294,75 @@ func (n *yamlNode) Children() []*yamlNode {
 }
 
 func unmarshalYAMLValue(reader io.ReadCloser, value interface{}) error {
-	if data, err := ioutil.ReadAll(reader); err != nil {
-		return err
-	} else if err = yaml.Unmarshal(data, value); err != nil {
+	raw, err := ioutil.ReadAll(reader)
+	if err != nil {
+		return errors.Wrap(err, "failed to read the yaml config")
+	}
+
+	data, err := interpolateEnvVars(raw)
+	if err != nil {
+		return errors.Wrap(err, "failed to interpolate environment variables")
+	}
+
+	if err = yaml.Unmarshal(data, value); err != nil {
 		return err
 	}
 
 	return reader.Close()
+}
+
+// Function pre-parses all the YAML bytes to allow value overrides from the environment
+// For example, if an HTTP_PORT environment variable should be used for the HTTP module
+// port, the config would look like this:
+//
+//   modules:
+//     http:
+//       port: ${HTTP_PORT:8080}
+//
+// In the case that HTTP_PORT is not provided, default value (in this case 8080)
+// will be used
+//
+// TODO: what if someone wanted a literal ${FOO} in config? need a small escape hatch
+func interpolateEnvVars(data []byte) ([]byte, error) {
+	var errs []string
+	data = _interpolationRegex.ReplaceAllFunc(data, func(in []byte) []byte {
+		// remove ${ and }, just look inside the braces
+		valAndMaybeDefault := in[2 : len(in)-1]
+
+		// ${VALUE:DEFAULT} -> VALUE, DEFAULT
+		// ${VALUE} -> VALUE, empty default
+		split := bytes.Split(valAndMaybeDefault, _envSeparator)
+		key := string(split[0])
+
+		if envVal, ok := os.LookupEnv(key); ok {
+			return []byte(envVal)
+		}
+
+		// value not found in the env, lets check if there is a default
+		if len(split) < 2 {
+			errs = append(errs, fmt.Sprintf("environment variable %s not found and default is not provided", key))
+			return in
+		}
+
+		// return the default
+		def := bytes.Join(split[1:], _envSeparator)
+		if len(def) == 0 {
+			errs = append(errs, fmt.Sprintf(`default is empty for %s (use "" for empty string)`, key))
+			return in
+		}
+
+		// return empty byte slices for "" as the default
+		if bytes.Compare(def, _emptyString) == 0 {
+			return nil
+		}
+
+		return def
+	})
+
+	if len(errs) > 0 {
+		return nil, errors.New(strings.Join(errs, ","))
+	}
+	return data, nil
 }
 
 func getNodeType(val interface{}) nodeType {
