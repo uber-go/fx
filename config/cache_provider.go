@@ -37,6 +37,10 @@ type cachedProvider struct {
 // If the underlying provider fails to register callback for a particular value, it will
 // return the underlying error wrapped in Value.
 func NewCachedProvider(p Provider) Provider {
+	if p == nil {
+		panic("Received a nil provider")
+	}
+
 	return &cachedProvider{
 		Provider: p,
 		cache:    make(map[string]Value),
@@ -64,11 +68,11 @@ func (p *cachedProvider) Get(key string) Value {
 	})
 
 	if err != nil {
-		return NewValue(p, key, err, true, GetType(err), nil)
+		return NewValue(p, key, err, false, GetType(err), nil)
 	}
 
 	v := p.Provider.Get(key)
-	if v.found {
+	if v.HasValue() {
 		p.Lock()
 		p.cache[key] = v
 		p.Unlock()
