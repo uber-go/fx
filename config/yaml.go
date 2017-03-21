@@ -33,8 +33,7 @@ import (
 )
 
 type yamlConfigProvider struct {
-	root   *yamlNode
-	vCache map[string]Value
+	root *yamlNode
 }
 
 var _ Provider = &yamlConfigProvider{}
@@ -56,7 +55,6 @@ func newYAMLProviderCore(files ...io.ReadCloser) Provider {
 			key:      Root,
 			value:    root,
 		},
-		vCache: make(map[string]Value),
 	}
 }
 
@@ -125,13 +123,13 @@ func NewYAMLProviderFromFiles(mustExist bool, resolver FileResolver, files ...st
 		}
 	}
 
-	return newYAMLProviderCore(readers...)
+	return NewCachedProvider(newYAMLProviderCore(readers...))
 }
 
 // NewYAMLProviderFromReader creates a configuration provider from a list of `io.ReadClosers`.
 // As above, all the objects are going to be merged and arrays/values overridden in the order of the files.
 func NewYAMLProviderFromReader(readers ...io.ReadCloser) Provider {
-	return newYAMLProviderCore(readers...)
+	return NewCachedProvider(newYAMLProviderCore(readers...))
 }
 
 // NewYAMLProviderFromBytes creates a config provider from a byte-backed YAML blobs.
@@ -142,7 +140,7 @@ func NewYAMLProviderFromBytes(yamls ...[]byte) Provider {
 		closers[i] = ioutil.NopCloser(bytes.NewReader(yml))
 	}
 
-	return newYAMLProviderCore(closers...)
+	return NewCachedProvider(newYAMLProviderCore(closers...))
 }
 
 func (y yamlConfigProvider) getNode(key string) *yamlNode {
@@ -160,21 +158,12 @@ func (y yamlConfigProvider) Name() string {
 
 // Get returns a configuration value by name
 func (y yamlConfigProvider) Get(key string) Value {
-	// check the cache for the value
-	if node, ok := y.vCache[key]; ok {
-		return node
-	}
-
 	node := y.getNode(key)
 	if node == nil {
 		return NewValue(y, key, nil, false, Invalid, nil)
 	}
 
-	// cache the found value
-	value := NewValue(y, key, node.value, true, GetType(node.value), nil)
-	y.vCache[key] = value
-
-	return value
+	return NewValue(y, key, node.value, true, GetType(node.value), nil)
 }
 
 func (y yamlConfigProvider) RegisterChangeCallback(key string, callback ChangeCallback) error {
