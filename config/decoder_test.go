@@ -546,5 +546,5 @@ func TestBoolParsing(t *testing.T) {
 func TestAddKeyToErrorReturnsNilForNilErrors(t *testing.T) {
 	t.Parallel()
 
-	assert.NoError(t, addKeyToError("key", nil))
+	assert.NoError(t, errorWithKey(nil, "key"))
 }
