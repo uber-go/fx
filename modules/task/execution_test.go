@@ -242,7 +242,7 @@ func TestEnqueueFnClosure(t *testing.T) {
 	require.NoError(t, err)
 }
 
-func TestEnqueueWithStructFnWithError(t *testing.T) {
+func TestEnqueueFnWithStructArg(t *testing.T) {
 	defer globalBackendSetup(t)()
 	require.NoError(t, Register(WithStruct))
 	err := Enqueue(WithStruct, _ctx, Car{Brand: "infinity", Year: 2017})
@@ -254,6 +254,38 @@ func TestEnqueueWithStructFnWithError(t *testing.T) {
 	require.NoError(t, err)
 	err = <-_errorCh
 	require.NoError(t, err)
+}
+
+func TestEnqueueFnOnStructArg(t *testing.T) {
+	s := StructWithFn{Car{Brand: "Hello"}, &Impl{}}
+	defer globalBackendSetup(t)()
+	require.NoError(t, Register(s.Check))
+	err := Enqueue(s.Check, _ctx)
+	require.NoError(t, err)
+	err = <-_errorCh
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "Hello error")
+}
+
+func TestEnqueueFnWithInterface(t *testing.T) {
+	fn := func(ct context.Context, iface IFace, a string) error {
+		return iface.Check(a)
+	}
+	defer globalBackendSetup(t)()
+
+	// Encode error when enqueueing a function that takes in an interface
+	require.NoError(t, Register(fn))
+	err := Enqueue(fn, _ctx, &Impl{}, "Hello")
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "gob: type not registered for interface")
+
+	// Register the implementation and voila
+	i := &Impl{}
+	require.NoError(t, GlobalBackend().Encoder().Register(i))
+	require.NoError(t, Enqueue(fn, _ctx, i, "Hello"))
+	err = <-_errorCh
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "Hello error")
 }
 
 func OnlyContext(ctx context.Context) error {
@@ -272,6 +304,28 @@ type Car struct {
 func WithStruct(ctx context.Context, car Car) error {
 	if car.Brand == "infinity" {
 		return errors.New("Complex error")
+	}
+	return nil
+}
+
+type StructWithFn struct {
+	car   Car
+	iface IFace
+}
+
+func (s *StructWithFn) Check(ctx context.Context) error {
+	return s.iface.Check(s.car.Brand)
+}
+
+type IFace interface {
+	Check(a string) error
+}
+
+type Impl struct{}
+
+func (i *Impl) Check(a string) error {
+	if a == "Hello" {
+		return errors.New("Hello error")
 	}
 	return nil
 }
