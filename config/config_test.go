@@ -26,8 +26,6 @@ import (
 	"path"
 	"testing"
 
-	"go.uber.org/fx/testutils/env"
-
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -101,8 +99,6 @@ int: 123
 string: test string
 `)
 
-var testDatacenter = "TEST_DATACENTER"
-
 type arrayOfStructs struct {
 	Things []nested `yaml:"things"`
 }
@@ -119,6 +115,7 @@ func TestGlobalConfig(t *testing.T) {
 }
 
 func TestRootNodeConfig(t *testing.T) {
+	t.Parallel()
 	txt := []byte(`
 one:
   two: hello
@@ -153,10 +150,10 @@ func TestScopedAccess(t *testing.T) {
 		NewEnvProvider(defaultEnvPrefix, mapEnvironmentProvider{values: envValues}),
 	)
 
-	provider = provider.Scope("n1")
+	p1 := provider.Get("n1")
 
-	v1 := provider.Get("id1")
-	v2 := provider.Get("idx").WithDefault("nope")
+	v1 := p1.Get("id1")
+	v2 := p1.Get("idx").WithDefault("nope")
 
 	assert.True(t, v1.HasValue())
 	assert.Equal(t, 111, v1.AsInt())
@@ -176,12 +173,12 @@ func TestOverrideSimple(t *testing.T) {
 	rpc := &rpcStruct{}
 	v := provider.Get("modules.rpc")
 	assert.True(t, v.HasValue())
-	v.PopulateStruct(rpc)
+	v.Populate(rpc)
 	assert.Equal(t, ":8888", rpc.Bind)
 }
 
 func TestSimpleConfigValues(t *testing.T) {
-
+	t.Parallel()
 	provider := NewProviderGroup(
 		"test",
 		NewYAMLProviderFromBytes(yamlConfig3),
@@ -194,10 +191,11 @@ func TestSimpleConfigValues(t *testing.T) {
 	assert.Equal(t, 1.123, provider.Get("float").AsFloat())
 	nested := &nested{}
 	v := provider.Get("nonexisting")
-	assert.NoError(t, v.PopulateStruct(nested))
+	assert.NoError(t, v.Populate(nested))
 }
 
 func TestGetAsIntegerValue(t *testing.T) {
+	t.Parallel()
 	testCases := []struct {
 		value interface{}
 	}{
@@ -214,6 +212,7 @@ func TestGetAsIntegerValue(t *testing.T) {
 }
 
 func TestGetAsFloatValue(t *testing.T) {
+	t.Parallel()
 	testCases := []struct {
 		value interface{}
 	}{
@@ -241,7 +240,7 @@ func TestNestedStructs(t *testing.T) {
 	v := provider.Get(Root)
 
 	assert.True(t, v.HasValue())
-	err := v.PopulateStruct(str)
+	err := v.Populate(str)
 	assert.Nil(t, err)
 
 	assert.Equal(t, 1234, str.ID)
@@ -265,7 +264,7 @@ func TestArrayOfStructs(t *testing.T) {
 	v := provider.Get(Root)
 
 	assert.True(t, v.HasValue())
-	assert.NoError(t, v.PopulateStruct(target))
+	assert.NoError(t, v.Populate(target))
 	assert.Equal(t, 0, target.Things[0].ID1)
 	assert.Equal(t, -2, target.Things[2].ID1)
 }
@@ -279,7 +278,7 @@ func TestDefault(t *testing.T) {
 	target := &nested{}
 	v := provider.Get(Root)
 	assert.True(t, v.HasValue())
-	assert.NoError(t, v.PopulateStruct(target))
+	assert.NoError(t, v.Populate(target))
 	assert.Equal(t, "default_name", target.Name)
 }
 
@@ -302,6 +301,7 @@ func TestDefaultValue(t *testing.T) {
 }
 
 func TestInvalidConfigFailures(t *testing.T) {
+	t.Parallel()
 	valueType := []byte(`
 id: xyz
 boolean:
@@ -361,17 +361,23 @@ func TestEnvProvider_Callbacks(t *testing.T) {
 
 func TestGetConfigFiles(t *testing.T) {
 	SetEnvironmentPrefix("TEST")
-	defer env.Override(t, testDatacenter, "dc")()
 
-	files := getConfigFiles()
+	files := getConfigFiles(baseFiles()...)
 	assert.Contains(t, files, "./base.yaml")
 	assert.Contains(t, files, "./development.yaml")
 	assert.Contains(t, files, "./secrets.yaml")
-	assert.Contains(t, files, "./development-dc.yaml")
 	assert.Contains(t, files, "./config/base.yaml")
 	assert.Contains(t, files, "./config/development.yaml")
 	assert.Contains(t, files, "./config/secrets.yaml")
-	assert.Contains(t, files, "./config/development-dc.yaml")
+}
+
+func TestSetConfigFiles(t *testing.T) {
+	SetConfigFiles("x", "y")
+	files := getConfigFiles(_configFiles...)
+	assert.Contains(t, files, "./x.yaml")
+	assert.Contains(t, files, "./y.yaml")
+	assert.Contains(t, files, "./config/x.yaml")
+	assert.Contains(t, files, "./config/y.yaml")
 }
 
 func expectedResolvePath(t *testing.T) string {
@@ -402,8 +408,146 @@ func TestResolvePathAbs(t *testing.T) {
 func TestEnvProviderWithEmptyPrefix(t *testing.T) {
 	p := NewEnvProvider("", mapEnvironmentProvider{map[string]string{"key": "value"}})
 	require.Equal(t, "value", p.Get("key").AsString())
-	emptyScope := p.Scope("")
+	emptyScope := p.Get("")
 	require.Equal(t, "value", emptyScope.Get("key").AsString())
-	scope := emptyScope.Scope("key")
+	scope := emptyScope.Get("key")
 	require.Equal(t, "value", scope.Get("").AsString())
+}
+
+func TestNopProvider_Get(t *testing.T) {
+	t.Parallel()
+	p := NopProvider{}
+	assert.Equal(t, "NopProvider", p.Name())
+	assert.NoError(t, p.RegisterChangeCallback("key", nil))
+	assert.NoError(t, p.UnregisterChangeCallback("token"))
+
+	v := p.Get("randomKey")
+	assert.Equal(t, "NopProvider", v.Source())
+	assert.True(t, v.HasValue())
+	assert.Nil(t, v.Value())
+}
+
+func TestPointerIntField(t *testing.T) {
+	t.Parallel()
+
+	type pointerFieldStruct struct {
+		Name  string
+		Value *int
+	}
+
+	var ptrYaml = `
+ps:
+  name: Hello
+  value: 123
+`
+	p := NewYAMLProviderFromBytes([]byte(ptrYaml))
+
+	cfg := &pointerFieldStruct{Name: "xxx"}
+	v := p.Get("ps")
+
+	require.NoError(t, v.Populate(cfg))
+}
+
+func TestPointerTypedField(t *testing.T) {
+	t.Parallel()
+
+	type pointerFieldStruct struct {
+		Name  string
+		Value *int
+	}
+
+	var ptrPort = `
+ps:
+  name: Hello
+  port: 123
+`
+	p := NewYAMLProviderFromBytes([]byte(ptrPort))
+
+	cfg := &pointerFieldStruct{Name: "xxx"}
+	v := p.Get("ps")
+
+	require.NoError(t, v.Populate(cfg))
+}
+
+func TestPointerChildTypedField(t *testing.T) {
+	t.Parallel()
+
+	type Port int
+	type childPort struct {
+		Port *Port
+	}
+
+	type portChildStruct struct {
+		Name     string
+		Child    *childPort
+		Children []childPort
+	}
+
+	var ptrChildPort = `
+ps:
+  name: Hello
+  child:
+    port: 123
+  children:
+    - port: 321
+`
+
+	p := NewYAMLProviderFromBytes([]byte(ptrChildPort))
+
+	cfg := &portChildStruct{Name: "xxx"}
+	v := p.Get("ps")
+
+	require.NoError(t, v.Populate(cfg))
+	require.Equal(t, 123, int(*cfg.Child.Port))
+}
+
+func TestRPCPortField(t *testing.T) {
+	t.Parallel()
+
+	type Port int
+	type TChannelOutbound struct {
+		Port *Port `yaml:"port"`
+	}
+
+	type Outbound struct {
+		// Only one of the following must be set.
+		TChannel *TChannelOutbound `yaml:"tchannel"`
+	}
+
+	type Outbounds []Outbound
+
+	// Config is the YARPC YAML configuration.
+	type YARPCConfig struct {
+		// Name of the service.
+		Name  string `yaml:"name"`
+		Stuff int    `yaml:"stuff"`
+		// Outbounds specifies how this service sends requests to other services.
+		Outbounds Outbounds `yaml:"outbounds"`
+	}
+
+	var rpc = `
+rpc:
+  name: my-cool-service
+  stuff: 999
+  outbounds:
+    - services:
+        - buffetpushgateway
+      tchannel:
+        host: 127.0.0.1
+        port: 123
+`
+	p := NewProviderGroup(
+		"test",
+		NewYAMLProviderFromBytes([]byte(rpc)),
+		NewEnvProvider(defaultEnvPrefix, mapEnvironmentProvider{
+			values: map[string]string{
+				toEnvString(defaultEnvPrefix, "rpc.outbounds.0.tchannel.port"): "4324",
+			}}),
+	)
+
+	cfg := &YARPCConfig{}
+	v := p.Get("rpc")
+
+	require.NoError(t, v.Populate(cfg))
+	require.Equal(t, 4324, int(*cfg.Outbounds[0].TChannel.Port))
 }

@@ -127,12 +127,12 @@ fmt.Println(foo)
 ```
 
 To get an access to the root element use `config.Root`:
+
 ```go
 root := provider.Get(config.Root).AsString()
 fmt.Println(root)
 // Output: map[one:map[two:hello]]
 ```
-
 
 * Populate a struct (`PopulateStruct(&myStruct)`)
 
@@ -175,19 +175,19 @@ fmt.Println(m.World)
 Note that any fields you wish to deserialize into must be exported, just like
 `json.Unmarshal` and friends.
 
-
 ### Benchmarks
 
 Current performance benchmark data:
 
 ```
-BenchmarkYAMLCreateSingleFile-8                    	   50000	     31345 ns/op	   11144 B/op	     122 allocs/op
-BenchmarkYAMLCreateMultiFile-8                     	   30000	     51927 ns/op	   20080 B/op	     207 allocs/op
-BenchmarkYAMLSimpleGetLevel1-8                     	50000000	        26.8 ns/op	       0 B/op	       0 allocs/op
-BenchmarkYAMLSimpleGetLevel3-8                     	50000000	        27.3 ns/op	       0 B/op	       0 allocs/op
-BenchmarkYAMLSimpleGetLevel7-8                     	50000000	        26.2 ns/op	       0 B/op	       0 allocs/op
-BenchmarkYAMLPopulateStruct-8                      	 1000000	      1598 ns/op	     576 B/op	      16 allocs/op
-BenchmarkYAMLPopulateStructNested-8                	  300000	      3972 ns/op	    1056 B/op	      42 allocs/op
-BenchmarkYAMLPopulateStructNestedMultipleFiles-8   	  300000	      5013 ns/op	    1248 B/op	      52 allocs/op
-BenchmarkYAMLPopulateNestedTextUnmarshaler-8       	  100000	     18209 ns/op	    3368 B/op	     211 allocs/op
+BenchmarkYAMLCreateSingleFile-8                    119 allocs/op
+BenchmarkYAMLCreateMultiFile-8                     203 allocs/op
+BenchmarkYAMLSimpleGetLevel1-8                       0 allocs/op
+BenchmarkYAMLSimpleGetLevel3-8                       0 allocs/op
+BenchmarkYAMLSimpleGetLevel7-8                       0 allocs/op
+BenchmarkYAMLPopulateStruct-8                       16 allocs/op
+BenchmarkYAMLPopulateStructNested-8                 42 allocs/op
+BenchmarkYAMLPopulateStructNestedMultipleFiles-8    52 allocs/op
+BenchmarkYAMLPopulateNestedTextUnmarshaler-8       211 allocs/op
+BenchmarkZapConfigLoad-8                           188 allocs/op
 ```

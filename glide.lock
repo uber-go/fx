@@ -1,22 +1,26 @@
-hash: f5c7c493baa0a29039c147f7244c37d573f95eee31ee448577a64024dabd6770
-updated: 2017-02-27T09:12:47.84121939-08:00
+hash: 3d5dd8dc7f7b2d1cb3a7f5a898ca6fcdf047e9ee046ddcf35922530d6d870c59
+updated: 2017-03-20T11:09:57.488424566-07:00
 imports:
 - name: github.com/apache/thrift
   version: 9549b25c77587b29be4e0b5c258221a4ed85d37a
   subpackages:
   - lib/go/thrift
+- name: github.com/cactus/go-statsd-client
+  version: 91c326c3f7bd20f0226d3d1c289dd9f8ce28d33d
+  subpackages:
+  - statsd
 - name: github.com/certifi/gocertifi
   version: 03be5e6bb9874570ea7fb0961225d193cbc374c5
 - name: github.com/codahale/hdrhistogram
-  version: 3a0bb77429bd3a61596f5e8a3172445844342120
+  version: f8ad88b59a584afeee9d334eff879b104439117b
 - name: github.com/davecgh/go-spew
-  version: 346938d642f2ec3594ed81d874461961cd0faa76
+  version: 04cdfd42973bb9c8589fd6a731800cf222fde1a9
   subpackages:
   - spew
 - name: github.com/facebookgo/clock
   version: 600d898af40aa09a7a93ecb9265d87b0504b6f03
 - name: github.com/getsentry/raven-go
-  version: 3f7439d3e74d88e21d196ba20eb61a5a958bc118
+  version: b68337dbf03e7fbb53d9fd9b63fd09b28e8f13f7
 - name: github.com/go-validator/validator
   version: 0a9835d809fb647a62611d30cb792e0b5dd65b11
 - name: github.com/golang/mock
@@ -27,28 +31,52 @@ imports:
   version: 1ea25387ff6f684839d82767c1733ff4d4d15d0a
 - name: github.com/gorilla/mux
   version: 392c28fe23e1c45ddba891b0320b3b5df220beea
+- name: github.com/gorilla/websocket
+  version: 3ab3a8b8831546bd18fd182c20687ca853b2bb13
 - name: github.com/opentracing/opentracing-go
   version: 6edb48674bd9467b8e91fda004f2bd7202d60ce4
   subpackages:
   - ext
   - log
+- name: github.com/pborman/uuid
+  version: c55201b036063326c5b1b89ccfe45a184973d073
 - name: github.com/pkg/errors
   version: 645ef00459ed84a119197bfb8d8205042c6df63d
 - name: github.com/pmezard/go-difflib
-  version: 792786c7400a136282c1664665ae0a8db921c6c2
+  version: d8ed2627bdf02c080bf22230dbb337003b7aba2d
   subpackages:
   - difflib
+- name: github.com/Sirupsen/logrus
+  version: 08a8a7c27e3d058a8989316a850daad1c10bf4ab
+- name: github.com/stretchr/objx
+  version: cbeaeb16a013161a98496fad62933b1d21786672
 - name: github.com/stretchr/testify
   version: 4d4bfba8f1d1027c4fdbe371823030df51419987
   subpackages:
   - assert
+  - mock
   - require
+- name: github.com/uber-common/bark
+  version: d52ffa061726911f47fcd3d9e8b9b55f22794772
 - name: github.com/uber-go/atomic
   version: e682c1008ac17bf26d2e4b5ad6cdd08520ed0b22
 - name: github.com/uber-go/tally
   version: 34be4a565ce6286a0ba91a54a81be3f6181ca2e2
+- name: github.com/uber/cherami-client-go
+  version: 1cdcfc4a204fe42013f4cf7196fab208d3b98085
+  subpackages:
+  - client/cherami
+  - common
+  - common/backoff
+  - common/metrics
+  - common/websocket
+  - stream
+- name: github.com/uber/cherami-thrift
+  version: 09ed2ceaeab9e52820a81caece0dee9914c31f5d
+  subpackages:
+  - .generated/go/cherami
 - name: github.com/uber/jaeger-client-go
-  version: a1c7be77e82c1ccd832ace5c4c04b25700d90b1f
+  version: bcc801808ce11db4f05a09e2af61698ffe3f5f38
   subpackages:
   - config
   - internal/spanlog
@@ -61,20 +89,25 @@ imports:
   - transport/udp
   - utils
 - name: github.com/uber/jaeger-lib
-  version: b9556711760c45a30bd79c31c8f041d0d9aba997
+  version: 9dd8526f119f8cd8379427bfefdc406e81bc3b2f
   subpackages:
   - metrics
   - metrics/tally
 - name: github.com/uber/tchannel-go
-  version: 79387824978f91318be3bfb43ae12e04c38cfe97
+  version: 2feb388c9d0c0303f98481d1621308d634093ffb
   subpackages:
+  - hyperbahn
+  - hyperbahn/gen-go/hyperbahn
   - internal/argreader
+  - json
   - relay
+  - thrift
+  - thrift/gen-go/meta
   - tnet
   - trand
   - typed
 - name: go.uber.org/atomic
-  version: 0c9e689d64f004564b79d9a663634756df322902
+  version: 3b8db5e93c4c02efbc313e17b2e796b0914a01fb
 - name: go.uber.org/thriftrw
   version: c98a13058faa5dd41584a77221a268d2c72d832d
   subpackages:
@@ -93,7 +126,7 @@ imports:
   - version
   - wire
 - name: go.uber.org/yarpc
-  version: 47ebfe9337d943e637cc1748254727ec1fa89bf4
+  version: 6ad92c34d7e982d4bb7299f20e6a27652116cf5d
   subpackages:
   - api/encoding
   - api/middleware
@@ -102,11 +135,13 @@ imports:
   - encoding/thrift
   - encoding/thrift/internal
   - internal
+  - internal/buffer
   - internal/clientconfig
   - internal/encoding
   - internal/errors
   - internal/inboundmiddleware
   - internal/introspection
+  - internal/iopool
   - internal/net
   - internal/outboundmiddleware
   - internal/request
@@ -117,21 +152,26 @@ imports:
   - transport/tchannel
   - transport/tchannel/internal
 - name: go.uber.org/zap
-  version: a03b90bc236f3def382f17743518889a31f8187c
+  version: 4257c7cf05477d92ec25c31cfd3d60e89575f18a
   subpackages:
   - buffer
   - internal/bufferpool
+  - internal/color
   - internal/exit
   - internal/multierror
-  - testutils
   - zapcore
+  - zaptest
 - name: golang.org/x/net
-  version: bb807669a61aca6092d8137da1fab2150bb96ad7
+  version: a6577fac2d73be281a500b310739095313165611
   subpackages:
   - context
   - context/ctxhttp
+- name: golang.org/x/sys
+  version: d4feaf1a7e61e1d9e79e6c4e76c6349e9cab0a03
+  subpackages:
+  - unix
 - name: golang.org/x/tools
-  version: 496819729719f9d07692195e0a94d6edd2251389
+  version: 2946dd1f77e693e136d9ed202ba093bb4a3ea761
   subpackages:
   - go/ast/astutil
 - name: gopkg.in/yaml.v2
@@ -146,25 +186,25 @@ testImports:
 - name: github.com/go-playground/overalls
   version: b52dfefba43cf6f75bb177ba45697ed12e0d10a2
 - name: github.com/golang/lint
-  version: b8599f7d71e7fead76b25aeb919c0e2558672f4a
+  version: cb00e5669539f047b2f4c53a421a01b0c8e172c6
   subpackages:
   - golint
+- name: github.com/google/gofuzz
+  version: 44d81051d367757e1c7c6a5a86423ece9afcf63c
 - name: github.com/jessevdk/go-flags
   version: 460c7bb0abd6e927f2767cadc91aa6ef776a98b4
 - name: github.com/kisielk/errcheck
-  version: db0ca22445717d1b2c51ac1034440e0a2a2de645
+  version: 23699b7e2cbfdb89481023524954ba2aeff6be90
 - name: github.com/kisielk/gotool
   version: 0de1eaf82fa3f583ce21fde859f1e7e0c5e9b220
 - name: github.com/kyoh86/richgo
   version: 35d295f8d8df6dc5159273293c5d294cb6fb6b84
 - name: github.com/mattn/goveralls
-  version: 8482d0ebd2a64f95ce02d2b9b7065b0d6fe9151b
+  version: a99c5ee06aeeca2a2befc7e90b99061b1180850c
 - name: github.com/mvdan/interfacer
-  version: 588bd9940e912b1b2760d41bd836ef28ff97164d
+  version: 049d0176189d83d4e2535611f0253b6f1db487ad
   subpackages:
   - cmd/interfacer
-- name: github.com/pborman/uuid
-  version: 1b00554d822231195d1babd97ff4a781231955c9
 - name: github.com/russross/blackfriday
   version: 5ebfae50aacdef0dacd1a1acc469c2c1c7a7d4d8
 - name: github.com/sectioneight/md-to-godoc
@@ -173,3 +213,7 @@ testImports:
   version: 1dba4b3954bc059efc3991ec364f9f9a35f597d2
 - name: github.com/yookoala/realpath
   version: c416d99ab5ed256fa30c1f3bab73152deb59bb69
+- name: go.uber.org/tools
+  version: fb05033aaa266ee0674167682d3da91bef95d02a
+  subpackages:
+  - update-license

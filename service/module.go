@@ -27,8 +27,7 @@ import (
 
 // ModuleProvider provides Modules.
 type ModuleProvider interface {
-	// DefaultName is the name that will be used for a new Module
-	// if no name is given as a ModuleOption.
+	// DefaultName returns the default module name
 	DefaultName() string
 	// Create a new Module. The name of the Host and the scoping
 	// of associated functions on the Host will be done using a name
@@ -48,57 +47,68 @@ type Module interface {
 
 // ModuleProviderFromFunc creates a new ModuleProvider from a name and create function.
 func ModuleProviderFromFunc(name string, createFunc func(Host) (Module, error)) ModuleProvider {
-	return &moduleProviderFunc{name, createFunc}
+	return &moduleProvider{name: name, createFunc: createFunc}
 }
 
 // ModuleOption is a function that configures module creation.
 type ModuleOption func(*moduleOptions) error
 
-// WithModuleName will override the name given by the ModuleProvider.
-func WithModuleName(name string) ModuleOption {
+// WithName will override the root service name specified in config.
+func WithName(name string) ModuleOption {
 	return func(o *moduleOptions) error {
-		o.name = name
+		o.ServiceName = name
 		return nil
 	}
 }
 
-// WithModuleRole will add a role to the Module.
+// WithRole will add a role to the Module.
 //
 // If the role was already added, this will be a no-op.
-func WithModuleRole(role string) ModuleOption {
+func WithRole(role string) ModuleOption {
 	return func(o *moduleOptions) error {
 		if role == "" {
 			return nil
 		}
-		for _, elem := range o.roles {
+		for _, elem := range o.Roles {
 			if role == elem {
 				return nil
 			}
 		}
-		o.roles = append(o.roles, role)
+		o.Roles = append(o.Roles, role)
 		return nil
 	}
 }
 
-// NewScopedHost returns a new Host scoped to a module. This should generally be used for testing.
-func NewScopedHost(host Host, name string, roles ...string) (Host, error) {
-	return newScopedHost(host, name, roles...)
+// WithModuleName will override the name given by the ModuleProvider.
+func WithModuleName(name string) ModuleOption {
+	return func(o *moduleOptions) error {
+		o.ModuleName = name
+		return nil
+	}
 }
 
-type moduleProviderFunc struct {
+// moduleOptions specifies options for service name and role
+type moduleOptions struct {
+	ModuleName  string
+	ServiceName string
+	Roles       []string
+}
+
+// NewScopedHost returns a new Host scoped to a module. This should generally be used for testing.
+func NewScopedHost(host Host, moduleName, serviceName string, roles ...string) (Host, error) {
+	return newScopedHost(host, moduleName, serviceName, roles...), nil
+}
+
+type moduleProvider struct {
 	name       string
 	createFunc func(Host) (Module, error)
 }
 
-func (m *moduleProviderFunc) DefaultName() string              { return m.name }
-func (m *moduleProviderFunc) Create(host Host) (Module, error) { return m.createFunc(host) }
-
-type moduleOptions struct {
-	name  string
-	roles []string
-}
+func (m *moduleProvider) DefaultName() string              { return m.name }
+func (m *moduleProvider) Create(host Host) (Module, error) { return m.createFunc(host) }
 
 type moduleWrapper struct {
+	name       string
 	module     Module
 	scopedHost *scopedHost
 	isRunning  bool
@@ -119,16 +129,26 @@ func newModuleWrapper(
 			return nil, err
 		}
 	}
-	if moduleOptions.name == "" {
-		moduleOptions.name = moduleProvider.DefaultName()
+	var name string
+	var roles []string
+	if moduleOptions.ModuleName == "" {
+		moduleOptions.ModuleName = moduleProvider.DefaultName()
 	}
-	scopedHost, err := newScopedHost(
-		host,
-		moduleOptions.name,
-		moduleOptions.roles...,
-	)
-	if err != nil {
-		return nil, err
+	if moduleOptions.ServiceName != "" {
+		name = moduleOptions.ServiceName
+	} else {
+		name = host.Name()
+	}
+	if len(moduleOptions.Roles) > 0 {
+		roles = moduleOptions.Roles
+	} else {
+		roles = host.Roles()
+	}
+	scopedHost := &scopedHost{
+		Host:        host,
+		serviceName: name,
+		moduleName:  moduleOptions.ModuleName,
+		roles:       roles,
 	}
 	module, err := moduleProvider.Create(scopedHost)
 	if err != nil {
@@ -137,18 +157,22 @@ func newModuleWrapper(
 	if module == nil {
 		return nil, nil
 	}
-	return &moduleWrapper{module: module, scopedHost: scopedHost}, nil
+	return &moduleWrapper{
+		name:       moduleOptions.ModuleName,
+		module:     module,
+		scopedHost: scopedHost,
+	}, nil
 }
 
 func (m *moduleWrapper) Name() string {
-	return m.scopedHost.name
+	return m.name
 }
 
 func (m *moduleWrapper) Start() error {
 	m.lock.Lock()
 	defer m.lock.Unlock()
 	if m.isRunning {
-		return fmt.Errorf("module %s is running", m.Name())
+		return fmt.Errorf("module %s is running", m.name)
 	}
 	if err := m.module.Start(); err != nil {
 		return err
@@ -161,7 +185,7 @@ func (m *moduleWrapper) Stop() error {
 	m.lock.Lock()
 	defer m.lock.Unlock()
 	if !m.isRunning {
-		return fmt.Errorf("module %s is not running", m.Name())
+		return fmt.Errorf("module %s is not running", m.name)
 	}
 	m.isRunning = false
 	return m.module.Stop()
@@ -173,24 +197,34 @@ func (m *moduleWrapper) IsRunning() bool {
 	return m.isRunning
 }
 
+// scopedHost is a host scoped to the module
 type scopedHost struct {
 	Host
-	name  string
-	roles []string
+	serviceName string
+	roles       []string
+	moduleName  string
 }
 
-func newScopedHost(host Host, name string, roles ...string) (*scopedHost, error) {
+func newScopedHost(host Host, moduleName string, serviceName string, roles ...string) *scopedHost {
 	return &scopedHost{
-		host,
-		name,
-		roles,
-	}, nil
+		Host:        host,
+		serviceName: serviceName,
+		moduleName:  moduleName,
+		roles:       roles,
+	}
 }
 
+// Name returns the scoped service name
 func (sh *scopedHost) Name() string {
-	return sh.name
+	return sh.serviceName
 }
 
+// Name returns the scoped module name
+func (sh *scopedHost) ModuleName() string {
+	return sh.moduleName
+}
+
+// Roles returns the roles for the module
 func (sh *scopedHost) Roles() []string {
 	return sh.roles
 }

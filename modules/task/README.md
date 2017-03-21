@@ -22,12 +22,16 @@ import (
   "context"
 
   "go.uber.org/fx/modules/task"
+  "go.uber.org/fx/modules/task/cherami"
   "go.uber.org/fx/service"
   "go.uber.org/fx/ulog"
 )
 
 func main() {
-  svc, err := service.WithModule(task.New(newBackend)).Build()
+  svc, err := service.WithModule(task.New(cherami.NewBackend)).Build()
+  if err != nil {
+    log.Fatal("Failed to initialize module", err)
+  }
   if err := task.Register(updateCache); err != nil {
     ulog.Logger().Fatal("could not register task", "error", err)
   }
@@ -54,6 +58,20 @@ func updateCache(ctx context.Context, input string, results string) error {
 The async task module is a singleton and a service can initialize
 only one at this time. Users are free to define their own backends
 and encodings for message passing.
+
+It is possible to enqueue and execute tasks on different clusters if you want
+to separate workloads. The default configuration spins up workers that will
+execute the task. In order to spin up just task enqueueing without execution,
+initialize the module as follows:
+
+```go
+  svc, err := service.WithModule(
+    task.New(cherami.NewBackend, task.DisableExecution()),
+  ).Build()
+  if err != nil {
+    log.Fatal("Failed to initialize module", err)
+  }
+```
 
 ## Async function requirements
 

@@ -22,7 +22,6 @@ package task
 
 import (
 	"errors"
-	"fmt"
 	"testing"
 
 	"golang.org/x/net/context"
@@ -34,45 +33,74 @@ import (
 )
 
 var (
-	_nopBackend   = &NopBackend{}
-	_nopBackendFn = func(host service.Host) (Backend, error) { return _nopBackend, nil }
-	_memBackend   *inMemBackend
-	_memBackendFn = func(host service.Host) (Backend, error) { return _memBackend, nil }
-	_errBackendFn = func(host service.Host) (Backend, error) { return nil, errors.New("bknd err") }
+	_nopBackend       = &NopBackend{}
+	_nopBackendFn     = func(service.Host) (Backend, error) { return _nopBackend, nil }
+	_memBackendFn     = func(host service.Host) (Backend, error) { return NewInMemBackend(host), nil }
+	_backendFnWithErr = func(service.Host) (Backend, error) { return nil, errors.New("bknd err") }
+	_errBackendFn     = func(service.Host) (Backend, error) { return errBackend{*_nopBackend}, nil }
 )
 
-func init() {
-	host, _ := service.NewScopedHost(service.NopHost(), "hello")
-	_memBackend = NewInMemBackend(host).(*inMemBackend)
+type errBackend struct{ NopBackend }
+
+func (b errBackend) ExecuteAsync() error {
+	return errors.New("execute async error")
 }
 
 func TestNew(t *testing.T) {
-	b := createModule(t, _memBackendFn) // Singleton modules get saved
-	require.Equal(t, _memBackend, b)
-	b = createModule(t, _nopBackendFn) // Singleton returns nop even though mem backend is input
-	require.Equal(t, _memBackend, b)
+	b := NewInMemBackend(newTestHost(t))
+	bFn := func(host service.Host) (Backend, error) { return b, nil }
+	mod := createModule(t, bFn) // Singleton modules get saved
+	require.NoError(t, mod.Start())
+	require.Equal(t, b, mod.(*managedBackend).Backend)
+	mod = createModule(t, _nopBackendFn) // Singleton returns nop even though mem backend is input
+	require.Equal(t, b, mod.(*managedBackend).Backend)
+}
+
+func TestMemBackendModuleWorkflowWithContext(t *testing.T) {
+	mod, err := newAsyncModule(newTestHost(t), _memBackendFn, DisableExecution())
+	require.NoError(t, err)
+	require.NotNil(t, mod)
+	b := GlobalBackend()
+	require.True(t, b.(*managedBackend).config.DisableExecution)
+	require.NoError(t, b.Start())
+	fn := func(ctx context.Context) error {
+		return errors.New("hello error")
+	}
+	require.NoError(t, b.ExecuteAsync()) // This is required module is set with DisableExecution
+	require.NoError(t, Register(fn))
+	require.NoError(t, Enqueue(fn, context.Background()))
+	errorCh := b.(*managedBackend).Backend.(*inMemBackend).errorCh
+	require.Error(t, <-errorCh)
+}
+
+func TestModuleStartWithExecuteAsyncError(t *testing.T) {
+	mod, err := newAsyncModule(newTestHost(t), _errBackendFn)
+	require.NoError(t, err)
+	require.NotNil(t, mod)
+	err = mod.Start()
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "execute async error")
 }
 
 func TestNewError(t *testing.T) {
-	mod, err := newAsyncModule(newTestHost(t), _errBackendFn)
+	mod, err := newAsyncModule(newTestHost(t), _backendFnWithErr)
 	require.Error(t, err)
 	require.Nil(t, mod)
 }
 
-func TestMemBackendModuleWorkflowWithContext(t *testing.T) {
-	b := createModule(t, _memBackendFn) // we will just get the singleton in mem backend here
-	require.NoError(t, b.Start())
-	fn := func(ctx context.Context) error {
-		fmt.Printf("Hello")
-		return errors.New("hello error")
-	}
-	require.NoError(t, Register(fn))
-	require.NoError(t, Enqueue(fn, context.Background()))
-	require.Error(t, <-_memBackend.ErrorCh())
+func TestNewWithOptionsError(t *testing.T) {
+	mod, err := newAsyncModule(
+		newTestHost(t),
+		_memBackendFn,
+		func(*Config) error { return errors.New("options error") },
+	)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "options error")
+	require.Nil(t, mod)
 }
 
-func createModule(t *testing.T, b BackendCreateFunc) Backend {
-	moduleProvider := New(b)
+func createModule(t *testing.T, b BackendCreateFunc, options ...ModuleOption) Backend {
+	moduleProvider := New(b, options...)
 	assert.NotNil(t, moduleProvider)
 	mod, err := moduleProvider.Create(newTestHost(t))
 	assert.NotNil(t, mod)

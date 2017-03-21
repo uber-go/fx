@@ -29,11 +29,13 @@ import (
 )
 
 func TestStaticProvider_Name(t *testing.T) {
+	t.Parallel()
 	p := NewStaticProvider(nil)
 	assert.Equal(t, "static", p.Name())
 }
 
 func TestNewStaticProvider_NilData(t *testing.T) {
+	t.Parallel()
 	p := NewStaticProvider(nil)
 
 	val := p.Get("something")
@@ -41,6 +43,7 @@ func TestNewStaticProvider_NilData(t *testing.T) {
 }
 
 func TestStaticProvider_WithData(t *testing.T) {
+	t.Parallel()
 	data := map[string]interface{}{
 		"hello": "world",
 	}
@@ -52,7 +55,8 @@ func TestStaticProvider_WithData(t *testing.T) {
 	assert.Equal(t, "world", val.AsString())
 }
 
-func TestStaticProvider_WithScope(t *testing.T) {
+func TestStaticProvider_WithGet(t *testing.T) {
+	t.Parallel()
 	data := map[string]interface{}{
 		"hello": map[string]int{"world": 42},
 	}
@@ -61,19 +65,21 @@ func TestStaticProvider_WithScope(t *testing.T) {
 	val := p.Get("hello")
 	assert.True(t, val.HasValue())
 
-	sub := p.Scope("hello")
+	sub := p.Get("hello")
 	val = sub.Get("world")
 	assert.True(t, val.HasValue())
 	assert.Equal(t, 42, val.AsInt())
 }
 
 func TestStaticProvider_Callbacks(t *testing.T) {
+	t.Parallel()
 	p := NewStaticProvider(nil)
 	assert.NoError(t, p.RegisterChangeCallback("test", nil))
 	assert.NoError(t, p.UnregisterChangeCallback("token"))
 }
 
 func TestStaticProviderFmtPrintOnValueNoPanic(t *testing.T) {
+	t.Parallel()
 	p := NewStaticProvider(nil)
 	val := p.Get("something")
 
@@ -84,6 +90,7 @@ func TestStaticProviderFmtPrintOnValueNoPanic(t *testing.T) {
 }
 
 func TestNilStaticProviderSetDefaultTagValue(t *testing.T) {
+	t.Parallel()
 	type Inner struct {
 		Set bool `yaml:"set" default:"true"`
 	}
@@ -99,7 +106,7 @@ func TestNilStaticProviderSetDefaultTagValue(t *testing.T) {
 	}{}
 
 	p := NewStaticProvider(nil)
-	require.NoError(t, p.Get("hello").PopulateStruct(&data))
+	require.NoError(t, p.Get("hello").Populate(&data))
 
 	assert.Equal(t, 10, data.ID0)
 	assert.Equal(t, "string", data.ID1)
@@ -109,4 +116,94 @@ func TestNilStaticProviderSetDefaultTagValue(t *testing.T) {
 	assert.Nil(t, data.ID5)
 	assert.True(t, data.ID6[0].Set)
 	assert.Nil(t, data.ID7[0])
+}
+
+func TestPopulateForSimpleMap(t *testing.T) {
+	t.Parallel()
+	p := NewStaticProvider(map[string]int{"one": 1, "b": -1})
+
+	var m map[string]interface{}
+	require.NoError(t, p.Get(Root).Populate(&m))
+	assert.Equal(t, 1, m["one"])
+}
+
+func TestPopulateForNestedMap(t *testing.T) {
+	t.Parallel()
+	p := NewStaticProvider(map[string]interface{}{
+		"top":    map[string]int{"one": 1, "": -1},
+		"bottom": "value"})
+
+	var m map[string]interface{}
+	require.NoError(t, p.Get(Root).Populate(&m))
+	assert.Equal(t, 2, len(m["top"].(map[interface{}]interface{})))
+	assert.Equal(t, 1, m["top"].(map[interface{}]interface{})["one"])
+	assert.Equal(t, "value", m["bottom"])
+}
+
+func TestPopulateForSimpleSlice(t *testing.T) {
+	t.Parallel()
+	p := NewStaticProvider([]string{"Eeny", "meeny", "miny", "moe"})
+
+	var s []string
+	require.NoError(t, p.Get(Root).Populate(&s))
+	assert.Equal(t, []string{"Eeny", "meeny", "miny", "moe"}, s)
+
+	var str string
+	require.NoError(t, p.Get("1").Populate(&str))
+	assert.Equal(t, "meeny", str)
+	assert.Equal(t, "miny", p.Get("2").String())
+}
+
+func TestPopulateForNestedSlices(t *testing.T) {
+	t.Parallel()
+	p := NewStaticProvider([][]string{{}, {"Catch", "a", "tiger", "by", "the", "toe"}, nil, {""}})
+
+	var s [][]string
+	require.NoError(t, p.Get(Root).Populate(&s))
+	require.Equal(t, 4, len(s))
+	assert.Equal(t, [][]string{nil, {"Catch", "a", "tiger", "by", "the", "toe"}, nil, {""}}, s)
+	assert.Equal(t, "Catch", p.Get("1.0").String())
+}
+
+func TestPopulateForBuiltins(t *testing.T) {
+	t.Parallel()
+	t.Run("int", func(t *testing.T) {
+		p := NewStaticProvider(1)
+		var i int
+		require.NoError(t, p.Get(Root).Populate(&i))
+		assert.Equal(t, 1, i)
+		assert.Equal(t, 1, p.Get(Root).AsInt())
+	})
+	t.Run("float", func(t *testing.T) {
+		p := NewStaticProvider(1.23)
+		var f float64
+		require.NoError(t, p.Get(Root).Populate(&f))
+		assert.Equal(t, 1.23, f)
+		assert.Equal(t, 1.23, p.Get(Root).AsFloat())
+	})
+	t.Run("string", func(t *testing.T) {
+		p := NewStaticProvider("pie")
+		var s string
+		require.NoError(t, p.Get(Root).Populate(&s))
+		assert.Equal(t, "pie", s)
+		assert.Equal(t, "pie", p.Get(Root).String())
+	})
+	t.Run("bool", func(t *testing.T) {
+		p := NewStaticProvider(true)
+		var b bool
+		require.NoError(t, p.Get(Root).Populate(&b))
+		assert.True(t, b)
+		assert.True(t, p.Get(Root).AsBool())
+	})
+}
+
+func TestPopulateForNestedMaps(t *testing.T) {
+	t.Parallel()
+	p := NewStaticProvider(map[string]map[string]string{
+		"a": {"one": "1", "": ""}})
+
+	var m map[string]map[string]string
+	err := p.Get("a").Populate(&m)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), `empty key leads to ambiguity for path: "a."`)
 }

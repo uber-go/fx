@@ -136,6 +136,11 @@ func (c *core) Write(ent zapcore.Entry, fs []zapcore.Field) error {
 	return nil
 }
 
+func (c *core) Sync() error {
+	c.client.Wait()
+	return nil
+}
+
 func (c *core) with(fs []zapcore.Field) *core {
 	// Copy our map.
 	m := make(map[string]interface{}, len(c.fields))

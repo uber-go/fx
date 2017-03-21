@@ -40,13 +40,17 @@ var (
 	_ctx       = context.Background()
 )
 
-func init() {
-	host, _ := service.NewScopedHost(service.NopHost(), "hello")
+func globalBackendSetup(t *testing.T) func() {
+	host, _ := service.NewScopedHost(service.NopHost(), "task", "hello")
 	_testScope = host.Metrics()
-	_globalBackend = NewInMemBackend(host)
-	_ = _globalBackend.Start()
-	_errorCh = _globalBackend.(*inMemBackend).ErrorCh()
-	_globalBackend.Encoder().Register(context.Background())
+	_globalBackend = NewManagedInMemBackend(host, Config{})
+	require.NoError(t, _globalBackend.Start())
+	_errorCh = _globalBackend.(*managedBackend).Backend.(*inMemBackend).errorCh
+	require.NotNil(t, _errorCh)
+	return func() {
+		assert.NoError(t, _globalBackend.Stop())
+		_globalBackend = NopBackend{}
+	}
 }
 
 func TestRegisterNonFunction(t *testing.T) {
@@ -92,11 +96,22 @@ func TestRegisterFnWithMismatchedArgCount(t *testing.T) {
 	assert.Contains(t, err.Error(), "2 function arg(s) but found 0")
 }
 
+func TestMustRegisterPanicsOnBadType(t *testing.T) {
+	assert.Panics(t, func() {
+		MustRegister("not a function")
+	})
+}
+
+func TestMustRegisterOkOnGoodFunc(t *testing.T) {
+	assert.NotPanics(t, func() {
+		MustRegister(validTaskFunc)
+	})
+}
+
 func TestEnqueueFnWithMismatchedArgType(t *testing.T) {
-	fn := func(ctx context.Context, s string) error { return nil }
-	err := Register(fn)
+	err := Register(validTaskFunc)
 	require.NoError(t, err)
-	err = Enqueue(fn, _ctx, 1)
+	err = Enqueue(validTaskFunc, _ctx, 1)
 	require.Error(t, err)
 	assert.Contains(
 		t, err.Error(), "argument: 2 from type: int to type: string",
@@ -114,21 +129,34 @@ func TestEnqueueWithoutRegister(t *testing.T) {
 }
 
 func TestConsumeWithoutRegister(t *testing.T) {
+	host, _ := service.NewScopedHost(service.NopHost(), "task", "hello")
+	_testScope = host.Metrics()
+	_globalBackend = NewManagedInMemBackend(host, Config{})
+	_errorCh = _globalBackend.(*managedBackend).Backend.(*inMemBackend).errorCh
+	require.NotNil(t, _errorCh)
+	defer func() {
+		assert.NoError(t, _globalBackend.Stop())
+		_globalBackend = NopBackend{}
+	}()
 	fn := func(ctx context.Context, num float64) error { return nil }
 	err := Register(fn)
 	require.NoError(t, err)
 	err = Enqueue(fn, _ctx, float64(1.0))
 	require.NoError(t, err)
+	// This clears the previous register
 	fnLookup.setFnNameMap(make(map[string]interface{}))
+	// Start after clearing the register to avoid race condition where consume happens before clearing
+	require.NoError(t, _globalBackend.Start())
 	err = <-_errorCh
 	require.Error(t, err)
 	assert.Contains(
-		t, err.Error(), "\"go.uber.org/fx/modules/task.TestConsumeWithoutRegister.func1\""+
+		t, err.Error(), "\"go.uber.org/fx/modules/task.TestConsumeWithoutRegister.func2\""+
 			" not found",
 	)
 }
 
 func TestEnqueueEncodingError(t *testing.T) {
+	defer globalBackendSetup(t)()
 	// Struct with all private members cannot be encoded
 	type prStr struct {
 		a int
@@ -143,12 +171,14 @@ func TestEnqueueEncodingError(t *testing.T) {
 }
 
 func TestRunDecodeError(t *testing.T) {
+	defer globalBackendSetup(t)()
 	err := Run(context.Background(), []byte{})
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "unable to decode the message")
 }
 
 func TestEnqueueNoArgsFn(t *testing.T) {
+	defer globalBackendSetup(t)()
 	err := Register(OnlyContext)
 	require.NoError(t, err)
 	err = Enqueue(OnlyContext, _ctx)
@@ -158,6 +188,7 @@ func TestEnqueueNoArgsFn(t *testing.T) {
 }
 
 func TestEnqueueSimpleFn(t *testing.T) {
+	defer globalBackendSetup(t)()
 	err := Register(SimpleWithError)
 	require.NoError(t, err)
 	err = Enqueue(SimpleWithError, _ctx, "hello")
@@ -176,6 +207,7 @@ func TestEnqueueSimpleFn(t *testing.T) {
 }
 
 func TestEnqueueMapFn(t *testing.T) {
+	defer globalBackendSetup(t)()
 	fn := func(ctx context.Context, arg map[string]string) error { return nil }
 	err := Register(fn)
 	require.NoError(t, err)
@@ -186,6 +218,7 @@ func TestEnqueueMapFn(t *testing.T) {
 }
 
 func TestEnqueueFnClosure(t *testing.T) {
+	defer globalBackendSetup(t)()
 	var wg sync.WaitGroup
 	fn := func(ctx context.Context) error { return nil }
 	wg.Add(1)
@@ -209,7 +242,8 @@ func TestEnqueueFnClosure(t *testing.T) {
 	require.NoError(t, err)
 }
 
-func TestEnqueueWithStructFnWithError(t *testing.T) {
+func TestEnqueueFnWithStructArg(t *testing.T) {
+	defer globalBackendSetup(t)()
 	require.NoError(t, Register(WithStruct))
 	err := Enqueue(WithStruct, _ctx, Car{Brand: "infinity", Year: 2017})
 	require.NoError(t, err)
@@ -220,6 +254,38 @@ func TestEnqueueWithStructFnWithError(t *testing.T) {
 	require.NoError(t, err)
 	err = <-_errorCh
 	require.NoError(t, err)
+}
+
+func TestEnqueueFnOnStructArg(t *testing.T) {
+	s := StructWithFn{Car{Brand: "Hello"}, &Impl{}}
+	defer globalBackendSetup(t)()
+	require.NoError(t, Register(s.Check))
+	err := Enqueue(s.Check, _ctx)
+	require.NoError(t, err)
+	err = <-_errorCh
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "Hello error")
+}
+
+func TestEnqueueFnWithInterface(t *testing.T) {
+	fn := func(ct context.Context, iface IFace, a string) error {
+		return iface.Check(a)
+	}
+	defer globalBackendSetup(t)()
+
+	// Encode error when enqueueing a function that takes in an interface
+	require.NoError(t, Register(fn))
+	err := Enqueue(fn, _ctx, &Impl{}, "Hello")
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "gob: type not registered for interface")
+
+	// Register the implementation and voila
+	i := &Impl{}
+	require.NoError(t, GlobalBackend().Encoder().Register(i))
+	require.NoError(t, Enqueue(fn, _ctx, i, "Hello"))
+	err = <-_errorCh
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "Hello error")
 }
 
 func OnlyContext(ctx context.Context) error {
@@ -242,9 +308,35 @@ func WithStruct(ctx context.Context, car Car) error {
 	return nil
 }
 
+type StructWithFn struct {
+	car   Car
+	iface IFace
+}
+
+func (s *StructWithFn) Check(ctx context.Context) error {
+	return s.iface.Check(s.car.Brand)
+}
+
+type IFace interface {
+	Check(a string) error
+}
+
+type Impl struct{}
+
+func (i *Impl) Check(a string) error {
+	if a == "Hello" {
+		return errors.New("Hello error")
+	}
+	return nil
+}
+
 func TestCastToError(t *testing.T) {
 	s := make(map[string]string)
 	err := castToError(reflect.ValueOf(s))
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "be error but found")
+}
+
+func validTaskFunc(ctx context.Context, s string) error {
+	return nil
 }

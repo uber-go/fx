@@ -92,6 +92,7 @@ type serviceCore struct {
 	scopeMux       sync.Mutex
 	standardConfig serviceConfig
 	state          State
+	moduleName     string
 }
 
 var _ Host = &serviceCore{}
@@ -102,6 +103,10 @@ func (s *serviceCore) AuthClient() auth.Client {
 
 func (s *serviceCore) Name() string {
 	return s.standardConfig.Name
+}
+
+func (s *serviceCore) ModuleName() string {
+	return s.moduleName
 }
 
 func (s *serviceCore) Description() string {
@@ -153,7 +158,7 @@ func (s *serviceCore) setupLogging() error {
 }
 
 func (s *serviceCore) setupStandardConfig() error {
-	if err := s.configProvider.Get(config.Root).PopulateStruct(&s.standardConfig); err != nil {
+	if err := s.configProvider.Get(config.Root).Populate(&s.standardConfig); err != nil {
 		return errors.Wrap(err, "unable to load standard configuration")
 	}
 
@@ -177,7 +182,7 @@ func (s *serviceCore) setupRuntimeMetricsCollector() error {
 	}
 
 	var runtimeMetricsConfig metrics.RuntimeConfig
-	err := s.configProvider.Get("metrics.runtime").PopulateStruct(&runtimeMetricsConfig)
+	err := s.configProvider.Get("metrics.runtime").Populate(&runtimeMetricsConfig)
 	if err != nil {
 		return errors.Wrap(err, "unable to load runtime metrics configuration")
 	}
@@ -196,7 +201,7 @@ func (s *serviceCore) setupTracer() error {
 	if s.Tracer() != nil {
 		return nil
 	}
-	if err := s.configProvider.Get("tracing").PopulateStruct(&s.tracerConfig); err != nil {
+	if err := s.configProvider.Get("tracing").Populate(&s.tracerConfig); err != nil {
 		return errors.Wrap(err, "unable to load tracing configuration")
 	}
 	tracer, closer, err := tracing.InitGlobalTracer(
@@ -237,7 +242,7 @@ func loadInstanceConfig(cfg config.Provider, key string, instance interface{}) b
 		configValue := reflect.New(field.Type())
 
 		// Try to load the service config
-		err := cfg.Get(key).PopulateStruct(configValue.Interface())
+		err := cfg.Get(key).Populate(configValue.Interface())
 		if err != nil {
 			zap.L().Error("Unable to load instance config", zap.Error(err))
 			return false

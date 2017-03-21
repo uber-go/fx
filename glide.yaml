@@ -1,7 +1,7 @@
 package: go.uber.org/fx
 import:
 - package: go.uber.org/zap
-  version: v1.0.0-rc.2
+  version: ^1
 - package: github.com/uber-go/tally
   version: ^2.1.0
 - package: github.com/gorilla/mux
@@ -24,6 +24,15 @@ import:
   subpackages:
   - assert
   - require
+- package: github.com/uber/cherami-client-go
+  version: ^v0.1.0
+  subpackages:
+  - client/cherami
+  - common
+  - common/metrics
+- package: github.com/uber/cherami-thrift
+  subpackages:
+  - .generated/go/cherami
 testImport:
 - package: golang.org/x/tools
   subpackages:
@@ -57,3 +66,7 @@ testImport:
 - package: github.com/shurcooL/sanitized_anchor_name
 - package: github.com/mvdan/interfacer/cmd/interfacer
 - package: github.com/kyoh86/richgo
+- package: go.uber.org/tools
+  subpackages:
+  - update-license
+- package: github.com/google/gofuzz

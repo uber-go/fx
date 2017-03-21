@@ -153,6 +153,82 @@ func TestBasicRegisterResolve(t *testing.T) {
 	require.True(t, first == second, "Must point to the same object")
 }
 
+func TestInterfaceRegisterResolve(t *testing.T) {
+	t.Parallel()
+	g := New()
+
+	var gc1 GrandchildInt1 = NewGrandchild1()
+	err := g.Register(&gc1)
+	require.NoError(t, err)
+
+	var registered1 GrandchildInt1
+	require.NoError(t, g.Resolve(&registered1), "No error expected during Resolve")
+
+	require.NotNil(t, registered1, "GrandchildInt1 must have been registered")
+	require.True(t, gc1 == registered1, "Must point to the same object")
+
+	var gc2 GrandchildInt2 = &Grandchild2{}
+	err = g.Register(&gc2)
+	require.NoError(t, err)
+
+	var registered2 GrandchildInt2
+	require.NoError(t, g.Resolve(&registered2), "No error expected during Resolve")
+
+	require.NotNil(t, registered2, "GrandchildInt2 must have been registered")
+	require.True(t, gc2 == registered2, "Must point to the same object")
+
+	err = g.Register(NewChild3)
+	require.NoError(t, err)
+
+	var c3 *Child3
+	require.NoError(t, g.Resolve(&c3), "No error expected during Resolve")
+
+	require.NotNil(t, c3, "NewChild3 must have been registered")
+	require.True(t, gc1 == c3.gci1, "Child grand childeren point to the same object")
+	require.True(t, gc2 == c3.gci2, "Child grand childeren point to the same object")
+}
+
+func TestConstructorErrors(t *testing.T) {
+	tests := []struct {
+		desc      string
+		registers []interface{}
+		wantErr   string
+	}{
+		{
+			desc: "success",
+			registers: []interface{}{
+				NewFlakyParent,
+				NewFlakyChild,
+			},
+		},
+		{
+			desc: "failure",
+			registers: []interface{}{
+				NewFlakyParent,
+				NewFlakyChildFailure,
+			},
+			wantErr: "unable to resolve **dig.FlakyParent: " +
+				"unable to resolve *dig.FlakyChild: " +
+				"great sadness",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.desc, func(t *testing.T) {
+			g := New()
+			require.NoError(t, g.RegisterAll(tt.registers...))
+
+			var p1 *FlakyParent
+			err := g.Resolve(&p1)
+			if tt.wantErr != "" {
+				require.EqualError(t, err, tt.wantErr)
+			} else {
+				require.NoError(t, err)
+			}
+		})
+	}
+}
+
 func TestRegisterAll(t *testing.T) {
 	t.Parallel()
 	g := New()

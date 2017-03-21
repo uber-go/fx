@@ -24,7 +24,6 @@ import (
 	"encoding"
 	"fmt"
 	"reflect"
-	"strconv"
 	"time"
 )
 
@@ -161,9 +160,9 @@ func (cv Value) ChildKeys() []string {
 	return nil
 }
 
-// String prints out underline value in Value with fmt.Srpintf.
+// String prints out underline value in Value with fmt.Sprint.
 func (cv Value) String() string {
-	return fmt.Sprintf("%v", cv.value)
+	return fmt.Sprint(cv.Value())
 }
 
 // TryAsString attempts to return the configuration value as a string
@@ -177,22 +176,9 @@ func (cv Value) TryAsString() (string, bool) {
 
 // TryAsInt attempts to return the configuration value as an int
 func (cv Value) TryAsInt() (int, bool) {
-	v := cv.Value()
-	if val, err := convertValue(v, reflect.TypeOf(0)); v != nil && err == nil {
-		return val.(int), true
-	}
-	switch val := v.(type) {
-	case int32:
-		return int(val), true
-	case int64:
-		return int(val), true
-	case float32:
-		return int(val), true
-	case float64:
-		return int(val), true
-	default:
-		return 0, false
-	}
+	var res int
+	err := newValueProvider(cv.Value()).Get(Root).Populate(&res)
+	return res, err == nil
 }
 
 // TryAsBool attempts to return the configuration value as a bool
@@ -202,27 +188,13 @@ func (cv Value) TryAsBool() (bool, bool) {
 		return val.(bool), true
 	}
 	return false, false
-
 }
 
 // TryAsFloat attempts to return the configuration value as a float
 func (cv Value) TryAsFloat() (float64, bool) {
-	v := cv.Value()
-	if val, err := convertValue(v, reflect.TypeOf(_float64Zero)); v != nil && err == nil {
-		return val.(float64), true
-	}
-	switch val := v.(type) {
-	case int:
-		return float64(val), true
-	case int32:
-		return float64(val), true
-	case int64:
-		return float64(val), true
-	case float32:
-		return float64(val), true
-	default:
-		return _float64Zero, false
-	}
+	var res float64
+	err := newValueProvider(cv.Value()).Get(Root).Populate(&res)
+	return res, err == nil
 }
 
 // AsString returns the configuration value as a string, or panics if not
@@ -285,6 +257,11 @@ func (cv Value) Value() interface{} {
 	return cv.defaultValue
 }
 
+// Get returns a value scoped in the current value
+func (cv Value) Get(key string) Value {
+	return NewScopedProvider(cv.key, cv.provider).Get(key)
+}
+
 // this is a quick-and-dirty conversion method that only handles
 // a couple of cases and complains if it finds one it doesn't like.
 // needs a bunch more cases.
@@ -297,17 +274,13 @@ func convertValue(value interface{}, targetType reflect.Type) (interface{}, erro
 	if valueType.AssignableTo(targetType) {
 		return value, nil
 	} else if targetType == _typeOfString {
-		return fmt.Sprintf("%v", value), nil
+		return fmt.Sprint(value), nil
 	}
 
 	switch v := value.(type) {
 	case string:
 		target := reflect.New(targetType).Interface()
 		switch t := target.(type) {
-		case *int:
-			return strconv.Atoi(v)
-		case *bool:
-			return strconv.ParseBool(v)
 		case *time.Duration:
 			return time.ParseDuration(v)
 		case encoding.TextUnmarshaler:
@@ -320,9 +293,8 @@ func convertValue(value interface{}, targetType reflect.Type) (interface{}, erro
 	return nil, fmt.Errorf("can't convert %v to %v", reflect.TypeOf(value).String(), targetType)
 }
 
-// PopulateStruct fills in a struct from configuration
-// TODO(alsam) now we can populate not only structs. Provide a generic function.
-func (cv Value) PopulateStruct(target interface{}) error {
+// Populate fills in an object from configuration
+func (cv Value) Populate(target interface{}) error {
 	d := decoder{Value: &cv, m: make(map[interface{}]struct{})}
 
 	return d.unmarshal(cv.key, reflect.Indirect(reflect.ValueOf(target)), "")

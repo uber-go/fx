@@ -42,7 +42,7 @@ func TestNew_OK(t *testing.T) {
 	dale := New(okCreate)
 	cfg := []byte(`
 modules:
-  hello:
+  yarpc:
     inbounds:
      - tchannel:
          port: 0
@@ -56,14 +56,16 @@ modules:
 			Host:   service.NopHost(),
 			config: config.NewYAMLProviderFromBytes(cfg),
 		},
+		"yarpc",
 		"hello",
 	)
 	goofy, err := chip.Create(mi)
 	require.NoError(t, err)
 	assert.NotNil(t, goofy)
 	assert.Equal(t, "hello", goofy.(*Module).host.Name())
+	assert.Equal(t, "yarpc", goofy.(*Module).host.ModuleName())
 
-	gopher, err := dale.Create(mih(t, "hello"))
+	gopher, err := dale.Create(mih(t, "yarpc", "hello"))
 	require.NoError(t, err)
 	assert.NotNil(t, gopher)
 
@@ -79,7 +81,7 @@ modules:
 func TestNew_Error(t *testing.T) {
 	dig.Reset()
 	modCreate := New(badCreateService)
-	mod, err := modCreate.Create(mih(t, "hello"))
+	mod, err := modCreate.Create(mih(t, "yarpc", "hello"))
 	assert.NoError(t, err)
 	assert.EqualError(t, mod.Start(), "unable to start dispatcher: can't create service")
 }
@@ -119,7 +121,7 @@ func TestBindToBadPortReturnsError(t *testing.T) {
 func TestMergeOfEmptyConfigCollectionReturnsError(t *testing.T) {
 	t.Parallel()
 	c := dispatcherController{}
-	_, err := c.mergeConfigs("test")
+	_, err := c.mergeConfig("test")
 	assert.EqualError(t, err, "unable to merge empty configs")
 	host := service.NopHost()
 	assert.EqualError(t, c.Start(host, newStatsClient(host.Metrics())), err.Error())
@@ -154,13 +156,13 @@ func testInitRunModule(t *testing.T, mod service.Module) {
 	assert.NoError(t, mod.Stop())
 }
 
-func mih(t *testing.T, moduleName string) service.Host {
-	return newHost(t, service.NopHost(), moduleName)
+func mih(t *testing.T, moduleName string, serviceName string) service.Host {
+	return newHost(t, service.NopHost(), moduleName, serviceName)
 }
 
-func newHost(t *testing.T, host service.Host, moduleName string) service.Host {
+func newHost(t *testing.T, host service.Host, moduleName string, serviceName string) service.Host {
 	// need to add name since we are not fully instantiating Host
-	mi, err := service.NewScopedHost(host, moduleName)
+	mi, err := service.NewScopedHost(host, moduleName, serviceName)
 	require.NoError(t, err)
 	return mi
 }

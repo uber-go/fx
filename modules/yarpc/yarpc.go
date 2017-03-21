@@ -96,6 +96,11 @@ type Module struct {
 // ModuleOption is a function that configures module creation.
 type ModuleOption func(*moduleOptions) error
 
+type moduleOptions struct {
+	unaryInbounds  []middleware.UnaryInbound
+	onewayInbounds []middleware.OnewayInbound
+}
+
 // WithInboundMiddleware adds custom YARPC inboundMiddleware to the module
 func WithInboundMiddleware(i ...middleware.UnaryInbound) ModuleOption {
 	return func(moduleOptions *moduleOptions) error {
@@ -128,9 +133,9 @@ func newModule(
 	module := &Module{
 		host:        host,
 		statsClient: newStatsClient(host.Metrics()),
-		log:         ulog.Logger(context.Background()).With(zap.String("module", host.Name())),
+		log:         ulog.Logger(context.Background()).With(zap.String("module", host.ModuleName())),
 	}
-	if err := host.Config().Scope("modules").Get(host.Name()).PopulateStruct(&module.config); err != nil {
+	if err := host.Config().Get("modules").Get(host.ModuleName()).Populate(&module.config); err != nil {
 		return nil, errs.Wrap(err, "can't read inbounds")
 	}
 
@@ -249,7 +254,7 @@ func (c *dispatcherController) Start(host service.Host, statsClient *statsClient
 
 		var cfg yarpc.Config
 		var err error
-		if cfg, err = c.mergeConfigs(host.Name()); err != nil {
+		if cfg, err = c.mergeConfig(host.Name()); err != nil {
 			c.startError = err
 			return
 		}
@@ -331,9 +336,8 @@ func (c *dispatcherController) addDefaultMiddleware(host service.Host, statsClie
 	c.addConfig(cfg)
 }
 
-// Merge all the YARPC configs in the collection: transports and middleware are going to be shared.
-// The name comes from the first config in the collection and is the same among all configs.
-func (c *dispatcherController) mergeConfigs(name string) (conf yarpc.Config, err error) {
+// Merge all YARPC config in the controller with the service name and middleware
+func (c *dispatcherController) mergeConfig(advertiseName string) (conf yarpc.Config, err error) {
 	c.RLock()
 	defer c.RUnlock()
 
@@ -342,7 +346,7 @@ func (c *dispatcherController) mergeConfigs(name string) (conf yarpc.Config, err
 		return conf, errors.New("unable to merge empty configs")
 	}
 
-	conf.Name = name
+	conf.Name = advertiseName
 
 	// Collect all Inbounds and middleware from all configs
 	var inboundMiddleware []middleware.UnaryInbound
@@ -406,9 +410,4 @@ type yarpcConfig struct {
 
 	transports transports
 	Inbounds   []Inbound
-}
-
-type moduleOptions struct {
-	unaryInbounds  []middleware.UnaryInbound
-	onewayInbounds []middleware.OnewayInbound
 }

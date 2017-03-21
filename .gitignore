@@ -9,5 +9,5 @@
 *.coverprofile
 coverage.txt
 *.pprof
-node_modules
 /.bin
+/.cache

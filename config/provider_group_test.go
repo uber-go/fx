@@ -21,7 +21,6 @@
 package config
 
 import (
-	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -42,24 +41,24 @@ func TestProviderGroupScope(t *testing.T) {
 	t.Parallel()
 	data := map[string]interface{}{"hello": map[string]int{"world": 42}}
 	pg := NewProviderGroup("test-group", NewStaticProvider(data))
-	assert.Equal(t, 42, pg.Scope("hello").Get("world").AsInt())
+	assert.Equal(t, 42, pg.Get("hello").Get("world").AsInt())
 }
 
 func TestCallbacks_WithDynamicProvider(t *testing.T) {
 	t.Parallel()
 	data := map[string]interface{}{"hello.world": 42}
 	mock := NewProviderGroup("with-dynamic", NewStaticProvider(data))
-	mock = mock.(providerGroup).WithProvider(newMockDynamicProvider(data))
+	mock = mock.(providerGroup).WithProvider(NewMockDynamicProvider(data))
 	assert.Equal(t, "with-dynamic", mock.Name())
 
 	require.NoError(t, mock.RegisterChangeCallback("mockcall", nil))
 	assert.EqualError(t,
 		mock.RegisterChangeCallback("mockcall", nil),
-		"Callback already registered for the key: mockcall")
+		"callback already registered for the key: mockcall")
 
 	assert.EqualError(t,
 		mock.UnregisterChangeCallback("mock"),
-		"There is no registered callback for token: mock")
+		"there is no registered callback for token: mock")
 }
 
 func TestCallbacks_WithoutDynamicProvider(t *testing.T) {
@@ -74,7 +73,7 @@ func TestCallbacks_WithoutDynamicProvider(t *testing.T) {
 
 func TestCallbacks_WithScopedProvider(t *testing.T) {
 	t.Parallel()
-	mock := &mockDynamicProvider{}
+	mock := &MockDynamicProvider{}
 	mock.Set("uber.fx", "go-lang")
 	scope := NewScopedProvider("uber", mock)
 
@@ -98,85 +97,36 @@ func TestCallbacks_WithScopedProvider(t *testing.T) {
 	assert.Equal(t, 1, callCount)
 }
 
-func TestScope_WithScopedProvider(t *testing.T) {
+func TestScope_WithGetFromValue(t *testing.T) {
 	t.Parallel()
-	mock := &mockDynamicProvider{}
+	mock := &MockDynamicProvider{}
 	mock.Set("uber.fx", "go-lang")
 	scope := NewScopedProvider("", mock)
 	require.Equal(t, "go-lang", scope.Get("uber.fx").AsString())
 	require.False(t, scope.Get("uber").HasValue())
 
-	base := scope.Scope("uber")
+	base := scope.Get("uber")
 	require.Equal(t, "go-lang", base.Get("fx").AsString())
 	require.False(t, base.Get("").HasValue())
 
-	uber := base.Scope("")
+	uber := base.Get(Root)
 	require.Equal(t, "go-lang", uber.Get("fx").AsString())
 	require.False(t, uber.Get("").HasValue())
 
-	fx := uber.Scope("fx")
+	fx := uber.Get("fx")
 	require.Equal(t, "go-lang", fx.Get("").AsString())
 	require.False(t, fx.Get("fx").HasValue())
 }
 
-type mockDynamicProvider struct {
-	data      map[string]interface{}
-	callBacks map[string]ChangeCallback
-}
+func TestProviderGroupScopingValue(t *testing.T) {
+	t.Parallel()
+	fst := []byte(`
+logging:`)
 
-// StaticProvider should only be used in tests to isolate config from your environment
-func newMockDynamicProvider(data map[string]interface{}) Provider {
-	return &mockDynamicProvider{
-		data: data,
-	}
-}
-
-func (*mockDynamicProvider) Name() string {
-	return "mock"
-}
-
-func (s *mockDynamicProvider) Get(key string) Value {
-	val, found := s.data[key]
-	return NewValue(s, key, val, found, GetType(val), nil)
-}
-
-func (s *mockDynamicProvider) Set(key string, value interface{}) {
-	if s.data == nil {
-		s.data = make(map[string]interface{})
-	}
-
-	s.data[key] = value
-	if cb, ok := s.callBacks[key]; ok {
-		cb(key, s.Name(), "randomConfig")
-	}
-}
-
-func (s *mockDynamicProvider) Scope(prefix string) Provider {
-	return NewScopedProvider(prefix, s)
-}
-
-func (s *mockDynamicProvider) RegisterChangeCallback(key string, callback ChangeCallback) error {
-	if s.callBacks == nil {
-		s.callBacks = make(map[string]ChangeCallback)
-	}
-
-	if _, ok := s.callBacks[key]; ok {
-		return errors.New("Callback already registered for the key: " + key)
-	}
-
-	s.callBacks[key] = callback
-	return nil
-}
-
-func (s *mockDynamicProvider) UnregisterChangeCallback(token string) error {
-	if s.callBacks == nil {
-		s.callBacks = make(map[string]ChangeCallback)
-	}
-
-	if _, ok := s.callBacks[token]; !ok {
-		return errors.New("There is no registered callback for token: " + token)
-	}
-
-	delete(s.callBacks, token)
-	return nil
+	snd := []byte(`
+logging:
+  enabled: true
+`)
+	pg := NewProviderGroup("group", NewYAMLProviderFromBytes(snd), NewYAMLProviderFromBytes(fst))
+	assert.True(t, pg.Get("logging").Get("enabled").AsBool())
 }

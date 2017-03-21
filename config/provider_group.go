@@ -58,6 +58,7 @@ func (p providerGroup) Get(key string) Value {
 	// here we add a new root, which defines the "scope" at which
 	// PopulateStructs will look for values.
 	cv.root = p
+	cv.provider = p
 	return cv
 }
 
@@ -81,8 +82,4 @@ func (p providerGroup) UnregisterChangeCallback(token string) error {
 		}
 	}
 	return nil
-}
-
-func (p providerGroup) Scope(prefix string) Provider {
-	return NewScopedProvider(prefix, p)
 }

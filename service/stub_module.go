@@ -29,17 +29,17 @@ type StubModuleProvider struct {
 var _ ModuleProvider = &StubModuleProvider{}
 
 // NewDefaultStubModuleProvider returns a new StubModuleProvider with an empty StubModule.
-func NewDefaultStubModuleProvider(name string) *StubModuleProvider {
-	return NewStubModuleProvider(name, &StubModule{})
+func NewDefaultStubModuleProvider() *StubModuleProvider {
+	return NewStubModuleProvider("stubModule", &StubModule{})
 }
 
 // NewStubModuleProvider returns a new StubModuleProvider with the given name
 // and create function from NewStubModuleCreateFunc.
 func NewStubModuleProvider(name string, stubModule *StubModule) *StubModuleProvider {
-	return &StubModuleProvider{name, NewStubModuleCreateFunc(stubModule)}
+	return &StubModuleProvider{NameVal: name, CreateVal: NewStubModuleCreateFunc(stubModule)}
 }
 
-// DefaultName returns the default name.
+// DefaultName returns the module name
 func (p *StubModuleProvider) DefaultName() string {
 	return p.NameVal
 }

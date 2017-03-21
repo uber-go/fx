@@ -59,6 +59,8 @@ type Host interface {
 	Observer() Observer
 	Config() config.Provider
 	Tracer() opentracing.Tracer
+	// TODO: Will be removed once log/metrics scoping is moved to the module provider
+	ModuleName() string
 }
 
 // A HostContainer is meant to be embedded in a LifecycleObserver

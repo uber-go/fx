@@ -22,19 +22,13 @@ package config
 
 import (
 	"bytes"
+	"encoding"
 	"fmt"
+	"math"
 	"reflect"
 	"strconv"
 
 	"github.com/go-validator/validator"
-)
-
-const (
-	bucketPrimitive = iota
-	bucketArray
-	bucketObject
-	bucketMap
-	bucketSlice
 )
 
 type fieldInfo struct {
@@ -58,51 +52,158 @@ func derefType(t reflect.Type) reflect.Type {
 	return t
 }
 
-func convertValueFromStruct(value interface{}, targetType reflect.Type, fieldType reflect.Type, fieldValue reflect.Value) error {
+func convertSignedInts(src interface{}, dst *reflect.Value) error {
+	switch t := src.(type) {
+	case int, uint, int8, uint8, int16, uint16, int32, uint32, int64:
+		i, err := strconv.ParseInt(fmt.Sprint(t), 10, 64)
+		if err != nil {
+			return err
+		}
+
+		if !dst.OverflowInt(i) {
+			dst.SetInt(i)
+			return nil
+		}
+	case uint64:
+		if t <= math.MaxInt64 {
+			dst.SetInt(int64(t))
+			return nil
+		}
+	case uintptr:
+		if t <= math.MaxInt64 && !dst.OverflowInt(int64(t)) {
+			dst.SetInt(int64(t))
+			return nil
+		}
+	case float32:
+		if t >= math.MinInt64 && t <= math.MaxInt64 && !dst.OverflowInt(int64(t)) {
+			dst.SetInt(int64(t))
+			return nil
+		}
+	case float64:
+		if t >= math.MinInt64 && t <= math.MaxInt64 && !dst.OverflowInt(int64(t)) {
+			dst.SetInt(int64(t))
+			return nil
+		}
+	case string:
+		i, err := strconv.ParseInt(t, 10, 64)
+		if err != nil {
+			return err
+		}
+
+		if !dst.OverflowInt(i) {
+			dst.SetInt(i)
+			return nil
+		}
+	}
+
+	return fmt.Errorf("can't convert %q to integer type %q", fmt.Sprint(src), dst.Type())
+}
+
+func convertUnsignedInts(src interface{}, dst *reflect.Value) error {
+	switch t := src.(type) {
+	case int, uint, int8, uint8, int16, uint16, int32, uint32, int64:
+		i, err := strconv.ParseInt(fmt.Sprint(t), 10, 64)
+		if err != nil {
+			return err
+		}
+		if i >= 0 && !dst.OverflowUint(uint64(i)) {
+			dst.SetUint(uint64(i))
+			return nil
+		}
+	case uint64:
+		if !dst.OverflowUint(t) {
+			dst.SetUint(t)
+			return nil
+		}
+	case uintptr:
+		if t <= math.MaxUint64 && !dst.OverflowUint(uint64(t)) {
+			dst.SetUint(uint64(t))
+			return nil
+		}
+	case float32:
+		if t >= 0 && t <= math.MaxUint64 && !dst.OverflowUint(uint64(t)) {
+			dst.SetUint(uint64(t))
+			return nil
+		}
+	case float64:
+		if t >= 0 && t <= math.MaxUint64 && !dst.OverflowUint(uint64(t)) {
+			dst.SetUint(uint64(t))
+			return nil
+		}
+	case string:
+		i, err := strconv.ParseUint(t, 10, 64)
+		if err != nil {
+			return err
+		}
+
+		if !dst.OverflowUint(i) {
+			dst.SetUint(i)
+			return nil
+		}
+	}
+
+	return fmt.Errorf("can't convert %q to unsigned integer type %q", fmt.Sprint(src), dst.Type())
+}
+
+func convertFloats(src interface{}, dst *reflect.Value) error {
+	switch t := src.(type) {
+	case int, uint, int8, uint8, int16, uint16, int32, uint32, int64, uint64, uintptr, float32:
+		f, err := strconv.ParseFloat(fmt.Sprint(t), 64)
+		dst.SetFloat(f)
+		return err
+	case float64:
+		v := float64(t)
+		if !dst.OverflowFloat(v) {
+			dst.SetFloat(v)
+			return nil
+		}
+	case string:
+		f, err := strconv.ParseFloat(t, 64)
+		if err != nil {
+			return err
+		}
+
+		if !dst.OverflowFloat(f) {
+			dst.SetFloat(f)
+			return nil
+		}
+	}
+
+	return fmt.Errorf("can't convert %q to float type %q", fmt.Sprint(src), dst.Type())
+}
+
+func convertValueFromStruct(src interface{}, dst *reflect.Value) error {
 	// The fieldType is probably a custom type here. We will try and set the fieldValue by
 	// the custom type
-	// TODO: refactor switch cases into isType functions
-	// TODO(alsam) Fix overflows/negatives for unsigned types...
-	switch fieldType.Kind() {
+	switch dst.Kind() {
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-		fieldValue.SetInt(int64(value.(int)))
+		return convertSignedInts(src, dst)
+
 	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr:
-		fieldValue.SetUint(uint64(value.(int)))
+		return convertUnsignedInts(src, dst)
+
 	case reflect.Float32, reflect.Float64:
-		fieldValue.SetFloat(value.(float64))
+		return convertFloats(src, dst)
+
 	case reflect.Bool:
-		fieldValue.SetBool(value.(bool))
+		if v, err := strconv.ParseBool(fmt.Sprint(src)); err == nil {
+			dst.SetBool(v)
+		}
+
 	case reflect.String:
-		fieldValue.SetString(value.(string))
+		dst.SetString(fmt.Sprint(src))
+
 	default:
-		return fmt.Errorf("can't convert %v to %v", reflect.TypeOf(value).String(), targetType)
+		return fmt.Errorf("can't convert %q to %q", fmt.Sprint(src), dst.Type())
 	}
 	return nil
 }
 
-func getBucket(t reflect.Type) int {
-	kind := t.Kind()
-	if kind == reflect.Ptr {
-		kind = t.Elem().Kind()
+func addSeparator(key string) string {
+	if key != "" {
+		key += _separator
 	}
-
-	switch kind {
-	case reflect.Chan:
-		fallthrough
-	case reflect.Interface:
-		fallthrough
-	case reflect.Func:
-		fallthrough
-	case reflect.Map:
-		return bucketMap
-	case reflect.Array:
-		return bucketArray
-	case reflect.Slice:
-		return bucketSlice
-	case reflect.Struct:
-		return bucketObject
-	}
-	return bucketPrimitive
+	return key
 }
 
 type decoder struct {
@@ -120,45 +221,8 @@ func (d *decoder) getGlobalProvider() Provider {
 
 // Sets value to a primitive type.
 func (d *decoder) scalar(childKey string, value reflect.Value, def string) error {
-	valueType := value.Type()
 	global := d.getGlobalProvider()
 	var val interface{}
-
-	if valueType.Kind() == reflect.Ptr {
-		if v1 := global.Get(childKey); v1.HasValue() {
-			val = v1.Value()
-			if val != nil {
-				// We cannot assign reflect.ValueOf(Val) to it as is to value.
-				// value is a pointer, which currently points to non address.
-				// We need to set a new reflect.Value with field type same as the field we are populating
-				// before assigning the value (val) parsed from yaml
-				if value.IsNil() {
-					value.Set(reflect.New(valueType.Elem()))
-				}
-
-				// We cannot assign reflect.ValueOf(val) to value as is, when field is a user defined type
-				// We need to find the Kind of the custom type and set the value to the specific type
-				// that user defined type is defined with.
-				kind := valueType.Elem().Kind()
-				switch kind {
-				case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-					value.Elem().SetInt(int64(val.(int)))
-				case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr:
-					value.Elem().SetUint(uint64(val.(int)))
-				case reflect.Float32, reflect.Float64:
-					value.Elem().SetFloat(val.(float64))
-				case reflect.Bool:
-					value.Elem().SetBool(val.(bool))
-				case reflect.String:
-					value.Elem().SetString(val.(string))
-				default:
-					value.Elem().Set(reflect.ValueOf(val))
-				}
-			}
-		}
-
-		return nil
-	}
 
 	// For primitive values, just get the value and set it into the field
 	if v2 := global.Get(childKey); v2.HasValue() {
@@ -170,14 +234,14 @@ func (d *decoder) scalar(childKey string, value reflect.Value, def string) error
 	if val != nil {
 		// First try to convert primitive type values, if convertValue wasn't able
 		// to convert to primitive,try converting the value as a struct value
-		if ret, err := convertValue(val, valueType); ret != nil {
+		if ret, err := convertValue(val, value.Type()); ret != nil {
 			if err != nil {
 				return err
 			}
 
 			value.Set(reflect.ValueOf(ret))
 		} else {
-			return convertValueFromStruct(val, value.Type(), valueType, value)
+			return convertValueFromStruct(val, &value)
 		}
 	}
 
@@ -193,7 +257,7 @@ func (d *decoder) sequence(childKey string, value reflect.Value) error {
 
 	// start looking for child values.
 	elementType := derefType(valueType).Elem()
-	childKey += _separator
+	childKey = addSeparator(childKey)
 
 	for ai := 0; ; ai++ {
 		arrayKey := childKey + strconv.Itoa(ai)
@@ -232,7 +296,7 @@ func (d *decoder) array(childKey string, value reflect.Value) error {
 
 	// start looking for child values.
 	elementType := derefType(valueType).Elem()
-	childKey += _separator
+	childKey = addSeparator(childKey)
 
 	for ai := 0; ai < value.Len(); ai++ {
 		arrayKey := childKey + strconv.Itoa(ai)
@@ -268,25 +332,23 @@ func (d *decoder) mapping(childKey string, value reflect.Value, def string) erro
 	}
 
 	val := v.Value()
-
-	// We fallthrough for interface to maps
-	if valueType.Kind() == reflect.Interface {
-		value.Set(reflect.ValueOf(val))
-		return nil
-	}
-
 	destMap := reflect.ValueOf(reflect.MakeMap(valueType).Interface())
 
 	// child yamlNode parsed from yaml file is of type map[interface{}]interface{}
 	// type casting here makes sure that we are iterating over a parsed map.
 	if v, ok := val.(map[interface{}]interface{}); ok {
-		childKey += _separator
+		childKey = addSeparator(childKey)
+
 		for key := range v {
-			mapKey := childKey + fmt.Sprintf("%v", key)
+			subKey := fmt.Sprintf("%v", key)
+			if subKey == "" {
+				return fmt.Errorf("empty key leads to ambiguity for path: %q", childKey)
+			}
+
 			itemValue := reflect.New(valueType.Elem()).Elem()
 
 			// Try to unmarshal value and save it in the map.
-			if err := d.unmarshal(mapKey, itemValue, def); err != nil {
+			if err := d.unmarshal(childKey+subKey, itemValue, def); err != nil {
 				return err
 			}
 
@@ -299,25 +361,26 @@ func (d *decoder) mapping(childKey string, value reflect.Value, def string) erro
 	return nil
 }
 
+// Sets value to an interface type.
+func (d *decoder) iface(key string, value reflect.Value, def string) error {
+	v := d.getGlobalProvider().Get(key)
+
+	if !v.HasValue() || v.Value() == nil {
+		return nil
+	}
+
+	src := reflect.ValueOf(v.Value())
+	if src.Type().Implements(value.Type()) {
+		value.Set(src)
+		return nil
+	}
+
+	return fmt.Errorf("%q doesn't implement %q", src.Type(), value.Type())
+}
+
 // Sets value to an object type.
 func (d *decoder) object(childKey string, value reflect.Value) error {
-	valueType := value.Type()
-	global := d.getGlobalProvider()
-
-	v2 := global.Get(childKey)
-
-	if !v2.HasValue() && valueType.Kind() == reflect.Ptr {
-		// in this case we will keep the pointer value as not defined.
-		return nil
-	}
-
-	if !value.CanSet() {
-		return nil
-	}
-
-	if valueType.Kind() != reflect.Ptr {
-		value = value.Addr()
-	}
+	value = value.Addr()
 
 	if value.IsNil() {
 		tmp := reflect.New(value.Type().Elem())
@@ -366,8 +429,57 @@ func (d *decoder) valueStruct(key string, target interface{}) error {
 	return validator.Validate(target)
 }
 
-// Dispatch un-marshalling functions based on the value type.
-func (d *decoder) unmarshal(name string, value reflect.Value, def string) error {
+// If there is no value with name - leave it nil, otherwise allocate memory and set the value.
+func (d *decoder) pointer(name string, value reflect.Value, def string) error {
+	if !d.getGlobalProvider().Get(name).HasValue() {
+		return nil
+	}
+
+	if value.IsNil() {
+		value.Set(reflect.New(value.Type().Elem()))
+	}
+
+	return d.unmarshal(name, value.Elem(), def)
+}
+
+// Sets value to a channel type.
+func (d *decoder) channel(key string, value reflect.Value, def string) error {
+	return d.textUnmarshaller(key, value, def)
+}
+
+// Sets value to a function type.
+func (d *decoder) function(key string, value reflect.Value, def string) error {
+	return d.textUnmarshaller(key, value, def)
+}
+
+func (d *decoder) textUnmarshaller(key string, value reflect.Value, str string) error {
+	v := d.getGlobalProvider().Get(key)
+	if v.HasValue() {
+		str = v.String()
+	} else if str == "" {
+		return nil
+	}
+
+	if value.IsNil() {
+		value.Set(reflect.New(value.Type()).Elem())
+	}
+
+	// Value has to have a pointer receiver to be able to modify itself with TextUnmarshaller
+	if !value.CanAddr() {
+		return fmt.Errorf("can't use TextUnmarshaller because %q is not addressable", key)
+	}
+
+	switch t := value.Addr().Interface().(type) {
+	case encoding.TextUnmarshaler:
+		return t.UnmarshalText([]byte(str))
+	}
+
+	return nil
+}
+
+// Check if a value is a pointer and decoder set it before.
+// TODO(alsam) print only elements in the loop, not all elements.
+func (d *decoder) checkCycles(value reflect.Value) error {
 	if value.Type().Comparable() {
 		val := value.Interface()
 		kind := value.Kind()
@@ -386,18 +498,35 @@ func (d *decoder) unmarshal(name string, value reflect.Value, def string) error 
 		d.m[val] = struct{}{}
 	}
 
-	switch getBucket(value.Type()) {
-	case bucketPrimitive:
-		return d.scalar(name, value, def)
-	case bucketObject:
-		return d.object(name, value)
-	case bucketArray:
-		return d.array(name, value)
-	case bucketSlice:
-		return d.sequence(name, value)
-	case bucketMap:
-		return d.mapping(name, value, def)
+	return nil
+}
+
+// Dispatch un-marshalling functions based on the value type.
+func (d *decoder) unmarshal(name string, value reflect.Value, def string) error {
+	if err := d.checkCycles(value); err != nil {
+		return err
 	}
 
-	return nil
+	switch value.Kind() {
+	case reflect.Invalid:
+		return fmt.Errorf("invalid value type for key %s", name)
+	case reflect.Ptr:
+		return d.pointer(name, value, def)
+	case reflect.Struct:
+		return d.object(name, value)
+	case reflect.Array:
+		return d.array(name, value)
+	case reflect.Slice:
+		return d.sequence(name, value)
+	case reflect.Map:
+		return d.mapping(name, value, def)
+	case reflect.Interface:
+		return d.iface(name, value, def)
+	case reflect.Chan:
+		return d.channel(name, value, def)
+	case reflect.Func:
+		return d.function(name, value, def)
+	default:
+		return d.scalar(name, value, def)
+	}
 }

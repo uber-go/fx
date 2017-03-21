@@ -20,6 +20,8 @@
 
 package dig
 
+import "errors"
+
 // Parent ->
 //     Child1 ->
 //         Grandchild1
@@ -29,6 +31,8 @@ package dig
 //     Child3 ->
 //         GrandchildInt1 (Grandchild1 object)
 //         GrandchildInt2 (Grandchild2 object)
+//     FlakyChild ->
+//         FlakyGrandchild1
 
 type Parent1 struct {
 	c1   *Child1
@@ -143,3 +147,21 @@ func (gc1 *Grandchild2) WhatGrandchild2() string {
 // Grandchild2 struct does not have a constructor on purpose
 // The only way to provide it as a dependency is through object injection
 type Grandchild2 struct{}
+
+type FlakyParent struct {
+	c1 *FlakyChild
+}
+
+func NewFlakyParent(c1 *FlakyChild) (*FlakyParent, error) {
+	return &FlakyParent{c1: c1}, nil
+}
+
+type FlakyChild struct{}
+
+func NewFlakyChild() (*FlakyChild, error) {
+	return &FlakyChild{}, nil
+}
+
+func NewFlakyChildFailure() (*FlakyChild, error) {
+	return nil, errors.New("great sadness")
+}

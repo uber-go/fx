@@ -54,7 +54,7 @@ func main() {
     kafka.Module("kakfa_topic1", []string{"worker"}),
   ).WithModule(
     yarpc.New(yarpc.ServiceCreateFunc(NewYarpcThriftHandler)),
-    service.WithModuleRole("service"),
+    service.WithRole("service"),
   ).Build()
 
   if err != nil {

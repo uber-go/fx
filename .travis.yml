@@ -1,29 +1,14 @@
-language: go
-sudo: false
-go:
-  - 1.7
-  - 1.8
-  - tip
-
-go_import_path: go.uber.org/fx
-
-env:
-  - V=1 COVERMODE=atomic
-
-matrix:
-  # Fail the build as soon as the first job fails
-  fast_finish: true
-
+sudo: required
+services:
+  - docker
 cache:
   directories:
-    - vendor
-
-install:
-  - make deps
-
+    - .cache/docker
+env:
+  - DOCKER_GO_VERSION=1.7
+  - DOCKER_GO_VERSION=1.8 CI_TEST_CMD=coveralls
+before_install:
+  - make dockerload
 script:
-  - make lint
-  - make test
-
-after_success:
-   - '[ "${TRAVIS_GO_VERSION}" == "1.8" ] && make coveralls'
+  - make dockerci
+  - if [[ "${TRAVIS_BRANCH}" == "master" ]] && [[ "${TRAVIS_PULL_REQUEST}" == "false" ]]; then make dockersave; fi

@@ -21,18 +21,21 @@
 package testutils
 
 import (
+	"bytes"
 	"io/ioutil"
+	"strings"
+	"sync"
 	"testing"
 
 	"go.uber.org/zap"
-	"go.uber.org/zap/testutils"
 	"go.uber.org/zap/zapcore"
+	"go.uber.org/zap/zaptest"
 )
 
 // WithInMemoryLogger creates an in-memory *zap.Logger that can be used in
 // tests.
-func WithInMemoryLogger(t *testing.T, opts []zap.Option, f func(*zap.Logger, *testutils.Buffer)) {
-	sink := &testutils.Buffer{}
+func WithInMemoryLogger(t *testing.T, opts []zap.Option, f func(*zap.Logger, *zaptest.Buffer)) {
+	sink := &zaptest.Buffer{}
 	errSink := zapcore.AddSync(ioutil.Discard)
 
 	allOpts := make([]zap.Option, 0, len(opts)+1)
@@ -52,4 +55,52 @@ func WithInMemoryLogger(t *testing.T, opts []zap.Option, f func(*zap.Logger, *te
 	)).WithOptions(allOpts...)
 
 	f(log, sink)
+}
+
+// LockedBuffer is a thread-safe log buffer for testing
+// TODO: This will soon be moved to zap itself, file to be deleted soon
+type LockedBuffer struct {
+	bytes.Buffer
+	zaptest.Syncer
+	sync.RWMutex
+}
+
+// Lines returns the lines that were logged
+func (b *LockedBuffer) Lines() []string {
+	b.RLock()
+	defer b.RUnlock()
+	output := strings.Split(b.String(), "\n")
+	return output[:len(output)-1]
+}
+
+// Write writes to the log
+func (b *LockedBuffer) Write(p []byte) (n int, err error) {
+	b.Lock()
+	defer b.Unlock()
+	return b.Buffer.Write(p)
+}
+
+// Sync syncs the log
+func (b *LockedBuffer) Sync() error {
+	b.Lock()
+	defer b.Unlock()
+	return b.Syncer.Sync()
+}
+
+// GetLockedInMemoryLogger creates an in-memory *zap.Logger that can be used in tests.
+func GetLockedInMemoryLogger() (*zap.Logger, *LockedBuffer) {
+	sink := &LockedBuffer{}
+
+	encoderCfg := zapcore.EncoderConfig{
+		LevelKey:    "level",
+		MessageKey:  "msg",
+		EncodeLevel: zapcore.LowercaseLevelEncoder,
+	}
+	log := zap.New(zapcore.NewCore(
+		zapcore.NewJSONEncoder(encoderCfg),
+		zapcore.Lock(sink),
+		zapcore.DebugLevel,
+	))
+
+	return log, sink
 }

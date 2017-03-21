@@ -21,6 +21,7 @@
 package config
 
 import (
+	"go.uber.org/zap"
 	"testing"
 )
 
@@ -83,7 +84,7 @@ func BenchmarkYAMLPopulateStruct(b *testing.B) {
 	b.ResetTimer()
 
 	for n := 0; n < b.N; n++ {
-		p.Get("api.credentials").PopulateStruct(c)
+		p.Get("api.credentials").Populate(c)
 	}
 }
 
@@ -104,7 +105,7 @@ func BenchmarkYAMLPopulateStructNested(b *testing.B) {
 	b.ResetTimer()
 
 	for n := 0; n < b.N; n++ {
-		p.Get("api").PopulateStruct(s)
+		p.Get("api").Populate(s)
 	}
 }
 
@@ -127,7 +128,7 @@ func BenchmarkYAMLPopulateStructNestedMultipleFiles(b *testing.B) {
 	b.ResetTimer()
 
 	for n := 0; n < b.N; n++ {
-		p.Get("api").PopulateStruct(s)
+		p.Get("api").Populate(s)
 	}
 }
 
@@ -145,7 +146,24 @@ func BenchmarkYAMLPopulateNestedTextUnmarshaler(b *testing.B) {
 	b.ResetTimer()
 
 	for n := 0; n < b.N; n++ {
-		p.Get(Root).PopulateStruct(s)
+		p.Get(Root).Populate(s)
+	}
+}
+
+func BenchmarkZapConfigLoad(b *testing.B) {
+	yaml := []byte(`
+level: info
+encoderConfig:
+  levelEncoder: color
+`)
+	p := NewYAMLProviderFromBytes(yaml)
+	cfg := &zap.Config{}
+	b.ResetTimer()
+
+	for n := 0; n < b.N; n++ {
+		if err := p.Get(Root).Populate(cfg); err != nil {
+			b.Error(err)
+		}
 	}
 }
 

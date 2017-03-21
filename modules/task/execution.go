@@ -102,7 +102,7 @@ func Enqueue(fn interface{}, args ...interface{}) error {
 		return errors.Wrap(err, "unable to encode the function or args")
 	}
 	globalBackendStatsClient().TaskPublishCount().Inc(1)
-	return GlobalBackend().Publish(ctx, sBytes)
+	return GlobalBackend().Enqueue(ctx, sBytes)
 }
 
 // Register registers a function for async tasks
@@ -131,6 +131,15 @@ func Register(fn interface{}) error {
 	}
 	fnLookup.addFn(fnName, fn)
 	return nil
+}
+
+// MustRegister registers a function for an async task or panics
+// Since Task registration is performed in main() we want to fail-fast and
+// reduce the amount of error-checking
+func MustRegister(fn interface{}) {
+	if err := Register(fn); err != nil {
+		panic(err)
+	}
 }
 
 // Run decodes the message and executes as a task
