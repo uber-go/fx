@@ -25,11 +25,13 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"os"
 	"reflect"
+	"strconv"
 	"strings"
 
+	"github.com/pkg/errors"
 	"gopkg.in/yaml.v2"
-	"strconv"
 )
 
 type yamlConfigProvider struct {
@@ -37,7 +39,10 @@ type yamlConfigProvider struct {
 	vCache map[string]Value
 }
 
-var _ Provider = &yamlConfigProvider{}
+var (
+	_envSeparator = ":"
+	_emptyDefault = `""`
+)
 
 func newYAMLProviderCore(files ...io.ReadCloser) Provider {
 	var root interface{}
@@ -285,13 +290,74 @@ func (n *yamlNode) Children() []*yamlNode {
 }
 
 func unmarshalYAMLValue(reader io.ReadCloser, value interface{}) error {
-	if data, err := ioutil.ReadAll(reader); err != nil {
-		return err
-	} else if err = yaml.Unmarshal(data, value); err != nil {
+	raw, err := ioutil.ReadAll(reader)
+	if err != nil {
+		return errors.Wrap(err, "failed to read the yaml config")
+	}
+
+	data, err := interpolateEnvVars(raw)
+	if err != nil {
+		return errors.Wrap(err, "failed to interpolate environment variables")
+	}
+
+	if err = yaml.Unmarshal(data, value); err != nil {
 		return err
 	}
 
 	return reader.Close()
+}
+
+// Function pre-parses all the YAML bytes to allow value overrides from the environment
+// For example, if an HTTP_PORT environment variable should be used for the HTTP module
+// port, the config would look like this:
+//
+//   modules:
+//     http:
+//       port: ${HTTP_PORT:8080}
+//
+// In the case that HTTP_PORT is not provided, default value (in this case 8080)
+// will be used
+//
+// TODO: what if someone wanted a literal ${FOO} in config? need a small escape hatch
+func interpolateEnvVars(data []byte) ([]byte, error) {
+	// Is this conversion ok?
+	str := string(data)
+	errs := []string{}
+
+	str = os.Expand(str, func(in string) string {
+		sep := strings.Index(in, _envSeparator)
+
+		var key string
+		var def string
+
+		if sep == -1 {
+			// separator missing - everything is the key ${KEY}
+			key = in
+		} else {
+			// ${KEY:DEFAULT}
+			key = in[:sep]
+			def = in[sep+1:]
+		}
+
+		if envVal, ok := os.LookupEnv(key); ok {
+			return envVal
+		}
+
+		if def == "" {
+			errs = append(errs, fmt.Sprintf(`default is empty for %s (use "" for empty string)`, key))
+			return in
+		} else if def == _emptyDefault {
+			return ""
+		}
+
+		return def
+	})
+
+	if len(errs) > 0 {
+		return nil, errors.New(strings.Join(errs, ","))
+	}
+
+	return []byte(str), nil
 }
 
 func getNodeType(val interface{}) nodeType {
