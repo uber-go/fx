@@ -30,6 +30,8 @@ import (
 	"go.uber.org/fx/service"
 	"go.uber.org/fx/ulog"
 
+	"github.com/opentracing/opentracing-go"
+	"github.com/opentracing/opentracing-go/ext"
 	"github.com/pkg/errors"
 	"github.com/uber-go/tally"
 	"github.com/uber/cherami-client-go/client/cherami"
@@ -43,7 +45,9 @@ const (
 	_initialized state = iota
 	_running
 	_stopped
-	_pathPrefix = "/uberfx_async/"
+	_pathPrefix    = "/uberfx_async/"
+	_ctxKey        = "ctxKey"
+	_operationName = "task.Run"
 )
 
 var (
@@ -86,6 +90,8 @@ type Backend struct {
 	stateMu     sync.RWMutex
 	taskSuccess tally.Counter
 	taskFailure tally.Counter
+	tracer      opentracing.Tracer
+	ctxEncoder  task.ContextEncoding
 }
 
 // RegisterHyperbahnBootstrapFile registers the hyperbahn bootstrap filename required for cherami
@@ -173,6 +179,8 @@ func newBackendWithConfig(
 		scope:       scope,
 		taskSuccess: scope.Counter("task.success"),
 		taskFailure: scope.Counter("task.fail"),
+		tracer:      host.Tracer(),
+		ctxEncoder:  task.ContextEncoding{Tracer: host.Tracer()},
 	}, nil
 }
 
@@ -261,19 +269,42 @@ func (b *Backend) consumeAndExecute() {
 	}()
 	for delivery := range b.deliveryCh {
 		messageData := delivery.GetMessage().GetPayload().GetData()
-		// TODO (madhu): Only specific errors should be retried
-		// TODO (madhu): Once context is added to the message, use that here
-		ctx := context.Background()
-		if err := task.Run(ctx, messageData); err != nil {
-			b.taskFailure.Inc(1)
-			ulog.Logger(ctx).Error("Task run failed", zap.Error(err))
-			_ = delivery.Nack()
-		} else {
-			b.taskSuccess.Inc(1)
-			if err = delivery.Ack(); err != nil {
-				ulog.Logger(ctx).Error("Task ack to cherami failed", zap.Error(err))
+		b.withContext(&delivery, func(ctx context.Context) {
+			// TODO (madhu): Only specific errors should be retried
+			if err := task.Run(ctx, messageData); err != nil {
+				ulog.Logger(ctx).Error("Task run failed", zap.Error(err))
+				b.recordRunFailure(ctx, &delivery)
+			} else {
+				b.taskSuccess.Inc(1)
+				if err = delivery.Ack(); err != nil {
+					ulog.Logger(ctx).Error("Task ack to cherami failed", zap.Error(err))
+				}
 			}
+		})
+	}
+}
+
+func (b *Backend) withContext(delivery *cherami.Delivery, f func(context.Context)) {
+	ctxData := (*delivery).GetMessage().GetPayload().GetUserContext()
+	ctx := context.Background()
+	var span opentracing.Span
+	if ctxVal, ok := ctxData[_ctxKey]; ok {
+		spanCtx, err := b.ctxEncoder.Unmarshal([]byte(ctxVal))
+		if err != nil {
+			ulog.Logger(ctx).Error("Unable to decode context", zap.Error(err))
+			b.recordRunFailure(ctx, delivery)
 		}
+		span = b.tracer.StartSpan(_operationName, ext.RPCServerOption(spanCtx))
+		defer span.Finish()
+		ctx = opentracing.ContextWithSpan(ctx, span)
+	}
+	f(ctx)
+}
+
+func (b *Backend) recordRunFailure(ctx context.Context, delivery *cherami.Delivery) {
+	b.taskFailure.Inc(1)
+	if err := (*delivery).Nack(); err != nil {
+		ulog.Logger(ctx).Error("Delivery Nack failed", zap.Error(err))
 	}
 }
 
@@ -286,10 +317,17 @@ func (b *Backend) isRunning() bool {
 
 // Enqueue sends the message to cherami
 func (b *Backend) Enqueue(ctx context.Context, message []byte) error {
-	// TODO (madhu): Extract and serialize context with the message
+	ctxBytes, err := b.ctxEncoder.Marshal(ctx)
+	if err != nil {
+		return errors.Wrap(err, "unable to encode context")
+	}
+	ctxMap := make(map[string]string)
+	if len(ctxBytes) > 0 {
+		ctxMap[_ctxKey] = string(ctxBytes)
+	}
 	receipt := b.publisher.Publish(&cherami.PublisherMessage{
 		Data:        message,
-		UserContext: make(map[string]string),
+		UserContext: ctxMap,
 	})
 	return receipt.Error
 }

@@ -23,6 +23,7 @@ package cherami
 import (
 	"context"
 	"errors"
+	"fmt"
 	"runtime"
 	"strings"
 	"sync"
@@ -35,6 +36,7 @@ import (
 	"go.uber.org/fx/modules/task"
 	"go.uber.org/fx/service"
 	"go.uber.org/fx/testutils"
+	"go.uber.org/fx/testutils/tracing"
 	"go.uber.org/fx/ulog"
 
 	"github.com/opentracing/opentracing-go"
@@ -58,22 +60,27 @@ func TestBackendWorkflow(t *testing.T) {
 	defer m.AssertExpectations(t)
 	zapLogger, buf := testutils.GetLockedInMemoryLogger()
 	defer ulog.SetLogger(zapLogger)()
-	bknd := createNewBackend(t, m)
-	assert.NotNil(t, bknd.Encoder())
-	deliveryCh, err := startBackend(t, m, bknd, nil, nil)
-	require.NoError(t, err)
-	assert.True(t, bknd.(*Backend).isRunning())
-	require.NoError(t, bknd.ExecuteAsync())
-
-	publish(t, m, bknd, deliveryCh)
-	publish(t, m, bknd, deliveryCh)
-	time.Sleep(10 * time.Millisecond)
-	stopBackend(t, m, bknd)
-	lines := buf.Lines()
-	require.Equal(t, 2, len(lines))
-	for _, line := range lines {
-		assert.Contains(t, line, "forget to register")
-	}
+	tracing.WithTracer(t, zapLogger, func(tracer opentracing.Tracer) {
+		host := service.NopHostConfigured(auth.NopClient, zapLogger, tracer)
+		bknd := createNewBackend(t, m, host)
+		assert.NotNil(t, bknd.Encoder())
+		deliveryCh, err := startBackend(t, m, bknd, nil, nil)
+		require.NoError(t, err)
+		assert.True(t, bknd.(*Backend).isRunning())
+		require.NoError(t, bknd.ExecuteAsync())
+		tracing.WithSpan(t, zapLogger, func(span opentracing.Span) {
+			publish(t, m, bknd, deliveryCh, span)
+			publish(t, m, bknd, deliveryCh, span)
+		})
+		time.Sleep(10 * time.Millisecond)
+		stopBackend(t, m, bknd)
+		lines := buf.Lines()
+		fmt.Println("Lines", lines)
+		require.Equal(t, 2, len(lines))
+		for _, line := range lines {
+			assert.Contains(t, line, "forget to register")
+		}
+	})
 }
 
 func TestBackendWorkflowWorkerPanic(t *testing.T) {
@@ -81,7 +88,7 @@ func TestBackendWorkflowWorkerPanic(t *testing.T) {
 	defer m.AssertExpectations(t)
 	zapLogger, buf := testutils.GetLockedInMemoryLogger()
 	defer ulog.SetLogger(zapLogger)()
-	bknd := createNewBackend(t, m)
+	bknd := createNewBackend(t, m, _host)
 	deliveryCh, err := startBackend(t, m, bknd, nil, nil)
 	require.NoError(t, err)
 	assert.True(t, bknd.(*Backend).isRunning())
@@ -97,7 +104,7 @@ func TestBackendWorkflowWorkerPanic(t *testing.T) {
 		m.Delivery.On("Nack").Run(func(mock.Arguments) { panic("nack panic") })
 	}
 	// Publish valid message
-	publish(t, m, bknd, deliveryCh)
+	publish(t, m, bknd, deliveryCh, nil)
 	time.Sleep(10 * time.Millisecond)
 	assert.True(t, bknd.(*Backend).isRunning())
 	stopBackend(t, m, bknd)
@@ -116,7 +123,7 @@ func TestBackendWorkflowWorkerPanic(t *testing.T) {
 func TestBackendWorkflowStateLocks(t *testing.T) {
 	m := newMock()
 	defer m.AssertExpectations(t)
-	bknd := createNewBackend(t, m)
+	bknd := createNewBackend(t, m, _host)
 	assert.NotNil(t, bknd.Encoder())
 	var wg sync.WaitGroup
 	wg.Add(2)
@@ -241,7 +248,7 @@ func TestStartBackendInvalidStateError(t *testing.T) {
 	stateToError := map[state]string{_running: "already running", _stopped: "has been stopped"}
 	for state, errStr := range stateToError {
 		m := newMock()
-		bknd := createNewBackend(t, m)
+		bknd := createNewBackend(t, m, _host)
 		bknd.(*Backend).setState(state)
 		err := bknd.Start()
 		assert.Contains(t, err.Error(), errStr)
@@ -251,7 +258,7 @@ func TestStartBackendInvalidStateError(t *testing.T) {
 func TestStartBackendOpenPublisherError(t *testing.T) {
 	m := newMock()
 	defer m.AssertExpectations(t)
-	bknd := createNewBackend(t, m)
+	bknd := createNewBackend(t, m, _host)
 	errStr := "publish error"
 	_, err := startBackend(t, m, bknd, errors.New(errStr), nil)
 	assert.False(t, bknd.(*Backend).isRunning())
@@ -261,7 +268,7 @@ func TestStartBackendOpenPublisherError(t *testing.T) {
 func TestStartBackendOpenConsumerError(t *testing.T) {
 	m := newMock()
 	defer m.AssertExpectations(t)
-	bknd := createNewBackend(t, m)
+	bknd := createNewBackend(t, m, _host)
 	errStr := "consume error"
 	_, err := startBackend(t, m, bknd, nil, errors.New(errStr))
 	assert.False(t, bknd.(*Backend).isRunning())
@@ -291,12 +298,12 @@ func (m *cheramiMock) AssertExpectations(t *testing.T) {
 	m.Delivery.AssertExpectations(t)
 }
 
-func createNewBackend(t *testing.T, m *cheramiMock) task.Backend {
+func createNewBackend(t *testing.T, m *cheramiMock, host service.Host) task.Backend {
 	setupHappyClientFunc(m)
 	setupDest(m, _pathName, nil)
 	setupCg(m, _pathName, _cgName, nil)
 	setupPublisherConsumer(m, _pathName, _cgName)
-	bknd, err := NewBackend(_host)
+	bknd, err := NewBackend(host)
 	require.NoError(t, err)
 	assert.NotNil(t, bknd)
 	assert.False(t, bknd.(*Backend).isRunning())
@@ -365,10 +372,23 @@ func startBackend(
 	return deliveryCh, err
 }
 
-func publish(t *testing.T, m *cheramiMock, bknd task.Backend, deliveryCh chan cherami.Delivery) {
+func publish(
+	t *testing.T, m *cheramiMock,
+	bknd task.Backend,
+	deliveryCh chan cherami.Delivery,
+	span opentracing.Span,
+) {
 	msg := []byte("Hello")
+	ctx := context.Background()
+	userCtx := make(map[string]string)
+	if span != nil {
+		ctx = opentracing.ContextWithSpan(ctx, span)
+		ctxBytes, err := bknd.(*Backend).ctxEncoder.Marshal(ctx)
+		require.NoError(t, err)
+		userCtx[_ctxKey] = string(ctxBytes)
+	}
 	m.Pub.On(
-		"Publish", &cherami.PublisherMessage{Data: msg, UserContext: map[string]string{}},
+		"Publish", &cherami.PublisherMessage{Data: msg, UserContext: userCtx},
 	).Run(
 		func(mock.Arguments) { deliveryCh <- m.Delivery },
 	).Return(&cherami.PublisherReceipt{})
@@ -378,5 +398,5 @@ func publish(t *testing.T, m *cheramiMock, bknd task.Backend, deliveryCh chan ch
 		},
 	)
 	m.Delivery.On("Nack").Return(nil)
-	require.NoError(t, bknd.Enqueue(context.Background(), msg))
+	require.NoError(t, bknd.Enqueue(ctx, msg))
 }

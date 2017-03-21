@@ -31,14 +31,21 @@ import (
 	"go.uber.org/zap"
 )
 
-// WithSpan is used for generating a span to be used in testing
-func WithSpan(t *testing.T, log *zap.Logger, f func(opentracing.Span)) {
-	tracer, closer, err := tracing.CreateTracer(nil, "serviceName", log, tally.NoopScope)
+// WithTracer is used for generating a tracer to be used in testing
+func WithTracer(t *testing.T, log *zap.Logger, f func(opentracing.Tracer)) {
+	tracer, closer, err := tracing.CreateTracer(nil, "dummy", log, tally.NoopScope)
 	require.NoError(t, err)
 	defer func() {
 		require.NoError(t, closer.Close())
 	}()
-	span := tracer.StartSpan("test")
-	defer span.Finish()
-	f(span)
+	f(tracer)
+}
+
+// WithSpan is used for generating a span to be used in testing
+func WithSpan(t *testing.T, log *zap.Logger, f func(opentracing.Span)) {
+	WithTracer(t, log, func(tracer opentracing.Tracer) {
+		span := tracer.StartSpan("test")
+		defer span.Finish()
+		f(span)
+	})
 }
