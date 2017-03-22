@@ -226,7 +226,7 @@ func TestUnsignedNumericDecodingNegatives(t *testing.T) {
 		t.Run(fmt.Sprintf("%q convert negative", to), func(t *testing.T) {
 			err := f(p)
 			require.Error(t, err)
-			assert.Contains(t, fmt.Sprintf("can't convert \"-1\" to unsigned integer type %q", to), err.Error())
+			assert.Contains(t, err.Error(), fmt.Sprintf("can't convert \"-1\" to unsigned integer type %q", to))
 		})
 	}
 }
@@ -541,4 +541,10 @@ func TestBoolParsing(t *testing.T) {
 	var alias boolAlias
 	require.NoError(t, p.Get(Root).Populate(&alias))
 	assert.Equal(t, boolAlias(true), alias)
+}
+
+func TestAddKeyToErrorReturnsNilForNilErrors(t *testing.T) {
+	t.Parallel()
+
+	assert.NoError(t, errorWithKey(nil, "key"))
 }

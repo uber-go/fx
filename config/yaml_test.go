@@ -505,7 +505,7 @@ func TestNilYAMLProviderSetDefaultTagValue(t *testing.T) {
 	}{}
 
 	p := NewYAMLProviderFromBytes(nil)
-	p.Get("hello").Populate(&data)
+	require.NoError(t, p.Get("hello").Populate(&data))
 
 	assert.Equal(t, 10, data.ID0)
 	assert.Equal(t, "string", data.ID1)
@@ -644,7 +644,10 @@ func TestLoops(t *testing.T) {
 	require.Equal(t, b, a)
 
 	p := testProvider{}
-	assert.Contains(t, p.Get(Root).Populate(&b).Error(), "cycles")
+	err := p.Get(Root).Populate(&b)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "cycles")
+	assert.Contains(t, err.Error(), `for key "A.A"`)
 }
 
 func TestInternalFieldsAreNotSet(t *testing.T) {
@@ -796,7 +799,7 @@ func TestGrumpyUnmarshallerChannelFunction(t *testing.T) {
 		var r S
 		p := NewYAMLProviderFromBytes(src)
 		e := p.Get(Root).Populate(&r)
-		require.EqualError(t, e, message)
+		require.Contains(t, e.Error(), message)
 	}
 
 	chanError := []byte(`
