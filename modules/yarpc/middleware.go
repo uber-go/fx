@@ -24,6 +24,7 @@ import (
 	"context"
 
 	"go.uber.org/fx/auth"
+	"go.uber.org/fx/modules/decorator"
 	"go.uber.org/fx/service"
 	"go.uber.org/fx/ulog"
 	"go.uber.org/zap"
@@ -50,6 +51,22 @@ func (f contextInboundMiddleware) Handle(
 		Start()
 	defer stopwatch.Stop()
 
+	return handler.Handle(ctx, req, resw)
+}
+
+// TransportUnaryMiddleware keeps all the decorator layers defined in the configuration
+type TransportUnaryMiddleware struct {
+	host         service.Host
+	procedureMap map[string][]decorator.Decorator
+}
+
+// Handle all layers
+func (l TransportUnaryMiddleware) Handle(
+	ctx context.Context,
+	req *transport.Request,
+	resw transport.ResponseWriter,
+	handler transport.UnaryHandler,
+) error {
 	return handler.Handle(ctx, req, resw)
 }
 

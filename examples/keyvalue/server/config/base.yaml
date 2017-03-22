@@ -6,6 +6,19 @@ modules:
   yarpc:
     advertiseName: keyvalue
     bind: :28941
+    middleware:
+      GetValue:
+        transport:
+          recovery:
+            enabled: true
+        application:
+          recovery:
+            enabled: false
+      PutValue:
+        transport:
+          recovery:
+            enabled: false
+
 
 service:
   some_number: 42
@@ -13,3 +26,5 @@ service:
 logging:
   stdout: true
   level: info
+
+
