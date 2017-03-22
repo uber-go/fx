@@ -44,11 +44,11 @@ func withRouter(t *testing.T, f func(r *Router, l net.Listener)) {
 	r := NewRouter(service.NopHost())
 	l := serve(t, r)
 	defer l.Close()
-	r.Handle("/foo/baz/quokka",
+	r.AddPatternRoute("/foo/baz/quokka",
 		http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 			w.Write([]byte("hello"))
 		}))
-	r.Handle("/foo/bar/quokka",
+	r.AddPatternRoute("/foo/bar/quokka",
 		http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 			w.Write([]byte("world"))
 		}))

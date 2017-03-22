@@ -22,57 +22,72 @@ package uhttp
 
 import (
 	"net/http"
-
-	"go.uber.org/fx/auth"
-
-	"go.uber.org/zap"
+	"sync"
 )
 
-type inboundMiddlewareChain struct {
-	currentMiddleware int
-	finalHandler      http.Handler
-	middleware        []InboundMiddleware
-}
+// DefaultMiddleware is used by Router if no custom middleware are provided.
+var DefaultMiddleware = newInboundMiddlewareChainBuilder().
+	AddMiddleware(InboundMiddlewareFunc(nopMiddleware)).
+	Build()
 
-func (fc inboundMiddlewareChain) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	if fc.currentMiddleware == len(fc.middleware) {
-		fc.finalHandler.ServeHTTP(w, r)
-	} else {
-		middleware := fc.middleware[fc.currentMiddleware]
-		fc.currentMiddleware++
-		middleware.Handle(w, r, fc)
-	}
+func newInboundMiddlewareChainBuilder() *inboundMiddlewareChainBuilder {
+	return &inboundMiddlewareChainBuilder{}
 }
 
 type inboundMiddlewareChainBuilder struct {
-	finalHandler http.Handler
-	middleware   []InboundMiddleware
+	middlewares []InboundMiddleware
 }
 
-func defaultInboundMiddlewareChainBuilder(log *zap.Logger, authClient auth.Client, statsClient *statsClient) inboundMiddlewareChainBuilder {
-	mcb := newInboundMiddlewareChainBuilder()
-	return mcb.AddMiddleware(
-		contextInbound{log},
-		panicInbound{statsClient},
-		metricsInbound{statsClient},
-		tracingInbound{},
-		authorizationInbound{authClient, statsClient},
-	)
+func (b *inboundMiddlewareChainBuilder) AddMiddleware(middleware ...InboundMiddleware) *inboundMiddlewareChainBuilder {
+	b.middlewares = append(b.middlewares, middleware...)
+	return b
 }
 
-// newInboundMiddlewareChainBuilder creates an empty middlewareChainBuilder for setup
-func newInboundMiddlewareChainBuilder() inboundMiddlewareChainBuilder {
-	return inboundMiddlewareChainBuilder{}
-}
-
-func (m inboundMiddlewareChainBuilder) AddMiddleware(middleware ...InboundMiddleware) inboundMiddlewareChainBuilder {
-	m.middleware = append(m.middleware, middleware...)
-	return m
-}
-
-func (m inboundMiddlewareChainBuilder) Build(finalHandler http.Handler) inboundMiddlewareChain {
-	return inboundMiddlewareChain{
-		middleware:   m.middleware,
-		finalHandler: finalHandler,
+func (b *inboundMiddlewareChainBuilder) Build() InboundMiddleware {
+	return &inboundMiddlewareChain{
+		middlewares: b.middlewares,
+		pool: sync.Pool{
+			New: func() interface{} {
+				return &chainExecution{}
+			},
+		},
 	}
+}
+
+type inboundMiddlewareChain struct {
+	middlewares []InboundMiddleware
+	pool        sync.Pool
+}
+
+type chainExecution struct {
+	middlewares       []InboundMiddleware
+	finalHandler      http.Handler
+	currentMiddleware int
+}
+
+func (chain *inboundMiddlewareChain) Handle(w http.ResponseWriter, r *http.Request, handler http.Handler) {
+	if len(chain.middlewares) == 0 {
+		handler.ServeHTTP(w, r)
+		return
+	}
+	exec := chain.pool.Get().(*chainExecution)
+	exec.middlewares = chain.middlewares
+	exec.currentMiddleware = 0
+	exec.finalHandler = handler
+	exec.ServeHTTP(w, r)
+	chain.pool.Put(exec)
+}
+
+func (exec *chainExecution) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	if exec.currentMiddleware == len(exec.middlewares) {
+		exec.finalHandler.ServeHTTP(w, r)
+	} else {
+		middleware := exec.middlewares[exec.currentMiddleware]
+		exec.currentMiddleware++
+		middleware.Handle(w, r, exec)
+	}
+}
+
+func nopMiddleware(w http.ResponseWriter, r *http.Request, next http.Handler) {
+	next.ServeHTTP(w, r)
 }
