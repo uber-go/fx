@@ -27,13 +27,14 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/opentracing/opentracing-go"
 )
 
 var (
 	_testYaml = []byte(`
 name: test
 `)
-	_testClient = New(fakeAuthInfo{yaml: _testYaml})
+	_testClient = New(fakeAuthInfo{yaml: _testYaml}, opentracing.NoopTracer{})
 )
 
 func TestNew(t *testing.T) {
@@ -46,7 +47,7 @@ func TestNew(t *testing.T) {
 func TestNew_Panic(t *testing.T) {
 	t.Parallel()
 	assert.Panics(t, func() {
-		New(fakeAuthInfo{yaml: []byte(``)})
+		New(fakeAuthInfo{yaml: []byte(``)}, opentracing.NoopTracer{})
 	})
 }
 
@@ -78,7 +79,7 @@ func TestClientGetTwiceExecutesAllMiddleware(t *testing.T) {
 		return next.Execute(r)
 	}
 
-	cl := New(fakeAuthInfo{yaml: _testYaml}, f)
+	cl := New(fakeAuthInfo{yaml: _testYaml}, opentracing.NoopTracer{}, f)
 	resp, err := cl.Get(svr.URL)
 	checkOKResponse(t, resp, err)
 	require.Equal(t, 1, count)
