@@ -7,7 +7,7 @@ import (
 )
 
 // Layer represents the method call between two service layers.
-type Layer func(context.Context, interface{}) (interface{}, error)
+type Layer func(context.Context, ...interface{}) (interface{}, error)
 
 // Decorator is a chainable behavior modifier for layer handlers.
 type Decorator func(Layer) Layer
@@ -33,8 +33,7 @@ func UnaryWrap(layer Layer) transport.UnaryHandler {
 }
 
 func (p plainUnaryWrap) Handle(ctx context.Context, req *transport.Request, resw transport.ResponseWriter) error {
-	res, err := p.layer(ctx, req)
-	resw = res.(transport.ResponseWriter)
+	_, err := p.layer(ctx, req, resw)
 	return err
 }
 

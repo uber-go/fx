@@ -1,25 +1,27 @@
 package yarpc
 
-import "go.uber.org/fx/modules/decorator"
+import (
+	"go.uber.org/fx/modules/decorator"
+	"go.uber.org/fx/service"
+)
 
-type InboundUnaryMiddleware interface {
-	Construct()
+type InboundUnaryMiddlewareChainBuilder struct {
+	host       service.Host
+	procedures map[string][]decorator.Decorator
 }
 
-type inboundUnaryMiddleware struct {
+type middlewares struct {
+	procs              map[string]interface{}
+	defaultMiddlewares []string
 }
 
-func Construct() {
-	var recoveryConfig decorator.RecoveryConfig
-	// we know the Procedure
-	if err := l.host.Config().Get(req.Procedure).Get("middleware").Get("transport").Populate(&recoveryConfig); err != nil {
+func (ch InboundUnaryMiddlewareChainBuilder) Compile() {
+	// compile procedures with set of decorators
+	// layer := decorator.Recovery(ch.host.Metrics())
 
-	}
-	layer := decorator.Recovery(l.host, recoveryConfig)(handler)
-
-	handler = decorator.UnaryWrap(decorator.Build(layer, l.procedureMap[req.Procedure]))
+	// handler = decorator.UnaryWrap(decorator.Build(layer, ch.procedures[req.Procedure]))
 }
+
 func Build() map[string][]decorator.Decorator {
-	decorators := make(map[string][]decorator.Decorator)
 	// populate decorators based on the configuration and Construct
 }

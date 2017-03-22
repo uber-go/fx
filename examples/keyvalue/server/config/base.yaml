@@ -8,16 +8,11 @@ modules:
     bind: :28941
     middleware:
       GetValue:
-        transport:
-          recovery:
-            enabled: true
-        application:
-          recovery:
-            enabled: false
+        recovery:
+          enabled: true
       PutValue:
-        transport:
-          recovery:
-            enabled: false
+        recovery:
+          enabled: false
 
 
 service:

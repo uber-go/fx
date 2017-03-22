@@ -320,11 +320,13 @@ func (c *dispatcherController) applyHandlers() error {
 
 // Adds the default middleware: context propagation and auth.
 func (c *dispatcherController) addDefaultMiddleware(host service.Host, statsClient *statsClient) {
+
 	cfg := yarpcConfig{
 		inboundMiddleware: []middleware.UnaryInbound{
 			contextInboundMiddleware{statsClient},
 			panicInboundMiddleware{statsClient},
 			authInboundMiddleware{host, statsClient},
+			TransportUnaryMiddleware{host},
 		},
 		onewayInboundMiddleware: []middleware.OnewayInbound{
 			contextOnewayInboundMiddleware{},

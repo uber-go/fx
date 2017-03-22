@@ -4,7 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	"go.uber.org/fx/service"
+	"github.com/uber-go/tally"
+	"go.uber.org/fx/config"
 )
 
 // RecoveryConfig configuration for recovery decorator
@@ -13,10 +14,16 @@ type RecoveryConfig struct {
 }
 
 // Recovery returns a panic recovery middleware
-func Recovery(host service.Host, cfg RecoveryConfig) Decorator {
+func Recovery(metrics tally.Scope, cfg config.Provider) Decorator {
+	recoveryConfig := RecoveryConfig{
+		enabled: true,
+	}
+	if err := cfg.Get("recovery").Populate(&recoveryConfig); err != nil {
+		// eror
+	}
 	return func(next Layer) Layer {
-		return func(ctx context.Context, req interface{}) (res interface{}, err error) {
-			if cfg.enabled {
+		return func(ctx context.Context, req ...interface{}) (res interface{}, err error) {
+			if recoveryConfig.enabled {
 				defer func() {
 					err = handlePanic(recover(), err)
 				}()
