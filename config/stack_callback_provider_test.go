@@ -81,12 +81,19 @@ func TestStackCallbackProvider_UnregisterChangeCallbackRace(t *testing.T) {
 	require.NoError(t, s.RegisterChangeCallback("batman", cb))
 	require.NoError(t, s.RegisterChangeCallback("batman", cb))
 
-	go s.UnregisterChangeCallback("batman")
-	go m.Set("batman", "bruce wayne")
+	wg := sync.WaitGroup{}
+	wg.Add(2)
+	go func() {
+		require.NoError(t, s.UnregisterChangeCallback("batman"))
+		wg.Done()
+	}()
 
-	m.RegisterChangeCallback("robin", func(key, provider string, data interface{}) {
-		assert.Equal(t, "dick grayson", data)
-	})
+	go func() {
+		m.Set("batman", "bruce wayne")
+		wg.Done()
+	}()
+
+	wg.Wait()
 }
 
 func TestStackCallbackProvider_ErrorToRegister(t *testing.T) {
