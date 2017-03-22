@@ -87,10 +87,6 @@ func TestStackCallbackProvider_UnregisterChangeCallbackRace(t *testing.T) {
 	m.RegisterChangeCallback("robin", func(key, provider string, data interface{}) {
 		assert.Equal(t, "dick grayson", data)
 	})
-
-	err := s.RegisterChangeCallback("robin", nil)
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "callback already registered for the key: robin")
 }
 
 func TestStackCallbackProvider_ErrorToRegister(t *testing.T) {
