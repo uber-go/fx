@@ -25,9 +25,9 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/opentracing/opentracing-go"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/opentracing/opentracing-go"
 )
 
 var (

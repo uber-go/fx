@@ -24,8 +24,8 @@ import (
 	"net/http"
 	"time"
 
-	"go.uber.org/fx/auth"
 	"github.com/opentracing/opentracing-go"
+	"go.uber.org/fx/auth"
 )
 
 // New creates an http.Client that includes 2 extra outbound middleware: tracing and auth
