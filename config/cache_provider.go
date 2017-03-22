@@ -72,11 +72,9 @@ func (p *cachedProvider) Get(key string) Value {
 	}
 
 	v := p.Provider.Get(key)
-	if v.HasValue() {
-		p.Lock()
-		p.cache[key] = v
-		p.Unlock()
-	}
+	p.Lock()
+	p.cache[key] = v
+	p.Unlock()
 
 	return v
 }
