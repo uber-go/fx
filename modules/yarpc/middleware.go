@@ -22,6 +22,7 @@ package yarpc
 
 import (
 	"context"
+	"sync"
 
 	"go.uber.org/fx/auth"
 	"go.uber.org/fx/modules/decorator"
@@ -57,6 +58,8 @@ func (f contextInboundMiddleware) Handle(
 // TransportUnaryMiddleware keeps all the decorator layers defined in the configuration
 type TransportUnaryMiddleware struct {
 	procedureMap map[string][]decorator.Decorator
+	layerMap     map[string]transport.UnaryHandler
+	mu           sync.Mutex
 }
 
 // Handle all layers
@@ -66,8 +69,13 @@ func (l TransportUnaryMiddleware) Handle(
 	resw transport.ResponseWriter,
 	handler transport.UnaryHandler,
 ) error {
-	h := decorator.UnaryWrap(decorator.Build(decorator.LayerWrap(handler), l.procedureMap[req.Procedure]...))
-	return h.Handle(ctx, req, resw)
+	l.mu.Lock()
+	if _, ok := l.layerMap[req.Procedure]; !ok {
+		layer := decorator.Build(decorator.LayerWrap(handler), l.procedureMap[req.Procedure]...)
+		l.layerMap[req.Procedure] = decorator.UnaryWrap(layer)
+	}
+	l.mu.Unlock()
+	return l.layerMap[req.Procedure].Handle(ctx, req, resw)
 }
 
 type contextOnewayInboundMiddleware struct{}
