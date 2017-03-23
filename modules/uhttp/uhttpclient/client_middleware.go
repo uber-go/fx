@@ -26,10 +26,10 @@ import (
 	"go.uber.org/fx/auth"
 	"go.uber.org/fx/config"
 	"go.uber.org/fx/ulog"
-	"go.uber.org/zap"
 
 	"github.com/opentracing/opentracing-go"
 	"github.com/opentracing/opentracing-go/ext"
+	"go.uber.org/zap"
 )
 
 // Executor executes the http request. Execute must be safe to use by multiple go routines
@@ -52,7 +52,7 @@ func (f OutboundMiddlewareFunc) Handle(r *http.Request, next Executor) (resp *ht
 	return f(r, next)
 }
 
-func tracingOutbound() OutboundMiddlewareFunc {
+func tracingOutbound(tracer opentracing.Tracer) OutboundMiddlewareFunc {
 	return func(req *http.Request, next Executor) (resp *http.Response, err error) {
 		ctx := req.Context()
 		opName := req.Method
@@ -61,8 +61,7 @@ func tracingOutbound() OutboundMiddlewareFunc {
 			parent = s.Context()
 		}
 
-		// TODO(alsam) This makes our client to be not safe to use by multiple go routines.
-		span := opentracing.GlobalTracer().StartSpan(opName, opentracing.ChildOf(parent))
+		span := tracer.StartSpan(opName, opentracing.ChildOf(parent))
 		ext.SpanKindRPCClient.Set(span)
 		ext.HTTPUrl.Set(span, req.URL.String())
 		defer span.Finish()

@@ -25,6 +25,9 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"go.uber.org/fx/auth"
+
+	"github.com/opentracing/opentracing-go"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -33,7 +36,7 @@ var (
 	_testYaml = []byte(`
 name: test
 `)
-	_testClient = New(fakeAuthInfo{yaml: _testYaml})
+	_testClient = New(opentracing.NoopTracer{}, fakeAuthInfo{yaml: _testYaml})
 )
 
 func TestNew(t *testing.T) {
@@ -46,7 +49,7 @@ func TestNew(t *testing.T) {
 func TestNew_Panic(t *testing.T) {
 	t.Parallel()
 	assert.Panics(t, func() {
-		New(fakeAuthInfo{yaml: []byte(``)})
+		New(opentracing.NoopTracer{}, fakeAuthInfo{yaml: []byte(``)})
 	})
 }
 
@@ -78,7 +81,7 @@ func TestClientGetTwiceExecutesAllMiddleware(t *testing.T) {
 		return next.Execute(r)
 	}
 
-	cl := New(fakeAuthInfo{yaml: _testYaml}, f)
+	cl := New(opentracing.NoopTracer{}, fakeAuthInfo{yaml: _testYaml}, f)
 	resp, err := cl.Get(svr.URL)
 	checkOKResponse(t, resp, err)
 	require.Equal(t, 1, count)
@@ -121,6 +124,26 @@ func TestClientPostForm(t *testing.T) {
 	var urlValues map[string][]string
 	resp, err := _testClient.PostForm(svr.URL, urlValues)
 	checkOKResponse(t, resp, err)
+}
+
+func TestClientWithNilParameters(t *testing.T) {
+	t.Parallel()
+	svr := startServer()
+	tests := map[string]struct {
+		info   auth.CreateAuthInfo
+		tracer opentracing.Tracer
+	}{
+		"NilInfo":   {info: nil, tracer: opentracing.NoopTracer{}},
+		"NilTracer": {info: fakeAuthInfo{yaml: _testYaml}, tracer: nil},
+		"BothNil":   {},
+	}
+	for name, params := range tests {
+		t.Run(name, func(t *testing.T) {
+			client := New(params.tracer, params.info)
+			resp, err := client.Head(svr.URL)
+			checkOKResponse(t, resp, err)
+		})
+	}
 }
 
 func checkErrResponse(t *testing.T, resp *http.Response, err error) {
