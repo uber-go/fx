@@ -25,31 +25,31 @@ import (
 	"sync"
 )
 
-type stackCallbackProvider struct {
+type multiCallbackProvider struct {
 	sync.RWMutex
 	cb map[string][]ChangeCallback
 	Provider
 }
 
-// NewStackCallbackProvider returns a provider that lets you to have multiple callbacks for a given Provider.
+// NewMultiCallbackProvider returns a provider that lets you to have multiple callbacks for a given Provider.
 // All registered callbacks are going to be executed in the order they were registered.
 // UnregisterCallback will unregister the most recently registered callback.
-func NewStackCallbackProvider(p Provider) Provider {
+func NewMultiCallbackProvider(p Provider) Provider {
 	if p == nil {
 		return nil
 	}
 
-	return &stackCallbackProvider{
+	return &multiCallbackProvider{
 		cb:       make(map[string][]ChangeCallback),
 		Provider: p,
 	}
 }
 
-func (s *stackCallbackProvider) Name() string {
-	return fmt.Sprintf("stackCallbackProvider %q", s.Provider.Name())
+func (s *multiCallbackProvider) Name() string {
+	return fmt.Sprintf("multiCallbackProvider %q", s.Provider.Name())
 }
 
-func (s *stackCallbackProvider) RegisterChangeCallback(key string, callback ChangeCallback) error {
+func (s *multiCallbackProvider) RegisterChangeCallback(key string, callback ChangeCallback) error {
 	s.Lock()
 	defer s.Unlock()
 	if val, exist := s.cb[key]; exist {
@@ -74,7 +74,7 @@ func (s *stackCallbackProvider) RegisterChangeCallback(key string, callback Chan
 	return nil
 }
 
-func (s *stackCallbackProvider) UnregisterChangeCallback(token string) error {
+func (s *multiCallbackProvider) UnregisterChangeCallback(token string) error {
 	s.Lock()
 	defer s.Unlock()
 

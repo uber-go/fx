@@ -30,20 +30,20 @@ import (
 func TestNewStackCallbackProvider_ForNilProvider(t *testing.T) {
 	t.Parallel()
 
-	assert.Nil(t, NewStackCallbackProvider(nil))
+	assert.Nil(t, NewMultiCallbackProvider(nil))
 }
 
 func TestStackCallbackProvider_Name(t *testing.T) {
 	t.Parallel()
 
-	assert.Equal(t, `stackCallbackProvider "static"`, NewStackCallbackProvider(NewStaticProvider(42)).Name())
+	assert.Equal(t, `stackCallbackProvider "static"`, NewMultiCallbackProvider(NewStaticProvider(42)).Name())
 }
 
 func TestStackCallbackProvider_RegisterChangeCallback(t *testing.T) {
 	t.Parallel()
 
 	m := NewMockDynamicProvider(nil)
-	s := NewStackCallbackProvider(m)
+	s := NewMultiCallbackProvider(m)
 	require.NotNil(t, s)
 
 	wg := sync.WaitGroup{}
@@ -71,7 +71,7 @@ func TestStackCallbackProvider_UnregisterChangeCallbackRace(t *testing.T) {
 	t.Parallel()
 
 	m := NewMockDynamicProvider(nil)
-	s := NewStackCallbackProvider(m)
+	s := NewMultiCallbackProvider(m)
 	require.NotNil(t, s)
 
 	cb := func(key string, provider string, data interface{}) {
@@ -100,7 +100,7 @@ func TestStackCallbackProvider_ErrorToRegister(t *testing.T) {
 	t.Parallel()
 
 	m := NewMockDynamicProvider(nil)
-	s := NewStackCallbackProvider(m)
+	s := NewMultiCallbackProvider(m)
 	require.NotNil(t, s)
 
 	require.NoError(t, m.RegisterChangeCallback("robin", nil))
@@ -112,7 +112,7 @@ func TestStackCallbackProvider_ErrorToRegister(t *testing.T) {
 func TestStackCallbackProvider_ErrorToUnregister(t *testing.T) {
 	t.Parallel()
 
-	s := NewStackCallbackProvider(NewMockDynamicProvider(nil))
+	s := NewMultiCallbackProvider(NewMockDynamicProvider(nil))
 	require.NotNil(t, s)
 
 	require.NoError(t, s.RegisterChangeCallback("robin", nil))
