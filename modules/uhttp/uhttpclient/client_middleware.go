@@ -26,10 +26,10 @@ import (
 	"go.uber.org/fx/auth"
 	"go.uber.org/fx/config"
 	"go.uber.org/fx/ulog"
-	"go.uber.org/zap"
 
 	"github.com/opentracing/opentracing-go"
 	"github.com/opentracing/opentracing-go/ext"
+	"go.uber.org/zap"
 )
 
 // Executor executes the http request. Execute must be safe to use by multiple go routines
