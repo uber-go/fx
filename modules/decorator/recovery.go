@@ -22,7 +22,7 @@ func Recovery(metrics tally.Scope, cfg config.Provider) Decorator {
 		// eror
 	}
 	return func(next Layer) Layer {
-		return func(ctx context.Context, req ...interface{}) (res interface{}, err error) {
+		return func(ctx context.Context, req ...interface{}) (err error) {
 			if recoveryConfig.enabled {
 				defer func() {
 					err = handlePanic(recover(), err)

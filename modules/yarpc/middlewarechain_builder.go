@@ -1,27 +1,46 @@
 package yarpc
 
 import (
+	"go.uber.org/fx/config"
 	"go.uber.org/fx/modules/decorator"
 	"go.uber.org/fx/service"
 )
 
+const (
+	recovery    = "recovery"
+	breaker     = "breaker"
+	logger      = "logger"
+	rateLimiter = "ratelimiter"
+	retry       = "retry"
+	timeout     = "timeout"
+)
+
+// InboundUnaryMiddlewareChainBuilder keeps all the procedures to build
 type InboundUnaryMiddlewareChainBuilder struct {
 	host       service.Host
 	procedures map[string][]decorator.Decorator
 }
 
-type middlewares struct {
-	procs              map[string]interface{}
-	defaultMiddlewares []string
+type InboundUnaryMiddlewareChain struct {
+	host   service.Host
+	layers decorator.Layer
 }
 
+// populate from config for creating decorator per procedure
+type middlewareConfig struct {
+	procedures map[string]interface{}
+}
+
+// Compile compiles all the Decorators for the TransportUnaryMiddleware
 func (ch InboundUnaryMiddlewareChainBuilder) Compile() {
-	// compile procedures with set of decorators
-	// layer := decorator.Recovery(ch.host.Metrics())
-
-	// handler = decorator.UnaryWrap(decorator.Build(layer, ch.procedures[req.Procedure]))
-}
-
-func Build() map[string][]decorator.Decorator {
-	// populate decorators based on the configuration and Construct
+	var m middlewareConfig
+	scopedCfg := config.NewScopedProvider("middleware", ch.host.Config())
+	ch.host.Config().Get("middleware").Populate(&m)
+	for procedure := range m.procedures {
+		switch procedure {
+		case recovery:
+			decorator := decorator.Recovery(ch.host.Metrics(), config.NewScopedProvider(recovery, scopedCfg))
+			ch.procedures[recovery] = append(ch.procedures[recovery], decorator)
+		}
+	}
 }

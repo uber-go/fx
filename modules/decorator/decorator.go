@@ -7,7 +7,7 @@ import (
 )
 
 // Layer represents the method call between two service layers.
-type Layer func(context.Context, ...interface{}) (interface{}, error)
+type Layer func(context.Context, ...interface{}) error
 
 // Decorator is a chainable behavior modifier for layer handlers.
 type Decorator func(Layer) Layer
@@ -21,34 +21,39 @@ func Build(l Layer, m ...Decorator) Layer {
 	return layer
 }
 
-type plainUnaryWrap struct {
+type unaryWrap struct {
 	layer Layer
 }
 
 // UnaryWrap ...
 func UnaryWrap(layer Layer) transport.UnaryHandler {
-	return &plainUnaryWrap{
+	return &unaryWrap{
 		layer: layer,
 	}
 }
 
-func (p plainUnaryWrap) Handle(ctx context.Context, req *transport.Request, resw transport.ResponseWriter) error {
-	_, err := p.layer(ctx, req, resw)
-	return err
+func (p unaryWrap) Handle(ctx context.Context, req *transport.Request, resw transport.ResponseWriter) error {
+	return p.layer(ctx, req, resw)
 }
 
-type plainOnewayWrap struct {
+// LayerWrap ...
+func LayerWrap(handler transport.UnaryHandler) func(ctx context.Context, req ...interface{}) error {
+	return func(ctx context.Context, req ...interface{}) error {
+		return handler.Handle(ctx, req[0].(*transport.Request), req[1].(transport.ResponseWriter))
+	}
+}
+
+type onewayWrap struct {
 	layer Layer
 }
 
 // OnewayWrap ...
 func OnewayWrap(layer Layer) transport.OnewayHandler {
-	return &plainOnewayWrap{
+	return &onewayWrap{
 		layer: layer,
 	}
 }
 
-func (p plainOnewayWrap) HandleOneway(ctx context.Context, req *transport.Request) error {
-	_, err := p.layer(ctx, req)
-	return err
+func (p onewayWrap) HandleOneway(ctx context.Context, req *transport.Request) error {
+	return p.layer(ctx, req)
 }

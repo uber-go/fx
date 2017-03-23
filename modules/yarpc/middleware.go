@@ -56,7 +56,6 @@ func (f contextInboundMiddleware) Handle(
 
 // TransportUnaryMiddleware keeps all the decorator layers defined in the configuration
 type TransportUnaryMiddleware struct {
-	host         service.Host
 	procedureMap map[string][]decorator.Decorator
 }
 
@@ -67,7 +66,8 @@ func (l TransportUnaryMiddleware) Handle(
 	resw transport.ResponseWriter,
 	handler transport.UnaryHandler,
 ) error {
-	return handler.Handle(ctx, req, resw)
+	h := decorator.UnaryWrap(decorator.Build(decorator.LayerWrap(handler), l.procedureMap[req.Procedure]...))
+	return h.Handle(ctx, req, resw)
 }
 
 type contextOnewayInboundMiddleware struct{}
