@@ -21,11 +21,11 @@
 package config
 
 import (
+	"sync"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"sync"
 )
 
 func TestCacheProviderName(t *testing.T) {
@@ -58,6 +58,8 @@ func TestCachedProvider_GetNewValues(t *testing.T) {
 	ts := v.LastUpdated()
 	m.Set("cartoon", "Futurama")
 	assert.True(t, ts.Before(v.Get(Root).LastUpdated()))
+
+	assert.Equal(t, p, v.provider)
 }
 
 func TestCachedProvider_ErrorToSetCallback(t *testing.T) {
