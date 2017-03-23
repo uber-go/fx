@@ -72,6 +72,7 @@ func (p *cachedProvider) Get(key string) Value {
 	}
 
 	v := p.Provider.Get(key)
+	v.provider = p
 	p.Lock()
 	p.cache[key] = v
 	p.Unlock()
