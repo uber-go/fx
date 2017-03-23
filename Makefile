@@ -188,7 +188,6 @@ clean:
 .PHONY: examples
 examples:
 	$(ECHO_V)go test ./examples/simple
-	$(ECHO_V)go test ./examples/dig
 
 .PHONY: vendor
 vendor:

@@ -23,6 +23,8 @@
 * [Breaking] Rename `PopulateStruct` method in value to `Populate`.
   The method can now populate not only structs, but anything: slices,
   maps, builtin types and maps.
+* [Breaking] `package dig` has moved from `go.uber.org/fx/dig` to a new home
+  at `go.uber.org/dig`.
 * [Breaking] Pass a tracer the `uhttp/uhttpclient` constructor explicitly, instead
   of using a global tracer. This will allow to use http client in parallel tests.
 

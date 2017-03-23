@@ -21,10 +21,9 @@
 package task
 
 import (
+	"context"
 	"errors"
 	"testing"
-
-	"golang.org/x/net/context"
 
 	"go.uber.org/fx/service"
 
