@@ -25,6 +25,8 @@ import (
 	"errors"
 	"testing"
 
+	"go.uber.org/fx/config"
+	"go.uber.org/fx/modules/decorator"
 	"go.uber.org/fx/service"
 	"go.uber.org/fx/testutils"
 	"go.uber.org/fx/testutils/tracing"
@@ -114,6 +116,27 @@ func TestInboundMiddleware_panic(t *testing.T) {
 	defer testPanicHandler(t, testScope)
 	unary := panicInboundMiddleware{statsClient}
 	unary.Handle(context.Background(), &transport.Request{}, nil, &alwaysPanicUnary{})
+}
+
+func TestInboundMiddleware_TransportUnaryMiddleware(t *testing.T) {
+
+	host := service.NopHost()
+
+	m := TransportUnaryMiddleware{
+		procedureMap: make(map[string][]decorator.Decorator),
+		layerMap:     make(map[string]transport.UnaryHandler),
+	}
+	decorator := decorator.Recovery(host.Metrics(), config.NewScopedProvider("recovery", host.Config()))
+	m.procedureMap["hello"] = append(m.procedureMap["recovery"], decorator)
+	m.Handle(context.Background(), &transport.Request{
+		Procedure: "hello",
+	}, nil, &fakeUnary{t: t})
+	m.Handle(context.Background(), &transport.Request{
+		Procedure: "hello",
+	}, nil, &fakeUnary{t: t})
+	m.Handle(context.Background(), &transport.Request{
+		Procedure: "hello",
+	}, nil, &fakeUnary{t: t})
 }
 
 func TestOnewayInboundMiddleware_panic(t *testing.T) {
