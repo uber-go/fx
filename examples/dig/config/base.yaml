@@ -1,7 +1,0 @@
-name: dig
-description: Dependency Injection Graph usage example
-owner: owner@service.com
-
-modules:
-  http:
-    port: 8080

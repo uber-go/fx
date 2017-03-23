@@ -26,12 +26,12 @@ import (
 	"testing"
 
 	"go.uber.org/fx/config"
-	"go.uber.org/fx/dig"
 	"go.uber.org/fx/service"
 	"go.uber.org/yarpc"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/dig"
 	"go.uber.org/yarpc/api/transport"
 	"go.uber.org/yarpc/transport/http"
 )
