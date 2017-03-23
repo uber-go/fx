@@ -31,7 +31,7 @@ import (
 	"go.uber.org/fx/ulog"
 
 	errs "github.com/pkg/errors"
-	"go.uber.org/fx/dig"
+	"go.uber.org/dig"
 	"go.uber.org/yarpc"
 	"go.uber.org/yarpc/api/middleware"
 	"go.uber.org/yarpc/api/transport"

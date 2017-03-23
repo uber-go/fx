@@ -23,7 +23,9 @@
 * [Breaking] Rename `PopulateStruct` method in value to `Populate`.
   The method can now populate not only structs, but anything: slices,
   maps, builtin types and maps.
-  
+* [Breaking] `package dig` has moved from `go.uber.org/fx/dig` to a new home
+  at `go.uber.org/dig`.
+
 ## v1.0.0-beta2 (09 Mar 2017)
 
 * [Breaking] Remove `ulog.Logger` interface and expose `*zap.Logger` directly.
