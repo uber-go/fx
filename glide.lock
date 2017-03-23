@@ -1,5 +1,5 @@
-hash: 275e1020ca1e7f8314c2a94ea6cc3964515561dab40e35d0847e08e99842c5de
-updated: 2017-03-22T19:35:19.914547464-07:00
+hash: 9c4d9cc4c94f2f4a87ace45dbcd749b7a39a338f08ff5865769e31616eb6a6f3
+updated: 2017-03-23T12:12:03.004496173-07:00
 imports:
 - name: github.com/apache/thrift
   version: 9549b25c77587b29be4e0b5c258221a4ed85d37a
@@ -76,7 +76,7 @@ imports:
   subpackages:
   - .generated/go/cherami
 - name: github.com/uber/jaeger-client-go
-  version: cbd3b6fe50f6d077951da8aabb06374f0ccf3181
+  version: 153cc21d199f5a4b65d0d7219c1f423ea58cfab5
   subpackages:
   - config
   - internal/spanlog
@@ -109,11 +109,12 @@ imports:
 - name: go.uber.org/atomic
   version: 3b8db5e93c4c02efbc313e17b2e796b0914a01fb
 - name: go.uber.org/dig
-  version: bbd35793b6915659f563f30533c7be4f43bc71a8
+  version: 869ade8e3afd0b6dee05418a8e165cdcb487070a
 - name: go.uber.org/thriftrw
-  version: c98a13058faa5dd41584a77221a268d2c72d832d
+  version: 05f870b3c56597d180af568a6392209cc33269e2
   subpackages:
   - envelope
+  - internal
   - internal/envelope
   - internal/envelope/exception
   - internal/frame
@@ -164,7 +165,7 @@ imports:
   - zapcore
   - zaptest
 - name: golang.org/x/net
-  version: a6577fac2d73be281a500b310739095313165611
+  version: 3e967e1d28d2c9c06e749dc2bdc14b04df89e689
   subpackages:
   - context
   - context/ctxhttp
