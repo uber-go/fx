@@ -122,9 +122,9 @@ UberFx is compatible with Go 1.7 and above.
 
 [doc]: https://godoc.org/go.uber.org/fx
 [doc-img]: https://godoc.org/go.uber.org/fx?status.svg
-[cov]: https://coveralls.io/github/uber-go/fx?branch=master
-[cov-img]: https://coveralls.io/repos/github/uber-go/fx/badge.svg?branch=master
+[cov]: https://coveralls.io/github/uber-go/fx?branch=dev
+[cov-img]: https://coveralls.io/repos/github/uber-go/fx/badge.svg?branch=dev
 [ci]: https://travis-ci.org/uber-go/fx
-[ci-img]: https://travis-ci.org/uber-go/fx.svg?branch=master
+[ci-img]: https://travis-ci.org/uber-go/fx.svg?branch=dev
 [report-card]: https://goreportcard.com/report/github.com/uber-go/fx
 [report-card-img]: https://goreportcard.com/badge/github.com/uber-go/fx
