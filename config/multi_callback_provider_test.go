@@ -27,19 +27,19 @@ import (
 	"testing"
 )
 
-func TestNewStackCallbackProvider_ForNilProvider(t *testing.T) {
+func TestNewMultiCallbackProvider_ForNilProvider(t *testing.T) {
 	t.Parallel()
 
 	assert.Nil(t, NewMultiCallbackProvider(nil))
 }
 
-func TestStackCallbackProvider_Name(t *testing.T) {
+func TestMultiCallbackProvider_Name(t *testing.T) {
 	t.Parallel()
 
-	assert.Equal(t, `stackCallbackProvider "static"`, NewMultiCallbackProvider(NewStaticProvider(42)).Name())
+	assert.Equal(t, `multiCallbackProvider "static"`, NewMultiCallbackProvider(NewStaticProvider(42)).Name())
 }
 
-func TestStackCallbackProvider_RegisterChangeCallback(t *testing.T) {
+func TestMultiCallbackProvider_RegisterChangeCallback(t *testing.T) {
 	t.Parallel()
 
 	m := NewMockDynamicProvider(nil)
@@ -67,7 +67,7 @@ func TestStackCallbackProvider_RegisterChangeCallback(t *testing.T) {
 	assert.Equal(t, 2, totalCalls)
 }
 
-func TestStackCallbackProvider_UnregisterChangeCallbackRace(t *testing.T) {
+func TestMultiCallbackProvider_UnregisterChangeCallbackRace(t *testing.T) {
 	t.Parallel()
 
 	m := NewMockDynamicProvider(nil)
@@ -96,7 +96,7 @@ func TestStackCallbackProvider_UnregisterChangeCallbackRace(t *testing.T) {
 	wg.Wait()
 }
 
-func TestStackCallbackProvider_ErrorToRegister(t *testing.T) {
+func TestMultiCallbackProvider_ErrorToRegister(t *testing.T) {
 	t.Parallel()
 
 	m := NewMockDynamicProvider(nil)
@@ -109,7 +109,7 @@ func TestStackCallbackProvider_ErrorToRegister(t *testing.T) {
 	assert.Contains(t, err.Error(), "callback already registered for the key: robin")
 }
 
-func TestStackCallbackProvider_ErrorToUnregister(t *testing.T) {
+func TestMultiCallbackProvider_ErrorToUnregister(t *testing.T) {
 	t.Parallel()
 
 	s := NewMultiCallbackProvider(NewMockDynamicProvider(nil))
