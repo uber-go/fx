@@ -57,7 +57,7 @@ type myStuff struct {
 
 target := &myStuff{}
 cfg := svc.Config()
-if err := cfg.Get("stuff.server").PopulateStruct(target); err != nil {
+if err := cfg.Get("stuff.server").Populate(target); err != nil {
   // fail, we didn't find it.
 }
 
@@ -127,7 +127,7 @@ fmt.Println(root)
 // Output: map[one:map[two:hello]]
 ```
 
-* Populate a struct (`PopulateStruct(&myStruct)`)
+* Populate a struct (`Populate(&myStruct)`)
 
 The `As*` method has two variants: `TryAs*` and `As*`. The former is a
 two-value return, similar to a type assertion, where the user checks if the second
@@ -137,9 +137,9 @@ The `As*` methods are similar to the `Must*` pattern in the standard library.
 If the underlying value cannot be converted to the requested type, `As*` will
 `panic`.
 
-## PopulateStruct
+## Populate
 
-`PopulateStruct` is akin to `json.Unmarshal()` in that it takes a pointer to a
+`Populate` is akin to `json.Unmarshal()` in that it takes a pointer to a
 custom struct and fills in the fields. It returns a `true` if the requested
 fields were found and populated properly, and `false` otherwise.
 
@@ -178,9 +178,9 @@ BenchmarkYAMLCreateMultiFile-8                     203 allocs/op
 BenchmarkYAMLSimpleGetLevel1-8                       0 allocs/op
 BenchmarkYAMLSimpleGetLevel3-8                       0 allocs/op
 BenchmarkYAMLSimpleGetLevel7-8                       0 allocs/op
-BenchmarkYAMLPopulateStruct-8                       16 allocs/op
-BenchmarkYAMLPopulateStructNested-8                 42 allocs/op
-BenchmarkYAMLPopulateStructNestedMultipleFiles-8    52 allocs/op
+BenchmarkYAMLPopulate-8                             16 allocs/op
+BenchmarkYAMLPopulateNested-8                       42 allocs/op
+BenchmarkYAMLPopulateNestedMultipleFiles-8          52 allocs/op
 BenchmarkYAMLPopulateNestedTextUnmarshaler-8       211 allocs/op
 BenchmarkZapConfigLoad-8                           188 allocs/op
 ```

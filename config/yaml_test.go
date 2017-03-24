@@ -250,7 +250,7 @@ func TestMatchPopulatedEmptyStruct(t *testing.T) {
 	})
 }
 
-func TestPopulateStructWithPointers(t *testing.T) {
+func TestPopulateWithPointers(t *testing.T) {
 	t.Parallel()
 	withYamlBytes(pointerYaml, func(provider Provider) {
 		ps := pointerStruct{}
@@ -261,7 +261,7 @@ func TestPopulateStructWithPointers(t *testing.T) {
 	})
 }
 
-func TestNonExistingPopulateStructWithPointers(t *testing.T) {
+func TestNonExistingPopulateWithPointers(t *testing.T) {
 	t.Parallel()
 	withYamlBytes([]byte(``), func(provider Provider) {
 		ps := pointerStruct{}

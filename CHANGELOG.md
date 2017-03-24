@@ -14,7 +14,7 @@
   `ExecuteAsync` method that will kick off workers to consume tasks and this is
   subsumed by module Start.
 * [Breaking] Rename package `uhttp/client` to `uhttp/uhttpclient` for clarity.
-* [Breaking] Rename `PopulateStruct` method in value to `Populate`.
+* [Breaking] Rename `Populate` method in value to `Populate`.
   The method can now populate not only structs, but anything: slices,
   maps, builtin types and maps.
 * [Breaking] `package dig` has moved from `go.uber.org/fx/dig` to a new home

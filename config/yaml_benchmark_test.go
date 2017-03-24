@@ -21,8 +21,9 @@
 package config
 
 import (
-	"go.uber.org/zap"
 	"testing"
+
+	"go.uber.org/zap"
 )
 
 func BenchmarkYAMLCreateSingleFile(b *testing.B) {
@@ -73,7 +74,7 @@ foo:
 	}
 }
 
-func BenchmarkYAMLPopulateStruct(b *testing.B) {
+func BenchmarkYAMLPopulate(b *testing.B) {
 	type creds struct {
 		Username string
 		Password string
@@ -88,7 +89,7 @@ func BenchmarkYAMLPopulateStruct(b *testing.B) {
 	}
 }
 
-func BenchmarkYAMLPopulateStructNested(b *testing.B) {
+func BenchmarkYAMLPopulateNested(b *testing.B) {
 	type creds struct {
 		Username string
 		Password string
@@ -109,7 +110,7 @@ func BenchmarkYAMLPopulateStructNested(b *testing.B) {
 	}
 }
 
-func BenchmarkYAMLPopulateStructNestedMultipleFiles(b *testing.B) {
+func BenchmarkYAMLPopulateNestedMultipleFiles(b *testing.B) {
 	type creds struct {
 		Username string
 		Password string
