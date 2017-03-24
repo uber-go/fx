@@ -25,6 +25,7 @@ import (
 	"sync"
 	"time"
 
+	"go.uber.org/fx/config"
 	"go.uber.org/fx/modules/task"
 	"go.uber.org/fx/service"
 	"go.uber.org/fx/ulog"
@@ -96,15 +97,15 @@ func RegisterHyperbahnBootstrapFile(filename string) {
 
 // NewBackend creates a Cherami client backend
 func NewBackend(host service.Host) (task.Backend, error) {
-	config, err := createClientConfig(host)
+	cc, err := createClientConfig(host)
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to parse config for cherami")
 	}
 	var ownerEmail string
-	if err = host.Config().Get("owner").Populate(&ownerEmail); err != nil {
+	if err = host.Config().Get(config.ServiceOwnerKey).Populate(&ownerEmail); err != nil {
 		return nil, errors.Wrap(err, "unable to parse owner for cherami")
 	}
-	return newBackendWithConfig(host, config, ownerEmail)
+	return newBackendWithConfig(host, cc, ownerEmail)
 }
 
 func createClientConfig(host service.Host) (clientConfig, error) {
@@ -121,14 +122,14 @@ func createClientConfig(host service.Host) (clientConfig, error) {
 // newBackendWithConfig creates a Cherami client backend with specified config
 func newBackendWithConfig(
 	host service.Host,
-	config clientConfig,
+	cc clientConfig,
 	ownerEmail string,
 ) (task.Backend, error) {
 	// Create Cherami client TODO: Configure with reporter
 	_hyperbahnMu.RLock()
 	client, err := _cheramiClientFunc(
 		host.Name(), _hyperbahnHostsFile,
-		&cherami.ClientOptions{DeploymentStr: config.DeploymentCluster, Timeout: config.Timeout},
+		&cherami.ClientOptions{DeploymentStr: cc.DeploymentCluster, Timeout: cc.Timeout},
 	)
 	defer _hyperbahnMu.RUnlock()
 	if err != nil {
@@ -137,29 +138,29 @@ func newBackendWithConfig(
 		)
 	}
 
-	if err = createDestination(client, config, ownerEmail); err != nil {
+	if err = createDestination(client, cc, ownerEmail); err != nil {
 		return nil, err
 	}
-	if err = createConsumerGroup(client, config, ownerEmail); err != nil {
+	if err = createConsumerGroup(client, cc, ownerEmail); err != nil {
 		return nil, err
 	}
 
 	// Create message publisher via client
 	publisher := client.CreatePublisher(&cherami.CreatePublisherRequest{
-		Path: config.Destination,
+		Path: cc.Destination,
 	})
 
 	// Create message consumer via client
 	consumer := client.CreateConsumer(&cherami.CreateConsumerRequest{
-		Path:              config.Destination,
-		ConsumerGroupName: config.ConsumerGroup,
-		ConsumerName:      config.ConsumerName,
-		PrefetchCount:     config.PrefetchCount,
+		Path:              cc.Destination,
+		ConsumerGroupName: cc.ConsumerGroup,
+		ConsumerName:      cc.ConsumerName,
+		PrefetchCount:     cc.PrefetchCount,
 		Options: &cherami.ClientOptions{
-			Timeout: config.Timeout,
+			Timeout: cc.Timeout,
 		},
 	})
-	deliveryCh := make(chan cherami.Delivery, config.PrefetchCount)
+	deliveryCh := make(chan cherami.Delivery, cc.PrefetchCount)
 	scope := host.Metrics().SubScope("cherami")
 
 	return &Backend{
@@ -167,7 +168,7 @@ func newBackendWithConfig(
 		publisher:   publisher,
 		consumer:    consumer,
 		deliveryCh:  deliveryCh,
-		config:      config,
+		config:      cc,
 		logger:      ulog.Logger(context.Background()),
 		scope:       scope,
 		taskSuccess: scope.Counter("task.success"),
@@ -175,30 +176,30 @@ func newBackendWithConfig(
 	}, nil
 }
 
-func createDestination(client cherami.Client, config clientConfig, ownerEmail string) error {
+func createDestination(client cherami.Client, cc clientConfig, ownerEmail string) error {
 	if _, err := client.CreateDestination(
 		&cherami_gen.CreateDestinationRequest{
-			Path: &config.Destination,
+			Path: &cc.Destination,
 			ConsumedMessagesRetention:   &_consumedMessagesRetentionInSeconds,
 			UnconsumedMessagesRetention: &_unconsumedMessagesRetentionInSeconds,
 			OwnerEmail:                  &ownerEmail,
 		},
 	); err != nil && !alreadyExistsError(err) {
-		return errors.Wrapf(err, "unable to create destination: %s", config.Destination)
+		return errors.Wrapf(err, "unable to create destination: %s", cc.Destination)
 	}
 	return nil
 }
 
-func createConsumerGroup(client cherami.Client, config clientConfig, ownerEmail string) error {
+func createConsumerGroup(client cherami.Client, cc clientConfig, ownerEmail string) error {
 	if _, err := client.CreateConsumerGroup(
 		&cherami_gen.CreateConsumerGroupRequest{
-			DestinationPath:      &config.Destination,
-			ConsumerGroupName:    &config.ConsumerGroup,
+			DestinationPath:      &cc.Destination,
+			ConsumerGroupName:    &cc.ConsumerGroup,
 			OwnerEmail:           &ownerEmail,
-			LockTimeoutInSeconds: &config.CgTimeoutInSeconds,
+			LockTimeoutInSeconds: &cc.CgTimeoutInSeconds,
 		},
 	); err != nil && !alreadyExistsError(err) {
-		return errors.Wrapf(err, "unable to create consumer group: %s", config.ConsumerGroup)
+		return errors.Wrapf(err, "unable to create consumer group: %s", cc.ConsumerGroup)
 	}
 	return nil
 }
