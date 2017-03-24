@@ -15,7 +15,7 @@ type RecoveryConfig struct {
 }
 
 // Recovery returns a panic recovery middleware
-func Recovery(metrics tally.Scope, cfg config.Provider) Decorator {
+func Recovery(metrics tally.Scope, cfg config.Provider) UnaryDecorator {
 	recoveryConfig := RecoveryConfig{
 		enabled: true,
 	}

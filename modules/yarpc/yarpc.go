@@ -323,14 +323,14 @@ func (c *dispatcherController) applyHandlers() error {
 func (c *dispatcherController) addDefaultMiddleware(host service.Host, statsClient *statsClient) {
 	u := InboundUnaryMiddlewareChainBuilder{
 		host:       host,
-		procedures: make(map[string][]decorator.Decorator),
+		procedures: make(map[string][]decorator.UnaryDecorator),
 	}
 	u.Compile()
 	cfg := yarpcConfig{
 		inboundMiddleware: []middleware.UnaryInbound{
 			TransportUnaryMiddleware{
-				procedureMap: u.procedures,
-				layerMap:     make(map[string]transport.UnaryHandler),
+				procedures: u.procedures,
+				decorators: make(map[string]transport.UnaryHandler),
 			},
 		},
 		onewayInboundMiddleware: []middleware.OnewayInbound{},

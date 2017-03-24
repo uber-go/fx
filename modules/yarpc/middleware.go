@@ -36,56 +36,49 @@ import (
 
 const _panicResponse = "Server Error"
 
-type contextInboundMiddleware struct {
-	statsClient *statsClient
-}
-
-func (f contextInboundMiddleware) Handle(
-	ctx context.Context,
-	req *transport.Request,
-	resw transport.ResponseWriter,
-	handler transport.UnaryHandler,
-) error {
-	stopwatch := f.statsClient.RPCHandleTimer().
-		Tagged(map[string]string{_tagProcedure: req.Procedure}).
-		Timer(req.Procedure).
-		Start()
-	defer stopwatch.Stop()
-
-	return handler.Handle(ctx, req, resw)
-}
+var (
+	mu sync.Mutex
+)
 
 // TransportUnaryMiddleware keeps all the decorator layers defined in the configuration
 type TransportUnaryMiddleware struct {
-	procedureMap map[string][]decorator.Decorator
-	layerMap     map[string]transport.UnaryHandler
-	mu           sync.Mutex
+	procedures map[string][]decorator.UnaryDecorator
+	decorators map[string]transport.UnaryHandler
 }
 
-// Handle all layers
+// Handle all decoratorss
 func (l TransportUnaryMiddleware) Handle(
 	ctx context.Context,
 	req *transport.Request,
 	resw transport.ResponseWriter,
 	handler transport.UnaryHandler,
 ) error {
-	l.mu.Lock()
-	if _, ok := l.layerMap[req.Procedure]; !ok {
-		layer := decorator.Build(handler, l.procedureMap[req.Procedure]...)
-		l.layerMap[req.Procedure] = layer
+	mu.Lock()
+	if _, ok := l.decorators[req.Procedure]; !ok {
+		l.decorators[req.Procedure] = decorator.BuildUnary(decorator.UnaryHandlerWrap(handler), l.procedures[req.Procedure]...)
 	}
-	l.mu.Unlock()
-	return l.layerMap[req.Procedure].Handle(ctx, req, resw)
+	mu.Unlock()
+	return l.decorators[req.Procedure].Handle(ctx, req, resw)
 }
 
-type contextOnewayInboundMiddleware struct{}
+// TransportOnewayMiddleware keeps all the decorator layers defined in the configuration
+type TransportOnewayMiddleware struct {
+	procedures map[string][]decorator.OnewayDecorator
+	decorators map[string]transport.OnewayHandler
+}
 
-func (f contextOnewayInboundMiddleware) HandleOneway(
+// Handle all decoratorss
+func (l TransportOnewayMiddleware) Handle(
 	ctx context.Context,
 	req *transport.Request,
 	handler transport.OnewayHandler,
 ) error {
-	return handler.HandleOneway(ctx, req)
+	mu.Lock()
+	if _, ok := l.decorators[req.Procedure]; !ok {
+		l.decorators[req.Procedure] = decorator.BuildOneway(decorator.OnewayHandlerWrap(handler), l.procedures[req.Procedure]...)
+	}
+	mu.Unlock()
+	return l.decorators[req.Procedure].HandleOneway(ctx, req)
 }
 
 type authInboundMiddleware struct {

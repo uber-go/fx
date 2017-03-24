@@ -28,46 +28,15 @@ import (
 	"go.uber.org/fx/config"
 	"go.uber.org/fx/modules/decorator"
 	"go.uber.org/fx/service"
-	"go.uber.org/fx/testutils"
-	"go.uber.org/fx/testutils/tracing"
 	"go.uber.org/fx/ulog"
 	"go.uber.org/thriftrw/wire"
 	"go.uber.org/yarpc/api/transport"
 
-	"github.com/opentracing/opentracing-go"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/uber-go/tally"
-	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
 )
-
-func TestInboundMiddleware_Context(t *testing.T) {
-	host := service.NopHost()
-	unary := contextInboundMiddleware{newStatsClient(host.Metrics())}
-	testutils.WithInMemoryLogger(t, nil, func(loggerWithZap *zap.Logger, buf *zaptest.Buffer) {
-		defer ulog.SetLogger(loggerWithZap)()
-		tracing.WithSpan(t, loggerWithZap, func(span opentracing.Span) {
-			ctx := opentracing.ContextWithSpan(context.Background(), span)
-			err := unary.Handle(ctx, &transport.Request{}, nil, &fakeUnary{t: t})
-			require.Contains(t, err.Error(), "handle")
-			checkLogForTrace(t, buf)
-		})
-	})
-}
-
-func TestOnewayInboundMiddleware_Context(t *testing.T) {
-	oneway := contextOnewayInboundMiddleware{}
-	testutils.WithInMemoryLogger(t, nil, func(loggerWithZap *zap.Logger, buf *zaptest.Buffer) {
-		defer ulog.SetLogger(loggerWithZap)()
-		tracing.WithSpan(t, loggerWithZap, func(span opentracing.Span) {
-			ctx := opentracing.ContextWithSpan(context.Background(), span)
-			err := oneway.HandleOneway(ctx, &transport.Request{}, &fakeOneway{t: t})
-			require.Contains(t, err.Error(), "oneway handle")
-			checkLogForTrace(t, buf)
-		})
-	})
-}
 
 func checkLogForTrace(t *testing.T, buf *zaptest.Buffer) {
 	require.True(t, len(buf.Lines()) > 0)
@@ -123,11 +92,11 @@ func TestInboundMiddleware_TransportUnaryMiddleware(t *testing.T) {
 	host := service.NopHost()
 
 	m := TransportUnaryMiddleware{
-		procedureMap: make(map[string][]decorator.Decorator),
-		layerMap:     make(map[string]transport.UnaryHandler),
+		procedures: make(map[string][]decorator.UnaryDecorator),
+		decorators: make(map[string]transport.UnaryHandler),
 	}
 	decorator := decorator.Recovery(host.Metrics(), config.NewScopedProvider("recovery", host.Config()))
-	m.procedureMap["hello"] = append(m.procedureMap["recovery"], decorator)
+	m.procedures["hello"] = append(m.procedures["recovery"], decorator)
 	m.Handle(context.Background(), &transport.Request{
 		Procedure: "hello",
 	}, nil, &fakeUnary{t: t})

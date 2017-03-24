@@ -51,11 +51,11 @@ modules:
     middleware:
       procedures:
         hello:
-          layers:
+          decorators:
            - recovery
            - tryme
         newhello:
-          layers:
+          decorators:
            - recovery
 `)
 	mi := newHost(

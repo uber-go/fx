@@ -37,15 +37,12 @@ func Benchmark_WithLayeredMiddleware(b *testing.B) {
 		host := service.NopHost()
 
 		m := TransportUnaryMiddleware{
-			procedureMap: make(map[string][]decorator.Decorator),
-			layerMap:     make(map[string]transport.UnaryHandler),
+			procedures: make(map[string][]decorator.UnaryDecorator),
+			decorators: make(map[string]transport.UnaryHandler),
 		}
 		decorator := decorator.Recovery(host.Metrics(), config.NewScopedProvider("recovery", host.Config()))
-		m.procedureMap["hello"] = append(m.procedureMap["recovery"], decorator)
+		m.procedures["hello"] = append(m.procedures["recovery"], decorator)
 		for pb.Next() {
-			m.Handle(context.Background(), &transport.Request{
-				Procedure: "hello",
-			}, nil, &fakeHandler{})
 			m.Handle(context.Background(), &transport.Request{
 				Procedure: "hello",
 			}, nil, &fakeHandler{})
