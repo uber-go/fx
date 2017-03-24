@@ -71,8 +71,8 @@ func (l TransportUnaryMiddleware) Handle(
 ) error {
 	l.mu.Lock()
 	if _, ok := l.layerMap[req.Procedure]; !ok {
-		layer := decorator.Build(decorator.LayerWrap(handler), l.procedureMap[req.Procedure]...)
-		l.layerMap[req.Procedure] = decorator.UnaryWrap(layer)
+		layer := decorator.Build(handler, l.procedureMap[req.Procedure]...)
+		l.layerMap[req.Procedure] = layer
 	}
 	l.mu.Unlock()
 	return l.layerMap[req.Procedure].Handle(ctx, req, resw)

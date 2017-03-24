@@ -25,7 +25,7 @@ type InboundUnaryMiddlewareChainBuilder struct {
 
 type InboundUnaryMiddlewareChain struct {
 	host   service.Host
-	layers decorator.Layer
+	layers decorator.UnaryHandlerFunc
 }
 
 // populate from config for creating decorator per procedure

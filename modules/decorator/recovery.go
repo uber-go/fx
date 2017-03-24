@@ -6,6 +6,7 @@ import (
 
 	"github.com/uber-go/tally"
 	"go.uber.org/fx/config"
+	"go.uber.org/yarpc/api/transport"
 )
 
 // RecoveryConfig configuration for recovery decorator
@@ -21,14 +22,14 @@ func Recovery(metrics tally.Scope, cfg config.Provider) Decorator {
 	if err := cfg.Get("recovery").Populate(&recoveryConfig); err != nil {
 		// eror
 	}
-	return func(next Layer) Layer {
-		return func(ctx context.Context, req ...interface{}) (err error) {
+	return func(next UnaryHandlerFunc) UnaryHandlerFunc {
+		return func(ctx context.Context, req *transport.Request, resw transport.ResponseWriter) (err error) {
 			if recoveryConfig.enabled {
 				defer func() {
 					err = handlePanic(recover(), err)
 				}()
 			}
-			return next(ctx, req)
+			return next(ctx, req, resw)
 		}
 	}
 }
