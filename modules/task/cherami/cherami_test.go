@@ -23,7 +23,6 @@ package cherami
 import (
 	"context"
 	"errors"
-	"fmt"
 	"runtime"
 	"strings"
 	"sync"
@@ -51,8 +50,9 @@ var (
 	_host = service.NopHostConfigured(
 		auth.NopClient, ulog.Logger(context.Background()), opentracing.NoopTracer{},
 	)
-	_pathName = _pathPrefix + _host.Name()
-	_cgName   = _pathPrefix + _host.Name() + "_cg"
+	_pathName   = _pathPrefix + _host.Name()
+	_cgName     = _pathPrefix + _host.Name() + "_cg"
+	_publishMsg = []byte("Hello")
 )
 
 func TestBackendWorkflow(t *testing.T) {
@@ -69,17 +69,23 @@ func TestBackendWorkflow(t *testing.T) {
 		assert.True(t, bknd.(*Backend).isRunning())
 		require.NoError(t, bknd.ExecuteAsync())
 		tracing.WithSpan(t, zapLogger, func(span opentracing.Span) {
-			publish(t, m, bknd, deliveryCh, span)
-			publish(t, m, bknd, deliveryCh, span)
+			publish(t, m, bknd, deliveryCh, span, nil)
+			publish(t, m, bknd, deliveryCh, span, errors.New("nack error"))
 		})
 		time.Sleep(10 * time.Millisecond)
 		stopBackend(t, m, bknd)
 		lines := buf.Lines()
-		fmt.Println("Lines", lines)
-		require.Equal(t, 2, len(lines))
+		var execCt, nackErrCt int
 		for _, line := range lines {
-			assert.Contains(t, line, "forget to register")
+			if strings.Contains(line, "forget to register") {
+				execCt++
+			}
+			if strings.Contains(line, "nack error") {
+				nackErrCt++
+			}
 		}
+		assert.Equal(t, 2, execCt)
+		assert.Equal(t, 1, nackErrCt)
 	})
 }
 
@@ -95,16 +101,16 @@ func TestBackendWorkflowWorkerPanic(t *testing.T) {
 	require.NoError(t, bknd.ExecuteAsync())
 	// Panic on ConsumeWorkerCount and make sure workers are still alive to consume messages
 	for i := 0; i < _defaultClientConfig.ConsumeWorkerCount; i++ {
-		deliveryCh <- m.Delivery
 		m.Delivery.On("GetMessage").Return(
 			&cherami_gen.ConsumerMessage{
-				Payload: &cherami_gen.PutMessage{Data: []byte("Hello")},
+				Payload: &cherami_gen.PutMessage{Data: _publishMsg},
 			},
 		)
-		m.Delivery.On("Nack").Run(func(mock.Arguments) { panic("nack panic") })
+		m.Delivery.On("Nack").Run(func(mock.Arguments) { panic("nack panic") }).Once()
+		deliveryCh <- m.Delivery
 	}
 	// Publish valid message
-	publish(t, m, bknd, deliveryCh, nil)
+	publish(t, m, bknd, deliveryCh, nil, nil)
 	time.Sleep(10 * time.Millisecond)
 	assert.True(t, bknd.(*Backend).isRunning())
 	stopBackend(t, m, bknd)
@@ -377,8 +383,8 @@ func publish(
 	bknd task.Backend,
 	deliveryCh chan cherami.Delivery,
 	span opentracing.Span,
+	nackErr error,
 ) {
-	msg := []byte("Hello")
 	ctx := context.Background()
 	userCtx := make(map[string]string)
 	if span != nil {
@@ -388,15 +394,15 @@ func publish(
 		userCtx[_ctxKey] = string(ctxBytes)
 	}
 	m.Pub.On(
-		"Publish", &cherami.PublisherMessage{Data: msg, UserContext: userCtx},
+		"Publish", &cherami.PublisherMessage{Data: _publishMsg, UserContext: userCtx},
 	).Run(
 		func(mock.Arguments) { deliveryCh <- m.Delivery },
-	).Return(&cherami.PublisherReceipt{})
+	).Return(&cherami.PublisherReceipt{}).Once()
 	m.Delivery.On("GetMessage").Return(
 		&cherami_gen.ConsumerMessage{
-			Payload: &cherami_gen.PutMessage{Data: msg},
+			Payload: &cherami_gen.PutMessage{Data: _publishMsg},
 		},
 	)
-	m.Delivery.On("Nack").Return(nil)
-	require.NoError(t, bknd.Enqueue(ctx, msg))
+	m.Delivery.On("Nack").Return(nackErr).Once()
+	require.NoError(t, bknd.Enqueue(ctx, _publishMsg))
 }

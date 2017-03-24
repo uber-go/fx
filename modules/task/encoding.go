@@ -24,7 +24,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/gob"
-	"fmt"
 
 	"github.com/opentracing/opentracing-go"
 	"github.com/pkg/errors"
@@ -97,13 +96,11 @@ func (c *ContextEncoding) Marshal(ctx context.Context) ([]byte, error) {
 		return nil, nil
 	}
 	spanCtx := span.Context()
-	fmt.Println("SpanCtx", spanCtx)
 	if spanCtx == nil {
 		return nil, nil
 	}
 	carrier := bytes.NewBuffer([]byte{})
 	err := c.Tracer.Inject(spanCtx, opentracing.Binary, carrier)
-	fmt.Println("Carrier", carrier)
 	return carrier.Bytes(), err
 }
 

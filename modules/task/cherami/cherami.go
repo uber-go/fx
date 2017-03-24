@@ -269,11 +269,14 @@ func (b *Backend) consumeAndExecute() {
 	}()
 	for delivery := range b.deliveryCh {
 		messageData := delivery.GetMessage().GetPayload().GetData()
-		b.withContext(&delivery, func(ctx context.Context) {
+		b.withContext(delivery, func(ctx context.Context) {
 			// TODO (madhu): Only specific errors should be retried
 			if err := task.Run(ctx, messageData); err != nil {
 				ulog.Logger(ctx).Error("Task run failed", zap.Error(err))
-				b.recordRunFailure(ctx, &delivery)
+				b.taskFailure.Inc(1)
+				if err := delivery.Nack(); err != nil {
+					ulog.Logger(ctx).Error("Delivery Nack failed", zap.Error(err))
+				}
 			} else {
 				b.taskSuccess.Inc(1)
 				if err = delivery.Ack(); err != nil {
@@ -284,28 +287,24 @@ func (b *Backend) consumeAndExecute() {
 	}
 }
 
-func (b *Backend) withContext(delivery *cherami.Delivery, f func(context.Context)) {
-	ctxData := (*delivery).GetMessage().GetPayload().GetUserContext()
+func (b *Backend) withContext(delivery cherami.Delivery, f func(context.Context)) {
+	ctxData := delivery.GetMessage().GetPayload().GetUserContext()
 	ctx := context.Background()
 	var span opentracing.Span
 	if ctxVal, ok := ctxData[_ctxKey]; ok {
 		spanCtx, err := b.ctxEncoder.Unmarshal([]byte(ctxVal))
 		if err != nil {
 			ulog.Logger(ctx).Error("Unable to decode context", zap.Error(err))
-			b.recordRunFailure(ctx, delivery)
+			b.taskFailure.Inc(1)
+			if err := delivery.Nack(); err != nil {
+				ulog.Logger(ctx).Error("Delivery Nack failed", zap.Error(err))
+			}
 		}
 		span = b.tracer.StartSpan(_operationName, ext.RPCServerOption(spanCtx))
 		defer span.Finish()
 		ctx = opentracing.ContextWithSpan(ctx, span)
 	}
 	f(ctx)
-}
-
-func (b *Backend) recordRunFailure(ctx context.Context, delivery *cherami.Delivery) {
-	b.taskFailure.Inc(1)
-	if err := (*delivery).Nack(); err != nil {
-		ulog.Logger(ctx).Error("Delivery Nack failed", zap.Error(err))
-	}
 }
 
 // IsRunning returns true if backend is running
