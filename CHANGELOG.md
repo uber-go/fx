@@ -2,6 +2,9 @@
 
 ## v1.0.0-beta3 (unreleased)
 
+* [Breaking] Environment config provider was removed. If you were using
+  environment variables to override YAML values, see
+  [config documentation](config/README.md) for more information.
 * [Breaking] Simplify Provider interface: remove `Scope` method from the
   `config.Provider` interface, one can use either ScopedProvider and Value.Get()
   to access sub fields.
