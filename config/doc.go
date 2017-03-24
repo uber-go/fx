@@ -77,22 +77,17 @@
 //
 //   target := &myStuff{}
 //   cfg := svc.Config()
-//   if err := cfg.Get("stuff.server").PopulateStruct(target); err != nil {
+//   if err := cfg.Get("stuff.server").Populate(target); err != nil {
 //     // fail, we didn't find it.
 //   }
 //
-//   fmt.Printf("Port is: %v", target.Port)
+//   fmt.Printf("Port is: %v\n", target.Port)
 //
 // Prints **Port is 8081**
 //
 // This model respects priority of providers to allow overriding of individual
-// values.  In this example, we override the server port via an environment
-// variable:
+// values.
 //
-//
-//   export CONFIG__stuff__server__port=3000
-//
-// Then running the above example will result in **Port is 3000**
 //
 // Provider
 //
@@ -152,7 +147,7 @@
 //   fmt.Println(root)
 //   // Output: map[one:map[two:hello]]
 //
-// • Populate a struct (PopulateStruct(&myStruct))
+// • Populate a struct (Populate(&myStruct))
 //
 // The As* method has two variants: TryAs* and As*. The former is a
 // two-value return, similar to a type assertion, where the user checks if the second
@@ -163,9 +158,9 @@
 // As* will
 // panic.
 //
-// PopulateStruct
+// Populate
 //
-// PopulateStruct is akin to json.Unmarshal() in that it takes a pointer to a
+// Populate is akin to json.Unmarshal() in that it takes a pointer to a
 // custom struct and fills in the fields. It returns a
 // true if the requested
 // fields were found and populated properly, and
@@ -201,9 +196,9 @@
 //   BenchmarkYAMLSimpleGetLevel1-8                       0 allocs/op
 //   BenchmarkYAMLSimpleGetLevel3-8                       0 allocs/op
 //   BenchmarkYAMLSimpleGetLevel7-8                       0 allocs/op
-//   BenchmarkYAMLPopulateStruct-8                       16 allocs/op
-//   BenchmarkYAMLPopulateStructNested-8                 42 allocs/op
-//   BenchmarkYAMLPopulateStructNestedMultipleFiles-8    52 allocs/op
+//   BenchmarkYAMLPopulate-8                             16 allocs/op
+//   BenchmarkYAMLPopulateNested-8                       42 allocs/op
+//   BenchmarkYAMLPopulateNestedMultipleFiles-8          52 allocs/op
 //   BenchmarkYAMLPopulateNestedTextUnmarshaler-8       211 allocs/op
 //   BenchmarkZapConfigLoad-8                           188 allocs/op
 //
