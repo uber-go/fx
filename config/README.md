@@ -61,20 +61,13 @@ if err := cfg.Get("stuff.server").PopulateStruct(target); err != nil {
   // fail, we didn't find it.
 }
 
-fmt.Printf("Port is: %v", target.Port)
+fmt.Printf("Port is: %v\n", target.Port)
 ```
 
 Prints **Port is 8081**
 
 This model respects priority of providers to allow overriding of individual
-values.  In this example, we override the server port via an environment
-variable:
-
-```sh
-export CONFIG__stuff__server__port=3000
-```
-
-Then running the above example will result in **Port is 3000**
+values.
 
 ## Provider
 
