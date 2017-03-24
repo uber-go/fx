@@ -175,8 +175,8 @@ func makeRequest(m *Module, method, url string, body io.Reader, fn func(r *http.
 		// Yes, panics are OK for programmer errors in test suites
 		panic(err)
 	}
+
 	response, err := _defaultHTTPClient.Do(request)
-	fmt.Println(err)
 	if err != nil {
 		panic(err)
 	}
