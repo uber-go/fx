@@ -134,7 +134,7 @@ func newBackendWithConfig(
 	defer _hyperbahnMu.RUnlock()
 	if err != nil {
 		return nil, errors.Wrapf(
-			err, "unable to initialize cherami client for service: %s", host.Name(),
+			err, "unable to initialize cherami client for service: %q", host.Name(),
 		)
 	}
 
@@ -185,7 +185,7 @@ func createDestination(client cherami.Client, cc clientConfig, ownerEmail string
 			OwnerEmail:                  &ownerEmail,
 		},
 	); err != nil && !alreadyExistsError(err) {
-		return errors.Wrapf(err, "unable to create destination: %s", cc.Destination)
+		return errors.Wrapf(err, "unable to create destination: %q", cc.Destination)
 	}
 	return nil
 }
@@ -199,7 +199,7 @@ func createConsumerGroup(client cherami.Client, cc clientConfig, ownerEmail stri
 			LockTimeoutInSeconds: &cc.CgTimeoutInSeconds,
 		},
 	); err != nil && !alreadyExistsError(err) {
-		return errors.Wrapf(err, "unable to create consumer group: %s", cc.ConsumerGroup)
+		return errors.Wrapf(err, "unable to create consumer group: %q", cc.ConsumerGroup)
 	}
 	return nil
 }

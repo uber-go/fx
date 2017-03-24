@@ -143,7 +143,7 @@ func TestNewBackendClientError(t *testing.T) {
 	) (cherami.Client, error) {
 		return nil, errors.New("failure")
 	}
-	checkNewBackendError(t, "client for service: dummy: failure")
+	checkNewBackendError(t, "client for service: \"dummy\": failure")
 }
 
 func TestNewBackendReadEntityNotExistsCreateDestError(t *testing.T) {
@@ -151,7 +151,7 @@ func TestNewBackendReadEntityNotExistsCreateDestError(t *testing.T) {
 	defer m.AssertExpectations(t)
 	setupHappyClientFunc(m)
 	setupDest(m, _pathName, errors.New("create error"))
-	checkNewBackendError(t, "create destination: /uberfx_async/dummy")
+	checkNewBackendError(t, "create destination: \"/uberfx_async/dummy\"")
 }
 
 func TestNewBackendEntityNotExistsCreateCgError(t *testing.T) {
@@ -160,7 +160,7 @@ func TestNewBackendEntityNotExistsCreateCgError(t *testing.T) {
 	setupHappyClientFunc(m)
 	setupDest(m, _pathName, nil)
 	setupCg(m, _pathName, _cgName, errors.New("create error"))
-	checkNewBackendError(t, "create consumer group: /uberfx_async/dummy")
+	checkNewBackendError(t, "create consumer group: \"/uberfx_async/dummy_cg\"")
 }
 
 func TestNewBackendCreateEntityExistsSuccess(t *testing.T) {
