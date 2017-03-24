@@ -3,7 +3,7 @@ description: A simple example service
 owner: owner@service.com
 
 modules:
-  http:
+  uhttp:
     roles:
       - worker
       - web
