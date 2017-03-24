@@ -9,26 +9,13 @@ import (
 	"go.uber.org/yarpc/api/transport"
 )
 
-// RecoveryConfig configuration for recovery decorator
-type RecoveryConfig struct {
-	enabled bool
-}
-
 // Recovery returns a panic recovery middleware
 func Recovery(metrics tally.Scope, cfg config.Provider) UnaryDecorator {
-	recoveryConfig := RecoveryConfig{
-		enabled: true,
-	}
-	if err := cfg.Get("recovery").Populate(&recoveryConfig); err != nil {
-		// eror
-	}
 	return func(next UnaryHandlerFunc) UnaryHandlerFunc {
 		return func(ctx context.Context, req *transport.Request, resw transport.ResponseWriter) (err error) {
-			if recoveryConfig.enabled {
-				defer func() {
-					err = handlePanic(recover(), err)
-				}()
-			}
+			defer func() {
+				err = handlePanic(recover(), err)
+			}()
 			return next(ctx, req, resw)
 		}
 	}

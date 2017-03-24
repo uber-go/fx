@@ -48,15 +48,14 @@ modules:
          port: 0
      - http:
          port: 0
-    middleware:
-      procedures:
-        hello:
-          decorators:
-           - recovery
-           - tryme
-        newhello:
-          decorators:
-           - recovery
+    procedures:
+      hello:
+        middleware:
+          - recovery
+          - tryme
+      newhello:
+        middleware:
+          - recovery
 `)
 	mi := newHost(
 		t,

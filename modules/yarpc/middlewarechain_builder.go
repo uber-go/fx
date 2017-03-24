@@ -29,19 +29,19 @@ type middlewareConfig struct {
 }
 
 type DecoratorConfig struct {
-	Decorators []string
+	Middleware []string
 }
 
 // Compile compiles all the Decorators for the TransportUnaryMiddleware
 func (ch InboundUnaryMiddlewareChainBuilder) Compile() {
 	var cfg middlewareConfig
-	if err := ch.host.Config().Get("modules").Get(ch.host.ModuleName()).Get("middleware").Populate(&cfg); err != nil {
+	if err := ch.host.Config().Get("modules").Get(ch.host.ModuleName()).Populate(&cfg); err != nil {
 		zap.L().Warn("can't read middleware config")
 	}
 
 	scopedCfg := config.NewScopedProvider("middleware", ch.host.Config())
 	for procedure, decorators := range cfg.Procedures {
-		for _, d := range decorators.Decorators {
+		for _, d := range decorators.Middleware {
 			switch d {
 			case recovery:
 				dec := decorator.Recovery(ch.host.Metrics(), config.NewScopedProvider(recovery, scopedCfg))
