@@ -208,8 +208,8 @@ modules:
 		"CreateDestination", mock.MatchedBy(func(request *cherami_gen.CreateDestinationRequest) bool {
 			return request.GetPath() == path &&
 				request.GetOwnerEmail() == "owner@owner.com" &&
-				request.GetConsumedMessagesRetention() == 1 &&
-				request.GetUnconsumedMessagesRetention() == 7
+				request.GetConsumedMessagesRetention() == 86400 &&
+				request.GetUnconsumedMessagesRetention() == 604800
 		}),
 	).Return(nil, nil)
 	m.Client.On(
@@ -321,7 +321,9 @@ func setupHappyClientFunc(m *cheramiMock) {
 func setupDest(m *cheramiMock, pathName string, createErr error) {
 	m.Client.On(
 		"CreateDestination", mock.MatchedBy(func(request *cherami_gen.CreateDestinationRequest) bool {
-			return request.GetPath() == pathName
+			return request.GetPath() == pathName &&
+				request.GetConsumedMessagesRetention() == 86400 &&
+				request.GetUnconsumedMessagesRetention() == 604800
 		}),
 	).Return(nil, createErr)
 }

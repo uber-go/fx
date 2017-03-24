@@ -46,12 +46,12 @@ const (
 )
 
 var (
-	_hyperbahnMu                 sync.RWMutex
-	_hyperbahnHostsFile          string
-	_cheramiClientFunc                 = cherami.NewHyperbahnClient
-	_consumedMessagesRetention   int32 = 1
-	_unconsumedMessagesRetention int32 = 7
-	_defaultClientConfig               = clientConfig{
+	_hyperbahnMu                          sync.RWMutex
+	_hyperbahnHostsFile                   string
+	_cheramiClientFunc                          = cherami.NewHyperbahnClient
+	_consumedMessagesRetentionInSeconds   int32 = 1 * 24 * 60 * 60 // 1 day
+	_unconsumedMessagesRetentionInSeconds int32 = 7 * 24 * 60 * 60 // 7 days
+	_defaultClientConfig                        = clientConfig{
 		ConsumerName:       "uberfx-async",
 		PrefetchCount:      10,
 		ConsumeWorkerCount: 10,
@@ -179,8 +179,8 @@ func createDestination(client cherami.Client, config clientConfig, ownerEmail st
 	if _, err := client.CreateDestination(
 		&cherami_gen.CreateDestinationRequest{
 			Path: &config.Destination,
-			ConsumedMessagesRetention:   &_consumedMessagesRetention,
-			UnconsumedMessagesRetention: &_unconsumedMessagesRetention,
+			ConsumedMessagesRetention:   &_consumedMessagesRetentionInSeconds,
+			UnconsumedMessagesRetention: &_unconsumedMessagesRetentionInSeconds,
 			OwnerEmail:                  &ownerEmail,
 		},
 	); err != nil && !alreadyExistsError(err) {
