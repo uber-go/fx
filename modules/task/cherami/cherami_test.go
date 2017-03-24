@@ -179,14 +179,14 @@ func TestNewBackendCreateEntityExistsSuccess(t *testing.T) {
 func TestNewBackendCreateWithConfiguredHost(t *testing.T) {
 	data := []byte(`
 name: dummy
-owner: owner
+owner: owner@owner.com
 modules:
   task:
     cherami:
       destination: /my_dest/
       consumerGroup: /my_dest_cg/
       deploymentCluster: dev
-
+      cgTimeoutInSeconds: 15
 `)
 	path := "/my_dest/"
 	cg := "/my_dest_cg/"
@@ -204,8 +204,23 @@ modules:
 		require.Equal(t, "hyperbahn-filename", bootstrapFile)
 		return m.Client, nil
 	}
-	setupDest(m, path, &cherami_gen.EntityAlreadyExistsError{})
-	setupCg(m, path, cg, &cherami_gen.EntityAlreadyExistsError{})
+	m.Client.On(
+		"CreateDestination", mock.MatchedBy(func(request *cherami_gen.CreateDestinationRequest) bool {
+			return request.GetPath() == path &&
+				request.GetOwnerEmail() == "owner@owner.com" &&
+				request.GetConsumedMessagesRetention() == 1 &&
+				request.GetUnconsumedMessagesRetention() == 7
+		}),
+	).Return(nil, nil)
+	m.Client.On(
+		"CreateConsumerGroup", mock.MatchedBy(
+			func(request *cherami_gen.CreateConsumerGroupRequest) bool {
+				return request.GetDestinationPath() == path &&
+					request.GetConsumerGroupName() == cg &&
+					request.GetOwnerEmail() == "owner@owner.com" &&
+					request.GetLockTimeoutInSeconds() == 15
+			}),
+	).Return(nil, nil)
 	setupPublisherConsumer(m, path, cg)
 
 	// Create backend
@@ -316,7 +331,8 @@ func setupCg(m *cheramiMock, pathName string, cgName string, createErr error) {
 		"CreateConsumerGroup", mock.MatchedBy(
 			func(request *cherami_gen.CreateConsumerGroupRequest) bool {
 				return request.GetDestinationPath() == pathName &&
-					request.GetConsumerGroupName() == cgName
+					request.GetConsumerGroupName() == cgName &&
+					request.GetLockTimeoutInSeconds() == 60
 			}),
 	).Return(nil, createErr)
 }
