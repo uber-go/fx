@@ -184,3 +184,18 @@ BenchmarkYAMLPopulateNestedMultipleFiles-8          52 allocs/op
 BenchmarkYAMLPopulateNestedTextUnmarshaler-8       211 allocs/op
 BenchmarkZapConfigLoad-8                           188 allocs/op
 ```
+
+## Environment Variables
+
+YAML provider supports accepting values from the environment.
+For example, consider the following YAML file:
+
+```yaml
+modules:
+  http:
+    port: ${HTTP_PORT:3001}
+```
+
+Upon loading file, YAML provider will look up the HTTP_PORT environment variable
+and if available use it's value. If it's not found, the provided `3001` default
+will be used.
