@@ -75,3 +75,13 @@ func TestContextEncoding(t *testing.T) {
 		})
 	})
 }
+
+func TestContextEncodingWithNoSpan(t *testing.T) {
+	encoding := ContextEncoding{Tracer: opentracing.NoopTracer{}}
+	msg, err := encoding.Marshal(context.Background())
+	require.NoError(t, err)
+	assert.Nil(t, msg)
+	spanCtx, err := encoding.Unmarshal(msg)
+	require.NoError(t, err)
+	assert.Nil(t, spanCtx)
+}
