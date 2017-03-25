@@ -299,10 +299,11 @@ func (b *Backend) withContext(delivery cherami.Delivery, f func(context.Context)
 			if err := delivery.Nack(); err != nil {
 				ulog.Logger(ctx).Error("Delivery Nack failed", zap.Error(err))
 			}
+		} else {
+			span = b.tracer.StartSpan(_operationName, ext.RPCServerOption(spanCtx))
+			defer span.Finish()
+			ctx = opentracing.ContextWithSpan(ctx, span)
 		}
-		span = b.tracer.StartSpan(_operationName, ext.RPCServerOption(spanCtx))
-		defer span.Finish()
-		ctx = opentracing.ContextWithSpan(ctx, span)
 	}
 	f(ctx)
 }

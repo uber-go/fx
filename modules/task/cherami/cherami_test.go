@@ -75,17 +75,7 @@ func TestBackendWorkflow(t *testing.T) {
 		time.Sleep(10 * time.Millisecond)
 		stopBackend(t, m, bknd)
 		lines := buf.Lines()
-		var execCt, nackErrCt int
-		for _, line := range lines {
-			if strings.Contains(line, "forget to register") {
-				execCt++
-			}
-			if strings.Contains(line, "nack error") {
-				nackErrCt++
-			}
-		}
-		assert.Equal(t, 2, execCt)
-		assert.Equal(t, 1, nackErrCt)
+		findInLogs(t, lines, map[string]int{"forget to register": 2, "nack error": 1})
 	})
 }
 
@@ -117,13 +107,11 @@ func TestBackendWorkflowWorkerPanic(t *testing.T) {
 	// Nack panics are sent for a count of _numWorkers and 1 valid publish. Make sure they are
 	// all processed
 	lines := buf.Lines()
-	var ct int
-	for _, line := range lines {
-		if strings.Contains(line, "forget to register") {
-			ct++
-		}
-	}
-	require.Equal(t, _defaultClientConfig.ConsumeWorkerCount+1, ct)
+	findInLogs(
+		t,
+		lines,
+		map[string]int{"forget to register": _defaultClientConfig.ConsumeWorkerCount + 1},
+	)
 }
 
 func TestBackendWorkflowStateLocks(t *testing.T) {
@@ -279,6 +267,77 @@ func TestStartBackendOpenConsumerError(t *testing.T) {
 	_, err := startBackend(t, m, bknd, nil, errors.New(errStr))
 	assert.False(t, bknd.(*Backend).isRunning())
 	assert.Contains(t, err.Error(), errStr)
+}
+
+func TestWithContext(t *testing.T) {
+	m := newMock()
+	defer m.AssertExpectations(t)
+	tracer := &errTracer{opentracing.NoopTracer{}}
+	testArgs := []struct {
+		nackError    error
+		expectedLogs map[string]int
+	}{
+		{nil, map[string]int{"extract error": 1}},
+		{errors.New("nack error"), map[string]int{"extract error": 1, "nack error": 1}},
+	}
+	for _, testArg := range testArgs {
+		zapLogger, buf := testutils.GetLockedInMemoryLogger()
+		defer ulog.SetLogger(zapLogger)()
+		host := service.NopHostConfigured(auth.NopClient, zapLogger, tracer)
+
+		bknd := createNewBackend(t, m, host)
+		cBknd := bknd.(*Backend)
+		m.Delivery.On("GetMessage").Return(
+			&cherami_gen.ConsumerMessage{
+				Payload: &cherami_gen.PutMessage{
+					Data:        _publishMsg,
+					UserContext: map[string]string{_ctxKey: ""},
+				},
+			},
+		)
+		m.Delivery.On("Nack").Return(testArg.nackError).Once()
+		cBknd.withContext(m.Delivery, func(context.Context) {})
+		findInLogs(t, buf.Lines(), testArg.expectedLogs)
+	}
+}
+
+func findInLogs(t *testing.T, logs []string, expectedLinesWithCt map[string]int) {
+	actualLinesWithCt := make(map[string]int)
+	for _, line := range logs {
+		for k := range expectedLinesWithCt {
+			if strings.Contains(line, k) {
+				actualLinesWithCt[k]++
+			}
+		}
+	}
+	for k, v := range expectedLinesWithCt {
+		assert.Equal(
+			t,
+			v,
+			actualLinesWithCt[k],
+			"Expected msg: %s to occur %d times but found %d", k, v, actualLinesWithCt[k],
+		)
+	}
+}
+
+// errTracer is used to test error scenarios from context encoding
+type errTracer struct {
+	opentracing.Tracer
+}
+
+func (e *errTracer) Inject(
+	sm opentracing.SpanContext,
+	format interface{},
+	carrier interface{},
+) error {
+	return errors.New("inject error")
+}
+
+func (e *errTracer) Extract(
+	format interface{},
+	carrier interface{},
+) (opentracing.SpanContext, error) {
+	return nil, errors.New("extract error")
 }
 
 type cheramiMock struct {
