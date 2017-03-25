@@ -21,6 +21,7 @@
 package tracing
 
 import (
+	"errors"
 	"testing"
 
 	"go.uber.org/fx/tracing"
@@ -48,4 +49,26 @@ func WithSpan(t *testing.T, log *zap.Logger, f func(opentracing.Span)) {
 		defer span.Finish()
 		f(span)
 	})
+}
+
+// ErrorTracer is used to test error scenarios from context encoding
+type ErrorTracer struct {
+	opentracing.Tracer
+}
+
+// Inject implements opentracing.Tracer
+func (e *ErrorTracer) Inject(
+	sm opentracing.SpanContext,
+	format interface{},
+	carrier interface{},
+) error {
+	return errors.New("inject error")
+}
+
+// Extract implements opentracing.Tracer
+func (e *ErrorTracer) Extract(
+	format interface{},
+	carrier interface{},
+) (opentracing.SpanContext, error) {
+	return nil, errors.New("extract error")
 }

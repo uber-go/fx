@@ -286,7 +286,7 @@ func TestEncodingErrors(t *testing.T) {
 		{errors.New("nack error"), map[string]int{"extract error": 1, "nack error": 1}},
 	}
 	for _, testArg := range testArgs {
-		tracer := &errTracer{opentracing.NoopTracer{}}
+		tracer := &tracing.ErrorTracer{Tracer: opentracing.NoopTracer{}}
 		zapLogger, buf := testutils.GetLockedInMemoryLogger()
 		defer ulog.SetLogger(zapLogger)()
 		host := service.NopHostConfigured(auth.NopClient, zapLogger, tracer)
@@ -330,26 +330,6 @@ func findInLogs(t *testing.T, logs []string, expectedLinesWithCt map[string]int)
 			"Expected msg: %s to occur %d times but found %d", k, v, actualLinesWithCt[k],
 		)
 	}
-}
-
-// errTracer is used to test error scenarios from context encoding
-type errTracer struct {
-	opentracing.Tracer
-}
-
-func (e *errTracer) Inject(
-	sm opentracing.SpanContext,
-	format interface{},
-	carrier interface{},
-) error {
-	return errors.New("inject error")
-}
-
-func (e *errTracer) Extract(
-	format interface{},
-	carrier interface{},
-) (opentracing.SpanContext, error) {
-	return nil, errors.New("extract error")
 }
 
 type cheramiMock struct {

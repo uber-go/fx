@@ -24,35 +24,54 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
-)
+	"golang.org/x/net/context"
 
-type encodingTest struct {
-	encoding       Encoding
-	inputObj       interface{}
-	verifyEncoding bool
-}
+	"go.uber.org/fx/testutils/tracing"
+	"go.uber.org/zap"
+
+	"github.com/opentracing/opentracing-go"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
 
 var kvMap = map[string]string{"key": "value"}
 
-var encodingTests = []encodingTest{
-	{&NopEncoding{}, kvMap, false},
-	{&GobEncoding{}, kvMap, true},
-}
-
 func TestEncoding(t *testing.T) {
+	encodingTests := []struct {
+		encoding    Encoding
+		inputObj    interface{}
+		expectedObj interface{}
+	}{
+		{&NopEncoding{}, kvMap, nil},
+		{&GobEncoding{}, kvMap, kvMap},
+	}
 	for _, test := range encodingTests {
-		testEncMethods(t, test.encoding, test.inputObj, test.verifyEncoding)
+		testEncMethods(t, test.encoding, test.inputObj, test.expectedObj)
 	}
 }
 
-func testEncMethods(t *testing.T, encoding Encoding, obj interface{}, deepChecks bool) {
+func testEncMethods(t *testing.T, encoding Encoding, obj interface{}, expectedObj interface{}) {
 	assert.NoError(t, encoding.Register(obj))
 	msg, err := encoding.Marshal(obj)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	receivedObj := make(map[string]string)
-	assert.NoError(t, encoding.Unmarshal(msg, &receivedObj))
-	if deepChecks {
-		assert.True(t, reflect.DeepEqual(obj, receivedObj))
+	require.NoError(t, encoding.Unmarshal(msg, &receivedObj))
+	if expectedObj != nil {
+		assert.True(t, reflect.DeepEqual(expectedObj, receivedObj))
 	}
+}
+
+func TestContextEncoding(t *testing.T) {
+	nopZap := zap.NewNop()
+	tracing.WithTracer(t, nopZap, func(tracer opentracing.Tracer) {
+		encoding := ContextEncoding{Tracer: tracer}
+		tracing.WithSpan(t, nopZap, func(span opentracing.Span) {
+			ctx := opentracing.ContextWithSpan(context.Background(), span)
+			msg, err := encoding.Marshal(ctx)
+			require.NoError(t, err)
+			spanCtx, err := encoding.Unmarshal(msg)
+			require.NoError(t, err)
+			assert.Equal(t, span.Context(), spanCtx)
+		})
+	})
 }
