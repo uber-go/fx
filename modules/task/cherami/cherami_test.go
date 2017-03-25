@@ -114,6 +114,12 @@ func TestBackendWorkflowWorkerPanic(t *testing.T) {
 	)
 }
 
+func TestBackendWorkflowWithTask(t *testing.T) {
+	m := newMock()
+	defer m.AssertExpectations(t)
+	//bknd := createNewBackend(t, m, _host)
+}
+
 func TestBackendWorkflowStateLocks(t *testing.T) {
 	m := newMock()
 	defer m.AssertExpectations(t)
@@ -269,10 +275,9 @@ func TestStartBackendOpenConsumerError(t *testing.T) {
 	assert.Contains(t, err.Error(), errStr)
 }
 
-func TestWithContext(t *testing.T) {
+func TestEncodingErrors(t *testing.T) {
 	m := newMock()
 	defer m.AssertExpectations(t)
-	tracer := &errTracer{opentracing.NoopTracer{}}
 	testArgs := []struct {
 		nackError    error
 		expectedLogs map[string]int
@@ -281,6 +286,7 @@ func TestWithContext(t *testing.T) {
 		{errors.New("nack error"), map[string]int{"extract error": 1, "nack error": 1}},
 	}
 	for _, testArg := range testArgs {
+		tracer := &errTracer{opentracing.NoopTracer{}}
 		zapLogger, buf := testutils.GetLockedInMemoryLogger()
 		defer ulog.SetLogger(zapLogger)()
 		host := service.NopHostConfigured(auth.NopClient, zapLogger, tracer)
@@ -297,6 +303,12 @@ func TestWithContext(t *testing.T) {
 		)
 		m.Delivery.On("Nack").Return(testArg.nackError).Once()
 		cBknd.withContext(m.Delivery, func(context.Context) {})
+		tracing.WithSpan(t, zapLogger, func(span opentracing.Span) {
+			ctx := opentracing.ContextWithSpan(context.Background(), span)
+			err := cBknd.Enqueue(ctx, _publishMsg)
+			require.Error(t, err)
+			assert.Contains(t, err.Error(), "unable to encode context")
+		})
 		findInLogs(t, buf.Lines(), testArg.expectedLogs)
 	}
 }
