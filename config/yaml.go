@@ -49,7 +49,7 @@ func newYAMLProviderCore(files ...io.ReadCloser) Provider {
 		var curr interface{}
 		if err := unmarshalYAMLValue(v, &curr); err != nil {
 			if file, ok := v.(*os.File); ok {
-				panic(errors.Wrap(err, fmt.Sprintf("in file: %q", file.Name())))
+				panic(errors.Wrapf(err, "in file: %q", file.Name()))
 			}
 
 			panic(err)
