@@ -61,10 +61,8 @@ if err := cfg.Get("stuff.server").Populate(target); err != nil {
   // fail, we didn't find it.
 }
 
-fmt.Printf("Port is: %v\n", target.Port)
+fmt.Printf("Port is: %v", target.Port) // "Port is 8081"
 ```
-
-Prints **Port is 8081**
 
 This model respects priority of providers to allow overriding of individual
 values.
