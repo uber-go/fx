@@ -63,7 +63,7 @@
 //
 //   cfg := svc.Config()
 //   if value := cfg.Get("foo.bar.baz"); value.HasValue() {
-//     fmt.Printf("Say %s", value.AsString()) // "Say hello"
+//     fmt.Println("Say", value.AsString()) // "Say hello"
 //   }
 //
 // Or via a strongly typed structure, even as a nest value, such as:
@@ -81,9 +81,7 @@
 //     // fail, we didn't find it.
 //   }
 //
-//   fmt.Printf("Port is: %v\n", target.Port)
-//
-// Prints **Port is 8081**
+//   fmt.Println("Port is", target.Port) // "Port is 8081"
 //
 // This model respects priority of providers to allow overriding of individual
 // values.
@@ -201,6 +199,22 @@
 //   BenchmarkYAMLPopulateNestedMultipleFiles-8          52 allocs/op
 //   BenchmarkYAMLPopulateNestedTextUnmarshaler-8       211 allocs/op
 //   BenchmarkZapConfigLoad-8                           188 allocs/op
+//
+// Environment Variables
+//
+// YAML provider supports accepting values from the environment.
+// For example, consider the following YAML file:
+//
+//
+//   modules:
+//     http:
+//       port: ${HTTP_PORT:3001}
+//
+// Upon loading file, YAML provider will look up the HTTP_PORT environment variable
+// and if available use it's value. If it's not found, the provided
+// 3001 default
+// will be used.
+//
 //
 //
 package config
