@@ -821,3 +821,23 @@ F: error
 		t.Run(k, func(*testing.T) { v() })
 	}
 }
+
+func TestFileNameInPanic(t *testing.T) {
+	t.Parallel()
+	f, err := ioutil.TempFile("", "testYaml")
+	require.NoError(t, err)
+	defer os.Remove(f.Name())
+	f.Write([]byte("\t"))
+	require.NoError(t, f.Close())
+
+	defer func() {
+		e := recover()
+		require.NotNil(t, e)
+		err, ok := e.(error)
+		require.True(t, ok)
+		require.Error(t, err)
+		require.Contains(t, err.Error(), f.Name())
+	}()
+
+	NewYAMLProviderFromFiles(true, NewRelativeResolver(), f.Name())
+}
