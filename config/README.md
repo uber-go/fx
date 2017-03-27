@@ -41,7 +41,7 @@ UberFx Config allows direct key access, such as `foo.bar.baz`:
 ```go
 cfg := svc.Config()
 if value := cfg.Get("foo.bar.baz"); value.HasValue() {
-  fmt.Printf("Say %s", value.AsString()) // "Say hello"
+  fmt.Println("Say", value.AsString()) // "Say hello"
 }
 ```
 
@@ -61,10 +61,8 @@ if err := cfg.Get("stuff.server").Populate(target); err != nil {
   // fail, we didn't find it.
 }
 
-fmt.Printf("Port is: %v\n", target.Port)
+fmt.Println("Port is", target.Port) // "Port is 8081"
 ```
-
-Prints **Port is 8081**
 
 This model respects priority of providers to allow overriding of individual
 values.
