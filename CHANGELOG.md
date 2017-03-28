@@ -1,5 +1,7 @@
 # Changelog
 
+## v1.0.0-beta4 (unreleased)
+
 ## v1.0.0-beta3 (28 Mar 2017)
 
 - **[Breaking]** Environment config provider was removed. If you were using
