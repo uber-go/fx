@@ -1,6 +1,6 @@
 # Changelog
 
-## v1.0.0-beta3 (unreleased)
+## v1.0.0-beta3 (28 Mar 2017)
 
 - **[Breaking]** Environment config provider was removed. If you were using
   environment variables to override YAML values, see
