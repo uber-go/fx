@@ -25,13 +25,12 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"os"
 	"reflect"
 	"testing"
 	"time"
 
 	"go.uber.org/fx/testutils/env"
-
-	"os"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"

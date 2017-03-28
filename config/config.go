@@ -254,9 +254,6 @@ func (l *Loader) UnregisterProviders() {
 
 // Load creates a Provider for use in a service
 func (l *Loader) Load() Provider {
-	l.lock.RLock()
-	defer l.lock.RUnlock()
-
 	var static []Provider
 	for _, providerFunc := range l.staticProviderFuncs {
 		cp, err := providerFunc()

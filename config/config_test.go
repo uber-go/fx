@@ -101,12 +101,11 @@ func TestGlobalConfig(t *testing.T) {
 	t.Parallel()
 
 	l := newDefaultLoader()
-	m := map[string]string{}
-	l.lookUp = func(key string) (string, bool) {
-		val, ok := m[key]
-		return val, ok
+	l.lookUp = func(string) (string, bool) {
+		return "", false
 	}
 
+	l.SetConfigFiles("base", "development")
 	l.SetEnvironmentPrefix("TEST")
 	cfg := l.Load()
 
@@ -119,7 +118,6 @@ func TestGlobalConfig(t *testing.T) {
 
 func TestRootNodeConfig(t *testing.T) {
 	t.Parallel()
-
 	txt := []byte(`
 one:
   two: hello
@@ -131,7 +129,6 @@ one:
 
 func TestDirectAccess(t *testing.T) {
 	t.Parallel()
-
 	provider := NewProviderGroup(
 		"test",
 		NewYAMLProviderFromBytes(nestedYaml),
@@ -145,7 +142,6 @@ func TestDirectAccess(t *testing.T) {
 
 func TestScopedAccess(t *testing.T) {
 	t.Parallel()
-
 	provider := NewProviderGroup(
 		"test",
 		NewYAMLProviderFromBytes(nestedYaml),
@@ -165,7 +161,6 @@ func TestScopedAccess(t *testing.T) {
 
 func TestSimpleConfigValues(t *testing.T) {
 	t.Parallel()
-
 	provider := NewProviderGroup(
 		"test",
 		NewYAMLProviderFromBytes(yamlConfig3),
@@ -185,7 +180,6 @@ func TestSimpleConfigValues(t *testing.T) {
 
 func TestGetAsIntegerValue(t *testing.T) {
 	t.Parallel()
-
 	testCases := []struct {
 		value interface{}
 	}{
@@ -203,7 +197,6 @@ func TestGetAsIntegerValue(t *testing.T) {
 
 func TestGetAsFloatValue(t *testing.T) {
 	t.Parallel()
-
 	testCases := []struct {
 		value interface{}
 	}{
