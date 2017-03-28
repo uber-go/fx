@@ -339,7 +339,8 @@ func TestGetConfigFiles(t *testing.T) {
 		"secrets.yaml",
 		"config/base.yaml",
 		"config/development.yaml",
-		"config/secrets.yaml"}
+		"config/secrets.yaml",
+	}
 
 	assert.Equal(t, expected, files)
 }

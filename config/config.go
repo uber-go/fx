@@ -178,7 +178,7 @@ func (l *Loader) SetConfigFiles(files ...string) {
 
 func (l *Loader) getFiles() []string {
 	l.lock.RLock()
-	l.lock.RUnlock()
+	defer l.lock.RUnlock()
 
 	res := make([]string, len(l.configFiles))
 	copy(res, l.configFiles)
@@ -188,19 +188,17 @@ func (l *Loader) getFiles() []string {
 // SetDirs overrides the set of dirs to load config files from.
 func (l *Loader) SetDirs(dirs ...string) {
 	l.lock.Lock()
+	defer l.lock.Unlock()
 
 	l.dirs = dirs
-
-	l.lock.Unlock()
 }
 
 // SetEnvironmentPrefix sets environment prefix for the application.
 func (l *Loader) SetEnvironmentPrefix(envPrefix string) {
 	l.lock.Lock()
+	defer l.lock.Unlock()
 
 	l.envPrefix = envPrefix
-
-	l.lock.Unlock()
 }
 
 // EnvironmentPrefix returns environment prefix for the application.
@@ -228,10 +226,9 @@ type DynamicProviderFunc func(config Provider) (Provider, error)
 // RegisterProviders registers configuration providers for the global config.
 func (l *Loader) RegisterProviders(providerFuncs ...ProviderFunc) {
 	l.lock.Lock()
+	defer l.lock.Unlock()
 
 	l.staticProviderFuncs = append(l.staticProviderFuncs, providerFuncs...)
-
-	l.lock.Unlock()
 }
 
 // RegisterDynamicProviders registers dynamic config providers for the global config
@@ -239,20 +236,18 @@ func (l *Loader) RegisterProviders(providerFuncs ...ProviderFunc) {
 // information for bootstrap, such as port number,keys, endpoints etc.
 func (l *Loader) RegisterDynamicProviders(dynamicProviderFuncs ...DynamicProviderFunc) {
 	l.lock.Lock()
+	defer l.lock.Unlock()
 
 	l.dynamicProviderFuncs = append(l.dynamicProviderFuncs, dynamicProviderFuncs...)
-
-	l.lock.Unlock()
 }
 
 // UnregisterProviders clears all the default providers.
 func (l *Loader) UnregisterProviders() {
 	l.lock.Lock()
+	defer l.lock.Unlock()
 
 	l.staticProviderFuncs = nil
 	l.dynamicProviderFuncs = nil
-
-	l.lock.Unlock()
 }
 
 // Load creates a Provider for use in a service.
