@@ -1,5 +1,5 @@
-hash: 9c4d9cc4c94f2f4a87ace45dbcd749b7a39a338f08ff5865769e31616eb6a6f3
-updated: 2017-03-23T12:12:03.004496173-07:00
+hash: 03dda616164575043fff9196cb586410a53906cceb2aa0a9105eb17b7a4a2e1f
+updated: 2017-03-28T11:36:43.637865373-07:00
 imports:
 - name: github.com/apache/thrift
   version: 9549b25c77587b29be4e0b5c258221a4ed85d37a
@@ -63,7 +63,7 @@ imports:
 - name: github.com/uber-go/tally
   version: 34be4a565ce6286a0ba91a54a81be3f6181ca2e2
 - name: github.com/uber/cherami-client-go
-  version: f6da4234a00f2494cacf22e364b92c3972e2050a
+  version: 1cdcfc4a204fe42013f4cf7196fab208d3b98085
   subpackages:
   - client/cherami
   - common
@@ -76,12 +76,13 @@ imports:
   subpackages:
   - .generated/go/cherami
 - name: github.com/uber/jaeger-client-go
-  version: 153cc21d199f5a4b65d0d7219c1f423ea58cfab5
+  version: 465529424ed6b04a7fd2fcab6a9d6e96ea807fda
   subpackages:
   - config
   - internal/spanlog
   - log
   - log/zap
+  - rpcmetrics
   - thrift-gen/agent
   - thrift-gen/sampling
   - thrift-gen/zipkincore
@@ -129,7 +130,7 @@ imports:
   - version
   - wire
 - name: go.uber.org/yarpc
-  version: 3860420a469b82f1708886e4e03ea75a2314f237
+  version: 6ad92c34d7e982d4bb7299f20e6a27652116cf5d
   subpackages:
   - api/encoding
   - api/middleware
@@ -165,7 +166,7 @@ imports:
   - zapcore
   - zaptest
 - name: golang.org/x/net
-  version: 3e967e1d28d2c9c06e749dc2bdc14b04df89e689
+  version: a6577fac2d73be281a500b310739095313165611
   subpackages:
   - context
   - context/ctxhttp

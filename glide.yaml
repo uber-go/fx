@@ -21,7 +21,7 @@ import:
 - package: github.com/getsentry/raven-go
   version: master
 - package: github.com/uber/jaeger-client-go
-  version: ^2.1.0
+  version: ^2.6
 - package: github.com/stretchr/testify
   subpackages:
   - assert
