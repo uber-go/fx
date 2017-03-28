@@ -77,7 +77,7 @@ func newDefaultLoader() *Loader {
 	}
 
 	l.configFiles = l.baseFiles()
-	l.RegisterProviders(l.YamlProvider(l.configFiles...))
+	l.RegisterProviders(l.YamlProvider())
 
 	return l
 }
@@ -119,7 +119,7 @@ func (l *Loader) getConfigFiles(fileSet ...string) []string {
 	var files []string
 	for _, dir := range l.dirs {
 		for _, baseFile := range fileSet {
-			files = append(files, fmt.Sprintf("%s/%s.yaml", dir, baseFile))
+			files = append(files, filepath.Join(dir, fmt.Sprintf("%s.yaml", baseFile)))
 		}
 	}
 
@@ -139,9 +139,9 @@ func (l *Loader) getResolver() FileResolver {
 }
 
 // YamlProvider returns function to create Yaml based configuration provider
-func (l *Loader) YamlProvider(files ...string) ProviderFunc {
+func (l *Loader) YamlProvider() ProviderFunc {
 	return func() (Provider, error) {
-		return NewYAMLProviderFromFiles(false, l.getResolver(), l.getConfigFiles(files...)...), nil
+		return NewYAMLProviderFromFiles(false, l.getResolver(), l.getConfigFiles(l.GetConfigFiles()...)...), nil
 	}
 }
 
@@ -171,6 +171,17 @@ func (l *Loader) SetConfigFiles(files ...string) {
 	l.configFiles = files
 
 	l.lock.Unlock()
+}
+
+
+// GetConfigFiles returns files used to load for a service.
+func (l *Loader) GetConfigFiles() []string {
+	l.lock.RLock()
+	l.lock.RUnlock()
+
+	res := make([]string, len(l.configFiles))
+	copy(res, l.configFiles)
+	return res
 }
 
 // SetDirs overrides the set of dirs to load config files

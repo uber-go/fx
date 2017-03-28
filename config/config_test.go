@@ -31,6 +31,7 @@ import (
 	"fmt"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"sync"
 )
 
 type nested struct {
@@ -340,12 +341,15 @@ func TestGetConfigFiles(t *testing.T) {
 	l.SetEnvironmentPrefix("TEST")
 
 	files := l.getConfigFiles(l.baseFiles()...)
-	assert.Contains(t, files, "./base.yaml")
-	assert.Contains(t, files, "./development.yaml")
-	assert.Contains(t, files, "./secrets.yaml")
-	assert.Contains(t, files, "./config/base.yaml")
-	assert.Contains(t, files, "./config/development.yaml")
-	assert.Contains(t, files, "./config/secrets.yaml")
+	expected := []string{
+		"base.yaml",
+		"development.yaml",
+		"secrets.yaml",
+		"config/base.yaml",
+		"config/development.yaml",
+		"config/secrets.yaml"}
+
+	assert.Equal(t, expected, files)
 }
 
 func TestSetConfigFiles(t *testing.T) {
@@ -354,10 +358,8 @@ func TestSetConfigFiles(t *testing.T) {
 	l := newDefaultLoader()
 	l.SetConfigFiles("x", "y")
 	files := l.getConfigFiles(l.configFiles...)
-	assert.Contains(t, files, "./x.yaml")
-	assert.Contains(t, files, "./y.yaml")
-	assert.Contains(t, files, "./config/x.yaml")
-	assert.Contains(t, files, "./config/y.yaml")
+	expected := []string{"x.yaml", "y.yaml", "config/x.yaml", "config/y.yaml"}
+	assert.Equal(t, expected, files)
 }
 
 func expectedResolvePath(t *testing.T) string {
@@ -568,21 +570,55 @@ func TestLoader_LoadPanicOnDynamicError(t *testing.T) {
 	assert.Panics(t, func() { l.Load() })
 }
 
-func TestLoader_Dirs(t *testing.T) {
-	t.Parallel()
-
-	l := newDefaultLoader()
+func withBase(t *testing.T, f func(dir string), contents string) {
 	dir, err := ioutil.TempDir("", "TestLoader_Dirs")
 	require.NoError(t, err)
 
-	defer os.Remove(dir)
-	l.SetDirs(dir)
+	defer func() { require.NoError(t, os.Remove(dir)) }()
 
 	base, err := os.Create(fmt.Sprintf("%s/base.yaml", dir))
 	require.NoError(t, err)
-	base.WriteString(fmt.Sprintf("dir: %s", dir))
+	defer os.Remove(base.Name())
+
+	base.WriteString(contents)
 	base.Close()
 
-	p := l.Load()
-	assert.Equal(t, dir, p.Get("dir").String())
+	f(dir)
+}
+
+func TestLoader_Dirs(t *testing.T) {
+	t.Parallel()
+
+	f := func(dir string) {
+		l := newDefaultLoader()
+		l.SetDirs(dir)
+		p := l.Load()
+		assert.Equal(t, "jocker", p.Get("vilain").String())
+	}
+
+	withBase(t, f, "vilain: jocker")
+}
+
+func TestParallelLoad(t *testing.T) {
+	t.Parallel()
+
+	l := newDefaultLoader()
+
+	f := func(dir string) {
+		l.SetDirs(dir)
+		p := l.Load()
+		assert.Equal(t, "bane", p.Get("vilain").String())
+	}
+
+	wg := sync.WaitGroup{}
+	wg.Add(2)
+	op := func() {
+		withBase(t, f, "vilain: bane")
+		wg.Done()
+	}
+
+	go op()
+	go op()
+
+	wg.Wait()
 }
