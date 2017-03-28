@@ -112,7 +112,7 @@ func (l *Loader) ResolvePath(relative string) (string, error) {
 	return abs, nil
 }
 
-func (l *Loader) getConfigFiles(fileSet ...string) []string {
+func (l *Loader) joinFilepaths(fileSet ...string) []string {
 	l.lock.RLock()
 	defer l.lock.RUnlock()
 
@@ -141,7 +141,7 @@ func (l *Loader) getResolver() FileResolver {
 // YamlProvider returns function to create Yaml based configuration provider
 func (l *Loader) YamlProvider() ProviderFunc {
 	return func() (Provider, error) {
-		return NewYAMLProviderFromFiles(false, l.getResolver(), l.getConfigFiles(l.GetConfigFiles()...)...), nil
+		return NewYAMLProviderFromFiles(false, l.getResolver(), l.joinFilepaths(l.getFiles()...)...), nil
 	}
 }
 
@@ -173,9 +173,7 @@ func (l *Loader) SetConfigFiles(files ...string) {
 	l.lock.Unlock()
 }
 
-
-// GetConfigFiles returns files used to load for a service.
-func (l *Loader) GetConfigFiles() []string {
+func (l *Loader) getFiles() []string {
 	l.lock.RLock()
 	l.lock.RUnlock()
 

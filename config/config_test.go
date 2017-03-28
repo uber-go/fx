@@ -340,7 +340,7 @@ func TestGetConfigFiles(t *testing.T) {
 	l := newDefaultLoader()
 	l.SetEnvironmentPrefix("TEST")
 
-	files := l.getConfigFiles(l.baseFiles()...)
+	files := l.joinFilepaths(l.baseFiles()...)
 	expected := []string{
 		"base.yaml",
 		"development.yaml",
@@ -357,7 +357,7 @@ func TestSetConfigFiles(t *testing.T) {
 
 	l := newDefaultLoader()
 	l.SetConfigFiles("x", "y")
-	files := l.getConfigFiles(l.configFiles...)
+	files := l.joinFilepaths(l.configFiles...)
 	expected := []string{"x.yaml", "y.yaml", "config/x.yaml", "config/y.yaml"}
 	assert.Equal(t, expected, files)
 }

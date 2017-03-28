@@ -47,7 +47,7 @@ func newYAMLProviderCore(lookUp lookUpFunc, files ...io.ReadCloser) Provider {
 	var root interface{}
 	for _, v := range files {
 		var curr interface{}
-		if err := unmarshalYAMLValue(v, &curr); err != nil {
+		if err := unmarshalYAMLValue(v, &curr, lookUp); err != nil {
 			if file, ok := v.(*os.File); ok {
 				panic(errors.Wrapf(err, "in file: %q", file.Name()))
 			}
