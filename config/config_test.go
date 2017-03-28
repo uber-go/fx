@@ -23,15 +23,15 @@ package config
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"os"
 	"path"
+	"sync"
 	"testing"
 
-	"fmt"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"sync"
 )
 
 type nested struct {
@@ -270,7 +270,6 @@ func TestDefault(t *testing.T) {
 
 func TestInvalidConfigFailures(t *testing.T) {
 	t.Parallel()
-
 	valueType := []byte(`
 id: xyz
 boolean:
