@@ -114,12 +114,6 @@ func TestBackendWorkflowWorkerPanic(t *testing.T) {
 	)
 }
 
-func TestBackendWorkflowWithTask(t *testing.T) {
-	m := newMock()
-	defer m.AssertExpectations(t)
-	//bknd := createNewBackend(t, m, _host)
-}
-
 func TestBackendWorkflowStateLocks(t *testing.T) {
 	m := newMock()
 	defer m.AssertExpectations(t)

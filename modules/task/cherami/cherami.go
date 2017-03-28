@@ -267,6 +267,7 @@ func (b *Backend) consumeAndExecute() {
 			b.consumeAndExecute()
 		}
 	}()
+
 	for delivery := range b.deliveryCh {
 		messageData := delivery.GetMessage().GetPayload().GetData()
 		b.withContext(delivery, func(ctx context.Context) {
@@ -290,21 +291,21 @@ func (b *Backend) consumeAndExecute() {
 func (b *Backend) withContext(delivery cherami.Delivery, f func(context.Context)) {
 	ctxData := delivery.GetMessage().GetPayload().GetUserContext()
 	ctx := context.Background()
-	var span opentracing.Span
 	if ctxVal, ok := ctxData[_ctxKey]; ok {
-		spanCtx, err := b.ctxEncoder.Unmarshal([]byte(ctxVal))
-		if err != nil {
+		if spanCtx, err := b.ctxEncoder.Unmarshal([]byte(ctxVal)); err != nil {
 			ulog.Logger(ctx).Error("Unable to decode context", zap.Error(err))
 			b.taskFailure.Inc(1)
 			if err := delivery.Nack(); err != nil {
 				ulog.Logger(ctx).Error("Delivery Nack failed", zap.Error(err))
 			}
 		} else {
+			var span opentracing.Span
 			span = b.tracer.StartSpan(_operationName, ext.RPCServerOption(spanCtx))
 			defer span.Finish()
 			ctx = opentracing.ContextWithSpan(ctx, span)
 		}
 	}
+
 	f(ctx)
 }
 
@@ -321,14 +322,17 @@ func (b *Backend) Enqueue(ctx context.Context, message []byte) error {
 	if err != nil {
 		return errors.Wrap(err, "unable to encode context")
 	}
+
 	ctxMap := make(map[string]string)
 	if len(ctxBytes) > 0 {
 		ctxMap[_ctxKey] = string(ctxBytes)
 	}
+
 	receipt := b.publisher.Publish(&cherami.PublisherMessage{
 		Data:        message,
 		UserContext: ctxMap,
 	})
+
 	return receipt.Error
 }
 
