@@ -95,12 +95,14 @@ func (c *ContextEncoding) Marshal(ctx context.Context) ([]byte, error) {
 	if span == nil {
 		return nil, nil
 	}
+
 	spanCtx := span.Context()
 	if spanCtx == nil {
 		return nil, nil
 	}
-	carrier := bytes.NewBuffer([]byte{})
-	err := c.Tracer.Inject(spanCtx, opentracing.Binary, carrier)
+
+	var carrier bytes.Buffer
+	err := c.Tracer.Inject(spanCtx, opentracing.Binary, &carrier)
 	return carrier.Bytes(), err
 }
 
@@ -110,9 +112,11 @@ func (c *ContextEncoding) Marshal(ctx context.Context) ([]byte, error) {
 func (c *ContextEncoding) Unmarshal(data []byte) (opentracing.SpanContext, error) {
 	carrier := bytes.NewBuffer(data)
 	spanContext, err := c.Tracer.Extract(opentracing.Binary, carrier)
+
 	// If no SpanContext was given, we return nil instead of erroring
 	if err == opentracing.ErrSpanContextNotFound {
 		return nil, nil
 	}
+
 	return spanContext, err
 }
