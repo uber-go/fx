@@ -100,7 +100,7 @@ type arrayOfStructs struct {
 func TestGlobalConfig(t *testing.T) {
 	t.Parallel()
 
-	l := newDefaultLoader()
+	l := NewLoader()
 	l.lookUp = func(string) (string, bool) {
 		return "", false
 	}
@@ -284,7 +284,7 @@ boolean:
 func TestRegisteredProvidersInitialization(t *testing.T) {
 	t.Parallel()
 
-	l := newDefaultLoader()
+	l := NewLoader()
 	l.RegisterProviders(StaticProvider(map[string]interface{}{
 		"hello": "world",
 	}))
@@ -307,7 +307,7 @@ func TestRegisteredProvidersInitialization(t *testing.T) {
 func TestNilProvider(t *testing.T) {
 	t.Parallel()
 
-	l := newDefaultLoader()
+	l := NewLoader()
 	l.RegisterProviders(func() (Provider, error) {
 		return nil, errors.New("error creating Provider")
 	})
@@ -329,7 +329,7 @@ func TestNilProvider(t *testing.T) {
 func TestGetConfigFiles(t *testing.T) {
 	t.Parallel()
 
-	l := newDefaultLoader()
+	l := NewLoader()
 	l.SetEnvironmentPrefix("TEST")
 
 	files := l.joinFilepaths(l.baseFiles()...)
@@ -348,7 +348,7 @@ func TestGetConfigFiles(t *testing.T) {
 func TestSetConfigFiles(t *testing.T) {
 	t.Parallel()
 
-	l := newDefaultLoader()
+	l := NewLoader()
 	l.SetConfigFiles("x", "y")
 	files := l.joinFilepaths(l.configFiles...)
 	expected := []string{"x.yaml", "y.yaml", "config/x.yaml", "config/y.yaml"}
@@ -364,7 +364,7 @@ func expectedResolvePath(t *testing.T) string {
 func TestResolvePath(t *testing.T) {
 	t.Parallel()
 
-	l := newDefaultLoader()
+	l := NewLoader()
 
 	res, err := l.ResolvePath("testdata")
 	assert.NoError(t, err)
@@ -374,7 +374,7 @@ func TestResolvePath(t *testing.T) {
 func TestResolvePathInvalid(t *testing.T) {
 	t.Parallel()
 
-	l := newDefaultLoader()
+	l := NewLoader()
 	res, err := l.ResolvePath("invalid")
 	assert.Error(t, err)
 	assert.Equal(t, "", res)
@@ -383,7 +383,7 @@ func TestResolvePathInvalid(t *testing.T) {
 func TestResolvePathAbs(t *testing.T) {
 	t.Parallel()
 
-	l := newDefaultLoader()
+	l := NewLoader()
 	abs := expectedResolvePath(t)
 	res, err := l.ResolvePath(abs)
 	assert.NoError(t, err)
@@ -533,7 +533,7 @@ rpc:
 func TestLoader_Environment(t *testing.T) {
 	t.Parallel()
 
-	l := newDefaultLoader()
+	l := NewLoader()
 	l.lookUp = func(key string) (string, bool) {
 		require.Equal(t, "APP_ENVIRONMENT", key)
 		return "KGBeast", true
@@ -545,7 +545,7 @@ func TestLoader_Environment(t *testing.T) {
 func TestLoader_AppRoot(t *testing.T) {
 	t.Parallel()
 
-	l := newDefaultLoader()
+	l := NewLoader()
 	l.lookUp = func(key string) (string, bool) {
 		require.Equal(t, "APP_ROOT", key)
 		return "Harley Quinn", true
@@ -557,7 +557,7 @@ func TestLoader_AppRoot(t *testing.T) {
 func TestLoader_LoadPanicOnDynamicError(t *testing.T) {
 	t.Parallel()
 
-	l := newDefaultLoader()
+	l := NewLoader()
 	l.RegisterDynamicProviders(func(config Provider) (Provider, error) { return nil, errors.New("something scary") })
 
 	assert.Panics(t, func() { l.Load() })
@@ -583,7 +583,7 @@ func TestLoader_Dirs(t *testing.T) {
 	t.Parallel()
 
 	f := func(dir string) {
-		l := newDefaultLoader()
+		l := NewLoader()
 		l.SetDirs(dir)
 		p := l.Load()
 		assert.Equal(t, "jocker", p.Get("vilain").String())
@@ -595,7 +595,7 @@ func TestLoader_Dirs(t *testing.T) {
 func TestParallelLoad(t *testing.T) {
 	t.Parallel()
 
-	l := newDefaultLoader()
+	l := NewLoader()
 
 	f := func(dir string) {
 		l.SetDirs(dir)
@@ -614,4 +614,10 @@ func TestParallelLoad(t *testing.T) {
 	go op()
 
 	wg.Wait()
+}
+
+func TestZeroInitializeLoader(t *testing.T) {
+	t.Parallel()
+	var l Loader
+	assert.NotPanics(t, func() { l.Load() })
 }

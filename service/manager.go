@@ -83,7 +83,7 @@ func newManager(builder *Builder) (Manager, error) {
 		// If the user didn't pass in a configuration provider, load the standard.
 		// Bypassing standard config load is pretty much only used for tests, although it could be
 		// useful in certain circumstances.
-		m.configProvider = config.DefaultLoader.Load()
+		m.configProvider = config.NewLoader().Load()
 	}
 	if err := m.setupStandardConfig(); err != nil {
 		return nil, err

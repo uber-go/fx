@@ -52,7 +52,7 @@ const (
 
 type lookUpFunc func(string) (string, bool)
 
-// Loader is responsible for loading configs.
+// Loader is responsible for loading config providers.
 type Loader struct {
 	lock sync.RWMutex
 
@@ -70,10 +70,8 @@ type Loader struct {
 	lookUp lookUpFunc
 }
 
-// DefaultLoader will be used if config is not defined for a service.
-var DefaultLoader = newDefaultLoader()
-
-func newDefaultLoader() *Loader {
+// NewLoader returns a default Loader.
+func NewLoader() *Loader {
 	l := &Loader{
 		envPrefix: "APP",
 		dirs:      []string{".", "./config"},
