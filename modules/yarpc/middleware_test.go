@@ -88,9 +88,7 @@ func TestInboundMiddleware_panic(t *testing.T) {
 }
 
 func TestInboundMiddleware_TransportUnaryMiddleware(t *testing.T) {
-
 	host := service.NopHost()
-
 	m := TransportUnaryMiddleware{
 		procedures: make(map[string][]decorator.UnaryDecorator),
 		decorators: make(map[string]transport.UnaryHandler),
@@ -104,8 +102,27 @@ func TestInboundMiddleware_TransportUnaryMiddleware(t *testing.T) {
 		Procedure: "hello",
 	}, nil, &fakeUnary{t: t})
 	m.Handle(context.Background(), &transport.Request{
-		Procedure: "hello",
+		Procedure: "nop",
 	}, nil, &fakeUnary{t: t})
+}
+
+func TestInboundMiddleware_TransportOnewayMiddleware(t *testing.T) {
+	host := service.NopHost()
+	m := TransportOnewayMiddleware{
+		procedures: make(map[string][]decorator.OnewayDecorator),
+		decorators: make(map[string]transport.OnewayHandler),
+	}
+	decorator := decorator.RecoveryOneway(host.Metrics(), config.NewScopedProvider("recovery", host.Config()))
+	m.procedures["hello"] = append(m.procedures["recovery"], decorator)
+	m.HandleOneway(context.Background(), &transport.Request{
+		Procedure: "hello",
+	}, &fakeOneway{t: t})
+	m.HandleOneway(context.Background(), &transport.Request{
+		Procedure: "hello",
+	}, &fakeOneway{t: t})
+	m.HandleOneway(context.Background(), &transport.Request{
+		Procedure: "nop",
+	}, &fakeOneway{t: t})
 }
 
 func TestOnewayInboundMiddleware_panic(t *testing.T) {

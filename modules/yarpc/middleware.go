@@ -46,13 +46,17 @@ type TransportUnaryMiddleware struct {
 	decorators map[string]transport.UnaryHandler
 }
 
-// Handle all decoratorss
+// Handle all decorators for Unary transport
 func (l TransportUnaryMiddleware) Handle(
 	ctx context.Context,
 	req *transport.Request,
 	resw transport.ResponseWriter,
 	handler transport.UnaryHandler,
 ) error {
+	if _, ok := l.procedures[req.Procedure]; !ok {
+		return handler.Handle(ctx, req, resw)
+	}
+
 	mu.Lock()
 	if _, ok := l.decorators[req.Procedure]; !ok {
 		l.decorators[req.Procedure] = decorator.BuildUnary(decorator.UnaryHandlerWrap(handler), l.procedures[req.Procedure]...)
@@ -67,12 +71,16 @@ type TransportOnewayMiddleware struct {
 	decorators map[string]transport.OnewayHandler
 }
 
-// Handle all decoratorss
-func (l TransportOnewayMiddleware) Handle(
+// HandleOneway all decorators for Oneway transport
+func (l TransportOnewayMiddleware) HandleOneway(
 	ctx context.Context,
 	req *transport.Request,
 	handler transport.OnewayHandler,
 ) error {
+	if _, ok := l.procedures[req.Procedure]; !ok {
+		return handler.HandleOneway(ctx, req)
+	}
+
 	mu.Lock()
 	if _, ok := l.decorators[req.Procedure]; !ok {
 		l.decorators[req.Procedure] = decorator.BuildOneway(decorator.OnewayHandlerWrap(handler), l.procedures[req.Procedure]...)
