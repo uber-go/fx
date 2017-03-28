@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.0.0-beta4 (unreleased)
+
+- **[Breaking]** Introduce a config loader, this will allow to override config loading
+  and use custom dirs to load from. In order to load configs calls to `config.Load()`
+  should be replaced with `config.NewLoader().Load()`.
+
 ## v1.0.0-beta3 (unreleased)
 
 - **[Breaking]** Environment config provider was removed. If you were using
@@ -24,9 +30,6 @@
   at `go.uber.org/dig`.
 - **[Breaking]** Pass a tracer the `uhttp/uhttpclient` constructor explicitly, instead
   of using a global tracer. This will allow to use http client in parallel tests.
-- **[Breaking]** Introduce a config loader, this will allow to override config loading
-  and use custom dirs to load from. In order to load configs calls to `config.Load()`
-  should be replaced with `config.NewLoader().Load()`.
 
 ## v1.0.0-beta2 (09 Mar 2017)
 

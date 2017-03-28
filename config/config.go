@@ -70,6 +70,9 @@ type Loader struct {
 	lookUp lookUpFunc
 }
 
+// DefaultLoader is going to be used by a service if config is not specified.
+var DefaultLoader = NewLoader()
+
 // NewLoader returns a default Loader.
 func NewLoader() *Loader {
 	l := &Loader{
