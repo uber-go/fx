@@ -25,13 +25,13 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
-	"os"
-	"path"
 	"reflect"
 	"testing"
 	"time"
 
 	"go.uber.org/fx/testutils/env"
+
+	"os"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -173,11 +173,7 @@ func TestExtends(t *testing.T) {
 func TestAppRoot(t *testing.T) {
 	t.Parallel()
 
-	cwd, err := os.Getwd()
-	assert.NoError(t, err)
-
-	defer env.Override(t, _appRoot, path.Join(cwd, "testdata"))()
-	provider := NewYAMLProviderFromFiles(false, NewRelativeResolver(), "base.yaml", "dev.yaml", "secrets.yaml")
+	provider := NewYAMLProviderFromFiles(false, NewRelativeResolver("testdata"), "base.yaml", "dev.yaml", "secrets.yaml")
 
 	baseValue := provider.Get("value").AsString()
 	assert.Equal(t, "base_only", baseValue)
@@ -203,7 +199,7 @@ func TestYAMLNode(t *testing.T) {
 	t.Parallel()
 	buff := bytes.NewBuffer([]byte("a: b"))
 	node := &yamlNode{value: make(map[interface{}]interface{})}
-	err := unmarshalYAMLValue(ioutil.NopCloser(buff), &node.value)
+	err := unmarshalYAMLValue(ioutil.NopCloser(buff), &node.value, nil)
 	require.NoError(t, err)
 	assert.Equal(t, "map[a:b]", node.String())
 	assert.Equal(t, "map[interface {}]interface {}", node.Type().String())
@@ -214,7 +210,7 @@ func TestYamlNodeWithNil(t *testing.T) {
 	provider := NewYAMLProviderFromFiles(false, nil)
 	assert.NotNil(t, provider)
 	assert.Panics(t, func() {
-		_ = unmarshalYAMLValue(nil, nil)
+		_ = unmarshalYAMLValue(nil, nil, nil)
 	}, "Expected panic with nil inpout.")
 }
 
@@ -840,4 +836,36 @@ func TestFileNameInPanic(t *testing.T) {
 	}()
 
 	NewYAMLProviderFromFiles(true, NewRelativeResolver(), f.Name())
+}
+
+func TestYAMLName(t *testing.T) {
+	t.Parallel()
+
+	p := NewYAMLProviderFromBytes([]byte(``))
+	require.Contains(t, p.Name(), "yaml")
+}
+
+func TestYAMLCallbacks(t *testing.T) {
+	t.Parallel()
+
+	p := newYAMLProviderCore(nil, ioutil.NopCloser(bytes.NewBuffer(nil)))
+	require.Nil(t, p.RegisterChangeCallback("key", nil))
+	require.Nil(t, p.UnregisterChangeCallback("key"))
+}
+
+func TestAbsolutePaths(t *testing.T) {
+	t.Parallel()
+
+	file, err := ioutil.TempFile("", "TestAbsolutePaths")
+	require.NoError(t, err)
+	file.WriteString("")
+	require.NoError(t, file.Close())
+	defer func() { assert.NoError(t, os.Remove(file.Name())) }()
+
+	p := NewYAMLProviderFromFiles(true, nil, file.Name())
+	require.NotNil(t, p)
+
+	val := p.Get("Imaginary")
+	assert.False(t, val.HasValue())
+	assert.Equal(t, time.Time{}, val.LastUpdated())
 }

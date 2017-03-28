@@ -21,13 +21,14 @@
 package config
 
 import (
-	"fmt"
+	"bytes"
+	"errors"
+	"io/ioutil"
 	"os"
 	"path"
 	"testing"
 
-	"go.uber.org/fx/testutils/env"
-
+	"fmt"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -96,11 +97,20 @@ type arrayOfStructs struct {
 }
 
 func TestGlobalConfig(t *testing.T) {
-	SetEnvironmentPrefix("TEST")
-	cfg := Load()
+	t.Parallel()
+
+	l := newDefaultLoader()
+	m := map[string]string{}
+	l.lookUp = func(key string) (string, bool) {
+		val, ok := m[key]
+		return val, ok
+	}
+
+	l.SetEnvironmentPrefix("TEST")
+	cfg := l.Load()
 
 	assert.Equal(t, "global", cfg.Name())
-	assert.Equal(t, "development", Environment())
+	assert.Equal(t, "development", l.Environment())
 
 	cfg = NewProviderGroup("test", NewYAMLProviderFromBytes([]byte(`name: sample`)))
 	assert.Equal(t, "test", cfg.Name())
@@ -108,6 +118,7 @@ func TestGlobalConfig(t *testing.T) {
 
 func TestRootNodeConfig(t *testing.T) {
 	t.Parallel()
+
 	txt := []byte(`
 one:
   two: hello
@@ -119,6 +130,7 @@ one:
 
 func TestDirectAccess(t *testing.T) {
 	t.Parallel()
+
 	provider := NewProviderGroup(
 		"test",
 		NewYAMLProviderFromBytes(nestedYaml),
@@ -132,6 +144,7 @@ func TestDirectAccess(t *testing.T) {
 
 func TestScopedAccess(t *testing.T) {
 	t.Parallel()
+
 	provider := NewProviderGroup(
 		"test",
 		NewYAMLProviderFromBytes(nestedYaml),
@@ -151,6 +164,7 @@ func TestScopedAccess(t *testing.T) {
 
 func TestSimpleConfigValues(t *testing.T) {
 	t.Parallel()
+
 	provider := NewProviderGroup(
 		"test",
 		NewYAMLProviderFromBytes(yamlConfig3),
@@ -170,6 +184,7 @@ func TestSimpleConfigValues(t *testing.T) {
 
 func TestGetAsIntegerValue(t *testing.T) {
 	t.Parallel()
+
 	testCases := []struct {
 		value interface{}
 	}{
@@ -187,6 +202,7 @@ func TestGetAsIntegerValue(t *testing.T) {
 
 func TestGetAsFloatValue(t *testing.T) {
 	t.Parallel()
+
 	testCases := []struct {
 		value interface{}
 	}{
@@ -203,6 +219,8 @@ func TestGetAsFloatValue(t *testing.T) {
 }
 
 func TestNestedStructs(t *testing.T) {
+	t.Parallel()
+
 	provider := NewProviderGroup(
 		"test",
 		NewYAMLProviderFromBytes(nestedYaml),
@@ -225,6 +243,8 @@ func TestNestedStructs(t *testing.T) {
 }
 
 func TestArrayOfStructs(t *testing.T) {
+	t.Parallel()
+
 	provider := NewProviderGroup(
 		"test",
 		NewYAMLProviderFromBytes(structArrayYaml),
@@ -241,6 +261,8 @@ func TestArrayOfStructs(t *testing.T) {
 }
 
 func TestDefault(t *testing.T) {
+	t.Parallel()
+
 	provider := NewProviderGroup(
 		"test",
 		NewYAMLProviderFromBytes(nest1),
@@ -254,6 +276,7 @@ func TestDefault(t *testing.T) {
 
 func TestInvalidConfigFailures(t *testing.T) {
 	t.Parallel()
+
 	valueType := []byte(`
 id: xyz
 boolean:
@@ -266,49 +289,57 @@ boolean:
 }
 
 func TestRegisteredProvidersInitialization(t *testing.T) {
-	RegisterProviders(StaticProvider(map[string]interface{}{
+	t.Parallel()
+
+	l := newDefaultLoader()
+	l.RegisterProviders(StaticProvider(map[string]interface{}{
 		"hello": "world",
 	}))
-	RegisterDynamicProviders(func(dynamic Provider) (Provider, error) {
+
+	l.RegisterDynamicProviders(func(dynamic Provider) (Provider, error) {
 		return NewStaticProvider(map[string]interface{}{
 			"dynamic": "provider",
 		}), nil
 	})
-	cfg := Load()
+
+	cfg := l.Load()
 	assert.Equal(t, "global", cfg.Name())
 	assert.Equal(t, "world", cfg.Get("hello").AsString())
 	assert.Equal(t, "provider", cfg.Get("dynamic").AsString())
-	UnregisterProviders()
-	assert.Nil(t, _staticProviderFuncs)
-	assert.Nil(t, _dynamicProviderFuncs)
+	l.UnregisterProviders()
+	assert.Nil(t, l.staticProviderFuncs)
+	assert.Nil(t, l.dynamicProviderFuncs)
 }
 
 func TestNilProvider(t *testing.T) {
-	RegisterProviders(func() (Provider, error) {
-		return nil, fmt.Errorf("error creating Provider")
+	t.Parallel()
+
+	l := newDefaultLoader()
+	l.RegisterProviders(func() (Provider, error) {
+		return nil, errors.New("error creating Provider")
 	})
-	assert.Panics(t, func() { Load() }, "Can't initialize with nil provider")
 
-	oldProviders := _staticProviderFuncs
-	defer func() {
-		_staticProviderFuncs = oldProviders
-	}()
+	assert.Panics(t, func() { l.Load() }, "Can't initialize with nil provider")
 
-	UnregisterProviders()
-	RegisterProviders(func() (Provider, error) {
+	l.UnregisterProviders()
+	l.RegisterProviders(func() (Provider, error) {
 		return nil, nil
 	})
-	// don't panic on Load
-	Load()
 
-	UnregisterProviders()
-	assert.Nil(t, _staticProviderFuncs)
+	// don't panic on Load
+	l.Load()
+
+	l.UnregisterProviders()
+	assert.Nil(t, l.staticProviderFuncs)
 }
 
 func TestGetConfigFiles(t *testing.T) {
-	SetEnvironmentPrefix("TEST")
+	t.Parallel()
 
-	files := getConfigFiles(baseFiles()...)
+	l := newDefaultLoader()
+	l.SetEnvironmentPrefix("TEST")
+
+	files := l.getConfigFiles(l.baseFiles()...)
 	assert.Contains(t, files, "./base.yaml")
 	assert.Contains(t, files, "./development.yaml")
 	assert.Contains(t, files, "./secrets.yaml")
@@ -318,8 +349,11 @@ func TestGetConfigFiles(t *testing.T) {
 }
 
 func TestSetConfigFiles(t *testing.T) {
-	SetConfigFiles("x", "y")
-	files := getConfigFiles(_configFiles...)
+	t.Parallel()
+
+	l := newDefaultLoader()
+	l.SetConfigFiles("x", "y")
+	files := l.getConfigFiles(l.configFiles...)
 	assert.Contains(t, files, "./x.yaml")
 	assert.Contains(t, files, "./y.yaml")
 	assert.Contains(t, files, "./config/x.yaml")
@@ -333,26 +367,37 @@ func expectedResolvePath(t *testing.T) string {
 }
 
 func TestResolvePath(t *testing.T) {
-	res, err := ResolvePath("testdata")
+	t.Parallel()
+
+	l := newDefaultLoader()
+
+	res, err := l.ResolvePath("testdata")
 	assert.NoError(t, err)
 	assert.Equal(t, expectedResolvePath(t), res)
 }
 
 func TestResolvePathInvalid(t *testing.T) {
-	res, err := ResolvePath("invalid")
+	t.Parallel()
+
+	l := newDefaultLoader()
+	res, err := l.ResolvePath("invalid")
 	assert.Error(t, err)
 	assert.Equal(t, "", res)
 }
 
 func TestResolvePathAbs(t *testing.T) {
+	t.Parallel()
+
+	l := newDefaultLoader()
 	abs := expectedResolvePath(t)
-	res, err := ResolvePath(abs)
+	res, err := l.ResolvePath(abs)
 	assert.NoError(t, err)
 	assert.Equal(t, abs, res)
 }
 
 func TestNopProvider_Get(t *testing.T) {
 	t.Parallel()
+
 	p := NopProvider{}
 	assert.Equal(t, "NopProvider", p.Name())
 	assert.NoError(t, p.RegisterChangeCallback("key", nil))
@@ -439,7 +484,7 @@ ps:
 }
 
 func TestRPCPortField(t *testing.T) {
-	defer env.Override(t, "COMPANY_TCHANNEL_PORT", "4324")()
+	t.Parallel()
 
 	type Port int
 	type TChannelOutbound struct {
@@ -473,14 +518,71 @@ rpc:
         host: 127.0.0.1
         port: ${COMPANY_TCHANNEL_PORT:321}
 `
-	p := NewProviderGroup(
-		"test",
-		NewYAMLProviderFromBytes([]byte(rpc)),
-	)
+	lookup := func(key string) (string, bool) {
+		if key == "COMPANY_TCHANNEL_PORT" {
+			return "4324", true
+		}
+
+		return "", false
+	}
+
+	p := newYAMLProviderCore(lookup, ioutil.NopCloser(bytes.NewBufferString(rpc)))
 
 	cfg := &YARPCConfig{}
 	v := p.Get("rpc")
 
 	require.NoError(t, v.Populate(cfg))
 	require.Equal(t, 4324, int(*cfg.Outbounds[0].TChannel.Port))
+}
+
+func TestLoader_Environment(t *testing.T) {
+	t.Parallel()
+
+	l := newDefaultLoader()
+	l.lookUp = func(key string) (string, bool) {
+		require.Equal(t, "APP_ENVIRONMENT", key)
+		return "KGBeast", true
+	}
+
+	assert.Equal(t, "KGBeast", l.Environment())
+}
+
+func TestLoader_AppRoot(t *testing.T) {
+	t.Parallel()
+
+	l := newDefaultLoader()
+	l.lookUp = func(key string) (string, bool) {
+		require.Equal(t, "APP_ROOT", key)
+		return "Harley Quinn", true
+	}
+
+	assert.Equal(t, "Harley Quinn", l.AppRoot())
+}
+
+func TestLoader_LoadPanicOnDynamicError(t *testing.T) {
+	t.Parallel()
+
+	l := newDefaultLoader()
+	l.RegisterDynamicProviders(func(config Provider) (Provider, error) { return nil, errors.New("something scary") })
+
+	assert.Panics(t, func() { l.Load() })
+}
+
+func TestLoader_Dirs(t *testing.T) {
+	t.Parallel()
+
+	l := newDefaultLoader()
+	dir, err := ioutil.TempDir("", "TestLoader_Dirs")
+	require.NoError(t, err)
+
+	defer os.Remove(dir)
+	l.SetDirs(dir)
+
+	base, err := os.Create(fmt.Sprintf("%s/base.yaml", dir))
+	require.NoError(t, err)
+	base.WriteString(fmt.Sprintf("dir: %s", dir))
+	base.Close()
+
+	p := l.Load()
+	assert.Equal(t, dir, p.Get("dir").String())
 }

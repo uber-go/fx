@@ -39,36 +39,59 @@ const (
 )
 
 const (
-	_appRoot     = "APP_ROOT"
+	_appRoot     = "_ROOT"
 	_environment = "_ENVIRONMENT"
 	_configDir   = "_CONFIG_DIR"
 	_configRoot  = "./config"
 	_baseFile    = "base"
 	_secretsFile = "secrets"
+	_devEnv      = "development"
 )
 
-var (
-	_setupMux sync.Mutex
+type lookUpFunc func(string) (string, bool)
 
-	_envPrefix            = "APP"
-	_staticProviderFuncs  = []ProviderFunc{YamlProvider()}
-	_configFiles          = baseFiles()
-	_dynamicProviderFuncs []DynamicProviderFunc
-)
+// Loader is responsible for loading configs.
+type Loader struct {
+	lock sync.RWMutex
 
-var (
-	_devEnv = "development"
-)
+	envPrefix            string
+	staticProviderFuncs  []ProviderFunc
+	dynamicProviderFuncs []DynamicProviderFunc
+
+	// files needed to be loaded
+	configFiles []string
+	dirs        []string
+
+	// Where to look for environment variables
+	lookUp lookUpFunc
+}
+
+// DefaultLoader will be used if config is not defined for a service.
+var DefaultLoader = newDefaultLoader()
+
+func newDefaultLoader() *Loader {
+	l := &Loader{
+		envPrefix: "APP",
+		dirs:      []string{".", "./config"},
+		lookUp:    os.LookupEnv,
+	}
+
+	l.configFiles = l.baseFiles()
+	l.RegisterProviders(l.YamlProvider(l.configFiles...))
+
+	return l
+}
 
 // AppRoot returns the root directory of your application. UberFx developers
 // can edit this via the APP_ROOT environment variable. If the environment
 // variable is not set then it will fallback to the current working directory.
-func AppRoot() string {
-	if appRoot := os.Getenv(_appRoot); appRoot != "" {
+func (l *Loader) AppRoot() string {
+	if appRoot, ok := l.lookUp(l.EnvironmentPrefix() + _appRoot); ok {
 		return appRoot
 	}
+
 	if cwd, err := os.Getwd(); err != nil {
-		panic(fmt.Sprintf("Unable to get the current working directory: %s", err.Error()))
+		panic(fmt.Sprintf("Unable to get the current working directory: %q", err.Error()))
 	} else {
 		return cwd
 	}
@@ -76,87 +99,112 @@ func AppRoot() string {
 
 // ResolvePath returns an absolute path derived from AppRoot and the relative path.
 // If the input parameter is already an absolute path it will be returned immediately.
-func ResolvePath(relative string) (string, error) {
+func (l *Loader) ResolvePath(relative string) (string, error) {
 	if filepath.IsAbs(relative) {
 		return relative, nil
 	}
-	abs := path.Join(AppRoot(), relative)
+
+	abs := path.Join(l.AppRoot(), relative)
 	if _, err := os.Stat(abs); err != nil {
 		return "", err
 	}
+
 	return abs, nil
 }
 
-func getConfigFiles(fileSet ...string) []string {
-	var files []string
+func (l *Loader) getConfigFiles(fileSet ...string) []string {
+	l.lock.RLock()
+	defer l.lock.RUnlock()
 
-	dirs := []string{".", _configRoot}
-	for _, dir := range dirs {
+	var files []string
+	for _, dir := range l.dirs {
 		for _, baseFile := range fileSet {
 			files = append(files, fmt.Sprintf("%s/%s.yaml", dir, baseFile))
 		}
 	}
+
 	return files
 }
 
-func baseFiles() []string {
-	env := Environment()
-	return []string{_baseFile, env, _secretsFile}
+func (l *Loader) baseFiles() []string {
+	return []string{_baseFile, l.Environment(), _secretsFile}
 }
 
-func getResolver() FileResolver {
-	paths := []string{}
-	configDir := Path()
-	if configDir != "" {
-		paths = []string{configDir}
+func (l *Loader) getResolver() FileResolver {
+	if dir := l.Path(); dir != "" {
+		NewRelativeResolver(dir)
 	}
-	return NewRelativeResolver(paths...)
+
+	return NewRelativeResolver()
 }
 
 // YamlProvider returns function to create Yaml based configuration provider
-func YamlProvider() ProviderFunc {
+func (l *Loader) YamlProvider(files ...string) ProviderFunc {
 	return func() (Provider, error) {
-		return NewYAMLProviderFromFiles(false, getResolver(), getConfigFiles(_configFiles...)...), nil
+		return NewYAMLProviderFromFiles(false, l.getResolver(), l.getConfigFiles(files...)...), nil
 	}
 }
 
 // Environment returns current environment setup for the service
-func Environment() string {
-	env := os.Getenv(EnvironmentKey())
-	if env == "" {
-		env = _devEnv
+func (l *Loader) Environment() string {
+	if env, ok := l.lookUp(l.EnvironmentKey()); ok {
+		return env
 	}
-	return env
+
+	return _devEnv
 }
 
 // Path returns path to the yaml configurations
-func Path() string {
-	configPath := os.Getenv(EnvironmentPrefix() + _configDir)
-	if configPath == "" {
-		configPath = _configRoot
+func (l *Loader) Path() string {
+	if path, ok := l.lookUp(l.EnvironmentPrefix() + _configDir); ok {
+		return path
 	}
-	return configPath
+
+	return _configRoot
 }
 
 // SetConfigFiles overrides the set of available config files
 // for the service
-func SetConfigFiles(files ...string) {
-	_configFiles = files
+func (l *Loader) SetConfigFiles(files ...string) {
+	l.lock.Lock()
+
+	l.configFiles = files
+
+	l.lock.Unlock()
+}
+
+// SetDirs overrides the set of dirs to load config files
+func (l *Loader) SetDirs(dirs ...string) {
+	l.lock.Lock()
+
+	l.dirs = dirs
+
+	l.lock.Unlock()
 }
 
 // SetEnvironmentPrefix sets environment prefix for the application
-func SetEnvironmentPrefix(envPrefix string) {
-	_envPrefix = envPrefix
+func (l *Loader) SetEnvironmentPrefix(envPrefix string) {
+	l.lock.Lock()
+
+	l.envPrefix = envPrefix
+
+	l.lock.Unlock()
 }
 
 // EnvironmentPrefix returns environment prefix for the application
-func EnvironmentPrefix() string {
-	return _envPrefix
+func (l *Loader) EnvironmentPrefix() string {
+	l.lock.RLock()
+	defer l.lock.RUnlock()
+
+	return l.envPrefix
 }
 
 // EnvironmentKey returns environment variable key name
-func EnvironmentKey() string {
-	return _envPrefix + _environment
+func (l *Loader) EnvironmentKey() string {
+	l.lock.RLock()
+	defer l.lock.RUnlock()
+
+	return l.envPrefix + _environment
 }
 
 // ProviderFunc is used to create config providers on configuration initialization
@@ -166,49 +214,54 @@ type ProviderFunc func() (Provider, error)
 type DynamicProviderFunc func(config Provider) (Provider, error)
 
 // RegisterProviders registers configuration providers for the global config
-func RegisterProviders(providerFuncs ...ProviderFunc) {
-	_setupMux.Lock()
-	defer _setupMux.Unlock()
-	_staticProviderFuncs = append(_staticProviderFuncs, providerFuncs...)
+func (l *Loader) RegisterProviders(providerFuncs ...ProviderFunc) {
+	l.lock.Lock()
+
+	l.staticProviderFuncs = append(l.staticProviderFuncs, providerFuncs...)
+
+	l.lock.Unlock()
 }
 
 // RegisterDynamicProviders registers dynamic config providers for the global config
 // Dynamic provider initialization needs access to Provider for accessing necessary
 // information for bootstrap, such as port number,keys, endpoints etc.
-func RegisterDynamicProviders(dynamicProviderFuncs ...DynamicProviderFunc) {
-	_setupMux.Lock()
-	defer _setupMux.Unlock()
-	_dynamicProviderFuncs = append(_dynamicProviderFuncs, dynamicProviderFuncs...)
-}
+func (l *Loader) RegisterDynamicProviders(dynamicProviderFuncs ...DynamicProviderFunc) {
+	l.lock.Lock()
 
-// Providers should only be used during tests
-func Providers() []ProviderFunc {
-	return _staticProviderFuncs
+	l.dynamicProviderFuncs = append(l.dynamicProviderFuncs, dynamicProviderFuncs...)
+
+	l.lock.Unlock()
 }
 
 // UnregisterProviders clears all the default providers
-func UnregisterProviders() {
-	_setupMux.Lock()
-	defer _setupMux.Unlock()
-	_staticProviderFuncs = nil
-	_dynamicProviderFuncs = nil
+func (l *Loader) UnregisterProviders() {
+	l.lock.Lock()
+
+	l.staticProviderFuncs = nil
+	l.dynamicProviderFuncs = nil
+
+	l.lock.Unlock()
 }
 
 // Load creates a Provider for use in a service
-func Load() Provider {
-	var static []Provider
+func (l *Loader) Load() Provider {
+	l.lock.RLock()
+	defer l.lock.RUnlock()
 
-	for _, providerFunc := range _staticProviderFuncs {
+	var static []Provider
+	for _, providerFunc := range l.staticProviderFuncs {
 		cp, err := providerFunc()
 		if err != nil {
 			panic(err)
 		}
+
 		static = append(static, cp)
 	}
+
 	baseCfg := NewProviderGroup("global", static...)
 
-	var dynamic = make([]Provider, 0, 2)
-	for _, providerFunc := range _dynamicProviderFuncs {
+	var dynamic []Provider
+	for _, providerFunc := range l.dynamicProviderFuncs {
 		cp, err := providerFunc(baseCfg)
 		if err != nil {
 			panic(err)
@@ -217,5 +270,6 @@ func Load() Provider {
 			dynamic = append(dynamic, cp)
 		}
 	}
+
 	return NewProviderGroup("global", append(static, dynamic...)...)
 }
