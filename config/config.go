@@ -29,12 +29,14 @@ import (
 )
 
 const (
-	// ServiceNameKey is the config key of the service name
+	// ServiceNameKey is the config key of the service name.
 	ServiceNameKey = "name"
+
 	// ServiceDescriptionKey is the config key of the service
-	// description
+	// description.
 	ServiceDescriptionKey = "description"
-	// ServiceOwnerKey is the config key for a service owner
+
+	// ServiceOwnerKey is the config key for a service owner.
 	ServiceOwnerKey = "owner"
 )
 
@@ -58,11 +60,13 @@ type Loader struct {
 	staticProviderFuncs  []ProviderFunc
 	dynamicProviderFuncs []DynamicProviderFunc
 
-	// files needed to be loaded
+	// Files to load.
 	configFiles []string
-	dirs        []string
 
-	// Where to look for environment variables
+	// Dirs to load from.
+	dirs []string
+
+	// Where to look for environment variables.
 	lookUp lookUpFunc
 }
 
@@ -163,8 +167,7 @@ func (l *Loader) Path() string {
 	return _configRoot
 }
 
-// SetConfigFiles overrides the set of available config files
-// for the service
+// SetConfigFiles overrides the set of available config files for the service.
 func (l *Loader) SetConfigFiles(files ...string) {
 	l.lock.Lock()
 
@@ -182,7 +185,7 @@ func (l *Loader) getFiles() []string {
 	return res
 }
 
-// SetDirs overrides the set of dirs to load config files
+// SetDirs overrides the set of dirs to load config files from.
 func (l *Loader) SetDirs(dirs ...string) {
 	l.lock.Lock()
 
@@ -191,7 +194,7 @@ func (l *Loader) SetDirs(dirs ...string) {
 	l.lock.Unlock()
 }
 
-// SetEnvironmentPrefix sets environment prefix for the application
+// SetEnvironmentPrefix sets environment prefix for the application.
 func (l *Loader) SetEnvironmentPrefix(envPrefix string) {
 	l.lock.Lock()
 
@@ -200,7 +203,7 @@ func (l *Loader) SetEnvironmentPrefix(envPrefix string) {
 	l.lock.Unlock()
 }
 
-// EnvironmentPrefix returns environment prefix for the application
+// EnvironmentPrefix returns environment prefix for the application.
 func (l *Loader) EnvironmentPrefix() string {
 	l.lock.RLock()
 	defer l.lock.RUnlock()
@@ -216,13 +219,13 @@ func (l *Loader) EnvironmentKey() string {
 	return l.envPrefix + _environment
 }
 
-// ProviderFunc is used to create config providers on configuration initialization
+// ProviderFunc is used to create config providers on configuration initialization.
 type ProviderFunc func() (Provider, error)
 
-// DynamicProviderFunc is used to create config providers on configuration initialization
+// DynamicProviderFunc is used to create config providers on configuration initialization.
 type DynamicProviderFunc func(config Provider) (Provider, error)
 
-// RegisterProviders registers configuration providers for the global config
+// RegisterProviders registers configuration providers for the global config.
 func (l *Loader) RegisterProviders(providerFuncs ...ProviderFunc) {
 	l.lock.Lock()
 
@@ -242,7 +245,7 @@ func (l *Loader) RegisterDynamicProviders(dynamicProviderFuncs ...DynamicProvide
 	l.lock.Unlock()
 }
 
-// UnregisterProviders clears all the default providers
+// UnregisterProviders clears all the default providers.
 func (l *Loader) UnregisterProviders() {
 	l.lock.Lock()
 
@@ -252,7 +255,7 @@ func (l *Loader) UnregisterProviders() {
 	l.lock.Unlock()
 }
 
-// Load creates a Provider for use in a service
+// Load creates a Provider for use in a service.
 func (l *Loader) Load() Provider {
 	var static []Provider
 	for _, providerFunc := range l.staticProviderFuncs {
