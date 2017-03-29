@@ -101,7 +101,7 @@ func TestBackendWorkflowWorkerPanic(t *testing.T) {
 	}
 	// Publish valid message
 	publish(t, m, bknd, deliveryCh, nil, nil)
-	time.Sleep(10 * time.Millisecond)
+	time.Sleep(20 * time.Millisecond)
 	assert.True(t, bknd.(*Backend).isRunning())
 	stopBackend(t, m, bknd)
 	// Nack panics are sent for a count of _numWorkers and 1 valid publish. Make sure they are

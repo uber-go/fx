@@ -302,8 +302,10 @@ func (b *Backend) withContext(delivery cherami.Delivery, f func(context.Context)
 			var span opentracing.Span
 			span = b.tracer.StartSpan(_operationName, ext.RPCServerOption(spanCtx))
 			defer span.Finish()
-			ctx = opentracing.ContextWithSpan(ctx, span)
+			f(opentracing.ContextWithSpan(ctx, span))
 		}
+
+		return
 	}
 
 	f(ctx)
