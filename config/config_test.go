@@ -534,10 +534,10 @@ func TestLoader_Environment(t *testing.T) {
 	t.Parallel()
 
 	l := NewLoader()
-	l.lookUp = func(key string) (string, bool) {
+	l.SetLookupFn(func(key string) (string, bool) {
 		require.Equal(t, "APP_ENVIRONMENT", key)
 		return "KGBeast", true
-	}
+	})
 
 	assert.Equal(t, "KGBeast", l.Environment())
 }
@@ -546,10 +546,10 @@ func TestLoader_AppRoot(t *testing.T) {
 	t.Parallel()
 
 	l := NewLoader()
-	l.lookUp = func(key string) (string, bool) {
+	l.SetLookupFn(func(key string) (string, bool) {
 		require.Equal(t, "APP_ROOT", key)
 		return "Harley Quinn", true
-	}
+	})
 
 	assert.Equal(t, "Harley Quinn", l.AppRoot())
 }

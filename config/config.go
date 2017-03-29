@@ -278,3 +278,11 @@ func (l *Loader) Load() Provider {
 
 	return NewProviderGroup("global", append(static, dynamic...)...)
 }
+
+// SetLookupFn sets the lookup function to get environment variables.
+func (l *Loader) SetLookupFn(fn func(string) (string, bool)) {
+	l.lock.Lock()
+	defer l.lock.Unlock()
+
+	l.lookUp = fn
+}
