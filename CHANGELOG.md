@@ -6,7 +6,7 @@
   and use custom dirs to load from. In order to load configs calls to `config.Load()`
   should be replaced with `config.NewLoader().Load()`.
 
-## v1.0.0-beta3 (unreleased)
+## v1.0.0-beta3 (28 Mar 2017)
 
 - **[Breaking]** Environment config provider was removed. If you were using
   environment variables to override YAML values, see
