@@ -70,10 +70,6 @@ func newManager(builder *Builder) (Manager, error) {
 		moduleWrappers: []*moduleWrapper{},
 		serviceCore:    serviceCore{},
 	}
-	m.roles = map[string]bool{}
-	for _, r := range m.standardConfig.Roles {
-		m.roles[r] = true
-	}
 	for _, opt := range builder.options {
 		if optionErr := opt(m); optionErr != nil {
 			return nil, errors.Wrap(optionErr, "option failed to apply")
@@ -88,6 +84,12 @@ func newManager(builder *Builder) (Manager, error) {
 	if err := m.setupStandardConfig(); err != nil {
 		return nil, err
 	}
+
+	m.roles = map[string]bool{}
+	for _, r := range m.standardConfig.Roles {
+		m.roles[r] = true
+	}
+
 	// Initialize metrics. If no metrics reporters were Registered, do nop
 	// TODO(glib): add a logging reporter and use it by default, rather than nop
 	m.setupMetrics()
