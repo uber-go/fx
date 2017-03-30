@@ -189,16 +189,16 @@
 //
 // Current performance benchmark data:
 //
-//   BenchmarkYAMLCreateSingleFile-8                    119 allocs/op
-//   BenchmarkYAMLCreateMultiFile-8                     203 allocs/op
+//   BenchmarkYAMLCreateSingleFile-8                    117 allocs/op
+//   BenchmarkYAMLCreateMultiFile-8                     204 allocs/op
 //   BenchmarkYAMLSimpleGetLevel1-8                       0 allocs/op
 //   BenchmarkYAMLSimpleGetLevel3-8                       0 allocs/op
 //   BenchmarkYAMLSimpleGetLevel7-8                       0 allocs/op
-//   BenchmarkYAMLPopulate-8                             16 allocs/op
+//   BenchmarkYAMLPopulate-8                             18 allocs/op
 //   BenchmarkYAMLPopulateNested-8                       42 allocs/op
 //   BenchmarkYAMLPopulateNestedMultipleFiles-8          52 allocs/op
-//   BenchmarkYAMLPopulateNestedTextUnmarshaler-8       211 allocs/op
-//   BenchmarkZapConfigLoad-8                           188 allocs/op
+//   BenchmarkYAMLPopulateNestedTextUnmarshaler-8       233 allocs/op
+//   BenchmarkZapConfigLoad-8                           136 allocs/op
 //
 // Environment Variables
 //

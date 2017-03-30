@@ -43,11 +43,11 @@ var (
 	_emptyDefault = `""`
 )
 
-func newYAMLProviderCore(files ...io.ReadCloser) Provider {
+func newYAMLProviderCore(lookUp lookUpFunc, files ...io.ReadCloser) Provider {
 	var root interface{}
 	for _, v := range files {
 		var curr interface{}
-		if err := unmarshalYAMLValue(v, &curr); err != nil {
+		if err := unmarshalYAMLValue(v, &curr, lookUp); err != nil {
 			if file, ok := v.(*os.File); ok {
 				panic(errors.Wrapf(err, "in file: %q", file.Name()))
 			}
@@ -132,13 +132,13 @@ func NewYAMLProviderFromFiles(mustExist bool, resolver FileResolver, files ...st
 		}
 	}
 
-	return NewCachedProvider(newYAMLProviderCore(readers...))
+	return NewCachedProvider(newYAMLProviderCore(os.LookupEnv, readers...))
 }
 
 // NewYAMLProviderFromReader creates a configuration provider from a list of `io.ReadClosers`.
 // As above, all the objects are going to be merged and arrays/values overridden in the order of the files.
 func NewYAMLProviderFromReader(readers ...io.ReadCloser) Provider {
-	return NewCachedProvider(newYAMLProviderCore(readers...))
+	return NewCachedProvider(newYAMLProviderCore(os.LookupEnv, readers...))
 }
 
 // NewYAMLProviderFromBytes creates a config provider from a byte-backed YAML blobs.
@@ -149,7 +149,7 @@ func NewYAMLProviderFromBytes(yamls ...[]byte) Provider {
 		closers[i] = ioutil.NopCloser(bytes.NewReader(yml))
 	}
 
-	return NewCachedProvider(newYAMLProviderCore(closers...))
+	return NewCachedProvider(newYAMLProviderCore(os.LookupEnv, closers...))
 }
 
 func (y yamlConfigProvider) getNode(key string) *yamlNode {
@@ -282,13 +282,13 @@ func (n *yamlNode) Children() []*yamlNode {
 	return nodes
 }
 
-func unmarshalYAMLValue(reader io.ReadCloser, value interface{}) error {
+func unmarshalYAMLValue(reader io.ReadCloser, value interface{}, lookUp lookUpFunc) error {
 	raw, err := ioutil.ReadAll(reader)
 	if err != nil {
 		return errors.Wrap(err, "failed to read the yaml config")
 	}
 
-	data, err := interpolateEnvVars(raw)
+	data, err := interpolateEnvVars(raw, lookUp)
 	if err != nil {
 		return errors.Wrap(err, "failed to interpolate environment variables")
 	}
@@ -312,7 +312,7 @@ func unmarshalYAMLValue(reader io.ReadCloser, value interface{}) error {
 // will be used
 //
 // TODO: what if someone wanted a literal ${FOO} in config? need a small escape hatch
-func interpolateEnvVars(data []byte) ([]byte, error) {
+func interpolateEnvVars(data []byte, lookUp lookUpFunc) ([]byte, error) {
 	// Is this conversion ok?
 	str := string(data)
 	errs := []string{}
@@ -332,7 +332,7 @@ func interpolateEnvVars(data []byte) ([]byte, error) {
 			def = in[sep+1:]
 		}
 
-		if envVal, ok := os.LookupEnv(key); ok {
+		if envVal, ok := lookUp(key); ok {
 			return envVal
 		}
 

@@ -39,14 +39,7 @@ type RelativeResolver struct {
 // NewRelativeResolver returns a file resolver relative to the given paths
 func NewRelativeResolver(paths ...string) FileResolver {
 	pathList := make([]string, len(paths))
-
 	copy(pathList, paths)
-
-	pathList = append(pathList, AppRoot())
-
-	// add the exe dir
-	pathList = append(pathList, path.Dir(os.Args[0]))
-
 	return &RelativeResolver{
 		paths: pathList,
 	}

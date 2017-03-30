@@ -2,7 +2,9 @@
 
 ## v1.0.0-beta4 (unreleased)
 
-- No changes yet
+- **[Breaking]** Introduce a config loader, this will allow to override config loading
+  and use custom dirs to load from. In order to load configs calls to `config.Load()`
+  should be replaced with `config.NewLoader().Load()`.
 
 ## v1.0.0-beta3 (28 Mar 2017)
 
