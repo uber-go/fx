@@ -137,7 +137,7 @@ func (l *Loader) baseFiles() []string {
 
 func (l *Loader) getResolver() FileResolver {
 	if dir := l.Path(); dir != "" {
-		NewRelativeResolver(dir)
+		return NewRelativeResolver(dir)
 	}
 
 	return NewRelativeResolver()
@@ -171,10 +171,9 @@ func (l *Loader) Path() string {
 // SetConfigFiles overrides the set of available config files for the service.
 func (l *Loader) SetConfigFiles(files ...string) {
 	l.lock.Lock()
+	defer l.lock.Unlock()
 
 	l.configFiles = files
-
-	l.lock.Unlock()
 }
 
 func (l *Loader) getFiles() []string {
