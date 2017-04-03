@@ -90,7 +90,7 @@ func TestInboundMiddleware_panic(t *testing.T) {
 func TestInboundMiddleware_TransportUnaryMiddleware(t *testing.T) {
 	host := service.NopHost()
 	m := TransportUnaryMiddleware{
-		procedures: make(map[string][]decorator.UnaryDecorator),
+		procedures: make(map[string][]decorator.Decorator),
 		decorators: make(map[string]transport.UnaryHandler),
 	}
 	decorator := decorator.Recovery(host.Metrics(), config.NewScopedProvider("recovery", host.Config()))

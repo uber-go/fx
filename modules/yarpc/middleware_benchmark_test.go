@@ -37,7 +37,7 @@ func Benchmark_WithLayeredMiddleware(b *testing.B) {
 		host := service.NopHost()
 
 		m := TransportUnaryMiddleware{
-			procedures: make(map[string][]decorator.UnaryDecorator),
+			procedures: make(map[string][]decorator.Decorator),
 			decorators: make(map[string]transport.UnaryHandler),
 		}
 		decorator := decorator.Recovery(host.Metrics(), config.NewScopedProvider("recovery", host.Config()))

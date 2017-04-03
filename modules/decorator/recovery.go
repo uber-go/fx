@@ -30,8 +30,8 @@ import (
 )
 
 // Recovery returns a panic recovery middleware
-func Recovery(metrics tally.Scope, cfg config.Provider) UnaryDecorator {
-	return func(next UnaryHandlerFunc) UnaryHandlerFunc {
+func Recovery(metrics tally.Scope, cfg config.Provider) Decorator {
+	return func(next HandlerFunc) HandlerFunc {
 		return func(ctx context.Context, req *transport.Request, resw transport.ResponseWriter) (err error) {
 			defer func() {
 				err = handlePanic(recover(), err)

@@ -42,7 +42,7 @@ var (
 
 // TransportUnaryMiddleware keeps all the decorator layers defined in the configuration
 type TransportUnaryMiddleware struct {
-	procedures map[string][]decorator.UnaryDecorator
+	procedures map[string][]decorator.Decorator
 	decorators map[string]transport.UnaryHandler
 }
 
@@ -59,7 +59,7 @@ func (l TransportUnaryMiddleware) Handle(
 
 	mu.Lock()
 	if _, ok := l.decorators[req.Procedure]; !ok {
-		l.decorators[req.Procedure] = decorator.BuildUnary(decorator.UnaryHandlerWrap(handler), l.procedures[req.Procedure]...)
+		l.decorators[req.Procedure] = decorator.Build(decorator.HandlerWrap(handler), l.procedures[req.Procedure]...)
 	}
 	mu.Unlock()
 	return l.decorators[req.Procedure].Handle(ctx, req, resw)

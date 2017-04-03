@@ -40,7 +40,7 @@ const (
 // InboundUnaryMiddlewareChainBuilder keeps all the procedures to build
 type InboundUnaryMiddlewareChainBuilder struct {
 	host       service.Host
-	procedures map[string][]decorator.UnaryDecorator
+	procedures map[string][]decorator.Decorator
 }
 
 // populate from config for creating decorator per procedure
