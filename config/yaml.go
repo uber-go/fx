@@ -288,9 +288,20 @@ func unmarshalYAMLValue(reader io.ReadCloser, value interface{}, lookUp lookUpFu
 		return errors.Wrap(err, "failed to read the yaml config")
 	}
 
-	data, err := interpolateEnvVars(raw, lookUp)
-	if err != nil {
-		return errors.Wrap(err, "failed to interpolate environment variables")
+	var data []byte
+	skipInterpolate := false
+	if f, ok := reader.(*os.File); ok {
+		if strings.Contains(f.Name(), "secrets.yaml") {
+			skipInterpolate = true
+			data = raw
+		}
+	}
+
+	if !skipInterpolate {
+		data, err = interpolateEnvVars(raw, lookUp)
+		if err != nil {
+			return errors.Wrap(err, "failed to interpolate environment variables")
+		}
 	}
 
 	if err = yaml.Unmarshal(data, value); err != nil {

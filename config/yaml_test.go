@@ -166,7 +166,7 @@ func TestExtends(t *testing.T) {
 	assert.Equal(t, "dev_setting", devValue)
 
 	secretValue := provider.Get("secret").AsString()
-	assert.Equal(t, "my_secret", secretValue)
+	assert.Equal(t, "my_${secret}", secretValue)
 }
 
 func TestAppRoot(t *testing.T) {
@@ -181,7 +181,7 @@ func TestAppRoot(t *testing.T) {
 	assert.Equal(t, "dev_setting", devValue)
 
 	secretValue := provider.Get("secret").AsString()
-	assert.Equal(t, "my_secret", secretValue)
+	assert.Equal(t, "my_${secret}", secretValue)
 }
 
 func TestNewYAMLProviderFromReader(t *testing.T) {
