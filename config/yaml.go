@@ -291,7 +291,7 @@ func unmarshalYAMLValue(reader io.ReadCloser, value interface{}, lookUp lookUpFu
 	var data []byte
 	skipInterpolate := false
 	if f, ok := reader.(*os.File); ok {
-		if strings.Contains(f.Name(), "secrets.yaml") {
+		if strings.Contains(f.Name(), _secretsFile) {
 			skipInterpolate = true
 			data = raw
 		}
