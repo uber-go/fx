@@ -48,13 +48,19 @@ modules:
          port: 0
      - http:
          port: 0
+    procedures:
+      hello:
+        middleware:
+          - recovery
+          - tryme
+      newhello:
+        middleware:
+          - recovery
 `)
-
 	mi := newHost(
 		t,
 		testHost{
-			Host:   service.NopHost(),
-			config: config.NewYAMLProviderFromBytes(cfg),
+			Host: service.NopHostWithConfig(config.NewYAMLProviderFromBytes(cfg)),
 		},
 		"yarpc",
 		"hello",
@@ -144,11 +150,6 @@ func TestInboundPrint(t *testing.T) {
 
 type testHost struct {
 	service.Host
-	config config.Provider
-}
-
-func (h testHost) Config() config.Provider {
-	return h.config
 }
 
 func testInitRunModule(t *testing.T, mod service.Module) {

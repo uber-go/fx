@@ -27,6 +27,7 @@ import (
 	"strconv"
 	"sync"
 
+	"go.uber.org/fx/modules/decorator"
 	"go.uber.org/fx/service"
 	"go.uber.org/fx/ulog"
 
@@ -320,17 +321,19 @@ func (c *dispatcherController) applyHandlers() error {
 
 // Adds the default middleware: context propagation and auth.
 func (c *dispatcherController) addDefaultMiddleware(host service.Host, statsClient *statsClient) {
+	u := InboundUnaryMiddlewareChainBuilder{
+		host:       host,
+		procedures: make(map[string][]decorator.Decorator),
+	}
+	u.Compile()
 	cfg := yarpcConfig{
 		inboundMiddleware: []middleware.UnaryInbound{
-			contextInboundMiddleware{statsClient},
-			panicInboundMiddleware{statsClient},
-			authInboundMiddleware{host, statsClient},
+			TransportUnaryMiddleware{
+				procedures: u.procedures,
+				decorators: make(map[string]transport.UnaryHandler),
+			},
 		},
-		onewayInboundMiddleware: []middleware.OnewayInbound{
-			contextOnewayInboundMiddleware{},
-			panicOnewayInboundMiddleware{statsClient},
-			authOnewayInboundMiddleware{host, statsClient},
-		},
+		onewayInboundMiddleware: []middleware.OnewayInbound{},
 	}
 
 	c.addConfig(cfg)

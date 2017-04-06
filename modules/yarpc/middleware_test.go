@@ -25,47 +25,18 @@ import (
 	"errors"
 	"testing"
 
+	"go.uber.org/fx/config"
+	"go.uber.org/fx/modules/decorator"
 	"go.uber.org/fx/service"
-	"go.uber.org/fx/testutils"
-	"go.uber.org/fx/testutils/tracing"
 	"go.uber.org/fx/ulog"
 	"go.uber.org/thriftrw/wire"
 	"go.uber.org/yarpc/api/transport"
 
-	"github.com/opentracing/opentracing-go"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/uber-go/tally"
-	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
 )
-
-func TestInboundMiddleware_Context(t *testing.T) {
-	host := service.NopHost()
-	unary := contextInboundMiddleware{newStatsClient(host.Metrics())}
-	testutils.WithInMemoryLogger(t, nil, func(loggerWithZap *zap.Logger, buf *zaptest.Buffer) {
-		defer ulog.SetLogger(loggerWithZap)()
-		tracing.WithSpan(t, loggerWithZap, func(span opentracing.Span) {
-			ctx := opentracing.ContextWithSpan(context.Background(), span)
-			err := unary.Handle(ctx, &transport.Request{}, nil, &fakeUnary{t: t})
-			require.Contains(t, err.Error(), "handle")
-			checkLogForTrace(t, buf)
-		})
-	})
-}
-
-func TestOnewayInboundMiddleware_Context(t *testing.T) {
-	oneway := contextOnewayInboundMiddleware{}
-	testutils.WithInMemoryLogger(t, nil, func(loggerWithZap *zap.Logger, buf *zaptest.Buffer) {
-		defer ulog.SetLogger(loggerWithZap)()
-		tracing.WithSpan(t, loggerWithZap, func(span opentracing.Span) {
-			ctx := opentracing.ContextWithSpan(context.Background(), span)
-			err := oneway.HandleOneway(ctx, &transport.Request{}, &fakeOneway{t: t})
-			require.Contains(t, err.Error(), "oneway handle")
-			checkLogForTrace(t, buf)
-		})
-	})
-}
 
 func checkLogForTrace(t *testing.T, buf *zaptest.Buffer) {
 	require.True(t, len(buf.Lines()) > 0)
@@ -114,6 +85,44 @@ func TestInboundMiddleware_panic(t *testing.T) {
 	defer testPanicHandler(t, testScope)
 	unary := panicInboundMiddleware{statsClient}
 	unary.Handle(context.Background(), &transport.Request{}, nil, &alwaysPanicUnary{})
+}
+
+func TestInboundMiddleware_TransportUnaryMiddleware(t *testing.T) {
+	host := service.NopHost()
+	m := TransportUnaryMiddleware{
+		procedures: make(map[string][]decorator.Decorator),
+		decorators: make(map[string]transport.UnaryHandler),
+	}
+	decorator := decorator.Recovery(host.Metrics(), config.NewScopedProvider("recovery", host.Config()))
+	m.procedures["hello"] = append(m.procedures["recovery"], decorator)
+	m.Handle(context.Background(), &transport.Request{
+		Procedure: "hello",
+	}, nil, &fakeUnary{t: t})
+	m.Handle(context.Background(), &transport.Request{
+		Procedure: "hello",
+	}, nil, &fakeUnary{t: t})
+	m.Handle(context.Background(), &transport.Request{
+		Procedure: "nop",
+	}, nil, &fakeUnary{t: t})
+}
+
+func TestInboundMiddleware_TransportOnewayMiddleware(t *testing.T) {
+	host := service.NopHost()
+	m := TransportOnewayMiddleware{
+		procedures: make(map[string][]decorator.OnewayDecorator),
+		decorators: make(map[string]transport.OnewayHandler),
+	}
+	decorator := decorator.RecoveryOneway(host.Metrics(), config.NewScopedProvider("recovery", host.Config()))
+	m.procedures["hello"] = append(m.procedures["recovery"], decorator)
+	m.HandleOneway(context.Background(), &transport.Request{
+		Procedure: "hello",
+	}, &fakeOneway{t: t})
+	m.HandleOneway(context.Background(), &transport.Request{
+		Procedure: "hello",
+	}, &fakeOneway{t: t})
+	m.HandleOneway(context.Background(), &transport.Request{
+		Procedure: "nop",
+	}, &fakeOneway{t: t})
 }
 
 func TestOnewayInboundMiddleware_panic(t *testing.T) {

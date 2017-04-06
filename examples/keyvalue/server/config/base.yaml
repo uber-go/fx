@@ -6,6 +6,13 @@ modules:
   yarpc:
     advertiseName: keyvalue
     bind: :28941
+    procedures:
+      GetValue:
+        middleware:
+         - recovery
+      PutValue:
+        middleware:
+         - recovery
 
 service:
   some_number: 42
@@ -13,3 +20,5 @@ service:
 logging:
   stdout: true
   level: info
+
+
