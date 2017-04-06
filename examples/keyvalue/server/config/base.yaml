@@ -6,14 +6,13 @@ modules:
   yarpc:
     advertiseName: keyvalue
     bind: :28941
-    middleware:
+    procedures:
       GetValue:
-        recovery:
-          enabled: true
+        middleware:
+         - recovery
       PutValue:
-        recovery:
-          enabled: false
-
+        middleware:
+         - recovery
 
 service:
   some_number: 42
