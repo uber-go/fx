@@ -27,9 +27,9 @@ import (
 )
 
 var (
-	capabilitiesReportingNoTagging = &capabilities{
+	capabilitiesReporting = &capabilities{
 		reporting: true,
-		tagging:   false,
+		tagging:   true,
 	}
 )
 
@@ -71,7 +71,7 @@ func (nopCachedStatsReporter) AllocateTimer(name string, tags map[string]string)
 }
 
 func (r nopCachedStatsReporter) Capabilities() tally.Capabilities {
-	return capabilitiesReportingNoTagging
+	return capabilitiesReporting
 }
 
 func (r nopCachedStatsReporter) Flush() {}

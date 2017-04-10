@@ -26,7 +26,6 @@ import (
 	"go.uber.org/fx/metrics"
 
 	"github.com/opentracing/opentracing-go"
-	"github.com/uber-go/tally"
 	"go.uber.org/zap"
 )
 
@@ -66,7 +65,7 @@ func nopHostConfigured(client auth.Client, logger *zap.Logger, tracer opentracin
 			Description: "does cool stuff",
 		},
 		metricsCore: metricsCore{
-			metrics:       tally.NoopScope,
+			metrics:       metrics.NopScope,
 			statsReporter: metrics.NopCachedStatsReporter,
 		},
 		tracerCore: tracerCore{
