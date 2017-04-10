@@ -320,13 +320,9 @@ func (c *dispatcherController) applyHandlers() error {
 func (c *dispatcherController) addDefaultMiddleware(host service.Host) {
 	cfg := yarpcConfig{
 		inboundMiddleware: []middleware.UnaryInbound{
-			contextInboundMiddleware{},
-			panicInboundMiddleware{},
 			authInboundMiddleware{host},
 		},
 		onewayInboundMiddleware: []middleware.OnewayInbound{
-			contextOnewayInboundMiddleware{},
-			panicOnewayInboundMiddleware{},
 			authOnewayInboundMiddleware{host},
 		},
 	}
