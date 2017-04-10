@@ -5,6 +5,8 @@
 - **[Breaking]** Introduce a config loader, this will allow to override config loading
   and use custom dirs to load from. In order to load configs calls to `config.Load()`
   should be replaced with `config.NewLoader().Load()`.
+- Added `metrics.NopScope` for tests on service.NopHost with tagging capabilities turned
+  on by default
 
 ## v1.0.0-beta3 (28 Mar 2017)
 
