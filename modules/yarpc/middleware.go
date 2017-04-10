@@ -25,7 +25,7 @@ import (
 	"sync"
 
 	"go.uber.org/fx/auth"
-	"go.uber.org/fx/modules/decorator"
+	"go.uber.org/fx/modules/yarpc/middleware"
 	"go.uber.org/fx/service"
 	"go.uber.org/fx/ulog"
 	"go.uber.org/zap"
@@ -40,13 +40,13 @@ var (
 	mu sync.Mutex
 )
 
-// TransportUnaryMiddleware keeps all the decorator layers defined in the configuration
+// TransportUnaryMiddleware keeps all the middleware layers defined in the configuration
 type TransportUnaryMiddleware struct {
-	procedures map[string][]decorator.Decorator
-	decorators map[string]transport.UnaryHandler
+	procedures  map[string][]middleware.Middleware
+	middlewares map[string]transport.UnaryHandler
 }
 
-// Handle all decorators for Unary transport
+// Handle all middlewares for Unary transport
 func (l TransportUnaryMiddleware) Handle(
 	ctx context.Context,
 	req *transport.Request,
@@ -58,20 +58,20 @@ func (l TransportUnaryMiddleware) Handle(
 	}
 
 	mu.Lock()
-	if _, ok := l.decorators[req.Procedure]; !ok {
-		l.decorators[req.Procedure] = decorator.Build(decorator.HandlerWrap(handler), l.procedures[req.Procedure]...)
+	if _, ok := l.middlewares[req.Procedure]; !ok {
+		l.middlewares[req.Procedure] = middleware.Build(middleware.HandlerWrap(handler), l.procedures[req.Procedure]...)
 	}
 	mu.Unlock()
-	return l.decorators[req.Procedure].Handle(ctx, req, resw)
+	return l.middlewares[req.Procedure].Handle(ctx, req, resw)
 }
 
-// TransportOnewayMiddleware keeps all the decorator layers defined in the configuration
+// TransportOnewayMiddleware keeps all the middleware layers defined in the configuration
 type TransportOnewayMiddleware struct {
-	procedures map[string][]decorator.OnewayDecorator
-	decorators map[string]transport.OnewayHandler
+	procedures  map[string][]middleware.OnewayMiddleware
+	middlewares map[string]transport.OnewayHandler
 }
 
-// HandleOneway all decorators for Oneway transport
+// HandleOneway all middlewares for Oneway transport
 func (l TransportOnewayMiddleware) HandleOneway(
 	ctx context.Context,
 	req *transport.Request,
@@ -82,11 +82,11 @@ func (l TransportOnewayMiddleware) HandleOneway(
 	}
 
 	mu.Lock()
-	if _, ok := l.decorators[req.Procedure]; !ok {
-		l.decorators[req.Procedure] = decorator.BuildOneway(decorator.OnewayHandlerWrap(handler), l.procedures[req.Procedure]...)
+	if _, ok := l.middlewares[req.Procedure]; !ok {
+		l.middlewares[req.Procedure] = middleware.BuildOneway(middleware.OnewayHandlerWrap(handler), l.procedures[req.Procedure]...)
 	}
 	mu.Unlock()
-	return l.decorators[req.Procedure].HandleOneway(ctx, req)
+	return l.middlewares[req.Procedure].HandleOneway(ctx, req)
 }
 
 type authInboundMiddleware struct {

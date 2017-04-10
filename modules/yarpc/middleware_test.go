@@ -26,7 +26,7 @@ import (
 	"testing"
 
 	"go.uber.org/fx/config"
-	"go.uber.org/fx/modules/decorator"
+	"go.uber.org/fx/modules/yarpc/middleware"
 	"go.uber.org/fx/service"
 	"go.uber.org/fx/ulog"
 	"go.uber.org/thriftrw/wire"
@@ -90,11 +90,11 @@ func TestInboundMiddleware_panic(t *testing.T) {
 func TestInboundMiddleware_TransportUnaryMiddleware(t *testing.T) {
 	host := service.NopHost()
 	m := TransportUnaryMiddleware{
-		procedures: make(map[string][]decorator.Decorator),
-		decorators: make(map[string]transport.UnaryHandler),
+		procedures:  make(map[string][]middleware.Middleware),
+		middlewares: make(map[string]transport.UnaryHandler),
 	}
-	decorator := decorator.Recovery(host.Metrics(), config.NewScopedProvider("recovery", host.Config()))
-	m.procedures["hello"] = append(m.procedures["recovery"], decorator)
+	middleware := middleware.Recovery(host.Metrics(), config.NewScopedProvider("recovery", host.Config()))
+	m.procedures["hello"] = append(m.procedures["recovery"], middleware)
 	m.Handle(context.Background(), &transport.Request{
 		Procedure: "hello",
 	}, nil, &fakeUnary{t: t})
@@ -109,11 +109,11 @@ func TestInboundMiddleware_TransportUnaryMiddleware(t *testing.T) {
 func TestInboundMiddleware_TransportOnewayMiddleware(t *testing.T) {
 	host := service.NopHost()
 	m := TransportOnewayMiddleware{
-		procedures: make(map[string][]decorator.OnewayDecorator),
-		decorators: make(map[string]transport.OnewayHandler),
+		procedures:  make(map[string][]middleware.OnewayMiddleware),
+		middlewares: make(map[string]transport.OnewayHandler),
 	}
-	decorator := decorator.RecoveryOneway(host.Metrics(), config.NewScopedProvider("recovery", host.Config()))
-	m.procedures["hello"] = append(m.procedures["recovery"], decorator)
+	middleware := middleware.RecoveryOneway(host.Metrics(), config.NewScopedProvider("recovery", host.Config()))
+	m.procedures["hello"] = append(m.procedures["recovery"], middleware)
 	m.HandleOneway(context.Background(), &transport.Request{
 		Procedure: "hello",
 	}, &fakeOneway{t: t})

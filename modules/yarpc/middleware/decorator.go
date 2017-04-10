@@ -18,7 +18,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package decorator
+package middleware
 
 import (
 	"context"
@@ -34,11 +34,11 @@ func (h HandlerFunc) Handle(ctx context.Context, req *transport.Request, resw tr
 	return h(ctx, req, resw)
 }
 
-// Decorator is a chainable behavior modifier for layer handlers.
-type Decorator func(HandlerFunc) HandlerFunc
+// Middleware is a chainable behavior modifier for layer handlers.
+type Middleware func(HandlerFunc) HandlerFunc
 
-// Build wraps the provided layer with decorators
-func Build(h HandlerFunc, m ...Decorator) HandlerFunc {
+// Build wraps the provided layer with middlewares
+func Build(h HandlerFunc, m ...Middleware) HandlerFunc {
 	handler := h
 	for i := len(m) - 1; i >= 0; i-- {
 		handler = m[i](handler)
@@ -61,11 +61,11 @@ func (u OnewayHandlerFunc) HandleOneway(ctx context.Context, req *transport.Requ
 	return u(ctx, req)
 }
 
-// OnewayDecorator is a chainable behavior modifier for layer handlers.
-type OnewayDecorator func(OnewayHandlerFunc) OnewayHandlerFunc
+// OnewayMiddleware is a chainable behavior modifier for layer handlers.
+type OnewayMiddleware func(OnewayHandlerFunc) OnewayHandlerFunc
 
-// BuildOneway wraps the provided layer with decorators
-func BuildOneway(h OnewayHandlerFunc, m ...OnewayDecorator) OnewayHandlerFunc {
+// BuildOneway wraps the provided layer with middlewares
+func BuildOneway(h OnewayHandlerFunc, m ...OnewayMiddleware) OnewayHandlerFunc {
 	handler := h
 	for i := len(m) - 1; i >= 0; i-- {
 		handler = m[i](handler)

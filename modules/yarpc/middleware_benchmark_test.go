@@ -25,7 +25,7 @@ import (
 	"testing"
 
 	"go.uber.org/fx/config"
-	"go.uber.org/fx/modules/decorator"
+	"go.uber.org/fx/modules/yarpc/middleware"
 	"go.uber.org/fx/service"
 
 	"go.uber.org/yarpc/api/transport"
@@ -37,11 +37,11 @@ func Benchmark_WithLayeredMiddleware(b *testing.B) {
 		host := service.NopHost()
 
 		m := TransportUnaryMiddleware{
-			procedures: make(map[string][]decorator.Decorator),
-			decorators: make(map[string]transport.UnaryHandler),
+			procedures:  make(map[string][]middleware.Middleware),
+			middlewares: make(map[string]transport.UnaryHandler),
 		}
-		decorator := decorator.Recovery(host.Metrics(), config.NewScopedProvider("recovery", host.Config()))
-		m.procedures["hello"] = append(m.procedures["recovery"], decorator)
+		middleware := middleware.Recovery(host.Metrics(), config.NewScopedProvider("recovery", host.Config()))
+		m.procedures["hello"] = append(m.procedures["recovery"], middleware)
 		for pb.Next() {
 			m.Handle(context.Background(), &transport.Request{
 				Procedure: "hello",

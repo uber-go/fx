@@ -18,7 +18,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package decorator
+package middleware
 
 import (
 	"context"
@@ -30,7 +30,7 @@ import (
 )
 
 // Recovery returns a panic recovery middleware
-func Recovery(metrics tally.Scope, cfg config.Provider) Decorator {
+func Recovery(metrics tally.Scope, cfg config.Provider) Middleware {
 	return func(next HandlerFunc) HandlerFunc {
 		return func(ctx context.Context, req *transport.Request, resw transport.ResponseWriter) (err error) {
 			defer func() {
@@ -42,7 +42,7 @@ func Recovery(metrics tally.Scope, cfg config.Provider) Decorator {
 }
 
 // RecoveryOneway returns a panic recovery middleware
-func RecoveryOneway(metrics tally.Scope, cfg config.Provider) OnewayDecorator {
+func RecoveryOneway(metrics tally.Scope, cfg config.Provider) OnewayMiddleware {
 	return func(next OnewayHandlerFunc) OnewayHandlerFunc {
 		return func(ctx context.Context, req *transport.Request) (err error) {
 			defer func() {

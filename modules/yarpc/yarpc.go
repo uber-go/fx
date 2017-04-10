@@ -27,7 +27,7 @@ import (
 	"strconv"
 	"sync"
 
-	"go.uber.org/fx/modules/decorator"
+	yarpcmiddleware "go.uber.org/fx/modules/yarpc/middleware"
 	"go.uber.org/fx/service"
 	"go.uber.org/fx/ulog"
 
@@ -323,14 +323,14 @@ func (c *dispatcherController) applyHandlers() error {
 func (c *dispatcherController) addDefaultMiddleware(host service.Host, statsClient *statsClient) {
 	u := InboundUnaryMiddlewareChainBuilder{
 		host:       host,
-		procedures: make(map[string][]decorator.Decorator),
+		procedures: make(map[string][]yarpcmiddleware.Middleware),
 	}
 	u.Compile()
 	cfg := yarpcConfig{
 		inboundMiddleware: []middleware.UnaryInbound{
 			TransportUnaryMiddleware{
-				procedures: u.procedures,
-				decorators: make(map[string]transport.UnaryHandler),
+				procedures:  u.procedures,
+				middlewares: make(map[string]transport.UnaryHandler),
 			},
 		},
 		onewayInboundMiddleware: []middleware.OnewayInbound{},

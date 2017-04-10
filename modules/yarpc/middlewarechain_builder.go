@@ -22,7 +22,7 @@ package yarpc
 
 import (
 	"go.uber.org/fx/config"
-	"go.uber.org/fx/modules/decorator"
+	"go.uber.org/fx/modules/yarpc/middleware"
 	"go.uber.org/fx/service"
 
 	"go.uber.org/zap"
@@ -40,31 +40,31 @@ const (
 // InboundUnaryMiddlewareChainBuilder keeps all the procedures to build
 type InboundUnaryMiddlewareChainBuilder struct {
 	host       service.Host
-	procedures map[string][]decorator.Decorator
+	procedures map[string][]middleware.Middleware
 }
 
-// populate from config for creating decorator per procedure
+// populate from config for creating middleware per procedure
+type procedureConfig struct {
+	Procedures map[string]middlewareConfig
+}
+
 type middlewareConfig struct {
-	Procedures map[string]decoratorConfig
-}
-
-type decoratorConfig struct {
 	Middleware []string
 }
 
-// Compile compiles all the Decorators for the TransportUnaryMiddleware
+// Compile compiles all the Middlewares for the TransportUnaryMiddleware
 func (ch InboundUnaryMiddlewareChainBuilder) Compile() {
-	var cfg middlewareConfig
+	var cfg procedureConfig
 	if err := ch.host.Config().Get("modules").Get(ch.host.ModuleName()).Populate(&cfg); err != nil {
 		zap.L().Warn("can't read middleware config")
 	}
 
 	scopedCfg := config.NewScopedProvider("middleware", ch.host.Config())
-	for procedure, decorators := range cfg.Procedures {
-		for _, d := range decorators.Middleware {
+	for procedure, middlewares := range cfg.Procedures {
+		for _, d := range middlewares.Middleware {
 			switch d {
 			case recovery:
-				dec := decorator.Recovery(ch.host.Metrics(), config.NewScopedProvider(recovery, scopedCfg))
+				dec := middleware.Recovery(ch.host.Metrics(), config.NewScopedProvider(recovery, scopedCfg))
 				ch.procedures[procedure] = append(ch.procedures[recovery], dec)
 			}
 		}
