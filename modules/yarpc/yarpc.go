@@ -86,11 +86,10 @@ func New(hookup ServiceCreateFunc, options ...ModuleOption) service.ModuleProvid
 // the lifecycle of all of the in/out bound traffic, so we will
 // register it in a dig.Graph provided with options/default graph.
 type Module struct {
-	host        service.Host
-	statsClient *statsClient
-	config      yarpcConfig
-	log         *zap.Logger
-	controller  *dispatcherController
+	host       service.Host
+	config     yarpcConfig
+	log        *zap.Logger
+	controller *dispatcherController
 }
 
 // ModuleOption is a function that configures module creation.
@@ -131,9 +130,8 @@ func newModule(
 		}
 	}
 	module := &Module{
-		host:        host,
-		statsClient: newStatsClient(host.Metrics()),
-		log:         ulog.Logger(context.Background()).With(zap.String("module", host.ModuleName())),
+		host: host,
+		log:  ulog.Logger(context.Background()).With(zap.String("module", host.ModuleName())),
 	}
 	if err := host.Config().Get("modules").Get(host.ModuleName()).Populate(&module.config); err != nil {
 		return nil, errs.Wrap(err, "can't read inbounds")
@@ -183,7 +181,7 @@ func newModule(
 // Start begins serving requests with YARPC.
 func (m *Module) Start() error {
 	// TODO(alsam) allow services to advertise with a name separate from the host name.
-	if err := m.controller.Start(m.host, m.statsClient); err != nil {
+	if err := m.controller.Start(m.host); err != nil {
 		return errs.Wrap(err, "unable to start dispatcher")
 	}
 	m.log.Info("Module started")
@@ -248,9 +246,9 @@ type dispatcherController struct {
 // 4. Start the dispatcher
 //
 // Once started the controller will not start the dispatcher again.
-func (c *dispatcherController) Start(host service.Host, statsClient *statsClient) error {
+func (c *dispatcherController) Start(host service.Host) error {
 	c.start.Do(func() {
-		c.addDefaultMiddleware(host, statsClient)
+		c.addDefaultMiddleware(host)
 
 		var cfg yarpc.Config
 		var err error
@@ -319,17 +317,17 @@ func (c *dispatcherController) applyHandlers() error {
 }
 
 // Adds the default middleware: context propagation and auth.
-func (c *dispatcherController) addDefaultMiddleware(host service.Host, statsClient *statsClient) {
+func (c *dispatcherController) addDefaultMiddleware(host service.Host) {
 	cfg := yarpcConfig{
 		inboundMiddleware: []middleware.UnaryInbound{
-			contextInboundMiddleware{statsClient},
-			panicInboundMiddleware{statsClient},
-			authInboundMiddleware{host, statsClient},
+			contextInboundMiddleware{},
+			panicInboundMiddleware{},
+			authInboundMiddleware{host},
 		},
 		onewayInboundMiddleware: []middleware.OnewayInbound{
 			contextOnewayInboundMiddleware{},
-			panicOnewayInboundMiddleware{statsClient},
-			authOnewayInboundMiddleware{host, statsClient},
+			panicOnewayInboundMiddleware{},
+			authOnewayInboundMiddleware{host},
 		},
 	}
 

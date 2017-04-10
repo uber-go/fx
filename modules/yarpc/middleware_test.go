@@ -41,8 +41,7 @@ import (
 )
 
 func TestInboundMiddleware_Context(t *testing.T) {
-	host := service.NopHost()
-	unary := contextInboundMiddleware{newStatsClient(host.Metrics())}
+	unary := contextInboundMiddleware{}
 	testutils.WithInMemoryLogger(t, nil, func(loggerWithZap *zap.Logger, buf *zaptest.Buffer) {
 		defer ulog.SetLogger(loggerWithZap)()
 		tracing.WithSpan(t, loggerWithZap, func(span opentracing.Span) {
@@ -78,14 +77,14 @@ func checkLogForTrace(t *testing.T, buf *zaptest.Buffer) {
 
 func TestInboundMiddleware_auth(t *testing.T) {
 	host := service.NopHost()
-	unary := authInboundMiddleware{host, newStatsClient(host.Metrics())}
+	unary := authInboundMiddleware{host}
 	err := unary.Handle(context.Background(), &transport.Request{}, nil, &fakeUnary{t: t})
 	assert.EqualError(t, err, "handle")
 }
 
 func TestInboundMiddleware_authFailure(t *testing.T) {
 	host := service.NopHostAuthFailure()
-	unary := authInboundMiddleware{host, newStatsClient(host.Metrics())}
+	unary := authInboundMiddleware{host}
 	err := unary.Handle(context.Background(), &transport.Request{}, nil, &fakeUnary{t: t})
 	assert.EqualError(t, err, "Error authorizing the service")
 
@@ -101,7 +100,7 @@ func TestOnewayInboundMiddleware_auth(t *testing.T) {
 
 func TestOnewayInboundMiddleware_authFailure(t *testing.T) {
 	host := service.NopHostAuthFailure()
-	oneway := authOnewayInboundMiddleware{host, newStatsClient(host.Metrics())}
+	oneway := authOnewayInboundMiddleware{host}
 	err := oneway.HandleOneway(context.Background(), &transport.Request{}, &fakeOneway{t: t})
 	assert.EqualError(t, err, "Error authorizing the service")
 }
@@ -109,30 +108,24 @@ func TestOnewayInboundMiddleware_authFailure(t *testing.T) {
 func TestInboundMiddleware_panic(t *testing.T) {
 	host := service.NopHost()
 	testScope := host.Metrics()
-	statsClient := newStatsClient(testScope)
 
 	defer testPanicHandler(t, testScope)
-	unary := panicInboundMiddleware{statsClient}
+	unary := panicInboundMiddleware{}
 	unary.Handle(context.Background(), &transport.Request{}, nil, &alwaysPanicUnary{})
 }
 
 func TestOnewayInboundMiddleware_panic(t *testing.T) {
 	host := service.NopHost()
 	testScope := host.Metrics()
-	statsClient := newStatsClient(testScope)
 
 	defer testPanicHandler(t, testScope)
-	oneway := panicOnewayInboundMiddleware{statsClient}
+	oneway := panicOnewayInboundMiddleware{}
 	oneway.HandleOneway(context.Background(), &transport.Request{}, &alwaysPanicOneway{})
 }
 
 func testPanicHandler(t *testing.T, testScope tally.Scope) {
 	r := recover()
 	assert.EqualValues(t, r, _panicResponse)
-
-	snapshot := testScope.(tally.TestScope).Snapshot()
-	counters := snapshot.Counters()
-	assert.True(t, counters["panic"].Value() > 0)
 }
 
 type fakeEnveloper struct {
