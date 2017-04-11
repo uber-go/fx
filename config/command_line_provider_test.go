@@ -126,7 +126,7 @@ func TestCommandLineProvider_OverlappingFlags(t *testing.T) {
 	f.String("Sushi.Tools.1", "Saibashi", "Chopsticks are extremely helpful!")
 	f.Var(&StringSlice{}, "Sushi.Tools", "yolo")
 
-	c := NewCommandLineProvider(f, []string{"--Sushi.Tools.1=Fork", "--Sushi.Tools=Fukin, Hashi"})
+	c := NewCommandLineProvider(f, []string{"--Sushi.Tools.1=Fork", "--Sushi.Tools=Hocho, Hashi"})
 	type Sushi struct {
 		Tools []string
 	}
@@ -134,6 +134,6 @@ func TestCommandLineProvider_OverlappingFlags(t *testing.T) {
 	var v Sushi
 	require.NoError(t, c.Get("Sushi").Populate(&v))
 	assert.Equal(t, Sushi{
-		Tools: []string{"Fukin", "Fork"},
+		Tools: []string{"Hocho", "Fork"},
 	}, v)
 }
