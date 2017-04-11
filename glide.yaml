@@ -35,6 +35,7 @@ import:
 - package: github.com/uber/cherami-thrift
   subpackages:
   - .generated/go/cherami
+- package: github.com/ogier/pflag
 testImport:
 - package: golang.org/x/tools
   subpackages:
