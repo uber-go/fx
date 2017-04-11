@@ -39,7 +39,7 @@
 //
 // • Static YAML configuration
 //
-// • Environment variables
+// • Command line flags
 //
 // So by stacking these providers, we can have a priority system for defining
 // configuration that can be overridden by higher priority providers. For example,
@@ -200,7 +200,7 @@
 //   BenchmarkYAMLPopulateNestedTextUnmarshaler-8       233 allocs/op
 //   BenchmarkZapConfigLoad-8                           136 allocs/op
 //
-// Environment Variables
+// Environment variables
 //
 // YAML provider supports accepting values from the environment.
 // For example, consider the following YAML file:
@@ -215,6 +215,18 @@
 // 3001 default
 // will be used.
 //
+//
+// Command line arguments
+//
+// Testing
+//
+// Helpers
+//
+// Load process
+//
+// Load process is controlled by config.Loader. If a service doesn't specify a config provider,
+// manager is going to use a provider returned by
+// config.DefaultLoader.Load().
 //
 //
 package config
