@@ -100,7 +100,7 @@ func TestCommandLineProvider_NestedValues(t *testing.T) {
 	f.String("Name.Source", "default", "Data provider source")
 	f.Var(&StringSlice{}, "Name.Array", "Example of a nested array")
 
-	c := NewCommandLineProvider(f, []string{"--Name.Source=chocolateFactory", "--Name.Array=one, two,three"})
+	c := NewCommandLineProvider(f, []string{"--Name.Source=chocolateFactory", "--Name.Array=cookie, candy,brandy"})
 	type Wonka struct {
 		Source string
 		Array  []string
@@ -110,11 +110,30 @@ func TestCommandLineProvider_NestedValues(t *testing.T) {
 		Name Wonka
 	}
 
-	g := NewProviderGroup("group", NewStaticProvider(Willy{Name: Wonka{Source: "staticProvider"}}), c)
+	g := NewProviderGroup("group", NewStaticProvider(Willy{Name: Wonka{Source: "staticFactory"}}), c)
 	var v Willy
 	require.NoError(t, g.Get(Root).Populate(&v))
 	assert.Equal(t, Willy{Name: Wonka{
 		Source: "chocolateFactory",
-		Array:  []string{"one", " two", "three"},
+		Array:  []string{"cookie", " candy", "brandy"},
 	}}, v)
+}
+
+func TestCommandLineProvider_OverlappingFlags(t *testing.T) {
+	t.Parallel()
+
+	f := flag.NewFlagSet("", flag.PanicOnError)
+	f.String("Sushi.Tools.1", "Saibashi", "Chopsticks are extremely helpful!")
+	f.Var(&StringSlice{}, "Sushi.Tools", "yolo")
+
+	c := NewCommandLineProvider(f, []string{"--Sushi.Tools.1=Fork", "--Sushi.Tools=Fukin, Hashi"})
+	type Sushi struct {
+		Tools []string
+	}
+
+	var v Sushi
+	require.NoError(t, c.Get("Sushi").Populate(&v))
+	assert.Equal(t, Sushi{
+		Tools: []string{"Fukin", "Fork"},
+	}, v)
 }

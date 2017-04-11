@@ -29,8 +29,7 @@ type cachedProvider struct {
 	sync.RWMutex
 	cache map[string]Value
 
-	p Provider
-	NopProvider
+	Provider
 }
 
 // NewCachedProvider returns a provider, that caches values of the underlying Provider p.
@@ -43,13 +42,13 @@ func NewCachedProvider(p Provider) Provider {
 	}
 
 	return &cachedProvider{
-		p:     p,
-		cache: make(map[string]Value),
+		Provider: p,
+		cache:    make(map[string]Value),
 	}
 }
 
 func (p *cachedProvider) Name() string {
-	return fmt.Sprintf("cached %q", p.p.Name())
+	return fmt.Sprintf("cached %q", p.Provider.Name())
 }
 
 // Retrieves a Value, caches it internally and subscribe to changes via RegisterCallback.
@@ -62,7 +61,7 @@ func (p *cachedProvider) Get(key string) Value {
 	}
 
 	p.RUnlock()
-	err := p.p.RegisterChangeCallback(key, func(key string, provider string, data interface{}) {
+	err := p.Provider.RegisterChangeCallback(key, func(key string, provider string, data interface{}) {
 		p.Lock()
 		p.cache[key] = NewValue(p, key, data, true, GetType(data), nil)
 		p.Unlock()
@@ -72,7 +71,7 @@ func (p *cachedProvider) Get(key string) Value {
 		return NewValue(p, key, err, false, GetType(err), nil)
 	}
 
-	v := p.p.Get(key)
+	v := p.Provider.Get(key)
 	v.provider = p
 	p.Lock()
 	p.cache[key] = v

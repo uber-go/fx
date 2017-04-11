@@ -23,8 +23,7 @@ package config
 import "gopkg.in/yaml.v2"
 
 type staticProvider struct {
-	p Provider
-	NopProvider
+	Provider
 }
 
 // NewStaticProvider should only be used in tests to isolate config from your environment
@@ -35,7 +34,7 @@ func NewStaticProvider(data interface{}) Provider {
 		panic(err)
 	}
 
-	return staticProvider{p: NewYAMLProviderFromBytes(b)}
+	return staticProvider{Provider: NewYAMLProviderFromBytes(b)}
 }
 
 // StaticProvider returns function to create StaticProvider during configuration initialization
@@ -45,12 +44,6 @@ func StaticProvider(data interface{}) ProviderFunc {
 	}
 }
 
-func (s staticProvider) Name() string {
+func (staticProvider) Name() string {
 	return "static"
 }
-
-func (s staticProvider) Get(key string) Value {
-	return s.p.Get(key)
-}
-
-var _ Provider = &staticProvider{}
