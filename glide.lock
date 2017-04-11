@@ -1,5 +1,5 @@
-hash: 8e8224a2ba8f61089673297868bb05b4154c3beeea1db92045df954c471c4d86
-updated: 2017-04-11T11:49:16.007397633-07:00
+hash: 0c3a9321d883b41d0d74669a604f6d76e9be838fa2d4f45922419346c558359f
+updated: 2017-04-11T12:59:07.851765717-07:00
 imports:
 - name: github.com/apache/thrift
   version: 9549b25c77587b29be4e0b5c258221a4ed85d37a
@@ -210,6 +210,8 @@ testImports:
   version: 22c51662ff476dfd97944f74db1b263ed920ee83
   subpackages:
   - cmd/interfacer
+- name: github.com/mvdan/lint
+  version: c9cbe299b369cbfea16318baaa037b19a69e45d2
 - name: github.com/russross/blackfriday
   version: 5ebfae50aacdef0dacd1a1acc469c2c1c7a7d4d8
 - name: github.com/sectioneight/md-to-godoc

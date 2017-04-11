@@ -32,7 +32,7 @@ func TestCommandLineProvider_Roles(t *testing.T) {
 	t.Parallel()
 
 	f := flag.NewFlagSet("", flag.PanicOnError)
-	var s stringSlice
+	var s StringSlice
 	f.Var(&s, "roles", "")
 
 	c := NewCommandLineProvider(f, []string{`--roles=a,b,c"d"`})
@@ -98,7 +98,7 @@ func TestCommandLineProvider_NestedValues(t *testing.T) {
 
 	f := flag.NewFlagSet("", flag.PanicOnError)
 	f.String("Name.Source", "default", "Data provider source")
-	f.Var(&stringSlice{}, "Name.Array", "Example of a nested array")
+	f.Var(&StringSlice{}, "Name.Array", "Example of a nested array")
 
 	c := NewCommandLineProvider(f, []string{"--Name.Source=chocolateFactory", "--Name.Array=one, two,three"})
 	type Wonka struct {

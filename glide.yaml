@@ -68,6 +68,7 @@ testImport:
   version: 2
 - package: github.com/shurcooL/sanitized_anchor_name
 - package: github.com/mvdan/interfacer/cmd/interfacer
+- package: github.com/mvdan/lint
 - package: github.com/kyoh86/richgo
 - package: go.uber.org/tools
   subpackages:

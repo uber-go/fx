@@ -293,7 +293,7 @@ func (l *Loader) SetLookupFn(fn func(string) (string, bool)) {
 }
 
 func commandLineProviderFunc() (Provider, error) {
-	var s stringSlice
+	var s StringSlice
 	flag.CommandLine.Var(&s, "roles", "")
 	return NewCommandLineProvider(flag.CommandLine, os.Args[1:]), nil
 }

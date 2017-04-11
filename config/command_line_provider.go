@@ -27,14 +27,17 @@ import (
 	flag "github.com/ogier/pflag"
 )
 
-type stringSlice []string
+// StringSlice is an alias to string slice, that is used to read comma separated flag values.
+type StringSlice []string
 
-func (s *stringSlice) String() string {
+var _ flag.Value = (*StringSlice)(nil)
+
+func (s *StringSlice) String() string {
 	return strings.Join(*s, ",")
 }
 
-func (s *stringSlice) Set(val string) error {
-	*s = stringSlice(strings.Split(val, ","))
+func (s *StringSlice) Set(val string) error {
+	*s = StringSlice(strings.Split(val, ","))
 	return nil
 }
 
@@ -44,6 +47,8 @@ type commandLineProvider struct {
 }
 
 // NewCommandLineProvider returns a Provider that is using command line parameters as config values.
+// In order to address nested elements one can use dots in flag names which are considered separators.
+// One can use StringSlice type to work with a list of comma separated strings.
 func NewCommandLineProvider(flags *flag.FlagSet, args []string) Provider {
 	if err := flags.Parse(args); err != nil {
 		panic(err)
@@ -51,40 +56,49 @@ func NewCommandLineProvider(flags *flag.FlagSet, args []string) Provider {
 
 	m := make(map[string]interface{})
 	flags.VisitAll(func(f *flag.Flag) {
-
-		// Traverse path elements
-		curr, prev := m, m
-		path := strings.Split(f.Name, _separator)
-		for _, item := range path {
-			if _, ok := curr[item]; !ok {
-				curr[item] = map[string]interface{}{}
-			}
-
-			prev = curr
-			if tmp, ok := curr[item].(map[string]interface{}); ok {
-				curr = tmp
-			} else {
-				curr = map[string]interface{}{}
-			}
-		}
-
-		// Assign values
-		last := path[len(path)-1]
-		if ss, ok := f.Value.(*stringSlice); ok {
-			slice := []string(*ss)
-			tmp := map[string]interface{}{}
-			prev[last] = tmp
-			for i, str := range slice {
-				tmp[fmt.Sprint(i)] = str
-			}
-
-			return
-		}
-
-		prev[last] = f.Value.String()
+		prev, last := traversePath(m, f)
+		assignValues(prev, last, f.Value)
 	})
 
 	return &commandLineProvider{p: NewStaticProvider(m)}
+}
+
+// Assign values to a map element based on value type.
+// If value is a StringSlice - create a new map and with keys - indices and values - StringSlice elements.
+// Otherwise just assign it's string value.
+func assignValues(m map[string]interface{}, key string, value flag.Value) {
+	if ss, ok := value.(*StringSlice); ok {
+		slice := []string(*ss)
+		tmp := map[string]interface{}{}
+		m[key] = tmp
+		for i, str := range slice {
+			tmp[fmt.Sprint(i)] = str
+		}
+
+		return
+	}
+
+	m[key] = value.String()
+}
+
+// Traverse map with the flag name used as path.
+func traversePath(m map[string]interface{}, f *flag.Flag) (prev map[string]interface{}, last string) {
+	curr, prev := m, m
+	path := strings.Split(f.Name, _separator)
+	for _, item := range path {
+		if _, ok := curr[item]; !ok {
+			curr[item] = map[string]interface{}{}
+		}
+
+		prev = curr
+		if tmp, ok := curr[item].(map[string]interface{}); ok {
+			curr = tmp
+		} else {
+			curr = map[string]interface{}{}
+		}
+	}
+
+	return prev, path[len(path)-1]
 }
 
 func (c *commandLineProvider) Name() string {
