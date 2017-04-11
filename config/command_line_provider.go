@@ -70,7 +70,7 @@ func NewCommandLineProvider(flags *flag.FlagSet, args []string) Provider {
 func assignValues(m map[string]interface{}, key string, value flag.Value) {
 	if ss, ok := value.(*StringSlice); ok {
 		slice := []string(*ss)
-		tmp := map[string]interface{}{}
+		tmp := make(map[string]interface{}, len(slice))
 		m[key] = tmp
 		for i, str := range slice {
 			tmp[fmt.Sprint(i)] = str
@@ -95,6 +95,8 @@ func traversePath(m map[string]interface{}, f *flag.Flag) (prev map[string]inter
 		if tmp, ok := curr[item].(map[string]interface{}); ok {
 			curr = tmp
 		} else {
+			// This should never happen, because pflag/flag sort flags before calling a visitor,
+			// but it is better to be safe then sorry.
 			curr = map[string]interface{}{}
 		}
 	}
