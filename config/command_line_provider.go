@@ -32,18 +32,19 @@ type StringSlice []string
 
 var _ flag.Value = (*StringSlice)(nil)
 
+// String returns slice elements separated by comma.
 func (s *StringSlice) String() string {
 	return strings.Join(*s, ",")
 }
 
+// Set splits val using comma as separators.
 func (s *StringSlice) Set(val string) error {
 	*s = StringSlice(strings.Split(val, ","))
 	return nil
 }
 
 type commandLineProvider struct {
-	p Provider
-	NopProvider
+	Provider
 }
 
 // NewCommandLineProvider returns a Provider that is using command line parameters as config values.
@@ -60,7 +61,7 @@ func NewCommandLineProvider(flags *flag.FlagSet, args []string) Provider {
 		assignValues(prev, last, f.Value)
 	})
 
-	return &commandLineProvider{p: NewStaticProvider(m)}
+	return commandLineProvider{Provider: NewStaticProvider(m)}
 }
 
 // Assign values to a map element based on value type.
@@ -101,10 +102,6 @@ func traversePath(m map[string]interface{}, f *flag.Flag) (prev map[string]inter
 	return prev, path[len(path)-1]
 }
 
-func (c *commandLineProvider) Name() string {
+func (commandLineProvider) Name() string {
 	return "cmd"
-}
-
-func (c *commandLineProvider) Get(key string) Value {
-	return c.p.Get(key)
 }
