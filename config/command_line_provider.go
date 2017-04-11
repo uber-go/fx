@@ -68,6 +68,7 @@ func NewCommandLineProvider(flags *flag.FlagSet, args []string) Provider {
 			}
 		}
 
+		// Assign values
 		last := path[len(path)-1]
 		if ss, ok := f.Value.(*stringSlice); ok {
 			slice := []string(*ss)

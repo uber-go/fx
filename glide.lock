@@ -1,5 +1,5 @@
 hash: 8e8224a2ba8f61089673297868bb05b4154c3beeea1db92045df954c471c4d86
-updated: 2017-04-10T16:08:40.885758964-07:00
+updated: 2017-04-11T11:49:16.007397633-07:00
 imports:
 - name: github.com/apache/thrift
   version: 9549b25c77587b29be4e0b5c258221a4ed85d37a
@@ -12,9 +12,9 @@ imports:
 - name: github.com/certifi/gocertifi
   version: 03be5e6bb9874570ea7fb0961225d193cbc374c5
 - name: github.com/codahale/hdrhistogram
-  version: f8ad88b59a584afeee9d334eff879b104439117b
+  version: 3a0bb77429bd3a61596f5e8a3172445844342120
 - name: github.com/davecgh/go-spew
-  version: 5215b55f46b2b919f50a1df0eaa5886afe4e3b3d
+  version: 346938d642f2ec3594ed81d874461961cd0faa76
   subpackages:
   - spew
 - name: github.com/facebookgo/clock
@@ -32,7 +32,7 @@ imports:
 - name: github.com/gorilla/mux
   version: 392c28fe23e1c45ddba891b0320b3b5df220beea
 - name: github.com/gorilla/websocket
-  version: 3ab3a8b8831546bd18fd182c20687ca853b2bb13
+  version: a91eba7f97777409bc2c443f5534d41dd20c5720
 - name: github.com/ogier/pflag
   version: 45c278ab3607870051a2ea9040bb85fcb8557481
 - name: github.com/opentracing/opentracing-go
@@ -41,7 +41,7 @@ imports:
   - ext
   - log
 - name: github.com/pborman/uuid
-  version: c55201b036063326c5b1b89ccfe45a184973d073
+  version: 1b00554d822231195d1babd97ff4a781231955c9
 - name: github.com/pkg/errors
   version: 645ef00459ed84a119197bfb8d8205042c6df63d
 - name: github.com/pmezard/go-difflib
@@ -49,7 +49,7 @@ imports:
   subpackages:
   - difflib
 - name: github.com/Sirupsen/logrus
-  version: 08a8a7c27e3d058a8989316a850daad1c10bf4ab
+  version: 10f801ebc38b33738c9d17d50860f484a0988ff5
 - name: github.com/stretchr/objx
   version: 1a9d0bb9f541897e62256577b352fdbc1fb4fd94
 - name: github.com/stretchr/testify
@@ -59,7 +59,7 @@ imports:
   - mock
   - require
 - name: github.com/uber-common/bark
-  version: d52ffa061726911f47fcd3d9e8b9b55f22794772
+  version: 148dd9dfbd0feb293fc81593a8c10c99877f81bc
 - name: github.com/uber-go/atomic
   version: e682c1008ac17bf26d2e4b5ad6cdd08520ed0b22
 - name: github.com/uber-go/tally
@@ -74,7 +74,7 @@ imports:
   - common/websocket
   - stream
 - name: github.com/uber/cherami-thrift
-  version: b745766cbb5398b92f532daf4ac8f7c0fa9555ac
+  version: 491bc3af350b3cdc0780c6f99ca9fd0a82aeb850
   subpackages:
   - .generated/go/cherami
 - name: github.com/uber/jaeger-client-go
@@ -172,11 +172,11 @@ imports:
   - context
   - context/ctxhttp
 - name: golang.org/x/sys
-  version: d4feaf1a7e61e1d9e79e6c4e76c6349e9cab0a03
+  version: f3918c30c5c2cb527c0b071a27c35120a6c0719a
   subpackages:
   - unix
 - name: golang.org/x/tools
-  version: ef3dcd5937c94da5c25df3f3a5d8356d778af8e4
+  version: 7ee420f17d7525d013c72c05ed371361a29895d3
   subpackages:
   - go/ast/astutil
 - name: gopkg.in/yaml.v2
