@@ -621,3 +621,18 @@ func TestZeroInitializeLoader(t *testing.T) {
 	var l Loader
 	assert.NotPanics(t, func() { l.Load() })
 }
+
+func TestLoader_StaticProviderOrder(t *testing.T) {
+	t.Parallel()
+	f := func(dir string) {
+		l := NewLoader(func() (Provider, error) {
+			return NewStaticProvider(map[string]string{"value": "correct"}), nil
+		})
+
+		l.SetDirs(dir)
+		p := l.Load()
+		assert.Equal(t, "correct", p.Get("value").AsString())
+	}
+
+	withBase(t, f, "value: wrong")
+}
