@@ -86,7 +86,7 @@ func NewLoader(providers ...ProviderFunc) *Loader {
 	}
 
 	l.configFiles = l.baseFiles()
-	// Order is important: we want users to be able to override
+	// Order is important: we want users to be able to override static provider
 	l.RegisterProviders(l.YamlProvider())
 	l.RegisterProviders(providers...)
 

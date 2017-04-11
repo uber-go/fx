@@ -79,3 +79,13 @@ func (p *cachedProvider) Get(key string) Value {
 
 	return v
 }
+
+// No need to register a callback, all the values are fresh.
+func (p *cachedProvider) RegisterChangeCallback(key string, callback ChangeCallback) error {
+	return nil
+}
+
+// No need to unregister a callback, because nothing was registered.
+func (p *cachedProvider) UnregisterChangeCallback(token string) error {
+	return nil
+}
