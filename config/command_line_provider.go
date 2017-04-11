@@ -39,7 +39,8 @@ func (s *stringSlice) Set(val string) error {
 }
 
 type commandLineProvider struct {
-	Provider
+	p Provider
+	NopProvider
 }
 
 // NewCommandLineProvider returns a Provider that is using command line parameters as config values.
@@ -64,9 +65,14 @@ func NewCommandLineProvider(flags *flag.FlagSet, args []string) Provider {
 		m[f.Name] = f.Value.String()
 	})
 
-	return commandLineProvider{Provider: NewStaticProvider(m)}
+	m[""] = ""
+	return &commandLineProvider{p: NewStaticProvider(m)}
 }
 
-func (c commandLineProvider) Name() string {
+func (c *commandLineProvider) Name() string {
 	return "cmd"
+}
+
+func (c *commandLineProvider) Get(key string) Value {
+	return c.p.Get(key)
 }

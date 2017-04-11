@@ -29,7 +29,8 @@ type cachedProvider struct {
 	sync.RWMutex
 	cache map[string]Value
 
-	Provider
+	p Provider
+	NopProvider
 }
 
 // NewCachedProvider returns a provider, that caches values of the underlying Provider p.
@@ -42,13 +43,13 @@ func NewCachedProvider(p Provider) Provider {
 	}
 
 	return &cachedProvider{
-		Provider: p,
-		cache:    make(map[string]Value),
+		p:     p,
+		cache: make(map[string]Value),
 	}
 }
 
 func (p *cachedProvider) Name() string {
-	return fmt.Sprintf("cached %q", p.Provider.Name())
+	return fmt.Sprintf("cached %q", p.p.Name())
 }
 
 // Retrieves a Value, caches it internally and subscribe to changes via RegisterCallback.
@@ -61,7 +62,7 @@ func (p *cachedProvider) Get(key string) Value {
 	}
 
 	p.RUnlock()
-	err := p.Provider.RegisterChangeCallback(key, func(key string, provider string, data interface{}) {
+	err := p.p.RegisterChangeCallback(key, func(key string, provider string, data interface{}) {
 		p.Lock()
 		p.cache[key] = NewValue(p, key, data, true, GetType(data), nil)
 		p.Unlock()
@@ -71,21 +72,11 @@ func (p *cachedProvider) Get(key string) Value {
 		return NewValue(p, key, err, false, GetType(err), nil)
 	}
 
-	v := p.Provider.Get(key)
+	v := p.p.Get(key)
 	v.provider = p
 	p.Lock()
 	p.cache[key] = v
 	p.Unlock()
 
 	return v
-}
-
-// No need to register a callback, all the values are fresh.
-func (p *cachedProvider) RegisterChangeCallback(key string, callback ChangeCallback) error {
-	return nil
-}
-
-// No need to unregister a callback, because nothing was registered.
-func (p *cachedProvider) UnregisterChangeCallback(token string) error {
-	return nil
 }

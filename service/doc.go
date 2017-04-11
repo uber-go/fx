@@ -86,15 +86,11 @@
 //     svc.Start()
 //   }
 //
-// Which then allows us to set the roles either via a command line variable:
+// Which then allows us to set the roles either via a command line flags:
 //
-// export CONFIG__roles__0=worker
+// • ./myservice or ./myservice --roles=service,worker: Runs all modules
 //
-// Or via the service parameters, we would activate in the following ways:
-//
-// • ./myservice or ./myservice --roles "service,worker": Runs all modules
-//
-// • ./myservice --roles "worker": Runs only the **Kakfa** module
+// • ./myservice --roles=worker: Runs only the **Kakfa** module
 //
 // • Etc...
 //

@@ -22,11 +22,12 @@ package config
 
 import (
 	"fmt"
-	"github.com/ogier/pflag"
 	"os"
 	"path"
 	"path/filepath"
 	"sync"
+
+	flag "github.com/ogier/pflag"
 )
 
 const (
@@ -69,10 +70,6 @@ type Loader struct {
 
 	// Where to look for environment variables.
 	lookUp lookUpFunc
-}
-
-func commandLineProviderFunc() (Provider, error) {
-	return NewCommandLineProvider(pflag.CommandLine, os.Args[1:]), nil
 }
 
 // DefaultLoader is going to be used by a service if config is not specified.
@@ -293,4 +290,10 @@ func (l *Loader) SetLookupFn(fn func(string) (string, bool)) {
 	defer l.lock.Unlock()
 
 	l.lookUp = fn
+}
+
+func commandLineProviderFunc() (Provider, error) {
+	var s stringSlice
+	flag.CommandLine.Var(&s, "roles", "")
+	return NewCommandLineProvider(flag.CommandLine, os.Args[1:]), nil
 }

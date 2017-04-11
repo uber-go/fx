@@ -23,7 +23,7 @@ package config
 import (
 	"testing"
 
-	"github.com/ogier/pflag"
+	flag "github.com/ogier/pflag"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -31,7 +31,7 @@ import (
 func TestCommandLineProvider_Roles(t *testing.T) {
 	t.Parallel()
 
-	f := pflag.NewFlagSet("", pflag.PanicOnError)
+	f := flag.NewFlagSet("", flag.PanicOnError)
 	var s stringSlice
 	f.Var(&s, "roles", "")
 
@@ -46,7 +46,7 @@ func TestCommandLineProvider_Roles(t *testing.T) {
 func TestCommandLineProvider_Default(t *testing.T) {
 	t.Parallel()
 
-	f := pflag.NewFlagSet("", pflag.PanicOnError)
+	f := flag.NewFlagSet("", flag.PanicOnError)
 	f.String("killerFeature", "minesweeper", "Start->Games->Minesweeper")
 
 	c := NewCommandLineProvider(f, nil)
@@ -58,7 +58,7 @@ func TestCommandLineProvider_Default(t *testing.T) {
 func TestCommandLineProvider_Conversion(t *testing.T) {
 	t.Parallel()
 
-	f := pflag.NewFlagSet("", pflag.PanicOnError)
+	f := flag.NewFlagSet("", flag.PanicOnError)
 	f.String("dozen", "14", " that number of rolls being allowed to the purchaser of a dozen")
 
 	c := NewCommandLineProvider(f, []string{"--dozen=13"})
@@ -71,24 +71,46 @@ func TestCommandLineProvider_PanicOnUnknownFlags(t *testing.T) {
 	t.Parallel()
 
 	assert.Panics(t, func() {
-		NewCommandLineProvider(pflag.NewFlagSet("", pflag.ContinueOnError), []string{"--boom"})
+		NewCommandLineProvider(flag.NewFlagSet("", flag.ContinueOnError), []string{"--boom"})
 	})
 }
 
 func TestCommandLineProvider_Name(t *testing.T) {
 	t.Parallel()
-	p := NewCommandLineProvider(pflag.NewFlagSet("", pflag.PanicOnError), nil)
+	p := NewCommandLineProvider(flag.NewFlagSet("", flag.PanicOnError), nil)
 	assert.Equal(t, "cmd", p.Name())
 }
 
 func TestCommandLineProvider_RepeatingArguments(t *testing.T) {
 	t.Parallel()
 
-	f := pflag.NewFlagSet("", pflag.PanicOnError)
+	f := flag.NewFlagSet("", flag.PanicOnError)
 	f.Int("count", 1, "If I had a million dollars")
 
 	c := NewCommandLineProvider(f, []string{"--count=2", "--count=3"})
 	v := c.Get("count")
 	require.True(t, v.HasValue())
 	assert.Equal(t, "3", v.AsString())
+}
+
+func TestCommandLineProvider_NestedValues(t *testing.T) {
+	t.Parallel()
+
+	f := flag.NewFlagSet("", flag.PanicOnError)
+	f.String("Name.Source", "default", "")
+	f.String("Name", "wonka", "")
+
+	c := NewCommandLineProvider(f, []string{"--Name.Source=chocolateFactory", "--Name=wonka"})
+	type Wonka struct {
+		Source string
+	}
+
+	type Willy struct {
+		Name Wonka
+	}
+
+	//g := NewProviderGroup("group", c, NewStaticProvider(Willy{Name: Wonka{Source: "staticProvider"}}))
+	var v Willy
+	require.NoError(t, c.Get("").Populate(&v))
+	assert.Equal(t, Willy{Name: Wonka{Source: "chocolateFactory"}}, v)
 }
