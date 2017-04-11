@@ -51,21 +51,38 @@ func NewCommandLineProvider(flags *flag.FlagSet, args []string) Provider {
 
 	m := make(map[string]interface{})
 	flags.VisitAll(func(f *flag.Flag) {
-		val := f.Value
-		if ss, ok := val.(*stringSlice); ok {
+
+		// Traverse path elements
+		curr, prev := m, m
+		path := strings.Split(f.Name, _separator)
+		for _, item := range path {
+			if _, ok := curr[item]; !ok {
+				curr[item] = map[string]interface{}{}
+			}
+
+			prev = curr
+			if tmp, ok := curr[item].(map[string]interface{}); ok {
+				curr = tmp
+			} else {
+				curr = map[string]interface{}{}
+			}
+		}
+
+		last := path[len(path)-1]
+		if ss, ok := f.Value.(*stringSlice); ok {
 			slice := []string(*ss)
-			m[f.Name] = slice
+			tmp := map[string]interface{}{}
+			prev[last] = tmp
 			for i, str := range slice {
-				m[fmt.Sprintf("%s.%d", f.Name, i)] = str
+				tmp[fmt.Sprint(i)] = str
 			}
 
 			return
 		}
 
-		m[f.Name] = f.Value.String()
+		prev[last] = f.Value.String()
 	})
 
-	m[""] = ""
 	return &commandLineProvider{p: NewStaticProvider(m)}
 }
 

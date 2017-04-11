@@ -97,20 +97,24 @@ func TestCommandLineProvider_NestedValues(t *testing.T) {
 	t.Parallel()
 
 	f := flag.NewFlagSet("", flag.PanicOnError)
-	f.String("Name.Source", "default", "")
-	f.String("Name", "wonka", "")
+	f.String("Name.Source", "default", "Data provider source")
+	f.Var(&stringSlice{}, "Name.Array", "Example of a nested array")
 
-	c := NewCommandLineProvider(f, []string{"--Name.Source=chocolateFactory", "--Name=wonka"})
+	c := NewCommandLineProvider(f, []string{"--Name.Source=chocolateFactory", "--Name.Array=one, two,three"})
 	type Wonka struct {
 		Source string
+		Array  []string
 	}
 
 	type Willy struct {
 		Name Wonka
 	}
 
-	//g := NewProviderGroup("group", c, NewStaticProvider(Willy{Name: Wonka{Source: "staticProvider"}}))
+	g := NewProviderGroup("group", NewStaticProvider(Willy{Name: Wonka{Source: "staticProvider"}}), c)
 	var v Willy
-	require.NoError(t, c.Get("").Populate(&v))
-	assert.Equal(t, Willy{Name: Wonka{Source: "chocolateFactory"}}, v)
+	require.NoError(t, g.Get(Root).Populate(&v))
+	assert.Equal(t, Willy{Name: Wonka{
+		Source: "chocolateFactory",
+		Array:  []string{"one", " two", "three"},
+	}}, v)
 }
