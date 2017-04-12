@@ -65,7 +65,7 @@ fmt.Println("Port is", target.Port) // "Port is 8081"
 ```
 
 This model respects priority of providers to allow overriding of individual
-values.
+values. Read `Loader` section for more details about loader process.
 
 ## Provider
 
@@ -200,12 +200,76 @@ will be used.
 
 ## Command line arguments
 
+Command line provider is a static provider that reads flags passed to a program and
+wraps them in the `Provider` interface. It uses dots in flag names as separators
+for nested values and commas to indicate that flag value is an array of values.
+For example:
+
+```go
+type Wonka struct {
+  Source string
+  Array  []string
+}
+
+type Willy struct {
+  Name Wonka
+}
+
+func main() {
+  pflag.CommandLine.String("Name.Source", "default", "Data provider source")
+  pflag.CommandLine.Var(&StringSlice{}, "Name.Array", "Example of a nested array")
+
+  var v Willy
+  config.DefaultLoader().Load().Get(config.Root).Populate(&v)
+  log.Println(v)
+}
+```
+
+If you run this program with arguments
+`./main --Name.Source=chocolateFactory --Name.Array=cookie,candy`, it will print
+``
+
 ## Testing
 
 ## Helpers
 
-## Load process
+## Loader
 
 Load process is controlled by `config.Loader`. If a service doesn't specify a
 config provider, manager is going to use a provider returned by
 `config.DefaultLoader.Load()`.
+
+The default loader will load static providers first:
+
+* YAML provider will look for `base.yaml` and `${environment}.yaml` files in
+  current folder and then in `./config` folder. You can override folders
+  to look for these files with `Loader.SetDirs()`.
+  To override files names use `Loader.SetFiles()`.
+
+* Command line provider will look for `--roles` argument to specify service
+  roles. You can introduce/override config values by adding new flags to
+  `pflags.CommandLine` set before building a service.
+
+You can add more static providers on top of mentioned above with
+`RegisterProviders()` function:
+
+```go
+config.DefaultLoader().RegisterProviders(
+        func() Provider, error {
+                return config.NewStaticProvider(map[string]int{"1+2": 3})
+        }
+)
+```
+
+After static providers are loaded, they are used to create dynamic providers.
+You can add new ones in the loader with `RegusterDynamicProviders()` call as well.
+
+In the end all providers are grouped together using
+`NewProviderGroup("globa", staticProviders, dynamicProviders)` and returned to service.
+
+If all you want is just a config, there is no need to build a service, you can use
+`config.DefaultLoader.Load()` and get exactly the same config.
+
+Loader type is very customizable and lets you write parallel tests easily: if you
+don't want to use `os.LookupEnv()` function to look for environment variables you
+can override with your custom function: `config.DefaultLoader.SetLookupFn()`
