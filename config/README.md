@@ -239,8 +239,10 @@ loaded with service or mock it with a static provider. For example, lets create
 a calculator type, that does operations with 2 arguments:
 
 ```go
+// Operation is a simple binary function.
 type Operation func(left, right int) int
 
+// Calculator evaluates operation Op on its Left and Right fields.
 type Calculator struct {
   Left  int
   Right int
