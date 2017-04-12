@@ -235,8 +235,11 @@
 //   }
 //
 //   func main() {
-//     pflag.CommandLine.String("Name.Source", "default", "Data provider source")
-//     pflag.CommandLine.Var(&StringSlice{}, "Name.Array", "Example of a nested array")
+//     pflag.CommandLine.String("Name.Source", "default value", "String example")
+//     pflag.CommandLine.Var(
+//       &config.StringSlice{},
+//       "Name.Array",
+//       "Example of a nested array")
 //
 //     var v Willy
 //     config.DefaultLoader().Load().Get(config.Root).Populate(&v)
@@ -245,12 +248,140 @@
 //
 // If you run this program with arguments
 // ./main --Name.Source=chocolateFactory --Name.Array=cookie,candy, it will print
-// ``
-//
+// {{chocolateFactory [cookie candy]}}
 //
 // Testing
 //
-// Helpers
+// Provider interface makes unit testing easy, you can use the config that was
+// loaded with service or mock it with a static provider. For example, lets create
+// a calculator type, that does operations with 2 arguments:
+//
+//
+//   type Operation func(left, right int) int
+//
+//   type Calculator struct {
+//     Left  int
+//     Right int
+//     Op    Operation
+//   }
+//
+//   func (c Calculator) Eval() int {
+//     return c.Op(c.Left, c.Right)
+//   }
+//
+// Calculator constructor needs only config.Provider and it loads configuration from
+// the root:
+//
+//
+//   func NewCalculator(cfg Provider) (*Calculator, error){
+//     calc := &Calculator{}
+//     return calc, cfg.Get(Root).Populate(calc)
+//   }
+//
+// Operation has a  function type, but we can make it configurable. In order for
+// a provider to know how to deserialize it,
+// Operation type needs to implement
+// text.Unmarshaller interface:
+//
+//   func (o *Operation) UnmarshalText(text []byte) error {
+//     switch s := string(text); s {
+//     case "+":
+//       *o = func(left, right int) int { return left + right }
+//     case "-":
+//       *o = func(left, right int) int { return left - right }
+//     default:
+//       return fmt.Errorf("unknown operation %q", s)
+//     }
+//
+//     return nil
+//   }
+//
+// Testing it with a static provider will be easy, we can define all arguments there
+// and the expected result:
+//
+//
+//   func TestCalculator_Eval(t *testing.T) {
+//     t.Parallel()
+//
+//     table := map[string]Provider{
+//       "1+2": NewStaticProvider(map[string]string{
+//         "Op": "+", "Left": "1", "Right": "2", "Expected": "3"}),
+//       "1-2": NewStaticProvider(map[string]string{
+//         "Op": "-", "Left": "2", "Right": "1", "Expected": "1"}),
+//     }
+//
+//     for name, cfg := range table {
+//       t.Run(name, func(t *testing.T) {
+//         calc, err := NewCalculator(cfg)
+//         require.NoError(t, err)
+//         assert.Equal(t, cfg.Get("Expected").AsInt(), calc.Eval())
+//       })
+//     }
+//   }
+//
+// We should not forget to test the error path as well:
+//
+//   func TestCalculator_Errors(t *testing.T) {
+//     t.Parallel()
+//
+//     _, err := newCalculator(NewStaticProvider(map[string]string{
+//       "Op": "*", "Left": "3", "Right": "5"
+//     }))
+//
+//     require.Error(t, err)
+//     assert.Contains(t, err.Error(), `unknown operation "*"`)
+//   }
+//
+// For integration/E2E testing you can customize config.Loader to load
+// configuration files from either custom folders(
+// Loader.SetDirs()),
+// or custom files(
+// Loader.SetFiles()), or register new providers on top of
+// existing providers(
+// Loader.RegisterProviders()) that will override values
+// of default configs.
+//
+//
+// Utilities
+//
+// Config package comes with several helpers that can make writing tests,
+// create new providers or amend existing ones much easier.
+//
+//
+// • NewCachedProvider(p Provider) returns a new provider that wraps pand caches values in underlying map. It also registers callbacks to track
+// changes in all values it cached, so you can call
+// cached.Get("something")and don't worry about latencies much. It is safe for concurrent use by
+// multiple goroutines.
+//
+//
+// • MockDynamicProvider is a mock provider that can be used to test dynamic
+// features, it implements
+// Provider interface and lets you to set values
+// to trigger change callbacks.
+//
+//
+// • Sometimes dynamic providers let you to register only one callback per key.
+// If you want to have multiple keys per callback you can use
+// NewMultiCallbackProvider(p Provider) wrapper, that will store a list of
+// all callbacks for each value and call them when a value changes.
+// Caution: it locks provider during callbacks execution, you should try to
+// make this callbacks as fast as possible.
+//
+//
+// • NopProvider is useful for testing because it can be embedded in any type
+// if you are not interested in implementing all Provider methods.
+//
+//
+// • NewProviderGroup(name string, providers ...Provider) groups providers in one.
+// Lookups for values are determined by the order providers passed:
+// NewProviderGroup("global", provider1, provider2), first provider1 will be
+// checked and if there is no value, it will return
+// provider2.Get().
+//
+// • NewStaticProvider(data interface{}) is very useful provider for testing,
+// you can pass create custom maps and use them as configs instead of loading
+// from files.
+//
 //
 // Loader
 //
@@ -276,9 +407,9 @@
 // RegisterProviders() function:
 //
 //   config.DefaultLoader().RegisterProviders(
-//           func() Provider, error {
-//                   return config.NewStaticProvider(map[string]int{"1+2": 3})
-//           }
+//     func() Provider, error {
+//       return config.NewStaticProvider(map[string]int{"1+2": 3})
+//     }
 //   )
 //
 // After static providers are loaded, they are used to create dynamic providers.
