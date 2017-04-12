@@ -85,7 +85,9 @@
 //
 // This model respects priority of providers to allow overriding of individual
 // values. Read
-// Loader section for more details about loader process.
+// Loading Section (#Loading-Section) section for more details
+// about loader process.
+//
 //
 // Provider
 //
@@ -95,7 +97,7 @@
 // config.RegisterProviders() and
 // config.RegisterDynamicProviders.
 //
-// Static configuration providers
+// Static Configuration Providers
 //
 // Static configuration providers conform to the Provider interface
 // and are bootstrapped first. Use these for simple providers such as file-backed or
@@ -185,22 +187,7 @@
 // Note that any fields you wish to deserialize into must be exported, just like
 // json.Unmarshal and friends.
 //
-// Benchmarks
-//
-// Current performance benchmark data:
-//
-//   BenchmarkYAMLCreateSingleFile-8                    117 allocs/op
-//   BenchmarkYAMLCreateMultiFile-8                     204 allocs/op
-//   BenchmarkYAMLSimpleGetLevel1-8                       0 allocs/op
-//   BenchmarkYAMLSimpleGetLevel3-8                       0 allocs/op
-//   BenchmarkYAMLSimpleGetLevel7-8                       0 allocs/op
-//   BenchmarkYAMLPopulate-8                             18 allocs/op
-//   BenchmarkYAMLPopulateNested-8                       42 allocs/op
-//   BenchmarkYAMLPopulateNestedMultipleFiles-8          52 allocs/op
-//   BenchmarkYAMLPopulateNestedTextUnmarshaler-8       233 allocs/op
-//   BenchmarkZapConfigLoad-8                           136 allocs/op
-//
-// Environment variables
+// Environment Variables
 //
 // YAML provider supports accepting values from the environment.
 // For example, consider the following YAML file:
@@ -216,7 +203,7 @@
 // will be used.
 //
 //
-// Command line arguments
+// Command Line Arguments
 //
 // Command line provider is a static provider that reads flags passed to a program and
 // wraps them in the
@@ -385,7 +372,7 @@
 // from files.
 //
 //
-// Loader
+// Loading Configuration
 //
 // Load process is controlled by config.Loader. If a service doesn't specify a
 // config provider, manager is going to use a provider returned by
@@ -416,10 +403,10 @@
 //
 // After static providers are loaded, they are used to create dynamic providers.
 // You can add new ones in the loader with
-// RegusterDynamicProviders() call as well.
+// RegisterDynamicProviders() call as well.
 //
 // In the end all providers are grouped together using
-// NewProviderGroup("globa", staticProviders, dynamicProviders) and returned to service.
+// NewProviderGroup("global", staticProviders, dynamicProviders) and returned to service.
 //
 // If all you want is just a config, there is no need to build a service, you can use
 // config.DefaultLoader.Load() and get exactly the same config.
@@ -429,6 +416,21 @@
 // os.LookupEnv() function to look for environment variables you
 // can override it with your custom function:
 // config.DefaultLoader.SetLookupFn().
+//
+// Benchmarks
+//
+// Current performance benchmark data:
+//
+//   BenchmarkYAMLCreateSingleFile-8                    117 allocs/op
+//   BenchmarkYAMLCreateMultiFile-8                     204 allocs/op
+//   BenchmarkYAMLSimpleGetLevel1-8                       0 allocs/op
+//   BenchmarkYAMLSimpleGetLevel3-8                       0 allocs/op
+//   BenchmarkYAMLSimpleGetLevel7-8                       0 allocs/op
+//   BenchmarkYAMLPopulate-8                             18 allocs/op
+//   BenchmarkYAMLPopulateNested-8                       42 allocs/op
+//   BenchmarkYAMLPopulateNestedMultipleFiles-8          52 allocs/op
+//   BenchmarkYAMLPopulateNestedTextUnmarshaler-8       233 allocs/op
+//   BenchmarkZapConfigLoad-8                           136 allocs/op
 //
 //
 package config
