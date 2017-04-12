@@ -85,7 +85,7 @@
 //
 // This model respects priority of providers to allow overriding of individual
 // values. Read
-// Loading Section (#Loading-Section) section for more details
+// Loading Configuration (#Loading-Configuration) section for more details
 // about loader process.
 //
 //
@@ -395,7 +395,7 @@
 // You can add more static providers on top of mentioned above with
 // RegisterProviders() function:
 //
-//   config.DefaultLoader().RegisterProviders(
+//   config.DefaultLoader.RegisterProviders(
 //     func() Provider, error {
 //       return config.NewStaticProvider(map[string]int{"1+2": 3})
 //     }
