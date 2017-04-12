@@ -282,7 +282,7 @@ func (o *Operation) UnmarshalText(text []byte) error {
 ```
 
 Testing it with a static provider will be easy, we can define all arguments there
-and the expected result:
+with the expected result:
 
 ```go
 func TestCalculator_Eval(t *testing.T) {
@@ -356,8 +356,8 @@ create new providers or amend existing ones much easier.
   `NewProviderGroup("global", provider1, provider2)`, first `provider1` will be
   checked and if there is no value, it will return `provider2.Get()`.
 
-* `NewStaticProvider(data interface{})` is very useful provider for testing,
-  you can pass create custom maps and use them as configs instead of loading
+* `NewStaticProvider(data interface{})` is very a useful wrapper for testing,
+  you can pass custom maps and use them as configs instead of loading them
   from files.
 
 ## Loader
