@@ -86,7 +86,7 @@
 // This model respects priority of providers to allow overriding of individual
 // values. Read
 // Loading Configuration (#Loading-Configuration) section for more details
-// about loader process.
+// about loading process.
 //
 //
 // Provider
@@ -94,8 +94,8 @@
 // Provider is the interface for anything that can provide values.
 // We provide a few reference implementations (environment and YAML), but you are
 // free to register your own providers via
-// config.RegisterProviders() and
-// config.RegisterDynamicProviders.
+// RegisterProviders() and
+// RegisterDynamicProviders().
 //
 // Static configuration providers
 //
@@ -141,7 +141,7 @@
 //   fmt.Println(foo)
 //   // Output: hello
 //
-// To get an access to the root element use config.Root:
+// To get an access to the root element use Root:
 //
 //   root := provider.Get(config.Root).AsString()
 //   fmt.Println(root)
@@ -161,10 +161,9 @@
 // Populate
 //
 // Populate is akin to json.Unmarshal() in that it takes a pointer to a
-// custom struct and fills in the fields. It returns a
-// true if the requested
-// fields were found and populated properly, and
-// false otherwise.
+// custom struct or any other type and fills in the fields. It returns an error,
+// if the requested were not populated properly.
+//
 //
 // For example, say we have the following YAML file:
 //
@@ -238,7 +237,7 @@
 //
 // Testing
 //
-// The config.Provider interface makes unit testing easy. You can use the config
+// The Provider interface makes unit testing easy. You can use the config
 // that came loaded with your service or mock it with a static provider. For example,
 // let's create a calculator type that does operations with two arguments:
 //
@@ -257,7 +256,7 @@
 //     return c.Op(c.Left, c.Right)
 //   }
 //
-// Calculator constructor needs only config.Provider and it loads configuration from
+// Calculator constructor needs only Provider and it loads configuration from
 // the root:
 //
 //
@@ -320,7 +319,7 @@
 //     assert.Contains(t, err.Error(), `unknown operation "*"`)
 //   }
 //
-// For integration/E2E testing you can customize config.Loader to load
+// For integration/E2E testing you can customize Loader to load
 // configuration files from either custom folders (
 // Loader.SetDirs())
 // or custom files (
@@ -342,7 +341,7 @@
 // multiple goroutines.
 //
 //
-// • MockDynamicProvider is a mock provider that can be used to test dynamic
+// • The MockDynamicProvider is a mock provider that can be used to test dynamic
 // features. It implements
 // Provider interface and lets you set values
 // to trigger change callbacks.
