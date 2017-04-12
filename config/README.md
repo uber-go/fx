@@ -207,7 +207,7 @@ func main() {
     "Example of a nested array")
 
   var v Willy
-  config.DefaultLoader().Load().Get(config.Root).Populate(&v)
+  config.DefaultLoader.Load().Get(config.Root).Populate(&v)
   log.Println(v)
 }
 ```
