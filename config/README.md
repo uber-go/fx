@@ -75,13 +75,13 @@ We provide a few reference implementations (environment and YAML), but you are
 free to register your own providers via `config.RegisterProviders()` and
 `config.RegisterDynamicProviders`.
 
-### Static Configuration Providers
+### Static configuration providers
 
 Static configuration providers conform to the `Provider` interface
 and are bootstrapped first. Use these for simple providers such as file-backed or
 environment-based configuration providers.
 
-### Dynamic Configuration Providers
+### Dynamic configuration providers
 
 Dynamic configuration providers frequently need some bootstrap configuration to
 be useful, so UberFx treats them specially. Dynamic configuration providers
@@ -167,10 +167,10 @@ fmt.Println(m.World)
 Note that any fields you wish to deserialize into must be exported, just like
 `json.Unmarshal` and friends.
 
-## Environment Variables
+## Environment variables
 
-YAML provider supports accepting values from the environment.
-For example, consider the following YAML file:
+YAML provider supports accepting values from the environment in which the process
+runs. For example, consider the following YAML file:
 
 ```yaml
 modules:
@@ -178,11 +178,11 @@ modules:
     port: ${HTTP_PORT:3001}
 ```
 
-Upon loading file, YAML provider will look up the HTTP_PORT environment variable
-and if available use it's value. If it's not found, the provided `3001` default
-will be used.
+When it loads the file, the YAML provider looks up the `HTTP_PORT` environment
+variable and checks for a value to use. If the YAML provider doesn't find a value,
+it uses the provided 3001 default.
 
-## Command Line Arguments
+## Command-line arguments
 
 Command line provider is a static provider that reads flags passed to a program and
 wraps them in the `Provider` interface. It uses dots in flag names as separators
@@ -218,9 +218,9 @@ If you run this program with arguments
 
 ## Testing
 
-`Provider` interface makes unit testing easy, you can use the config that was
-loaded with service or mock it with a static provider. For example, lets create
-a calculator type, that does operations with 2 arguments:
+The `config.Provider` interface makes unit testing easy. You can use the config
+that came loaded with your service or mock it with a static provider. For example,
+let's create a calculator type that does operations with two arguments:
 
 ```go
 // Operation is a simple binary function.
@@ -267,8 +267,8 @@ func (o *Operation) UnmarshalText(text []byte) error {
 }
 ```
 
-Testing it with a static provider will be easy, we can define all arguments there
-with the expected result:
+To test with a static provider will be easy, define all arguments with the
+expected results:
 
 ```go
 func TestCalculator_Eval(t *testing.T) {
@@ -291,7 +291,7 @@ func TestCalculator_Eval(t *testing.T) {
 }
 ```
 
-We should not forget to test the error path as well:
+Don't forget to test the error path::
 
 ```go
 func TestCalculator_Errors(t *testing.T) {
@@ -307,63 +307,70 @@ func TestCalculator_Errors(t *testing.T) {
 ```
 
 For integration/E2E testing you can customize `config.Loader` to load
-configuration files from either custom folders(`Loader.SetDirs()`),
-or custom files(`Loader.SetFiles()`), or register new providers on top of
-existing providers(`Loader.RegisterProviders()`) that will override values
-of default configs.
+configuration files from either custom folders (`Loader.SetDirs()`)
+or custom files (`Loader.SetFiles()`), or or you can register providers
+on top of existing providers (`Loader.RegisterProviders()`) that will
+override values of default configs.
 
 ## Utilities
 
-`Config` package comes with several helpers that can make writing tests,
-create new providers or amend existing ones much easier.
+`Config` package comes with several helpers for writing tests, creating
+new providers, and amending existing providers.
 
 * `NewCachedProvider(p Provider)` returns a new provider that wraps `p`
   and caches values in underlying map. It also registers callbacks to track
-  changes in all values it cached, so you can call `cached.Get("something")`
-  and don't worry about latencies much. It is safe for concurrent use by
+  changes in all cached values, so you can call `cached.Get("something")`
+  without worrying about latency. It is safe for concurrent use by
   multiple goroutines.
 
 * `MockDynamicProvider` is a mock provider that can be used to test dynamic
-  features, it implements `Provider` interface and lets you to set values
+  features. It implements `Provider` interface and lets you set values
   to trigger change callbacks.
 
-* Sometimes dynamic providers let you to register only one callback per key.
-  If you want to have multiple keys per callback you can use
-  `NewMultiCallbackProvider(p Provider)` wrapper, that will store a list of
-  all callbacks for each value and call them when a value changes.
-  Caution: it locks provider during callbacks execution, you should try to
-  make this callbacks as fast as possible.
+* Sometimes dynamic providers only let you register one callback per key.
+  If you want to have multiple keys per callback, use the
+  `NewMultiCallbackProvider(p Provider)` wrapper. It stores a list of
+  all callbacks for each value and calls them when a value changes.
+  **Caution**: provider is locked during callbacks execution, you should try to
+  make the callbacks as fast as possible.
 
 * `NopProvider` is useful for testing because it can be embedded in any type
   if you are not interested in implementing all Provider methods.
 
-* `NewProviderGroup(name string, providers ...Provider)` groups providers in one.
-  Lookups for values are determined by the order providers passed:
-  `NewProviderGroup("global", provider1, provider2)`, first `provider1` will be
-  checked and if there is no value, it will return `provider2.Get()`.
+* `NewProviderGroup(name string, providers ...Provider)` groups providers into
+  one. Lookups for values are determined by the order providers passed:
+  For example:
 
-* `NewStaticProvider(data interface{})` is very a useful wrapper for testing,
-  you can pass custom maps and use them as configs instead of loading them
+  ```go
+  group := NewProviderGroup("global", provider1, provider2)
+  value := group.Get("X")
+  ```
+
+  `group` provider checks `provider1` for "X" first. If there is no value,
+  it returns result of `provider2.Get()`.
+
+* `NewStaticProvider(data interface{})` is very a useful wrapper for testing.
+  You can pass custom maps and use them as configs instead of loading them
   from files.
 
 ## Loading Configuration
 
-Load process is controlled by `config.Loader`. If a service doesn't specify a
-config provider, manager is going to use a provider returned by
-`config.DefaultLoader.Load()`.
+The load process is controlled by `Loader`. If a service doesn't
+specify a config provider, `service.Manager` is going to use a provider
+returned by `DefaultLoader.Load()`.
 
-The default loader will load static providers first:
+The default loader loads static providers first:
 
 * YAML provider will look for `base.yaml` and `${environment}.yaml` files in
-  current folder and then in `./config` folder. You can override folders
-  to look for these files with `Loader.SetDirs()`.
-  To override files names use `Loader.SetFiles()`.
+  the current directory and then in the `./config` directory. You can override
+  directories to look for these files with `Loader.SetDirs()`.
+  To override file names, use `Loader.SetFiles()`.
 
-* Command line provider will look for `--roles` argument to specify service
-  roles. You can introduce/override config values by adding new flags to
-  `pflags.CommandLine` set before building a service.
+* The command-line provider looks for `--roles` argument to specify service
+  roles. You can introduce or override config values by adding new flags to the
+  `pflags.CommandLine` variable before building a service.
 
-You can add more static providers on top of mentioned above with
+You can add more static providers on top of those mentioned above with
 `RegisterProviders()` function:
 
 ```go
@@ -375,17 +382,19 @@ config.DefaultLoader.RegisterProviders(
 ```
 
 After static providers are loaded, they are used to create dynamic providers.
-You can add new ones in the loader with `RegisterDynamicProviders()` call as well.
+You can add new dynamic providers in the loader with the `RegisterDynamicProviders()`
+call as well.
 
 In the end all providers are grouped together using
-`NewProviderGroup("global", staticProviders, dynamicProviders)` and returned to service.
+`NewProviderGroup("global", staticProviders, dynamicProviders)` and returned to
+your service.
 
-If all you want is just a config, there is no need to build a service, you can use
-`config.DefaultLoader.Load()` and get exactly the same config.
+If you only want a config, you don't need to build a service. You can use
+`DefaultLoader.Load()` and get exactly the same config as `service.Config()`.
 
-Loader type is very customizable and lets you write parallel tests easily: if you
-don't want to use `os.LookupEnv()` function to look for environment variables you
-can override it with your custom function: `config.DefaultLoader.SetLookupFn()`.
+The loader type is customizable, letting you write parallel tests easily. If you
+don't want to use the `os.LookupEnv()` function to look for environment variables,
+override it with your custom function: `DefaultLoader.SetLookupFn()`.
 
 ### Benchmarks
 
