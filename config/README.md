@@ -272,4 +272,4 @@ If all you want is just a config, there is no need to build a service, you can u
 
 Loader type is very customizable and lets you write parallel tests easily: if you
 don't want to use `os.LookupEnv()` function to look for environment variables you
-can override with your custom function: `config.DefaultLoader.SetLookupFn()`
+can override it with your custom function: `config.DefaultLoader.SetLookupFn()`.
