@@ -162,7 +162,7 @@
 //
 // Populate is akin to json.Unmarshal() in that it takes a pointer to a
 // custom struct or any other type and fills in the fields. It returns an error,
-// if the requested were not populated properly.
+// if the requested fields were not populated properly.
 //
 //
 // For example, say we have the following YAML file:
