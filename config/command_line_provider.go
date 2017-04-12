@@ -83,7 +83,7 @@ func assignValues(m map[string]interface{}, key string, value flag.Value) {
 }
 
 // Traverse map with the flag name used as path.
-func traversePath(m map[string]interface{}, f *flag.Flag) (prev map[string]interface{}, last string) {
+func traversePath(m map[string]interface{}, f *flag.Flag) (map[string]interface{}, string) {
 	curr, prev := m, m
 	path := strings.Split(f.Name, _separator)
 	for _, item := range path {
