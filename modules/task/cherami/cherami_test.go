@@ -72,7 +72,7 @@ func TestBackendWorkflow(t *testing.T) {
 			publish(t, m, bknd, deliveryCh, span, nil)
 			publish(t, m, bknd, deliveryCh, span, errors.New("nack error"))
 		})
-		time.Sleep(10 * time.Millisecond)
+		time.Sleep(30 * time.Millisecond)
 		stopBackend(t, m, bknd)
 		lines := buf.Lines()
 		findInLogs(t, lines, map[string]int{"forget to register": 2, "nack error": 1})
@@ -101,7 +101,7 @@ func TestBackendWorkflowWorkerPanic(t *testing.T) {
 	}
 	// Publish valid message
 	publish(t, m, bknd, deliveryCh, nil, nil)
-	time.Sleep(20 * time.Millisecond)
+	time.Sleep(30 * time.Millisecond)
 	assert.True(t, bknd.(*Backend).isRunning())
 	stopBackend(t, m, bknd)
 	// Nack panics are sent for a count of _numWorkers and 1 valid publish. Make sure they are
