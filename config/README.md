@@ -15,7 +15,7 @@ The configuration system wraps a set of _providers_ that each know how to get
 values from an underlying source:
 
 * Static YAML configuration
-* Command line flags
+* Command-line flags
 
 So by stacking these providers, we can have a priority system for defining
 configuration that can be overridden by higher priority providers. For example,
