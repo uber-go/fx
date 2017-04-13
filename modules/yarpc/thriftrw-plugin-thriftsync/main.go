@@ -107,7 +107,7 @@ func (generator) Generate(req *api.GenerateServiceRequest) (*api.GenerateService
 			f := NewUpdater(opts)
 			if err := f.UpdateExistingHandlerFile(service, gofilePath, *_baseDir, *_handlerStructName); err != nil {
 				return nil, err
-			} else if err = f.RefreshAll(service, gofilePath); err != nil {
+			} else if err = f.RefreshAll(service, gofilePath, *_handlerStructName); err != nil {
 				return nil, err
 			}
 		}
