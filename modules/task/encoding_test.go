@@ -21,10 +21,9 @@
 package task
 
 import (
+	"context"
 	"reflect"
 	"testing"
-
-	"golang.org/x/net/context"
 
 	"go.uber.org/fx/testutils/tracing"
 	"go.uber.org/zap"
