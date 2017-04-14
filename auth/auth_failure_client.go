@@ -24,8 +24,9 @@ import (
 	"context"
 	"errors"
 
-	"github.com/uber-go/tally"
 	"go.uber.org/fx/config"
+
+	"github.com/uber-go/tally"
 )
 
 // FailureClient is used for auth failure testing

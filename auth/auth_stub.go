@@ -23,8 +23,9 @@ package auth
 import (
 	"context"
 
-	"github.com/uber-go/tally"
 	"go.uber.org/fx/config"
+
+	"github.com/uber-go/tally"
 )
 
 var (

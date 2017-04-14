@@ -24,8 +24,9 @@ import (
 	"context"
 	"sync"
 
-	"github.com/uber-go/tally"
 	"go.uber.org/fx/config"
+
+	"github.com/uber-go/tally"
 )
 
 var (
