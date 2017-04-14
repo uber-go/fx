@@ -86,7 +86,7 @@
 // This model respects priority of providers to allow overriding of individual
 // values. Read
 // Loading Configuration (#Loading-Configuration) section for more details
-// about loading process.
+// about the loading process.
 //
 //
 // Provider
@@ -188,7 +188,7 @@
 //
 // Environment variables
 //
-// YAML provider supports accepting values from the environment in which the process
+// The YAML provider supports accepting values from the environment in which the process
 // runs. For example, consider the following YAML file:
 //
 //
@@ -203,12 +203,18 @@
 //
 // Command-line arguments
 //
-// Command line provider is a static provider that reads flags passed to a program and
-// wraps them in the
-// Provider interface. It uses dots in flag names as separators
-// for nested values and commas to indicate that flag value is an array of values.
-// For example:
+// The command-line provider is a static provider that reads flags passed to a
+// program and wraps them in the
+// Provider interface. Dots in flag names act
+// as separators for nested values (read about dotted notation in the
+// Dynamic configuration providers (Dynamic-configuration-providers) section above).
+// Commas indicate to the provider that the flag value is an array of values.
+// For example, command
+// ./service --roles=actor,writer will set roles to a slice
+// with two values
+// []string{"actor","writer"}.
 //
+// Use the pflag.CommandLine global variable to define your own flags:
 //
 //   type Wonka struct {
 //     Source string
@@ -256,7 +262,7 @@
 //     return c.Op(c.Left, c.Right)
 //   }
 //
-// Calculator constructor needs only Provider and it loads configuration from
+// The calculator constructor needs only Provider and it loads configuration from
 // the root:
 //
 //
@@ -267,7 +273,7 @@
 //
 // Operation has a  function type, but we can make it configurable. In order for
 // a provider to know how to deserialize it,
-// Operation type needs to implement
+// Operation type needs to implement the
 // text.Unmarshaller interface:
 //
 //   func (o *Operation) UnmarshalText(text []byte) error {
@@ -319,19 +325,19 @@
 //     assert.Contains(t, err.Error(), `unknown operation "*"`)
 //   }
 //
-// For integration/E2E testing you can customize Loader to load
+// For integration/E2E testing you can customize Loader to load the
 // configuration files from either custom folders (
 // Loader.SetDirs())
 // or custom files (
-// Loader.SetFiles()), or or you can register providers
-// on top of existing providers (
+// Loader.SetFiles()), or you can register providers
+// on top of the existing providers (
 // Loader.RegisterProviders()) that will
-// override values of default configs.
+// override values of the default configs.
 //
 //
 // Utilities
 //
-// Config package comes with several helpers for writing tests, creating
+// The config package comes with several helpers for writing tests, creating
 // new providers, and amending existing providers.
 //
 //
@@ -361,17 +367,16 @@
 //
 // • NewProviderGroup(name string, providers ...Provider) groups providers into
 // one. Lookups for values are determined by the order providers passed:
-// For example:
 //
 //
 //     group := NewProviderGroup("global", provider1, provider2)
 //     value := group.Get("X")
 //
-// group provider checks provider1 for "X" first. If there is no value,
-//   it returns result of
+// The group provider checks provider1 for "X" first. If there is no value,
+//   it returns the result of
 // provider2.Get().
 //
-// • NewStaticProvider(data interface{}) is very a useful wrapper for testing.
+// • NewStaticProvider(data interface{}) is a very useful wrapper for testing.
 // You can pass custom maps and use them as configs instead of loading them
 // from files.
 //
@@ -384,7 +389,7 @@
 // returned by
 // DefaultLoader.Load().
 //
-// The default loader loads static providers first:
+// The default loader creates static providers first:
 //
 // • YAML provider will look for base.yaml and ${environment}.yaml files in
 // the current directory and then in the
@@ -395,8 +400,10 @@
 // Loader.SetFiles().
 //
 // • The command-line provider looks for --roles argument to specify service
-// roles. You can introduce or override config values by adding new flags to the
-// pflags.CommandLine variable before building a service.
+// roles. Use
+// pflags.CommandLine variable to introduce or override config
+// values before building a service.
+//
 //
 // You can add more static providers on top of those mentioned above with
 // RegisterProviders() function:
