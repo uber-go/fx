@@ -26,7 +26,6 @@ import (
 	"sync"
 	"time"
 
-	"go.uber.org/fx/auth"
 	"go.uber.org/fx/config"
 	"go.uber.org/fx/internal/util"
 	"go.uber.org/fx/metrics"
@@ -221,10 +220,6 @@ func (s *serviceCore) setupObserver() {
 			shc.SetContainer(s)
 		}
 	}
-}
-
-func (s *serviceCore) setupAuthClient() {
-	auth.Load(s.Config(), s.Metrics())
 }
 
 func loadInstanceConfig(cfg config.Provider, key string, instance interface{}) bool {
