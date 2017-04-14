@@ -39,7 +39,7 @@
 //
 // • Static YAML configuration
 //
-// • Environment variables
+// • Command-line flags
 //
 // So by stacking these providers, we can have a priority system for defining
 // configuration that can be overridden by higher priority providers. For example,
@@ -84,7 +84,9 @@
 //   fmt.Println("Port is", target.Port) // "Port is 8081"
 //
 // This model respects priority of providers to allow overriding of individual
-// values.
+// values. Read
+// Loading Configuration (#Loading-Configuration) section for more details
+// about the loading process.
 //
 //
 // Provider
@@ -92,8 +94,8 @@
 // Provider is the interface for anything that can provide values.
 // We provide a few reference implementations (environment and YAML), but you are
 // free to register your own providers via
-// config.RegisterProviders() and
-// config.RegisterDynamicProviders.
+// RegisterProviders() and
+// RegisterDynamicProviders().
 //
 // Static configuration providers
 //
@@ -102,7 +104,7 @@
 // environment-based configuration providers.
 //
 //
-// Dynamic Configuration Providers
+// Dynamic configuration providers
 //
 // Dynamic configuration providers frequently need some bootstrap configuration to
 // be useful, so UberFx treats them specially. Dynamic configuration providers
@@ -139,7 +141,7 @@
 //   fmt.Println(foo)
 //   // Output: hello
 //
-// To get an access to the root element use config.Root:
+// To get an access to the root element use Root:
 //
 //   root := provider.Get(config.Root).AsString()
 //   fmt.Println(root)
@@ -159,10 +161,9 @@
 // Populate
 //
 // Populate is akin to json.Unmarshal() in that it takes a pointer to a
-// custom struct and fills in the fields. It returns a
-// true if the requested
-// fields were found and populated properly, and
-// false otherwise.
+// custom struct or any other type and fills in the fields. It returns an error,
+// if the requested fields were not populated properly.
+//
 //
 // For example, say we have the following YAML file:
 //
@@ -185,6 +186,253 @@
 // Note that any fields you wish to deserialize into must be exported, just like
 // json.Unmarshal and friends.
 //
+// Environment variables
+//
+// The YAML provider supports accepting values from the environment in which the process
+// runs. For example, consider the following YAML file:
+//
+//
+//   modules:
+//     http:
+//       port: ${HTTP_PORT:3001}
+//
+// When it loads the file, the YAML provider looks up the HTTP_PORT environment
+// variable and checks for a value to use. If the YAML provider doesn't find a value,
+// it uses the provided 3001 default.
+//
+//
+// Command-line arguments
+//
+// The command-line provider is a static provider that reads flags passed to a
+// program and wraps them in the
+// Provider interface. Dots in flag names act
+// as separators for nested values (read about dotted notation in the
+// Dynamic configuration providers (Dynamic-configuration-providers) section above).
+// Commas indicate to the provider that the flag value is an array of values.
+// For example, command
+// ./service --roles=actor,writer will set roles to a slice
+// with two values
+// []string{"actor","writer"}.
+//
+// Use the pflag.CommandLine global variable to define your own flags:
+//
+//   type Wonka struct {
+//     Source string
+//     Array  []string
+//   }
+//
+//   type Willy struct {
+//     Name Wonka
+//   }
+//
+//   func main() {
+//     pflag.CommandLine.String("Name.Source", "default value", "String example")
+//     pflag.CommandLine.Var(
+//       &config.StringSlice{},
+//       "Name.Array",
+//       "Example of a nested array")
+//
+//     var v Willy
+//     config.DefaultLoader.Load().Get(config.Root).Populate(&v)
+//     log.Println(v)
+//   }
+//
+// If you run this program with arguments
+// ./main --Name.Source=chocolateFactory --Name.Array=cookie,candy, it will print
+// {{chocolateFactory [cookie candy]}}
+//
+// Testing
+//
+// The Provider interface makes unit testing easy. You can use the config
+// that came loaded with your service or mock it with a static provider. For example,
+// let's create a calculator type that does operations with two arguments:
+//
+//
+//   // Operation is a simple binary function.
+//   type Operation func(left, right int) int
+//
+//   // Calculator evaluates operation Op on its Left and Right fields.
+//   type Calculator struct {
+//     Left  int
+//     Right int
+//     Op    Operation
+//   }
+//
+//   func (c Calculator) Eval() int {
+//     return c.Op(c.Left, c.Right)
+//   }
+//
+// The calculator constructor needs only Provider and it loads configuration from
+// the root:
+//
+//
+//   func NewCalculator(cfg Provider) (*Calculator, error){
+//     calc := &Calculator{}
+//     return calc, cfg.Get(Root).Populate(calc)
+//   }
+//
+// Operation has a  function type, but we can make it configurable. In order for
+// a provider to know how to deserialize it,
+// Operation type needs to implement the
+// text.Unmarshaller interface:
+//
+//   func (o *Operation) UnmarshalText(text []byte) error {
+//     switch s := string(text); s {
+//     case "+":
+//       *o = func(left, right int) int { return left + right }
+//     case "-":
+//       *o = func(left, right int) int { return left - right }
+//     default:
+//       return fmt.Errorf("unknown operation %q", s)
+//     }
+//
+//     return nil
+//   }
+//
+// To test with a static provider will be easy, define all arguments with the
+// expected results:
+//
+//
+//   func TestCalculator_Eval(t *testing.T) {
+//     t.Parallel()
+//
+//     table := map[string]Provider{
+//       "1+2": NewStaticProvider(map[string]string{
+//         "Op": "+", "Left": "1", "Right": "2", "Expected": "3"}),
+//       "1-2": NewStaticProvider(map[string]string{
+//         "Op": "-", "Left": "2", "Right": "1", "Expected": "1"}),
+//     }
+//
+//     for name, cfg := range table {
+//       t.Run(name, func(t *testing.T) {
+//         calc, err := NewCalculator(cfg)
+//         require.NoError(t, err)
+//         assert.Equal(t, cfg.Get("Expected").AsInt(), calc.Eval())
+//       })
+//     }
+//   }
+//
+// Don't forget to test the error path::
+//
+//   func TestCalculator_Errors(t *testing.T) {
+//     t.Parallel()
+//
+//     _, err := newCalculator(NewStaticProvider(map[string]string{
+//       "Op": "*", "Left": "3", "Right": "5"
+//     }))
+//
+//     require.Error(t, err)
+//     assert.Contains(t, err.Error(), `unknown operation "*"`)
+//   }
+//
+// For integration/E2E testing you can customize Loader to load the
+// configuration files from either custom folders (
+// Loader.SetDirs())
+// or custom files (
+// Loader.SetFiles()), or you can register providers
+// on top of the existing providers (
+// Loader.RegisterProviders()) that will
+// override values of the default configs.
+//
+//
+// Utilities
+//
+// The config package comes with several helpers for writing tests, creating
+// new providers, and amending existing providers.
+//
+//
+// • NewCachedProvider(p Provider) returns a new provider that wraps pand caches values in underlying map. It also registers callbacks to track
+// changes in all cached values, so you can call
+// cached.Get("something")without worrying about latency. It is safe for concurrent use by
+// multiple goroutines.
+//
+//
+// • The MockDynamicProvider is a mock provider that can be used to test dynamic
+// features. It implements
+// Provider interface and lets you set values
+// to trigger change callbacks.
+//
+//
+// • Sometimes dynamic providers only let you register one callback per key.
+// If you want to have multiple keys per callback, use the
+// NewMultiCallbackProvider(p Provider) wrapper. It stores a list of
+// all callbacks for each value and calls them when a value changes.
+// **Caution**: provider is locked during callbacks execution, you should try to
+// make the callbacks as fast as possible.
+//
+//
+// • NopProvider is useful for testing because it can be embedded in any type
+// if you are not interested in implementing all Provider methods.
+//
+//
+// • NewProviderGroup(name string, providers ...Provider) groups providers into
+// one. Lookups for values are determined by the order providers passed:
+//
+//
+//     group := NewProviderGroup("global", provider1, provider2)
+//     value := group.Get("X")
+//
+// The group provider checks provider1 for "X" first. If there is no value,
+//   it returns the result of
+// provider2.Get().
+//
+// • NewStaticProvider(data interface{}) is a very useful wrapper for testing.
+// You can pass custom maps and use them as configs instead of loading them
+// from files.
+//
+//
+// Loading Configuration
+//
+// The load process is controlled by Loader. If a service doesn't
+// specify a config provider,
+// service.Manager is going to use a provider
+// returned by
+// DefaultLoader.Load().
+//
+// The default loader creates static providers first:
+//
+// • YAML provider will look for base.yaml and ${environment}.yaml files in
+// the current directory and then in the
+// ./config directory. You can override
+// directories to look for these files with
+// Loader.SetDirs().
+// To override file names, use
+// Loader.SetFiles().
+//
+// • The command-line provider looks for --roles argument to specify service
+// roles. Use
+// pflags.CommandLine variable to introduce or override config
+// values before building a service.
+//
+//
+// You can add more static providers on top of those mentioned above with
+// RegisterProviders() function:
+//
+//   config.DefaultLoader.RegisterProviders(
+//     func() Provider, error {
+//       return config.NewStaticProvider(map[string]int{"1+2": 3})
+//     }
+//   )
+//
+// After static providers are loaded, they are used to create dynamic providers.
+// You can add new dynamic providers in the loader with the
+// RegisterDynamicProviders()call as well.
+//
+//
+// In the end all providers are grouped together using
+// NewProviderGroup("global", staticProviders, dynamicProviders) and returned to
+// your service.
+//
+//
+// If you only want a config, you don't need to build a service. You can use
+// DefaultLoader.Load() and get exactly the same config as service.Config().
+//
+// The loader type is customizable, letting you write parallel tests easily. If you
+// don't want to use the
+// os.LookupEnv() function to look for environment variables,
+// override it with your custom function:
+// DefaultLoader.SetLookupFn().
+//
 // Benchmarks
 //
 // Current performance benchmark data:
@@ -199,22 +447,6 @@
 //   BenchmarkYAMLPopulateNestedMultipleFiles-8          52 allocs/op
 //   BenchmarkYAMLPopulateNestedTextUnmarshaler-8       233 allocs/op
 //   BenchmarkZapConfigLoad-8                           136 allocs/op
-//
-// Environment Variables
-//
-// YAML provider supports accepting values from the environment.
-// For example, consider the following YAML file:
-//
-//
-//   modules:
-//     http:
-//       port: ${HTTP_PORT:3001}
-//
-// Upon loading file, YAML provider will look up the HTTP_PORT environment variable
-// and if available use it's value. If it's not found, the provided
-// 3001 default
-// will be used.
-//
 //
 //
 package config

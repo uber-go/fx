@@ -68,7 +68,7 @@ func main() {
     log.Fatal("Could not initialize service: ", err)
   }
 
-  client := uhttpclient.New(svc)
+  client := uhttpclient.New(opentracing.GlobalTracer(), svc)
   client.Get("https://www.uber.com")
 }
 ```
