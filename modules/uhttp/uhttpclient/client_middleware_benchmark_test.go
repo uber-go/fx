@@ -26,6 +26,7 @@ import (
 	"testing"
 
 	"go.uber.org/fx/auth"
+	"go.uber.org/fx/config"
 	"go.uber.org/fx/tracing"
 
 	"github.com/opentracing/opentracing-go"
@@ -50,8 +51,8 @@ func BenchmarkClientMiddleware(b *testing.B) {
 	bm := map[string][]OutboundMiddleware{
 		"empty":   {},
 		"tracing": {tracingOutbound(tracer)},
-		"auth":    {authenticationOutbound(fakeAuthInfo{_testYaml})},
-		"default": {tracingOutbound(tracer), authenticationOutbound(fakeAuthInfo{_testYaml})},
+		"auth":    {authenticationOutbound(config.NewYAMLProviderFromBytes(_testYaml), tally.NoopScope)},
+		"default": {tracingOutbound(tracer), authenticationOutbound(config.NewYAMLProviderFromBytes(_testYaml), tally.NoopScope)},
 	}
 
 	for name, middleware := range bm {
