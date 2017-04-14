@@ -1,0 +1,4 @@
+logging:
+  stdout: true
+  level: info
+  encoder: json
