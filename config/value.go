@@ -295,6 +295,10 @@ func convertValue(value interface{}, targetType reflect.Type) (interface{}, erro
 
 // Populate fills in an object from configuration
 func (cv Value) Populate(target interface{}) error {
+	if reflect.TypeOf(target).Kind() != reflect.Ptr {
+		return fmt.Errorf("can't populate non pointer type %T", target)
+	}
+
 	d := decoder{Value: &cv, m: make(map[interface{}]struct{})}
 
 	return d.unmarshal(cv.key, reflect.Indirect(reflect.ValueOf(target)), "")

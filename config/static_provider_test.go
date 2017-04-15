@@ -208,3 +208,13 @@ func TestPopulateForNestedMaps(t *testing.T) {
 	assert.Contains(t, err.Error(), `empty map key is ambigious`)
 	assert.Contains(t, err.Error(), `a.`)
 }
+
+func TestPopulateNonPointerType(t *testing.T) {
+	t.Parallel()
+
+	p := NewStaticProvider(42)
+	x := 13
+	err := p.Get(Root).Populate(x)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "can't populate non pointer type")
+}
