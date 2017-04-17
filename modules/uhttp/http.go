@@ -110,31 +110,37 @@ func newModule(
 	if err := host.Config().Get("modules").Get(host.ModuleName()).Populate(&cfg); err != nil {
 		log.Error("Error loading http module configuration", zap.Error(err))
 	}
+	statsClient := newStatsClient(host.Metrics())
 	module := &Module{
 		Host:     host,
 		handlers: addHealth(getHandlers(host)),
-		mcb:      defaultInboundMiddlewareChainBuilder(log, host.AuthClient(), newStatsClient(host.Metrics())),
-		config:   cfg,
-		log:      log,
+		mcb: *newInboundMiddlewareChainBuilder().AddMiddleware(
+			contextInbound{},
+			panicInbound{statsClient},
+			metricsInbound{statsClient},
+			tracingInbound{},
+			authorizationInbound{host.AuthClient(), statsClient}),
+		config: cfg,
+		log:    log,
 	}
-	module.mcb = module.mcb.AddMiddleware(moduleOptions.inboundMiddleware...)
+	module.mcb = *module.mcb.AddMiddleware(moduleOptions.inboundMiddleware...)
 	return module, nil
 }
 
 // Start begins serving requests over HTTP
 func (m *Module) Start() error {
 	mux := http.NewServeMux()
-	// Do something unrelated to annotations
-	router := NewRouter(m.Host)
+
+	router := NewRouterWithMiddleware(m.mcb.Build())
 
 	mux.Handle("/", router)
 
 	for _, h := range m.handlers {
-		router.Handle(h.Path, m.mcb.Build(h.Handler))
+		router.AddPatternRoute(h.Path, h.Handler)
 	}
 
 	if m.config.Debug {
-		router.PathPrefix("/debug/pprof").Handler(http.DefaultServeMux)
+		router.AddPatternRoute("/debug/pprof", http.DefaultServeMux)
 	}
 
 	// Set up the socket

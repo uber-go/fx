@@ -29,27 +29,12 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestFromGorilla_OK(t *testing.T) {
-	r := mux.NewRouter()
-	route := r.Headers("foo", "bar")
-	f := FromGorilla(route)
-	assert.Equal(t, f.r, route)
-}
-
 func TestNewRouteHandler(t *testing.T) {
 	rh := NewRouteHandler("/", http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		fmt.Fprintf(w, "Hi\n")
 	}))
 
 	assert.Equal(t, rh.Path, "/")
-}
-
-func TestGorillaMux_OK(t *testing.T) {
-	r := mux.NewRouter()
-	route := r.Path("/foo")
-	ours := FromGorilla(route)
-	rounded := ours.GorillaMux()
-	assert.Equal(t, route, rounded)
 }
 
 func TestHeaders_OK(t *testing.T) {
