@@ -66,7 +66,7 @@ func setupLogging(cfg config.Provider, scope tally.Scope) (*zap.Logger, error) {
 
 	logger, err := logConfig.Build(zap.Hooks(ulog.Metrics(scope)))
 	ulog.SetLogger(logger)
-	zap.L().Info("logging is set")
+	zap.L().Info("logging is initialized")
 	return logger, err
 }
 
@@ -79,11 +79,10 @@ func setupMetrics(cfg config.Provider) (tally.Scope, error) {
 }
 
 func setupMetricsReporter() (tally.CachedStatsReporter, error) {
-	zap.L().Info("metrics reporter is set")
+	zap.L().Info("metrics reporter is initialized")
 	return _metricsStatsReporter, nil
 }
 
-// FxTracer initializes tracer
 func setupTracing(cfg config.Provider, scope tally.Scope) (opentracing.Tracer, error) {
 	var tracerConfig jconfig.Configuration
 	if err := cfg.Get("tracing").Populate(&tracerConfig); err != nil {
@@ -96,6 +95,6 @@ func setupTracing(cfg config.Provider, scope tally.Scope) (opentracing.Tracer, e
 		scope,
 	)
 	_closers = append(_closers, closer)
-	zap.L().Info("tracing is set")
+	zap.L().Info("tracing is initialized")
 	return tracer, err
 }
