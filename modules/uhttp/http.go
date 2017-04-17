@@ -134,14 +134,17 @@ func (m *Module) Start() error {
 	serveMux.Handle("/", router)
 
 	for _, h := range m.handlers {
-		handle := contextInbound(
-			panicInbound(
-				metricsInbound(
-					tracingInbound(
-						authorizationInbound(h, m.authClient, m.stats),
+		// TODO: find better way of chaining the middleware
+		handle :=
+			contextInbound(
+				panicInbound(
+					metricsInbound(
+						tracingInbound(
+							authorizationInbound(h, m.authClient, m.stats),
+						), m.stats,
 					), m.stats,
-				), m.stats,
-			), m.log)
+				), m.log,
+			)
 		router.Handle(h.Path, handle)
 	}
 
