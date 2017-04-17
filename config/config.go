@@ -26,6 +26,8 @@ import (
 	"path"
 	"path/filepath"
 	"sync"
+
+	flag "github.com/ogier/pflag"
 )
 
 const (
@@ -71,10 +73,12 @@ type Loader struct {
 }
 
 // DefaultLoader is going to be used by a service if config is not specified.
-var DefaultLoader = NewLoader()
+// First values are going to be looked in dynamic providers, then in command line provider
+// and YAML provider is going to be the last.
+var DefaultLoader = NewLoader(commandLineProviderFunc)
 
-// NewLoader returns a default Loader.
-func NewLoader() *Loader {
+// NewLoader returns a default Loader with providers overriding the YAML provider.
+func NewLoader(providers ...ProviderFunc) *Loader {
 	l := &Loader{
 		envPrefix: "APP",
 		dirs:      []string{".", "./config"},
@@ -82,7 +86,9 @@ func NewLoader() *Loader {
 	}
 
 	l.configFiles = l.baseFiles()
+	// Order is important: we want users to be able to override static provider
 	l.RegisterProviders(l.YamlProvider())
+	l.RegisterProviders(providers...)
 
 	return l
 }
@@ -284,4 +290,10 @@ func (l *Loader) SetLookupFn(fn func(string) (string, bool)) {
 	defer l.lock.Unlock()
 
 	l.lookUp = fn
+}
+
+func commandLineProviderFunc() (Provider, error) {
+	var s StringSlice
+	flag.CommandLine.Var(&s, "roles", "")
+	return NewCommandLineProvider(flag.CommandLine, os.Args[1:]), nil
 }

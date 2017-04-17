@@ -34,7 +34,7 @@ func NewStaticProvider(data interface{}) Provider {
 		panic(err)
 	}
 
-	return staticProvider{NewYAMLProviderFromBytes(b)}
+	return staticProvider{Provider: NewYAMLProviderFromBytes(b)}
 }
 
 // StaticProvider returns function to create StaticProvider during configuration initialization
@@ -47,5 +47,3 @@ func StaticProvider(data interface{}) ProviderFunc {
 func (staticProvider) Name() string {
 	return "static"
 }
-
-var _ Provider = &staticProvider{}
