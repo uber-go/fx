@@ -26,6 +26,7 @@ import (
 
 	"go.uber.org/dig"
 	"go.uber.org/fx/config"
+	"go.uber.org/zap"
 )
 
 // Service foo
@@ -52,8 +53,10 @@ func (s *Service) Start() {
 func (s *Service) Stop() {
 	// close all dig stuff
 	log.Println("Stopping...")
-	for _, closer := range _closers {
-		closer.Close()
+	for i := len(_closers) - 1; i >= 0; i-- {
+		if err := _closers[i].Close(); err != nil {
+			zap.L().Error("Failure to close", zap.Error(err))
+		}
 	}
 }
 
