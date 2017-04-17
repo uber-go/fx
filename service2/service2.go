@@ -52,6 +52,9 @@ func (s *Service) Start() {
 func (s *Service) Stop() {
 	// close all dig stuff
 	log.Println("Stopping...")
+	for _, closer := range _closers {
+		closer.Close()
+	}
 }
 
 // New foo
@@ -61,7 +64,7 @@ func New(constructors ...interface{}) *Service {
 		cs: constructors,
 	}
 
-	s.g.MustRegister(config.DefaultLoader.Load)
+	registerDefaultConstructors(s.g)
 
 	// add a bunch of stuff
 	for _, c := range constructors {
@@ -69,4 +72,15 @@ func New(constructors ...interface{}) *Service {
 	}
 
 	return s
+}
+
+func registerDefaultConstructors(g *dig.Graph) {
+	g.MustRegister(config.DefaultLoader.Load)
+
+	g.MustRegister(setupMetrics)
+	g.MustRegister(setupMetricsReporter)
+
+	g.MustRegister(setupLogging)
+
+	g.MustRegister(setupTracing)
 }

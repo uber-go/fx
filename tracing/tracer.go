@@ -25,7 +25,7 @@ import (
 
 	"github.com/opentracing/opentracing-go"
 	"github.com/uber-go/tally"
-	"github.com/uber/jaeger-client-go/config"
+	jconfig "github.com/uber/jaeger-client-go/config"
 	jzap "github.com/uber/jaeger-client-go/log/zap"
 	jtally "github.com/uber/jaeger-lib/metrics/tally"
 	"go.uber.org/zap"
@@ -33,7 +33,7 @@ import (
 
 // InitGlobalTracer instantiates a new global tracer
 func InitGlobalTracer(
-	cfg *config.Configuration,
+	cfg *jconfig.Configuration,
 	serviceName string,
 	logger *zap.Logger,
 	scope tally.Scope,
@@ -47,7 +47,7 @@ func InitGlobalTracer(
 
 // CreateTracer creates a tracer
 func CreateTracer(
-	cfg *config.Configuration,
+	cfg *jconfig.Configuration,
 	serviceName string,
 	logger *zap.Logger,
 	scope tally.Scope,
@@ -57,12 +57,12 @@ func CreateTracer(
 	}
 	jaegerMetrics := jtally.Wrap(scope)
 	jaegerLogger := jzap.NewLogger(logger)
-	return cfg.New(serviceName, config.Metrics(jaegerMetrics), config.Logger(jaegerLogger))
+	return cfg.New(serviceName, jconfig.Metrics(jaegerMetrics), jconfig.Logger(jaegerLogger))
 }
 
-func loadAppConfig(cfg *config.Configuration) *config.Configuration {
+func loadAppConfig(cfg *jconfig.Configuration) *jconfig.Configuration {
 	if cfg == nil {
-		cfg = &config.Configuration{}
+		cfg = &jconfig.Configuration{}
 	}
 	return cfg
 }

@@ -27,15 +27,15 @@ import (
 	"syscall"
 	"time"
 
-	"go.uber.org/fx/config"
 	"go.uber.org/fx/service2"
-	"go.uber.org/fx/ulog"
+
+	"github.com/opentracing/opentracing-go"
+	"github.com/uber-go/tally"
 	"go.uber.org/zap"
 )
 
 func main() {
 	svc := service2.New(
-		FxZapNew,
 		Ticker,
 	)
 	svc.Start()
@@ -45,16 +45,8 @@ func main() {
 	log.Println(<-c)
 }
 
-// FxZapNew is a component constructor thing for zap
-func FxZapNew(cfg config.Provider) (*zap.Logger, error) {
-	logConfig := ulog.Configuration{}
-	logConfig.Configure(cfg.Get("logging"))
-	l, err := logConfig.Build()
-	return l, err
-}
-
 // Ticker off
-func Ticker(l *zap.Logger) *time.Ticker {
+func Ticker(l *zap.Logger, scope tally.Scope, tracer opentracing.Tracer) *time.Ticker {
 	ticker := time.NewTicker(time.Second * 1)
 	go func() {
 		for range ticker.C {
