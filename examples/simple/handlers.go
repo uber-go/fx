@@ -47,9 +47,11 @@ func registerHTTPers(service service.Host) []uhttp.RouteHandler {
 	}
 }
 
-type simpleInboundMiddleware struct{}
+type simpleInboundMiddleware struct {
+	next http.Handler
+}
 
-func (simpleInboundMiddleware) Handle(w http.ResponseWriter, r *http.Request, next http.Handler) {
+func (s simpleInboundMiddleware) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	io.WriteString(w, "Going through simpleInboundMiddleware")
-	next.ServeHTTP(w, r)
+	s.next.ServeHTTP(w, r)
 }

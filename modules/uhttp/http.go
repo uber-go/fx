@@ -29,9 +29,11 @@ import (
 	"sync"
 	"time"
 
+	"go.uber.org/fx/auth"
 	"go.uber.org/fx/service"
 	"go.uber.org/fx/ulog"
 
+	"github.com/gorilla/mux"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
 )
@@ -62,13 +64,15 @@ var _ service.Module = &Module{}
 // A Module is a module to handle HTTP requests
 type Module struct {
 	service.Host
-	config   Config
-	log      *zap.Logger
-	srv      *http.Server
-	listener net.Listener
-	handlers []RouteHandler
-	mcb      inboundMiddlewareChainBuilder
-	lock     sync.RWMutex
+	config     Config
+	authClient auth.Client
+	stats      *statsClient
+	inbound    http.Handler
+	log        *zap.Logger
+	srv        *http.Server
+	listener   net.Listener
+	handlers   []RouteHandler
+	lock       sync.RWMutex
 }
 
 var _ service.Module = &Module{}
@@ -111,26 +115,34 @@ func newModule(
 		log.Error("Error loading http module configuration", zap.Error(err))
 	}
 	module := &Module{
-		Host:     host,
-		handlers: addHealth(getHandlers(host)),
-		mcb:      defaultInboundMiddlewareChainBuilder(log, host.AuthClient(), newStatsClient(host.Metrics())),
-		config:   cfg,
-		log:      log,
+		Host:       host,
+		handlers:   addHealth(getHandlers(host)),
+		authClient: host.AuthClient(),
+		stats:      newStatsClient(host.Metrics()),
+		config:     cfg,
+		log:        log,
 	}
-	module.mcb = module.mcb.AddMiddleware(moduleOptions.inboundMiddleware...)
 	return module, nil
 }
 
 // Start begins serving requests over HTTP
 func (m *Module) Start() error {
-	mux := http.NewServeMux()
 	// Do something unrelated to annotations
-	router := NewRouter(m.Host)
+	router := mux.NewRouter()
 
-	mux.Handle("/", router)
+	serveMux := http.NewServeMux()
+	serveMux.Handle("/", router)
 
 	for _, h := range m.handlers {
-		router.Handle(h.Path, m.mcb.Build(h.Handler))
+		handle := contextInbound(
+			panicInbound(
+				metricsInbound(
+					tracingInbound(
+						authorizationInbound(h, m.authClient, m.stats),
+					), m.stats,
+				), m.stats,
+			), m.log)
+		router.Handle(h.Path, handle)
 	}
 
 	if m.config.Debug {
@@ -147,7 +159,7 @@ func (m *Module) Start() error {
 	m.log.Info("Server listening on port", zap.Int("port", m.config.Port))
 
 	m.listener = listener
-	m.srv = &http.Server{Handler: mux}
+	m.srv = &http.Server{Handler: serveMux}
 	go func() {
 		// TODO(pedge): what to do about error?
 		if err := m.srv.Serve(listener); err != nil {

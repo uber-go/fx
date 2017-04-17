@@ -47,6 +47,10 @@ func NewRouteHandler(path string, handler http.Handler) RouteHandler {
 	}
 }
 
+func (rh RouteHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	rh.Handler.ServeHTTP(w, r)
+}
+
 // A Route represents a handler for HTTP requests, with restrictions
 type Route struct {
 	r *mux.Route

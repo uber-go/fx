@@ -48,37 +48,6 @@ func TestNew_OK(t *testing.T) {
 	})
 }
 
-func TestHTTPModule_WithInboundMiddleware(t *testing.T) {
-	withModule(
-		t,
-		registerPanic,
-		[]ModuleOption{WithInboundMiddleware(fakeInbound())},
-		false,
-		func(m *Module) {
-			assert.NotNil(t, m)
-			makeRequest(m, "GET", "/", nil, func(r *http.Response) {
-				body, err := ioutil.ReadAll(r.Body)
-				assert.NoError(t, err)
-				assert.Contains(t, string(body), "inbound middleware is executed")
-			})
-			verifyMetrics(t, m.Metrics())
-		})
-}
-
-func TestHTTPModule_WithUserPanicInboundMiddleware(t *testing.T) {
-	withModule(
-		t,
-		registerTracerCheckHandler,
-		[]ModuleOption{WithInboundMiddleware(userPanicInbound())},
-		false,
-		func(m *Module) {
-			assert.NotNil(t, m)
-			makeRequest(m, "GET", "/", nil, func(r *http.Response) {
-				assert.Equal(t, http.StatusInternalServerError, r.StatusCode, "Expected 500 with panic wrapper")
-			})
-		})
-}
-
 func TestHTTPModule_Panic_OK(t *testing.T) {
 	withModule(t, registerPanic, nil, false, func(m *Module) {
 		assert.NotNil(t, m)
@@ -220,19 +189,6 @@ func registerPanic(_ service.Host) []RouteHandler {
 	return makeSingleHandler("/", func(_ http.ResponseWriter, r *http.Request) {
 		panic("Intentional panic for:" + r.URL.Path)
 	})
-}
-
-func fakeInbound() InboundMiddlewareFunc {
-	return func(w http.ResponseWriter, r *http.Request, next http.Handler) {
-		io.WriteString(w, "inbound middleware is executed")
-		next.ServeHTTP(w, r)
-	}
-}
-
-func userPanicInbound() InboundMiddlewareFunc {
-	return func(_ http.ResponseWriter, r *http.Request, _ http.Handler) {
-		panic("Intentional panic for:" + r.URL.Path)
-	}
 }
 
 func verifyMetrics(t *testing.T, scope tally.Scope) {

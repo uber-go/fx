@@ -20,15 +20,17 @@
 
 package uhttp
 
+import "net/http"
+
 // ModuleOption is a function that configures module creation.
 type ModuleOption func(*moduleOptions) error
 
 type moduleOptions struct {
-	inboundMiddleware []InboundMiddleware
+	inboundMiddleware []http.Handler
 }
 
 // WithInboundMiddleware adds inbound middleware to uhttp Module that will be applied to all incoming http requests.
-func WithInboundMiddleware(m ...InboundMiddleware) ModuleOption {
+func WithInboundMiddleware(m ...http.Handler) ModuleOption {
 	return func(moduleOptions *moduleOptions) error {
 		moduleOptions.inboundMiddleware = append(moduleOptions.inboundMiddleware, m...)
 		return nil

@@ -121,8 +121,7 @@ func TestDefaultInboundMiddlewareWithNopHostConfigured(t *testing.T) {
 }
 
 func testInboundMiddlewareChain(t *testing.T, host service.Host) {
-	chain := newInboundMiddlewareChainBuilder().AddMiddleware([]InboundMiddleware{}...).Build(getNopHandler())
-	response := testServeHTTP(chain)
+	response := testServeHTTP(getNopHandler())
 	assert.True(t, strings.Contains(response.Body.String(), "inbound middleware ok"))
 }
 
@@ -141,9 +140,8 @@ func testTracingInboundWithLogs(t *testing.T) {
 		defer closer.Close()
 		opentracing.InitGlobalTracer(tracer)
 		defer opentracing.InitGlobalTracer(opentracing.NoopTracer{})
+		response := testServeHTTP(contextInbound(tracingInbound(getNopHandler()), loggerWithZap))
 
-		chain := newInboundMiddlewareChainBuilder().AddMiddleware([]InboundMiddleware{contextInbound{loggerWithZap}, tracingInbound{}}...).Build(getNopHandler())
-		response := testServeHTTP(chain)
 		assert.Contains(t, response.Body.String(), "inbound middleware ok")
 		assert.True(t, len(buf.Lines()) > 0)
 		var tracecount = 0
@@ -163,34 +161,18 @@ func testTracingInboundWithLogs(t *testing.T) {
 }
 
 func testInboundTraceInboundAuthChain(t *testing.T, host service.Host) {
-	chain := newInboundMiddlewareChainBuilder().AddMiddleware(
-		tracingInbound{},
-		authorizationInbound{
-			authClient:  host.AuthClient(),
-			statsClient: newStatsClient(host.Metrics()),
-		}).Build(getNopHandler())
-
-	response := testServeHTTP(chain)
+	response := testServeHTTP(authorizationInbound(tracingInbound(getNopHandler()), host.AuthClient(), newStatsClient(host.Metrics())))
 	assert.Contains(t, response.Body.String(), "inbound middleware ok")
 }
 
 func testInboundMiddlewareChainAuthFailure(t *testing.T, host service.Host) {
-	chain := newInboundMiddlewareChainBuilder().AddMiddleware(
-		tracingInbound{},
-		authorizationInbound{
-			authClient:  host.AuthClient(),
-			statsClient: newStatsClient(host.Metrics()),
-		}).Build(getNopHandler())
-	response := testServeHTTP(chain)
+	response := testServeHTTP(authorizationInbound(tracingInbound(getNopHandler()), host.AuthClient(), newStatsClient(host.Metrics())))
 	assert.Equal(t, response.Body.String(), "Unauthorized access: Error authorizing the service\n")
 	assert.Equal(t, 401, response.Code)
 }
 
 func testPanicInbound(t *testing.T, host service.Host) {
-	chain := newInboundMiddlewareChainBuilder().AddMiddleware(
-		panicInbound{newStatsClient(host.Metrics())},
-	).Build(getPanicHandler())
-	response := testServeHTTP(chain)
+	response := testServeHTTP(panicInbound(getPanicHandler(), newStatsClient(host.Metrics())))
 	assert.Equal(t, response.Body.String(), _panicResponse+"\n")
 	assert.Equal(t, http.StatusInternalServerError, response.Code)
 
@@ -201,10 +183,7 @@ func testPanicInbound(t *testing.T, host service.Host) {
 }
 
 func testMetricsInbound(t *testing.T, host service.Host) {
-	chain := newInboundMiddlewareChainBuilder().AddMiddleware(
-		metricsInbound{newStatsClient(host.Metrics())},
-	).Build(getNopHandler())
-	response := testServeHTTP(chain)
+	response := testServeHTTP(metricsInbound(getNopHandler(), newStatsClient(host.Metrics())))
 	assert.Contains(t, response.Body.String(), "inbound middleware ok")
 
 	testScope := host.Metrics()
@@ -215,7 +194,7 @@ func testMetricsInbound(t *testing.T, host service.Host) {
 	assert.NotNil(t, timers["GET"].Values())
 }
 
-func testServeHTTP(chain inboundMiddlewareChain) *httptest.ResponseRecorder {
+func testServeHTTP(chain http.Handler) *httptest.ResponseRecorder {
 	request := httptest.NewRequest("", "http://middleware", nil)
 	response := httptest.NewRecorder()
 	chain.ServeHTTP(response, request)
