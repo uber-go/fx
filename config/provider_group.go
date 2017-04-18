@@ -29,15 +29,16 @@ type providerGroup struct {
 // The highest priority provider is the last.
 func NewProviderGroup(name string, providers ...Provider) Provider {
 	l := len(providers)
-	for i := 0; i < l/2; i++ {
-		last := l - i - 1
-		providers[i], providers[last] = providers[last], providers[i]
+	p := providerGroup{
+		name:      name,
+		providers: make([]Provider, l),
 	}
 
-	return providerGroup{
-		name:      name,
-		providers: providers,
+	for i := 0; i < l; i++ {
+		p.providers[i] = providers[l-i-1]
 	}
+
+	return p
 }
 
 func (p providerGroup) Get(key string) Value {
