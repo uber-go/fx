@@ -9,6 +9,7 @@
   turned on by default
 - Added a command line provider `config.NewCommandLineProvider()`, which can be used
   to pass configuration parameters through command line.
+- **[Breaking]** `uhttp module` now accepts `mux.Router` as part of module setup.
 
 ## v1.0.0-beta3 (28 Mar 2017)
 

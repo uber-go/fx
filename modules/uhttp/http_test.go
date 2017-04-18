@@ -33,6 +33,7 @@ import (
 	. "go.uber.org/fx/service/testutils"
 	. "go.uber.org/fx/testutils"
 
+	"github.com/gorilla/mux"
 	"github.com/opentracing/opentracing-go"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -43,13 +44,13 @@ import (
 var _defaultHTTPClient = &http.Client{Timeout: 2 * time.Second}
 
 func TestNew_OK(t *testing.T) {
-	WithService(New(registerNothing), nil, []service.Option{configOption()}, func(s service.Manager) {
+	WithService(New(registerNothing, mux.NewRouter()), nil, []service.Option{configOption()}, func(s service.Manager) {
 		assert.NotNil(t, s, "Should create a module")
 	})
 }
 
 func TestHTTPModule_Panic_OK(t *testing.T) {
-	withModule(t, registerPanic, nil, false, func(m *Module) {
+	withModule(t, registerPanic, mux.NewRouter(), nil, false, func(m *Module) {
 		assert.NotNil(t, m)
 		makeRequest(m, "GET", "/", nil, func(r *http.Response) {
 			assert.Equal(t, http.StatusInternalServerError, r.StatusCode, "Expected 500 with panic wrapper")
@@ -58,7 +59,7 @@ func TestHTTPModule_Panic_OK(t *testing.T) {
 }
 
 func TestHTTPModule_Tracer(t *testing.T) {
-	withModule(t, registerTracerCheckHandler, nil, false, func(m *Module) {
+	withModule(t, registerTracerCheckHandler, mux.NewRouter(), nil, false, func(m *Module) {
 		assert.NotNil(t, m)
 		makeRequest(m, "GET", "/", nil, func(r *http.Response) {
 			assert.Equal(t, http.StatusOK, r.StatusCode, "Expected 200 with tracer check")
@@ -67,13 +68,13 @@ func TestHTTPModule_Tracer(t *testing.T) {
 }
 
 func TestHTTPModule_StartsAndStops(t *testing.T) {
-	withModule(t, registerPanic, nil, false, func(m *Module) {
+	withModule(t, registerPanic, mux.NewRouter(), nil, false, func(m *Module) {
 		assert.NotNil(t, m.listener, "Start should be successful")
 	})
 }
 
 func TestBuiltinHealth_OK(t *testing.T) {
-	withModule(t, registerNothing, nil, false, func(m *Module) {
+	withModule(t, registerNothing, mux.NewRouter(), nil, false, func(m *Module) {
 		assert.NotNil(t, m)
 		makeRequest(m, "GET", "/health", nil, func(r *http.Response) {
 			assert.Equal(t, http.StatusOK, r.StatusCode, "Expected 200 with default health handler")
@@ -82,7 +83,7 @@ func TestBuiltinHealth_OK(t *testing.T) {
 }
 
 func TestOverrideHealth_OK(t *testing.T) {
-	withModule(t, registerCustomHealth, nil, false, func(m *Module) {
+	withModule(t, registerCustomHealth, mux.NewRouter(), nil, false, func(m *Module) {
 		assert.NotNil(t, m)
 		makeRequest(m, "GET", "/health", nil, func(r *http.Response) {
 			assert.Equal(t, http.StatusOK, r.StatusCode, "Expected 200 with default health handler")
@@ -94,7 +95,7 @@ func TestOverrideHealth_OK(t *testing.T) {
 }
 
 func TestPProf_Registered(t *testing.T) {
-	withModule(t, registerNothing, nil, false, func(m *Module) {
+	withModule(t, registerNothing, mux.NewRouter(), nil, false, func(m *Module) {
 		assert.NotNil(t, m)
 		makeRequest(m, "GET", "/debug/pprof", nil, func(r *http.Response) {
 			assert.Equal(t, http.StatusOK, r.StatusCode, "Expected 200 from pprof handler")
@@ -111,13 +112,14 @@ func configOption() service.Option {
 func withModule(
 	t testing.TB,
 	hookup GetHandlersFunc,
+	router *mux.Router,
 	moduleOptions []ModuleOption,
 	expectError bool,
 	fn func(*Module),
 ) {
 	host, err := service.NewScopedHost(service.NopHost(), "uhttp", "hello")
 	require.NoError(t, err)
-	mod, err := newModule(host, hookup, moduleOptions...)
+	mod, err := newModule(host, router, hookup, moduleOptions...)
 	if expectError {
 		require.Error(t, err, "Expected error instantiating module")
 		fn(nil)

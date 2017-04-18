@@ -25,16 +25,8 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/gorilla/mux"
 	"github.com/stretchr/testify/assert"
 )
-
-func TestFromGorilla_OK(t *testing.T) {
-	r := mux.NewRouter()
-	route := r.Headers("foo", "bar")
-	f := FromGorilla(route)
-	assert.Equal(t, f.r, route)
-}
 
 func TestNewRouteHandler(t *testing.T) {
 	rh := NewRouteHandler("/", http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
@@ -42,26 +34,4 @@ func TestNewRouteHandler(t *testing.T) {
 	}))
 
 	assert.Equal(t, rh.Path, "/")
-}
-
-func TestGorillaMux_OK(t *testing.T) {
-	r := mux.NewRouter()
-	route := r.Path("/foo")
-	ours := FromGorilla(route)
-	rounded := ours.GorillaMux()
-	assert.Equal(t, route, rounded)
-}
-
-func TestHeaders_OK(t *testing.T) {
-	r := mux.NewRouter()
-	route := Route{r.Path("/foo")}
-	withHeaders := route.Headers("foo", "bar")
-	assert.NotNil(t, withHeaders.r)
-}
-
-func TestMethods_OK(t *testing.T) {
-	r := mux.NewRouter()
-	route := Route{r.Path("/foo")}
-	withMethods := route.Methods("GET")
-	assert.NotNil(t, withMethods.r)
 }

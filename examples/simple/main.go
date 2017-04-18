@@ -23,13 +23,14 @@ package main
 import (
 	"log"
 
+	"github.com/gorilla/mux"
 	"go.uber.org/fx/modules/uhttp"
 	"go.uber.org/fx/service"
 )
 
 func main() {
 	svc, err := service.WithModule(
-		uhttp.New(registerHTTPers, uhttp.WithInboundMiddleware(simpleInboundMiddleware{})),
+		uhttp.New(registerHTTPers, mux.NewRouter(), uhttp.WithInboundMiddleware(simpleInboundMiddleware{})),
 	).Build()
 
 	if err != nil {

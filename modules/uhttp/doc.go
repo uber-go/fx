@@ -23,6 +23,9 @@
 // The HTTP module is built on top of Gorilla Mux (https://github.com/gorilla/mux),
 // but the details of that are abstracted away through
 // uhttp.RouteHandler.
+// As part of module initialization, you can now pass in a
+// mux.Router to the
+// uhttp module.
 //
 //   package main
 //
@@ -33,10 +36,12 @@
 //     "go.uber.org/fx"
 //     "go.uber.org/fx/modules/uhttp"
 //     "go.uber.org/fx/service"
+//
+//   	"github.com/gorilla/mux"
 //   )
 //
 //   func main() {
-//     svc, err := service.WithModule(uhttp.New(registerHTTP)).Build()
+//     svc, err := service.WithModule(uhttp.New(registerHTTP, mux.NewRouter())).Build()
 //
 //     if err != nil {
 //       log.Fatal("Could not initialize service: ", err)

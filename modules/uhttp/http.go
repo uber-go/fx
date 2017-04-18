@@ -64,6 +64,7 @@ var _ service.Module = &Module{}
 // A Module is a module to handle HTTP requests
 type Module struct {
 	service.Host
+	router     *mux.Router
 	config     Config
 	authClient auth.Client
 	stats      *statsClient
@@ -88,14 +89,15 @@ type Config struct {
 type GetHandlersFunc func(service service.Host) []RouteHandler
 
 // New returns a new HTTP ModuleProvider.
-func New(hookup GetHandlersFunc, options ...ModuleOption) service.ModuleProvider {
+func New(hookup GetHandlersFunc, router *mux.Router, options ...ModuleOption) service.ModuleProvider {
 	return service.ModuleProviderFromFunc("uhttp", func(host service.Host) (service.Module, error) {
-		return newModule(host, hookup, options...)
+		return newModule(host, router, hookup, options...)
 	})
 }
 
 func newModule(
 	host service.Host,
+	router *mux.Router,
 	getHandlers GetHandlersFunc,
 	options ...ModuleOption,
 ) (*Module, error) {
@@ -116,6 +118,7 @@ func newModule(
 	}
 	module := &Module{
 		Host:       host,
+		router:     router,
 		handlers:   addHealth(getHandlers(host)),
 		authClient: host.AuthClient(),
 		stats:      newStatsClient(host.Metrics()),
@@ -127,11 +130,8 @@ func newModule(
 
 // Start begins serving requests over HTTP
 func (m *Module) Start() error {
-	// Do something unrelated to annotations
-	router := mux.NewRouter()
-
 	serveMux := http.NewServeMux()
-	serveMux.Handle("/", router)
+	serveMux.Handle("/", m.router)
 
 	for _, h := range m.handlers {
 		// TODO: find better way of chaining the middleware
@@ -145,11 +145,11 @@ func (m *Module) Start() error {
 					), m.stats,
 				), m.log,
 			)
-		router.Handle(h.Path, handle)
+		m.router.Handle(h.Path, handle)
 	}
 
 	if m.config.Debug {
-		router.PathPrefix("/debug/pprof").Handler(http.DefaultServeMux)
+		m.router.PathPrefix("/debug/pprof").Handler(http.DefaultServeMux)
 	}
 
 	// Set up the socket

@@ -27,6 +27,8 @@ import (
 
 	"go.uber.org/fx/modules/uhttp"
 	"go.uber.org/fx/service"
+
+	"github.com/gorilla/mux"
 )
 
 type exampleHandler struct{}
@@ -35,7 +37,7 @@ func (exampleHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	io.WriteString(w, fmt.Sprintf("Headers: %+v", r.Header))
 }
 
-func enforceHeader(r uhttp.Route) uhttp.Route {
+func enforceHeader(r *mux.Route) *mux.Route {
 	// require some weird headers
 	return r.Headers("X-Uber-FX", "yass")
 }

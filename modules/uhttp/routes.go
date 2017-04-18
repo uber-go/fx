@@ -20,18 +20,7 @@
 
 package uhttp
 
-import (
-	"net/http"
-
-	"github.com/gorilla/mux"
-)
-
-// FromGorilla turns a gorilla mux route into an UberFx route
-func FromGorilla(r *mux.Route) Route {
-	return Route{
-		r: r,
-	}
-}
+import "net/http"
 
 // A RouteHandler is an HTTP handler for a single route
 type RouteHandler struct {
@@ -49,28 +38,4 @@ func NewRouteHandler(path string, handler http.Handler) RouteHandler {
 
 func (rh RouteHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	rh.Handler.ServeHTTP(w, r)
-}
-
-// A Route represents a handler for HTTP requests, with restrictions
-type Route struct {
-	r *mux.Route
-}
-
-// GorillaMux returns the underlying mux if you need to use it directly
-func (r Route) GorillaMux() *mux.Route {
-	return r.r
-}
-
-// Headers allows easy enforcement of headers
-func (r Route) Headers(headerPairs ...string) Route {
-	return Route{
-		r.r.Headers(headerPairs...),
-	}
-}
-
-// Methods allows easy enforcement of metthods (HTTP Verbs)
-func (r Route) Methods(methods ...string) Route {
-	return Route{
-		r.r.Methods(methods...),
-	}
 }
