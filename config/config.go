@@ -123,7 +123,7 @@ func (l *Loader) ResolvePath(relative string) (string, error) {
 }
 
 func (l *Loader) baseFiles() []string {
-	return []string{_baseFile+".yaml", l.Environment()+".yaml", _secretsFile+".yaml"}
+	return []string{_baseFile + ".yaml", l.Environment() + ".yaml", _secretsFile + ".yaml"}
 }
 
 func (l *Loader) getResolver() FileResolver {
