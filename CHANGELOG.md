@@ -9,6 +9,8 @@
   turned on by default
 - Added a command line provider `config.NewCommandLineProvider()`, which can be used
   to pass configuration parameters through command line.
+- Changed the return type of `Loader.Path()`, because we actually look for config
+  files in several directories.
 
 ## v1.0.0-beta3 (28 Mar 2017)
 
