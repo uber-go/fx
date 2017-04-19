@@ -55,23 +55,18 @@ const (
 
 	// default healthcheck endpoint
 	healthPath = "/health"
+
+	// default pprof endpoint
+	pprofPath = "/debug/pprof"
 )
 
 var _ service.Module = &Module{}
 
 // A Module is a module to handle HTTP requests
 type Module struct {
-	service.Host
-	config   Config
-	log      *zap.Logger
-	srv      *http.Server
 	listener net.Listener
-	handlers []RouteHandler
-	mcb      inboundMiddlewareChainBuilder
 	lock     sync.RWMutex
 }
-
-var _ service.Module = &Module{}
 
 // Config handles config for HTTP modules
 type Config struct {
@@ -80,27 +75,18 @@ type Config struct {
 	Debug   bool          `yaml:"debug" default:"true"`
 }
 
-// GetHandlersFunc returns a slice of registrants from a service host
-type GetHandlersFunc func(service service.Host) []RouteHandler
+// GetHandlersFunc returns http handler created by caller
+type GetHandlersFunc func(service service.Host) http.Handler
 
 // New returns a new HTTP ModuleProvider.
-func New(hookup GetHandlersFunc, options ...ModuleOption) service.ModuleProvider {
+func New(handlerFunc GetHandlersFunc) service.ModuleProvider {
 	return service.ModuleProviderFromFunc("uhttp", func(host service.Host) (service.Module, error) {
-		return newModule(host, hookup, options...)
+		handler := handlerFunc(host)
+		return newModule(host, handler)
 	})
 }
 
-func newModule(
-	host service.Host,
-	getHandlers GetHandlersFunc,
-	options ...ModuleOption,
-) (*Module, error) {
-	moduleOptions := &moduleOptions{}
-	for _, option := range options {
-		if err := option(moduleOptions); err != nil {
-			return nil, err
-		}
-	}
+func newModule(host service.Host, handler http.Handler) (*Module, error) {
 	// setup config defaults
 	cfg := Config{
 		Port:    defaultPort,
@@ -110,50 +96,52 @@ func newModule(
 	if err := host.Config().Get("modules").Get(host.ModuleName()).Populate(&cfg); err != nil {
 		log.Error("Error loading http module configuration", zap.Error(err))
 	}
-	module := &Module{
-		Host:     host,
-		handlers: addHealth(getHandlers(host)),
-		mcb:      defaultInboundMiddlewareChainBuilder(log, host.AuthClient(), newStatsClient(host.Metrics())),
-		config:   cfg,
-		log:      log,
+
+	serveMux := http.NewServeMux()
+	serveMux.Handle(healthPath, healthHandler{})
+
+	authClient := host.AuthClient()
+	stats := newStatsClient(host.Metrics())
+
+	handle :=
+		panicInbound(
+			metricsInbound(
+				tracingInbound(
+					authorizationInbound(handler, authClient, stats),
+				), stats,
+			), stats,
+		)
+	serveMux.Handle("/", handle)
+
+	if cfg.Debug {
+		serveMux.Handle(pprofPath, http.DefaultServeMux)
 	}
-	module.mcb = module.mcb.AddMiddleware(moduleOptions.inboundMiddleware...)
-	return module, nil
+	// Set up the socket
+	listener, err := net.Listen("tcp", fmt.Sprintf(":%d", cfg.Port))
+	if err != nil {
+		return nil, errors.Wrap(err, "unable to open TCP listener for HTTP module")
+	}
+
+	// finally, start the http server.
+	log.Info("Server listening on port", zap.Int("port", cfg.Port))
+
+	srv := &http.Server{
+		Handler: serveMux,
+	}
+
+	go func() {
+		// TODO(pedge): what to do about error?
+		if err := srv.Serve(listener); err != nil {
+			log.Error("HTTP Serve error", zap.Error(err))
+		}
+	}()
+	return &Module{
+		listener: listener,
+	}, nil
 }
 
 // Start begins serving requests over HTTP
 func (m *Module) Start() error {
-	mux := http.NewServeMux()
-	// Do something unrelated to annotations
-	router := NewRouter(m.Host)
-
-	mux.Handle("/", router)
-
-	for _, h := range m.handlers {
-		router.Handle(h.Path, m.mcb.Build(h.Handler))
-	}
-
-	if m.config.Debug {
-		router.PathPrefix("/debug/pprof").Handler(http.DefaultServeMux)
-	}
-
-	// Set up the socket
-	listener, err := net.Listen("tcp", fmt.Sprintf(":%d", m.config.Port))
-	if err != nil {
-		return errors.Wrap(err, "unable to open TCP listener for HTTP module")
-	}
-	// finally, start the http server.
-	// TODO update log object to be accessed via http context #74
-	m.log.Info("Server listening on port", zap.Int("port", m.config.Port))
-
-	m.listener = listener
-	m.srv = &http.Server{Handler: mux}
-	go func() {
-		// TODO(pedge): what to do about error?
-		if err := m.srv.Serve(listener); err != nil {
-			m.log.Error("HTTP Serve error", zap.Error(err))
-		}
-	}()
 	return nil
 }
 
@@ -170,18 +158,4 @@ func (m *Module) Stop() error {
 		m.listener = nil
 	}
 	return err
-}
-
-// addHealth adds in the default if health handler is not set
-func addHealth(handlers []RouteHandler) []RouteHandler {
-	healthFound := false
-	for _, h := range handlers {
-		if h.Path == healthPath {
-			healthFound = true
-		}
-	}
-	if !healthFound {
-		handlers = append(handlers, NewRouteHandler(healthPath, healthHandler{}))
-	}
-	return handlers
 }
