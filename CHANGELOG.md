@@ -11,6 +11,8 @@
   to pass configuration parameters through command line.
 - **[Breaking]** `uhttp module` now accepts `http.Handler` as part of module setup.
   As part of refactor, RouteHandler is removed from the module registration.
+- `Loader.Path() string` is now `Loader.Paths() []string`, to better reflect that
+  configuration is loaded from multiple directories.
 
 ## v1.0.0-beta3 (28 Mar 2017)
 

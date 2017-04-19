@@ -326,35 +326,6 @@ func TestNilProvider(t *testing.T) {
 	assert.Nil(t, l.staticProviderFuncs)
 }
 
-func TestGetConfigFiles(t *testing.T) {
-	t.Parallel()
-
-	l := NewLoader()
-	l.SetEnvironmentPrefix("TEST")
-
-	files := l.joinFilepaths(l.baseFiles()...)
-	expected := []string{
-		"base.yaml",
-		"development.yaml",
-		"secrets.yaml",
-		"config/base.yaml",
-		"config/development.yaml",
-		"config/secrets.yaml",
-	}
-
-	assert.Equal(t, expected, files)
-}
-
-func TestSetConfigFiles(t *testing.T) {
-	t.Parallel()
-
-	l := NewLoader()
-	l.SetConfigFiles("x", "y")
-	files := l.joinFilepaths(l.configFiles...)
-	expected := []string{"x.yaml", "y.yaml", "config/x.yaml", "config/y.yaml"}
-	assert.Equal(t, expected, files)
-}
-
 func expectedResolvePath(t *testing.T) string {
 	cwd, err := os.Getwd()
 	assert.NoError(t, err)
@@ -635,4 +606,16 @@ func TestLoader_StaticProviderOrder(t *testing.T) {
 	}
 
 	withBase(t, f, "value: wrong")
+}
+
+func TestLoader_LoadFromCurrentFolder(t *testing.T) {
+	t.Parallel()
+	f := func(dir string) {
+		l := NewLoader()
+		l.SetConfigFiles(dir + "/base.yaml")
+		p := l.Load()
+		assert.Equal(t, "base", p.Get("value").AsString())
+	}
+
+	withBase(t, f, "value: base")
 }
