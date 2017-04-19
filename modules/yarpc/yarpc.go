@@ -27,6 +27,7 @@ import (
 	"strconv"
 	"sync"
 
+	"go.uber.org/fx/auth"
 	"go.uber.org/fx/service"
 	"go.uber.org/fx/ulog"
 
@@ -86,6 +87,7 @@ func New(hookup ServiceCreateFunc, options ...ModuleOption) service.ModuleProvid
 // the lifecycle of all of the in/out bound traffic, so we will
 // register it in a dig.Graph provided with options/default graph.
 type Module struct {
+	authClient auth.Client
 	host       service.Host
 	config     yarpcConfig
 	log        *zap.Logger
@@ -137,6 +139,8 @@ func newModule(
 		return nil, errs.Wrap(err, "can't read inbounds")
 	}
 
+	module.authClient = auth.Load(host.Config(), host.Metrics())
+
 	// iterate over inbounds
 	transportsIn, err := prepareInbounds(module.config.Inbounds, host.Name())
 	if err != nil {
@@ -181,7 +185,7 @@ func newModule(
 // Start begins serving requests with YARPC.
 func (m *Module) Start() error {
 	// TODO(alsam) allow services to advertise with a name separate from the host name.
-	if err := m.controller.Start(m.host); err != nil {
+	if err := m.controller.Start(m.authClient, m.host); err != nil {
 		return errs.Wrap(err, "unable to start dispatcher")
 	}
 	m.log.Info("Module started")
@@ -246,9 +250,9 @@ type dispatcherController struct {
 // 4. Start the dispatcher
 //
 // Once started the controller will not start the dispatcher again.
-func (c *dispatcherController) Start(host service.Host) error {
+func (c *dispatcherController) Start(authClient auth.Client, host service.Host) error {
 	c.start.Do(func() {
-		c.addDefaultMiddleware(host)
+		c.addDefaultMiddleware(authClient)
 
 		var cfg yarpc.Config
 		var err error
@@ -317,13 +321,13 @@ func (c *dispatcherController) applyHandlers() error {
 }
 
 // Adds the default middleware: context propagation and auth.
-func (c *dispatcherController) addDefaultMiddleware(host service.Host) {
+func (c *dispatcherController) addDefaultMiddleware(authClient auth.Client) {
 	cfg := yarpcConfig{
 		inboundMiddleware: []middleware.UnaryInbound{
-			authInboundMiddleware{host},
+			authInboundMiddleware{authClient},
 		},
 		onewayInboundMiddleware: []middleware.OnewayInbound{
-			authOnewayInboundMiddleware{host},
+			authOnewayInboundMiddleware{authClient},
 		},
 	}
 

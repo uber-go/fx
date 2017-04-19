@@ -84,7 +84,6 @@ type serviceConfig struct {
 type serviceCore struct {
 	metricsCore
 	tracerCore
-	authClient     auth.Client
 	configProvider config.Provider
 	logConfig      ulog.Configuration
 	observer       Observer
@@ -96,10 +95,6 @@ type serviceCore struct {
 }
 
 var _ Host = &serviceCore{}
-
-func (s *serviceCore) AuthClient() auth.Client {
-	return s.authClient
-}
 
 func (s *serviceCore) Name() string {
 	return s.standardConfig.Name
@@ -229,10 +224,7 @@ func (s *serviceCore) setupObserver() {
 }
 
 func (s *serviceCore) setupAuthClient() {
-	if s.authClient != nil {
-		return
-	}
-	s.authClient = auth.Load(s)
+	auth.Load(s.Config(), s.Metrics())
 }
 
 func loadInstanceConfig(cfg config.Provider, key string, instance interface{}) bool {

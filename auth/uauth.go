@@ -44,14 +44,8 @@ var (
 	ErrAuthorization = "Error authorizing the service"
 )
 
-// CreateAuthInfo interface provides necessary data
-type CreateAuthInfo interface {
-	Config() config.Provider
-	Metrics() tally.Scope
-}
-
 // RegisterFunc is used during service init time to register the Auth client
-type RegisterFunc func(info CreateAuthInfo) Client
+type RegisterFunc func(config config.Provider, scope tally.Scope) Client
 
 // RegisterClient sets up the registerFunc for Auth client initialization
 func RegisterClient(registerFunc RegisterFunc) {
@@ -71,11 +65,11 @@ func UnregisterClient() {
 }
 
 // Load returns a Client instance based on registered auth client implementation
-func Load(info CreateAuthInfo) Client {
+func Load(config config.Provider, scope tally.Scope) Client {
 	_setupMu.Lock()
 	defer _setupMu.Unlock()
 	if _registerFunc != nil {
-		return _registerFunc(info)
+		return _registerFunc(config, scope)
 	}
 	return NopClient
 }

@@ -118,14 +118,14 @@ func TestExecutionChainOutboundMiddleware_AuthContextPropagationFailure(t *testi
 
 func getExecChainWithAuth(t *testing.T) executionChain {
 	return newExecutionChain(
-		[]OutboundMiddleware{authenticationOutbound(fakeAuthInfo{_testYaml})},
+		[]OutboundMiddleware{authenticationOutbound(config.NewYAMLProviderFromBytes(_testYaml), tally.NoopScope)},
 		contextPropagationTransport{t},
 	)
 }
 
 func TestOutboundMiddlewareWithTracerErrors(t *testing.T) {
 	testCases := map[string]OutboundMiddleware{
-		"auth":    authenticationOutbound(fakeAuthInfo{_testYaml}),
+		"auth":    authenticationOutbound(config.NewYAMLProviderFromBytes(_testYaml), tally.NoopScope),
 		"tracing": tracingOutbound(opentracing.NoopTracer{}),
 	}
 
@@ -154,22 +154,6 @@ func TestOutboundMiddlewareWithTracerErrors(t *testing.T) {
 
 		t.Run(name, func(t *testing.T) { op() })
 	}
-}
-
-type fakeAuthInfo struct {
-	yaml []byte
-}
-
-func (f fakeAuthInfo) Config() config.Provider {
-	return config.NewYAMLProviderFromBytes(f.yaml)
-}
-
-func (f fakeAuthInfo) Logger() *zap.Logger {
-	return zap.NewNop()
-}
-
-func (f fakeAuthInfo) Metrics() tally.Scope {
-	return tally.NoopScope
 }
 
 type contextPropagationTransport struct {

@@ -20,11 +20,16 @@
 
 package auth
 
-import "context"
+import (
+	"context"
+
+	"github.com/uber-go/tally"
+	"go.uber.org/fx/config"
+)
 
 var (
 	// NopClient is used for testing and no-op integration
-	NopClient = nopClient(nil)
+	NopClient = nopClient(nil, tally.NoopScope)
 
 	_ Client = &nop{}
 )
@@ -32,7 +37,7 @@ var (
 type nop struct {
 }
 
-func nopClient(info CreateAuthInfo) Client {
+func nopClient(config config.Provider, scope tally.Scope) Client {
 	return &nop{}
 }
 

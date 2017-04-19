@@ -25,7 +25,7 @@ import (
 	"errors"
 	"testing"
 
-	"go.uber.org/fx/service"
+	"go.uber.org/fx/auth"
 	"go.uber.org/fx/ulog"
 	"go.uber.org/thriftrw/wire"
 	"go.uber.org/yarpc/api/transport"
@@ -45,31 +45,26 @@ func checkLogForTrace(t *testing.T, buf *zaptest.Buffer) {
 }
 
 func TestInboundMiddleware_auth(t *testing.T) {
-	host := service.NopHost()
-	unary := authInboundMiddleware{host}
+	unary := authInboundMiddleware{auth.NopClient}
 	err := unary.Handle(context.Background(), &transport.Request{}, nil, &fakeUnary{t: t})
 	assert.EqualError(t, err, "handle")
 }
 
 func TestInboundMiddleware_authFailure(t *testing.T) {
-	host := service.NopHostAuthFailure()
-	unary := authInboundMiddleware{host}
+	unary := authInboundMiddleware{auth.FailureClient}
 	err := unary.Handle(context.Background(), &transport.Request{}, nil, &fakeUnary{t: t})
 	assert.EqualError(t, err, "Error authorizing the service")
 
 }
 
 func TestOnewayInboundMiddleware_auth(t *testing.T) {
-	oneway := authOnewayInboundMiddleware{
-		Host: service.NopHost(),
-	}
+	oneway := authOnewayInboundMiddleware{auth.NopClient}
 	err := oneway.HandleOneway(context.Background(), &transport.Request{}, &fakeOneway{t: t})
 	assert.EqualError(t, err, "oneway handle")
 }
 
 func TestOnewayInboundMiddleware_authFailure(t *testing.T) {
-	host := service.NopHostAuthFailure()
-	oneway := authOnewayInboundMiddleware{host}
+	oneway := authOnewayInboundMiddleware{auth.FailureClient}
 	err := oneway.HandleOneway(context.Background(), &transport.Request{}, &fakeOneway{t: t})
 	assert.EqualError(t, err, "Error authorizing the service")
 }

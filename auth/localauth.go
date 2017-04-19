@@ -20,7 +20,12 @@
 
 package auth
 
-import "context"
+import (
+	"context"
+
+	"github.com/uber-go/tally"
+	"go.uber.org/fx/config"
+)
 
 var _ Client = &defaultClient{}
 
@@ -30,7 +35,7 @@ type defaultClient struct {
 
 // defaultAuth is a placeholder auth client when no auth client is registered
 // TODO(anup): add configurable authentication, whether a service needs one or not
-func defaultAuth(info CreateAuthInfo) Client {
+func defaultAuth(config config.Provider, scope tally.Scope) Client {
 	return &defaultClient{
 		authClient: NopClient,
 	}

@@ -96,10 +96,11 @@ func newManager(builder *Builder) (Manager, error) {
 	if err := m.setupLogging(); err != nil {
 		return nil, err
 	}
-	m.setupAuthClient()
+
 	if err := m.setupRuntimeMetricsCollector(); err != nil {
 		return nil, err
 	}
+
 	m.setupVersionMetricsEmitter()
 	if err := m.setupTracer(); err != nil {
 		return nil, err

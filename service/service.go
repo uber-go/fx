@@ -21,7 +21,6 @@
 package service
 
 import (
-	"go.uber.org/fx/auth"
 	"go.uber.org/fx/config"
 	"go.uber.org/fx/metrics"
 
@@ -49,7 +48,6 @@ const (
 
 // A Host represents the hosting environment for a service instance
 type Host interface {
-	AuthClient() auth.Client
 	Name() string
 	Description() string
 	Roles() []string

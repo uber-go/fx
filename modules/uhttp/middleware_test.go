@@ -27,6 +27,7 @@ import (
 	"strings"
 	"testing"
 
+	"go.uber.org/fx/auth"
 	"go.uber.org/fx/service"
 	"go.uber.org/fx/testutils"
 	"go.uber.org/fx/tracing"
@@ -89,7 +90,7 @@ func TestDefaultMiddlewareWithNopHostAuthFailure(t *testing.T) {
 	}
 
 	// setup
-	host := service.NopHostAuthFailure()
+	host := service.NopHost()
 
 	t.Run("parallel group", func(t *testing.T) {
 		for _, tt := range tests {
@@ -161,12 +162,12 @@ func testTracingInboundWithLogs(t *testing.T) {
 }
 
 func testInboundTraceInboundAuthChain(t *testing.T, host service.Host) {
-	response := testServeHTTP(authorizationInbound(tracingInbound(getNopHandler()), host.AuthClient(), newStatsClient(host.Metrics())))
+	response := testServeHTTP(authorizationInbound(tracingInbound(getNopHandler()), auth.NopClient, newStatsClient(host.Metrics())))
 	assert.Contains(t, response.Body.String(), "inbound middleware ok")
 }
 
 func testInboundMiddlewareChainAuthFailure(t *testing.T, host service.Host) {
-	response := testServeHTTP(authorizationInbound(tracingInbound(getNopHandler()), host.AuthClient(), newStatsClient(host.Metrics())))
+	response := testServeHTTP(authorizationInbound(tracingInbound(getNopHandler()), auth.FailureClient, newStatsClient(host.Metrics())))
 	assert.Equal(t, response.Body.String(), "Unauthorized access: Error authorizing the service\n")
 	assert.Equal(t, 401, response.Code)
 }
