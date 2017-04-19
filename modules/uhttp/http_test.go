@@ -50,7 +50,7 @@ modules:
 var _defaultHTTPClient = &http.Client{Timeout: 2 * time.Second}
 
 func TestNew_OK(t *testing.T) {
-	WithService(New(registerNothing()), nil, []service.Option{configOption()}, func(s service.Manager) {
+	WithService(New(registerNothing), nil, []service.Option{configOption()}, func(s service.Manager) {
 		assert.NotNil(t, s, "Should create a module")
 
 	})
@@ -81,7 +81,7 @@ func TestHTTPModule_StartsAndStops(t *testing.T) {
 }
 
 func TestBuiltinHealth_OK(t *testing.T) {
-	withModule(t, registerNothing(), false, func(m *Module) {
+	withModule(t, registerNothing(nil), false, func(m *Module) {
 		assert.NotNil(t, m)
 		makeRequest(m, "GET", "/health", nil, func(r *http.Response) {
 			assert.Equal(t, http.StatusOK, r.StatusCode, "Expected 200 with default health handler")
@@ -141,7 +141,7 @@ func makeRequest(m *Module, method, url string, body io.Reader, fn func(r *http.
 	fn(response)
 }
 
-func registerNothing() http.Handler {
+func registerNothing(_ service.Host) http.Handler {
 	return nil
 }
 
