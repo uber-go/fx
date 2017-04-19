@@ -46,7 +46,6 @@ const (
 	_appRoot     = "_ROOT"
 	_environment = "_ENVIRONMENT"
 	_configDir   = "_CONFIG_DIR"
-	_configRoot  = "./config"
 	_baseFile    = "base"
 	_secretsFile = "secrets"
 	_devEnv      = "development"
@@ -123,36 +122,18 @@ func (l *Loader) ResolvePath(relative string) (string, error) {
 	return abs, nil
 }
 
-func (l *Loader) joinFilepaths(fileSet ...string) []string {
-	l.lock.RLock()
-	defer l.lock.RUnlock()
-
-	var files []string
-	for _, dir := range l.dirs {
-		for _, baseFile := range fileSet {
-			files = append(files, filepath.Join(dir, fmt.Sprintf("%s.yaml", baseFile)))
-		}
-	}
-
-	return files
-}
-
 func (l *Loader) baseFiles() []string {
-	return []string{_baseFile, l.Environment(), _secretsFile}
+	return []string{_baseFile+".yaml", l.Environment()+".yaml", _secretsFile+".yaml"}
 }
 
 func (l *Loader) getResolver() FileResolver {
-	if dir := l.Path(); dir != "" {
-		return NewRelativeResolver(dir)
-	}
-
-	return NewRelativeResolver()
+	return NewRelativeResolver(l.Path()...)
 }
 
 // YamlProvider returns function to create Yaml based configuration provider
 func (l *Loader) YamlProvider() ProviderFunc {
 	return func() (Provider, error) {
-		return NewYAMLProviderFromFiles(false, l.getResolver(), l.joinFilepaths(l.getFiles()...)...), nil
+		return NewYAMLProviderFromFiles(false, l.getResolver(), l.getFiles()...), nil
 	}
 }
 
@@ -166,12 +147,12 @@ func (l *Loader) Environment() string {
 }
 
 // Path returns path to the yaml configurations
-func (l *Loader) Path() string {
+func (l *Loader) Path() []string {
 	if path, ok := l.lookUp(l.EnvironmentPrefix() + _configDir); ok {
-		return path
+		return []string{path}
 	}
 
-	return _configRoot
+	return l.dirs
 }
 
 // SetConfigFiles overrides the set of available config files for the service.
