@@ -20,7 +20,7 @@
 
 // Package uhttp is the HTTP Module.
 //
-// The HTTP module is built on top of Gorilla Mux (https://github.com/gorilla/mux),
+// The HTTP module is built on top of standardlib http library (https://golang.org/pkg/net/http/),
 // but the details of that are abstracted away through
 // uhttp.RouteHandler.
 // As part of module initialization, you can now pass in a
