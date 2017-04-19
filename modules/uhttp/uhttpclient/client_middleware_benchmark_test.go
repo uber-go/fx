@@ -48,11 +48,12 @@ func BenchmarkClientMiddleware(b *testing.B) {
 	}
 
 	defer closer.Close()
+	cfg := config.NewYAMLProviderFromBytes(_testYaml)
 	bm := map[string][]OutboundMiddleware{
 		"empty":   {},
 		"tracing": {tracingOutbound(tracer)},
-		"auth":    {authenticationOutbound(config.NewYAMLProviderFromBytes(_testYaml), tally.NoopScope)},
-		"default": {tracingOutbound(tracer), authenticationOutbound(config.NewYAMLProviderFromBytes(_testYaml), tally.NoopScope)},
+		"auth":    {authenticationOutbound(cfg, auth.Load(cfg, tally.NoopScope))},
+		"default": {tracingOutbound(tracer), authenticationOutbound(cfg, auth.Load(cfg, tally.NoopScope))},
 	}
 
 	for name, middleware := range bm {

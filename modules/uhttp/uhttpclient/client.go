@@ -24,6 +24,7 @@ import (
 	"net/http"
 	"time"
 
+	"go.uber.org/fx/auth"
 	"go.uber.org/fx/config"
 
 	"github.com/opentracing/opentracing-go"
@@ -40,7 +41,8 @@ func New(tracer opentracing.Tracer, config config.Provider, scope tally.Scope, m
 		defaultMiddleware = append(defaultMiddleware, tracingOutbound(tracer))
 	}
 	if config.Get("auth").HasValue() {
-		defaultMiddleware = append(defaultMiddleware, authenticationOutbound(config, scope))
+		authClient := auth.Load(config, scope)
+		defaultMiddleware = append(defaultMiddleware, authenticationOutbound(config, authClient))
 	}
 	defaultMiddleware = append(defaultMiddleware, middleware...)
 	return &http.Client{

@@ -117,15 +117,17 @@ func TestExecutionChainOutboundMiddleware_AuthContextPropagationFailure(t *testi
 }
 
 func getExecChainWithAuth(t *testing.T) executionChain {
+	cfg := config.NewYAMLProviderFromBytes(_testYaml)
 	return newExecutionChain(
-		[]OutboundMiddleware{authenticationOutbound(config.NewYAMLProviderFromBytes(_testYaml), tally.NoopScope)},
+		[]OutboundMiddleware{authenticationOutbound(cfg, auth.Load(cfg, tally.NoopScope))},
 		contextPropagationTransport{t},
 	)
 }
 
 func TestOutboundMiddlewareWithTracerErrors(t *testing.T) {
+	cfg := config.NewYAMLProviderFromBytes(_testYaml)
 	testCases := map[string]OutboundMiddleware{
-		"auth":    authenticationOutbound(config.NewYAMLProviderFromBytes(_testYaml), tally.NoopScope),
+		"auth":    authenticationOutbound(cfg, auth.Load(cfg, tally.NoopScope)),
 		"tracing": tracingOutbound(opentracing.NoopTracer{}),
 	}
 
