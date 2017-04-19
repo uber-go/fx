@@ -26,8 +26,6 @@ import (
 	"net/http"
 
 	"go.uber.org/fx/service"
-
-	"github.com/gorilla/mux"
 )
 
 type exampleHandler struct{}
@@ -38,7 +36,7 @@ func (exampleHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 func registerHTTPers(service service.Host) http.Handler {
 	handler := &exampleHandler{}
-	router := mux.NewRouter()
+	router := http.NewServeMux()
 	router.Handle("/", handler)
 	return router
 }

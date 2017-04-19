@@ -36,12 +36,10 @@
 //     "go.uber.org/fx"
 //     "go.uber.org/fx/modules/uhttp"
 //     "go.uber.org/fx/service"
-//
-//   	"github.com/gorilla/mux"
 //   )
 //
 //   func main() {
-//     svc, err := service.WithModule(uhttp.New(registerHTTP, mux.NewRouter())).Build()
+//     svc, err := service.WithModule(uhttp.New(registerHTTP)).Build()
 //
 //     if err != nil {
 //       log.Fatal("Could not initialize service: ", err)
@@ -50,15 +48,14 @@
 //     svc.Start(true)
 //   }
 //
-//   func registerHTTP(service service.Host) []uhttp.RouteHandler {
-//       handleHome := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+//   func registerHTTP(service service.Host) http.Handler {
+//     handleHome := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 //       ulog.Logger(r.Context()).Info("Inside the handler")
 //       io.WriteString(w, "Hello, world")
 //     })
-//
-//     return []uhttp.RouteHandler{
-//       uhttp.NewRouteHandler("/", handleHome)
-//     }
+//     router := http.NewServeMux()
+//     router.Handle("/", handleHome)
+//   	return router
 //   }
 //
 // HTTP handlers are set up with inbound middleware that inject tracing,

@@ -50,6 +50,7 @@ modules:
 var _defaultHTTPClient = &http.Client{Timeout: 2 * time.Second}
 
 func TestNew_OK(t *testing.T) {
+	t.Parallel()
 	WithService(New(registerNothing), nil, []service.Option{configOption()}, func(s service.Manager) {
 		assert.NotNil(t, s, "Should create a module")
 
@@ -57,6 +58,7 @@ func TestNew_OK(t *testing.T) {
 }
 
 func TestHTTPModule_Panic_OK(t *testing.T) {
+	t.Parallel()
 	withModule(t, registerPanic(), false, func(m *Module) {
 		assert.NotNil(t, m)
 		makeRequest(m, "GET", "/", nil, func(r *http.Response) {
@@ -66,6 +68,7 @@ func TestHTTPModule_Panic_OK(t *testing.T) {
 }
 
 func TestHTTPModule_Tracer(t *testing.T) {
+	t.Parallel()
 	withModule(t, registerTracerCheckHandler(), false, func(m *Module) {
 		assert.NotNil(t, m)
 		makeRequest(m, "GET", "/", nil, func(r *http.Response) {
@@ -75,12 +78,14 @@ func TestHTTPModule_Tracer(t *testing.T) {
 }
 
 func TestHTTPModule_StartsAndStops(t *testing.T) {
+	t.Parallel()
 	withModule(t, registerPanic(), false, func(m *Module) {
 		assert.NotNil(t, m.listener, "Start should be successful")
 	})
 }
 
 func TestBuiltinHealth_OK(t *testing.T) {
+	t.Parallel()
 	withModule(t, registerNothing(nil), false, func(m *Module) {
 		assert.NotNil(t, m)
 		makeRequest(m, "GET", "/health", nil, func(r *http.Response) {
