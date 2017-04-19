@@ -1,5 +1,5 @@
-hash: 0c3a9321d883b41d0d74669a604f6d76e9be838fa2d4f45922419346c558359f
-updated: 2017-04-11T12:59:07.851765717-07:00
+hash: f886e7783e08600dec3035d19b3d599ce8a7644582993671f42302294a104f26
+updated: 2017-04-19T11:20:45.657893361-07:00
 imports:
 - name: github.com/apache/thrift
   version: 9549b25c77587b29be4e0b5c258221a4ed85d37a
@@ -29,8 +29,6 @@ imports:
   - gomock
 - name: github.com/gorilla/context
   version: 1ea25387ff6f684839d82767c1733ff4d4d15d0a
-- name: github.com/gorilla/mux
-  version: 392c28fe23e1c45ddba891b0320b3b5df220beea
 - name: github.com/gorilla/websocket
   version: a91eba7f97777409bc2c443f5534d41dd20c5720
 - name: github.com/ogier/pflag
@@ -110,11 +108,11 @@ imports:
   - trand
   - typed
 - name: go.uber.org/atomic
-  version: 3b8db5e93c4c02efbc313e17b2e796b0914a01fb
+  version: 4e336646b2ef9fc6e47be8e21594178f98e5ebcf
 - name: go.uber.org/dig
   version: 869ade8e3afd0b6dee05418a8e165cdcb487070a
 - name: go.uber.org/thriftrw
-  version: 05f870b3c56597d180af568a6392209cc33269e2
+  version: dde90c2a40f45fb2b6361d13c1b4bf09465401c0
   subpackages:
   - envelope
   - internal
@@ -129,6 +127,7 @@ imports:
   - protocol
   - protocol/binary
   - ptr
+  - thriftreflect
   - version
   - wire
 - name: go.uber.org/yarpc
@@ -157,7 +156,7 @@ imports:
   - transport/tchannel
   - transport/tchannel/internal
 - name: go.uber.org/zap
-  version: a2773be06b9ac7c318a3a105b5c310af5730c6b4
+  version: 1550bc05539134bbf8612a35f34a79ab8bf34ee3
   subpackages:
   - buffer
   - internal/bufferpool
@@ -167,7 +166,7 @@ imports:
   - zapcore
   - zaptest
 - name: golang.org/x/net
-  version: d1e1b351919c6738fdeb9893d5c998b161464f0c
+  version: 5602c733f70afc6dcec6766be0d5034d4c4f14de
   subpackages:
   - context
   - context/ctxhttp
