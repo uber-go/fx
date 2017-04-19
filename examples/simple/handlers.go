@@ -35,8 +35,7 @@ func (exampleHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func registerHTTPers(service service.Host) http.Handler {
-	handler := &exampleHandler{}
 	router := http.NewServeMux()
-	router.Handle("/", handler)
+	router.Handle("/", &exampleHandler{})
 	return router
 }
