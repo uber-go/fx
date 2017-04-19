@@ -46,8 +46,8 @@ const (
 	_appRoot     = "_ROOT"
 	_environment = "_ENVIRONMENT"
 	_configDir   = "_CONFIG_DIR"
-	_baseFile    = "base"
-	_secretsFile = "secrets"
+	_baseFile    = "base.yaml"
+	_secretsFile = "secrets.yaml"
 	_devEnv      = "development"
 )
 
@@ -123,7 +123,7 @@ func (l *Loader) ResolvePath(relative string) (string, error) {
 }
 
 func (l *Loader) baseFiles() []string {
-	return []string{_baseFile + ".yaml", l.Environment() + ".yaml", _secretsFile + ".yaml"}
+	return []string{_baseFile, l.Environment() + ".yaml", _secretsFile}
 }
 
 func (l *Loader) getResolver() FileResolver {
