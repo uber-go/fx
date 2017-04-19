@@ -127,7 +127,7 @@ func (l *Loader) baseFiles() []string {
 }
 
 func (l *Loader) getResolver() FileResolver {
-	return NewRelativeResolver(l.Path()...)
+	return NewRelativeResolver(l.Paths()...)
 }
 
 // YamlProvider returns function to create Yaml based configuration provider
@@ -146,8 +146,8 @@ func (l *Loader) Environment() string {
 	return _devEnv
 }
 
-// Path returns path to the yaml configurations
-func (l *Loader) Path() []string {
+// Paths returns paths to the yaml configurations
+func (l *Loader) Paths() []string {
 	if path, ok := l.lookUp(l.EnvironmentPrefix() + _configDir); ok {
 		return []string{path}
 	}

@@ -612,7 +612,7 @@ func TestLoader_LoadFromCurrentFolder(t *testing.T) {
 	t.Parallel()
 	f := func(dir string) {
 		l := NewLoader()
-		l.SetConfigFiles(dir+"/base.yaml")
+		l.SetConfigFiles(dir + "/base.yaml")
 		p := l.Load()
 		assert.Equal(t, "base", p.Get("value").AsString())
 	}
