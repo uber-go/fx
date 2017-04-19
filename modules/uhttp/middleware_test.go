@@ -140,7 +140,7 @@ func testTracingInboundWithLogs(t *testing.T) {
 		defer closer.Close()
 		opentracing.InitGlobalTracer(tracer)
 		defer opentracing.InitGlobalTracer(opentracing.NoopTracer{})
-		response := testServeHTTP(contextInbound(tracingInbound(getNopHandler()), loggerWithZap))
+		response := testServeHTTP(tracingInbound(getNopHandler()))
 
 		assert.Contains(t, response.Body.String(), "inbound middleware ok")
 		assert.True(t, len(buf.Lines()) > 0)
