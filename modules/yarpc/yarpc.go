@@ -139,6 +139,7 @@ func newModule(
 		return nil, errs.Wrap(err, "can't read inbounds")
 	}
 
+	// TODO: pass in the auth client as part of module construction
 	module.authClient = auth.Load(host.Config(), host.Metrics())
 
 	// iterate over inbounds
