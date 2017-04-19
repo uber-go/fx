@@ -25,7 +25,6 @@ import (
 	"io"
 	"net/http"
 
-	"go.uber.org/fx/modules/uhttp"
 	"go.uber.org/fx/service"
 
 	"github.com/gorilla/mux"
@@ -37,23 +36,9 @@ func (exampleHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	io.WriteString(w, fmt.Sprintf("Headers: %+v", r.Header))
 }
 
-func enforceHeader(r *mux.Route) *mux.Route {
-	// require some weird headers
-	return r.Headers("X-Uber-FX", "yass")
-}
-
-func registerHTTPers(service service.Host) []uhttp.RouteHandler {
+func registerHTTPers(service service.Host) http.Handler {
 	handler := &exampleHandler{}
-	return []uhttp.RouteHandler{
-		uhttp.NewRouteHandler("/", handler),
-	}
-}
-
-type simpleInboundMiddleware struct {
-	next http.Handler
-}
-
-func (s simpleInboundMiddleware) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	io.WriteString(w, "Going through simpleInboundMiddleware")
-	s.next.ServeHTTP(w, r)
+	router := mux.NewRouter()
+	router.Handle("/", handler)
+	return router
 }

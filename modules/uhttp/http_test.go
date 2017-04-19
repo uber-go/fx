@@ -23,34 +23,41 @@ package uhttp
 import (
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"runtime"
 	"testing"
 	"time"
 
+	"go.uber.org/fx/config"
 	"go.uber.org/fx/service"
 	. "go.uber.org/fx/service/testutils"
 	. "go.uber.org/fx/testutils"
 
-	"github.com/gorilla/mux"
 	"github.com/opentracing/opentracing-go"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/uber-go/tally"
 )
 
+var _httpconfig = []byte(`
+modules:
+  uhttp:
+    port: 0
+    debug: true
+`)
+
 // Custom default client since http's defaultClient does not set timeout
 var _defaultHTTPClient = &http.Client{Timeout: 2 * time.Second}
 
 func TestNew_OK(t *testing.T) {
-	WithService(New(registerNothing, mux.NewRouter()), nil, []service.Option{configOption()}, func(s service.Manager) {
+	WithService(New(registerNothing()), nil, []service.Option{configOption()}, func(s service.Manager) {
 		assert.NotNil(t, s, "Should create a module")
+
 	})
 }
 
 func TestHTTPModule_Panic_OK(t *testing.T) {
-	withModule(t, registerPanic, mux.NewRouter(), nil, false, func(m *Module) {
+	withModule(t, registerPanic(), false, func(m *Module) {
 		assert.NotNil(t, m)
 		makeRequest(m, "GET", "/", nil, func(r *http.Response) {
 			assert.Equal(t, http.StatusInternalServerError, r.StatusCode, "Expected 500 with panic wrapper")
@@ -59,7 +66,7 @@ func TestHTTPModule_Panic_OK(t *testing.T) {
 }
 
 func TestHTTPModule_Tracer(t *testing.T) {
-	withModule(t, registerTracerCheckHandler, mux.NewRouter(), nil, false, func(m *Module) {
+	withModule(t, registerTracerCheckHandler(), false, func(m *Module) {
 		assert.NotNil(t, m)
 		makeRequest(m, "GET", "/", nil, func(r *http.Response) {
 			assert.Equal(t, http.StatusOK, r.StatusCode, "Expected 200 with tracer check")
@@ -68,37 +75,16 @@ func TestHTTPModule_Tracer(t *testing.T) {
 }
 
 func TestHTTPModule_StartsAndStops(t *testing.T) {
-	withModule(t, registerPanic, mux.NewRouter(), nil, false, func(m *Module) {
+	withModule(t, registerPanic(), false, func(m *Module) {
 		assert.NotNil(t, m.listener, "Start should be successful")
 	})
 }
 
 func TestBuiltinHealth_OK(t *testing.T) {
-	withModule(t, registerNothing, mux.NewRouter(), nil, false, func(m *Module) {
+	withModule(t, registerNothing(), false, func(m *Module) {
 		assert.NotNil(t, m)
 		makeRequest(m, "GET", "/health", nil, func(r *http.Response) {
 			assert.Equal(t, http.StatusOK, r.StatusCode, "Expected 200 with default health handler")
-		})
-	})
-}
-
-func TestOverrideHealth_OK(t *testing.T) {
-	withModule(t, registerCustomHealth, mux.NewRouter(), nil, false, func(m *Module) {
-		assert.NotNil(t, m)
-		makeRequest(m, "GET", "/health", nil, func(r *http.Response) {
-			assert.Equal(t, http.StatusOK, r.StatusCode, "Expected 200 with default health handler")
-			body, err := ioutil.ReadAll(r.Body)
-			require.NoError(t, err, "Should be able to read health body")
-			assert.Equal(t, "not ok", string(body))
-		})
-	})
-}
-
-func TestPProf_Registered(t *testing.T) {
-	withModule(t, registerNothing, mux.NewRouter(), nil, false, func(m *Module) {
-		assert.NotNil(t, m)
-		makeRequest(m, "GET", "/debug/pprof", nil, func(r *http.Response) {
-			assert.Equal(t, http.StatusOK, r.StatusCode, "Expected 200 from pprof handler")
 		})
 	})
 }
@@ -111,23 +97,24 @@ func configOption() service.Option {
 
 func withModule(
 	t testing.TB,
-	hookup GetHandlersFunc,
-	router *mux.Router,
-	moduleOptions []ModuleOption,
+	handler http.Handler,
 	expectError bool,
 	fn func(*Module),
 ) {
-	host, err := service.NewScopedHost(service.NopHost(), "uhttp", "hello")
+	host, err := service.NewScopedHost(
+		service.NopHostWithConfig(
+			config.NewYAMLProviderFromBytes(_httpconfig)),
+		"uhttp",
+		"hello",
+	)
 	require.NoError(t, err)
-	mod, err := newModule(host, router, hookup, moduleOptions...)
+	mod, err := newModule(host, handler)
 	if expectError {
 		require.Error(t, err, "Expected error instantiating module")
 		fn(nil)
 		return
 	}
 	require.NoError(t, err, "Unable to instantiate module")
-	// us an ephemeral port on tests
-	mod.config.Port = 0
 	assert.NoError(t, mod.Start(), "Got error from starting")
 	fn(mod)
 	runtime.Gosched()
@@ -154,21 +141,12 @@ func makeRequest(m *Module, method, url string, body io.Reader, fn func(r *http.
 	fn(response)
 }
 
-func registerNothing(_ service.Host) []RouteHandler {
+func registerNothing() http.Handler {
 	return nil
 }
 
-func makeSingleHandler(path string, fn func(http.ResponseWriter, *http.Request)) []RouteHandler {
-	return []RouteHandler{
-		{
-			Path:    path,
-			Handler: http.HandlerFunc(fn),
-		},
-	}
-}
-
-func registerTracerCheckHandler(host service.Host) []RouteHandler {
-	return makeSingleHandler("/", func(_ http.ResponseWriter, r *http.Request) {
+func registerTracerCheckHandler() http.HandlerFunc {
+	return func(_ http.ResponseWriter, r *http.Request) {
 		span := opentracing.SpanFromContext(r.Context())
 		if span == nil {
 			panic(fmt.Sprintf("Intentional panic, invalid span: %v", span))
@@ -178,19 +156,13 @@ func registerTracerCheckHandler(host service.Host) []RouteHandler {
 				opentracing.GlobalTracer(),
 			))
 		}
-	})
+	}
 }
 
-func registerCustomHealth(_ service.Host) []RouteHandler {
-	return makeSingleHandler("/health", func(w http.ResponseWriter, _ *http.Request) {
-		io.WriteString(w, "not ok")
-	})
-}
-
-func registerPanic(_ service.Host) []RouteHandler {
-	return makeSingleHandler("/", func(_ http.ResponseWriter, r *http.Request) {
+func registerPanic() http.HandlerFunc {
+	return func(_ http.ResponseWriter, r *http.Request) {
 		panic("Intentional panic for:" + r.URL.Path)
-	})
+	}
 }
 
 func verifyMetrics(t *testing.T, scope tally.Scope) {
