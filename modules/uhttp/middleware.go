@@ -35,12 +35,6 @@ import (
 
 const _panicResponse = "Server Error"
 
-func contextInbound(next http.Handler, log *zap.Logger) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		next.ServeHTTP(w, r.WithContext(r.Context()))
-	}
-}
-
 func tracingInbound(next http.Handler) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()

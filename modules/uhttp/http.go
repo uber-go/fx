@@ -104,14 +104,12 @@ func newModule(host service.Host, handler http.Handler) (*Module, error) {
 	stats := newStatsClient(host.Metrics())
 
 	handle :=
-		contextInbound(
-			panicInbound(
-				metricsInbound(
-					tracingInbound(
-						authorizationInbound(handler, authClient, stats),
-					), stats,
+		panicInbound(
+			metricsInbound(
+				tracingInbound(
+					authorizationInbound(handler, authClient, stats),
 				), stats,
-			), log,
+			), stats,
 		)
 	serveMux.Handle("/", handle)
 
