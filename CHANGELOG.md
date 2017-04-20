@@ -13,6 +13,10 @@
   As part of refactor, RouteHandler is removed from the module registration.
 - `Loader.Path() string` is now `Loader.Paths() []string`, to better reflect that
   configuration is loaded from multiple directories.
+- **[Breaking]** Removed `CreateAuthInfo` interface from auth package. package auth
+  RegisterFunc now accepts `config.Provider` and `tally.Scope` for initialization.
+- **[Breaking]** Removed `auth.Client` access from `service.Host`. `auth.Client` can
+  now be accessed via `auth.Load()` call.
 
 ## v1.0.0-beta3 (28 Mar 2017)
 
