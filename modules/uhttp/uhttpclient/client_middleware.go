@@ -85,9 +85,8 @@ func tracingOutbound(tracer opentracing.Tracer) OutboundMiddlewareFunc {
 
 // authenticationOutbound on client side calls authenticate, and gets a claim that client is who they say they are
 // We only authorize with the claim on server side
-func authenticationOutbound(info auth.CreateAuthInfo) OutboundMiddlewareFunc {
-	authClient := auth.Load(info)
-	serviceName := info.Config().Get(config.ServiceNameKey).AsString()
+func authenticationOutbound(cfg config.Provider, authClient auth.Client) OutboundMiddlewareFunc {
+	serviceName := cfg.Get(config.ServiceNameKey).AsString()
 	return func(req *http.Request, next Executor) (resp *http.Response, err error) {
 		ctx := req.Context()
 		// Client needs to know what service it is to authenticate

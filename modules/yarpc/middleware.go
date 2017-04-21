@@ -24,7 +24,6 @@ import (
 	"context"
 
 	"go.uber.org/fx/auth"
-	"go.uber.org/fx/service"
 	"go.uber.org/fx/ulog"
 	"go.uber.org/zap"
 
@@ -34,7 +33,7 @@ import (
 const _panicResponse = "Server Error"
 
 type authInboundMiddleware struct {
-	service.Host
+	authClient auth.Client
 }
 
 func (a authInboundMiddleware) Handle(
@@ -43,7 +42,7 @@ func (a authInboundMiddleware) Handle(
 	resw transport.ResponseWriter,
 	handler transport.UnaryHandler,
 ) error {
-	fxctx, err := authorize(ctx, a.Host)
+	fxctx, err := authorize(ctx, a.authClient)
 	if err != nil {
 		return err
 	}
@@ -51,7 +50,7 @@ func (a authInboundMiddleware) Handle(
 }
 
 type authOnewayInboundMiddleware struct {
-	service.Host
+	authClient auth.Client
 }
 
 func (a authOnewayInboundMiddleware) HandleOneway(
@@ -59,15 +58,15 @@ func (a authOnewayInboundMiddleware) HandleOneway(
 	req *transport.Request,
 	handler transport.OnewayHandler,
 ) error {
-	fxctx, err := authorize(ctx, a.Host)
+	fxctx, err := authorize(ctx, a.authClient)
 	if err != nil {
 		return err
 	}
 	return handler.HandleOneway(fxctx, req)
 }
 
-func authorize(ctx context.Context, host service.Host) (context.Context, error) {
-	if err := host.AuthClient().Authorize(ctx); err != nil {
+func authorize(ctx context.Context, authClient auth.Client) (context.Context, error) {
+	if err := authClient.Authorize(ctx); err != nil {
 		ulog.Logger(ctx).Error(auth.ErrAuthorization, zap.Error(err))
 		// TODO(anup): GFM-255 update returned error to transport.BadRequestError (user error than server error)
 		// https://github.com/yarpc/yarpc-go/issues/687

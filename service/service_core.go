@@ -26,7 +26,6 @@ import (
 	"sync"
 	"time"
 
-	"go.uber.org/fx/auth"
 	"go.uber.org/fx/config"
 	"go.uber.org/fx/internal/util"
 	"go.uber.org/fx/metrics"
@@ -84,7 +83,6 @@ type serviceConfig struct {
 type serviceCore struct {
 	metricsCore
 	tracerCore
-	authClient     auth.Client
 	configProvider config.Provider
 	logConfig      ulog.Configuration
 	observer       Observer
@@ -96,10 +94,6 @@ type serviceCore struct {
 }
 
 var _ Host = &serviceCore{}
-
-func (s *serviceCore) AuthClient() auth.Client {
-	return s.authClient
-}
 
 func (s *serviceCore) Name() string {
 	return s.standardConfig.Name
@@ -226,13 +220,6 @@ func (s *serviceCore) setupObserver() {
 			shc.SetContainer(s)
 		}
 	}
-}
-
-func (s *serviceCore) setupAuthClient() {
-	if s.authClient != nil {
-		return
-	}
-	s.authClient = auth.Load(s)
 }
 
 func loadInstanceConfig(cfg config.Provider, key string, instance interface{}) bool {

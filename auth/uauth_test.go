@@ -24,15 +24,12 @@ import (
 	"context"
 	"testing"
 
-	"go.uber.org/fx/config"
-
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/uber-go/tally"
-	"go.uber.org/zap"
 )
 
-func withAuthClientSetup(t *testing.T, registerFunc RegisterFunc, info CreateAuthInfo, fn func()) {
+func withAuthClientSetup(t *testing.T, registerFunc RegisterFunc, fn func()) {
 	UnregisterClient()
 	RegisterClient(registerFunc)
 	fn()
@@ -40,7 +37,7 @@ func withAuthClientSetup(t *testing.T, registerFunc RegisterFunc, info CreateAut
 
 func TestUauth_Stub(t *testing.T) {
 	RegisterClient(defaultAuth)
-	authClient := Load(fakeAuthInfo{})
+	authClient := Load(nil, tally.NoopScope)
 	assert.Equal(t, "auth", authClient.Name())
 	assert.NotNil(t, authClient)
 	assert.Nil(t, authClient.Authorize(context.Background()))
@@ -52,8 +49,8 @@ func TestUauth_Stub(t *testing.T) {
 }
 
 func TestUauth_Register(t *testing.T) {
-	withAuthClientSetup(t, FakeFailureClient, fakeAuthInfo{}, func() {
-		authClient := Load(fakeAuthInfo{})
+	withAuthClientSetup(t, FakeFailureClient, func() {
+		authClient := Load(nil, tally.NoopScope)
 		assert.Equal(t, "failure", authClient.Name())
 		assert.NotNil(t, authClient)
 		err := authClient.Authorize(context.Background())
@@ -67,7 +64,7 @@ func TestUauth_Register(t *testing.T) {
 }
 
 func TestUauth_RegisterPanic(t *testing.T) {
-	withAuthClientSetup(t, FakeFailureClient, nil, func() {
+	withAuthClientSetup(t, FakeFailureClient, func() {
 		assert.Panics(t, func() {
 			RegisterClient(FakeFailureClient)
 		})
@@ -75,21 +72,7 @@ func TestUauth_RegisterPanic(t *testing.T) {
 }
 
 func TestUauth_Default(t *testing.T) {
-	withAuthClientSetup(t, nil, fakeAuthInfo{}, func() {
-		assert.Equal(t, "nop", Load(fakeAuthInfo{}).Name())
+	withAuthClientSetup(t, nil, func() {
+		assert.Equal(t, "nop", Load(nil, tally.NoopScope).Name())
 	})
-}
-
-type fakeAuthInfo struct{}
-
-func (fakeAuthInfo) Config() config.Provider {
-	return nil
-}
-
-func (fakeAuthInfo) Logger() *zap.Logger {
-	return zap.NewNop()
-}
-
-func (fakeAuthInfo) Metrics() tally.Scope {
-	return tally.NoopScope
 }

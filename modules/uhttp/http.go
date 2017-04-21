@@ -29,6 +29,7 @@ import (
 	"sync"
 	"time"
 
+	"go.uber.org/fx/auth"
 	"go.uber.org/fx/service"
 	"go.uber.org/fx/ulog"
 
@@ -100,7 +101,8 @@ func newModule(host service.Host, handler http.Handler) (*Module, error) {
 	serveMux := http.NewServeMux()
 	serveMux.Handle(healthPath, healthHandler{})
 
-	authClient := host.AuthClient()
+	// TODO: pass in the auth client as part of module construction
+	authClient := auth.Load(host.Config(), host.Metrics())
 	stats := newStatsClient(host.Metrics())
 
 	handle :=

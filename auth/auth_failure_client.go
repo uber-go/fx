@@ -23,13 +23,19 @@ package auth
 import (
 	"context"
 	"errors"
+
+	"go.uber.org/fx/config"
+
+	"github.com/uber-go/tally"
 )
 
-type failureClient struct {
-}
+// FailureClient is used for auth failure testing
+var FailureClient = FakeFailureClient(nil, tally.NoopScope)
+
+type failureClient struct{}
 
 // FakeFailureClient fails all auth request and must only be used for testing
-func FakeFailureClient(info CreateAuthInfo) Client {
+func FakeFailureClient(config config.Provider, scope tally.Scope) Client {
 	return &failureClient{}
 }
 

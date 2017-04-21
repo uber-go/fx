@@ -29,7 +29,6 @@ import (
 	"testing"
 	"time"
 
-	"go.uber.org/fx/auth"
 	"go.uber.org/fx/config"
 	cherami_mocks "go.uber.org/fx/mocks/modules/task/cherami"
 	"go.uber.org/fx/modules/task"
@@ -47,9 +46,7 @@ import (
 )
 
 var (
-	_host = service.NopHostConfigured(
-		auth.NopClient, ulog.Logger(context.Background()), opentracing.NoopTracer{},
-	)
+	_host       = service.NopHostConfigured(ulog.Logger(context.Background()), opentracing.NoopTracer{})
 	_pathName   = _pathPrefix + _host.Name()
 	_cgName     = _pathPrefix + _host.Name() + "_cg"
 	_publishMsg = []byte("Hello")
@@ -61,7 +58,7 @@ func TestBackendWorkflow(t *testing.T) {
 	zapLogger, buf := testutils.GetLockedInMemoryLogger()
 	defer ulog.SetLogger(zapLogger)()
 	tracing.WithTracer(t, zapLogger, func(tracer opentracing.Tracer) {
-		host := service.NopHostConfigured(auth.NopClient, zapLogger, tracer)
+		host := service.NopHostConfigured(zapLogger, tracer)
 		bknd := createNewBackend(t, m, host)
 		assert.NotNil(t, bknd.Encoder())
 		deliveryCh, err := startBackend(t, m, bknd, nil, nil)
@@ -283,7 +280,7 @@ func TestEncodingErrors(t *testing.T) {
 		tracer := &tracing.ErrorTracer{Tracer: opentracing.NoopTracer{}}
 		zapLogger, buf := testutils.GetLockedInMemoryLogger()
 		defer ulog.SetLogger(zapLogger)()
-		host := service.NopHostConfigured(auth.NopClient, zapLogger, tracer)
+		host := service.NopHostConfigured(zapLogger, tracer)
 
 		bknd := createNewBackend(t, m, host)
 		cBknd := bknd.(*Backend)

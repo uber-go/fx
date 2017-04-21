@@ -66,7 +66,7 @@
 //     // embed backend security service client here
 //   }
 //
-//   func userAuthClient(info CreateAuthInfo) auth.Client {
+//   func userAuthClient(config config.Provider, scope tally.Scope) auth.Client {
 //   	return &userAuthClient{}
 //   }
 //
