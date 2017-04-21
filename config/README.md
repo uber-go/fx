@@ -303,11 +303,11 @@ func TestCalculator_Errors(t *testing.T) {
   t.Parallel()
 
   _, err := newCalculator(NewStaticProvider(map[string]string{
-    "Op": "*", "Left": "3", "Right": "5"
+    "Op": "^", "Left": "3", "Right": "5"
   }))
 
   require.Error(t, err)
-  assert.Contains(t, err.Error(), `unknown operation "*"`)
+  assert.Contains(t, err.Error(), `unknown operation "^"`)
 }
 ```
 
