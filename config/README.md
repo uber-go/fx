@@ -296,7 +296,7 @@ func TestCalculator_Eval(t *testing.T) {
 }
 ```
 
-Don't forget to test the error path::
+Don't forget to test the error path:
 
 ```go
 func TestCalculator_Errors(t *testing.T) {
