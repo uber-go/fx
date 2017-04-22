@@ -296,7 +296,7 @@ func TestCalculator_Eval(t *testing.T) {
 }
 ```
 
-Don't forget to test the error path::
+Don't forget to test the error path:
 
 ```go
 func TestCalculator_Errors(t *testing.T) {
@@ -307,7 +307,7 @@ func TestCalculator_Errors(t *testing.T) {
   }))
 
   require.Error(t, err)
-  assert.Contains(t, err.Error(), `unknown operation "*"`)
+  assert.Contains(t, err.Error(), "unknown operation")
 }
 ```
 
