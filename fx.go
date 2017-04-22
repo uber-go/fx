@@ -21,8 +21,6 @@
 package fx
 
 import (
-	"fmt"
-	"log"
 	"reflect"
 
 	"go.uber.org/dig"
@@ -37,16 +35,17 @@ type Component interface{}
 // TODO: Document and explain how is this different from Component?
 // Something around roles and higher fidelity, maybe serving data
 type Module interface {
-	Create(config.Provider) Component
-	Start()
+	Name() string
+	Constructor() Component
 	Stop()
 }
 
 // Service foo
 type Service struct {
-	g          *dig.Graph
-	modules    []Module
-	components []Component
+	g                *dig.Graph
+	modules          []Module
+	moduleComponents []interface{}
+	components       []Component
 }
 
 // New foo
@@ -63,7 +62,10 @@ func New(modules ...Module) *Service {
 
 	// add a bunch of stuff
 	for _, c := range modules {
-		s.g.MustRegister(c.Create(cfg))
+		// TODO: everything is enabled right now
+		co := c.Constructor()
+		s.moduleComponents = append(s.moduleComponents, co)
+		s.g.MustRegister(co)
 	}
 
 	return s
@@ -74,7 +76,7 @@ func (s *Service) WithComponents(components ...Component) *Service {
 	s.components = append(s.components, components...)
 
 	// Add provided components to dig
-	for _, c := range s.components {
+	for _, c := range components {
 		s.g.MustRegister(c)
 	}
 
@@ -83,11 +85,9 @@ func (s *Service) WithComponents(components ...Component) *Service {
 
 // Start foo
 func (s *Service) Start() {
-	fmt.Println(s.g)
-
 	// add a bunch of stuff
 	// TODO: move to dig, perhaps #Call(constructor) function
-	for _, c := range s.components {
+	for _, c := range s.moduleComponents {
 		ctype := reflect.TypeOf(c)
 		switch ctype.Kind() {
 		case reflect.Func:
@@ -99,6 +99,7 @@ func (s *Service) Start() {
 
 // Stop foo
 func (s *Service) Stop() {
-	// close all dig stuff
-	log.Println("Stopping...")
+	for _, m := range s.modules {
+		m.Stop()
+	}
 }

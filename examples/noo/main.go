@@ -21,6 +21,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"os"
 	"os/signal"
@@ -34,32 +35,56 @@ import (
 )
 
 func main() {
-	svc := fx.New().WithComponents(
+	svc := fx.New(
+		NewT(),
+	).WithComponents(
 		FxZapNew,
-		Ticker,
 	)
 	svc.Start()
 
 	c := make(chan os.Signal, 2)
 	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
 	log.Println(<-c)
+	svc.Stop()
 }
 
 // FxZapNew is a component constructor thing for zap
 func FxZapNew(cfg config.Provider) (*zap.Logger, error) {
+	fmt.Println("New zap was called")
+
 	logConfig := ulog.Configuration{}
 	logConfig.Configure(cfg.Get("logging"))
 	l, err := logConfig.Build()
 	return l, err
 }
 
-// Ticker off
-func Ticker(l *zap.Logger) *time.Ticker {
-	ticker := time.NewTicker(time.Second * 1)
-	go func() {
-		for range ticker.C {
-			l.Info("I'm alive")
-		}
-	}()
-	return ticker
+type ticker struct {
+	t *time.Ticker
+}
+
+// NewT foo
+func NewT() *ticker {
+	return &ticker{}
+}
+
+func (t *ticker) Name() string { return "ticker" }
+func (t *ticker) Constructor() fx.Component {
+	return func(l *zap.Logger) *time.Ticker {
+		fmt.Println("new ticker was called")
+
+		ticker := time.NewTicker(time.Second * 1)
+		go func() {
+			for range ticker.C {
+				l.Info("I'm alive")
+			}
+		}()
+		t.t = ticker
+		return ticker
+	}
+}
+func (t *ticker) Stop() {
+	fmt.Println("gnight")
+	if t.t != nil {
+		t.t.Stop()
+	}
 }
