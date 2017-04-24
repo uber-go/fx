@@ -21,25 +21,21 @@
 package main
 
 import (
-	"fmt"
+	"context"
 	"log"
 	"os"
 	"os/signal"
 	"syscall"
-	"time"
 
 	"go.uber.org/fx"
 	"go.uber.org/fx/config"
-	"go.uber.org/fx/ulog"
-	"go.uber.org/zap"
+	"go.uber.org/fx/examples/keyvalue/kv"
+	kvs "go.uber.org/fx/examples/keyvalue/kv/keyvalueserver"
+	"go.uber.org/fx/modules/yarpc"
 )
 
 func main() {
-	svc := fx.New(
-		NewT(),
-	).WithComponents(
-		FxZapNew,
-	)
+	svc := fx.New(yarpc.New()).WithComponents(newHandler)
 	svc.Start()
 
 	c := make(chan os.Signal, 2)
@@ -48,43 +44,24 @@ func main() {
 	svc.Stop()
 }
 
-// FxZapNew is a component constructor thing for zap
-func FxZapNew(cfg config.Provider) (*zap.Logger, error) {
-	fmt.Println("New zap was called")
-
-	logConfig := ulog.Configuration{}
-	logConfig.Configure(cfg.Get("logging"))
-	l, err := logConfig.Build()
-	return l, err
+type handler struct {
+	items map[string]string
 }
 
-type ticker struct {
-	t *time.Ticker
+func newHandler(cfg config.Provider) (*yarpc.Transports, error) {
+	return &yarpc.Transports{
+		Ts: kvs.New(&handler{items: map[string]string{}}),
+	}, nil
 }
 
-// NewT foo
-func NewT() *ticker {
-	return &ticker{}
-}
-
-func (t *ticker) Name() string { return "ticker" }
-func (t *ticker) Constructor() fx.Component {
-	return func(l *zap.Logger) *time.Ticker {
-		fmt.Println("new ticker was called")
-
-		ticker := time.NewTicker(time.Second * 1)
-		go func() {
-			for range ticker.C {
-				l.Info("I'm alive")
-			}
-		}()
-		t.t = ticker
-		return ticker
+func (h *handler) GetValue(ctx context.Context, key *string) (string, error) {
+	if value, ok := h.items[*key]; ok {
+		return value, nil
 	}
+	return "", &kv.ResourceDoesNotExist{Key: *key}
 }
-func (t *ticker) Stop() {
-	fmt.Println("gnight")
-	if t.t != nil {
-		t.t.Stop()
-	}
+
+func (h *handler) SetValue(ctx context.Context, key *string, value *string) error {
+	h.items[*key] = *value
+	return nil
 }

@@ -21,10 +21,20 @@
 package fx
 
 import (
+	"fmt"
 	"reflect"
+	"strconv"
+
+	"github.com/pkg/errors"
 
 	"go.uber.org/dig"
 	"go.uber.org/fx/config"
+	"go.uber.org/fx/ulog"
+	"go.uber.org/yarpc"
+	"go.uber.org/yarpc/api/transport"
+	"go.uber.org/yarpc/transport/http"
+	tch "go.uber.org/yarpc/transport/tchannel"
+	"go.uber.org/zap"
 )
 
 // Component is a dig constructor for something that's easily
@@ -60,6 +70,9 @@ func New(modules ...Module) *Service {
 	// TODO: need to pull latest dig for direct Interface injection fix
 	s.g.MustRegister(func() config.Provider { return cfg })
 
+	s.g.MustRegister(dispatcher)
+	s.g.MustRegister(logger)
+
 	// add a bunch of stuff
 	for _, c := range modules {
 		// TODO: everything is enabled right now
@@ -69,6 +82,95 @@ func New(modules ...Module) *Service {
 	}
 
 	return s
+}
+
+func dispatcher(cfg config.Provider, l *zap.Logger) *yarpc.Dispatcher {
+	var c yarpcConfig
+	// TODO: yarpc -> modules.yarpc
+	err := cfg.Get("yarpc").Populate(&c)
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Printf("%#v\n", c.Inbounds)
+	inb, err := prepareInbounds(c.Inbounds, "noo")
+	if err != nil {
+		panic(err)
+	}
+	yc := yarpc.Config{
+		Name:     "noo",
+		Inbounds: inb,
+	}
+	return yarpc.NewDispatcher(yc)
+}
+
+func logger(cfg config.Provider) (*zap.Logger, error) {
+	logConfig := ulog.Configuration{}
+	logConfig.Configure(cfg.Get("logging"))
+	l, err := logConfig.Build()
+	return l, err
+}
+
+type yarpcConfig struct {
+	transports transports
+	Inbounds   []Inbound
+}
+
+type transports struct {
+	inbounds []transport.Inbound
+}
+
+// Inbound is a union that configures how to configure a single inbound.
+type Inbound struct {
+	TChannel *Address
+	HTTP     *Address
+}
+
+// Address is a struct that have a required port for tchannel/http transports.
+// TODO(alsam) make it optional
+type Address struct {
+	Port int
+}
+
+func (i *Inbound) String() string {
+	if i == nil {
+		return ""
+	}
+	http := "none"
+	if i.HTTP != nil {
+		http = strconv.Itoa(i.HTTP.Port)
+	}
+	tchannel := "none"
+	if i.TChannel != nil {
+		tchannel = strconv.Itoa(i.TChannel.Port)
+	}
+	return fmt.Sprintf("Inbound:{HTTP: %s; TChannel: %s}", http, tchannel)
+}
+
+// Iterate over all inbounds and prepare corresponding transports
+func prepareInbounds(inbounds []Inbound, serviceName string) (transportsIn []transport.Inbound, err error) {
+	transportsIn = make([]transport.Inbound, 0, 2*len(inbounds))
+	for _, in := range inbounds {
+		if h := in.HTTP; h != nil {
+			transportsIn = append(
+				transportsIn,
+				http.NewTransport().NewInbound(fmt.Sprintf(":%d", h.Port)))
+		}
+
+		if t := in.TChannel; t != nil {
+			chn, err := tch.NewChannelTransport(
+				tch.ServiceName(serviceName),
+				tch.ListenAddr(fmt.Sprintf(":%d", t.Port)))
+
+			if err != nil {
+				return nil, errors.Wrap(err, "can't create tchannel transport")
+			}
+
+			transportsIn = append(transportsIn, chn.NewInbound())
+		}
+	}
+
+	return transportsIn, nil
 }
 
 // WithComponents adds additional components to the service
@@ -95,6 +197,14 @@ func (s *Service) Start() {
 			s.g.MustResolve(reflect.New(objType).Interface())
 		}
 	}
+
+	// start the dispatcher
+	var d *yarpc.Dispatcher
+	s.g.MustResolve(&d)
+	d.Start()
+
+	// range over modules and start here
+	fmt.Println("Stuff is started")
 }
 
 // Stop foo

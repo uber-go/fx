@@ -2,3 +2,9 @@ logging:
   stdout: true
   level: info
   encoder: json
+
+yarpc:
+  name: noo
+  inbounds:
+    - tchannel:
+        port: 1234
