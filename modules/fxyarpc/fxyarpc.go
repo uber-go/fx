@@ -97,8 +97,8 @@ func (m *Module) Constructor() fx.Component {
 
 // Stop the dispatcher
 func (m *Module) Stop() {
-	m.l.Info("Stopping the dispatcher")
 	if m.d != nil {
+		m.l.Info("Stopping the dispatcher")
 		if err := m.d.Stop(); err != nil {
 			panic("Failed to stop dispatcher...")
 		}
