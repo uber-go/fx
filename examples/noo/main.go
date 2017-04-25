@@ -30,12 +30,14 @@ import (
 	"go.uber.org/fx"
 	"go.uber.org/fx/config"
 	"go.uber.org/fx/examples/keyvalue/kv"
+	kvc "go.uber.org/fx/examples/keyvalue/kv/keyvalueclient"
 	kvs "go.uber.org/fx/examples/keyvalue/kv/keyvalueserver"
 	"go.uber.org/fx/modules/fxyarpc"
+	"go.uber.org/yarpc"
 )
 
 func main() {
-	svc := fx.New(fxyarpc.New()).WithComponents(newHandler)
+	svc := fx.New(fxyarpc.New(newHandler))
 	svc.Start()
 
 	c := make(chan os.Signal, 2)
@@ -45,16 +47,24 @@ func main() {
 }
 
 type handler struct {
-	items map[string]string
+	items  map[string]string
+	client kvc.Interface
 }
 
-func newHandler(cfg config.Provider) (*fxyarpc.Transports, error) {
+func newHandler(cfg config.Provider, d *yarpc.Dispatcher) (*fxyarpc.Transports, error) {
+	c := kvc.New(d.ClientConfig("noo"))
 	return &fxyarpc.Transports{
-		Ts: kvs.New(&handler{items: map[string]string{}}),
+		Ts: kvs.New(
+			&handler{items: map[string]string{}, client: c},
+		),
 	}, nil
 }
 
 func (h *handler) GetValue(ctx context.Context, key *string) (string, error) {
+	// TODO: Outbounds are not set up in fx public yet
+	//k := "hello"
+	//v := "world"
+	//h.client.SetValue(ctx, &k, &v)
 	if value, ok := h.items[*key]; ok {
 		return value, nil
 	}

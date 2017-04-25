@@ -35,15 +35,20 @@ import (
 	"go.uber.org/zap"
 )
 
+// ServiceCreateFunc creates a YARPC service from a service host
+type ServiceCreateFunc func(...interface{}) ([]transport.Procedure, error)
+
 // Module foo
 type Module struct {
-	l *zap.Logger
-	d *yarpc.Dispatcher
+	l  *zap.Logger
+	d  *yarpc.Dispatcher
+	fn fx.Component
 }
 
 // New foo
-func New() *Module {
-	return &Module{}
+func New(fn fx.Component) *Module {
+	// TODO: Check fn types
+	return &Module{fn: fn}
 }
 
 // Name foo
@@ -56,42 +61,56 @@ type Transports struct {
 	Ts []transport.Procedure
 }
 
+type fake struct{}
+
 // Constructor foo
-func (m *Module) Constructor() fx.Component {
+func (m *Module) Constructor() []fx.Component {
 	// TODO: once #Constructors => []Component refactor is complete
 	// this function needs to be split into two.
 	// The first one would require config and create a dispatcher
 	// The second one would require dispatcher and transports and:
 	//		- Register transports in the dispatcher
 	//	  - Start the dispatcher
-	return func(l *zap.Logger, cfg config.Provider, t *Transports) (*yarpc.Dispatcher, error) {
-		m.l = l.With(zap.String("module", "yarpc"))
+	return []fx.Component{
+		m.fn,
+		func(l *zap.Logger, cfg config.Provider) (*yarpc.Dispatcher, error) {
+			m.l = l.With(zap.String("module", "yarpc"))
 
-		var c yarpcConfig
-		// TODO: yarpc -> modules.yarpc
-		if err := cfg.Get("yarpc").Populate(&c); err != nil {
-			return nil, err
-		}
+			var c yarpcConfig
+			// TODO: yarpc -> modules.yarpc
+			if err := cfg.Get("yarpc").Populate(&c); err != nil {
+				return nil, err
+			}
 
-		inb, err := prepareInbounds(c.Inbounds, "noo")
-		if err != nil {
-			panic(err)
-		}
-		yc := yarpc.Config{
-			Name:     "noo",
-			Inbounds: inb,
-		}
+			inb, err := prepareInbounds(c.Inbounds, "noo")
+			if err != nil {
+				panic(err)
+			}
+			yc := yarpc.Config{
+				Name:     "noo",
+				Inbounds: inb,
+			}
 
-		d := yarpc.NewDispatcher(yc)
-		d.Register(t.Ts)
+			d := yarpc.NewDispatcher(yc)
 
-		m.l.Info("Starting the dispatcher")
-		if err := d.Start(); err != nil {
-			return nil, err
-		}
+			m.l.Info("Starting the dispatcher")
+			if err := d.Start(); err != nil {
+				return nil, err
+			}
 
-		m.d = d
-		return d, nil
+			m.d = d
+			return d, nil
+		},
+		func(d *yarpc.Dispatcher, t *Transports) (*fake, error) {
+			d.Register(t.Ts)
+
+			m.l.Info("Starting the dispatcher")
+			if err := d.Start(); err != nil {
+				m.l.Error("Error starting the dispatcher", zap.Error(err))
+				return nil, err
+			}
+			return &fake{}, nil
+		},
 	}
 }
 

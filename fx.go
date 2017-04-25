@@ -38,7 +38,7 @@ type Component interface{}
 // Something around roles and higher fidelity, maybe serving data
 type Module interface {
 	Name() string
-	Constructor() Component
+	Constructor() []Component
 	Stop()
 }
 
@@ -72,8 +72,9 @@ func New(modules ...Module) *Service {
 
 	// add a bunch of stuff
 	for _, m := range modules {
-		co := m.Constructor()
-		s.g.MustRegister(co)
+		for _, ctor := range m.Constructor() {
+			s.g.MustRegister(ctor)
+		}
 	}
 
 	return s
@@ -105,12 +106,13 @@ func (s *Service) WithComponents(components ...Component) *Service {
 func (s *Service) Start() {
 	// TODO: move to dig, perhaps #Call(constructor) function
 	for _, m := range s.modules {
-		c := m.Constructor()
-		ctype := reflect.TypeOf(c)
-		switch ctype.Kind() {
-		case reflect.Func:
-			objType := ctype.Out(0)
-			s.g.MustResolve(reflect.New(objType).Interface())
+		for _, ctor := range m.Constructor() {
+			ctype := reflect.TypeOf(ctor)
+			switch ctype.Kind() {
+			case reflect.Func:
+				objType := ctype.Out(0)
+				s.g.MustResolve(reflect.New(objType).Interface())
+			}
 		}
 		s.l.Info("Module started", zap.String("module", m.Name()))
 	}
