@@ -44,17 +44,15 @@ type Transports struct {
 	Ts []transport.Procedure
 }
 
-// TODO: figure out the starter
-type starter struct{}
-
-// TODO: dig work-around. Returning just error is not doable :(
-type foo struct{}
-
 // Constructor foo
 func (m *Module) Constructor() fx.Component {
-	return func(d *yarpc.Dispatcher, t *Transports) (*foo, error) {
+	// TODO: Returning a solo error is not great for dig.
+	// It works right now, because it sees a single return as one interface
+	// that someone else might inject as a dependency. Essentially,
+	// in this format errors are considered something sharable.
+	return func(d *yarpc.Dispatcher, t *Transports) error {
 		d.Register(t.Ts)
-		return nil, nil
+		return nil
 	}
 }
 
