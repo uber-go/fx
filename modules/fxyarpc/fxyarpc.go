@@ -18,50 +18,47 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package main
+package fxyarpc
 
 import (
-	"context"
-	"log"
-	"os"
-	"os/signal"
-	"syscall"
-
 	"go.uber.org/fx"
-	"go.uber.org/fx/config"
-	"go.uber.org/fx/examples/keyvalue/kv"
-	kvs "go.uber.org/fx/examples/keyvalue/kv/keyvalueserver"
-	"go.uber.org/fx/modules/fxyarpc"
+	"go.uber.org/yarpc"
+	"go.uber.org/yarpc/api/transport"
 )
 
-func main() {
-	svc := fx.New(fxyarpc.New()).WithComponents(newHandler)
-	svc.Start()
+// Module foo
+type Module struct{}
 
-	c := make(chan os.Signal, 2)
-	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
-	log.Println(<-c)
-	svc.Stop()
+// New foo
+func New() *Module {
+	return &Module{}
 }
 
-type handler struct {
-	items map[string]string
+// Name foo
+func (m *Module) Name() string {
+	return "yarpc"
 }
 
-func newHandler(cfg config.Provider) (*fxyarpc.Transports, error) {
-	return &fxyarpc.Transports{
-		Ts: kvs.New(&handler{items: map[string]string{}}),
-	}, nil
+// Transports foo
+type Transports struct {
+	Ts []transport.Procedure
 }
 
-func (h *handler) GetValue(ctx context.Context, key *string) (string, error) {
-	if value, ok := h.items[*key]; ok {
-		return value, nil
+// TODO: figure out the starter
+type starter struct{}
+
+// FIXME: dig work-around. Returning just error is not doabled
+type foo struct{}
+
+// Constructor foo
+func (m *Module) Constructor() fx.Component {
+	return func(d *yarpc.Dispatcher, t *Transports) (*foo, error) {
+		d.Register(t.Ts)
+		return nil, nil
 	}
-	return "", &kv.ResourceDoesNotExist{Key: *key}
 }
 
-func (h *handler) SetValue(ctx context.Context, key *string, value *string) error {
-	h.items[*key] = *value
-	return nil
+// Stop foo
+func (m *Module) Stop() {
+	panic("ah")
 }
