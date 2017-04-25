@@ -1,0 +1,7 @@
+logging:
+  level: debug
+  stdout: true
+  encoding: console
+  encoderConfig:
+    levelEncoder: color
+    timeEncoder: iso8601
