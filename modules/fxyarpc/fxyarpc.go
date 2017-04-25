@@ -47,7 +47,7 @@ type Transports struct {
 // TODO: figure out the starter
 type starter struct{}
 
-// FIXME: dig work-around. Returning just error is not doabled
+// TODO: dig work-around. Returning just error is not doable :(
 type foo struct{}
 
 // Constructor foo

@@ -106,7 +106,10 @@ func dispatcher(cfg config.Provider, l *zap.Logger) *yarpc.Dispatcher {
 
 func logger(cfg config.Provider) (*zap.Logger, error) {
 	logConfig := ulog.Configuration{}
-	logConfig.Configure(cfg.Get("logging"))
+	err := logConfig.Configure(cfg.Get("logging"))
+	if err != nil {
+		return nil, err
+	}
 	l, err := logConfig.Build()
 	return l, err
 }
@@ -201,7 +204,10 @@ func (s *Service) Start() {
 	// start the dispatcher
 	var d *yarpc.Dispatcher
 	s.g.MustResolve(&d)
-	d.Start()
+	err := d.Start()
+	if err != nil {
+		panic("failed to start the dispatcher")
+	}
 
 	// range over modules and start here
 	fmt.Println("Stuff is started")
