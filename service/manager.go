@@ -28,11 +28,11 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/uber-go/multierr"
 	"go.uber.org/fx/config"
-	"go.uber.org/zap"
 
 	"github.com/pkg/errors"
+	"github.com/uber-go/multierr"
+	"go.uber.org/zap"
 )
 
 const (
