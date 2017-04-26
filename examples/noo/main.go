@@ -52,10 +52,10 @@ type handler struct {
 }
 
 func newHandler(cfg config.Provider, d *yarpc.Dispatcher) (*fxyarpc.Transports, error) {
-	c := kvc.New(d.ClientConfig("noo"))
+	//c := kvc.New(d.ClientConfig("noo"))
 	return &fxyarpc.Transports{
 		Ts: kvs.New(
-			&handler{items: map[string]string{}, client: c},
+			&handler{items: map[string]string{}},
 		),
 	}, nil
 }

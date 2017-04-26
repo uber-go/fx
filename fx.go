@@ -21,6 +21,7 @@
 package fx
 
 import (
+	"fmt"
 	"reflect"
 
 	"go.uber.org/dig"
@@ -38,7 +39,7 @@ type Component interface{}
 // Something around roles and higher fidelity, maybe serving data
 type Module interface {
 	Name() string
-	Constructor() []Component
+	Constructor(Core) []Component
 	Stop()
 }
 
@@ -48,6 +49,21 @@ type Service struct {
 	modules    []Module
 	components []Component
 	l          *zap.Logger
+	core       Core
+}
+
+// Core has core
+type Core struct {
+	config *config.Provider
+	logger *zap.Logger
+}
+
+func (c *Core) Logger() *zap.Logger {
+	return c.logger
+}
+
+func (c *Core) Config() *config.Provider {
+	return c.config
 }
 
 // New foo
@@ -70,9 +86,10 @@ func New(modules ...Module) *Service {
 	s.l = l
 	s.g.MustRegister(l)
 
+	s.core = Core{logger: l, config: &cfg}
 	// add a bunch of stuff
 	for _, m := range modules {
-		for _, ctor := range m.Constructor() {
+		for _, ctor := range m.Constructor(s.core) {
 			s.g.MustRegister(ctor)
 		}
 	}
@@ -106,11 +123,12 @@ func (s *Service) WithComponents(components ...Component) *Service {
 func (s *Service) Start() {
 	// TODO: move to dig, perhaps #Call(constructor) function
 	for _, m := range s.modules {
-		for _, ctor := range m.Constructor() {
+		for _, ctor := range m.Constructor(s.core) {
 			ctype := reflect.TypeOf(ctor)
 			switch ctype.Kind() {
 			case reflect.Func:
 				objType := ctype.Out(0)
+				fmt.Printf("Object %v %v\n", ctype, objType)
 				s.g.MustResolve(reflect.New(objType).Interface())
 			}
 		}

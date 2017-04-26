@@ -1,3 +1,4 @@
+name: noo
 logging:
   stdout: true
   level: info
@@ -7,9 +8,4 @@ yarpc:
   name: noo
   inbounds:
     - tchannel:
-        port: 1234
-  outbounds:
-    - service: noo
-      tchannel:
-        host: 127.0.0.1
         port: 1234
