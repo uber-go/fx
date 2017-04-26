@@ -24,6 +24,9 @@ import (
 	"fmt"
 	"reflect"
 
+	"github.com/opentracing/opentracing-go"
+	"github.com/uber-go/tally"
+
 	"go.uber.org/dig"
 	"go.uber.org/fx/config"
 	"go.uber.org/fx/ulog"
@@ -54,8 +57,10 @@ type Service struct {
 
 // Core has core
 type Core struct {
-	config *config.Provider
+	config config.Provider
 	logger *zap.Logger
+	scope  tally.Scope
+	tracer opentracing.Tracer
 }
 
 // Logger returns the logger
@@ -64,8 +69,18 @@ func (c *Core) Logger() *zap.Logger {
 }
 
 // Config returns the config
-func (c *Core) Config() *config.Provider {
+func (c *Core) Config() config.Provider {
 	return c.config
+}
+
+// Metrics returns the metrics scope
+func (c *Core) Metrics() tally.Scope {
+	return c.scope
+}
+
+// Tracer returns the tracer
+func (c *Core) Tracer() opentracing.Tracer {
+	return c.tracer
 }
 
 // New foo
@@ -88,7 +103,7 @@ func New(modules ...Module) *Service {
 	s.l = l
 	s.g.MustRegister(l)
 
-	s.core = Core{logger: l, config: &cfg}
+	s.core = Core{logger: l, config: cfg}
 	// add a bunch of stuff
 	for _, m := range modules {
 		for _, ctor := range m.Constructor(s.core) {

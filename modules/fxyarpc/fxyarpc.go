@@ -41,45 +41,29 @@ var (
 	// Function to create a dispatcher
 	_dispatcherFn dispatcherFn = defaultYARPCDispatcher
 	// Function to start a dispatcher
-	_starterFn dispatcherFn = defaultYARPCStarter
+	_starterFn starterFn = defaultYARPCStarter
 )
 
-type dispatcherFn func(m *Module) fx.Component
+type dispatcherFn func(m *Module, l *zap.Logger, yc *yarpc.Config) fx.Component
+type starterFn func(l *zap.Logger) fx.Component
 
-func defaultYARPCDispatcher(m *Module) fx.Component {
-	return func(l *zap.Logger, cfg config.Provider) (*yarpc.Dispatcher, error) {
-		var c yarpcConfig
-		// TODO: yarpc -> modules.yarpc
-		if err := cfg.Get("yarpc").Populate(&c); err != nil {
-			return nil, err
-		}
-		svcname := cfg.Get(config.ServiceNameKey).AsString()
-		inb, err := prepareInbounds(c.Inbounds, svcname)
-		if err != nil {
-			panic(err)
-		}
-		yc := yarpc.Config{
-			Name:     svcname,
-			Inbounds: inb,
-		}
-
-		d := yarpc.NewDispatcher(yc)
-		m.l.Info("Created the dispatcher")
-		m.d = d
-		return d, nil
+func defaultYARPCDispatcher(m *Module, l *zap.Logger, yc *yarpc.Config) fx.Component {
+	return func() (*yarpc.Dispatcher, error) {
+		m.d = yarpc.NewDispatcher(*yc)
+		return m.d, nil
 	}
 }
 
-func defaultYARPCStarter(m *Module) fx.Component {
+func defaultYARPCStarter(l *zap.Logger) fx.Component {
 	return func(d *yarpc.Dispatcher, t *Transports) (*fake, error) {
 		d.Register(t.Ts)
 
-		m.l.Info("Starting the dispatcher")
+		l.Info("Starting the dispatcher")
 		if err := d.Start(); err != nil {
-			m.l.Error("Error starting the dispatcher", zap.Error(err))
+			l.Error("Error starting the dispatcher", zap.Error(err))
 			return nil, err
 		}
-		m.l.Info("Dispatcher started")
+		l.Info("Dispatcher started")
 		return &fake{}, nil
 	}
 }
@@ -96,7 +80,7 @@ func RegisterDispatcher(dispatchFn dispatcherFn) {
 type StarterFn func(dispatcher *yarpc.Dispatcher) error
 
 // RegisterStarter allows you to override function that starts a dispatcher.
-func RegisterStarter(startFn dispatcherFn) {
+func RegisterStarter(startFn starterFn) {
 	_dispatcherMu.Lock()
 	defer _dispatcherMu.Unlock()
 	_starterFn = startFn
@@ -108,8 +92,8 @@ type ServiceCreateFunc func(...interface{}) ([]transport.Procedure, error)
 // Module foo
 type Module struct {
 	l  *zap.Logger
-	d  *yarpc.Dispatcher
 	fn fx.Component
+	d  *yarpc.Dispatcher
 }
 
 // New foo
@@ -139,10 +123,24 @@ func (m *Module) Constructor(core fx.Core) []fx.Component {
 	//		- Register transports in the dispatcher
 	//	  - Start the dispatcher
 	m.l = core.Logger().With(zap.String("module", "yarpc"))
+	var c yarpcConfig
+	// TODO: yarpc -> modules.yarpc
+	if err := core.Config().Get("yarpc").Populate(&c); err != nil {
+		panic(err)
+	}
+	svcname := core.Config().Get(config.ServiceNameKey).AsString()
+	inb, err := prepareInbounds(c.Inbounds, svcname)
+	if err != nil {
+		panic(err)
+	}
+	yc := yarpc.Config{
+		Name:     svcname,
+		Inbounds: inb,
+	}
 	return []fx.Component{
 		m.fn,
-		_dispatcherFn(m),
-		_starterFn(m),
+		_dispatcherFn(m, m.l, &yc),
+		_starterFn(m.l),
 	}
 }
 
