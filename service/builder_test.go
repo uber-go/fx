@@ -61,9 +61,9 @@ func TestWithModules_SkipsModulesBadInit(t *testing.T) {
 }
 
 func TestWithModules_StartTimeout(t *testing.T) {
-	t.Parallel()
-
-	svc, err := WithModule(startTimeoutProvider).WithOptions(
+	svc, err := WithModule(startTimeoutProvider).
+		WithModule(startTimeoutProvider).
+		WithOptions(
 		WithConfiguration(StaticAppData(nil)),
 		WithStartTimeout(time.Millisecond),
 		WithStopTimeout(time.Millisecond),
@@ -78,9 +78,9 @@ func TestWithModules_StartTimeout(t *testing.T) {
 }
 
 func TestWithModules_StopTimeout(t *testing.T) {
-	t.Parallel()
-
-	svc, err := WithModule(stopTimeoutProvider).WithOptions(
+	svc, err := WithModule(stopTimeoutProvider).
+		WithModule(stopTimeoutProvider).
+		WithOptions(
 		WithConfiguration(StaticAppData(nil)),
 		WithStartTimeout(time.Millisecond),
 		WithStopTimeout(time.Millisecond),
