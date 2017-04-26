@@ -68,9 +68,10 @@ func TestWithModules_StartTimeout(t *testing.T) {
 		WithStartTimeout(time.Millisecond),
 		WithStopTimeout(time.Millisecond),
 	).Build()
-	require.NoError(t, err)
-	ctl := svc.StartAsync()
 
+	require.NoError(t, err)
+
+	ctl := svc.StartAsync()
 	require.Error(t, ctl.ServiceError)
 	assert.Contains(t, ctl.ServiceError.Error(), "timeoutStart")
 	assert.Contains(t, ctl.ServiceError.Error(), "didn't start after 1ms")
@@ -84,7 +85,9 @@ func TestWithModules_StopTimeout(t *testing.T) {
 		WithStartTimeout(time.Millisecond),
 		WithStopTimeout(time.Millisecond),
 	).Build()
+
 	require.NoError(t, err)
+
 	ctl := svc.StartAsync()
 	require.NoError(t, ctl.ServiceError)
 
