@@ -84,8 +84,8 @@ func defaultYARPCStarter(m *Module) fx.Component {
 	}
 }
 
-// TODO: Alternate solution to Register functions
 // RegisterDispatcher allows you to override the YARPC dispatcher registration
+// TODO: Alternate solution to Register functions
 func RegisterDispatcher(dispatchFn dispatcherFn) {
 	_dispatcherMu.Lock()
 	defer _dispatcherMu.Unlock()

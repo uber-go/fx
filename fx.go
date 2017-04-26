@@ -58,10 +58,12 @@ type Core struct {
 	logger *zap.Logger
 }
 
+// Logger returns the logger
 func (c *Core) Logger() *zap.Logger {
 	return c.logger
 }
 
+// Config returns the config
 func (c *Core) Config() *config.Provider {
 	return c.config
 }
