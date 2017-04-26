@@ -270,11 +270,6 @@ func (m *manager) shutdown(err error, reason string, exitCode *int) (bool, error
 	}
 
 	m.transitionState(Stopped)
-
-	if errs != nil {
-
-	}
-
 	return true, multierr.Combine(err, multierr.Combine(errs...))
 }
 

@@ -23,12 +23,12 @@ package service
 import (
 	"errors"
 	"testing"
+	"time"
 
 	. "go.uber.org/fx/testutils"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"time"
 )
 
 var (

@@ -21,11 +21,12 @@
 package service
 
 import (
+	"time"
+
 	"go.uber.org/fx/config"
 
 	"github.com/opentracing/opentracing-go"
 	"github.com/uber-go/tally"
-	"time"
 )
 
 // A Option configures a manager
