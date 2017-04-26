@@ -28,6 +28,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/uber-go/multierr"
 	"go.uber.org/fx/config"
 	"go.uber.org/zap"
 
@@ -35,7 +36,7 @@ import (
 )
 
 const (
-	defaultStartupWait = 10 * time.Second
+	defaultTimeout = 10 * time.Second
 )
 
 // A ExitCallback is a function to handle a service shutdown and provide
@@ -50,6 +51,8 @@ type manager struct {
 	moduleWrappers []*moduleWrapper
 	roles          map[string]bool
 	stateMu        sync.Mutex
+	startTimeout   time.Duration
+	stopTimeout    time.Duration
 
 	// Shutdown fields.
 	shutdownMu     sync.Mutex
@@ -69,6 +72,8 @@ func newManager(builder *Builder) (Manager, error) {
 		// TODO: get these out of config struct instead
 		moduleWrappers: []*moduleWrapper{},
 		serviceCore:    serviceCore{},
+		startTimeout:   defaultTimeout,
+		stopTimeout:    defaultTimeout,
 	}
 	for _, opt := range builder.options {
 		if optionErr := opt(m); optionErr != nil {
@@ -266,7 +271,11 @@ func (m *manager) shutdown(err error, reason string, exitCode *int) (bool, error
 
 	m.transitionState(Stopped)
 
-	return true, err
+	if errs != nil {
+
+	}
+
+	return true, multierr.Combine(err, multierr.Combine(errs...))
 }
 
 func (m *manager) addModule(provider ModuleProvider, options ...ModuleOption) error {
@@ -406,11 +415,11 @@ func (m *manager) startModules() []error {
 					} else {
 						zap.L().Info("Module started up cleanly", zap.String("module", mw.Name()))
 					}
-				case <-time.After(defaultStartupWait):
+				case <-time.After(m.startTimeout):
 					lock.Lock()
 					results = append(
 						results,
-						fmt.Errorf("module: %s didn't start after %v", mw.Name(), defaultStartupWait),
+						fmt.Errorf("module: %q didn't start after %v", mw.Name(), m.startTimeout),
 					)
 					lock.Unlock()
 				}
@@ -426,24 +435,28 @@ func (m *manager) startModules() []error {
 
 func (m *manager) stopModules() []error {
 	var results []error
-	var lock sync.Mutex
-	wg := sync.WaitGroup{}
-	wg.Add(len(m.moduleWrappers))
 	for _, mod := range m.moduleWrappers {
-		go func(m *moduleWrapper) {
-			if !m.IsRunning() {
-				// TODO: have a timeout here so a bad shutdown
-				// doesn't block everyone
-				if err := m.Stop(); err != nil {
-					lock.Lock()
-					results = append(results, err)
-					lock.Unlock()
-				}
+		errC := make(chan error, 1)
+		go func(mod *moduleWrapper) {
+			if mod.IsRunning() {
+				errC <- mod.Stop()
+				return
 			}
-			wg.Done()
+			errC <- nil
 		}(mod)
+
+		select {
+		case err := <-errC:
+			if err != nil {
+				results = append(results,
+					fmt.Errorf("module %q stopped with error %q", mod.Name(), err))
+			}
+		case <-time.After(m.stopTimeout):
+			results = append(results,
+				fmt.Errorf("stop module %q timedout after %q", mod.Name(), m.stopTimeout))
+		}
 	}
-	wg.Wait()
+
 	return results
 }
 

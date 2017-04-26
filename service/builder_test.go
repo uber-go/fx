@@ -27,11 +27,15 @@ import (
 	. "go.uber.org/fx/testutils"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"time"
 )
 
 var (
-	nopModuleProvider = &StubModuleProvider{"nop", nopModule}
-	errModuleProvider = &StubModuleProvider{"err", errModule}
+	nopModuleProvider    = &StubModuleProvider{"nop", nopModule}
+	errModuleProvider    = &StubModuleProvider{"err", errModule}
+	startTimeoutProvider = &StubModuleProvider{"timeoutStart", timeoutStartModule}
+	stopTimeoutProvider  = &StubModuleProvider{"timeoutStop", timeoutStopModule}
 )
 
 func TestWithModules_OK(t *testing.T) {
@@ -56,10 +60,74 @@ func TestWithModules_SkipsModulesBadInit(t *testing.T) {
 	assert.Error(t, err, "Expected service name to be provided")
 }
 
+func TestWithModules_StartTimeout(t *testing.T) {
+	t.Parallel()
+
+	svc, err := WithModule(startTimeoutProvider).WithOptions(
+		WithConfiguration(StaticAppData(nil)),
+		WithStartTimeout(time.Millisecond),
+		WithStopTimeout(time.Millisecond),
+	).Build()
+	require.NoError(t, err)
+	ctl := svc.StartAsync()
+
+	require.Error(t, ctl.ServiceError)
+	assert.Contains(t, ctl.ServiceError.Error(), "timeoutStart")
+	assert.Contains(t, ctl.ServiceError.Error(), "didn't start after 1ms")
+}
+
+func TestWithModules_StopTimeout(t *testing.T) {
+	t.Parallel()
+
+	svc, err := WithModule(stopTimeoutProvider).WithOptions(
+		WithConfiguration(StaticAppData(nil)),
+		WithStartTimeout(time.Millisecond),
+		WithStopTimeout(time.Millisecond),
+	).Build()
+	require.NoError(t, err)
+	ctl := svc.StartAsync()
+	require.NoError(t, ctl.ServiceError)
+
+	err = svc.Stop("someReason", 1)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "timeoutStop")
+	assert.Contains(t, err.Error(), `timedout after "1ms"`)
+}
+
 func nopModule(_ Host) (Module, error) {
 	return nil, nil
 }
 
 func errModule(_ Host) (Module, error) {
 	return nil, errors.New("intentional module creation failure")
+}
+
+func timeoutStartModule(_ Host) (Module, error) {
+	return timeoutStart{}, nil
+}
+
+type timeoutStart struct{}
+
+func (timeoutStart) Start() error {
+	<-make(chan int)
+	return nil
+}
+
+func (timeoutStart) Stop() error {
+	return nil
+}
+
+func timeoutStopModule(_ Host) (Module, error) {
+	return timeoutStop{}, nil
+}
+
+type timeoutStop struct{}
+
+func (timeoutStop) Start() error {
+	return nil
+}
+
+func (timeoutStop) Stop() error {
+	<-make(chan int)
+	return nil
 }

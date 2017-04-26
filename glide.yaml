@@ -72,3 +72,4 @@ testImport:
   subpackages:
   - update-license
 - package: github.com/google/gofuzz
+- package: github.com/uber-go/multierr
