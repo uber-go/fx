@@ -113,9 +113,11 @@ func New(modules ...Module) *Service {
 	core := Core{logger: l, config: cfg}
 	scope, _, scopeCloser := metrics.RootScope(&core)
 	metrics.Freeze()
+	s.g.MustRegister(scope)
 	core.scope = scope
 	s.scopeCloser = scopeCloser
 
+	s.core = core
 	// add a bunch of stuff
 	for _, m := range modules {
 		for _, ctor := range m.Constructor(s.core) {
