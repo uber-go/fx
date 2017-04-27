@@ -65,8 +65,8 @@ func TestWithModules_StartTimeout(t *testing.T) {
 	cfg := config.NewStaticProvider(map[string]interface{}{
 		"startTimeout": time.Microsecond,
 		"stopTimeout":  time.Microsecond,
-		"name":          "test",
-		"owner":         "test@uber.com",
+		"name":         "test",
+		"owner":        "test@uber.com",
 	})
 
 	svc, err := WithModule(startTimeoutProvider).
@@ -87,8 +87,8 @@ func TestWithModules_StopTimeout(t *testing.T) {
 	cfg := config.NewStaticProvider(map[string]interface{}{
 		"startTimeout": time.Microsecond,
 		"stopTimeout":  time.Microsecond,
-		"name":          "test",
-		"owner":         "test@uber.com",
+		"name":         "test",
+		"owner":        "test@uber.com",
 	})
 
 	svc, err := WithModule(stopTimeoutProvider).
