@@ -35,10 +35,6 @@ import (
 	"go.uber.org/zap"
 )
 
-const (
-	defaultTimeout = 10 * time.Second
-)
-
 // A ExitCallback is a function to handle a service shutdown and provide
 // an exit code
 type ExitCallback func(shutdown Exit) int
