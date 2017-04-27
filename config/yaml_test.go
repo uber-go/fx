@@ -868,3 +868,24 @@ func TestAbsolutePaths(t *testing.T) {
 	assert.False(t, val.HasValue())
 	assert.Equal(t, time.Time{}, val.LastUpdated())
 }
+
+func TestPrivateAnonymousField(t *testing.T) {
+	t.Parallel()
+
+	type x struct {
+		field string
+	}
+
+	type y struct {
+		x
+	}
+
+	b := []byte(`
+x:
+  field: something
+`)
+	var z y
+	provider := NewYAMLProviderFromBytes(b)
+	require.NoError(t, provider.Get(Root).Populate(&z))
+	assert.Empty(t, z.field)
+}

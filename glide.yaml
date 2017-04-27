@@ -34,6 +34,8 @@ import:
   subpackages:
   - .generated/go/cherami
 - package: github.com/ogier/pflag
+- package: github.com/uber-go/multierr
+  version: ~0.1
 testImport:
 - package: golang.org/x/tools
   subpackages:
