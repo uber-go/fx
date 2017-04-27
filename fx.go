@@ -22,6 +22,7 @@ package fx
 
 import (
 	"fmt"
+	"io"
 	"reflect"
 
 	"github.com/opentracing/opentracing-go"
@@ -29,6 +30,7 @@ import (
 
 	"go.uber.org/dig"
 	"go.uber.org/fx/config"
+	"go.uber.org/fx/metrics"
 	"go.uber.org/fx/ulog"
 	"go.uber.org/zap"
 )
@@ -48,11 +50,11 @@ type Module interface {
 
 // Service foo
 type Service struct {
-	g          *dig.Graph
-	modules    []Module
-	components []Component
-	l          *zap.Logger
-	core       Core
+	g           *dig.Graph
+	modules     []Module
+	components  []Component
+	core        Core
+	scopeCloser io.Closer
 }
 
 // Core has core
@@ -61,6 +63,12 @@ type Core struct {
 	logger *zap.Logger
 	scope  tally.Scope
 	tracer opentracing.Tracer
+}
+
+// Name returns the name
+// TODO: Remove once metrics is changed
+func (c *Core) Name() string {
+	return c.config.Get(config.ServiceNameKey).AsString()
 }
 
 // Logger returns the logger
@@ -100,10 +108,14 @@ func New(modules ...Module) *Service {
 	if err != nil {
 		panic("failed to instantiate logger")
 	}
-	s.l = l
 	s.g.MustRegister(l)
 
-	s.core = Core{logger: l, config: cfg}
+	core := Core{logger: l, config: cfg}
+	scope, _, scopeCloser := metrics.RootScope(&core)
+	metrics.Freeze()
+	core.scope = scope
+	s.scopeCloser = scopeCloser
+
 	// add a bunch of stuff
 	for _, m := range modules {
 		for _, ctor := range m.Constructor(s.core) {
@@ -149,17 +161,20 @@ func (s *Service) Start() {
 				s.g.MustResolve(reflect.New(objType).Interface())
 			}
 		}
-		s.l.Info("Module started", zap.String("module", m.Name()))
+		s.core.logger.Info("Module started", zap.String("module", m.Name()))
 	}
 
-	s.l.Info("Service has started")
+	s.core.logger.Info("Service has started")
 }
 
 // Stop foo
 func (s *Service) Stop() {
 	for _, m := range s.modules {
-		s.l.Info("Stopping module", zap.String("module", m.Name()))
+		s.core.logger.Info("Stopping module", zap.String("module", m.Name()))
 		m.Stop()
-		s.l.Info("Module stopped", zap.String("module", m.Name()))
+		s.core.logger.Info("Module stopped", zap.String("module", m.Name()))
+	}
+	if err := s.scopeCloser.Close(); err != nil {
+		s.core.logger.Error("Unable to close scope", zap.Error(err))
 	}
 }
