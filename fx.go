@@ -113,7 +113,7 @@ func New(modules ...Module) *Service {
 	core := Core{logger: l, config: cfg}
 	scope, _, scopeCloser := metrics.RootScope(&core)
 	metrics.Freeze()
-	s.g.MustRegister(scope)
+	s.g.MustRegister(func() (tally.Scope, error) { return scope, nil })
 	core.scope = scope
 	s.scopeCloser = scopeCloser
 
