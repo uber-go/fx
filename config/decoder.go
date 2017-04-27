@@ -401,7 +401,7 @@ func (d *decoder) valueStruct(key string, target interface{}) error {
 		field := targetType.Field(i)
 
 		// Check for the private field
-		if field.PkgPath != "" && !field.Anonymous {
+		if field.PkgPath != "" || field.Anonymous {
 			continue
 		}
 

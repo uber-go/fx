@@ -29,6 +29,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/fx/config"
 )
 
 var (
@@ -61,30 +62,40 @@ func TestWithModules_SkipsModulesBadInit(t *testing.T) {
 }
 
 func TestWithModules_StartTimeout(t *testing.T) {
+	cfg := config.NewStaticProvider(map[string]interface{}{
+		"start_timeout": time.Microsecond,
+		"stop_timeout":  time.Microsecond,
+		"name":          "test",
+		"owner":         "test@uber.com",
+	})
+
 	svc, err := WithModule(startTimeoutProvider).
 		WithModule(startTimeoutProvider).
 		WithOptions(
-		WithConfiguration(StaticAppData(nil)),
-		WithStartTimeout(time.Millisecond),
-		WithStopTimeout(time.Millisecond),
-	).Build()
+			WithConfiguration(cfg),
+		).Build()
 
 	require.NoError(t, err)
 
 	ctl := svc.StartAsync()
 	require.Error(t, ctl.ServiceError)
 	assert.Contains(t, ctl.ServiceError.Error(), "timeoutStart")
-	assert.Contains(t, ctl.ServiceError.Error(), "didn't start after 1ms")
+	assert.Contains(t, ctl.ServiceError.Error(), "didn't start after 1µs")
 }
 
 func TestWithModules_StopTimeout(t *testing.T) {
+	cfg := config.NewStaticProvider(map[string]interface{}{
+		"start_timeout": time.Microsecond,
+		"stop_timeout":  time.Microsecond,
+		"name":          "test",
+		"owner":         "test@uber.com",
+	})
+
 	svc, err := WithModule(stopTimeoutProvider).
 		WithModule(stopTimeoutProvider).
 		WithOptions(
-		WithConfiguration(StaticAppData(nil)),
-		WithStartTimeout(time.Millisecond),
-		WithStopTimeout(time.Millisecond),
-	).Build()
+			WithConfiguration(cfg),
+		).Build()
 
 	require.NoError(t, err)
 
@@ -94,7 +105,22 @@ func TestWithModules_StopTimeout(t *testing.T) {
 	err = svc.Stop("someReason", 1)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "timeoutStop")
-	assert.Contains(t, err.Error(), `timedout after "1ms"`)
+	assert.Contains(t, err.Error(), `timedout after "1µs"`)
+}
+
+func TestDefaultTimeouts(t *testing.T) {
+	svc, err := WithModule(stopTimeoutProvider).
+		WithModule(stopTimeoutProvider).
+		WithOptions(
+			WithConfiguration(StaticAppData(nil)),
+		).Build()
+
+	require.NoError(t, err)
+	m, ok := svc.(*manager)
+	require.True(t, ok, "expect manager returned by Build")
+	require.NotNil(t, m)
+	assert.Equal(t, 10*time.Second, m.StartTimeout)
+	assert.Equal(t, 10*time.Second, m.StopTimeout)
 }
 
 func nopModule(_ Host) (Module, error) {

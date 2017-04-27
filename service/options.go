@@ -21,8 +21,6 @@
 package service
 
 import (
-	"time"
-
 	"go.uber.org/fx/config"
 
 	"github.com/opentracing/opentracing-go"
@@ -62,22 +60,6 @@ func WithObserver(observer Observer) Option {
 	return func(m *manager) error {
 		m.observer = observer
 		m.serviceCore.observer = observer
-		return nil
-	}
-}
-
-// WithStartTimeout configures a manager with a timeout to start modules
-func WithStartTimeout(timeout time.Duration) Option {
-	return func(m *manager) error {
-		m.startTimeout = timeout
-		return nil
-	}
-}
-
-// WithStopTimeout configures a manager with a timeout to stop modules
-func WithStopTimeout(timeout time.Duration) Option {
-	return func(m *manager) error {
-		m.stopTimeout = timeout
 		return nil
 	}
 }

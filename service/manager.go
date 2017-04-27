@@ -46,13 +46,15 @@ type ExitCallback func(shutdown Exit) int
 // Implements Manager interface
 type manager struct {
 	serviceCore
+
+	StartTimeout time.Duration `yaml:"start_timeout" default:"10s"`
+	StopTimeout  time.Duration `yaml:"stop_timeout" default:"10s"`
+
 	locked         bool
 	observer       Observer
 	moduleWrappers []*moduleWrapper
 	roles          map[string]bool
 	stateMu        sync.Mutex
-	startTimeout   time.Duration
-	stopTimeout    time.Duration
 
 	// Shutdown fields.
 	shutdownMu     sync.Mutex
@@ -72,8 +74,6 @@ func newManager(builder *Builder) (Manager, error) {
 		// TODO: get these out of config struct instead
 		moduleWrappers: []*moduleWrapper{},
 		serviceCore:    serviceCore{},
-		startTimeout:   defaultTimeout,
-		stopTimeout:    defaultTimeout,
 	}
 	for _, opt := range builder.options {
 		if optionErr := opt(m); optionErr != nil {
@@ -87,6 +87,10 @@ func newManager(builder *Builder) (Manager, error) {
 		m.configProvider = config.DefaultLoader.Load()
 	}
 	if err := m.setupStandardConfig(); err != nil {
+		return nil, err
+	}
+
+	if err := m.configProvider.Get(config.Root).Populate(m); err != nil {
 		return nil, err
 	}
 
@@ -332,7 +336,7 @@ func (m *manager) start() Control {
 		m.registerSignalHandlers()
 		if len(errs) > 0 {
 			var serviceErr error
-			errChan := make(chan Exit, 1)
+			errChan := make(chan Exit, len(errs))
 			// grab the first error, shut down the service and return the error
 			for _, e := range errs {
 				errChan <- Exit{
@@ -341,19 +345,24 @@ func (m *manager) start() Control {
 					ExitCode: 4,
 				}
 
-				m.shutdownMu.Unlock()
-				if _, err := m.shutdown(e, "", nil); err != nil {
-					zap.L().Error("Unable to shut down modules",
-						zap.NamedError("initialError", e),
-						zap.NamedError("shutdownError", err),
-					)
-				}
-				zap.L().Error("Error starting the module", zap.Error(e))
-				// return first service error
-				if serviceErr == nil {
-					serviceErr = e
-				}
 			}
+
+			m.shutdownMu.Unlock()
+
+			e := multierr.Combine(errs...)
+			if _, err := m.shutdown(e, "", nil); err != nil {
+				zap.L().Error("Unable to shut down modules",
+					zap.NamedError("combinedErrors", e),
+					zap.NamedError("shutdownError", err),
+				)
+			}
+
+			zap.L().Error("Error starting the module", zap.Error(e))
+			// return first service error
+			if serviceErr == nil {
+				serviceErr = e
+			}
+
 			return Control{
 				ExitChan:     errChan,
 				ReadyChan:    readyCh,
@@ -410,11 +419,11 @@ func (m *manager) startModules() []error {
 					} else {
 						zap.L().Info("Module started up cleanly", zap.String("module", mw.Name()))
 					}
-				case <-time.After(m.startTimeout):
+				case <-time.After(m.StartTimeout):
 					lock.Lock()
 					results = append(
 						results,
-						fmt.Errorf("module: %q didn't start after %v", mw.Name(), m.startTimeout),
+						fmt.Errorf("module: %q didn't start after %q", mw.Name(), m.StartTimeout),
 					)
 					lock.Unlock()
 				}
@@ -446,9 +455,9 @@ func (m *manager) stopModules() []error {
 				results = append(results,
 					fmt.Errorf("module %q stopped with error %q", mod.Name(), err))
 			}
-		case <-time.After(m.stopTimeout):
+		case <-time.After(m.StopTimeout):
 			results = append(results,
-				fmt.Errorf("stop module %q timedout after %q", mod.Name(), m.stopTimeout))
+				fmt.Errorf("stop module %q timedout after %q", mod.Name(), m.StopTimeout))
 		}
 	}
 
