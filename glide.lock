@@ -1,5 +1,5 @@
-hash: c607c3aae0347b9a276e72829f7acd8d745d9dcdfef11e2c3e4002009a28b522
-updated: 2017-04-25T19:03:34.029286823-07:00
+hash: 1b2a476d5083d953c59101472d4cc525971daeaae4d75769775f184780d0aff8
+updated: 2017-04-27T11:45:59.497375972-07:00
 imports:
 - name: github.com/apache/thrift
   version: 9549b25c77587b29be4e0b5c258221a4ed85d37a
@@ -10,11 +10,11 @@ imports:
   subpackages:
   - statsd
 - name: github.com/certifi/gocertifi
-  version: 03be5e6bb9874570ea7fb0961225d193cbc374c5
+  version: a9c833d2837d3b16888d55d5aafa9ffe9afb22b0
 - name: github.com/codahale/hdrhistogram
   version: f8ad88b59a584afeee9d334eff879b104439117b
 - name: github.com/davecgh/go-spew
-  version: 5215b55f46b2b919f50a1df0eaa5886afe4e3b3d
+  version: 346938d642f2ec3594ed81d874461961cd0faa76
   subpackages:
   - spew
 - name: github.com/facebookgo/clock
@@ -30,7 +30,7 @@ imports:
 - name: github.com/gorilla/context
   version: 1ea25387ff6f684839d82767c1733ff4d4d15d0a
 - name: github.com/gorilla/websocket
-  version: 3ab3a8b8831546bd18fd182c20687ca853b2bb13
+  version: c36f2fe5c330f0ac404b616b96c438b8616b1aaf
 - name: github.com/ogier/pflag
   version: 45c278ab3607870051a2ea9040bb85fcb8557481
 - name: github.com/opentracing/opentracing-go
@@ -39,7 +39,7 @@ imports:
   - ext
   - log
 - name: github.com/pborman/uuid
-  version: a97ce2ca70fa5a848076093f05e639a89ca34d06
+  version: 1b00554d822231195d1babd97ff4a781231955c9
 - name: github.com/pkg/errors
   version: 645ef00459ed84a119197bfb8d8205042c6df63d
 - name: github.com/pmezard/go-difflib
@@ -60,6 +60,8 @@ imports:
   version: d52ffa061726911f47fcd3d9e8b9b55f22794772
 - name: github.com/uber-go/atomic
   version: e682c1008ac17bf26d2e4b5ad6cdd08520ed0b22
+- name: github.com/uber-go/multierr
+  version: 737b41aa3bf31c25d11dc84d5275af6bfe2ef4d2
 - name: github.com/uber-go/tally
   version: 34be4a565ce6286a0ba91a54a81be3f6181ca2e2
 - name: github.com/uber/cherami-client-go
@@ -166,7 +168,7 @@ imports:
   - zapcore
   - zaptest
 - name: golang.org/x/net
-  version: 0b588ed7a0cd59c271d128ec8c429c1c1607e8ab
+  version: da118f7b8e5954f39d0d2130ab35d4bf0e3cb344
   subpackages:
   - context
   - context/ctxhttp
@@ -217,8 +219,6 @@ testImports:
   version: f274e5a4257c85a9eaf60ac820ee813b78cac6ab
 - name: github.com/shurcooL/sanitized_anchor_name
   version: 79c90efaf01eddc01945af5bc1797859189b830b
-- name: github.com/uber-go/multierr
-  version: a3d1fc1f1316d4132fc61f4ea1159ae0613fb474
 - name: github.com/yookoala/realpath
   version: c416d99ab5ed256fa30c1f3bab73152deb59bb69
 - name: go.uber.org/tools

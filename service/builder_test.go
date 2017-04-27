@@ -63,8 +63,8 @@ func TestWithModules_SkipsModulesBadInit(t *testing.T) {
 
 func TestWithModules_StartTimeout(t *testing.T) {
 	cfg := config.NewStaticProvider(map[string]interface{}{
-		"start_timeout": time.Microsecond,
-		"stop_timeout":  time.Microsecond,
+		"startTimeout": time.Microsecond,
+		"stopTimeout":  time.Microsecond,
 		"name":          "test",
 		"owner":         "test@uber.com",
 	})
@@ -85,8 +85,8 @@ func TestWithModules_StartTimeout(t *testing.T) {
 
 func TestWithModules_StopTimeout(t *testing.T) {
 	cfg := config.NewStaticProvider(map[string]interface{}{
-		"start_timeout": time.Microsecond,
-		"stop_timeout":  time.Microsecond,
+		"startTimeout": time.Microsecond,
+		"stopTimeout":  time.Microsecond,
 		"name":          "test",
 		"owner":         "test@uber.com",
 	})

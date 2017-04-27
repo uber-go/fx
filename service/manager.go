@@ -43,8 +43,8 @@ type ExitCallback func(shutdown Exit) int
 type manager struct {
 	serviceCore
 
-	StartTimeout time.Duration `yaml:"start_timeout" default:"10s"`
-	StopTimeout  time.Duration `yaml:"stop_timeout" default:"10s"`
+	StartTimeout time.Duration `default:"10s"`
+	StopTimeout  time.Duration `default:"10s"`
 
 	locked         bool
 	observer       Observer
