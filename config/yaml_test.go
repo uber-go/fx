@@ -930,7 +930,8 @@ a:
   b:
     s: Mozart
     i: 1756
-a.b.i: 1791
+a.b:
+  i: 1791
 `)
 	var A a
 	provider := NewYAMLProviderFromBytes(bytes)
@@ -984,7 +985,8 @@ a:
 `)
 
 	development := []byte(`
-a.b.s: List
+a.b:
+  s: List
 a.b.i: 1811
 `)
 	var A a
@@ -1007,10 +1009,10 @@ a.b.c.d : e
 	var m map[string]string
 	require.NoError(t, p.Get(Root).Populate(&m))
 	expected := map[string]string{
-		"a": "b",
-		"a.b": "c",
-		"a.b.c": "d",
-		"a.b.c.d" : "e",
+		"a":       "b",
+		"a.b":     "c",
+		"a.b.c":   "d",
+		"a.b.c.d": "e",
 	}
 
 	assert.Equal(t, expected, m)

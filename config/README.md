@@ -131,17 +131,19 @@ if there are 2 values that correspond to the same path, i.e. the longest matchin
 prefix will be chosen first to continue search in child nodes. For example:
 
  ```yaml
-composer:
+list:
+  composer:
     name: Beethoven
     born: 1770
 
-composer.name: Mozart
-composer.born: 1756
+list.composer:
+  name: Mozart
+  born: 1756
  ```
 
 ```go
 var composer struct{Name, Born string}
-p.Get("composer").Populate(&composer)
+p.Get("list.composer").Populate(&composer)
 fmt.Println(composer)
 // Output: {Mozart 1756}
 ```

@@ -230,7 +230,7 @@ func (n *yamlNode) Find(dottedPath string) *yamlNode {
 		}
 
 		if last := strings.LastIndex(curr, _separator); last > 0 {
-			curr = curr[0:last]
+			curr = curr[:last]
 		} else {
 			break
 		}
