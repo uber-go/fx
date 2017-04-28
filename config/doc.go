@@ -147,6 +147,23 @@
 //   fmt.Println(root)
 //   // Output: map[one:map[two:hello]]
 //
+// A provider will choose a value with the most specific path,
+// if there are 2 values that correspond to the same path, i.e. the longest matching
+// prefix will be chosen first to continue search in child nodes. For example:
+//
+//
+//   composer:
+//       name: Beethoven
+//       born: 1770
+//
+//   composer.name: Mozart
+//   composer.born: 1756
+//
+//   var composer struct{Name, Born string}
+//   p.Get("composer").Populate(&composer)
+//   fmt.Println(composer)
+//   // Output: {Mozart 1756}
+//
 // • Populate a struct (Populate(&myStruct))
 //
 // The As* method has two variants: TryAs* and As*. The former is a
@@ -312,7 +329,7 @@
 //     }
 //   }
 //
-// Don't forget to test the error path::
+// Don't forget to test the error path:
 //
 //   func TestCalculator_Errors(t *testing.T) {
 //     t.Parallel()
@@ -322,7 +339,7 @@
 //     }))
 //
 //     require.Error(t, err)
-//     assert.Contains(t, err.Error(), `unknown operation "*"`)
+//     assert.Contains(t, err.Error(), "unknown operation")
 //   }
 //
 // For integration/E2E testing you can customize Loader to load the
