@@ -21,7 +21,6 @@
 package fx
 
 import (
-	"fmt"
 	"io"
 	"reflect"
 
@@ -34,20 +33,17 @@ import (
 	"go.uber.org/zap"
 )
 
-// Component is a dig constructor for something that's easily
-// sharable in UberFx
+// Component is a function that initializes and returns objects to be shared across the code
 type Component interface{}
 
-// Module is a building block of UberFx
-// TODO: Document and explain how is this different from Component?
-// Something around roles and higher fidelity, maybe serving data
+// Module is a building block or primary function performed by a service built on fx
 type Module interface {
 	Name() string
 	Constructor() []Component
 	Stop()
 }
 
-// Service foo
+// Service controls the lifecycle of an fx service
 type Service struct {
 	g           *dig.Graph
 	modules     []Module
@@ -85,7 +81,7 @@ func New(modules ...Module) *Service {
 	s.g.MustRegister(func() config.Provider { return cfg })
 
 	// Set up the logger, remember it on the service and also inject into the graph
-	l, err := logger(cfg)
+	l, err := createLogger(cfg)
 	if err != nil {
 		panic("failed to instantiate logger")
 	}
@@ -106,7 +102,7 @@ func New(modules ...Module) *Service {
 	return s
 }
 
-func logger(cfg config.Provider) (*zap.Logger, error) {
+func createLogger(cfg config.Provider) (*zap.Logger, error) {
 	logConfig := ulog.Configuration{}
 	err := logConfig.Configure(cfg.Get("logging"))
 	if err != nil {
@@ -135,7 +131,6 @@ func (s *Service) Start() {
 			switch ctype.Kind() {
 			case reflect.Func:
 				objType := ctype.Out(0)
-				fmt.Printf("Object %v %v\n", ctype, objType)
 				s.g.MustResolve(reflect.New(objType).Interface())
 			}
 		}
