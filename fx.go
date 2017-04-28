@@ -25,7 +25,6 @@ import (
 	"io"
 	"reflect"
 
-	"github.com/opentracing/opentracing-go"
 	"github.com/uber-go/tally"
 
 	"go.uber.org/dig"
@@ -44,7 +43,7 @@ type Component interface{}
 // Something around roles and higher fidelity, maybe serving data
 type Module interface {
 	Name() string
-	Constructor(Core) []Component
+	Constructor() []Component
 	Stop()
 }
 
@@ -53,45 +52,27 @@ type Service struct {
 	g           *dig.Graph
 	modules     []Module
 	components  []Component
-	core        Core
 	scopeCloser io.Closer
+	logger      *zap.Logger
 }
 
-// Core has core
-type Core struct {
+// scopeInit is used by the metrics package
+// TODO: Remove after metrics refactor
+type scopeInit struct {
 	config config.Provider
-	logger *zap.Logger
-	scope  tally.Scope
-	tracer opentracing.Tracer
 }
 
 // Name returns the name
-// TODO: Remove once metrics is changed
-func (c *Core) Name() string {
+func (c *scopeInit) Name() string {
 	return c.config.Get(config.ServiceNameKey).AsString()
 }
 
-// Logger returns the logger
-func (c *Core) Logger() *zap.Logger {
-	return c.logger
-}
-
 // Config returns the config
-func (c *Core) Config() config.Provider {
+func (c *scopeInit) Config() config.Provider {
 	return c.config
 }
 
-// Metrics returns the metrics scope
-func (c *Core) Metrics() tally.Scope {
-	return c.scope
-}
-
-// Tracer returns the tracer
-func (c *Core) Tracer() opentracing.Tracer {
-	return c.tracer
-}
-
-// New foo
+// New creates a service with the provided modules
 func New(modules ...Module) *Service {
 	s := &Service{
 		g:       dig.New(),
@@ -110,17 +91,14 @@ func New(modules ...Module) *Service {
 	}
 	s.g.MustRegister(l)
 
-	core := Core{logger: l, config: cfg}
-	scope, _, scopeCloser := metrics.RootScope(&core)
+	scope, _, scopeCloser := metrics.RootScope(&scopeInit{config: cfg})
 	metrics.Freeze()
 	s.g.MustRegister(func() (tally.Scope, error) { return scope, nil })
-	core.scope = scope
 	s.scopeCloser = scopeCloser
 
-	s.core = core
 	// add a bunch of stuff
 	for _, m := range modules {
-		for _, ctor := range m.Constructor(s.core) {
+		for _, ctor := range m.Constructor() {
 			s.g.MustRegister(ctor)
 		}
 	}
@@ -141,20 +119,18 @@ func logger(cfg config.Provider) (*zap.Logger, error) {
 // WithComponents adds additional components to the service
 func (s *Service) WithComponents(components ...Component) *Service {
 	s.components = append(s.components, components...)
-
 	// Add provided components to dig
 	for _, c := range components {
 		s.g.MustRegister(c)
 	}
-
 	return s
 }
 
-// Start foo
+// Start starts the service
 func (s *Service) Start() {
 	// TODO: move to dig, perhaps #Call(constructor) function
 	for _, m := range s.modules {
-		for _, ctor := range m.Constructor(s.core) {
+		for _, ctor := range m.Constructor() {
 			ctype := reflect.TypeOf(ctor)
 			switch ctype.Kind() {
 			case reflect.Func:
@@ -163,20 +139,19 @@ func (s *Service) Start() {
 				s.g.MustResolve(reflect.New(objType).Interface())
 			}
 		}
-		s.core.logger.Info("Module started", zap.String("module", m.Name()))
+		s.logger.Info("Module started", zap.String("module", m.Name()))
 	}
-
-	s.core.logger.Info("Service has started")
+	s.logger.Info("Service has started")
 }
 
-// Stop foo
+// Stop stops the service
 func (s *Service) Stop() {
 	for _, m := range s.modules {
-		s.core.logger.Info("Stopping module", zap.String("module", m.Name()))
+		s.logger.Info("Stopping module", zap.String("module", m.Name()))
 		m.Stop()
-		s.core.logger.Info("Module stopped", zap.String("module", m.Name()))
+		s.logger.Info("Module stopped", zap.String("module", m.Name()))
 	}
 	if err := s.scopeCloser.Close(); err != nil {
-		s.core.logger.Error("Unable to close scope", zap.Error(err))
+		s.logger.Error("Unable to close scope", zap.Error(err))
 	}
 }
