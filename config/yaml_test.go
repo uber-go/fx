@@ -993,3 +993,25 @@ a.b.i: 1811
 	assert.Equal(t, 1811, A.B.I)
 	assert.Equal(t, "List", A.B.S)
 }
+
+func TestMapsWithDottedKeys(t *testing.T) {
+	t.Parallel()
+
+	p := NewYAMLProviderFromBytes([]byte(`
+a: b
+a.b: c
+a.b.c: d
+a.b.c.d : e
+`))
+
+	var m map[string]string
+	require.NoError(t, p.Get(Root).Populate(&m))
+	expected := map[string]string{
+		"a": "b",
+		"a.b": "c",
+		"a.b.c": "d",
+		"a.b.c.d" : "e",
+	}
+
+	assert.Equal(t, expected, m)
+}
