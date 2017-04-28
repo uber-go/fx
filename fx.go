@@ -24,6 +24,7 @@ import (
 	"io"
 	"reflect"
 
+	"github.com/pkg/errors"
 	"github.com/uber-go/tally"
 
 	"go.uber.org/dig"
@@ -80,17 +81,17 @@ func New(modules ...Module) *Service {
 	// TODO: need to pull latest dig for direct Interface injection fix
 	s.g.MustRegister(func() config.Provider { return cfg })
 
-	// Set up the logger, remember it on the service and also inject into the graph
-	l, err := createLogger(cfg)
-	if err != nil {
-		panic("failed to instantiate logger")
-	}
-	s.g.MustRegister(l)
-
 	scope, _, scopeCloser := metrics.RootScope(&scopeInit{config: cfg})
 	metrics.Freeze()
 	s.g.MustRegister(func() (tally.Scope, error) { return scope, nil })
 	s.scopeCloser = scopeCloser
+
+	// Set up the logger, remember it on the service and also inject into the graph
+	l, err := createLogger(cfg, scope)
+	if err != nil {
+		panic("failed to instantiate logger")
+	}
+	s.g.MustRegister(l)
 
 	// add a bunch of stuff
 	for _, m := range modules {
@@ -102,14 +103,25 @@ func New(modules ...Module) *Service {
 	return s
 }
 
-func createLogger(cfg config.Provider) (*zap.Logger, error) {
+func createLogger(cp config.Provider, scope tally.Scope) (*zap.Logger, error) {
+	cfg := cp.Get("logging")
 	logConfig := ulog.Configuration{}
-	err := logConfig.Configure(cfg.Get("logging"))
-	if err != nil {
-		return nil, err
+	if cfg.HasValue() {
+		if err := logConfig.Configure(cfg); err != nil {
+			return nil, errors.Wrap(err, "failed to initialize logging from config")
+		}
+	} else {
+		// if no config, default to the regular one
+		logConfig = ulog.DefaultConfiguration()
 	}
-	l, err := logConfig.Build()
-	return l, err
+
+	logger, err := logConfig.Build(zap.Hooks(ulog.Metrics(scope)))
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to build the logger")
+	}
+	// TODO(glib): SetLogger returns a deferral to clean up global log which is not used
+	ulog.SetLogger(logger)
+	return logger, err
 }
 
 // WithComponents adds additional components to the service
