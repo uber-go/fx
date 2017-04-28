@@ -23,7 +23,6 @@ package fxyarpc
 import (
 	"fmt"
 	"strconv"
-	"sync"
 
 	"github.com/pkg/errors"
 
@@ -36,26 +35,31 @@ import (
 	"go.uber.org/zap"
 )
 
-var (
-	_dispatcherMu sync.Mutex
-	// Function to create a dispatcher
-	_dispatcherFn dispatcherFn = defaultYARPCDispatcher
-	// Function to start a dispatcher
-	_starterFn starterFn = defaultYARPCStarter
-)
-
-type dispatcherFn func(m *Module, l *zap.Logger, yc *yarpc.Config) fx.Component
-type starterFn func(l *zap.Logger) fx.Component
-
-func defaultYARPCDispatcher(m *Module, l *zap.Logger, yc *yarpc.Config) fx.Component {
-	return func() (*yarpc.Dispatcher, error) {
-		m.d = yarpc.NewDispatcher(*yc)
+func newDispatcher(m *Module, l *zap.Logger) fx.Component {
+	return func(cfg config.Provider) (*yarpc.Dispatcher, error) {
+		var c yarpcConfig
+		// TODO: yarpc -> modules.yarpc
+		if err := cfg.Get("yarpc").Populate(&c); err != nil {
+			panic(err)
+		}
+		svcname := cfg.Get(config.ServiceNameKey).AsString()
+		inb, err := prepareInbounds(c.Inbounds, svcname)
+		if err != nil {
+			panic(err)
+		}
+		yc := yarpc.Config{
+			Name:     svcname,
+			Inbounds: inb,
+		}
+		m.d = yarpc.NewDispatcher(yc)
 		return m.d, nil
 	}
 }
 
-func defaultYARPCStarter(l *zap.Logger) fx.Component {
-	return func(d *yarpc.Dispatcher, t *Transports) (*fake, error) {
+type noop struct{}
+
+func startDispatcher(l *zap.Logger) fx.Component {
+	return func(d *yarpc.Dispatcher, t *Transports) (*noop, error) {
 		d.Register(t.Ts)
 
 		l.Info("Starting the dispatcher")
@@ -64,26 +68,8 @@ func defaultYARPCStarter(l *zap.Logger) fx.Component {
 			return nil, err
 		}
 		l.Info("Dispatcher started")
-		return &fake{}, nil
+		return &noop{}, nil
 	}
-}
-
-// RegisterDispatcher allows you to override the YARPC dispatcher registration
-// TODO: Alternate solution to Register functions
-func RegisterDispatcher(dispatchFn dispatcherFn) {
-	_dispatcherMu.Lock()
-	defer _dispatcherMu.Unlock()
-	_dispatcherFn = dispatchFn
-}
-
-// StarterFn overrides start for dispatcher, e.g. attach some metrics with start.
-type StarterFn func(dispatcher *yarpc.Dispatcher) error
-
-// RegisterStarter allows you to override function that starts a dispatcher.
-func RegisterStarter(startFn starterFn) {
-	_dispatcherMu.Lock()
-	defer _dispatcherMu.Unlock()
-	_starterFn = startFn
 }
 
 // ServiceCreateFunc creates a YARPC service from a service host
@@ -112,35 +98,22 @@ type Transports struct {
 	Ts []transport.Procedure
 }
 
-type fake struct{}
-
 // Constructor foo
-func (m *Module) Constructor(core fx.Core) []fx.Component {
+func (m *Module) Constructor() []fx.Component {
 	// TODO: once #Constructors => []Component refactor is complete
 	// this function needs to be split into two.
 	// The first one would require config and create a dispatcher
 	// The second one would require dispatcher and transports and:
 	//		- Register transports in the dispatcher
 	//	  - Start the dispatcher
-	m.l = core.Logger().With(zap.String("module", "yarpc"))
-	var c yarpcConfig
-	// TODO: yarpc -> modules.yarpc
-	if err := core.Config().Get("yarpc").Populate(&c); err != nil {
-		panic(err)
-	}
-	svcname := core.Config().Get(config.ServiceNameKey).AsString()
-	inb, err := prepareInbounds(c.Inbounds, svcname)
-	if err != nil {
-		panic(err)
-	}
-	yc := yarpc.Config{
-		Name:     svcname,
-		Inbounds: inb,
-	}
 	return []fx.Component{
+		func(l *zap.Logger) error {
+			m.l = l.With(zap.String("module", "yarpc"))
+			return nil
+		},
 		m.fn,
-		_dispatcherFn(m, m.l, &yc),
-		_starterFn(m.l),
+		newDispatcher(m, m.l),
+		startDispatcher(m.l),
 	}
 }
 
