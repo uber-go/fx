@@ -889,3 +889,107 @@ x:
 	require.NoError(t, provider.Get(Root).Populate(&z))
 	assert.Empty(t, z.field)
 }
+
+func TestFlatMapWithDots(t *testing.T) {
+	t.Parallel()
+
+	type b struct {
+		S string
+		I int
+	}
+
+	type a struct {
+		B b
+	}
+
+	bytes := []byte(`
+a.b.s: Beethoven
+a.b.i: 1770
+`)
+	var A a
+	provider := NewYAMLProviderFromBytes(bytes)
+	require.NoError(t, provider.Get("a").Populate(&A))
+	assert.Equal(t, 1770, A.B.I)
+	assert.Equal(t, "Beethoven", A.B.S)
+}
+
+func TestOverridingLongestPath(t *testing.T) {
+	t.Parallel()
+
+	type b struct {
+		S string
+		I int
+	}
+
+	type a struct {
+		B b
+	}
+
+	bytes := []byte(`
+a:
+  b:
+    s: Mozart
+    i: 1756
+a.b.i: 1791
+`)
+	var A a
+	provider := NewYAMLProviderFromBytes(bytes)
+	require.NoError(t, provider.Get("a").Populate(&A))
+	assert.Equal(t, 1791, A.B.I)
+	assert.Equal(t, "Mozart", A.B.S)
+}
+
+func TestFlatSingleDots(t *testing.T) {
+	t.Parallel()
+
+	type b struct {
+		S string
+		I int
+	}
+
+	type a struct {
+		B b
+	}
+
+	bytes := []byte(`
+.: .
+..: ..
+...: 3
+.................................................: 50
+`)
+	provider := NewYAMLProviderFromBytes(bytes)
+	require.Equal(t, ".", provider.Get(".").AsString())
+	require.Equal(t, "..", provider.Get("..").AsString())
+	require.Equal(t, "3", provider.Get("...").AsString())
+	require.Equal(t, 50, provider.Get(".................................................").AsInt())
+}
+
+func TestDotsFromMultipleSources(t *testing.T) {
+	t.Parallel()
+
+	type b struct {
+		S string
+		I int
+	}
+
+	type a struct {
+		B b
+	}
+
+	base := []byte(`
+a:
+  b:
+    s: Chopin
+    i: 1810
+`)
+
+	development := []byte(`
+a.b.s: List
+a.b.i: 1811
+`)
+	var A a
+	provider := NewYAMLProviderFromBytes(base, development)
+	require.NoError(t, provider.Get("a").Populate(&A))
+	assert.Equal(t, 1811, A.B.I)
+	assert.Equal(t, "List", A.B.S)
+}
