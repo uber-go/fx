@@ -46,11 +46,12 @@ type Module interface {
 
 // Service controls the lifecycle of an fx service
 type Service struct {
-	g           *dig.Graph
-	modules     []Module
-	components  []Component
-	scopeCloser io.Closer
-	logger      *zap.Logger
+	g              *dig.Graph
+	modules        []Module
+	components     []Component
+	scopeCloser    io.Closer
+	logger         *zap.Logger
+	loggerCloserFn func()
 }
 
 // scopeInit is used by the metrics package
@@ -87,12 +88,13 @@ func New(modules ...Module) *Service {
 	s.scopeCloser = scopeCloser
 
 	// Set up the logger, remember it on the service and also inject into the graph
-	l, err := createLogger(cfg, scope)
+	l, closerFn, err := createLogger(cfg, scope)
 	if err != nil {
 		panic("failed to instantiate logger")
 	}
-	s.g.MustRegister(l)
 	s.logger = l
+	s.loggerCloserFn = closerFn
+	s.g.MustRegister(l)
 
 	// add a bunch of stuff
 	for _, m := range modules {
@@ -104,12 +106,12 @@ func New(modules ...Module) *Service {
 	return s
 }
 
-func createLogger(cp config.Provider, scope tally.Scope) (*zap.Logger, error) {
+func createLogger(cp config.Provider, scope tally.Scope) (*zap.Logger, func(), error) {
 	cfg := cp.Get("logging")
 	logConfig := ulog.Configuration{}
 	if cfg.HasValue() {
 		if err := logConfig.Configure(cfg); err != nil {
-			return nil, errors.Wrap(err, "failed to initialize logging from config")
+			return nil, nil, errors.Wrap(err, "failed to initialize logging from config")
 		}
 	} else {
 		// if no config, default to the regular one
@@ -118,11 +120,10 @@ func createLogger(cp config.Provider, scope tally.Scope) (*zap.Logger, error) {
 
 	logger, err := logConfig.Build(zap.Hooks(ulog.Metrics(scope)))
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to build the logger")
+		return nil, nil, errors.Wrap(err, "failed to build the logger")
 	}
-	// TODO(glib): SetLogger returns a deferral to clean up global log which is not used
-	ulog.SetLogger(logger)
-	return logger, err
+	closerFn := ulog.SetLogger(logger)
+	return logger, closerFn, err
 }
 
 // WithComponents adds additional components to the service
@@ -159,6 +160,7 @@ func (s *Service) Stop() {
 		m.Stop()
 		s.logger.Info("Module stopped", zap.String("module", m.Name()))
 	}
+	s.loggerCloserFn()
 	if err := s.scopeCloser.Close(); err != nil {
 		s.logger.Error("Unable to close scope", zap.Error(err))
 	}
