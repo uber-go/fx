@@ -158,13 +158,12 @@
 //       born: 1770
 //
 //   list.composer:
-//     name: Mozart
 //     born: 1756
 //
 //   var composer struct{Name, Born string}
 //   p.Get("list.composer").Populate(&composer)
 //   fmt.Println(composer)
-//   // Output: {Mozart 1756}
+//   // Output: {Beethoven 1756}
 //
 // • Populate a struct (Populate(&myStruct))
 //
