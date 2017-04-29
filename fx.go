@@ -92,6 +92,7 @@ func New(modules ...Module) *Service {
 		panic("failed to instantiate logger")
 	}
 	s.g.MustRegister(l)
+	s.logger = l
 
 	// add a bunch of stuff
 	for _, m := range modules {
