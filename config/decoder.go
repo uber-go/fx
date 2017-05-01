@@ -386,14 +386,7 @@ func (d *decoder) iface(key string, value reflect.Value, def string) error {
 
 // Sets value to an object type.
 func (d *decoder) object(childKey string, value reflect.Value) error {
-	value = value.Addr()
-
-	if value.IsNil() {
-		tmp := reflect.New(value.Type().Elem())
-		value.Set(tmp)
-	}
-
-	return d.valueStruct(childKey, value.Interface())
+	return d.valueStruct(childKey, value.Addr().Interface())
 }
 
 // Walk through the struct and start asking the providers for values at each key.
@@ -408,7 +401,7 @@ func (d *decoder) valueStruct(key string, target interface{}) error {
 		field := targetType.Field(i)
 
 		// Check for the private field
-		if field.PkgPath != "" && !field.Anonymous {
+		if field.PkgPath != "" || field.Anonymous {
 			continue
 		}
 

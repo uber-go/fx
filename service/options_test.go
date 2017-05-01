@@ -43,13 +43,17 @@ func TestNewOwner_ModulesErr(t *testing.T) {
 
 func TestNewOwner_WithMetricsOK(t *testing.T) {
 	assert.NotPanics(t, func() {
-		newManager(WithModule(nopModuleProvider).WithOptions(WithMetrics(tally.NoopScope, metrics.NopCachedStatsReporter)))
+		newManager(WithModule(nopModuleProvider).WithOptions(
+			withConfig(validServiceConfig),
+			WithMetrics(tally.NoopScope, metrics.NopCachedStatsReporter)))
 	})
 }
 
 func TestNewOwner_WithTracingOK(t *testing.T) {
 	tracer := &opentracing.NoopTracer{}
 	assert.NotPanics(t, func() {
-		newManager(WithModule(nopModuleProvider).WithOptions(WithTracer(tracer)))
+		newManager(WithModule(nopModuleProvider).WithOptions(
+			withConfig(validServiceConfig),
+			WithTracer(tracer)))
 	})
 }

@@ -24,48 +24,16 @@ import (
 	"context"
 
 	"go.uber.org/fx/auth"
-	"go.uber.org/fx/service"
 	"go.uber.org/fx/ulog"
 	"go.uber.org/zap"
 
-	"github.com/pkg/errors"
 	"go.uber.org/yarpc/api/transport"
 )
 
 const _panicResponse = "Server Error"
 
-type contextInboundMiddleware struct {
-	statsClient *statsClient
-}
-
-func (f contextInboundMiddleware) Handle(
-	ctx context.Context,
-	req *transport.Request,
-	resw transport.ResponseWriter,
-	handler transport.UnaryHandler,
-) error {
-	stopwatch := f.statsClient.RPCHandleTimer().
-		Tagged(map[string]string{_tagProcedure: req.Procedure}).
-		Timer(req.Procedure).
-		Start()
-	defer stopwatch.Stop()
-
-	return handler.Handle(ctx, req, resw)
-}
-
-type contextOnewayInboundMiddleware struct{}
-
-func (f contextOnewayInboundMiddleware) HandleOneway(
-	ctx context.Context,
-	req *transport.Request,
-	handler transport.OnewayHandler,
-) error {
-	return handler.HandleOneway(ctx, req)
-}
-
 type authInboundMiddleware struct {
-	service.Host
-	statsClient *statsClient
+	authClient auth.Client
 }
 
 func (a authInboundMiddleware) Handle(
@@ -74,7 +42,7 @@ func (a authInboundMiddleware) Handle(
 	resw transport.ResponseWriter,
 	handler transport.UnaryHandler,
 ) error {
-	fxctx, err := authorize(ctx, a.Host, a.statsClient)
+	fxctx, err := authorize(ctx, a.authClient)
 	if err != nil {
 		return err
 	}
@@ -82,8 +50,7 @@ func (a authInboundMiddleware) Handle(
 }
 
 type authOnewayInboundMiddleware struct {
-	service.Host
-	statsClient *statsClient
+	authClient auth.Client
 }
 
 func (a authOnewayInboundMiddleware) HandleOneway(
@@ -91,59 +58,19 @@ func (a authOnewayInboundMiddleware) HandleOneway(
 	req *transport.Request,
 	handler transport.OnewayHandler,
 ) error {
-	fxctx, err := authorize(ctx, a.Host, a.statsClient)
+	fxctx, err := authorize(ctx, a.authClient)
 	if err != nil {
 		return err
 	}
 	return handler.HandleOneway(fxctx, req)
 }
 
-func authorize(ctx context.Context, host service.Host, statsClient *statsClient) (context.Context, error) {
-	if err := host.AuthClient().Authorize(ctx); err != nil {
-		statsClient.RPCAuthFailCounter().Inc(1)
+func authorize(ctx context.Context, authClient auth.Client) (context.Context, error) {
+	if err := authClient.Authorize(ctx); err != nil {
 		ulog.Logger(ctx).Error(auth.ErrAuthorization, zap.Error(err))
 		// TODO(anup): GFM-255 update returned error to transport.BadRequestError (user error than server error)
 		// https://github.com/yarpc/yarpc-go/issues/687
 		return nil, err
 	}
 	return ctx, nil
-}
-
-type panicInboundMiddleware struct {
-	statsClient *statsClient
-}
-
-func (p panicInboundMiddleware) Handle(
-	ctx context.Context,
-	req *transport.Request,
-	resw transport.ResponseWriter,
-	handler transport.UnaryHandler,
-) error {
-	defer panicRecovery(ctx, p.statsClient)
-	return handler.Handle(ctx, req, resw)
-}
-
-type panicOnewayInboundMiddleware struct {
-	statsClient *statsClient
-}
-
-func (p panicOnewayInboundMiddleware) HandleOneway(
-	ctx context.Context,
-	req *transport.Request,
-	handler transport.OnewayHandler,
-) error {
-	defer panicRecovery(ctx, p.statsClient)
-	return handler.HandleOneway(ctx, req)
-}
-
-func panicRecovery(ctx context.Context, statsClient *statsClient) {
-	if err := recover(); err != nil {
-		statsClient.RPCPanicCounter().Inc(1)
-		ulog.Logger(ctx).Error("Panic recovered serving request",
-			zap.Error(errors.Errorf("panic in handler: %+v", err)),
-		)
-		// rethrow panic back to yarpc
-		// before https://github.com/yarpc/yarpc-go/issues/734 fixed, throw a generic error.
-		panic(_panicResponse)
-	}
 }

@@ -25,18 +25,21 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"go.uber.org/fx/auth"
+	"go.uber.org/fx/config"
 
 	"github.com/opentracing/opentracing-go"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/uber-go/tally"
 )
 
 var (
 	_testYaml = []byte(`
 name: test
+auth:
+  service: test
 `)
-	_testClient = New(opentracing.NoopTracer{}, fakeAuthInfo{yaml: _testYaml})
+	_testClient = New(opentracing.NoopTracer{}, config.NewYAMLProviderFromBytes(_testYaml), tally.NoopScope)
 )
 
 func TestNew(t *testing.T) {
@@ -49,7 +52,7 @@ func TestNew(t *testing.T) {
 func TestNew_Panic(t *testing.T) {
 	t.Parallel()
 	assert.Panics(t, func() {
-		New(opentracing.NoopTracer{}, fakeAuthInfo{yaml: []byte(``)})
+		New(opentracing.NoopTracer{}, nil, tally.NoopScope)
 	})
 }
 
@@ -81,7 +84,7 @@ func TestClientGetTwiceExecutesAllMiddleware(t *testing.T) {
 		return next.Execute(r)
 	}
 
-	cl := New(opentracing.NoopTracer{}, fakeAuthInfo{yaml: _testYaml}, f)
+	cl := New(opentracing.NoopTracer{}, config.NewYAMLProviderFromBytes(_testYaml), tally.NoopScope, f)
 	resp, err := cl.Get(svr.URL)
 	checkOKResponse(t, resp, err)
 	require.Equal(t, 1, count)
@@ -129,17 +132,19 @@ func TestClientPostForm(t *testing.T) {
 func TestClientWithNilParameters(t *testing.T) {
 	t.Parallel()
 	svr := startServer()
+	cfg := config.NewYAMLProviderFromBytes([]byte(``))
 	tests := map[string]struct {
-		info   auth.CreateAuthInfo
+		cfg    config.Provider
+		scope  tally.Scope
 		tracer opentracing.Tracer
 	}{
-		"NilInfo":   {info: nil, tracer: opentracing.NoopTracer{}},
-		"NilTracer": {info: fakeAuthInfo{yaml: _testYaml}, tracer: nil},
-		"BothNil":   {},
+		"NilScope":       {cfg: cfg, scope: nil, tracer: opentracing.NoopTracer{}},
+		"NilTracer":      {cfg: cfg, scope: tally.NoopScope, tracer: nil},
+		"TracerScopeNil": {cfg: cfg},
 	}
 	for name, params := range tests {
 		t.Run(name, func(t *testing.T) {
-			client := New(params.tracer, params.info)
+			client := New(params.tracer, params.cfg, params.scope)
 			resp, err := client.Head(svr.URL)
 			checkOKResponse(t, resp, err)
 		})

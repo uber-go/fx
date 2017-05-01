@@ -25,23 +25,20 @@ type providerGroup struct {
 	providers []Provider
 }
 
-// NewProviderGroup creates a configuration provider from a group of backends
+// NewProviderGroup creates a configuration provider from a group of backends.
+// The highest priority provider is the last.
 func NewProviderGroup(name string, providers ...Provider) Provider {
-	group := providerGroup{
-		name: name,
+	l := len(providers)
+	p := providerGroup{
+		name:      name,
+		providers: make([]Provider, l),
 	}
-	for _, provider := range providers {
-		group.providers = append([]Provider{provider}, group.providers...)
-	}
-	return group
-}
 
-// WithProvider updates the current Provider
-func (p providerGroup) WithProvider(provider Provider) Provider {
-	return providerGroup{
-		name:      p.name,
-		providers: append([]Provider{provider}, p.providers...),
+	for i := 0; i < l; i++ {
+		p.providers[i] = providers[l-i-1]
 	}
+
+	return p
 }
 
 func (p providerGroup) Get(key string) Value {

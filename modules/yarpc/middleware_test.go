@@ -25,47 +25,15 @@ import (
 	"errors"
 	"testing"
 
-	"go.uber.org/fx/service"
-	"go.uber.org/fx/testutils"
-	"go.uber.org/fx/testutils/tracing"
+	"go.uber.org/fx/auth"
 	"go.uber.org/fx/ulog"
 	"go.uber.org/thriftrw/wire"
 	"go.uber.org/yarpc/api/transport"
 
-	"github.com/opentracing/opentracing-go"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/uber-go/tally"
-	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
 )
-
-func TestInboundMiddleware_Context(t *testing.T) {
-	host := service.NopHost()
-	unary := contextInboundMiddleware{newStatsClient(host.Metrics())}
-	testutils.WithInMemoryLogger(t, nil, func(loggerWithZap *zap.Logger, buf *zaptest.Buffer) {
-		defer ulog.SetLogger(loggerWithZap)()
-		tracing.WithSpan(t, loggerWithZap, func(span opentracing.Span) {
-			ctx := opentracing.ContextWithSpan(context.Background(), span)
-			err := unary.Handle(ctx, &transport.Request{}, nil, &fakeUnary{t: t})
-			require.Contains(t, err.Error(), "handle")
-			checkLogForTrace(t, buf)
-		})
-	})
-}
-
-func TestOnewayInboundMiddleware_Context(t *testing.T) {
-	oneway := contextOnewayInboundMiddleware{}
-	testutils.WithInMemoryLogger(t, nil, func(loggerWithZap *zap.Logger, buf *zaptest.Buffer) {
-		defer ulog.SetLogger(loggerWithZap)()
-		tracing.WithSpan(t, loggerWithZap, func(span opentracing.Span) {
-			ctx := opentracing.ContextWithSpan(context.Background(), span)
-			err := oneway.HandleOneway(ctx, &transport.Request{}, &fakeOneway{t: t})
-			require.Contains(t, err.Error(), "oneway handle")
-			checkLogForTrace(t, buf)
-		})
-	})
-}
 
 func checkLogForTrace(t *testing.T, buf *zaptest.Buffer) {
 	require.True(t, len(buf.Lines()) > 0)
@@ -77,62 +45,28 @@ func checkLogForTrace(t *testing.T, buf *zaptest.Buffer) {
 }
 
 func TestInboundMiddleware_auth(t *testing.T) {
-	host := service.NopHost()
-	unary := authInboundMiddleware{host, newStatsClient(host.Metrics())}
+	unary := authInboundMiddleware{auth.NopClient}
 	err := unary.Handle(context.Background(), &transport.Request{}, nil, &fakeUnary{t: t})
 	assert.EqualError(t, err, "handle")
 }
 
 func TestInboundMiddleware_authFailure(t *testing.T) {
-	host := service.NopHostAuthFailure()
-	unary := authInboundMiddleware{host, newStatsClient(host.Metrics())}
+	unary := authInboundMiddleware{auth.FailureClient}
 	err := unary.Handle(context.Background(), &transport.Request{}, nil, &fakeUnary{t: t})
 	assert.EqualError(t, err, "Error authorizing the service")
 
 }
 
 func TestOnewayInboundMiddleware_auth(t *testing.T) {
-	oneway := authOnewayInboundMiddleware{
-		Host: service.NopHost(),
-	}
+	oneway := authOnewayInboundMiddleware{auth.NopClient}
 	err := oneway.HandleOneway(context.Background(), &transport.Request{}, &fakeOneway{t: t})
 	assert.EqualError(t, err, "oneway handle")
 }
 
 func TestOnewayInboundMiddleware_authFailure(t *testing.T) {
-	host := service.NopHostAuthFailure()
-	oneway := authOnewayInboundMiddleware{host, newStatsClient(host.Metrics())}
+	oneway := authOnewayInboundMiddleware{auth.FailureClient}
 	err := oneway.HandleOneway(context.Background(), &transport.Request{}, &fakeOneway{t: t})
 	assert.EqualError(t, err, "Error authorizing the service")
-}
-
-func TestInboundMiddleware_panic(t *testing.T) {
-	host := service.NopHost()
-	testScope := host.Metrics()
-	statsClient := newStatsClient(testScope)
-
-	defer testPanicHandler(t, testScope)
-	unary := panicInboundMiddleware{statsClient}
-	unary.Handle(context.Background(), &transport.Request{}, nil, &alwaysPanicUnary{})
-}
-
-func TestOnewayInboundMiddleware_panic(t *testing.T) {
-	host := service.NopHost()
-	testScope := host.Metrics()
-	statsClient := newStatsClient(testScope)
-
-	defer testPanicHandler(t, testScope)
-	oneway := panicOnewayInboundMiddleware{statsClient}
-	oneway.HandleOneway(context.Background(), &transport.Request{}, &alwaysPanicOneway{})
-}
-
-func testPanicHandler(t *testing.T, testScope tally.Scope) {
-	r := recover()
-	assert.EqualValues(t, r, _panicResponse)
-
-	snapshot := testScope.(tally.TestScope).Snapshot()
-	counters := snapshot.Counters()
-	assert.True(t, counters["panic"].Value() > 0)
 }
 
 type fakeEnveloper struct {

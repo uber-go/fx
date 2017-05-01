@@ -22,8 +22,10 @@ package task
 
 import (
 	"bytes"
+	"context"
 	"encoding/gob"
 
+	"github.com/opentracing/opentracing-go"
 	"github.com/pkg/errors"
 )
 
@@ -80,4 +82,41 @@ func (g GobEncoding) Unmarshal(data []byte, obj interface{}) error {
 		return errors.Wrap(err, "unable to decode with gob")
 	}
 	return nil
+}
+
+// ContextEncoding supports encoding for the context object
+type ContextEncoding struct {
+	Tracer opentracing.Tracer
+}
+
+// Marshal encodes a context into bytes
+func (c *ContextEncoding) Marshal(ctx context.Context) ([]byte, error) {
+	span := opentracing.SpanFromContext(ctx)
+	if span == nil {
+		return nil, nil
+	}
+
+	spanCtx := span.Context()
+	if spanCtx == nil {
+		return nil, nil
+	}
+
+	var carrier bytes.Buffer
+	err := c.Tracer.Inject(spanCtx, opentracing.Binary, &carrier)
+	return carrier.Bytes(), err
+}
+
+// Unmarshal decodes a bytes array into context
+// NOTE: If we were to add more things to the context, this will need to change to return a
+// collection of context values instead of just SpanContext
+func (c *ContextEncoding) Unmarshal(data []byte) (opentracing.SpanContext, error) {
+	carrier := bytes.NewBuffer(data)
+	spanContext, err := c.Tracer.Extract(opentracing.Binary, carrier)
+
+	// If no SpanContext was given, we return nil instead of erroring
+	if err == opentracing.ErrSpanContextNotFound {
+		return nil, nil
+	}
+
+	return spanContext, err
 }

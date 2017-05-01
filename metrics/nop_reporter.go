@@ -27,9 +27,9 @@ import (
 )
 
 var (
-	capabilitiesReportingNoTagging = &capabilities{
+	capabilitiesReporting = &capabilities{
 		reporting: true,
-		tagging:   false,
+		tagging:   true,
 	}
 )
 
@@ -52,6 +52,9 @@ func (c *capabilities) Tagging() bool {
 // Remove and replace metrics.NopCachedStatsReporter with tally.NopCachedStatsReporter once issue is resolved
 var NopCachedStatsReporter tally.CachedStatsReporter = nopCachedStatsReporter{}
 
+// NopScope is a root scope that does nothing
+var NopScope, _ = tally.NewRootScope(tally.ScopeOptions{CachedReporter: NopCachedStatsReporter}, 0)
+
 type nopCachedStatsReporter struct{}
 
 func (nopCachedStatsReporter) AllocateCounter(name string, tags map[string]string) tally.CachedCount {
@@ -71,7 +74,7 @@ func (nopCachedStatsReporter) AllocateTimer(name string, tags map[string]string)
 }
 
 func (r nopCachedStatsReporter) Capabilities() tally.Capabilities {
-	return capabilitiesReportingNoTagging
+	return capabilitiesReporting
 }
 
 func (r nopCachedStatsReporter) Flush() {}

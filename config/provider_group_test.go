@@ -47,8 +47,7 @@ func TestProviderGroupScope(t *testing.T) {
 func TestCallbacks_WithDynamicProvider(t *testing.T) {
 	t.Parallel()
 	data := map[string]interface{}{"hello.world": 42}
-	mock := NewProviderGroup("with-dynamic", NewStaticProvider(data))
-	mock = mock.(providerGroup).WithProvider(NewMockDynamicProvider(data))
+	mock := NewProviderGroup("with-dynamic", NewStaticProvider(data), NewMockDynamicProvider(data))
 	assert.Equal(t, "with-dynamic", mock.Name())
 
 	require.NoError(t, mock.RegisterChangeCallback("mockcall", nil))
@@ -65,7 +64,6 @@ func TestCallbacks_WithoutDynamicProvider(t *testing.T) {
 	t.Parallel()
 	data := map[string]interface{}{"hello.world": 42}
 	mock := NewProviderGroup("with-dynamic", NewStaticProvider(data))
-	mock = mock.(providerGroup).WithProvider(NewStaticProvider(data))
 	assert.Equal(t, "with-dynamic", mock.Name())
 	assert.NoError(t, mock.RegisterChangeCallback("mockcall", nil))
 	assert.NoError(t, mock.UnregisterChangeCallback("mock"))

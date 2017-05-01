@@ -21,12 +21,14 @@
 package config
 
 import (
+	"bytes"
+	"errors"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"path"
+	"sync"
 	"testing"
-
-	"go.uber.org/fx/testutils/env"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -96,11 +98,19 @@ type arrayOfStructs struct {
 }
 
 func TestGlobalConfig(t *testing.T) {
-	SetEnvironmentPrefix("TEST")
-	cfg := Load()
+	t.Parallel()
+
+	l := NewLoader()
+	l.lookUp = func(string) (string, bool) {
+		return "", false
+	}
+
+	l.SetConfigFiles("base", "development")
+	l.SetEnvironmentPrefix("TEST")
+	cfg := l.Load()
 
 	assert.Equal(t, "global", cfg.Name())
-	assert.Equal(t, "development", Environment())
+	assert.Equal(t, "development", l.Environment())
 
 	cfg = NewProviderGroup("test", NewYAMLProviderFromBytes([]byte(`name: sample`)))
 	assert.Equal(t, "test", cfg.Name())
@@ -203,6 +213,8 @@ func TestGetAsFloatValue(t *testing.T) {
 }
 
 func TestNestedStructs(t *testing.T) {
+	t.Parallel()
+
 	provider := NewProviderGroup(
 		"test",
 		NewYAMLProviderFromBytes(nestedYaml),
@@ -225,6 +237,8 @@ func TestNestedStructs(t *testing.T) {
 }
 
 func TestArrayOfStructs(t *testing.T) {
+	t.Parallel()
+
 	provider := NewProviderGroup(
 		"test",
 		NewYAMLProviderFromBytes(structArrayYaml),
@@ -241,6 +255,8 @@ func TestArrayOfStructs(t *testing.T) {
 }
 
 func TestDefault(t *testing.T) {
+	t.Parallel()
+
 	provider := NewProviderGroup(
 		"test",
 		NewYAMLProviderFromBytes(nest1),
@@ -266,64 +282,48 @@ boolean:
 }
 
 func TestRegisteredProvidersInitialization(t *testing.T) {
-	RegisterProviders(StaticProvider(map[string]interface{}{
+	t.Parallel()
+
+	l := NewLoader()
+	l.RegisterProviders(StaticProvider(map[string]interface{}{
 		"hello": "world",
 	}))
-	RegisterDynamicProviders(func(dynamic Provider) (Provider, error) {
+
+	l.RegisterDynamicProviders(func(dynamic Provider) (Provider, error) {
 		return NewStaticProvider(map[string]interface{}{
 			"dynamic": "provider",
 		}), nil
 	})
-	cfg := Load()
+
+	cfg := l.Load()
 	assert.Equal(t, "global", cfg.Name())
 	assert.Equal(t, "world", cfg.Get("hello").AsString())
 	assert.Equal(t, "provider", cfg.Get("dynamic").AsString())
-	UnregisterProviders()
-	assert.Nil(t, _staticProviderFuncs)
-	assert.Nil(t, _dynamicProviderFuncs)
+	l.UnregisterProviders()
+	assert.Nil(t, l.staticProviderFuncs)
+	assert.Nil(t, l.dynamicProviderFuncs)
 }
 
 func TestNilProvider(t *testing.T) {
-	RegisterProviders(func() (Provider, error) {
-		return nil, fmt.Errorf("error creating Provider")
+	t.Parallel()
+
+	l := NewLoader()
+	l.RegisterProviders(func() (Provider, error) {
+		return nil, errors.New("error creating Provider")
 	})
-	assert.Panics(t, func() { Load() }, "Can't initialize with nil provider")
 
-	oldProviders := _staticProviderFuncs
-	defer func() {
-		_staticProviderFuncs = oldProviders
-	}()
+	assert.Panics(t, func() { l.Load() }, "Can't initialize with nil provider")
 
-	UnregisterProviders()
-	RegisterProviders(func() (Provider, error) {
+	l.UnregisterProviders()
+	l.RegisterProviders(func() (Provider, error) {
 		return nil, nil
 	})
+
 	// don't panic on Load
-	Load()
+	l.Load()
 
-	UnregisterProviders()
-	assert.Nil(t, _staticProviderFuncs)
-}
-
-func TestGetConfigFiles(t *testing.T) {
-	SetEnvironmentPrefix("TEST")
-
-	files := getConfigFiles(baseFiles()...)
-	assert.Contains(t, files, "./base.yaml")
-	assert.Contains(t, files, "./development.yaml")
-	assert.Contains(t, files, "./secrets.yaml")
-	assert.Contains(t, files, "./config/base.yaml")
-	assert.Contains(t, files, "./config/development.yaml")
-	assert.Contains(t, files, "./config/secrets.yaml")
-}
-
-func TestSetConfigFiles(t *testing.T) {
-	SetConfigFiles("x", "y")
-	files := getConfigFiles(_configFiles...)
-	assert.Contains(t, files, "./x.yaml")
-	assert.Contains(t, files, "./y.yaml")
-	assert.Contains(t, files, "./config/x.yaml")
-	assert.Contains(t, files, "./config/y.yaml")
+	l.UnregisterProviders()
+	assert.Nil(t, l.staticProviderFuncs)
 }
 
 func expectedResolvePath(t *testing.T) string {
@@ -333,26 +333,37 @@ func expectedResolvePath(t *testing.T) string {
 }
 
 func TestResolvePath(t *testing.T) {
-	res, err := ResolvePath("testdata")
+	t.Parallel()
+
+	l := NewLoader()
+
+	res, err := l.ResolvePath("testdata")
 	assert.NoError(t, err)
 	assert.Equal(t, expectedResolvePath(t), res)
 }
 
 func TestResolvePathInvalid(t *testing.T) {
-	res, err := ResolvePath("invalid")
+	t.Parallel()
+
+	l := NewLoader()
+	res, err := l.ResolvePath("invalid")
 	assert.Error(t, err)
 	assert.Equal(t, "", res)
 }
 
 func TestResolvePathAbs(t *testing.T) {
+	t.Parallel()
+
+	l := NewLoader()
 	abs := expectedResolvePath(t)
-	res, err := ResolvePath(abs)
+	res, err := l.ResolvePath(abs)
 	assert.NoError(t, err)
 	assert.Equal(t, abs, res)
 }
 
 func TestNopProvider_Get(t *testing.T) {
 	t.Parallel()
+
 	p := NopProvider{}
 	assert.Equal(t, "NopProvider", p.Name())
 	assert.NoError(t, p.RegisterChangeCallback("key", nil))
@@ -439,7 +450,7 @@ ps:
 }
 
 func TestRPCPortField(t *testing.T) {
-	defer env.Override(t, "COMPANY_TCHANNEL_PORT", "4324")()
+	t.Parallel()
 
 	type Port int
 	type TChannelOutbound struct {
@@ -473,14 +484,138 @@ rpc:
         host: 127.0.0.1
         port: ${COMPANY_TCHANNEL_PORT:321}
 `
-	p := NewProviderGroup(
-		"test",
-		NewYAMLProviderFromBytes([]byte(rpc)),
-	)
+	lookup := func(key string) (string, bool) {
+		if key == "COMPANY_TCHANNEL_PORT" {
+			return "4324", true
+		}
+
+		return "", false
+	}
+
+	p := newYAMLProviderCore(lookup, ioutil.NopCloser(bytes.NewBufferString(rpc)))
 
 	cfg := &YARPCConfig{}
 	v := p.Get("rpc")
 
 	require.NoError(t, v.Populate(cfg))
 	require.Equal(t, 4324, int(*cfg.Outbounds[0].TChannel.Port))
+}
+
+func TestLoader_Environment(t *testing.T) {
+	t.Parallel()
+
+	l := NewLoader()
+	l.SetLookupFn(func(key string) (string, bool) {
+		require.Equal(t, "APP_ENVIRONMENT", key)
+		return "KGBeast", true
+	})
+
+	assert.Equal(t, "KGBeast", l.Environment())
+}
+
+func TestLoader_AppRoot(t *testing.T) {
+	t.Parallel()
+
+	l := NewLoader()
+	l.SetLookupFn(func(key string) (string, bool) {
+		require.Equal(t, "APP_ROOT", key)
+		return "Harley Quinn", true
+	})
+
+	assert.Equal(t, "Harley Quinn", l.AppRoot())
+}
+
+func TestLoader_LoadPanicOnDynamicError(t *testing.T) {
+	t.Parallel()
+
+	l := NewLoader()
+	l.RegisterDynamicProviders(func(config Provider) (Provider, error) { return nil, errors.New("something scary") })
+
+	assert.Panics(t, func() { l.Load() })
+}
+
+func withBase(t *testing.T, f func(dir string), contents string) {
+	dir, err := ioutil.TempDir("", "TestLoader_Dirs")
+	require.NoError(t, err)
+
+	defer func() { require.NoError(t, os.Remove(dir)) }()
+
+	base, err := os.Create(fmt.Sprintf("%s/base.yaml", dir))
+	require.NoError(t, err)
+	defer os.Remove(base.Name())
+
+	base.WriteString(contents)
+	base.Close()
+
+	f(dir)
+}
+
+func TestLoader_Dirs(t *testing.T) {
+	t.Parallel()
+
+	f := func(dir string) {
+		l := NewLoader()
+		l.SetDirs(dir)
+		p := l.Load()
+		assert.Equal(t, "jocker", p.Get("vilain").String())
+	}
+
+	withBase(t, f, "vilain: jocker")
+}
+
+func TestParallelLoad(t *testing.T) {
+	t.Parallel()
+
+	l := NewLoader()
+
+	f := func(dir string) {
+		l.SetDirs(dir)
+		p := l.Load()
+		assert.Equal(t, "bane", p.Get("vilain").String())
+	}
+
+	wg := sync.WaitGroup{}
+	wg.Add(2)
+	op := func() {
+		withBase(t, f, "vilain: bane")
+		wg.Done()
+	}
+
+	go op()
+	go op()
+
+	wg.Wait()
+}
+
+func TestZeroInitializeLoader(t *testing.T) {
+	t.Parallel()
+	var l Loader
+	assert.NotPanics(t, func() { l.Load() })
+}
+
+func TestLoader_StaticProviderOrder(t *testing.T) {
+	t.Parallel()
+	f := func(dir string) {
+		l := NewLoader(func() (Provider, error) {
+			return NewStaticProvider(map[string]string{"value": "correct"}), nil
+		})
+
+		l.SetDirs(dir)
+		p := l.Load()
+		assert.Equal(t, "correct", p.Get("value").AsString())
+	}
+
+	withBase(t, f, "value: wrong")
+}
+
+func TestLoader_LoadFromCurrentFolder(t *testing.T) {
+	t.Parallel()
+	f := func(dir string) {
+		l := NewLoader()
+		l.SetConfigFiles(dir + "/base.yaml")
+		p := l.Load()
+		assert.Equal(t, "base", p.Get("value").AsString())
+	}
+
+	withBase(t, f, "value: base")
 }

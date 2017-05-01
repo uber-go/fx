@@ -121,7 +121,7 @@ func (u *Updater) compare(service *api.Service, filepath string, handlerDir stri
 
 // RefreshAll creates new funcs if they are missing from *.go file, and updates
 // all the existing functions from the idl.
-func (u *Updater) RefreshAll(service *api.Service, filepath string) error {
+func (u *Updater) RefreshAll(service *api.Service, filepath string, handlerStructName string) error {
 	fset := token.NewFileSet()
 	file, err := parser.ParseFile(fset, filepath, nil, parser.ParseComments)
 	if err != nil {
@@ -132,7 +132,7 @@ func (u *Updater) RefreshAll(service *api.Service, filepath string) error {
 			switch x := n.(type) {
 			case *ast.FuncDecl:
 				if x.Name.Name == function.Name {
-					exp, err := u.createExpr(filepath, service, function)
+					exp, err := u.createExpr(filepath, service, function, handlerStructName)
 					if err != nil {
 						return false
 					}
@@ -163,8 +163,8 @@ func (u *Updater) RefreshAll(service *api.Service, filepath string) error {
 	return err
 }
 
-func (u *Updater) createExpr(filepath string, service *api.Service, f *api.Function) (*ast.File, error) {
-	buff, err := u.generateSingleFunction(filepath, service, f)
+func (u *Updater) createExpr(filepath string, service *api.Service, f *api.Function, handlerStructName string) (*ast.File, error) {
+	buff, err := u.generateSingleFunction(filepath, service, f, handlerStructName)
 	tmpf, err := ioutil.TempFile("", "tempbuff")
 	if _, err := tmpf.Write(buff); err != nil {
 		return nil, err
@@ -176,12 +176,12 @@ func (u *Updater) createExpr(filepath string, service *api.Service, f *api.Funct
 	return exp, err
 }
 
-func (u *Updater) generateSingleFunction(goFilePath string, service *api.Service, f *api.Function) ([]byte, error) {
-	var funcs []*api.Function
+func (u *Updater) generateSingleFunction(goFilePath string, service *api.Service, f *api.Function, handlerStructName string) ([]byte, error) {
 	newData := &updatedData{
-		Service:   service,
-		Functions: append(funcs, f),
+		Service: service,
 	}
+	newData.Functions = append(newData.Functions, f)
+	newData.HandlerStructName = handlerStructName
 	return u.generate(goFilePath, newData)
 }
 

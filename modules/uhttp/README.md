@@ -1,7 +1,9 @@
 # HTTP Module
 
-The HTTP module is built on top of [Gorilla Mux](https://github.com/gorilla/mux),
+The HTTP module is built on top of [standardlib http library](https://golang.org/pkg/net/http/),
 but the details of that are abstracted away through `uhttp.RouteHandler`.
+As part of module initialization, you can now pass in a `mux.Router` to the
+`uhttp` module.
 
 ```go
 package main
@@ -25,15 +27,14 @@ func main() {
   svc.Start(true)
 }
 
-func registerHTTP(service service.Host) []uhttp.RouteHandler {
-    handleHome := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+func registerHTTP(service service.Host) http.Handler {
+  handleHome := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
     ulog.Logger(r.Context()).Info("Inside the handler")
     io.WriteString(w, "Hello, world")
   })
-
-  return []uhttp.RouteHandler{
-    uhttp.NewRouteHandler("/", handleHome)
-  }
+  router := http.NewServeMux()
+  router.Handle("/", handleHome)
+	return router
 }
 ```
 
@@ -68,7 +69,7 @@ func main() {
     log.Fatal("Could not initialize service: ", err)
   }
 
-  client := uhttpclient.New(svc)
+  client := uhttpclient.New(opentracing.GlobalTracer(), svc)
   client.Get("https://www.uber.com")
 }
 ```

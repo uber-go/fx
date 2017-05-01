@@ -29,13 +29,10 @@ import (
 	"time"
 
 	"go.uber.org/fx/config"
-	"go.uber.org/zap"
 
 	"github.com/pkg/errors"
-)
-
-const (
-	defaultStartupWait = 10 * time.Second
+	"github.com/uber-go/multierr"
+	"go.uber.org/zap"
 )
 
 // A ExitCallback is a function to handle a service shutdown and provide
@@ -45,6 +42,10 @@ type ExitCallback func(shutdown Exit) int
 // Implements Manager interface
 type manager struct {
 	serviceCore
+
+	StartTimeout time.Duration `default:"10s"`
+	StopTimeout  time.Duration `default:"10s"`
+
 	locked         bool
 	observer       Observer
 	moduleWrappers []*moduleWrapper
@@ -70,10 +71,6 @@ func newManager(builder *Builder) (Manager, error) {
 		moduleWrappers: []*moduleWrapper{},
 		serviceCore:    serviceCore{},
 	}
-	m.roles = map[string]bool{}
-	for _, r := range m.standardConfig.Roles {
-		m.roles[r] = true
-	}
 	for _, opt := range builder.options {
 		if optionErr := opt(m); optionErr != nil {
 			return nil, errors.Wrap(optionErr, "option failed to apply")
@@ -83,21 +80,32 @@ func newManager(builder *Builder) (Manager, error) {
 		// If the user didn't pass in a configuration provider, load the standard.
 		// Bypassing standard config load is pretty much only used for tests, although it could be
 		// useful in certain circumstances.
-		m.configProvider = config.Load()
+		m.configProvider = config.DefaultLoader.Load()
 	}
 	if err := m.setupStandardConfig(); err != nil {
 		return nil, err
 	}
+
+	if err := m.configProvider.Get(config.Root).Populate(m); err != nil {
+		return nil, err
+	}
+
+	m.roles = map[string]bool{}
+	for _, r := range m.standardConfig.Roles {
+		m.roles[r] = true
+	}
+
 	// Initialize metrics. If no metrics reporters were Registered, do nop
 	// TODO(glib): add a logging reporter and use it by default, rather than nop
 	m.setupMetrics()
 	if err := m.setupLogging(); err != nil {
 		return nil, err
 	}
-	m.setupAuthClient()
+
 	if err := m.setupRuntimeMetricsCollector(); err != nil {
 		return nil, err
 	}
+
 	m.setupVersionMetricsEmitter()
 	if err := m.setupTracer(); err != nil {
 		return nil, err
@@ -262,8 +270,7 @@ func (m *manager) shutdown(err error, reason string, exitCode *int) (bool, error
 	}
 
 	m.transitionState(Stopped)
-
-	return true, err
+	return true, multierr.Combine(err, multierr.Combine(errs...))
 }
 
 func (m *manager) addModule(provider ModuleProvider, options ...ModuleOption) error {
@@ -325,7 +332,7 @@ func (m *manager) start() Control {
 		m.registerSignalHandlers()
 		if len(errs) > 0 {
 			var serviceErr error
-			errChan := make(chan Exit, 1)
+			errChan := make(chan Exit, len(errs))
 			// grab the first error, shut down the service and return the error
 			for _, e := range errs {
 				errChan <- Exit{
@@ -334,19 +341,24 @@ func (m *manager) start() Control {
 					ExitCode: 4,
 				}
 
-				m.shutdownMu.Unlock()
-				if _, err := m.shutdown(e, "", nil); err != nil {
-					zap.L().Error("Unable to shut down modules",
-						zap.NamedError("initialError", e),
-						zap.NamedError("shutdownError", err),
-					)
-				}
-				zap.L().Error("Error starting the module", zap.Error(e))
-				// return first service error
-				if serviceErr == nil {
-					serviceErr = e
-				}
 			}
+
+			m.shutdownMu.Unlock()
+
+			e := multierr.Combine(errs...)
+			if _, err := m.shutdown(e, "", nil); err != nil {
+				zap.L().Error("Unable to shut down modules",
+					zap.NamedError("combinedErrors", e),
+					zap.NamedError("shutdownError", err),
+				)
+			}
+
+			zap.L().Error("Error starting the module", zap.Error(e))
+			// return first service error
+			if serviceErr == nil {
+				serviceErr = e
+			}
+
 			return Control{
 				ExitChan:     errChan,
 				ReadyChan:    readyCh,
@@ -403,11 +415,11 @@ func (m *manager) startModules() []error {
 					} else {
 						zap.L().Info("Module started up cleanly", zap.String("module", mw.Name()))
 					}
-				case <-time.After(defaultStartupWait):
+				case <-time.After(m.StartTimeout):
 					lock.Lock()
 					results = append(
 						results,
-						fmt.Errorf("module: %s didn't start after %v", mw.Name(), defaultStartupWait),
+						fmt.Errorf("module: %q didn't start after %q", mw.Name(), m.StartTimeout),
 					)
 					lock.Unlock()
 				}
@@ -423,24 +435,28 @@ func (m *manager) startModules() []error {
 
 func (m *manager) stopModules() []error {
 	var results []error
-	var lock sync.Mutex
-	wg := sync.WaitGroup{}
-	wg.Add(len(m.moduleWrappers))
 	for _, mod := range m.moduleWrappers {
-		go func(m *moduleWrapper) {
-			if !m.IsRunning() {
-				// TODO: have a timeout here so a bad shutdown
-				// doesn't block everyone
-				if err := m.Stop(); err != nil {
-					lock.Lock()
-					results = append(results, err)
-					lock.Unlock()
-				}
+		errC := make(chan error, 1)
+		go func(mod *moduleWrapper) {
+			if mod.IsRunning() {
+				errC <- mod.Stop()
+				return
 			}
-			wg.Done()
+			errC <- nil
 		}(mod)
+
+		select {
+		case err := <-errC:
+			if err != nil {
+				results = append(results,
+					fmt.Errorf("module %q stopped with error %q", mod.Name(), err))
+			}
+		case <-time.After(m.StopTimeout):
+			results = append(results,
+				fmt.Errorf("stop module %q timedout after %q", mod.Name(), m.StopTimeout))
+		}
 	}
-	wg.Wait()
+
 	return results
 }
 

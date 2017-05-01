@@ -23,16 +23,16 @@ package task
 import (
 	"sync"
 
-	"github.com/pkg/errors"
-	"github.com/uber-go/tally"
-
+	"go.uber.org/fx/metrics"
 	"go.uber.org/fx/service"
+
+	"github.com/pkg/errors"
 )
 
 var (
 	_globalBackendMu          sync.RWMutex
 	_globalBackend            Backend = &NopBackend{}
-	_globalBackendStatsClient         = newStatsClient(tally.NoopScope)
+	_globalBackendStatsClient         = newStatsClient(metrics.NopScope)
 	_asyncMod                 service.Module
 	_asyncModErr              error
 	_once                     sync.Once

@@ -1,5 +1,23 @@
 # Changelog
 
+## v1.0.0-beta4 (unreleased)
+
+- **[Breaking]** Introduce a config loader, this will allow to override config loading
+  and use custom dirs to load from. In order to load configs calls to `config.Load()`
+  should be replaced with `config.NewLoader().Load()`.
+- Added `metrics.NopScope` for tests on service.NopHost with tagging capabilities
+  turned on by default
+- Added a command line provider `config.NewCommandLineProvider()`, which can be used
+  to pass configuration parameters through command line.
+- **[Breaking]** `uhttp module` now accepts `http.Handler` as part of module setup.
+  As part of refactor, RouteHandler is removed from the module registration.
+- `Loader.Path() string` is now `Loader.Paths() []string`, to better reflect that
+  configuration is loaded from multiple directories.
+- **[Breaking]** Removed `CreateAuthInfo` interface from auth package. package auth
+  RegisterFunc now accepts `config.Provider` and `tally.Scope` for initialization.
+- **[Breaking]** Removed `auth.Client` access from `service.Host`. `auth.Client` can
+  now be accessed via `auth.Load()` call.
+
 ## v1.0.0-beta3 (28 Mar 2017)
 
 - **[Breaking]** Environment config provider was removed. If you were using
