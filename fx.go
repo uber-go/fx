@@ -24,13 +24,13 @@ import (
 	"io"
 	"reflect"
 
-	"github.com/pkg/errors"
-	"github.com/uber-go/tally"
-
-	"go.uber.org/dig"
 	"go.uber.org/fx/config"
 	"go.uber.org/fx/metrics"
 	"go.uber.org/fx/ulog"
+
+	"github.com/pkg/errors"
+	"github.com/uber-go/tally"
+	"go.uber.org/dig"
 	"go.uber.org/zap"
 )
 
@@ -48,7 +48,6 @@ type Module interface {
 type Service struct {
 	g              *dig.Graph
 	modules        []Module
-	components     []Component
 	scopeCloser    io.Closer
 	logger         *zap.Logger
 	loggerCloserFn func()
@@ -107,15 +106,11 @@ func New(modules ...Module) *Service {
 }
 
 func createLogger(cp config.Provider, scope tally.Scope) (*zap.Logger, func(), error) {
-	cfg := cp.Get("logging")
-	logConfig := ulog.Configuration{}
-	if cfg.HasValue() {
+	logConfig := ulog.DefaultConfiguration()
+	if cfg := cp.Get("logging"); cfg.HasValue() {
 		if err := logConfig.Configure(cfg); err != nil {
 			return nil, nil, errors.Wrap(err, "failed to initialize logging from config")
 		}
-	} else {
-		// if no config, default to the regular one
-		logConfig = ulog.DefaultConfiguration()
 	}
 
 	logger, err := logConfig.Build(zap.Hooks(ulog.Metrics(scope)))
@@ -128,7 +123,6 @@ func createLogger(cp config.Provider, scope tally.Scope) (*zap.Logger, func(), e
 
 // WithComponents adds additional components to the service
 func (s *Service) WithComponents(components ...Component) *Service {
-	s.components = append(s.components, components...)
 	// Add provided components to dig
 	for _, c := range components {
 		s.g.MustRegister(c)
@@ -140,6 +134,7 @@ func (s *Service) WithComponents(components ...Component) *Service {
 func (s *Service) Start() {
 	// TODO: move to dig, perhaps #Call(constructor) function
 	for _, m := range s.modules {
+		s.logger.Info("Starting module", zap.String("module", m.Name()))
 		for _, ctor := range m.Constructor() {
 			ctype := reflect.TypeOf(ctor)
 			switch ctype.Kind() {
@@ -153,9 +148,11 @@ func (s *Service) Start() {
 	s.logger.Info("Service has started")
 }
 
-// Stop stops the service
+// Stop stops the service. Modules are stopped in reverse order to avoid errors caused by
+// interdependencies
 func (s *Service) Stop() {
-	for _, m := range s.modules {
+	for i := len(s.modules) - 1; i >= 0; i-- {
+		m := s.modules[i]
 		s.logger.Info("Stopping module", zap.String("module", m.Name()))
 		m.Stop()
 		s.logger.Info("Module stopped", zap.String("module", m.Name()))
