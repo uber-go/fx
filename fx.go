@@ -22,7 +22,6 @@ package fx // import "go.uber.org/fx"
 
 import (
 	"io"
-	"reflect"
 
 	"go.uber.org/fx/config"
 	"go.uber.org/fx/metrics"
@@ -46,104 +45,103 @@ type Module interface {
 
 // Service controls the lifecycle of an fx service
 type Service struct {
-	g              *dig.Graph
+	c              *dig.Container
 	modules        []Module
-	scopeCloser    io.Closer
-	logger         *zap.Logger
+	closers        []io.Closer
 	loggerCloserFn func()
 }
 
 // New creates a service with the provided modules
 func New(modules ...Module) *Service {
 	s := &Service{
-		g:       dig.New(),
+		c:       dig.New(),
 		modules: modules,
 	}
 
 	// load config for module creation and include it in the graph
-	cfg := config.DefaultLoader.Load()
-	// TODO: need to pull latest dig for direct Interface injection fix
-	s.g.MustRegister(func() config.Provider { return cfg })
-
-	svcName := cfg.Get(config.ServiceNameKey).AsString()
-	scope, _, scopeCloser := metrics.RootScope(svcName, cfg)
+	s.c.MustRegister(config.DefaultLoader.Load)
 	metrics.Freeze()
-	s.g.MustRegister(func() (tally.Scope, error) { return scope, nil })
-	s.scopeCloser = scopeCloser
+
+	s.c.MustRegister(s.setupMetrics)
 
 	// Set up the logger, remember it on the service and also inject into the graph
-	l, closerFn, err := createLogger(cfg, scope)
-	if err != nil {
-		panic("failed to instantiate logger")
-	}
-	s.logger = l
-	s.loggerCloserFn = closerFn
-	s.g.MustRegister(l)
+	s.c.MustRegister(s.setupLogger)
 
 	// add a bunch of stuff
 	for _, m := range modules {
 		for _, ctor := range m.Constructor() {
-			s.g.MustRegister(ctor)
+			s.c.MustRegister(ctor)
 		}
 	}
-
 	return s
 }
 
-func createLogger(cp config.Provider, scope tally.Scope) (*zap.Logger, func(), error) {
+func (s *Service) setupMetrics(cfg config.Provider) (tally.Scope, tally.CachedStatsReporter) {
+	scope, cachedStatsReporter, closer := metrics.RootScope(cfg)
+	s.closers = append(s.closers, closer)
+	return scope, cachedStatsReporter
+}
+
+func (s *Service) setupLogger(cp config.Provider, scope tally.Scope) (*zap.Logger, error) {
 	logConfig := ulog.DefaultConfiguration()
 	if cfg := cp.Get("logging"); cfg.HasValue() {
 		if err := logConfig.Configure(cfg); err != nil {
-			return nil, nil, errors.Wrap(err, "failed to initialize logging from config")
+			return nil, errors.Wrap(err, "failed to initialize logging from config")
 		}
 	}
 
 	logger, err := logConfig.Build(zap.Hooks(ulog.Metrics(scope)))
 	if err != nil {
-		return nil, nil, errors.Wrap(err, "failed to build the logger")
+		return nil, errors.Wrap(err, "failed to build the logger")
 	}
-	closerFn := ulog.SetLogger(logger)
-	return logger, closerFn, err
+	s.loggerCloserFn = ulog.SetLogger(logger)
+	return logger, err
 }
 
 // WithComponents adds additional components to the service
 func (s *Service) WithComponents(components ...Component) *Service {
 	// Add provided components to dig
 	for _, c := range components {
-		s.g.MustRegister(c)
+		s.c.MustRegister(c)
 	}
 	return s
 }
 
 // Start starts the service
 func (s *Service) Start() {
-	// TODO: move to dig, perhaps #Call(constructor) function
-	for _, m := range s.modules {
-		s.logger.Info("Starting module", zap.String("module", m.Name()))
-		for _, ctor := range m.Constructor() {
-			ctype := reflect.TypeOf(ctor)
-			switch ctype.Kind() {
-			case reflect.Func:
-				objType := ctype.Out(0)
-				s.g.MustResolve(reflect.New(objType).Interface())
+	if err := s.c.Invoke(func(l *zap.Logger) {
+		for _, m := range s.modules {
+			l.Info("Starting module", zap.String("module", m.Name()))
+			for _, ctor := range m.Constructor() {
+				if err := s.c.Invoke(ctor); err != nil {
+					l.Error("error executing ctor ", zap.Error(err))
+				}
 			}
+			l.Info("Module started", zap.String("module", m.Name()))
 		}
-		s.logger.Info("Module started", zap.String("module", m.Name()))
+		l.Info("Service has started")
+	}); err != nil {
+		zap.L().Error("Error starting the service", zap.Error(err))
 	}
-	s.logger.Info("Service has started")
 }
 
 // Stop stops the service. Modules are stopped in reverse order to avoid errors caused by
 // interdependencies
 func (s *Service) Stop() {
-	for i := len(s.modules) - 1; i >= 0; i-- {
-		m := s.modules[i]
-		s.logger.Info("Stopping module", zap.String("module", m.Name()))
-		m.Stop()
-		s.logger.Info("Module stopped", zap.String("module", m.Name()))
-	}
-	s.loggerCloserFn()
-	if err := s.scopeCloser.Close(); err != nil {
-		s.logger.Error("Unable to close scope", zap.Error(err))
+	if err := s.c.Invoke(func(l *zap.Logger) {
+		for i := len(s.modules) - 1; i >= 0; i-- {
+			m := s.modules[i]
+			l.Info("Stopping module", zap.String("module", m.Name()))
+			m.Stop()
+			l.Info("Module stopped", zap.String("module", m.Name()))
+		}
+		s.loggerCloserFn()
+		for i := len(s.closers) - 1; i >= 0; i-- {
+			if err := s.closers[i].Close(); err != nil {
+				l.Error("Unable to close", zap.Error(err))
+			}
+		}
+	}); err != nil {
+		zap.L().Error("Error stopping the service", zap.Error(err))
 	}
 }

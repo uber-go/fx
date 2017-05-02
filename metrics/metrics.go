@@ -90,12 +90,10 @@ func RegisterRootScope(scopeFunc ScopeFunc) {
 }
 
 // RootScope returns the provided metrics scope and stats reporter, or nil if not provided
-func RootScope(
-	name string, cfg config.Provider,
-) (tally.Scope, tally.CachedStatsReporter, io.Closer) {
+func RootScope(cfg config.Provider) (tally.Scope, tally.CachedStatsReporter, io.Closer) {
 	_mu.Lock()
 	defer _mu.Unlock()
-
+	name := cfg.Get(config.ServiceNameKey).AsString()
 	if _scopeFunc != nil {
 		scope, reporter, closer, err := _scopeFunc(name, cfg)
 		if err != nil {
