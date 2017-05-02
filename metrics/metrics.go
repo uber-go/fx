@@ -49,7 +49,9 @@ type ScopeInit interface {
 }
 
 // ScopeFunc is used during service init time to register the reporter
-type ScopeFunc func(i ScopeInit) (tally.Scope, tally.CachedStatsReporter, io.Closer, error)
+type ScopeFunc func(
+	string, config.Provider,
+) (tally.Scope, tally.CachedStatsReporter, io.Closer, error)
 
 // Freeze ensures that after service is started, no other metrics manipulations can be done
 //
@@ -88,12 +90,14 @@ func RegisterRootScope(scopeFunc ScopeFunc) {
 }
 
 // RootScope returns the provided metrics scope and stats reporter, or nil if not provided
-func RootScope(i ScopeInit) (tally.Scope, tally.CachedStatsReporter, io.Closer) {
+func RootScope(
+	name string, cfg config.Provider,
+) (tally.Scope, tally.CachedStatsReporter, io.Closer) {
 	_mu.Lock()
 	defer _mu.Unlock()
 
 	if _scopeFunc != nil {
-		scope, reporter, closer, err := _scopeFunc(i)
+		scope, reporter, closer, err := _scopeFunc(name, cfg)
 		if err != nil {
 			panic(fmt.Sprintf("Failed to initialize metrics reporter %v", err))
 		}

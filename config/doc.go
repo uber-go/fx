@@ -312,7 +312,7 @@
 //     }
 //   }
 //
-// Don't forget to test the error path::
+// Don't forget to test the error path:
 //
 //   func TestCalculator_Errors(t *testing.T) {
 //     t.Parallel()
@@ -322,7 +322,7 @@
 //     }))
 //
 //     require.Error(t, err)
-//     assert.Contains(t, err.Error(), `unknown operation "*"`)
+//     assert.Contains(t, err.Error(), "unknown operation")
 //   }
 //
 // For integration/E2E testing you can customize Loader to load the
