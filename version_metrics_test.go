@@ -23,44 +23,16 @@ package fx // import "go.uber.org/fx"
 import (
 	"testing"
 
-	"go.uber.org/fx/config"
-
-	"github.com/stretchr/testify/assert"
+	"github.com/uber-go/tally"
 )
 
-// TODO: To be removed once we have service options
-func init() {
-	data := map[string]string{"name": "dummy"}
-	config.DefaultLoader = config.NewLoader(config.StaticProvider(data))
+func TestNewEmitter_OK(t *testing.T) {
+	// verify ctor does not do anything weird
+	newVersionMetricsEmitter(tally.NoopScope)
 }
 
-type NopModule struct{}
-
-func (m *NopModule) Name() string {
-	return "NopModule"
-}
-
-func (m *NopModule) Constructor() []Component {
-	return []Component{}
-}
-
-func (m *NopModule) Stop() {}
-
-type nopStruct struct{ Name string }
-
-func TestServiceLifecycle(t *testing.T) {
-	svc := New(&NopModule{})
-	assert.NotNil(t, svc)
-	svc.Start()
-	svc.Stop()
-}
-
-func TestServiceWithComponents(t *testing.T) {
-	svc := New(&NopModule{}).WithComponents(&nopStruct{Name: "hello"})
-	assert.NotNil(t, svc)
-	svc.Start()
-	var nop *nopStruct
-	svc.c.MustResolve(&nop)
-	assert.Equal(t, "hello", nop.Name)
-	svc.Stop()
+func TestEmitter_StartStop(t *testing.T) {
+	e := newVersionMetricsEmitter(tally.NoopScope)
+	defer e.close()
+	e.start()
 }

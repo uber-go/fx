@@ -24,11 +24,7 @@ import (
 	"io"
 
 	"go.uber.org/fx/config"
-	"go.uber.org/fx/metrics"
-	"go.uber.org/fx/ulog"
 
-	"github.com/pkg/errors"
-	"github.com/uber-go/tally"
 	"go.uber.org/dig"
 	"go.uber.org/zap"
 )
@@ -60,12 +56,17 @@ func New(modules ...Module) *Service {
 
 	// load config for module creation and include it in the graph
 	s.c.MustRegister(config.DefaultLoader.Load)
-	metrics.Freeze()
 
+	// setup metrics
 	s.c.MustRegister(s.setupMetrics)
 
-	// Set up the logger, remember it on the service and also inject into the graph
+	s.c.MustRegister(setupRuntimeMetricsCollector)
+	s.c.MustRegister(setupVersionMetricsEmitter)
+
+	// Set up the logger
 	s.c.MustRegister(s.setupLogger)
+
+	s.c.MustRegister(s.setupTracer)
 
 	// add a bunch of stuff
 	for _, m := range modules {
@@ -74,28 +75,6 @@ func New(modules ...Module) *Service {
 		}
 	}
 	return s
-}
-
-func (s *Service) setupMetrics(cfg config.Provider) (tally.Scope, tally.CachedStatsReporter) {
-	scope, cachedStatsReporter, closer := metrics.RootScope(cfg)
-	s.closers = append(s.closers, closer)
-	return scope, cachedStatsReporter
-}
-
-func (s *Service) setupLogger(cp config.Provider, scope tally.Scope) (*zap.Logger, error) {
-	logConfig := ulog.DefaultConfiguration()
-	if cfg := cp.Get("logging"); cfg.HasValue() {
-		if err := logConfig.Configure(cfg); err != nil {
-			return nil, errors.Wrap(err, "failed to initialize logging from config")
-		}
-	}
-
-	logger, err := logConfig.Build(zap.Hooks(ulog.Metrics(scope)))
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to build the logger")
-	}
-	s.loggerCloserFn = ulog.SetLogger(logger)
-	return logger, err
 }
 
 // WithComponents adds additional components to the service
