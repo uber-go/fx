@@ -30,7 +30,8 @@ import (
 
 // TODO: To be removed once we have service options
 func init() {
-	config.DefaultLoader = config.NewLoader()
+	data := map[string]string{"name": "dummy"}
+	config.DefaultLoader = config.NewLoader(config.StaticProvider(data))
 }
 
 type NopModule struct{}

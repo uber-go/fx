@@ -53,22 +53,6 @@ type Service struct {
 	loggerCloserFn func()
 }
 
-// scopeInit is used by the metrics package
-// TODO: Remove after metrics refactor
-type scopeInit struct {
-	config config.Provider
-}
-
-// Name returns the name
-func (c *scopeInit) Name() string {
-	return c.config.Get(config.ServiceNameKey).AsString()
-}
-
-// Config returns the config
-func (c *scopeInit) Config() config.Provider {
-	return c.config
-}
-
 // New creates a service with the provided modules
 func New(modules ...Module) *Service {
 	s := &Service{
@@ -81,7 +65,8 @@ func New(modules ...Module) *Service {
 	// TODO: need to pull latest dig for direct Interface injection fix
 	s.g.MustRegister(func() config.Provider { return cfg })
 
-	scope, _, scopeCloser := metrics.RootScope(&scopeInit{config: cfg})
+	svcName := cfg.Get(config.ServiceNameKey).AsString()
+	scope, _, scopeCloser := metrics.RootScope(svcName, cfg)
 	metrics.Freeze()
 	s.g.MustRegister(func() (tally.Scope, error) { return scope, nil })
 	s.scopeCloser = scopeCloser

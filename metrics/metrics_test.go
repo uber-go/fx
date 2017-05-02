@@ -75,11 +75,17 @@ func TestRegisterBadReporterPanics(t *testing.T) {
 	})
 }
 
-func goodScope(i ScopeInit) (tally.Scope, tally.CachedStatsReporter, io.Closer, error) {
+func goodScope(
+	name string,
+	cfg config.Provider,
+) (tally.Scope, tally.CachedStatsReporter, io.Closer, error) {
 	return tally.NoopScope, NopCachedStatsReporter, testutils.NopCloser{}, nil
 }
 
-func badScope(i ScopeInit) (tally.Scope, tally.CachedStatsReporter, io.Closer, error) {
+func badScope(
+	name string,
+	cfg config.Provider,
+) (tally.Scope, tally.CachedStatsReporter, io.Closer, error) {
 	return nil, nil, nil, errors.New("fake error")
 }
 
@@ -87,26 +93,8 @@ func getScope() (tally.Scope, tally.CachedStatsReporter, io.Closer) {
 	return RootScope(scopeInit())
 }
 
-type scopeIniter struct {
-	name   string
-	config config.Provider
-}
-
-func (i scopeIniter) Name() string {
-	return i.name
-}
-
-func (i scopeIniter) Config() config.Provider {
-	return i.config
-}
-
-func scopeInit() ScopeInit {
-	return &scopeIniter{
-		name: "SomeName",
-		config: config.NewStaticProvider(map[string]interface{}{
-			"foo": "bar",
-		}),
-	}
+func scopeInit() (string, config.Provider) {
+	return "SomeName", config.NewStaticProvider(map[string]interface{}{"foo": "bar"})
 }
 
 func cleanup() {
