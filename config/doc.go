@@ -147,6 +147,24 @@
 //   fmt.Println(root)
 //   // Output: map[one:map[two:hello]]
 //
+// A provider will choose a value with the most specific path,
+// if there are 2 values that correspond to the same path, i.e. the longest matching
+// prefix will be chosen first to continue search in child nodes. For example:
+//
+//
+//   list:
+//     composer:
+//       name: Beethoven
+//       born: 1770
+//
+//   list.composer:
+//     born: 1756
+//
+//   var composer struct{Name, Born string}
+//   p.Get("list.composer").Populate(&composer)
+//   fmt.Println(composer)
+//   // Output: {Beethoven 1756}
+//
 // • Populate a struct (Populate(&myStruct))
 //
 // The As* method has two variants: TryAs* and As*. The former is a

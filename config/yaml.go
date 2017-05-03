@@ -214,33 +214,24 @@ func (n yamlNode) Type() reflect.Type {
 	return reflect.TypeOf(n.value)
 }
 
+// Find the first longest match in child nodes for the dottedPath.
 func (n *yamlNode) Find(dottedPath string) *yamlNode {
-	node := n
-	parts := strings.Split(dottedPath, ".")
+	for curr := dottedPath; len(curr) != 0; {
+		for _, v := range n.Children() {
+			if strings.EqualFold(v.key, curr) {
+				if curr == dottedPath {
+					return v
+				}
 
-	for {
-		if len(parts) == 0 {
-			return node
-		}
-		// does this part exist?
-		children := node.Children()
-		if len(children) == 0 {
-			// not found
-			break
-		}
-
-		part := parts[0]
-		found := false
-		for _, v := range children {
-			if strings.EqualFold(v.key, part) {
-				parts = parts[1:]
-				node = v
-				found = true
-				break
+				if node := v.Find(dottedPath[len(curr)+1:]); node != nil {
+					return node
+				}
 			}
 		}
 
-		if !found {
+		if last := strings.LastIndex(curr, _separator); last > 0 {
+			curr = curr[:last]
+		} else {
 			break
 		}
 	}
