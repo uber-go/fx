@@ -60,7 +60,7 @@ func TestServiceWithComponents(t *testing.T) {
 	assert.NotNil(t, svc)
 	svc.Start()
 	var nop *nopStruct
-	svc.g.MustResolve(&nop)
+	svc.c.MustResolve(&nop)
 	assert.Equal(t, "hello", nop.Name)
 	svc.Stop()
 }

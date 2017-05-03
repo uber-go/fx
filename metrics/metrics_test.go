@@ -93,8 +93,13 @@ func getScope() (tally.Scope, tally.CachedStatsReporter, io.Closer) {
 	return RootScope(scopeInit())
 }
 
-func scopeInit() (string, config.Provider) {
-	return "SomeName", config.NewStaticProvider(map[string]interface{}{"foo": "bar"})
+func scopeInit() config.Provider {
+	return config.NewStaticProvider(
+		map[string]interface{}{
+			config.ServiceNameKey: "somename",
+			"foo": "bar",
+		},
+	)
 }
 
 func cleanup() {

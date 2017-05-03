@@ -165,7 +165,7 @@ func (s *serviceCore) setupStandardConfig() error {
 
 func (s *serviceCore) setupMetrics() {
 	if s.Metrics() == nil {
-		s.metrics, s.statsReporter, s.metricsCloser = metrics.RootScope(s.Name(), s.Config())
+		s.metrics, s.statsReporter, s.metricsCloser = metrics.RootScope(s.Config())
 		metrics.Freeze()
 	}
 }

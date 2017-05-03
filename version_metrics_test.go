@@ -18,22 +18,21 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package main
+package fx // import "go.uber.org/fx"
 
 import (
-	"log"
+	"testing"
 
-	"go.uber.org/fx/service"
+	"github.com/uber-go/tally"
 )
 
-func main() {
-	svc, err := service.WithModule(nil).WithOptions(
-		service.WithObserver(&Observer{}),
-	).Build()
+func TestNewEmitter_OK(t *testing.T) {
+	// verify ctor does not do anything weird
+	newVersionMetricsEmitter(tally.NoopScope)
+}
 
-	if err != nil {
-		log.Fatal("Unable to initialize service", "error", err)
-	}
-
-	svc.Start()
+func TestEmitter_StartStop(t *testing.T) {
+	e := newVersionMetricsEmitter(tally.NoopScope)
+	defer e.close()
+	e.start()
 }

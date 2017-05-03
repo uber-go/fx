@@ -18,22 +18,43 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package main
+package fx // import "go.uber.org/fx"
 
 import (
-	"log"
+	"runtime"
+	"time"
 
-	"go.uber.org/fx/service"
+	"github.com/uber-go/tally"
 )
 
-func main() {
-	svc, err := service.WithModule(nil).WithOptions(
-		service.WithObserver(&Observer{}),
-	).Build()
+const reportingTime = 10 * time.Second
 
-	if err != nil {
-		log.Fatal("Unable to initialize service", "error", err)
+type versionMetricsEmitter struct {
+	counter tally.Counter
+	ticker  *time.Ticker
+}
+
+func newVersionMetricsEmitter(scope tally.Scope) *versionMetricsEmitter {
+	t := time.NewTicker(reportingTime)
+	return &versionMetricsEmitter{
+		counter: scope.Tagged(map[string]string{
+			"uberfx-v": Version,
+			"go-v":     runtime.Version(),
+		}).Counter("uberfx-go"),
+		ticker: t,
 	}
+}
 
-	svc.Start()
+func (v versionMetricsEmitter) start() {
+	go func() {
+		for range v.ticker.C {
+			v.counter.Inc(1)
+		}
+	}()
+}
+
+func (v versionMetricsEmitter) close() {
+	if v.ticker != nil {
+		v.ticker.Stop()
+	}
 }
