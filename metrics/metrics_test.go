@@ -97,7 +97,8 @@ func scopeInit() config.Provider {
 	return config.NewStaticProvider(
 		map[string]interface{}{
 			config.ServiceNameKey: "somename",
-			"foo": "bar"},
+			"foo": "bar",
+		},
 	)
 }
 
