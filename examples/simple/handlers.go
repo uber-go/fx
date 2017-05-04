@@ -24,8 +24,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-
-	"go.uber.org/fx/service"
 )
 
 type exampleHandler struct{}
@@ -34,8 +32,8 @@ func (exampleHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	io.WriteString(w, fmt.Sprintf("Headers: %+v", r.Header))
 }
 
-func registerHTTPers(service service.Host) http.Handler {
+func registerHTTPers() (http.Handler, error) {
 	router := http.NewServeMux()
 	router.Handle("/", &exampleHandler{})
-	return router
+	return router, nil
 }

@@ -21,20 +21,11 @@
 package main
 
 import (
-	"log"
-
 	"go.uber.org/fx/modules/uhttp"
-	"go.uber.org/fx/service"
+	"go.uber.org/fx"
 )
 
 func main() {
-	svc, err := service.WithModule(
-		uhttp.New(registerHTTPers),
-	).Build()
-
-	if err != nil {
-		log.Fatal("Unable to initialize service", "error", err)
-	}
-
+	svc := fx.New(uhttp.New(registerHTTPers))
 	svc.Start()
 }

@@ -36,7 +36,7 @@ type Component interface{}
 type Module interface {
 	Name() string
 	Constructor() []Component
-	Stop()
+	Stop() error
 }
 
 // Service controls the lifecycle of an fx service
@@ -110,9 +110,12 @@ func (s *Service) Stop() {
 	if err := s.c.Invoke(func(l *zap.Logger) {
 		for i := len(s.modules) - 1; i >= 0; i-- {
 			m := s.modules[i]
-			l.Info("Stopping module", zap.String("module", m.Name()))
-			m.Stop()
-			l.Info("Module stopped", zap.String("module", m.Name()))
+			l.Info("Stopping ", zap.String("module", m.Name()))
+			if err := m.Stop(); err != nil {
+				l.Error("Error while stopping", zap.String("module", m.Name()), zap.Error(err))
+			}
+
+			l.Info("Stopped", zap.String("module", m.Name()))
 		}
 		s.loggerCloserFn()
 		for i := len(s.closers) - 1; i >= 0; i-- {

@@ -21,7 +21,6 @@
 package uhttp
 
 import (
-	"context"
 	"fmt"
 	"net"
 	"net/http"
@@ -29,31 +28,16 @@ import (
 	"sync"
 	"time"
 
+	"go.uber.org/fx"
 	"go.uber.org/fx/auth"
-	"go.uber.org/fx/service"
-	"go.uber.org/fx/ulog"
+	"go.uber.org/fx/config"
 
 	"github.com/pkg/errors"
+	"github.com/uber-go/tally"
 	"go.uber.org/zap"
 )
 
 const (
-	// ContentType is the header key that contains the body type
-	ContentType = "Content-Type"
-	// ContentLength is the length of the HTTP body
-	ContentLength = "Content-Length"
-	// ContentTypeText is the plain content type
-	ContentTypeText = "text/plain"
-	// ContentTypeJSON is the JSON content type
-	ContentTypeJSON = "application/json"
-
-	// HTTP defaults
-	defaultTimeout = 60 * time.Second
-	defaultPort    = 3001
-
-	// Reporter timeout for tracking HTTP requests
-	defaultReportTimeout = 90 * time.Second
-
 	// default healthcheck endpoint
 	healthPath = "/health"
 
@@ -61,90 +45,95 @@ const (
 	pprofPath = "/debug/pprof"
 )
 
-var _ service.Module = &Module{}
-
 // A Module is a module to handle HTTP requests
 type Module struct {
-	listener net.Listener
-	lock     sync.RWMutex
+	listener    net.Listener
+	lock        sync.RWMutex
+	l           *zap.Logger
+	handlerCtor fx.Component
 }
 
 // Config handles config for HTTP modules
 type Config struct {
-	Port    int           `yaml:"port"`
-	Timeout time.Duration `yaml:"timeout"`
+	Port    int           `yaml:"port" default:"3001"`
+	Timeout time.Duration `yaml:"timeout" default:"60s"`
 	Debug   bool          `yaml:"debug" default:"true"`
 }
 
-// GetHandlersFunc returns http handler created by caller
-type GetHandlersFunc func(service service.Host) http.Handler
-
 // New returns a new HTTP ModuleProvider.
-func New(handlerFunc GetHandlersFunc) service.ModuleProvider {
-	return service.ModuleProviderFromFunc("uhttp", func(host service.Host) (service.Module, error) {
-		handler := handlerFunc(host)
-		return newModule(host, handler)
-	})
+func New(handlerCtor fx.Component) *Module {
+	if handlerCtor == nil {
+		panic("Handler constructor is nil")
+	}
+
+	return &Module{handlerCtor: handlerCtor}
 }
 
-func newModule(host service.Host, handler http.Handler) (*Module, error) {
-	// setup config defaults
-	cfg := Config{
-		Port:    defaultPort,
-		Timeout: defaultTimeout,
-	}
-	log := ulog.Logger(context.Background()).With(zap.String("module", host.ModuleName()))
-	if err := host.Config().Get("modules").Get(host.ModuleName()).Populate(&cfg); err != nil {
-		log.Error("Error loading http module configuration", zap.Error(err))
-	}
-
-	serveMux := http.NewServeMux()
-	serveMux.Handle(healthPath, healthHandler{})
-
-	// TODO: pass in the auth client as part of module construction
-	authClient := auth.Load(host.Config(), host.Metrics())
-	stats := newStatsClient(host.Metrics())
-
-	handle :=
-		panicInbound(
-			metricsInbound(
-				tracingInbound(
-					authorizationInbound(handler, authClient, stats),
-				), stats,
-			), stats,
-		)
-	serveMux.Handle("/", handle)
-
-	if cfg.Debug {
-		serveMux.Handle(pprofPath, http.DefaultServeMux)
-	}
-	// Set up the socket
-	listener, err := net.Listen("tcp", fmt.Sprintf(":%d", cfg.Port))
-	if err != nil {
-		return nil, errors.Wrap(err, "unable to open TCP listener for HTTP module")
-	}
-
-	// finally, start the http server.
-	log.Info("Server listening on port", zap.Int("port", cfg.Port))
-
-	srv := &http.Server{
-		Handler: serveMux,
-	}
-
-	go func() {
-		// TODO(pedge): what to do about error?
-		if err := srv.Serve(listener); err != nil {
-			log.Error("HTTP Serve error", zap.Error(err))
-		}
-	}()
-	return &Module{
-		listener: listener,
-	}, nil
+// Name returns uhttp.
+func (m *Module) Name() string {
+	return "uhttp"
 }
 
-// Start begins serving requests over HTTP
-func (m *Module) Start() error {
-	return nil
+// TODO(alsam) Remove when dig.Invoke is fixed.
+type starter struct{}
+
+// Constructor returns module components: handler constructor and harness for it.
+func (m *Module) Constructor() []fx.Component {
+	return []fx.Component{
+		m.handlerCtor,
+		//TODO(alsam): remove pointers to interfaces when dig is ready.
+		func(provider config.Provider, l *zap.Logger, scope tally.Scope, handler *http.Handler) (*starter, error) {
+			// setup config defaults
+			cfg := Config{}
+
+			m.l = l.With(zap.String("module", m.Name()))
+			if err := provider.Get("modules").Get(m.Name()).Populate(&cfg); err != nil {
+				m.l.Error("Error loading http module configuration", zap.Error(err))
+			}
+
+			serveMux := http.NewServeMux()
+			serveMux.Handle(healthPath, healthHandler{})
+
+			// TODO: pass in the auth client as part of module construction
+			authClient := auth.Load(provider, scope)
+			stats := newStatsClient(scope)
+
+			handle :=
+				panicInbound(
+					metricsInbound(
+						tracingInbound(
+							authorizationInbound(*handler, authClient, stats),
+						), stats,
+					), stats,
+				)
+
+			serveMux.Handle("/", handle)
+			if cfg.Debug {
+				serveMux.Handle(pprofPath, http.DefaultServeMux)
+			}
+
+			// Set up the socket
+			listener, err := net.Listen("tcp", fmt.Sprintf(":%d", cfg.Port))
+			if err != nil {
+				return nil, errors.Wrap(err, "unable to open TCP listener for HTTP module")
+			}
+			m.listener = listener
+
+			// finally, start the http server.
+			m.l.Info("Server listening on port", zap.Int("port", cfg.Port))
+			srv := &http.Server{
+				Handler: serveMux,
+			}
+
+			go func() {
+				if err := srv.Serve(listener); err != nil {
+					m.l.Error("HTTP Serve error", zap.Error(err))
+				}
+			}()
+
+			return &starter{}, nil
+		},
+	}
 }
 
 // Stop shuts down an HTTP module

@@ -28,7 +28,6 @@ import (
 	"testing"
 
 	"go.uber.org/fx/auth"
-	"go.uber.org/fx/service"
 	"go.uber.org/fx/testutils"
 	"go.uber.org/fx/tracing"
 	"go.uber.org/fx/ulog"
@@ -44,7 +43,7 @@ import (
 func TestDefaultInboundMiddlewareWithNopHost(t *testing.T) {
 	tests := []struct {
 		desc   string
-		testFn func(*testing.T, service.Host)
+		testFn func(*testing.T, tally.Scope)
 	}{
 		{
 			desc:   "testInboundMiddlewareChain",
@@ -64,15 +63,12 @@ func TestDefaultInboundMiddlewareWithNopHost(t *testing.T) {
 		},
 	}
 
-	// setup
-	host := service.NopHost()
-
 	t.Run("parallel group", func(t *testing.T) {
 		for _, tt := range tests {
 			tt := tt // capture range variable
 			t.Run(tt.desc, func(t *testing.T) {
 				t.Parallel()
-				tt.testFn(t, host)
+				tt.testFn(t, tally.NoopScope)
 			})
 		}
 	})
@@ -81,7 +77,7 @@ func TestDefaultInboundMiddlewareWithNopHost(t *testing.T) {
 func TestDefaultMiddlewareWithNopHostAuthFailure(t *testing.T) {
 	tests := []struct {
 		desc   string
-		testFn func(*testing.T, service.Host)
+		testFn func(*testing.T, tally.Scope)
 	}{
 		{
 			desc:   "testInboundMiddlewareChainAuthFailure",
@@ -89,15 +85,12 @@ func TestDefaultMiddlewareWithNopHostAuthFailure(t *testing.T) {
 		},
 	}
 
-	// setup
-	host := service.NopHost()
-
 	t.Run("parallel group", func(t *testing.T) {
 		for _, tt := range tests {
 			tt := tt // capture range variable
 			t.Run(tt.desc, func(t *testing.T) {
 				t.Parallel()
-				tt.testFn(t, host)
+				tt.testFn(t, tally.NoopScope)
 			})
 		}
 	})
@@ -105,7 +98,7 @@ func TestDefaultMiddlewareWithNopHostAuthFailure(t *testing.T) {
 
 func TestDefaultInboundMiddlewareWithNopHostConfigured(t *testing.T) {
 	// this test's sub tests cannot run parallel
-	// and they need to build host by theirselves
+	// and they need to build host by themselves
 	tests := []struct {
 		desc   string
 		testFn func(*testing.T)
@@ -121,7 +114,7 @@ func TestDefaultInboundMiddlewareWithNopHostConfigured(t *testing.T) {
 	}
 }
 
-func testInboundMiddlewareChain(t *testing.T, host service.Host) {
+func testInboundMiddlewareChain(t *testing.T, s tally.Scope) {
 	response := testServeHTTP(getNopHandler())
 	assert.True(t, strings.Contains(response.Body.String(), "inbound middleware ok"))
 }
@@ -145,8 +138,8 @@ func testTracingInboundWithLogs(t *testing.T) {
 
 		assert.Contains(t, response.Body.String(), "inbound middleware ok")
 		assert.True(t, len(buf.Lines()) > 0)
-		var tracecount = 0
-		var spancount = 0
+		tracecount := 0
+		spancount := 0
 		t.Log(buf.Lines())
 		for _, line := range buf.Lines() {
 			if strings.Contains(line, `"trace":`) {
@@ -161,34 +154,32 @@ func testTracingInboundWithLogs(t *testing.T) {
 	})
 }
 
-func testInboundTraceInboundAuthChain(t *testing.T, host service.Host) {
-	response := testServeHTTP(authorizationInbound(tracingInbound(getNopHandler()), auth.NopClient, newStatsClient(host.Metrics())))
+func testInboundTraceInboundAuthChain(t *testing.T, s tally.Scope) {
+	response := testServeHTTP(authorizationInbound(tracingInbound(getNopHandler()), auth.NopClient, newStatsClient(s)))
 	assert.Contains(t, response.Body.String(), "inbound middleware ok")
 }
 
-func testInboundMiddlewareChainAuthFailure(t *testing.T, host service.Host) {
-	response := testServeHTTP(authorizationInbound(tracingInbound(getNopHandler()), auth.FailureClient, newStatsClient(host.Metrics())))
+func testInboundMiddlewareChainAuthFailure(t *testing.T, s tally.Scope) {
+	response := testServeHTTP(authorizationInbound(tracingInbound(getNopHandler()), auth.FailureClient, newStatsClient(s)))
 	assert.Equal(t, response.Body.String(), "Unauthorized access: Error authorizing the service\n")
 	assert.Equal(t, 401, response.Code)
 }
 
-func testPanicInbound(t *testing.T, host service.Host) {
-	response := testServeHTTP(panicInbound(getPanicHandler(), newStatsClient(host.Metrics())))
+func testPanicInbound(t *testing.T, s tally.Scope) {
+	response := testServeHTTP(panicInbound(getPanicHandler(), newStatsClient(s)))
 	assert.Equal(t, response.Body.String(), _panicResponse+"\n")
 	assert.Equal(t, http.StatusInternalServerError, response.Code)
 
-	testScope := host.Metrics()
-	snapshot := testScope.(tally.TestScope).Snapshot()
+	snapshot := s.(tally.TestScope).Snapshot()
 	counters := snapshot.Counters()
 	assert.True(t, counters["panic"].Value() > 0)
 }
 
-func testMetricsInbound(t *testing.T, host service.Host) {
-	response := testServeHTTP(metricsInbound(getNopHandler(), newStatsClient(host.Metrics())))
+func testMetricsInbound(t *testing.T, s tally.Scope) {
+	response := testServeHTTP(metricsInbound(getNopHandler(), newStatsClient(s)))
 	assert.Contains(t, response.Body.String(), "inbound middleware ok")
 
-	testScope := host.Metrics()
-	snapshot := testScope.(tally.TestScope).Snapshot()
+	snapshot := s.(tally.TestScope).Snapshot()
 	counters := snapshot.Counters()
 	timers := snapshot.Timers()
 	assert.True(t, counters["total"].Value() > 0)

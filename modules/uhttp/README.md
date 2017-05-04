@@ -2,39 +2,56 @@
 
 The HTTP module is built on top of [standardlib http library](https://golang.org/pkg/net/http/),
 but the details of that are abstracted away through `uhttp.RouteHandler`.
-As part of module initialization, you can now pass in a `mux.Router` to the
-`uhttp` module.
+As part of module initialization, you can now pass in a function that
+constructs a `mux.Router` for the `uhttp` module.
 
 ```go
 package main
 
 import (
+  "fmt"
   "io"
+  "io/ioutil"
+  "log"
   "net/http"
 
   "go.uber.org/fx"
+  "go.uber.org/fx/config"
   "go.uber.org/fx/modules/uhttp"
-  "go.uber.org/fx/service"
+  "go.uber.org/fx/ulog"
 )
 
 func main() {
-  svc, err := service.WithModule(uhttp.New(registerHTTP)).Build()
+  svc := fx.New(uhttp.New(registerHTTP))
+  svc.Start()
 
+  resp, err := http.DefaultClient.Get("http://localhost:3001/hello")
   if err != nil {
-    log.Fatal("Could not initialize service: ", err)
+    log.Fatal(err)
   }
 
-  svc.Start(true)
+  s, err := ioutil.ReadAll(resp.Body)
+  if err != nil {
+    log.Fatal(err)
+  }
+
+  fmt.Println(string(s))
+  if err := resp.Body.Close(); err != nil {
+    log.Fatal(err)
+  }
+
+  svc.Stop()
 }
 
-func registerHTTP(service service.Host) http.Handler {
+func registerHTTP(cfg config.Provider) (http.Handler, error) {
   handleHome := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
     ulog.Logger(r.Context()).Info("Inside the handler")
-    io.WriteString(w, "Hello, world")
+    io.WriteString(w, "Hello, I am "+cfg.Get("owner").AsString())
   })
+
   router := http.NewServeMux()
-  router.Handle("/", handleHome)
-	return router
+  router.Handle("/hello", handleHome)
+  return router, nil
 }
 ```
 
