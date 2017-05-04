@@ -125,17 +125,18 @@ func TestNegativePortPanic(t *testing.T) {
 		},
 	})
 
-	di.MustRegister(&p)
-	di.MustRegister(&tally.NoopScope)
-	di.MustRegister(zap.NewNop())
-	handlerCtor := func() (http.Handler, error) {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}), nil
+	require.NoError(t, di.Provide(&p))
+	require.NoError(t, di.Provide(&tally.NoopScope))
+	require.NoError(t, di.Provide(zap.NewNop()))
+	handlerCtor := func() (*http.Handler, error) {
+		var res http.Handler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {})
+		return &res, nil
 	}
 
 	mod := New(handlerCtor)
 	ctors := mod.Constructor()
 	for i := range ctors {
-		di.MustRegister(ctors[i])
+		require.NoError(t, di.Provide(ctors[i]))
 	}
 
 	var s *starter
@@ -154,18 +155,18 @@ func withModule(
 ) {
 	di := dig.New()
 	p := config.NewYAMLProviderFromBytes(_httpConfig)
-	di.MustRegister(&p)
-	di.MustRegister(&tally.NoopScope)
-	di.MustRegister(zap.NewNop())
+	require.NoError(t, di.Provide(&p))
+	require.NoError(t, di.Provide(&tally.NoopScope))
+	require.NoError(t, di.Provide(zap.NewNop()))
 
-	mod := New(&handler)
+	mod := New(func() (*http.Handler, error) {return &handler, nil})
 	ctors := mod.Constructor()
 	for i := range ctors {
-		di.MustRegister(ctors[i])
+		require.NoError(t, di.Provide(ctors[i]))
 	}
 
 	var s *starter
-	di.MustResolve(&s)
+	require.NoError(t, di.Resolve(&s))
 	fn(mod)
 	runtime.Gosched()
 	assert.NoError(t, mod.Stop(), "No exit error should occur")

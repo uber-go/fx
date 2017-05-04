@@ -21,7 +21,6 @@
 package uhttp
 
 import (
-	"context"
 	"fmt"
 	"net"
 	"net/http"
@@ -32,7 +31,6 @@ import (
 	"go.uber.org/fx"
 	"go.uber.org/fx/auth"
 	"go.uber.org/fx/config"
-	"go.uber.org/fx/ulog"
 
 	"github.com/pkg/errors"
 	"github.com/uber-go/tally"
@@ -76,17 +74,19 @@ func (m *Module) Name() string {
 	return "uhttp"
 }
 
+// TODO(alsam) Remove when dig.Invoke is fixed.
 type starter struct{}
 
 // Constructor returns module components: handler constructor and harness for it.
 func (m *Module) Constructor() []fx.Component {
 	return []fx.Component{
 		m.handlerCtor,
-		func(provider config.Provider, l *zap.Logger, scope tally.Scope, handler http.Handler) (*starter, error) {
+		//TODO(alsam): remove pointers to interfaces when dig is ready.
+		func(provider config.Provider, l *zap.Logger, scope tally.Scope, handler *http.Handler) (*starter, error) {
 			// setup config defaults
 			cfg := Config{}
 
-			m.l = ulog.Logger(context.Background()).With(zap.String("module", m.Name()))
+			m.l = l.With(zap.String("module", m.Name()))
 			if err := provider.Get("modules").Get(m.Name()).Populate(&cfg); err != nil {
 				m.l.Error("Error loading http module configuration", zap.Error(err))
 			}
@@ -102,7 +102,7 @@ func (m *Module) Constructor() []fx.Component {
 				panicInbound(
 					metricsInbound(
 						tracingInbound(
-							authorizationInbound(handler, authClient, stats),
+							authorizationInbound(*handler, authClient, stats),
 						), stats,
 					), stats,
 				)
