@@ -44,7 +44,7 @@ func (m *NopModule) Constructor() []Component {
 	return []Component{}
 }
 
-func (m *NopModule) Stop() {}
+func (m *NopModule) Stop() error {return nil}
 
 type nopStruct struct{ Name string }
 
