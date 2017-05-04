@@ -71,13 +71,15 @@ func New(handlerCtor fx.Component) *Module {
 	return &Module{handlerCtor: handlerCtor}
 }
 
+// Name returns uhttp.
 func (m *Module) Name() string {
 	return "uhttp"
 }
 
 type starter struct{}
 
-func (m *Module) Constructors() []fx.Component {
+// Constructor returns module components: handler constructor and harness for it.
+func (m *Module) Constructor() []fx.Component {
 	return []fx.Component{
 		m.handlerCtor,
 		func(provider config.Provider, l *zap.Logger, scope tally.Scope, handler http.Handler) (*starter, error) {

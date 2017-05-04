@@ -36,7 +36,7 @@ type Component interface{}
 type Module interface {
 	Name() string
 	Constructor() []Component
-	Stop()
+	Stop() error
 }
 
 // Service controls the lifecycle of an fx service

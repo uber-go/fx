@@ -133,7 +133,7 @@ func TestNegativePortPanic(t *testing.T) {
 	}
 
 	mod := New(handlerCtor)
-	ctors := mod.Constructors()
+	ctors := mod.Constructor()
 	for i := range ctors {
 		di.MustRegister(ctors[i])
 	}
@@ -159,7 +159,7 @@ func withModule(
 	di.MustRegister(zap.NewNop())
 
 	mod := New(&handler)
-	ctors := mod.Constructors()
+	ctors := mod.Constructor()
 	for i := range ctors {
 		di.MustRegister(ctors[i])
 	}

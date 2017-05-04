@@ -30,28 +30,49 @@
 //   package main
 //
 //   import (
+//     "fmt"
 //     "io"
+//     "io/ioutil"
+//     "log"
 //     "net/http"
 //
 //     "go.uber.org/fx"
+//     "go.uber.org/fx/config"
 //     "go.uber.org/fx/modules/uhttp"
+//     "go.uber.org/fx/ulog"
 //   )
 //
 //   func main() {
 //     svc := fx.New(uhttp.New(registerHTTP))
-//     http.DefaultClient.Get("http://localhost:3001/hello")
+//     svc.Start()
+//
+//     resp, err := http.DefaultClient.Get("http://localhost:3001/hello")
+//     if err != nil {
+//       log.Fatal(err)
+//     }
+//
+//     s, err := ioutil.ReadAll(resp.Body)
+//     if err != nil {
+//       log.Fatal(err)
+//     }
+//
+//     fmt.Println(string(s))
+//     if err := resp.Body.Close(); err != nil {
+//       log.Fatal(err)
+//     }
+//
 //     svc.Stop()
 //   }
 //
 //   func registerHTTP(cfg config.Provider) (http.Handler, error) {
 //     handleHome := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 //       ulog.Logger(r.Context()).Info("Inside the handler")
-//       io.WriteString(w, "Hello, I am " + cfg.Get("owner").AsString())
+//       io.WriteString(w, "Hello, I am "+cfg.Get("owner").AsString())
 //     })
 //
 //     router := http.NewServeMux()
 //     router.Handle("/hello", handleHome)
-//     return router
+//     return router, nil
 //   }
 //
 // HTTP handlers are set up with inbound middleware that inject tracing,

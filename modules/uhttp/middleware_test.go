@@ -43,7 +43,7 @@ import (
 func TestDefaultInboundMiddlewareWithNopHost(t *testing.T) {
 	tests := []struct {
 		desc   string
-		testFn func(*testing.T,tally.Scope)
+		testFn func(*testing.T, tally.Scope)
 	}{
 		{
 			desc:   "testInboundMiddlewareChain",
