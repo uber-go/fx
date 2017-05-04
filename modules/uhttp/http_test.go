@@ -159,7 +159,7 @@ func withModule(
 	require.NoError(t, di.Provide(&tally.NoopScope))
 	require.NoError(t, di.Provide(zap.NewNop()))
 
-	mod := New(func() (*http.Handler, error) {return &handler, nil})
+	mod := New(func() (*http.Handler, error) { return &handler, nil })
 	ctors := mod.Constructor()
 	for i := range ctors {
 		require.NoError(t, di.Provide(ctors[i]))
