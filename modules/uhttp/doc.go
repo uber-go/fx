@@ -25,7 +25,7 @@
 // uhttp.RouteHandler.
 // As part of module initialization, you can now pass in a function that
 // constructs a
-// mux.Router to the uhttp module.
+// mux.Router for the uhttp module.
 //
 //   package main
 //
