@@ -23,23 +23,23 @@ package uhttp
 import (
 	"fmt"
 	"io"
+	"io/ioutil"
 	"net/http"
 	"runtime"
 	"testing"
 	"time"
 
 	"go.uber.org/fx/config"
-	"go.uber.org/fx/service"
-	. "go.uber.org/fx/service/testutils"
-	. "go.uber.org/fx/testutils"
 
 	"github.com/opentracing/opentracing-go"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/uber-go/tally"
+	"go.uber.org/dig"
+	"go.uber.org/zap"
 )
 
-var _httpconfig = []byte(`
+var _httpConfig = []byte(`
 modules:
   uhttp:
     port: 0
@@ -51,15 +51,27 @@ var _defaultHTTPClient = &http.Client{Timeout: 2 * time.Second}
 
 func TestNew_OK(t *testing.T) {
 	t.Parallel()
-	WithService(New(registerNothing), nil, []service.Option{configOption()}, func(s service.Manager) {
-		assert.NotNil(t, s, "Should create a module")
 
+	mux := http.NewServeMux()
+	mux.Handle("/something", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte("funny"))
+		assert.NoError(t, r.Body.Close())
+	}))
+
+	withModule(t, mux, func(m *Module) {
+		resp, err := _defaultHTTPClient.Get(fmt.Sprintf("%s/something", getURL(m)))
+		require.NoError(t, err)
+		res, err := ioutil.ReadAll(resp.Body)
+		require.NoError(t, err)
+		resp.Body.Close()
+		assert.Equal(t, "funny", string(res))
 	})
 }
 
 func TestHTTPModule_Panic_OK(t *testing.T) {
 	t.Parallel()
-	withModule(t, registerPanic(), false, func(m *Module) {
+
+	withModule(t, registerPanic(), func(m *Module) {
 		assert.NotNil(t, m)
 		makeRequest(m, "GET", "/", nil, func(r *http.Response) {
 			assert.Equal(t, http.StatusInternalServerError, r.StatusCode, "Expected 500 with panic wrapper")
@@ -69,7 +81,7 @@ func TestHTTPModule_Panic_OK(t *testing.T) {
 
 func TestHTTPModule_Tracer(t *testing.T) {
 	t.Parallel()
-	withModule(t, registerTracerCheckHandler(), false, func(m *Module) {
+	withModule(t, registerTracerCheckHandler(), func(m *Module) {
 		assert.NotNil(t, m)
 		makeRequest(m, "GET", "/", nil, func(r *http.Response) {
 			assert.Equal(t, http.StatusOK, r.StatusCode, "Expected 200 with tracer check")
@@ -79,14 +91,16 @@ func TestHTTPModule_Tracer(t *testing.T) {
 
 func TestHTTPModule_StartsAndStops(t *testing.T) {
 	t.Parallel()
-	withModule(t, registerPanic(), false, func(m *Module) {
+
+	withModule(t, registerPanic(), func(m *Module) {
 		assert.NotNil(t, m.listener, "Start should be successful")
 	})
 }
 
 func TestBuiltinHealth_OK(t *testing.T) {
 	t.Parallel()
-	withModule(t, registerNothing(nil), false, func(m *Module) {
+
+	withModule(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}), func(m *Module) {
 		assert.NotNil(t, m)
 		makeRequest(m, "GET", "/health", nil, func(r *http.Response) {
 			assert.Equal(t, http.StatusOK, r.StatusCode, "Expected 200 with default health handler")
@@ -94,33 +108,64 @@ func TestBuiltinHealth_OK(t *testing.T) {
 	})
 }
 
-// TODO(ai) add a test for binding a bad port and get an error out of Start()
+func TestPanicsOnNilConstructorHandler(t *testing.T) {
+	t.Parallel()
+	require.Panics(t, func() { New(nil) })
+}
 
-func configOption() service.Option {
-	return service.WithConfiguration(StaticAppData(nil))
+func TestNegativePortPanic(t *testing.T) {
+	t.Parallel()
+
+	di := dig.New()
+	p := config.NewStaticProvider(map[string]interface{}{
+		"modules": map[string]interface{}{
+			"uhttp": map[string]interface{}{
+				"port": -1,
+			},
+		},
+	})
+
+	di.MustRegister(&p)
+	di.MustRegister(&tally.NoopScope)
+	di.MustRegister(zap.NewNop())
+	handlerCtor := func() (http.Handler, error) {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}), nil
+	}
+
+	mod := New(handlerCtor)
+	ctors := mod.Constructors()
+	for i := range ctors {
+		di.MustRegister(ctors[i])
+	}
+
+	var s *starter
+	err := di.Resolve(&s)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "unable to open TCP listener for HTTP module")
+
+	runtime.Gosched()
+	assert.NoError(t, mod.Stop(), "No exit error should occur")
 }
 
 func withModule(
 	t testing.TB,
 	handler http.Handler,
-	expectError bool,
 	fn func(*Module),
 ) {
-	host, err := service.NewScopedHost(
-		service.NopHostWithConfig(
-			config.NewYAMLProviderFromBytes(_httpconfig)),
-		"uhttp",
-		"hello",
-	)
-	require.NoError(t, err)
-	mod, err := newModule(host, handler)
-	if expectError {
-		require.Error(t, err, "Expected error instantiating module")
-		fn(nil)
-		return
+	di := dig.New()
+	p := config.NewYAMLProviderFromBytes(_httpConfig)
+	di.MustRegister(&p)
+	di.MustRegister(&tally.NoopScope)
+	di.MustRegister(zap.NewNop())
+
+	mod := New(&handler)
+	ctors := mod.Constructors()
+	for i := range ctors {
+		di.MustRegister(ctors[i])
 	}
-	require.NoError(t, err, "Unable to instantiate module")
-	assert.NoError(t, mod.Start(), "Got error from starting")
+
+	var s *starter
+	di.MustResolve(&s)
 	fn(mod)
 	runtime.Gosched()
 	assert.NoError(t, mod.Stop(), "No exit error should occur")
@@ -146,10 +191,6 @@ func makeRequest(m *Module, method, url string, body io.Reader, fn func(r *http.
 	fn(response)
 }
 
-func registerNothing(_ service.Host) http.Handler {
-	return nil
-}
-
 func registerTracerCheckHandler() http.HandlerFunc {
 	return func(_ http.ResponseWriter, r *http.Request) {
 		span := opentracing.SpanFromContext(r.Context())
@@ -168,15 +209,4 @@ func registerPanic() http.HandlerFunc {
 	return func(_ http.ResponseWriter, r *http.Request) {
 		panic("Intentional panic for:" + r.URL.Path)
 	}
-}
-
-func verifyMetrics(t *testing.T, scope tally.Scope) {
-	snapshot := scope.(tally.TestScope).Snapshot()
-	timers := snapshot.Timers()
-	counters := snapshot.Counters()
-
-	require.NotNil(t, timers["GET"])
-	assert.NotNil(t, timers["GET"].Values())
-	require.NotNil(t, counters["fail"])
-	assert.NotNil(t, counters["fail"].Value())
 }
