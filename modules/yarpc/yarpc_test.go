@@ -1,8 +1,10 @@
 package yarpc
 
 import (
+	"bytes"
+	"context"
+	"fmt"
 	"net/http"
-	"net/http/httptest"
 	"sync"
 	"testing"
 
@@ -13,20 +15,46 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/dig"
-	"go.uber.org/zap"
 	"go.uber.org/yarpc"
+	"go.uber.org/yarpc/api/transport"
+	yhttp "go.uber.org/yarpc/transport/http"
+	"go.uber.org/zap"
 )
 
-func TestYARPC_HTTPTransportHealthAndStop(t *testing.T) {
+type testOnewayHandler struct {
+	handler func(ctx context.Context, req *transport.Request) error
+}
+
+func (t *testOnewayHandler) HandleOneway(ctx context.Context, req *transport.Request) error {
+	return t.handler(ctx, req)
+}
+
+func TestYARPC_HTTPTransportE2E(t *testing.T) {
 	t.Parallel()
 
 	di := dig.New()
-
 	var dispatcher *yarpc.Dispatcher
+	wg := sync.WaitGroup{}
+	wg.Add(1)
 	fn := func(d *yarpc.Dispatcher) (*Transports, error) {
 		require.NotNil(t, d)
 		dispatcher = d
-		return &Transports{}, nil
+		proc := []transport.Procedure{{
+			Name:      "TestName",
+			Service:   "ServiceName",
+			Encoding:  "jsonShallNotBeUsed",
+			Signature: "SaltAndPepper",
+			HandlerSpec: transport.NewOnewayHandlerSpec(&testOnewayHandler{
+				handler: func(ctx context.Context, req *transport.Request) error {
+					assert.Equal(t, "SecretAgent", req.Caller)
+					wg.Done()
+					return nil
+				},
+			}),
+		},
+		}
+
+		return &Transports{Ts: proc}, nil
 	}
 
 	module := New(fn)
@@ -37,11 +65,9 @@ func TestYARPC_HTTPTransportHealthAndStop(t *testing.T) {
 	cfg := map[string]interface{}{
 		"name": "test",
 		"modules.yarpc": map[string]interface{}{
-			"inbounds": []interface{}{
-				map[string]interface{}{
-					"http": map[string]interface{}{
-						"port": 0,
-					},
+			"inbounds": map[string]interface{}{
+				"http": map[string]interface{}{
+					"address": ":0",
 				},
 			},
 		},
@@ -58,5 +84,21 @@ func TestYARPC_HTTPTransportHealthAndStop(t *testing.T) {
 	var starter *starter
 	di.MustResolve(&starter)
 
-	require.NotNil(t, dispatcher)
+	req, err := http.NewRequest(
+		http.MethodPost,
+		fmt.Sprintf("http://%s", dispatcher.Introspect().Inbounds[0].Endpoint), &bytes.Buffer{})
+
+	require.NoError(t, err)
+	req.Header = http.Header{
+		yhttp.ServiceHeader:   []string{"ServiceName"},
+		yhttp.ProcedureHeader: []string{"TestName"},
+		yhttp.CallerHeader:    []string{"SecretAgent"},
+		yhttp.EncodingHeader:  []string{"jsonShallNotBeUsed"},
+	}
+
+	resp, err := http.DefaultClient.Do(req)
+	require.NoError(t, err)
+	require.NoError(t, resp.Body.Close())
+	wg.Wait()
+	require.NoError(t, module.Stop())
 }
