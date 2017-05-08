@@ -28,36 +28,32 @@ import (
 )
 
 const (
-	_nopHostName      = "dummy"
+	_nopName          = "dummy"
 	_stubProviderName = "stubModule"
 )
 
+var _nopRoles = []string{}
+
 func TestModuleOptions(t *testing.T) {
 	for _, test := range []struct {
-		description        string
-		nameOption         string
-		expectedName       string
-		moduleNameOption   string
-		expectedModuleName string
-		roles              []string
-		expectedRoles      []string
+		description   string
+		nameOption    string
+		expectedName  string
+		roles         []string
+		expectedRoles []string
 	}{
 		{
-			description:        "TestNewScopedHostNoOptions",
-			expectedName:       _nopHostName,
-			expectedModuleName: _stubProviderName,
+			description:  "TestNewScopedHostNoOptions",
+			expectedName: _nopName,
 		},
 		{
-			description:        "TestNewScopedHostWithName",
-			nameOption:         "hello",
-			expectedName:       "hello",
-			moduleNameOption:   "yarpc",
-			expectedModuleName: "yarpc",
+			description:  "TestNewScopedHostWithName",
+			nameOption:   "hello",
+			expectedName: "hello",
 		},
 		{
-			description:        "TestNewScopedHostWithRole",
-			expectedName:       _nopHostName,
-			expectedModuleName: _stubProviderName,
+			description:  "TestNewScopedHostWithRole",
+			expectedName: _nopName,
 			roles: []string{
 				"role1",
 			},
@@ -66,10 +62,9 @@ func TestModuleOptions(t *testing.T) {
 			},
 		},
 		{
-			description:        "TestNewScopedHostWithRoles",
-			nameOption:         "hello",
-			expectedName:       "hello",
-			expectedModuleName: _stubProviderName,
+			description:  "TestNewScopedHostWithRoles",
+			nameOption:   "hello",
+			expectedName: "hello",
 			roles: []string{
 				"role1",
 				"role2",
@@ -80,10 +75,9 @@ func TestModuleOptions(t *testing.T) {
 			},
 		},
 		{
-			description:        "TestNewScopedHostWithDuplicateRoles",
-			nameOption:         "hello",
-			expectedName:       "hello",
-			expectedModuleName: _stubProviderName,
+			description:  "TestNewScopedHostWithDuplicateRoles",
+			nameOption:   "hello",
+			expectedName: "hello",
 			roles: []string{
 				"role1",
 				"role2",
@@ -103,33 +97,29 @@ func TestModuleOptions(t *testing.T) {
 			if test.nameOption != "" {
 				moduleOptions = append(moduleOptions, WithName(test.nameOption))
 			}
-			if test.moduleNameOption != "" {
-				moduleOptions = append(moduleOptions, WithModuleName(test.moduleNameOption))
-			}
 			for _, role := range test.roles {
 				moduleOptions = append(moduleOptions, WithRole(role))
 			}
 			moduleWrapper, err := newModuleWrapper(
-				NopHost(),
+				_nopName, _nopRoles,
 				NewDefaultStubModuleProvider(),
 				moduleOptions...,
 			)
 			require.NoError(t, err)
-			assert.Equal(t, test.expectedName, moduleWrapper.scopedHost.Name())
-			assert.Equal(t, test.expectedModuleName, moduleWrapper.scopedHost.ModuleName())
-			assert.Equal(t, test.expectedRoles, moduleWrapper.scopedHost.Roles())
+			assert.Equal(t, test.expectedName, moduleWrapper.Name())
+			assert.Equal(t, test.expectedRoles, moduleWrapper.Roles())
 		})
 	}
 }
 
 func TestModuleWrapper(t *testing.T) {
 	moduleWrapper, err := newModuleWrapper(
-		NopHost(),
+		_nopName, _nopRoles,
 		NewDefaultStubModuleProvider(),
 		WithName("hello"),
 	)
 	require.NoError(t, err)
-	assert.Equal(t, "hello", moduleWrapper.scopedHost.Name())
+	assert.Equal(t, "hello", moduleWrapper.Name())
 	assert.False(t, moduleWrapper.IsRunning())
 	assert.NoError(t, moduleWrapper.Start())
 	assert.True(t, moduleWrapper.IsRunning())
@@ -139,10 +129,10 @@ func TestModuleWrapper(t *testing.T) {
 	assert.Error(t, moduleWrapper.Stop())
 	assert.NoError(t, moduleWrapper.Start())
 	assert.NoError(t, moduleWrapper.Stop())
-	moduleWrapper, err = newModuleWrapper(NopHost(), NewStubModuleProvider("stub", nil))
+	moduleWrapper, err = newModuleWrapper(_nopName, _nopRoles, NewStubModuleProvider("stub", nil))
 	assert.NoError(t, err)
 	assert.Nil(t, moduleWrapper)
-	moduleWrapper, err = newModuleWrapper(NopHost(), nil)
+	moduleWrapper, err = newModuleWrapper(_nopName, _nopRoles, nil)
 	assert.NoError(t, err)
 	assert.Nil(t, moduleWrapper)
 }

@@ -79,7 +79,6 @@ type serviceConfig struct {
 	Roles       []string `yaml:"roles"`
 }
 
-// Implements Host interface
 type serviceCore struct {
 	metricsCore
 	tracerCore
@@ -92,8 +91,6 @@ type serviceCore struct {
 	state          State
 	moduleName     string
 }
-
-var _ Host = &serviceCore{}
 
 func (s *serviceCore) Name() string {
 	return s.standardConfig.Name
@@ -108,7 +105,6 @@ func (s *serviceCore) Description() string {
 }
 
 // ServiceOwner is a string in config.
-// Manager is also a struct that embeds Host
 func (s *serviceCore) Owner() string {
 	return s.standardConfig.Owner
 }
@@ -215,10 +211,6 @@ func (s *serviceCore) setupTracer() error {
 func (s *serviceCore) setupObserver() {
 	if s.observer != nil {
 		loadInstanceConfig(s.configProvider, "service", s.observer)
-
-		if shc, ok := s.observer.(SetContainerer); ok {
-			shc.SetContainer(s)
-		}
 	}
 }
 

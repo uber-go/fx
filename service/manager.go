@@ -60,8 +60,6 @@ type manager struct {
 	started        bool
 }
 
-// TODO(glib): manager is both an Manager and a Host?
-var _ Host = &manager{}
 var _ Manager = &manager{}
 
 // newManager creates a service Manager from a Builder.
@@ -277,17 +275,17 @@ func (m *manager) addModule(provider ModuleProvider, options ...ModuleOption) er
 	if m.locked {
 		return fmt.Errorf("can't add module: service already started")
 	}
-	moduleWrapper, err := newModuleWrapper(m, provider, options...)
+	moduleWrapper, err := newModuleWrapper(m.Name(), m.Roles(), provider, options...)
 	if err != nil {
 		return err
 	}
 	if moduleWrapper == nil {
 		return nil
 	}
-	if !m.supportsRole(moduleWrapper.scopedHost.Roles()...) {
+	if !m.supportsRole(moduleWrapper.Roles()...) {
 		zap.L().Info(
 			"module will not be added due to selected roles",
-			zap.Any("roles", moduleWrapper.scopedHost.Roles()),
+			zap.Any("roles", moduleWrapper.Roles()),
 		)
 	}
 	m.moduleWrappers = append(m.moduleWrappers, moduleWrapper)
@@ -318,7 +316,7 @@ func (m *manager) start() Control {
 		}
 	} else {
 		if m.observer != nil {
-			if err := m.observer.OnInit(m); err != nil {
+			if err := m.observer.OnInit(); err != nil {
 				m.shutdownMu.Unlock()
 				return Control{
 					ReadyChan:    readyCh,

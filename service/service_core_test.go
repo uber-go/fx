@@ -28,7 +28,6 @@ import (
 
 func TestHostContainer_SetContainer(t *testing.T) {
 	myObserver := struct {
-		HostContainer
 	}{}
 	sh := &serviceCore{}
 	myObserver.SetContainer(sh)

@@ -256,7 +256,6 @@ func TestAddModule_NotLocked(t *testing.T) {
 	sh := &manager{}
 	require.NoError(t, sh.addModule(NewDefaultStubModuleProvider()))
 	require.Len(t, sh.moduleWrappers, 1)
-	require.Equal(t, sh, sh.moduleWrappers[0].module.(*StubModule).Host.(*scopedHost).Host)
 }
 
 func TestStartStopRegressionDeadlock(t *testing.T) {
@@ -291,9 +290,8 @@ func TestStartManager_WithErrors(t *testing.T) {
 	s := makeManager()
 	moduleProvider := &StubModuleProvider{
 		NameVal: "stubModule",
-		CreateVal: func(host Host) (Module, error) {
+		CreateVal: func() (Module, error) {
 			return &StubModule{
-				Host:       host,
 				StartError: errors.New("can't start this"),
 			}, nil
 		},

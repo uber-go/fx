@@ -32,7 +32,7 @@ type ModuleProvider interface {
 	// Create a new Module. The name of the Host and the scoping
 	// of associated functions on the Host will be done using a name
 	// provided by a ModuleOption, or by the DefaultName on this ModuleProvider.
-	Create(Host) (Module, error)
+	Create() (Module, error)
 }
 
 // Module is the basic building block of an UberFx service.
@@ -46,7 +46,7 @@ type Module interface {
 }
 
 // ModuleProviderFromFunc creates a new ModuleProvider from a name and create function.
-func ModuleProviderFromFunc(name string, createFunc func(Host) (Module, error)) ModuleProvider {
+func ModuleProviderFromFunc(name string, createFunc func() (Module, error)) ModuleProvider {
 	return &moduleProvider{name: name, createFunc: createFunc}
 }
 
@@ -94,29 +94,25 @@ type moduleOptions struct {
 	Roles       []string
 }
 
-// NewScopedHost returns a new Host scoped to a module. This should generally be used for testing.
-func NewScopedHost(host Host, moduleName, serviceName string, roles ...string) (Host, error) {
-	return newScopedHost(host, moduleName, serviceName, roles...), nil
-}
-
 type moduleProvider struct {
 	name       string
-	createFunc func(Host) (Module, error)
+	createFunc func() (Module, error)
 }
 
-func (m *moduleProvider) DefaultName() string              { return m.name }
-func (m *moduleProvider) Create(host Host) (Module, error) { return m.createFunc(host) }
+func (m *moduleProvider) DefaultName() string     { return m.name }
+func (m *moduleProvider) Create() (Module, error) { return m.createFunc() }
 
 type moduleWrapper struct {
-	name       string
-	module     Module
-	scopedHost *scopedHost
-	isRunning  bool
-	lock       sync.RWMutex
+	name      string
+	roles     []string
+	module    Module
+	isRunning bool
+	lock      sync.RWMutex
 }
 
 func newModuleWrapper(
-	host Host,
+	modName string,
+	modRoles []string,
 	moduleProvider ModuleProvider,
 	options ...ModuleOption,
 ) (*moduleWrapper, error) {
@@ -137,20 +133,14 @@ func newModuleWrapper(
 	if moduleOptions.ServiceName != "" {
 		name = moduleOptions.ServiceName
 	} else {
-		name = host.Name()
+		name = modName
 	}
 	if len(moduleOptions.Roles) > 0 {
 		roles = moduleOptions.Roles
 	} else {
-		roles = host.Roles()
+		roles = modRoles
 	}
-	scopedHost := &scopedHost{
-		Host:        host,
-		serviceName: name,
-		moduleName:  moduleOptions.ModuleName,
-		roles:       roles,
-	}
-	module, err := moduleProvider.Create(scopedHost)
+	module, err := moduleProvider.Create()
 	if err != nil {
 		return nil, err
 	}
@@ -158,14 +148,18 @@ func newModuleWrapper(
 		return nil, nil
 	}
 	return &moduleWrapper{
-		name:       moduleOptions.ModuleName,
-		module:     module,
-		scopedHost: scopedHost,
+		name:   name,
+		module: module,
+		roles:  roles,
 	}, nil
 }
 
 func (m *moduleWrapper) Name() string {
 	return m.name
+}
+
+func (m *moduleWrapper) Roles() []string {
+	return m.roles
 }
 
 func (m *moduleWrapper) Start() error {
@@ -195,36 +189,4 @@ func (m *moduleWrapper) IsRunning() bool {
 	m.lock.RLock()
 	defer m.lock.RUnlock()
 	return m.isRunning
-}
-
-// scopedHost is a host scoped to the module
-type scopedHost struct {
-	Host
-	serviceName string
-	roles       []string
-	moduleName  string
-}
-
-func newScopedHost(host Host, moduleName string, serviceName string, roles ...string) *scopedHost {
-	return &scopedHost{
-		Host:        host,
-		serviceName: serviceName,
-		moduleName:  moduleName,
-		roles:       roles,
-	}
-}
-
-// Name returns the scoped service name
-func (sh *scopedHost) Name() string {
-	return sh.serviceName
-}
-
-// Name returns the scoped module name
-func (sh *scopedHost) ModuleName() string {
-	return sh.moduleName
-}
-
-// Roles returns the roles for the module
-func (sh *scopedHost) Roles() []string {
-	return sh.roles
 }

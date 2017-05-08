@@ -20,14 +20,6 @@
 
 package service
 
-import (
-	"go.uber.org/fx/config"
-	"go.uber.org/fx/metrics"
-
-	opentracing "github.com/opentracing/opentracing-go"
-	"github.com/uber-go/tally"
-)
-
 // A State represents the state of a service
 type State int
 
@@ -46,42 +38,8 @@ const (
 	Stopped
 )
 
-// A Host represents the hosting environment for a service instance
-type Host interface {
-	Name() string
-	Description() string
-	Roles() []string
-	State() State
-	Metrics() tally.Scope
-	RuntimeMetricsCollector() *metrics.RuntimeCollector
-	Observer() Observer
-	Config() config.Provider
-	Tracer() opentracing.Tracer
-	// TODO: Will be removed once log/metrics scoping is moved to the module provider
-	ModuleName() string
-}
-
-// A HostContainer is meant to be embedded in a LifecycleObserver
-// if you want access to the underlying Host
-type HostContainer struct {
-	Host
-}
-
-// SetContainer sets the Host instance on the container.
-// NOTE: This is not thread-safe, and should only be called once during startup.
-func (s *HostContainer) SetContainer(sh Host) {
-	s.Host = sh
-}
-
-// SetContainerer is the interface for anything that you can call SetContainer on
-type SetContainerer interface {
-	SetContainer(Host)
-}
-
 // A Manager encapsulates service ownership
 type Manager interface {
-	Host
-
 	// Start service is used for blocking the call on service start. Start will block the
 	// call and yield the control to the service lifecyce manager. No code will be executed
 	//after call to Start() the service.
@@ -115,7 +73,7 @@ func AfterStart(f func()) Observer {
 
 type niladicStart func()
 
-func (n niladicStart) OnInit(service Host) error      { return nil }
+func (n niladicStart) OnInit() error                  { return nil }
 func (n niladicStart) OnShutdown(reason Exit)         {}
 func (n niladicStart) OnCriticalError(err error) bool { return true }
 func (n niladicStart) OnStateChange(old State, curr State) {
