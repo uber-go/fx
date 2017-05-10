@@ -25,18 +25,16 @@ import (
 	"errors"
 	"testing"
 
-	"go.uber.org/fx/service"
-
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 var (
 	_nopBackend       = &NopBackend{}
-	_nopBackendFn     = func(service.Host) (Backend, error) { return _nopBackend, nil }
-	_memBackendFn     = func(host service.Host) (Backend, error) { return NewInMemBackend(host), nil }
-	_backendFnWithErr = func(service.Host) (Backend, error) { return nil, errors.New("bknd err") }
-	_errBackendFn     = func(service.Host) (Backend, error) { return errBackend{*_nopBackend}, nil }
+	_nopBackendFn     = func() (Backend, error) { return _nopBackend, nil }
+	_memBackendFn     = func() (Backend, error) { return NewInMemBackend(), nil }
+	_backendFnWithErr = func() (Backend, error) { return nil, errors.New("bknd err") }
+	_errBackendFn     = func() (Backend, error) { return errBackend{*_nopBackend}, nil }
 )
 
 type errBackend struct{ NopBackend }
@@ -46,8 +44,8 @@ func (b errBackend) ExecuteAsync() error {
 }
 
 func TestNew(t *testing.T) {
-	b := NewInMemBackend(newTestHost(t))
-	bFn := func(host service.Host) (Backend, error) { return b, nil }
+	b := NewInMemBackend()
+	bFn := func() (Backend, error) { return b, nil }
 	mod := createModule(t, bFn) // Singleton modules get saved
 	require.NoError(t, mod.Start())
 	require.Equal(t, b, mod.(*managedBackend).Backend)
@@ -56,7 +54,7 @@ func TestNew(t *testing.T) {
 }
 
 func TestMemBackendModuleWorkflowWithContext(t *testing.T) {
-	mod, err := newAsyncModule(newTestHost(t), _memBackendFn, DisableExecution())
+	mod, err := newAsyncModule(_memBackendFn, DisableExecution())
 	require.NoError(t, err)
 	require.NotNil(t, mod)
 	b := GlobalBackend()
@@ -73,7 +71,7 @@ func TestMemBackendModuleWorkflowWithContext(t *testing.T) {
 }
 
 func TestModuleStartWithExecuteAsyncError(t *testing.T) {
-	mod, err := newAsyncModule(newTestHost(t), _errBackendFn)
+	mod, err := newAsyncModule(_errBackendFn)
 	require.NoError(t, err)
 	require.NotNil(t, mod)
 	err = mod.Start()
@@ -82,14 +80,13 @@ func TestModuleStartWithExecuteAsyncError(t *testing.T) {
 }
 
 func TestNewError(t *testing.T) {
-	mod, err := newAsyncModule(newTestHost(t), _backendFnWithErr)
+	mod, err := newAsyncModule(_backendFnWithErr)
 	require.Error(t, err)
 	require.Nil(t, mod)
 }
 
 func TestNewWithOptionsError(t *testing.T) {
 	mod, err := newAsyncModule(
-		newTestHost(t),
 		_memBackendFn,
 		func(*Config) error { return errors.New("options error") },
 	)
@@ -101,7 +98,7 @@ func TestNewWithOptionsError(t *testing.T) {
 func createModule(t *testing.T, b BackendCreateFunc, options ...ModuleOption) Backend {
 	moduleProvider := New(b, options...)
 	assert.NotNil(t, moduleProvider)
-	mod, err := moduleProvider.Create(newTestHost(t))
+	mod, err := moduleProvider.Create()
 	assert.NotNil(t, mod)
 	assert.NoError(t, err)
 	return _globalBackend

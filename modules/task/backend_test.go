@@ -25,8 +25,6 @@ import (
 	"testing"
 	"time"
 
-	"go.uber.org/fx/service"
-
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -49,7 +47,7 @@ func TestNopBackend(t *testing.T) {
 }
 
 func TestInMemBackend(t *testing.T) {
-	b := NewInMemBackend(newTestHost(t))
+	b := NewInMemBackend()
 	defer withBackendSetup(t, b)()
 	require.NotNil(t, b.Encoder())
 	require.NoError(t, b.Start())
@@ -60,7 +58,7 @@ func TestInMemBackend(t *testing.T) {
 }
 
 func TestInMemBackendStartTimeout(t *testing.T) {
-	b := NewInMemBackend(newTestHost(t))
+	b := NewInMemBackend()
 	_ = b.Start()
 	defer b.Stop()
 	time.Sleep(time.Millisecond)
@@ -79,10 +77,4 @@ func publishEncodedVal(t *testing.T, b Backend) {
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "type mismatch")
 	}
-}
-
-func newTestHost(t *testing.T) service.Host {
-	mi, err := service.NewScopedHost(service.NopHost(), "task", "hello")
-	require.NoError(t, err)
-	return mi
 }

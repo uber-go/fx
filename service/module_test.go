@@ -43,13 +43,15 @@ func TestModuleOptions(t *testing.T) {
 		expectedRoles []string
 	}{
 		{
-			description:  "TestNewScopedHostNoOptions",
-			expectedName: _nopName,
+			description:   "TestNewScopedHostNoOptions",
+			expectedName:  _nopName,
+			expectedRoles: _nopRoles,
 		},
 		{
-			description:  "TestNewScopedHostWithName",
-			nameOption:   "hello",
-			expectedName: "hello",
+			description:   "TestNewScopedHostWithName",
+			nameOption:    "hello",
+			expectedName:  "hello",
+			expectedRoles: _nopRoles,
 		},
 		{
 			description:  "TestNewScopedHostWithRole",

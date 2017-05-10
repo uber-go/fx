@@ -28,13 +28,13 @@ import (
 )
 
 func TestStubModule_StartError(t *testing.T) {
-	s := NewStubModule(NopHost())
+	s := NewStubModule()
 	s.StartError = errors.New("blargh")
 	assert.Error(t, s.Start())
 }
 
 func TestStubModule_Accessors(t *testing.T) {
-	s := NewStubModule(NopHost())
+	s := NewStubModule()
 	assert := assert.New(t)
 	assert.NoError(s.Stop())
 }

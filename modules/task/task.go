@@ -23,19 +23,17 @@ package task
 import (
 	"sync"
 
-	"go.uber.org/fx/metrics"
 	"go.uber.org/fx/service"
 
 	"github.com/pkg/errors"
 )
 
 var (
-	_globalBackendMu          sync.RWMutex
-	_globalBackend            Backend = &NopBackend{}
-	_globalBackendStatsClient         = newStatsClient(metrics.NopScope)
-	_asyncMod                 service.Module
-	_asyncModErr              error
-	_once                     sync.Once
+	_globalBackendMu sync.RWMutex
+	_globalBackend   Backend = &NopBackend{}
+	_asyncMod        service.Module
+	_asyncModErr     error
+	_once            sync.Once
 )
 
 // GlobalBackend returns global instance of the backend
@@ -46,32 +44,24 @@ func GlobalBackend() Backend {
 	return _globalBackend
 }
 
-func globalBackendStatsClient() *statsClient {
-	_globalBackendMu.RLock()
-	defer _globalBackendMu.RUnlock()
-	return _globalBackendStatsClient
-}
-
 // New creates an async task queue ModuleProvider.
 func New(createFunc BackendCreateFunc, options ...ModuleOption) service.ModuleProvider {
-	return service.ModuleProviderFromFunc("task", func(host service.Host) (service.Module, error) {
-		return newAsyncModuleSingleton(host, createFunc, options...)
+	return service.ModuleProviderFromFunc("task", func() (service.Module, error) {
+		return newAsyncModuleSingleton(createFunc, options...)
 	})
 }
 
 func newAsyncModuleSingleton(
-	host service.Host,
 	createFunc BackendCreateFunc,
 	options ...ModuleOption,
 ) (service.Module, error) {
 	_once.Do(func() {
-		_asyncMod, _asyncModErr = newAsyncModule(host, createFunc, options...)
+		_asyncMod, _asyncModErr = newAsyncModule(createFunc, options...)
 	})
 	return _asyncMod, _asyncModErr
 }
 
 func newAsyncModule(
-	host service.Host,
 	createFunc BackendCreateFunc,
 	options ...ModuleOption,
 ) (service.Module, error) {
@@ -81,14 +71,13 @@ func newAsyncModule(
 			return nil, err
 		}
 	}
-	b, err := createFunc(host)
+	b, err := createFunc()
 	if err != nil {
 		return nil, err
 	}
 	mBackend := &managedBackend{b, *config}
 	_globalBackendMu.Lock()
 	_globalBackend = mBackend
-	_globalBackendStatsClient = newStatsClient(host.Metrics())
 	_globalBackendMu.Unlock()
 	return mBackend, nil
 }
@@ -113,7 +102,7 @@ func (b *managedBackend) Start() error {
 }
 
 // BackendCreateFunc creates a backend implementation
-type BackendCreateFunc func(service.Host) (Backend, error)
+type BackendCreateFunc func() (Backend, error)
 
 // ModuleOption is a function that configures module creation.
 type ModuleOption func(*Config) error

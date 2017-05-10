@@ -21,39 +21,38 @@
 package service
 
 import (
-	"errors"
-	"testing"
+	"go.uber.org/fx/config"
+	"go.uber.org/fx/metrics"
 
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
+	"github.com/opentracing/opentracing-go"
+	"go.uber.org/zap"
 )
 
-func TestStubObserver_OnInit(t *testing.T) {
-	o := observerStub()
-	require.NoError(t, o.OnInit())
-
-	assert.True(t, o.init)
+func nopServiceCore() serviceCore {
+	return nopHostWithConfig(nil)
 }
 
-func TestStubObserver_OnStateChange(t *testing.T) {
-	o := observerStub()
-	o.OnStateChange(Uninitialized, Initialized)
-
-	assert.Equal(t, Initialized, o.state)
+func nopHostWithConfig(configProvider config.Provider) serviceCore {
+	return nopHostConfigured(zap.NewNop(), opentracing.NoopTracer{}, configProvider)
 }
 
-func TestStubObserver_OnShutdown(t *testing.T) {
-	o := observerStub()
-	o.OnShutdown(Exit{})
-
-	assert.True(t, o.shutdown)
-}
-
-func TestStubObserver_OnCriticalError(t *testing.T) {
-	o := observerStub()
-	assert.False(t, o.OnCriticalError(errors.New("dying")))
-}
-
-func observerStub() *StubObserver {
-	return &StubObserver{}
+func nopHostConfigured(logger *zap.Logger, tracer opentracing.Tracer, configProvider config.Provider) serviceCore {
+	if configProvider == nil {
+		configProvider = config.NewStaticProvider(nil)
+	}
+	return serviceCore{
+		configProvider: configProvider,
+		standardConfig: serviceConfig{
+			Name:        "dummy",
+			Owner:       "root@example.com",
+			Description: "does cool stuff",
+		},
+		metricsCore: metricsCore{
+			metrics:       metrics.NopScope,
+			statsReporter: metrics.NopCachedStatsReporter,
+		},
+		tracerCore: tracerCore{
+			tracer: tracer,
+		},
+	}
 }
