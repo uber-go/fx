@@ -43,11 +43,15 @@ var (
 	_emptyDefault = `""`
 )
 
-func newYAMLProviderCore(lookUp lookUpFunc, files ...io.ReadCloser) Provider {
+func newYAMLProviderCore(files ...io.ReadCloser) Provider {
 	var root interface{}
 	for _, v := range files {
+		if v == nil {
+			continue
+		}
+
 		var curr interface{}
-		if err := unmarshalYAMLValue(v, &curr, lookUp); err != nil {
+		if err := unmarshalYAMLValue(v, &curr); err != nil {
 			if file, ok := v.(*os.File); ok {
 				panic(errors.Wrapf(err, "in file: %q", file.Name()))
 			}
@@ -132,13 +136,20 @@ func NewYAMLProviderFromFiles(mustExist bool, resolver FileResolver, files ...st
 		}
 	}
 
-	return NewCachedProvider(newYAMLProviderCore(os.LookupEnv, readers...))
+	return NewCachedProvider(newYAMLProviderCore(readers...))
+}
+
+// NewYAMLProviderWithExpand creates a configuration provider from a set of YAML file names with ${var} or $var values
+// replaced based on the mapping function.
+func NewYAMLProviderWithExpand(mustExist bool, resolver FileResolver, mapping func(string) string, files ...string) Provider {
+	p := NewYAMLProviderFromFiles(mustExist, resolver, files...)
+	return NewExpandProvider(p, mapping)
 }
 
 // NewYAMLProviderFromReader creates a configuration provider from a list of `io.ReadClosers`.
 // As above, all the objects are going to be merged and arrays/values overridden in the order of the files.
 func NewYAMLProviderFromReader(readers ...io.ReadCloser) Provider {
-	return NewCachedProvider(newYAMLProviderCore(os.LookupEnv, readers...))
+	return NewCachedProvider(newYAMLProviderCore(readers...))
 }
 
 // NewYAMLProviderFromBytes creates a config provider from a byte-backed YAML blobs.
@@ -149,7 +160,7 @@ func NewYAMLProviderFromBytes(yamls ...[]byte) Provider {
 		closers[i] = ioutil.NopCloser(bytes.NewReader(yml))
 	}
 
-	return NewCachedProvider(newYAMLProviderCore(os.LookupEnv, closers...))
+	return NewCachedProvider(newYAMLProviderCore(closers...))
 }
 
 func (y yamlConfigProvider) getNode(key string) *yamlNode {
@@ -273,36 +284,20 @@ func (n *yamlNode) Children() []*yamlNode {
 	return nodes
 }
 
-func unmarshalYAMLValue(reader io.ReadCloser, value interface{}, lookUp lookUpFunc) error {
+func unmarshalYAMLValue(reader io.ReadCloser, value interface{}) error {
 	raw, err := ioutil.ReadAll(reader)
 	if err != nil {
 		return errors.Wrap(err, "failed to read the yaml config")
 	}
 
-	var data []byte
-	skipInterpolate := false
-	if f, ok := reader.(*os.File); ok {
-		if strings.Contains(f.Name(), _secretsFile) {
-			skipInterpolate = true
-			data = raw
-		}
-	}
-
-	if !skipInterpolate {
-		data, err = interpolateEnvVars(raw, lookUp)
-		if err != nil {
-			return errors.Wrap(err, "failed to interpolate environment variables")
-		}
-	}
-
-	if err = yaml.Unmarshal(data, value); err != nil {
+	if err = yaml.Unmarshal(raw, value); err != nil {
 		return err
 	}
 
 	return reader.Close()
 }
 
-// Function pre-parses all the YAML bytes to allow value overrides from the environment
+// Function to interpolate environment variables in returned values that have form: ${ENV_VAR:DEFAULT_VALUE}.
 // For example, if an HTTP_PORT environment variable should be used for the HTTP module
 // port, the config would look like this:
 //
@@ -314,14 +309,9 @@ func unmarshalYAMLValue(reader io.ReadCloser, value interface{}, lookUp lookUpFu
 // will be used
 //
 // TODO: what if someone wanted a literal ${FOO} in config? need a small escape hatch
-func interpolateEnvVars(data []byte, lookUp lookUpFunc) ([]byte, error) {
-	// Is this conversion ok?
-	str := string(data)
-	errs := []string{}
-
-	str = os.Expand(str, func(in string) string {
+func interpolate(lookUp lookUpFunc) func(in string) string {
+	return func(in string) string {
 		sep := strings.Index(in, _envSeparator)
-
 		var key string
 		var def string
 
@@ -339,20 +329,13 @@ func interpolateEnvVars(data []byte, lookUp lookUpFunc) ([]byte, error) {
 		}
 
 		if def == "" {
-			errs = append(errs, fmt.Sprintf(`default is empty for %s (use "" for empty string)`, key))
-			return in
+			panic(fmt.Sprintf(`default is empty for %s (use "" for empty string)`, key))
 		} else if def == _emptyDefault {
 			return ""
 		}
 
 		return def
-	})
-
-	if len(errs) > 0 {
-		return nil, errors.New(strings.Join(errs, ","))
 	}
-
-	return []byte(str), nil
 }
 
 func getNodeType(val interface{}) nodeType {

@@ -61,8 +61,11 @@ type Loader struct {
 	staticProviderFuncs  []ProviderFunc
 	dynamicProviderFuncs []DynamicProviderFunc
 
-	// Files to load.
+	// Files to load, they will be interpolated with values from environment variables.
 	configFiles []string
+
+	// Files to load without interpolation.
+	staticFiles []string
 
 	// Dirs to load from.
 	dirs []string
@@ -79,9 +82,10 @@ var DefaultLoader = NewLoader(commandLineProviderFunc)
 // NewLoader returns a default Loader with providers overriding the YAML provider.
 func NewLoader(providers ...ProviderFunc) *Loader {
 	l := &Loader{
-		envPrefix: "APP",
-		dirs:      []string{".", "./config"},
-		lookUp:    os.LookupEnv,
+		envPrefix:   "APP",
+		dirs:        []string{".", "./config"},
+		lookUp:      os.LookupEnv,
+		staticFiles: []string{_secretsFile},
 	}
 
 	// Order is important: we want users to be able to override static provider
@@ -129,10 +133,6 @@ func (l *Loader) ResolvePath(relative string) (string, error) {
 	return abs, nil
 }
 
-func (l *Loader) baseFiles() []string {
-	return []string{_baseFile, l.Environment() + ".yaml", _secretsFile}
-}
-
 func (l *Loader) getResolver() FileResolver {
 	return NewRelativeResolver(l.Paths()...)
 }
@@ -140,7 +140,9 @@ func (l *Loader) getResolver() FileResolver {
 // YamlProvider returns function to create Yaml based configuration provider
 func (l *Loader) YamlProvider() ProviderFunc {
 	return func() (Provider, error) {
-		return NewYAMLProviderFromFiles(false, l.getResolver(), l.getFiles()...), nil
+		interpolated := NewYAMLProviderFromFiles(false, l.getResolver(), l.getFiles()...)
+		static := NewYAMLProviderWithExpand(false, l.getResolver(), interpolate(os.LookupEnv), l.getFiles()...)
+		return NewProviderGroup("yaml", interpolated, static), nil
 	}
 }
 
@@ -163,11 +165,21 @@ func (l *Loader) Paths() []string {
 }
 
 // SetConfigFiles overrides the set of available config files for the service.
+// Configs will be interpolated with values from environment variables.
 func (l *Loader) SetConfigFiles(files ...string) {
 	l.lock.Lock()
 	defer l.lock.Unlock()
 
 	l.configFiles = files
+}
+
+// SetStaticConfigFiles overrides the set of available config files for the service.
+// Config values will not be interpolated.
+func (l *Loader) SetStaticConfigFiles(files ...string) {
+	l.lock.Lock()
+	defer l.lock.Unlock()
+
+	l.staticFiles = files
 }
 
 func (l *Loader) getFiles() []string {

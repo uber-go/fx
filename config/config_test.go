@@ -485,15 +485,14 @@ rpc:
         host: 127.0.0.1
         port: ${COMPANY_TCHANNEL_PORT:321}
 `
-	lookup := func(key string) (string, bool) {
+	lookup := func(key string) (string) {
 		if key == "COMPANY_TCHANNEL_PORT" {
-			return "4324", true
+			return "4324"
 		}
-
-		return "", false
+		panic("boom")
 	}
 
-	p := newYAMLProviderCore(lookup, ioutil.NopCloser(bytes.NewBufferString(rpc)))
+	p := NewExpandProvider(NewYAMLProviderFromReader(ioutil.NopCloser(bytes.NewBufferString(rpc))), lookup)
 
 	cfg := &YARPCConfig{}
 	v := p.Get("rpc")

@@ -198,7 +198,7 @@ func TestYAMLNode(t *testing.T) {
 	t.Parallel()
 	buff := bytes.NewBuffer([]byte("a: b"))
 	node := &yamlNode{value: make(map[interface{}]interface{})}
-	err := unmarshalYAMLValue(ioutil.NopCloser(buff), &node.value, nil)
+	err := unmarshalYAMLValue(ioutil.NopCloser(buff), &node.value)
 	require.NoError(t, err)
 	assert.Equal(t, "map[a:b]", node.String())
 	assert.Equal(t, "map[interface {}]interface {}", node.Type().String())
@@ -209,7 +209,7 @@ func TestYamlNodeWithNil(t *testing.T) {
 	provider := NewYAMLProviderFromFiles(false, nil)
 	assert.NotNil(t, provider)
 	assert.Panics(t, func() {
-		_ = unmarshalYAMLValue(nil, nil, nil)
+		_ = unmarshalYAMLValue(nil, nil)
 	}, "Expected panic with nil inpout.")
 }
 
