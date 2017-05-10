@@ -32,6 +32,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"path/filepath"
 )
 
 type nested struct {
@@ -614,6 +615,35 @@ func TestLoader_LoadFromCurrentFolder(t *testing.T) {
 		l := NewLoader()
 		l.SetConfigFiles(dir + "/base.yaml")
 		p := l.Load()
+		assert.Equal(t, "base", p.Get("value").AsString())
+	}
+
+	withBase(t, f, "value: base")
+}
+
+func TestLoader_LoadFromTestEnvironment(t *testing.T) {
+	t.Parallel()
+	f := func(dir string) {
+		l := NewLoader()
+		l.SetEnvironmentPrefix("MINI")
+		f, err := os.Create(filepath.Join(dir, "spy.yaml"))
+		require.NoError(t, err)
+		defer os.Remove(f.Name())
+
+		l.SetLookupFn(func(key string) (string, bool) {
+			m := map[string]string{
+				"MINI_CONFIG_DIR":  dir,
+				"MINI_ENVIRONMENT": "spy",
+			}
+
+			res, ok := m[key]
+			require.True(t, ok)
+			return res, ok
+		})
+
+		f.WriteString("me: Austin Powers")
+		p := l.Load()
+		assert.Equal(t, "Austin Powers", p.Get("me").AsString())
 		assert.Equal(t, "base", p.Get("value").AsString())
 	}
 

@@ -84,13 +84,20 @@ func NewLoader(providers ...ProviderFunc) *Loader {
 		lookUp:    os.LookupEnv,
 	}
 
-	l.configFiles = l.baseFiles()
 	// Order is important: we want users to be able to override static provider
 	l.RegisterProviders(l.YamlProvider())
 	l.RegisterProviders(providers...)
 
 	return l
 }
+
+// TestConfig is Provider that can be used for testing. It loads configuration from
+// base.yaml and test.yaml files.
+var TestConfig = func() Provider {
+	l := NewLoader()
+	l.SetConfigFiles(_baseFile, "test.yaml")
+	return l.Load()
+}()
 
 // AppRoot returns the root directory of your application. UberFx developers
 // can edit this via the APP_ROOT environment variable. If the environment
@@ -167,8 +174,15 @@ func (l *Loader) getFiles() []string {
 	l.lock.RLock()
 	defer l.lock.RUnlock()
 
-	res := make([]string, len(l.configFiles))
-	copy(res, l.configFiles)
+	files := l.configFiles
+
+	// Check if files where explicitly set.
+	if len(files) == 0 {
+		files = l.baseFiles()
+	}
+
+	res := make([]string, len(files))
+	copy(res, files)
 	return res
 }
 
