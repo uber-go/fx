@@ -84,9 +84,8 @@ func TestYAMLEnvInterpolationMissing(t *testing.T) {
 name: some name here
 email: ${EMAIL_ADDRESS}`)
 
-	require.Panics(t, func() {
-		NewYAMLProviderFromBytes(cfg)
-	})
+	p := NewYAMLProviderFromBytes(cfg)
+	assert.Equal(t, "${EMAIL_ADDRESS}", p.Get("email"))
 }
 
 func TestYAMLEnvInterpolationIncomplete(t *testing.T) {

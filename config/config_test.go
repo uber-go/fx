@@ -485,7 +485,7 @@ rpc:
         host: 127.0.0.1
         port: ${COMPANY_TCHANNEL_PORT:321}
 `
-	lookup := func(key string) (string) {
+	lookup := func(key string) string {
 		if key == "COMPANY_TCHANNEL_PORT" {
 			return "4324"
 		}

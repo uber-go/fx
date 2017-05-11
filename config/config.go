@@ -133,6 +133,10 @@ func (l *Loader) ResolvePath(relative string) (string, error) {
 	return abs, nil
 }
 
+func (l *Loader) baseFiles() []string {
+	return []string{_baseFile, l.Environment() + ".yaml", _secretsFile}
+}
+
 func (l *Loader) getResolver() FileResolver {
 	return NewRelativeResolver(l.Paths()...)
 }
@@ -187,7 +191,6 @@ func (l *Loader) getFiles() []string {
 	defer l.lock.RUnlock()
 
 	files := l.configFiles
-
 	// Check if files where explicitly set.
 	if len(files) == 0 {
 		files = l.baseFiles()

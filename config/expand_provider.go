@@ -1,3 +1,23 @@
+// Copyright (c) 2017 Uber Technologies, Inc.
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included in
+// all copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+// THE SOFTWARE.
+
 package config
 
 import (
@@ -28,25 +48,16 @@ func (e *expandProvider) Get(key string) (val Value) {
 		return NewValue(e, key, nil, false, Invalid, nil)
 	}
 
-	defer func() {
-		recover()
-		val = NewValue(e, key, val, true, v.Type, &v.Timestamp)
-	}()
-
 	m := os.Expand(fmt.Sprint(v.Value()), e.mapping)
 	val = NewValue(e, key, m, true, String, &v.Timestamp)
 	return
 }
 
 // RegisterChangeCallback registers the callback in the underlying provider.
-func (e *expandProvider) RegisterChangeCallback(key string, callback ChangeCallback) error{
-	return e.p.RegisterChangeCallback(key, func(key string, provider string, data interface{}){
-		defer func() {
-			recover()
-			callback(key, e.Name(), data)
-		}()
-
+func (e *expandProvider) RegisterChangeCallback(key string, callback ChangeCallback) error {
+	return e.p.RegisterChangeCallback(key, func(key string, provider string, data interface{}) {
 		data = e.mapping(fmt.Sprint(data))
+		callback(key, e.Name(), data)
 	})
 }
 
