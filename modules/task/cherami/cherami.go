@@ -101,6 +101,7 @@ func RegisterHyperbahnBootstrapFile(filename string) {
 }
 
 // NewBackend creates a Cherami client backend
+// TODO (madhu): Fix new backend after module refactor
 func NewBackend(
 	cfg config.Provider,
 	metrics tally.Scope,
