@@ -108,7 +108,7 @@ func TestModuleOptions(t *testing.T) {
 				moduleOptions...,
 			)
 			require.NoError(t, err)
-			assert.Equal(t, test.expectedName, moduleWrapper.Name())
+			assert.Equal(t, test.expectedName, moduleWrapper.ServiceName())
 			assert.Equal(t, test.expectedRoles, moduleWrapper.Roles())
 		})
 	}
@@ -121,7 +121,7 @@ func TestModuleWrapper(t *testing.T) {
 		WithName("hello"),
 	)
 	require.NoError(t, err)
-	assert.Equal(t, "hello", moduleWrapper.Name())
+	assert.Equal(t, "hello", moduleWrapper.ServiceName())
 	assert.False(t, moduleWrapper.IsRunning())
 	assert.NoError(t, moduleWrapper.Start())
 	assert.True(t, moduleWrapper.IsRunning())

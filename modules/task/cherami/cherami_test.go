@@ -32,7 +32,6 @@ import (
 	"go.uber.org/fx/config"
 	cherami_mocks "go.uber.org/fx/mocks/modules/task/cherami"
 	"go.uber.org/fx/modules/task"
-	"go.uber.org/fx/service"
 	"go.uber.org/fx/testutils"
 	"go.uber.org/fx/testutils/tracing"
 	"go.uber.org/fx/ulog"
@@ -41,15 +40,19 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
+	"github.com/uber-go/tally"
 	"github.com/uber/cherami-client-go/client/cherami"
 	cherami_gen "github.com/uber/cherami-thrift/.generated/go/cherami"
 )
 
 var (
-	_host       = service.NopHostConfigured(ulog.Logger(context.Background()), opentracing.NoopTracer{})
-	_pathName   = _pathPrefix + _host.Name()
-	_cgName     = _pathPrefix + _host.Name() + "_cg"
-	_publishMsg = []byte("Hello")
+	_serviceName = "nopService"
+	_cfg         = config.NewStaticProvider(map[string]string{"name": "nopService"})
+	_metrics     = tally.NoopScope
+	_tracer      = opentracing.NoopTracer{}
+	_pathName    = _pathPrefix + _serviceName
+	_cgName      = _pathPrefix + _serviceName + "_cg"
+	_publishMsg  = []byte("Hello")
 )
 
 func TestBackendWorkflow(t *testing.T) {
@@ -58,8 +61,7 @@ func TestBackendWorkflow(t *testing.T) {
 	zapLogger, buf := testutils.GetLockedInMemoryLogger()
 	defer ulog.SetLogger(zapLogger)()
 	tracing.WithTracer(t, zapLogger, func(tracer opentracing.Tracer) {
-		host := service.NopHostConfigured(zapLogger, tracer)
-		bknd := createNewBackend(t, m, host)
+		bknd := createNewBackend(t, m, _cfg, _metrics, _tracer)
 		assert.NotNil(t, bknd.Encoder())
 		deliveryCh, err := startBackend(t, m, bknd, nil, nil)
 		require.NoError(t, err)
@@ -81,7 +83,7 @@ func TestBackendWorkflowWorkerPanic(t *testing.T) {
 	defer m.AssertExpectations(t)
 	zapLogger, buf := testutils.GetLockedInMemoryLogger()
 	defer ulog.SetLogger(zapLogger)()
-	bknd := createNewBackend(t, m, _host)
+	bknd := createNewBackend(t, m, _cfg, _metrics, _tracer)
 	deliveryCh, err := startBackend(t, m, bknd, nil, nil)
 	require.NoError(t, err)
 	assert.True(t, bknd.(*Backend).isRunning())
@@ -114,7 +116,7 @@ func TestBackendWorkflowWorkerPanic(t *testing.T) {
 func TestBackendWorkflowStateLocks(t *testing.T) {
 	m := newMock()
 	defer m.AssertExpectations(t)
-	bknd := createNewBackend(t, m, _host)
+	bknd := createNewBackend(t, m, _cfg, _metrics, _tracer)
 	assert.NotNil(t, bknd.Encoder())
 	var wg sync.WaitGroup
 	wg.Add(2)
@@ -141,7 +143,7 @@ func TestNewBackendClientError(t *testing.T) {
 	) (cherami.Client, error) {
 		return nil, errors.New("failure")
 	}
-	checkNewBackendError(t, "client for service: \"dummy\": failure")
+	checkNewBackendError(t, "client for service: \""+_serviceName+"\": failure")
 }
 
 func TestNewBackendReadEntityNotExistsCreateDestError(t *testing.T) {
@@ -149,7 +151,7 @@ func TestNewBackendReadEntityNotExistsCreateDestError(t *testing.T) {
 	defer m.AssertExpectations(t)
 	setupHappyClientFunc(m)
 	setupDest(m, _pathName, errors.New("create error"))
-	checkNewBackendError(t, "create destination: \"/uberfx_async/dummy\"")
+	checkNewBackendError(t, "create destination: \"/uberfx_async/"+_serviceName+"\"")
 }
 
 func TestNewBackendEntityNotExistsCreateCgError(t *testing.T) {
@@ -158,7 +160,7 @@ func TestNewBackendEntityNotExistsCreateCgError(t *testing.T) {
 	setupHappyClientFunc(m)
 	setupDest(m, _pathName, nil)
 	setupCg(m, _pathName, _cgName, errors.New("create error"))
-	checkNewBackendError(t, "create consumer group: \"/uberfx_async/dummy_cg\"")
+	checkNewBackendError(t, "create consumer group: \"/uberfx_async/"+_serviceName+"_cg\"")
 }
 
 func TestNewBackendCreateEntityExistsSuccess(t *testing.T) {
@@ -168,15 +170,15 @@ func TestNewBackendCreateEntityExistsSuccess(t *testing.T) {
 	setupDest(m, _pathName, &cherami_gen.EntityAlreadyExistsError{})
 	setupCg(m, _pathName, _cgName, &cherami_gen.EntityAlreadyExistsError{})
 	setupPublisherConsumer(m, _pathName, _cgName)
-	bknd, err := NewBackend(_host)
+	bknd, err := NewBackend(_cfg, _metrics, _tracer)
 	require.NoError(t, err)
 	assert.NotNil(t, bknd)
 	assert.False(t, bknd.(*Backend).isRunning())
 }
 
-func TestNewBackendCreateWithConfiguredHost(t *testing.T) {
+func TestNewBackendCreateWithConfigProvidert(t *testing.T) {
 	data := []byte(`
-name: dummy
+name: nopService
 owner: owner@owner.com
 modules:
   task:
@@ -188,8 +190,7 @@ modules:
 `)
 	path := "/my_dest/"
 	cg := "/my_dest_cg/"
-	provider := config.NewYAMLProviderFromBytes(data)
-	host := service.NopHostWithConfig(provider)
+	cfgProvider := config.NewYAMLProviderFromBytes(data)
 	RegisterHyperbahnBootstrapFile("hyperbahn-filename")
 
 	// Setup mock and function calls
@@ -222,14 +223,14 @@ modules:
 	setupPublisherConsumer(m, path, cg)
 
 	// Create backend
-	bknd, err := NewBackend(host)
+	bknd, err := NewBackend(cfgProvider, _metrics, _tracer)
 	require.NoError(t, err)
 	assert.NotNil(t, bknd)
 	assert.False(t, bknd.(*Backend).isRunning())
 }
 
 func checkNewBackendError(t *testing.T, errStr string) {
-	bknd, err := NewBackend(_host)
+	bknd, err := NewBackend(_cfg, _metrics, _tracer)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), errStr)
 	assert.Nil(t, bknd)
@@ -239,7 +240,7 @@ func TestStartBackendInvalidStateError(t *testing.T) {
 	stateToError := map[state]string{_running: "already running", _stopped: "has been stopped"}
 	for state, errStr := range stateToError {
 		m := newMock()
-		bknd := createNewBackend(t, m, _host)
+		bknd := createNewBackend(t, m, _cfg, _metrics, _tracer)
 		bknd.(*Backend).setState(state)
 		err := bknd.Start()
 		assert.Contains(t, err.Error(), errStr)
@@ -249,7 +250,7 @@ func TestStartBackendInvalidStateError(t *testing.T) {
 func TestStartBackendOpenPublisherError(t *testing.T) {
 	m := newMock()
 	defer m.AssertExpectations(t)
-	bknd := createNewBackend(t, m, _host)
+	bknd := createNewBackend(t, m, _cfg, _metrics, _tracer)
 	errStr := "publish error"
 	_, err := startBackend(t, m, bknd, errors.New(errStr), nil)
 	assert.False(t, bknd.(*Backend).isRunning())
@@ -259,7 +260,7 @@ func TestStartBackendOpenPublisherError(t *testing.T) {
 func TestStartBackendOpenConsumerError(t *testing.T) {
 	m := newMock()
 	defer m.AssertExpectations(t)
-	bknd := createNewBackend(t, m, _host)
+	bknd := createNewBackend(t, m, _cfg, _metrics, _tracer)
 	errStr := "consume error"
 	_, err := startBackend(t, m, bknd, nil, errors.New(errStr))
 	assert.False(t, bknd.(*Backend).isRunning())
@@ -280,9 +281,8 @@ func TestEncodingErrors(t *testing.T) {
 		tracer := &tracing.ErrorTracer{Tracer: opentracing.NoopTracer{}}
 		zapLogger, buf := testutils.GetLockedInMemoryLogger()
 		defer ulog.SetLogger(zapLogger)()
-		host := service.NopHostConfigured(zapLogger, tracer)
 
-		bknd := createNewBackend(t, m, host)
+		bknd := createNewBackend(t, m, _cfg, _metrics, tracer)
 		cBknd := bknd.(*Backend)
 		m.Delivery.On("GetMessage").Return(
 			&cherami_gen.ConsumerMessage{
@@ -346,12 +346,18 @@ func (m *cheramiMock) AssertExpectations(t *testing.T) {
 	m.Delivery.AssertExpectations(t)
 }
 
-func createNewBackend(t *testing.T, m *cheramiMock, host service.Host) task.Backend {
+func createNewBackend(
+	t *testing.T,
+	m *cheramiMock,
+	cfg config.Provider,
+	metrics tally.Scope,
+	tracer opentracing.Tracer,
+) task.Backend {
 	setupHappyClientFunc(m)
 	setupDest(m, _pathName, nil)
 	setupCg(m, _pathName, _cgName, nil)
 	setupPublisherConsumer(m, _pathName, _cgName)
-	bknd, err := NewBackend(host)
+	bknd, err := NewBackend(cfg, metrics, tracer)
 	require.NoError(t, err)
 	assert.NotNil(t, bknd)
 	assert.False(t, bknd.(*Backend).isRunning())
@@ -433,7 +439,9 @@ func publish(
 		ctx = opentracing.ContextWithSpan(ctx, span)
 		ctxBytes, err := bknd.(*Backend).ctxEncoder.Marshal(ctx)
 		require.NoError(t, err)
-		userCtx[_ctxKey] = string(ctxBytes)
+		if len(ctxBytes) > 0 {
+			userCtx[_ctxKey] = string(ctxBytes)
+		}
 	}
 	m.Pub.On(
 		"Publish", &cherami.PublisherMessage{Data: _publishMsg, UserContext: userCtx},

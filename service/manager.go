@@ -451,7 +451,7 @@ func (m *manager) stopModules() []error {
 			}
 		case <-time.After(m.StopTimeout):
 			results = append(results,
-				fmt.Errorf("stop module %q timedout after %q", mod.Name(), m.StopTimeout))
+				fmt.Errorf("stop module %q timed out after %q", mod.Name(), m.StopTimeout))
 		}
 	}
 

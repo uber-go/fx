@@ -105,7 +105,7 @@ func TestWithModules_StopTimeout(t *testing.T) {
 	err = svc.Stop("someReason", 1)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "timeoutStop")
-	assert.Contains(t, err.Error(), `timedout after "1µs"`)
+	assert.Contains(t, err.Error(), `timed out after "1µs"`)
 }
 
 func TestDefaultTimeouts(t *testing.T) {

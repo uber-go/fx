@@ -103,15 +103,16 @@ func (m *moduleProvider) DefaultName() string     { return m.name }
 func (m *moduleProvider) Create() (Module, error) { return m.createFunc() }
 
 type moduleWrapper struct {
-	name      string
-	roles     []string
-	module    Module
-	isRunning bool
-	lock      sync.RWMutex
+	name        string
+	serviceName string
+	roles       []string
+	module      Module
+	isRunning   bool
+	lock        sync.RWMutex
 }
 
 func newModuleWrapper(
-	modName string,
+	serviceName string,
 	modRoles []string,
 	moduleProvider ModuleProvider,
 	options ...ModuleOption,
@@ -125,15 +126,15 @@ func newModuleWrapper(
 			return nil, err
 		}
 	}
-	var name string
+	var svcName string
 	var roles []string
 	if moduleOptions.ModuleName == "" {
 		moduleOptions.ModuleName = moduleProvider.DefaultName()
 	}
 	if moduleOptions.ServiceName != "" {
-		name = moduleOptions.ServiceName
+		svcName = moduleOptions.ServiceName
 	} else {
-		name = modName
+		svcName = serviceName
 	}
 	if len(moduleOptions.Roles) > 0 {
 		roles = moduleOptions.Roles
@@ -148,10 +149,15 @@ func newModuleWrapper(
 		return nil, nil
 	}
 	return &moduleWrapper{
-		name:   name,
-		module: module,
-		roles:  roles,
+		name:        moduleOptions.ModuleName,
+		serviceName: svcName,
+		module:      module,
+		roles:       roles,
 	}, nil
+}
+
+func (m *moduleWrapper) ServiceName() string {
+	return m.serviceName
 }
 
 func (m *moduleWrapper) Name() string {
