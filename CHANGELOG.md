@@ -23,7 +23,7 @@
   propagated through module creation.
 - **[Breaking]** Remove lookup function from the YAML provider constructor and add
   explicit constructors `WithExpand` to use interpolation.
-- Add a SetStaticConfigFiles method to load yaml files that should no be interpolated.
+- Add a SetStaticConfigFiles method to load yaml files that should not be interpolated.
 
 ## v1.0.0-beta3 (28 Mar 2017)
 
