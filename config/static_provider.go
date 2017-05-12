@@ -23,6 +23,7 @@ package config
 import (
 	"bytes"
 	"gopkg.in/yaml.v2"
+	"io"
 	"io/ioutil"
 )
 
@@ -33,23 +34,17 @@ type staticProvider struct {
 // NewStaticProvider should only be used in tests to isolate config from your environment
 // It is not race free, because underlying objects can be accessed with Value().
 func NewStaticProvider(data interface{}) Provider {
-	b, err := yaml.Marshal(data)
-	if err != nil {
-		panic(err)
+	return staticProvider{
+		Provider: NewYAMLProviderFromReader(toReadCloser(data)),
 	}
-
-	return staticProvider{Provider: NewYAMLProviderFromBytes(b)}
 }
 
 // NewStaticProviderWithExpand returns a static provider with values replaced by a mapping function.
 func NewStaticProviderWithExpand(data interface{}, mapping func(string) (string, bool)) Provider {
-	b, err := yaml.Marshal(data)
-	if err != nil {
-		panic(err)
-	}
 
-	r := ioutil.NopCloser(bytes.NewBuffer(b))
-	return staticProvider{Provider: NewYAMLProviderFromReaderWithExpand(mapping, r)}
+	return staticProvider{
+		Provider: NewYAMLProviderFromReaderWithExpand(mapping, toReadCloser(data)),
+	}
 }
 
 // StaticProvider returns function to create StaticProvider during configuration initialization
@@ -61,4 +56,13 @@ func StaticProvider(data interface{}) ProviderFunc {
 
 func (staticProvider) Name() string {
 	return "static"
+}
+
+func toReadCloser(data interface{}) io.ReadCloser {
+	b, err := yaml.Marshal(data)
+	if err != nil {
+		panic(err)
+	}
+
+	return ioutil.NopCloser(bytes.NewBuffer(b))
 }

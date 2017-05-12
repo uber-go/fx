@@ -647,7 +647,7 @@ func TestLoader_LoadFromTestEnvironment(t *testing.T) {
 	withBase(t, f, "value: base")
 }
 
-func TestLoader_LoadNotInterpolatedFiles(t *testing.T) {
+func TestLoader_DefaultLoadOfStaticConfigFiles(t *testing.T) {
 	t.Parallel()
 	f := func(dir string) {
 		l := NewLoader()
