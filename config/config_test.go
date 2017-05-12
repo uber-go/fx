@@ -486,10 +486,8 @@ rpc:
         port: ${COMPANY_TCHANNEL_PORT:321}
 `
 	lookup := func(key string) string {
-		if key == "COMPANY_TCHANNEL_PORT" {
-			return "4324"
-		}
-		panic("boom")
+		require.Equal(t, "COMPANY_TCHANNEL_PORT:321", key)
+		return "4324"
 	}
 
 	p := NewExpandProvider(NewYAMLProviderFromReader(ioutil.NopCloser(bytes.NewBufferString(rpc))), lookup)

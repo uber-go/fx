@@ -218,3 +218,31 @@ func TestPopulateNonPointerType(t *testing.T) {
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "can't populate non pointer type")
 }
+
+func TestStaticProviderWithExpand(t *testing.T) {
+	t.Parallel()
+
+	p := NewStaticProviderWithExpand(map[string]interface{}{
+		"slice": []interface{}{"one", "${iTwo:2}"},
+		"value": `${iValue:""}`,
+		"map": map[string]interface{}{
+			"drink?":"${iMap:tea?}",
+			"tea?":"with cream",
+		},
+	}, func(key string) (string, bool){
+		switch key {
+		case "iValue": return "null", true
+		case "iTwo" : return "3", true
+		case "iMap" : return "rum please!", true
+		}
+
+		return "", false
+	})
+
+	assert.Equal(t, "one", p.Get("slice.0").AsString())
+	assert.Equal(t, "3", p.Get("slice.1").AsString())
+	assert.Equal(t, "null", p.Get("value").Value())
+
+	assert.Equal(t, "rum please!", p.Get("map.drink?").AsString())
+	assert.Equal(t, "with cream", p.Get("map.tea?").AsString())
+}

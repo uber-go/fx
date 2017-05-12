@@ -43,7 +43,7 @@ var (
 	_emptyDefault = `""`
 )
 
-func newYAMLProviderCore(files ...io.ReadCloser) Provider {
+func newYAMLProviderCore(files ...io.ReadCloser) *yamlConfigProvider {
 	var root interface{}
 	for _, v := range files {
 		if v == nil {
@@ -141,15 +141,37 @@ func NewYAMLProviderFromFiles(mustExist bool, resolver FileResolver, files ...st
 
 // NewYAMLProviderWithExpand creates a configuration provider from a set of YAML file names with ${var} or $var values
 // replaced based on the mapping function.
-func NewYAMLProviderWithExpand(mustExist bool, resolver FileResolver, mapping func(string) string, files ...string) Provider {
-	p := NewYAMLProviderFromFiles(mustExist, resolver, files...)
-	return NewExpandProvider(p, mapping)
+func NewYAMLProviderWithExpand(mustExist bool, resolver FileResolver, mapping func(string) (string, bool), files ...string) Provider {
+	if resolver == nil {
+		resolver = NewRelativeResolver()
+	}
+
+	// load the files, read their bytes
+	readers := []io.ReadCloser{}
+
+	for _, v := range files {
+		if reader := resolver.Resolve(v); reader == nil && mustExist {
+			panic("Couldn't open " + v)
+		} else if reader != nil {
+			readers = append(readers, reader)
+		}
+	}
+
+	return NewYAMLProviderFromReaderWithExpand(mapping, readers...)
 }
 
 // NewYAMLProviderFromReader creates a configuration provider from a list of `io.ReadClosers`.
 // As above, all the objects are going to be merged and arrays/values overridden in the order of the files.
 func NewYAMLProviderFromReader(readers ...io.ReadCloser) Provider {
 	return NewCachedProvider(newYAMLProviderCore(readers...))
+}
+
+// NewYAMLProviderFromReader creates a configuration provider from a list of `io.ReadClosers`.
+// As above, all the objects are going to be merged and arrays/values overridden in the order of the files.
+func NewYAMLProviderFromReaderWithExpand(mapping func(string) (string, bool), readers ...io.ReadCloser) Provider {
+	p := newYAMLProviderCore(readers...)
+	p.root.dfs(interpolate(mapping))
+	return NewCachedProvider(p)
 }
 
 // NewYAMLProviderFromBytes creates a config provider from a byte-backed YAML blobs.
@@ -282,6 +304,20 @@ func (n *yamlNode) Children() []*yamlNode {
 	nodes := make([]*yamlNode, len(n.children))
 	copy(nodes, n.children)
 	return nodes
+}
+
+func (n *yamlNode) dfs(expand func(string) string) {
+	if n == nil {
+		return
+	}
+
+	if n.nodeType == valueNode  && n.value != nil {
+		n.value = os.Expand(fmt.Sprint(n.value), expand)
+	}
+
+	for _, c := range n.Children() {
+		c.dfs(expand)
+	}
 }
 
 func unmarshalYAMLValue(reader io.ReadCloser, value interface{}) error {

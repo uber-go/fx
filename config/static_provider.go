@@ -20,7 +20,11 @@
 
 package config
 
-import "gopkg.in/yaml.v2"
+import (
+	"gopkg.in/yaml.v2"
+	"io/ioutil"
+	"bytes"
+)
 
 type staticProvider struct {
 	Provider
@@ -35,6 +39,17 @@ func NewStaticProvider(data interface{}) Provider {
 	}
 
 	return staticProvider{Provider: NewYAMLProviderFromBytes(b)}
+}
+
+// NewStaticProviderWithExpand returns a static provider with values replaced by a mapping function.
+func NewStaticProviderWithExpand(data interface{}, mapping func(string) (string, bool)) Provider {
+	b, err := yaml.Marshal(data)
+	if err != nil {
+		panic(err)
+	}
+
+	r := ioutil.NopCloser(bytes.NewBuffer(b))
+	return staticProvider{Provider: NewYAMLProviderFromReaderWithExpand(mapping, r)}
 }
 
 // StaticProvider returns function to create StaticProvider during configuration initialization

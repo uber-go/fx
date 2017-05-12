@@ -27,10 +27,9 @@ import (
 	"io/ioutil"
 	"os"
 	"reflect"
+	"strings"
 	"testing"
 	"time"
-
-	"go.uber.org/fx/testutils/env"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -58,16 +57,22 @@ func TestYAMLSimple(t *testing.T) {
 
 func TestYAMLEnvInterpolation(t *testing.T) {
 	t.Parallel()
-	defer env.Override(t, "OWNER_EMAIL", "hello@there.yasss")()
+	f := func(key string) (string, bool) {
+		if key == "OWNER_EMAIL" {
+			return "hello@there.yasss", true
+		}
 
-	cfg := []byte(`
+		return "", false
+	}
+
+	cfg := strings.NewReader(`
 name: some name here
 owner: ${OWNER_EMAIL}
 module:
   fake:
     number: ${FAKE_NUMBER:321}`)
 
-	p := NewYAMLProviderFromBytes(cfg)
+	p := NewYAMLProviderFromReaderWithExpand(f, ioutil.NopCloser(cfg))
 
 	num, ok := p.Get("module.fake.number").TryAsFloat()
 	require.True(t, ok)
@@ -80,42 +85,50 @@ module:
 func TestYAMLEnvInterpolationMissing(t *testing.T) {
 	t.Parallel()
 
-	cfg := []byte(`
+	cfg := strings.NewReader(`
 name: some name here
 email: ${EMAIL_ADDRESS}`)
 
-	p := NewYAMLProviderFromBytes(cfg)
-	assert.Equal(t, "${EMAIL_ADDRESS}", p.Get("email"))
+	require.Panics(t, func() {
+		f := func(string) (string, bool) { return "", false }
+		NewYAMLProviderFromReaderWithExpand(f, ioutil.NopCloser(cfg))
+	})
 }
 
 func TestYAMLEnvInterpolationIncomplete(t *testing.T) {
 	t.Parallel()
 
-	cfg := []byte(`
+	cfg := strings.NewReader(`
 name: some name here
 telephone: ${SUPPORT_TEL:}`)
 
 	require.Panics(t, func() {
-		NewYAMLProviderFromBytes(cfg)
+		f := func(string) (string, bool) { return "", false }
+		NewYAMLProviderFromReaderWithExpand(f, ioutil.NopCloser(cfg))
 	})
 }
 
 func TestYAMLEnvInterpolationWithColon(t *testing.T) {
 	t.Parallel()
 
-	cfg := []byte(`fullValue: ${MISSING_ENV:this:is:my:value}`)
-	p := NewYAMLProviderFromBytes(cfg)
+	cfg := strings.NewReader(`fullValue: ${MISSING_ENV:this:is:my:value}`)
+	f := func(string) (string, bool) {
+		return "", false
+	}
+
+	p := NewYAMLProviderFromReaderWithExpand(f, ioutil.NopCloser(cfg))
 	require.Equal(t, "this:is:my:value", p.Get("fullValue").AsString())
 }
 
 func TestYAMLEnvInterpolationEmptyString(t *testing.T) {
 	t.Parallel()
 
-	cfg := []byte(`
+	cfg := strings.NewReader(`
 name: ${APP_NAME:my shiny app}
 fullTel: 1-800-LOLZ${TELEPHONE_EXTENSION:""}`)
 
-	p := NewYAMLProviderFromBytes(cfg)
+	f := func(string) (string, bool) { return "", false }
+	p := NewYAMLProviderFromReaderWithExpand(f, ioutil.NopCloser(cfg))
 	require.Equal(t, "my shiny app", p.Get("name").AsString())
 	require.Equal(t, "1-800-LOLZ", p.Get("fullTel").AsString())
 }
@@ -1015,4 +1028,31 @@ a.b.c.d : e
 	}
 
 	assert.Equal(t, expected, m)
+}
+
+func TestYAMLEnvInterpolationValueMissing(t *testing.T) {
+	t.Parallel()
+
+	cfg := strings.NewReader(`name:`)
+
+	f := func(string) (string, bool) { return "", false }
+	p := NewYAMLProviderFromReaderWithExpand(f, ioutil.NopCloser(cfg))
+	assert.Equal(t, nil, p.Get("name").Value())
+}
+
+func TestYAMLEnvInterpolationValueConversion(t *testing.T) {
+	t.Parallel()
+
+	cfg := strings.NewReader(`number: ${TWO:3}`)
+
+	f := func(key string) (string, bool) {
+		assert.Equal(t, "TWO", key)
+		return "3", true
+	}
+
+	p := NewYAMLProviderFromReaderWithExpand(f, ioutil.NopCloser(cfg))
+	v, ok := p.Get("number").TryAsInt()
+	require.True(t, ok)
+	assert.Equal(t, 3, v)
+
 }

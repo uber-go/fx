@@ -145,7 +145,7 @@ func (l *Loader) getResolver() FileResolver {
 func (l *Loader) YamlProvider() ProviderFunc {
 	return func() (Provider, error) {
 		interpolated := NewYAMLProviderFromFiles(false, l.getResolver(), l.getFiles()...)
-		static := NewYAMLProviderWithExpand(false, l.getResolver(), interpolate(os.LookupEnv), l.getFiles()...)
+		static := NewYAMLProviderWithExpand(false, l.getResolver(), os.LookupEnv, l.getFiles()...)
 		return NewProviderGroup("yaml", interpolated, static), nil
 	}
 }
