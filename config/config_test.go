@@ -654,7 +654,7 @@ func TestLoader_LoadNotInterpolatedFiles(t *testing.T) {
 		l.SetDirs(dir)
 		s, err := os.Create(path.Join(dir, _secretsFile))
 		require.NoError(t, err)
-		defer func() {require.NoError(t, os.Remove(s.Name()))}()
+		defer func() { require.NoError(t, os.Remove(s.Name())) }()
 
 		fmt.Fprint(s, "password: ${don't interpolate me}")
 		require.NoError(t, s.Close())

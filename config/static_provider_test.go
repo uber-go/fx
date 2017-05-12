@@ -226,14 +226,17 @@ func TestStaticProviderWithExpand(t *testing.T) {
 		"slice": []interface{}{"one", "${iTwo:2}"},
 		"value": `${iValue:""}`,
 		"map": map[string]interface{}{
-			"drink?":"${iMap:tea?}",
-			"tea?":"with cream",
+			"drink?": "${iMap:tea?}",
+			"tea?":   "with cream",
 		},
-	}, func(key string) (string, bool){
+	}, func(key string) (string, bool) {
 		switch key {
-		case "iValue": return "null", true
-		case "iTwo" : return "3", true
-		case "iMap" : return "rum please!", true
+		case "iValue":
+			return "null", true
+		case "iTwo":
+			return "3", true
+		case "iMap":
+			return "rum please!", true
 		}
 
 		return "", false

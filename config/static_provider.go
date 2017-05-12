@@ -21,9 +21,9 @@
 package config
 
 import (
+	"bytes"
 	"gopkg.in/yaml.v2"
 	"io/ioutil"
-	"bytes"
 )
 
 type staticProvider struct {

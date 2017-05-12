@@ -82,9 +82,9 @@ var DefaultLoader = NewLoader(commandLineProviderFunc)
 // NewLoader returns a default Loader with providers overriding the YAML provider.
 func NewLoader(providers ...ProviderFunc) *Loader {
 	l := &Loader{
-		envPrefix:   "APP",
-		dirs:        []string{".", "./config"},
-		lookUp:      os.LookupEnv,
+		envPrefix: "APP",
+		dirs:      []string{".", "./config"},
+		lookUp:    os.LookupEnv,
 	}
 
 	// Order is important: we want users to be able to override static provider

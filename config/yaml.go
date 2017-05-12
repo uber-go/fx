@@ -166,8 +166,8 @@ func NewYAMLProviderFromReader(readers ...io.ReadCloser) Provider {
 	return NewCachedProvider(newYAMLProviderCore(readers...))
 }
 
-// NewYAMLProviderFromReader creates a configuration provider from a list of `io.ReadClosers`.
-// As above, all the objects are going to be merged and arrays/values overridden in the order of the files.
+// NewYAMLProviderFromReaderWithExpand creates a configuration provider from a list of `io.ReadClosers`
+// and uses the mapping function to interpolated values in the underlying provider.
 func NewYAMLProviderFromReaderWithExpand(mapping func(string) (string, bool), readers ...io.ReadCloser) Provider {
 	p := newYAMLProviderCore(readers...)
 	p.root.dfs(interpolate(mapping))
@@ -311,7 +311,7 @@ func (n *yamlNode) dfs(expand func(string) string) {
 		return
 	}
 
-	if n.nodeType == valueNode  && n.value != nil {
+	if n.nodeType == valueNode && n.value != nil {
 		n.value = os.Expand(fmt.Sprint(n.value), expand)
 	}
 
