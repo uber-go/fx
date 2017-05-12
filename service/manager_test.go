@@ -290,7 +290,7 @@ func TestStartManager_WithErrors(t *testing.T) {
 	s := makeManager()
 	moduleProvider := &StubModuleProvider{
 		NameVal: "stubModule",
-		CreateVal: func() (Module, error) {
+		CreateVal: func(tally.Scope) (Module, error) {
 			return &StubModule{
 				StartError: errors.New("can't start this"),
 			}, nil

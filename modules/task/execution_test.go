@@ -27,6 +27,8 @@ import (
 	"sync"
 	"testing"
 
+	"go.uber.org/fx/metrics"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/uber-go/tally"
@@ -39,7 +41,7 @@ var (
 )
 
 func globalBackendSetup(t *testing.T) func() {
-	_testScope = tally.NoopScope
+	_testScope = metrics.NopScope
 	_globalBackend = NewManagedInMemBackend(Config{})
 	require.NoError(t, _globalBackend.Start())
 	_errorCh = _globalBackend.(*managedBackend).Backend.(*inMemBackend).errorCh
@@ -193,16 +195,13 @@ func TestEnqueueSimpleFn(t *testing.T) {
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "Simple error")
 
-	// TODO(madhu): Add back after module refactor
-	/*
-		snapshot := _testScope.(tally.TestScope).Snapshot()
-		timers := snapshot.Timers()
-		counters := snapshot.Counters()
+	snapshot := _testScope.(tally.TestScope).Snapshot()
+	timers := snapshot.Timers()
+	counters := snapshot.Counters()
 
-		assert.True(t, counters["count"].Value() > 0)
-		assert.True(t, counters["fail"].Value() > 0)
-		assert.NotNil(t, timers["time"].Values())
-	*/
+	assert.True(t, counters["count"].Value() > 0)
+	assert.True(t, counters["fail"].Value() > 0)
+	assert.NotNil(t, timers["time"].Values())
 }
 
 func TestEnqueueMapFn(t *testing.T) {

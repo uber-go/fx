@@ -275,7 +275,7 @@ func (m *manager) addModule(provider ModuleProvider, options ...ModuleOption) er
 	if m.locked {
 		return fmt.Errorf("can't add module: service already started")
 	}
-	moduleWrapper, err := newModuleWrapper(m.Name(), m.Roles(), provider, options...)
+	moduleWrapper, err := newModuleWrapper(m.Name(), m.Roles(), m.Metrics(), provider, options...)
 	if err != nil {
 		return err
 	}

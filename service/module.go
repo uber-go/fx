@@ -23,6 +23,8 @@ package service
 import (
 	"fmt"
 	"sync"
+
+	"github.com/uber-go/tally"
 )
 
 // ModuleProvider provides Modules.
@@ -32,7 +34,7 @@ type ModuleProvider interface {
 	// Create a new Module. The name of the Host and the scoping
 	// of associated functions on the Host will be done using a name
 	// provided by a ModuleOption, or by the DefaultName on this ModuleProvider.
-	Create() (Module, error)
+	Create(tally.Scope) (Module, error)
 }
 
 // Module is the basic building block of an UberFx service.
@@ -46,7 +48,10 @@ type Module interface {
 }
 
 // ModuleProviderFromFunc creates a new ModuleProvider from a name and create function.
-func ModuleProviderFromFunc(name string, createFunc func() (Module, error)) ModuleProvider {
+func ModuleProviderFromFunc(
+	name string,
+	createFunc func(tally.Scope) (Module, error),
+) ModuleProvider {
 	return &moduleProvider{name: name, createFunc: createFunc}
 }
 
@@ -96,11 +101,11 @@ type moduleOptions struct {
 
 type moduleProvider struct {
 	name       string
-	createFunc func() (Module, error)
+	createFunc func(tally.Scope) (Module, error)
 }
 
-func (m *moduleProvider) DefaultName() string     { return m.name }
-func (m *moduleProvider) Create() (Module, error) { return m.createFunc() }
+func (m *moduleProvider) DefaultName() string                      { return m.name }
+func (m *moduleProvider) Create(scope tally.Scope) (Module, error) { return m.createFunc(scope) }
 
 type moduleWrapper struct {
 	name        string
@@ -114,6 +119,7 @@ type moduleWrapper struct {
 func newModuleWrapper(
 	serviceName string,
 	modRoles []string,
+	scope tally.Scope,
 	moduleProvider ModuleProvider,
 	options ...ModuleOption,
 ) (*moduleWrapper, error) {
@@ -141,7 +147,7 @@ func newModuleWrapper(
 	} else {
 		roles = modRoles
 	}
-	module, err := moduleProvider.Create()
+	module, err := moduleProvider.Create(scope)
 	if err != nil {
 		return nil, err
 	}

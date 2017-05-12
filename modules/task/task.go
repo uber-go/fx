@@ -23,17 +23,20 @@ package task
 import (
 	"sync"
 
+	"go.uber.org/fx/metrics"
 	"go.uber.org/fx/service"
 
 	"github.com/pkg/errors"
+	"github.com/uber-go/tally"
 )
 
 var (
-	_globalBackendMu sync.RWMutex
-	_globalBackend   Backend = &NopBackend{}
-	_asyncMod        service.Module
-	_asyncModErr     error
-	_once            sync.Once
+	_globalBackendMu          sync.RWMutex
+	_globalBackend            Backend = &NopBackend{}
+	_globalBackendStatsClient         = newStatsClient(metrics.NopScope)
+	_asyncMod                 service.Module
+	_asyncModErr              error
+	_once                     sync.Once
 )
 
 // GlobalBackend returns global instance of the backend
@@ -43,26 +46,33 @@ func GlobalBackend() Backend {
 	defer _globalBackendMu.RUnlock()
 	return _globalBackend
 }
+func globalBackendStatsClient() *statsClient {
+	_globalBackendMu.RLock()
+	defer _globalBackendMu.RUnlock()
+	return _globalBackendStatsClient
+}
 
 // New creates an async task queue ModuleProvider.
 func New(createFunc BackendCreateFunc, options ...ModuleOption) service.ModuleProvider {
-	return service.ModuleProviderFromFunc("task", func() (service.Module, error) {
-		return newAsyncModuleSingleton(createFunc, options...)
+	return service.ModuleProviderFromFunc("task", func(scope tally.Scope) (service.Module, error) {
+		return newAsyncModuleSingleton(createFunc, scope, options...)
 	})
 }
 
 func newAsyncModuleSingleton(
 	createFunc BackendCreateFunc,
+	scope tally.Scope,
 	options ...ModuleOption,
 ) (service.Module, error) {
 	_once.Do(func() {
-		_asyncMod, _asyncModErr = newAsyncModule(createFunc, options...)
+		_asyncMod, _asyncModErr = newAsyncModule(createFunc, scope, options...)
 	})
 	return _asyncMod, _asyncModErr
 }
 
 func newAsyncModule(
 	createFunc BackendCreateFunc,
+	scope tally.Scope,
 	options ...ModuleOption,
 ) (service.Module, error) {
 	config := &Config{}
@@ -78,6 +88,7 @@ func newAsyncModule(
 	mBackend := &managedBackend{b, *config}
 	_globalBackendMu.Lock()
 	_globalBackend = mBackend
+	_globalBackendStatsClient = newStatsClient(scope)
 	_globalBackendMu.Unlock()
 	return mBackend, nil
 }
