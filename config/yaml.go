@@ -365,7 +365,7 @@ func interpolate(lookUp lookUpFunc) func(in string) string {
 		}
 
 		if def == "" {
-			panic(fmt.Sprintf(`default is empty for %s (use "" for empty string)`, key))
+			panic(fmt.Sprintf(`default is empty for %q (use "" for empty string)`, key))
 		} else if def == _emptyDefault {
 			return ""
 		}
