@@ -485,12 +485,12 @@ rpc:
         host: 127.0.0.1
         port: ${COMPANY_TCHANNEL_PORT:321}
 `
-	lookup := func(key string) string {
-		require.Equal(t, "COMPANY_TCHANNEL_PORT:321", key)
-		return "4324"
+	lookup := func(key string) (string, bool) {
+		require.Equal(t, "COMPANY_TCHANNEL_PORT", key)
+		return "4324", true
 	}
 
-	p := NewExpandProvider(NewYAMLProviderFromReader(ioutil.NopCloser(bytes.NewBufferString(rpc))), lookup)
+	p := NewYAMLProviderFromReaderWithExpand(lookup, ioutil.NopCloser(bytes.NewBufferString(rpc)))
 
 	cfg := &YARPCConfig{}
 	v := p.Get("rpc")
@@ -642,6 +642,26 @@ func TestLoader_LoadFromTestEnvironment(t *testing.T) {
 		p := l.Load()
 		assert.Equal(t, "Austin Powers", p.Get("me").AsString())
 		assert.Equal(t, "base", p.Get("value").AsString())
+	}
+
+	withBase(t, f, "value: base")
+}
+
+func TestLoader_LoadNotInterpolatedFiles(t *testing.T) {
+	t.Parallel()
+	f := func(dir string) {
+		l := NewLoader()
+		l.SetDirs(dir)
+		s, err := os.Create(path.Join(dir, _secretsFile))
+		require.NoError(t, err)
+		defer func() {require.NoError(t, os.Remove(s.Name()))}()
+
+		fmt.Fprint(s, "password: ${don't interpolate me}")
+		require.NoError(t, s.Close())
+
+		p := l.Load()
+		assert.Equal(t, "base", p.Get("value").AsString())
+		assert.Equal(t, "${don't interpolate me}", p.Get("password").AsString())
 	}
 
 	withBase(t, f, "value: base")

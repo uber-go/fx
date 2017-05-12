@@ -85,7 +85,6 @@ func NewLoader(providers ...ProviderFunc) *Loader {
 		envPrefix:   "APP",
 		dirs:        []string{".", "./config"},
 		lookUp:      os.LookupEnv,
-		staticFiles: []string{_secretsFile},
 	}
 
 	// Order is important: we want users to be able to override static provider
@@ -134,7 +133,7 @@ func (l *Loader) ResolvePath(relative string) (string, error) {
 }
 
 func (l *Loader) baseFiles() []string {
-	return []string{_baseFile, l.Environment() + ".yaml", _secretsFile}
+	return []string{_baseFile, l.Environment() + ".yaml"}
 }
 
 func (l *Loader) getResolver() FileResolver {
@@ -144,8 +143,8 @@ func (l *Loader) getResolver() FileResolver {
 // YamlProvider returns function to create Yaml based configuration provider
 func (l *Loader) YamlProvider() ProviderFunc {
 	return func() (Provider, error) {
-		interpolated := NewYAMLProviderFromFiles(false, l.getResolver(), l.getFiles()...)
-		static := NewYAMLProviderWithExpand(false, l.getResolver(), os.LookupEnv, l.getFiles()...)
+		static := NewYAMLProviderFromFiles(false, l.getResolver(), l.getStaticFiles()...)
+		interpolated := NewYAMLProviderWithExpand(false, l.getResolver(), os.LookupEnv, l.getFiles()...)
 		return NewProviderGroup("yaml", interpolated, static), nil
 	}
 }
@@ -194,6 +193,21 @@ func (l *Loader) getFiles() []string {
 	// Check if files where explicitly set.
 	if len(files) == 0 {
 		files = l.baseFiles()
+	}
+
+	res := make([]string, len(files))
+	copy(res, files)
+	return res
+}
+
+func (l *Loader) getStaticFiles() []string {
+	l.lock.RLock()
+	defer l.lock.RUnlock()
+
+	files := l.staticFiles
+	// Check if files where explicitly set.
+	if len(files) == 0 {
+		return []string{_secretsFile}
 	}
 
 	res := make([]string, len(files))
