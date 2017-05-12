@@ -23,8 +23,6 @@ package service
 // StubObserver may be used for tests or demonstration apps where you wish to
 // observe state transitions without implementing your own observer
 type StubObserver struct {
-	HostContainer
-
 	state         State
 	shutdown      bool
 	init          bool
@@ -33,7 +31,7 @@ type StubObserver struct {
 }
 
 // OnInit is called when a service is initialized
-func (s *StubObserver) OnInit(svc Host) error {
+func (s *StubObserver) OnInit() error {
 	s.init = true
 	return s.initError
 }

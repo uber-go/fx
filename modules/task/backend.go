@@ -75,19 +75,18 @@ func (b NopBackend) Stop() error {
 
 // inMemBackend is an in-memory implementation of the Backend interface
 type inMemBackend struct {
-	service.Host
 	bufQueue chan []byte
 	errorCh  chan error
 }
 
 // NewManagedInMemBackend creates a new in memory backend, designed for use in tests
-func NewManagedInMemBackend(host service.Host, cfg Config) Backend {
-	b := NewInMemBackend(host)
+func NewManagedInMemBackend(cfg Config) Backend {
+	b := NewInMemBackend()
 	return &managedBackend{b, cfg}
 }
 
 // NewInMemBackend creates a new in memory backend, designed for use in tests
-func NewInMemBackend(host service.Host) Backend {
+func NewInMemBackend() Backend {
 	return &inMemBackend{
 		bufQueue: make(chan []byte, 2),
 		errorCh:  make(chan error, 1),

@@ -26,26 +26,13 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestHostContainer_SetContainer(t *testing.T) {
-	myObserver := struct {
-		HostContainer
-	}{}
-	sh := &serviceCore{}
-	myObserver.SetContainer(sh)
-
-	// Simple assertion that the obserer had its Host set properly
-	assert.NotNil(t, myObserver.Name())
-}
-
 func TestCoreDescription(t *testing.T) {
-	sh := NopHost().(*serviceCore)
-
+	sh := nopServiceCore()
 	assert.Equal(t, sh.standardConfig.Description, sh.Description())
 }
 
 func TestCoreOwner(t *testing.T) {
-	sh := NopHost().(*serviceCore)
-
+	sh := nopServiceCore()
 	assert.Equal(t, sh.standardConfig.Owner, sh.Owner())
 }
 
@@ -68,7 +55,7 @@ func TestCoreRoles(t *testing.T) {
 }
 
 func TestCoreConfig(t *testing.T) {
-	sh := NopHost()
+	sh := nopServiceCore()
 	cfg := sh.Config()
 
 	assert.Equal(t, "static", cfg.Name())

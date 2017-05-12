@@ -21,39 +21,12 @@
 package service
 
 import (
-	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
-func TestStubObserver_OnInit(t *testing.T) {
-	o := observerStub()
-	require.NoError(t, o.OnInit())
-
-	assert.True(t, o.init)
-}
-
-func TestStubObserver_OnStateChange(t *testing.T) {
-	o := observerStub()
-	o.OnStateChange(Uninitialized, Initialized)
-
-	assert.Equal(t, Initialized, o.state)
-}
-
-func TestStubObserver_OnShutdown(t *testing.T) {
-	o := observerStub()
-	o.OnShutdown(Exit{})
-
-	assert.True(t, o.shutdown)
-}
-
-func TestStubObserver_OnCriticalError(t *testing.T) {
-	o := observerStub()
-	assert.False(t, o.OnCriticalError(errors.New("dying")))
-}
-
-func observerStub() *StubObserver {
-	return &StubObserver{}
+func TestNopServiceCore_OK(t *testing.T) {
+	sh := nopServiceCore()
+	assert.Equal(t, "dummy", sh.Name())
 }

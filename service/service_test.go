@@ -66,7 +66,7 @@ func TestWithObserver_Nil(t *testing.T) {
 	)
 	require.NoError(t, err)
 
-	assert.Nil(t, svc.Observer(), "Observer should be nil")
+	assert.Nil(t, svc.(*manager).observer, "Observer should be nil")
 }
 
 func TestServiceCreation_MissingRequiredParams(t *testing.T) {
@@ -96,7 +96,7 @@ func TestServiceWithRoles(t *testing.T) {
 	)
 	require.NoError(t, err)
 
-	assert.Contains(t, svc.Roles(), "foo")
+	assert.Contains(t, svc.(*manager).roles, "foo")
 }
 
 func TestServiceWithMetricsRuntime(t *testing.T) {
@@ -117,7 +117,7 @@ metrics:
 	)
 	require.NoError(t, err)
 
-	assert.Nil(t, svc.RuntimeMetricsCollector())
+	assert.Nil(t, svc.(*manager).runtimeCollector)
 }
 
 func TestServiceWithSentryHook(t *testing.T) {
@@ -190,7 +190,7 @@ func TestNew_WithObserver(t *testing.T) {
 			),
 	)
 	require.NoError(t, err)
-	assert.Equal(t, o, svc.Observer())
+	assert.Equal(t, o, svc.(*manager).observer)
 }
 
 var validServiceConfig = map[string]interface{}{

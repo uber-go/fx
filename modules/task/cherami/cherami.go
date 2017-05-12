@@ -27,7 +27,6 @@ import (
 
 	"go.uber.org/fx/config"
 	"go.uber.org/fx/modules/task"
-	"go.uber.org/fx/service"
 	"go.uber.org/fx/ulog"
 
 	"github.com/opentracing/opentracing-go"
@@ -102,45 +101,53 @@ func RegisterHyperbahnBootstrapFile(filename string) {
 }
 
 // NewBackend creates a Cherami client backend
-func NewBackend(host service.Host) (task.Backend, error) {
-	cc, err := createClientConfig(host)
+// TODO (madhu): Fix new backend after module refactor
+func NewBackend(
+	cfg config.Provider,
+	metrics tally.Scope,
+	tracer opentracing.Tracer,
+) (task.Backend, error) {
+	serviceName := cfg.Get(config.ServiceNameKey).AsString()
+	cc, err := createClientConfig(serviceName, cfg)
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to parse config for cherami")
 	}
 	var ownerEmail string
-	if err = host.Config().Get(config.ServiceOwnerKey).Populate(&ownerEmail); err != nil {
+	if err = cfg.Get(config.ServiceOwnerKey).Populate(&ownerEmail); err != nil {
 		return nil, errors.Wrap(err, "unable to parse owner for cherami")
 	}
-	return newBackendWithConfig(host, cc, ownerEmail)
+	return newBackendWithConfig(serviceName, metrics, tracer, cc, ownerEmail)
 }
 
-func createClientConfig(host service.Host) (clientConfig, error) {
+func createClientConfig(serviceName string, cfg config.Provider) (clientConfig, error) {
 	config := _defaultClientConfig
 	// Set default destination and consumer group with the service name
-	config.Destination = _pathPrefix + host.Name()
-	config.ConsumerGroup = _pathPrefix + host.Name() + "_cg"
+	config.Destination = _pathPrefix + serviceName
+	config.ConsumerGroup = _pathPrefix + serviceName + "_cg"
 	// Preference to keys specified in config, they will be over-written
 	// TODO: Might change based on module naming decision from fx public
-	err := host.Config().Get("modules").Get("task").Get("cherami").Populate(&config)
+	err := cfg.Get("modules").Get("task").Get("cherami").Populate(&config)
 	return config, err
 }
 
 // newBackendWithConfig creates a Cherami client backend with specified config
 func newBackendWithConfig(
-	host service.Host,
+	serviceName string,
+	metrics tally.Scope,
+	tracer opentracing.Tracer,
 	cc clientConfig,
 	ownerEmail string,
 ) (task.Backend, error) {
 	// Create Cherami client TODO: Configure with reporter
 	_hyperbahnMu.RLock()
 	client, err := _cheramiClientFunc(
-		host.Name(), _hyperbahnHostsFile,
+		serviceName, _hyperbahnHostsFile,
 		&cherami.ClientOptions{DeploymentStr: cc.DeploymentCluster, Timeout: cc.Timeout},
 	)
 	defer _hyperbahnMu.RUnlock()
 	if err != nil {
 		return nil, errors.Wrapf(
-			err, "unable to initialize cherami client for service: %q", host.Name(),
+			err, "unable to initialize cherami client for service: %q", serviceName,
 		)
 	}
 
@@ -167,7 +174,7 @@ func newBackendWithConfig(
 		},
 	})
 	deliveryCh := make(chan cherami.Delivery, cc.PrefetchCount)
-	scope := host.Metrics().SubScope("cherami")
+	scope := metrics.SubScope("cherami")
 
 	return &Backend{
 		client:      client,
@@ -179,8 +186,8 @@ func newBackendWithConfig(
 		scope:       scope,
 		taskSuccess: scope.Counter("task.success"),
 		taskFailure: scope.Counter("task.fail"),
-		tracer:      host.Tracer(),
-		ctxEncoder:  task.ContextEncoding{Tracer: host.Tracer()},
+		tracer:      tracer,
+		ctxEncoder:  task.ContextEncoding{Tracer: tracer},
 	}, nil
 }
 

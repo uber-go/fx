@@ -21,12 +21,38 @@
 package service
 
 import (
-	"testing"
+	"go.uber.org/fx/config"
+	"go.uber.org/fx/metrics"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/opentracing/opentracing-go"
+	"go.uber.org/zap"
 )
 
-func TestNopHost_OK(t *testing.T) {
-	sh := NopHost()
-	assert.Equal(t, "dummy", sh.Name())
+func nopServiceCore() serviceCore {
+	return nopHostWithConfig(nil)
+}
+
+func nopHostWithConfig(configProvider config.Provider) serviceCore {
+	return nopHostConfigured(zap.NewNop(), opentracing.NoopTracer{}, configProvider)
+}
+
+func nopHostConfigured(logger *zap.Logger, tracer opentracing.Tracer, configProvider config.Provider) serviceCore {
+	if configProvider == nil {
+		configProvider = config.NewStaticProvider(nil)
+	}
+	return serviceCore{
+		configProvider: configProvider,
+		standardConfig: serviceConfig{
+			Name:        "dummy",
+			Owner:       "root@example.com",
+			Description: "does cool stuff",
+		},
+		metricsCore: metricsCore{
+			metrics:       metrics.NopScope,
+			statsReporter: metrics.NopCachedStatsReporter,
+		},
+		tracerCore: tracerCore{
+			tracer: tracer,
+		},
+	}
 }

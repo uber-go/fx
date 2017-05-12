@@ -23,7 +23,7 @@ package service
 // StubModuleProvider implements the ModuleProvider interface for testing.
 type StubModuleProvider struct {
 	NameVal   string
-	CreateVal func(Host) (Module, error)
+	CreateVal func() (Module, error)
 }
 
 var _ ModuleProvider = &StubModuleProvider{}
@@ -45,13 +45,12 @@ func (p *StubModuleProvider) DefaultName() string {
 }
 
 // Create creates a new Module.
-func (p *StubModuleProvider) Create(host Host) (Module, error) {
-	return p.CreateVal(host)
+func (p *StubModuleProvider) Create() (Module, error) {
+	return p.CreateVal()
 }
 
 // A StubModule implements the Module interface for testing
 type StubModule struct {
-	Host       Host
 	StartError error
 	StopError  error
 }
@@ -66,19 +65,18 @@ var DefaultStubModuleCreateFunc = NewStubModuleCreateFunc(&StubModule{})
 // If stubModule is nil, this will return nil for the new Module.
 //
 // Host will be overwritten.
-func NewStubModuleCreateFunc(stubModule *StubModule) func(Host) (Module, error) {
-	return func(host Host) (Module, error) {
+func NewStubModuleCreateFunc(stubModule *StubModule) func() (Module, error) {
+	return func() (Module, error) {
 		if stubModule == nil {
 			return nil, nil
 		}
-		stubModule.Host = host
 		return stubModule, nil
 	}
 }
 
 // NewStubModule generates a Module for use in testing
-func NewStubModule(host Host) *StubModule {
-	return &StubModule{Host: host}
+func NewStubModule() *StubModule {
+	return &StubModule{}
 }
 
 // Start mimics startup

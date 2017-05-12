@@ -24,7 +24,7 @@ package service
 // code.
 type Observer interface {
 	// OnInit will be called after the service has been initialized
-	OnInit(service Host) error
+	OnInit() error
 
 	// OnStateChange is called whenever the service changes
 	// states

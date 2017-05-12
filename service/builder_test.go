@@ -105,7 +105,7 @@ func TestWithModules_StopTimeout(t *testing.T) {
 	err = svc.Stop("someReason", 1)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "timeoutStop")
-	assert.Contains(t, err.Error(), `timedout after "1µs"`)
+	assert.Contains(t, err.Error(), `timed out after "1µs"`)
 }
 
 func TestDefaultTimeouts(t *testing.T) {
@@ -123,15 +123,15 @@ func TestDefaultTimeouts(t *testing.T) {
 	assert.Equal(t, 10*time.Second, m.StopTimeout)
 }
 
-func nopModule(_ Host) (Module, error) {
+func nopModule() (Module, error) {
 	return nil, nil
 }
 
-func errModule(_ Host) (Module, error) {
+func errModule() (Module, error) {
 	return nil, errors.New("intentional module creation failure")
 }
 
-func timeoutStartModule(_ Host) (Module, error) {
+func timeoutStartModule() (Module, error) {
 	return timeoutStart{}, nil
 }
 
@@ -146,7 +146,7 @@ func (timeoutStart) Stop() error {
 	return nil
 }
 
-func timeoutStopModule(_ Host) (Module, error) {
+func timeoutStopModule() (Module, error) {
 	return timeoutStop{}, nil
 }
 

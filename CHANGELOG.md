@@ -15,8 +15,10 @@
   configuration is loaded from multiple directories.
 - **[Breaking]** Removed `CreateAuthInfo` interface from auth package. package auth
   RegisterFunc now accepts `config.Provider` and `tally.Scope` for initialization.
-- **[Breaking]** Removed `auth.Client` access from `service.Host`. `auth.Client` can
-  now be accessed via `auth.Load()` call.
+- **[Breaking]** Removed `auth.Client` access from `service.Host`. `auth.Client`
+  can now be accessed via `auth.Load()` call.
+- **[Breaking]** Removed service.Host altogether. Metrics, config etc. are used
+  explicitly where required.
 
 ## v1.0.0-beta3 (28 Mar 2017)
 
