@@ -19,6 +19,8 @@
   can now be accessed via `auth.Load()` call.
 - **[Breaking]** Removed service.Host altogether. Metrics, config etc. are used
   explicitly where required.
+- **[Breaking]** Module providers take in a `tally.Scope` so they can be
+  propagated through module creation.
 
 ## v1.0.0-beta3 (28 Mar 2017)
 

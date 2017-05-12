@@ -20,10 +20,12 @@
 
 package service
 
+import "github.com/uber-go/tally"
+
 // StubModuleProvider implements the ModuleProvider interface for testing.
 type StubModuleProvider struct {
 	NameVal   string
-	CreateVal func() (Module, error)
+	CreateVal func(tally.Scope) (Module, error)
 }
 
 var _ ModuleProvider = &StubModuleProvider{}
@@ -45,8 +47,8 @@ func (p *StubModuleProvider) DefaultName() string {
 }
 
 // Create creates a new Module.
-func (p *StubModuleProvider) Create() (Module, error) {
-	return p.CreateVal()
+func (p *StubModuleProvider) Create(scope tally.Scope) (Module, error) {
+	return p.CreateVal(scope)
 }
 
 // A StubModule implements the Module interface for testing
@@ -65,8 +67,8 @@ var DefaultStubModuleCreateFunc = NewStubModuleCreateFunc(&StubModule{})
 // If stubModule is nil, this will return nil for the new Module.
 //
 // Host will be overwritten.
-func NewStubModuleCreateFunc(stubModule *StubModule) func() (Module, error) {
-	return func() (Module, error) {
+func NewStubModuleCreateFunc(stubModule *StubModule) func(tally.Scope) (Module, error) {
+	return func(tally.Scope) (Module, error) {
 		if stubModule == nil {
 			return nil, nil
 		}

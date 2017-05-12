@@ -27,6 +27,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/uber-go/tally"
 )
 
 var (
@@ -54,7 +55,7 @@ func TestNew(t *testing.T) {
 }
 
 func TestMemBackendModuleWorkflowWithContext(t *testing.T) {
-	mod, err := newAsyncModule(_memBackendFn, DisableExecution())
+	mod, err := newAsyncModule(_memBackendFn, tally.NoopScope, DisableExecution())
 	require.NoError(t, err)
 	require.NotNil(t, mod)
 	b := GlobalBackend()
@@ -71,7 +72,7 @@ func TestMemBackendModuleWorkflowWithContext(t *testing.T) {
 }
 
 func TestModuleStartWithExecuteAsyncError(t *testing.T) {
-	mod, err := newAsyncModule(_errBackendFn)
+	mod, err := newAsyncModule(_errBackendFn, tally.NoopScope)
 	require.NoError(t, err)
 	require.NotNil(t, mod)
 	err = mod.Start()
@@ -80,7 +81,7 @@ func TestModuleStartWithExecuteAsyncError(t *testing.T) {
 }
 
 func TestNewError(t *testing.T) {
-	mod, err := newAsyncModule(_backendFnWithErr)
+	mod, err := newAsyncModule(_backendFnWithErr, tally.NoopScope)
 	require.Error(t, err)
 	require.Nil(t, mod)
 }
@@ -88,6 +89,7 @@ func TestNewError(t *testing.T) {
 func TestNewWithOptionsError(t *testing.T) {
 	mod, err := newAsyncModule(
 		_memBackendFn,
+		tally.NoopScope,
 		func(*Config) error { return errors.New("options error") },
 	)
 	require.Error(t, err)
@@ -98,7 +100,7 @@ func TestNewWithOptionsError(t *testing.T) {
 func createModule(t *testing.T, b BackendCreateFunc, options ...ModuleOption) Backend {
 	moduleProvider := New(b, options...)
 	assert.NotNil(t, moduleProvider)
-	mod, err := moduleProvider.Create()
+	mod, err := moduleProvider.Create(tally.NoopScope)
 	assert.NotNil(t, mod)
 	assert.NoError(t, err)
 	return _globalBackend

@@ -29,6 +29,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/uber-go/tally"
 	"go.uber.org/fx/config"
 )
 
@@ -123,15 +124,15 @@ func TestDefaultTimeouts(t *testing.T) {
 	assert.Equal(t, 10*time.Second, m.StopTimeout)
 }
 
-func nopModule() (Module, error) {
+func nopModule(tally.Scope) (Module, error) {
 	return nil, nil
 }
 
-func errModule() (Module, error) {
+func errModule(tally.Scope) (Module, error) {
 	return nil, errors.New("intentional module creation failure")
 }
 
-func timeoutStartModule() (Module, error) {
+func timeoutStartModule(tally.Scope) (Module, error) {
 	return timeoutStart{}, nil
 }
 
@@ -146,7 +147,7 @@ func (timeoutStart) Stop() error {
 	return nil
 }
 
-func timeoutStopModule() (Module, error) {
+func timeoutStopModule(tally.Scope) (Module, error) {
 	return timeoutStop{}, nil
 }
 

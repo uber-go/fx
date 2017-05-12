@@ -25,6 +25,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/uber-go/tally"
 )
 
 const (
@@ -104,6 +105,7 @@ func TestModuleOptions(t *testing.T) {
 			}
 			moduleWrapper, err := newModuleWrapper(
 				_nopName, _nopRoles,
+				tally.NoopScope,
 				NewDefaultStubModuleProvider(),
 				moduleOptions...,
 			)
@@ -117,6 +119,7 @@ func TestModuleOptions(t *testing.T) {
 func TestModuleWrapper(t *testing.T) {
 	moduleWrapper, err := newModuleWrapper(
 		_nopName, _nopRoles,
+		tally.NoopScope,
 		NewDefaultStubModuleProvider(),
 		WithName("hello"),
 	)
@@ -131,10 +134,15 @@ func TestModuleWrapper(t *testing.T) {
 	assert.Error(t, moduleWrapper.Stop())
 	assert.NoError(t, moduleWrapper.Start())
 	assert.NoError(t, moduleWrapper.Stop())
-	moduleWrapper, err = newModuleWrapper(_nopName, _nopRoles, NewStubModuleProvider("stub", nil))
+	moduleWrapper, err = newModuleWrapper(
+		_nopName,
+		_nopRoles,
+		tally.NoopScope,
+		NewStubModuleProvider("stub", nil),
+	)
 	assert.NoError(t, err)
 	assert.Nil(t, moduleWrapper)
-	moduleWrapper, err = newModuleWrapper(_nopName, _nopRoles, nil)
+	moduleWrapper, err = newModuleWrapper(_nopName, _nopRoles, tally.NoopScope, nil)
 	assert.NoError(t, err)
 	assert.Nil(t, moduleWrapper)
 }
