@@ -205,7 +205,7 @@ func TestPopulateForNestedMaps(t *testing.T) {
 	var m map[string]map[string]string
 	err := p.Get("a").Populate(&m)
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), `empty map key is ambigious`)
+	assert.Contains(t, err.Error(), `empty map key is ambiguous`)
 	assert.Contains(t, err.Error(), `a.`)
 }
 
@@ -217,4 +217,27 @@ func TestPopulateNonPointerType(t *testing.T) {
 	err := p.Get(Root).Populate(x)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "can't populate non pointer type")
+}
+
+func TestPopulateForMapOfDifferentKeyTypes(t *testing.T) {
+	t.Parallel()
+
+	p := NewStaticProvider(map[int]string{1: "a"})
+
+	var m map[string]string
+	require.NoError(t, p.Get(Root).Populate(&m))
+	assert.Equal(t, "a", m["1"])
+}
+
+func TestPopulateForMapsWithNotAssignableKeyTypes(t *testing.T) {
+	t.Parallel()
+	p := NewStaticProvider(map[int]string{1: "a"})
+	type secretType struct{password string}
+
+	var m map[secretType]string
+	err := p.Get(Root).Populate(&m)
+	require.Error(t, err)
+	msg := err.Error()
+	assert.Contains(t, msg, `can't convert "1" to "config.secretType"`)
+	assert.Contains(t, msg, "key types conversion")
 }
