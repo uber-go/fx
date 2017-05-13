@@ -121,43 +121,13 @@ func mergeMaps(dst interface{}, src interface{}) interface{} {
 // NewYAMLProviderFromFiles creates a configuration provider from a set of YAML file names.
 // All the objects are going to be merged and arrays/values overridden in the order of the files.
 func NewYAMLProviderFromFiles(mustExist bool, resolver FileResolver, files ...string) Provider {
-	if resolver == nil {
-		resolver = NewRelativeResolver()
-	}
-
-	// load the files, read their bytes
-	readers := []io.ReadCloser{}
-
-	for _, v := range files {
-		if reader := resolver.Resolve(v); reader == nil && mustExist {
-			panic("Couldn't open " + v)
-		} else if reader != nil {
-			readers = append(readers, reader)
-		}
-	}
-
-	return NewCachedProvider(newYAMLProviderCore(readers...))
+	return NewCachedProvider(newYAMLProviderCore(filesToReaders(mustExist, resolver, files...)...))
 }
 
 // NewYAMLProviderWithExpand creates a configuration provider from a set of YAML file names with ${var} or $var values
 // replaced based on the mapping function.
 func NewYAMLProviderWithExpand(mustExist bool, resolver FileResolver, mapping func(string) (string, bool), files ...string) Provider {
-	if resolver == nil {
-		resolver = NewRelativeResolver()
-	}
-
-	// load the files, read their bytes
-	readers := []io.ReadCloser{}
-
-	for _, v := range files {
-		if reader := resolver.Resolve(v); reader == nil && mustExist {
-			panic("Couldn't open " + v)
-		} else if reader != nil {
-			readers = append(readers, reader)
-		}
-	}
-
-	return NewYAMLProviderFromReaderWithExpand(mapping, readers...)
+	return NewYAMLProviderFromReaderWithExpand(mapping, filesToReaders(mustExist, resolver, files...)...)
 }
 
 // NewYAMLProviderFromReader creates a configuration provider from a list of `io.ReadClosers`.
@@ -183,6 +153,25 @@ func NewYAMLProviderFromBytes(yamls ...[]byte) Provider {
 	}
 
 	return NewCachedProvider(newYAMLProviderCore(closers...))
+}
+
+func filesToReaders(mustExist bool, resolver FileResolver, files ...string) []io.ReadCloser {
+	if resolver == nil {
+		resolver = NewRelativeResolver()
+	}
+
+	// load the files, read their bytes
+	readers := []io.ReadCloser{}
+
+	for _, v := range files {
+		if reader := resolver.Resolve(v); reader == nil && mustExist {
+			panic("Couldn't open " + v)
+		} else if reader != nil {
+			readers = append(readers, reader)
+		}
+	}
+
+	return readers
 }
 
 func (y yamlConfigProvider) getNode(key string) *yamlNode {

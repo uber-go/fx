@@ -666,3 +666,25 @@ func TestLoader_DefaultLoadOfStaticConfigFiles(t *testing.T) {
 
 	withBase(t, f, "value: base")
 }
+
+func TestLoader_OverrideStaticConfigFiles(t *testing.T) {
+	t.Parallel()
+	f := func(dir string) {
+		l := NewLoader()
+		l.SetDirs(dir)
+		l.SetStaticConfigFiles("static.yaml")
+
+		s, err := os.Create(path.Join(dir, "static.yaml"))
+		require.NoError(t, err)
+		defer func() { require.NoError(t, os.Remove(s.Name())) }()
+
+		fmt.Fprint(s, "static: ${null}")
+		require.NoError(t, s.Close())
+
+		p := l.Load()
+		assert.Equal(t, "base", p.Get("value").AsString())
+		assert.Equal(t, "${null}", p.Get("static").AsString())
+	}
+
+	withBase(t, f, "value: base")
+}
