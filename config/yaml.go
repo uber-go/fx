@@ -170,7 +170,7 @@ func NewYAMLProviderFromReader(readers ...io.ReadCloser) Provider {
 // and uses the mapping function to interpolated values in the underlying provider.
 func NewYAMLProviderFromReaderWithExpand(mapping func(string) (string, bool), readers ...io.ReadCloser) Provider {
 	p := newYAMLProviderCore(readers...)
-	p.root.dfs(interpolate(mapping))
+	p.root.applyOnAllNodes(interpolate(mapping))
 	return NewCachedProvider(p)
 }
 
@@ -306,7 +306,7 @@ func (n *yamlNode) Children() []*yamlNode {
 	return nodes
 }
 
-func (n *yamlNode) dfs(expand func(string) string) {
+func (n *yamlNode) applyOnAllNodes(expand func(string) string) {
 	if n == nil {
 		return
 	}
@@ -316,7 +316,7 @@ func (n *yamlNode) dfs(expand func(string) string) {
 	}
 
 	for _, c := range n.Children() {
-		c.dfs(expand)
+		c.applyOnAllNodes(expand)
 	}
 }
 

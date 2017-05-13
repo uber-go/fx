@@ -133,6 +133,7 @@ func (l *Loader) ResolvePath(relative string) (string, error) {
 }
 
 func (l *Loader) baseFiles() []string {
+	// Order is important: last files override values in the first files.
 	return []string{_baseFile, l.Environment() + ".yaml"}
 }
 
@@ -145,7 +146,9 @@ func (l *Loader) YamlProvider() ProviderFunc {
 	return func() (Provider, error) {
 		static := NewYAMLProviderFromFiles(false, l.getResolver(), l.getStaticFiles()...)
 		interpolated := NewYAMLProviderWithExpand(false, l.getResolver(), os.LookupEnv, l.getFiles()...)
-		return NewProviderGroup("yaml", interpolated, static), nil
+
+		// Interpolated files will have higher priority than static.
+		return NewProviderGroup("yaml", static, interpolated), nil
 	}
 }
 
