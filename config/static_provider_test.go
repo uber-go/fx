@@ -232,7 +232,7 @@ func TestPopulateForMapOfDifferentKeyTypes(t *testing.T) {
 func TestPopulateForMapsWithNotAssignableKeyTypes(t *testing.T) {
 	t.Parallel()
 	p := NewStaticProvider(map[int]string{1: "a"})
-	type secretType struct{password string}
+	type secretType struct{ password string }
 
 	var m map[secretType]string
 	err := p.Get(Root).Populate(&m)
