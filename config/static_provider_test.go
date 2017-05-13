@@ -223,7 +223,6 @@ func TestPopulateForMapOfDifferentKeyTypes(t *testing.T) {
 	t.Parallel()
 
 	p := NewStaticProvider(map[int]string{1: "a"})
-
 	var m map[string]string
 	require.NoError(t, p.Get(Root).Populate(&m))
 	assert.Equal(t, "a", m["1"])
@@ -231,9 +230,9 @@ func TestPopulateForMapOfDifferentKeyTypes(t *testing.T) {
 
 func TestPopulateForMapsWithNotAssignableKeyTypes(t *testing.T) {
 	t.Parallel()
+
 	p := NewStaticProvider(map[int]string{1: "a"})
 	type secretType struct{ password string }
-
 	var m map[secretType]string
 	err := p.Get(Root).Populate(&m)
 	require.Error(t, err)
