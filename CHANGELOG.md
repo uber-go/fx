@@ -25,6 +25,7 @@
   explicit constructors `WithExpand` to use interpolation. Only values in the YAML
   files are replaced, comments and keys are ignored.
 - Add a SetStaticConfigFiles method to load yaml files that should not be interpolated.
+- Introduce an ExpandProvider wrapper for config providers.
 
 ## v1.0.0-beta3 (28 Mar 2017)
 
