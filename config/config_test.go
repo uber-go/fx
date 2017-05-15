@@ -486,14 +486,11 @@ rpc:
         port: ${COMPANY_TCHANNEL_PORT:321}
 `
 	lookup := func(key string) (string, bool) {
-		if key == "COMPANY_TCHANNEL_PORT" {
-			return "4324", true
-		}
-
-		return "", false
+		require.Equal(t, "COMPANY_TCHANNEL_PORT", key)
+		return "4324", true
 	}
 
-	p := newYAMLProviderCore(lookup, ioutil.NopCloser(bytes.NewBufferString(rpc)))
+	p := NewYAMLProviderFromReaderWithExpand(lookup, ioutil.NopCloser(bytes.NewBufferString(rpc)))
 
 	cfg := &YARPCConfig{}
 	v := p.Get("rpc")
@@ -645,6 +642,49 @@ func TestLoader_LoadFromTestEnvironment(t *testing.T) {
 		p := l.Load()
 		assert.Equal(t, "Austin Powers", p.Get("me").AsString())
 		assert.Equal(t, "base", p.Get("value").AsString())
+	}
+
+	withBase(t, f, "value: base")
+}
+
+func TestLoader_DefaultLoadOfStaticConfigFiles(t *testing.T) {
+	t.Parallel()
+	f := func(dir string) {
+		l := NewLoader()
+		l.SetDirs(dir)
+		s, err := os.Create(path.Join(dir, _secretsFile))
+		require.NoError(t, err)
+		defer func() { require.NoError(t, os.Remove(s.Name())) }()
+
+		fmt.Fprint(s, "password: ${don't interpolate me}")
+		require.NoError(t, s.Close())
+
+		p := l.Load()
+		assert.Equal(t, "base", p.Get("value").AsString())
+		assert.Equal(t, "${don't interpolate me}", p.Get("password").AsString())
+	}
+
+	withBase(t, f, "value: base")
+}
+
+func TestLoader_OverrideStaticConfigFiles(t *testing.T) {
+	t.Parallel()
+	f := func(dir string) {
+		l := NewLoader()
+		l.SetDirs(dir)
+		l.SetStaticConfigFiles("static.yaml")
+
+		s, err := os.Create(path.Join(dir, "static.yaml"))
+		require.NoError(t, err)
+		defer func() { require.NoError(t, os.Remove(s.Name())) }()
+
+		// Order is important, we want to override base.yaml
+		fmt.Fprint(s, "static: ${null}\nvalue: override")
+		require.NoError(t, s.Close())
+
+		p := l.Load()
+		assert.Equal(t, "override", p.Get("value").AsString())
+		assert.Equal(t, "${null}", p.Get("static").AsString())
 	}
 
 	withBase(t, f, "value: base")

@@ -61,8 +61,11 @@ type Loader struct {
 	staticProviderFuncs  []ProviderFunc
 	dynamicProviderFuncs []DynamicProviderFunc
 
-	// Files to load.
+	// Files to load, they will be replaced with values from environment variables.
 	configFiles []string
+
+	// Files to load without interpolation.
+	staticFiles []string
 
 	// Dirs to load from.
 	dirs []string
@@ -130,7 +133,8 @@ func (l *Loader) ResolvePath(relative string) (string, error) {
 }
 
 func (l *Loader) baseFiles() []string {
-	return []string{_baseFile, l.Environment() + ".yaml", _secretsFile}
+	// Order is important: last files override values in the first files.
+	return []string{_baseFile, l.Environment() + ".yaml"}
 }
 
 func (l *Loader) getResolver() FileResolver {
@@ -140,7 +144,11 @@ func (l *Loader) getResolver() FileResolver {
 // YamlProvider returns function to create Yaml based configuration provider
 func (l *Loader) YamlProvider() ProviderFunc {
 	return func() (Provider, error) {
-		return NewYAMLProviderFromFiles(false, l.getResolver(), l.getFiles()...), nil
+		static := NewYAMLProviderFromFiles(false, l.getResolver(), l.getStaticFiles()...)
+		expanded := NewYAMLProviderWithExpand(false, l.getResolver(), os.LookupEnv, l.getFiles()...)
+
+		// Static files will have higher priority than expanded.
+		return NewProviderGroup("yaml", expanded, static), nil
 	}
 }
 
@@ -163,6 +171,7 @@ func (l *Loader) Paths() []string {
 }
 
 // SetConfigFiles overrides the set of available config files for the service.
+// Configs will be interpolated with values from environment variables.
 func (l *Loader) SetConfigFiles(files ...string) {
 	l.lock.Lock()
 	defer l.lock.Unlock()
@@ -170,15 +179,38 @@ func (l *Loader) SetConfigFiles(files ...string) {
 	l.configFiles = files
 }
 
+// SetStaticConfigFiles overrides the set of available config files for the service.
+// Config values will not be interpolated.
+func (l *Loader) SetStaticConfigFiles(files ...string) {
+	l.lock.Lock()
+	defer l.lock.Unlock()
+
+	l.staticFiles = files
+}
+
 func (l *Loader) getFiles() []string {
 	l.lock.RLock()
 	defer l.lock.RUnlock()
 
 	files := l.configFiles
-
 	// Check if files where explicitly set.
 	if len(files) == 0 {
 		files = l.baseFiles()
+	}
+
+	res := make([]string, len(files))
+	copy(res, files)
+	return res
+}
+
+func (l *Loader) getStaticFiles() []string {
+	l.lock.RLock()
+	defer l.lock.RUnlock()
+
+	files := l.staticFiles
+	// Check if files where explicitly set.
+	if len(files) == 0 {
+		return []string{_secretsFile}
 	}
 
 	res := make([]string, len(files))
