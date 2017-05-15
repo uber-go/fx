@@ -61,7 +61,7 @@ type Loader struct {
 	staticProviderFuncs  []ProviderFunc
 	dynamicProviderFuncs []DynamicProviderFunc
 
-	// Files to load, they will be interpolated with values from environment variables.
+	// Files to load, they will be replaced with values from environment variables.
 	configFiles []string
 
 	// Files to load without interpolation.
@@ -145,10 +145,10 @@ func (l *Loader) getResolver() FileResolver {
 func (l *Loader) YamlProvider() ProviderFunc {
 	return func() (Provider, error) {
 		static := NewYAMLProviderFromFiles(false, l.getResolver(), l.getStaticFiles()...)
-		interpolated := NewYAMLProviderWithExpand(false, l.getResolver(), os.LookupEnv, l.getFiles()...)
+		expanded := NewYAMLProviderWithExpand(false, l.getResolver(), os.LookupEnv, l.getFiles()...)
 
-		// Interpolated files will have higher priority than static.
-		return NewProviderGroup("yaml", static, interpolated), nil
+		// Expanded files will have higher priority than static.
+		return NewProviderGroup("yaml", static, expanded), nil
 	}
 }
 

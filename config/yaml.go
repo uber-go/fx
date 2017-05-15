@@ -137,10 +137,10 @@ func NewYAMLProviderFromReader(readers ...io.ReadCloser) Provider {
 }
 
 // NewYAMLProviderFromReaderWithExpand creates a configuration provider from a list of `io.ReadClosers`
-// and uses the mapping function to interpolated values in the underlying provider.
+// and uses the mapping function to expand values in the underlying provider.
 func NewYAMLProviderFromReaderWithExpand(mapping func(string) (string, bool), readers ...io.ReadCloser) Provider {
 	p := newYAMLProviderCore(readers...)
-	p.root.applyOnAllNodes(interpolate(mapping))
+	p.root.applyOnAllNodes(replace(mapping))
 	return NewCachedProvider(p)
 }
 
@@ -322,7 +322,7 @@ func unmarshalYAMLValue(reader io.ReadCloser, value interface{}) error {
 	return reader.Close()
 }
 
-// Function to interpolate environment variables in returned values that have form: ${ENV_VAR:DEFAULT_VALUE}.
+// Function to expand environment variables in returned values that have form: ${ENV_VAR:DEFAULT_VALUE}.
 // For example, if an HTTP_PORT environment variable should be used for the HTTP module
 // port, the config would look like this:
 //
@@ -334,7 +334,7 @@ func unmarshalYAMLValue(reader io.ReadCloser, value interface{}) error {
 // will be used
 //
 // TODO: what if someone wanted a literal ${FOO} in config? need a small escape hatch
-func interpolate(lookUp lookUpFunc) func(in string) string {
+func replace(lookUp lookUpFunc) func(in string) string {
 	return func(in string) string {
 		sep := strings.Index(in, _envSeparator)
 		var key string
