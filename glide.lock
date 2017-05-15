@@ -1,5 +1,5 @@
-hash: 0dff4fa7a9505a775a11fdc391f7b8d5b106dbef03e7dfdcf5670182d6226590
-updated: 2017-05-02T14:04:55.659040039-07:00
+hash: 29f7f8a09c59c5ca1e770208961c97896d30400f9fcb0aa33b8bf0195a61c0a6
+updated: 2017-05-04T16:35:13.499736997-07:00
 imports:
 - name: github.com/apache/thrift
   version: 9549b25c77587b29be4e0b5c258221a4ed85d37a
@@ -18,7 +18,7 @@ imports:
 - name: github.com/codahale/hdrhistogram
   version: f8ad88b59a584afeee9d334eff879b104439117b
 - name: github.com/davecgh/go-spew
-  version: 5215b55f46b2b919f50a1df0eaa5886afe4e3b3d
+  version: 346938d642f2ec3594ed81d874461961cd0faa76
   subpackages:
   - spew
 - name: github.com/facebookgo/clock
@@ -32,7 +32,7 @@ imports:
   subpackages:
   - gomock
 - name: github.com/golang/protobuf
-  version: 18c9bb3261723cd5401db4d0c9fbc5c3b6c70fe8
+  version: 7cc19b78d562895b13596ddce7aafb59dd789318
   subpackages:
   - proto
 - name: github.com/gorilla/context
@@ -78,7 +78,7 @@ imports:
   subpackages:
   - xfs
 - name: github.com/Sirupsen/logrus
-  version: 08a8a7c27e3d058a8989316a850daad1c10bf4ab
+  version: ba1b36c82c5e05c4f912a88eab0dcd91a171688f
 - name: github.com/stretchr/objx
   version: 1a9d0bb9f541897e62256577b352fdbc1fb4fd94
 - name: github.com/stretchr/testify
@@ -168,7 +168,7 @@ imports:
   - version
   - wire
 - name: go.uber.org/yarpc
-  version: 6b9245d126758870690c44f27f695cc7e811f913
+  version: 1d24a72942f33a6dd32caaabdc9badf347a4118f
   subpackages:
   - api/encoding
   - api/middleware
@@ -181,8 +181,11 @@ imports:
   - internal/encoding
   - internal/errors
   - internal/inboundmiddleware
+  - internal/interpolate
   - internal/introspection
   - internal/iopool
+  - internal/mapdecode
+  - internal/mapdecode/mapstructure
   - internal/net
   - internal/observability
   - internal/outboundmiddleware
@@ -193,8 +196,7 @@ imports:
   - peer
   - peer/hostport
   - transport/http
-  - transport/tchannel
-  - transport/tchannel/internal
+  - x/config
 - name: go.uber.org/zap
   version: 6a4e056f2cc954cfec3581729e758909604b3f76
   subpackages:
@@ -206,8 +208,7 @@ imports:
   - zapcore
   - zaptest
 - name: golang.org/x/net
-  version: 0819898fb4973868bba6de59b6aaad75beea9a6a
-  repo: https://github.com/golang/net
+  version: feeb485667d1fdabe727840fe00adc22431bc86e
   subpackages:
   - context
 - name: golang.org/x/sys

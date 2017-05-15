@@ -7,7 +7,7 @@ import:
 - package: github.com/gorilla/context
   version: ^1.1.0
 - package: go.uber.org/yarpc
-  version: ^v1.4.0
+  version: config
 - package: go.uber.org/dig
   version: ~0.3
 - package: go.uber.org/thriftrw
