@@ -22,7 +22,8 @@
 - **[Breaking]** Module providers take in a `tally.Scope` so they can be
   propagated through module creation.
 - **[Breaking]** Remove lookup function from the YAML provider constructor and add
-  explicit constructors `WithExpand` to use interpolation.
+  explicit constructors `WithExpand` to use interpolation. Only values in the YAML
+  files are replaced, comments and keys are ignored.
 - Add a SetStaticConfigFiles method to load yaml files that should not be interpolated.
 
 ## v1.0.0-beta3 (28 Mar 2017)
