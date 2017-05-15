@@ -147,8 +147,8 @@ func (l *Loader) YamlProvider() ProviderFunc {
 		static := NewYAMLProviderFromFiles(false, l.getResolver(), l.getStaticFiles()...)
 		expanded := NewYAMLProviderWithExpand(false, l.getResolver(), os.LookupEnv, l.getFiles()...)
 
-		// Expanded files will have higher priority than static.
-		return NewProviderGroup("yaml", static, expanded), nil
+		// Static files will have higher priority than expanded.
+		return NewProviderGroup("yaml", expanded, static), nil
 	}
 }
 

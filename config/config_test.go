@@ -678,11 +678,12 @@ func TestLoader_OverrideStaticConfigFiles(t *testing.T) {
 		require.NoError(t, err)
 		defer func() { require.NoError(t, os.Remove(s.Name())) }()
 
-		fmt.Fprint(s, "static: ${null}")
+		// Order is important, we want to override base.yaml
+		fmt.Fprint(s, "static: ${null}\nvalue: override")
 		require.NoError(t, s.Close())
 
 		p := l.Load()
-		assert.Equal(t, "base", p.Get("value").AsString())
+		assert.Equal(t, "override", p.Get("value").AsString())
 		assert.Equal(t, "${null}", p.Get("static").AsString())
 	}
 
