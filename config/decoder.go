@@ -200,6 +200,24 @@ func convertValueFromStruct(src interface{}, dst *reflect.Value) error {
 	return nil
 }
 
+func convert(childKey string, value *reflect.Value, val interface{}) error {
+	if val != nil {
+		// First try to convert primitive type values, if convertValue wasn't able
+		// to convert to primitive,try converting the value as a struct value
+		if ret, err := convertValue(val, value.Type()); ret != nil {
+			if err != nil {
+				return errorWithKey(err, childKey)
+			}
+
+			value.Set(reflect.ValueOf(ret))
+		} else {
+			return errorWithKey(convertValueFromStruct(val, value), childKey)
+		}
+	}
+
+	return nil
+}
+
 func addSeparator(key string) string {
 	if key != "" {
 		key += _separator
@@ -236,21 +254,7 @@ func (d *decoder) scalar(childKey string, value reflect.Value, def string) error
 		val = def
 	}
 
-	if val != nil {
-		// First try to convert primitive type values, if convertValue wasn't able
-		// to convert to primitive,try converting the value as a struct value
-		if ret, err := convertValue(val, value.Type()); ret != nil {
-			if err != nil {
-				return errorWithKey(err, childKey)
-			}
-
-			value.Set(reflect.ValueOf(ret))
-		} else {
-			return errorWithKey(convertValueFromStruct(val, &value), childKey)
-		}
-	}
-
-	return nil
+	return convert(childKey, &value, val)
 }
 
 // Set value for a sequence type
@@ -348,7 +352,7 @@ func (d *decoder) mapping(childKey string, value reflect.Value, def string) erro
 			subKey := fmt.Sprintf("%v", key)
 			if subKey == "" {
 				// We can confuse an empty map key with a root element.
-				return errorWithKey(errors.New("empty map key is ambigious"), childKey)
+				return errorWithKey(errors.New("empty map key is ambiguous"), childKey)
 			}
 
 			itemValue := reflect.New(valueType.Elem()).Elem()
@@ -358,7 +362,13 @@ func (d *decoder) mapping(childKey string, value reflect.Value, def string) erro
 				return err
 			}
 
-			destMap.SetMapIndex(reflect.ValueOf(key), itemValue)
+			//TODO(alsam) do we need non scalar key types?
+			keyVal := reflect.New(value.Type().Key()).Elem()
+			if err := convert(childKey, &keyVal, key); err != nil {
+				return errors.Wrap(err, "key types conversion")
+			}
+
+			destMap.SetMapIndex(keyVal, itemValue)
 		}
 
 		value.Set(destMap)
