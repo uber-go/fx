@@ -5,6 +5,7 @@ go_import_path: go.uber.org/fx
 go:
   - 1.7
   - 1.8
+  - 1.8.x
 
 install:
   - make install
