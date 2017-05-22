@@ -17,3 +17,6 @@ testImport:
   - require
 - package: go.uber.org/zap
   version: ^1.4.0
+- package: go.uber.org/tools
+  subpackages:
+  - update-license

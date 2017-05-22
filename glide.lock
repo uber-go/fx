@@ -1,5 +1,5 @@
-hash: 932757c02bf8e7730fb5ca6d8f37f7ead35899dcf7e481700fcfdabcac71c75d
-updated: 2017-05-22T13:21:32.35044959-07:00
+hash: 3ada2dfd445ff91bd21e86b765dcc78503df5ac2c755539cb252118102408220
+updated: 2017-05-22T15:40:04.704780979-07:00
 imports:
 - name: github.com/go-validator/validator
   version: 0a9835d809fb647a62611d30cb792e0b5dd65b11
@@ -29,6 +29,10 @@ testImports:
   subpackages:
   - assert
   - require
+- name: go.uber.org/tools
+  version: 5908733c544153a245dddd039959386356fbc082
+  subpackages:
+  - update-license
 - name: go.uber.org/zap
   version: fab453050a7a08c35f31fc5fff6f2dbd962285ab
   subpackages:
