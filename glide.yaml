@@ -1,0 +1,42 @@
+package: go.uber.org/fx
+import:
+- package: github.com/go-validator/validator
+  version: v2
+testImport:
+- package: golang.org/x/tools
+  subpackages:
+  - cover
+- package: github.com/anmitsu/go-shlex
+- package: github.com/jessevdk/go-flags
+- package: github.com/mattn/goveralls
+# Necessary for goveralls
+- package: github.com/pborman/uuid
+- package: github.com/golang/lint
+  subpackages:
+  - golint
+- package: github.com/kisielk/gotool
+- package: github.com/kisielk/errcheck
+- package: github.com/axw/gocov
+  subpackages:
+  - gocov
+- package: github.com/axw/gocov
+- package: github.com/go-playground/overalls
+  # Force glide to get the latest version. Newer than this should be fine,
+  # but older than this doesn't support -go-binary flag I added
+  version: b52dfefba43cf6f75bb177ba45697ed12e0
+  # dependency of overalls that isn't imported in code. we REALLY need a
+  # separate manifest for build tools. that's a problem for future-aiden though
+- package: github.com/yookoala/realpath
+- package: github.com/sectioneight/md-to-godoc
+  version: master
+# specified manually since we don't import md-to-godoc
+- package: github.com/russross/blackfriday
+  version: 2
+- package: github.com/shurcooL/sanitized_anchor_name
+- package: github.com/mvdan/interfacer/cmd/interfacer
+- package: github.com/mvdan/lint
+- package: github.com/kyoh86/richgo
+- package: go.uber.org/tools
+  subpackages:
+  - update-license
+- package: github.com/google/gofuzz

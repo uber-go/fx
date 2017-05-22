@@ -1,0 +1,84 @@
+hash: f5dfa0c23de4b700e47cd743df158908ee79b7b4d247a3a2c29ba556e5bd5ea6
+updated: 2017-05-22T12:52:28.909968269-07:00
+imports:
+- name: github.com/go-validator/validator
+  version: 07ffaad256c8e957050ad83d6472eb97d785013d
+- name: github.com/ogier/pflag
+  version: 45c278ab3607870051a2ea9040bb85fcb8557481
+- name: github.com/pkg/errors
+  version: c605e284fe17294bda444b34710735b29d1a9d90
+- name: gopkg.in/yaml.v2
+  version: cd8b52f8269e0feb286dfeef29f8fe4d5b397e0b
+testImports:
+- name: github.com/anmitsu/go-shlex
+  version: 648efa622239a2f6ff949fed78ee37b48d499ba4
+- name: github.com/axw/gocov
+  version: 3a69a0d2a4ef1f263e2d92b041a69593d6964fe8
+  subpackages:
+  - gocov
+- name: github.com/davecgh/go-spew
+  version: 346938d642f2ec3594ed81d874461961cd0faa76
+  subpackages:
+  - spew
+- name: github.com/go-playground/overalls
+  version: b52dfefba43cf6f75bb177ba45697ed12e0d10a2
+- name: github.com/golang/lint
+  version: cb00e5669539f047b2f4c53a421a01b0c8e172c6
+  subpackages:
+  - golint
+- name: github.com/google/gofuzz
+  version: 44d81051d367757e1c7c6a5a86423ece9afcf63c
+- name: github.com/jessevdk/go-flags
+  version: 5695738f733662da3e9afc2283bba6f3c879002d
+- name: github.com/kisielk/errcheck
+  version: 23699b7e2cbfdb89481023524954ba2aeff6be90
+- name: github.com/kisielk/gotool
+  version: 0de1eaf82fa3f583ce21fde859f1e7e0c5e9b220
+- name: github.com/kyoh86/richgo
+  version: 4aa6fe9df163a501e6eed51be841fc234103295c
+- name: github.com/mattn/goveralls
+  version: a2cbbd7cdce4f5e051016fedf639c64bb05ef031
+- name: github.com/mvdan/interfacer
+  version: 22c51662ff476dfd97944f74db1b263ed920ee83
+  subpackages:
+  - cmd/interfacer
+- name: github.com/mvdan/lint
+  version: c9cbe299b369cbfea16318baaa037b19a69e45d2
+- name: github.com/pborman/uuid
+  version: 1b00554d822231195d1babd97ff4a781231955c9
+- name: github.com/pmezard/go-difflib
+  version: 792786c7400a136282c1664665ae0a8db921c6c2
+  subpackages:
+  - difflib
+- name: github.com/russross/blackfriday
+  version: e7910a813fbd94acce2680899175fa106b7b1787
+- name: github.com/sectioneight/md-to-godoc
+  version: 79157ff08f1acd5c5b1d13d71c0adb7908dbb8a2
+- name: github.com/shurcooL/sanitized_anchor_name
+  version: 541ff5ee47f1dddf6a5281af78307d921524bcb5
+- name: github.com/stretchr/testify
+  version: 4d4bfba8f1d1027c4fdbe371823030df51419987
+  subpackages:
+  - assert
+  - require
+- name: github.com/yookoala/realpath
+  version: c416d99ab5ed256fa30c1f3bab73152deb59bb69
+- name: go.uber.org/atomic
+  version: 4e336646b2ef9fc6e47be8e21594178f98e5ebcf
+- name: go.uber.org/tools
+  version: 5908733c544153a245dddd039959386356fbc082
+  subpackages:
+  - update-license
+- name: go.uber.org/zap
+  version: fab453050a7a08c35f31fc5fff6f2dbd962285ab
+  subpackages:
+  - buffer
+  - internal/bufferpool
+  - internal/color
+  - internal/exit
+  - internal/multierror
+  - zapcore
+- name: golang.org/x/tools
+  version: bf4b54dc687c73b6ef63de8b8abf0ad3951e3edc
+  subpackages:
+  - cover
