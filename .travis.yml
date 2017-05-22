@@ -1,14 +1,5 @@
 sudo: required
 services:
   - docker
-cache:
-  directories:
-    - .cache/docker
-env:
-  - DOCKER_GO_VERSION=1.7
-  - DOCKER_GO_VERSION=1.8 CI_TEST_CMD=coveralls
-before_install:
-  - make dockerload
 script:
-  - make dockerci
-  - if [[ "${TRAVIS_BRANCH}" == "master" ]] && [[ "${TRAVIS_PULL_REQUEST}" == "false" ]]; then make dockersave; fi
+  - go test

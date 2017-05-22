@@ -14,13 +14,6 @@ all: lint test
 
 COV_REPORT := overalls.coverprofile
 
-DOCKER_GO_VERSION ?= 1.8
-DOCKER_IMAGE := uber/fx-$(DOCKER_GO_VERSION)
-DOCKERFILE := Dockerfile.$(DOCKER_GO_VERSION)
-DOCKER_CACHE_DIR ?= .cache/docker
-DOCKER_CACHE_FILE := $(DOCKER_CACHE_DIR)/uber-fx-$(DOCKER_GO_VERSION)
-DOCKER_FLAGS := -e V -e COVERMODE -e RACE -e CI_TEST_CMD -e TRAVIS_JOB_ID -e TRAVIS_PULL_REQUEST
-
 COVERMODE ?= set
 CI_TEST_CMD ?= test
 ifeq ($(CI_TEST_CMD),coveralls)
@@ -133,27 +126,6 @@ benchreset:
 	$(ECHO_V)rm -f $(BASELINE_BENCH_FILE)
 	$(ECHO_V)rm -f $(BENCH_FILE)
 
-
-.PHONY: dockerbuild
-dockerbuild:
-	docker build -t $(DOCKER_IMAGE) -f $(DOCKERFILE) .
-
-.PHONY: dockertest
-dockertest: dockerbuild
-	docker run $(DOCKER_FLAGS) $(DOCKER_IMAGE) make test
-
-.PHONY: dockerci
-dockerci: dockerbuild
-	docker run $(DOCKER_FLAGS) $(DOCKER_IMAGE) make ci
-
-.PHONY: dockerload
-dockerload:
-	if [ -f $(DOCKER_CACHE_FILE) ]; then gunzip -c $(DOCKER_CACHE_FILE) | docker load; fi
-
-.PHONY: dockersave
-dockersave:
-	mkdir -p $(DOCKER_CACHE_DIR)
-	docker save $(shell docker history -q $(DOCKER_IMAGE) | grep -v '<missing>') | gzip > $(DOCKER_CACHE_FILE)
 
 .PHONY: ci
 ci: lint $(CI_TEST_CMD)
