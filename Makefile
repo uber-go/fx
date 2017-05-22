@@ -30,7 +30,6 @@ endif
 # all .go files that don't exist in hidden directories
 ALL_SRC := $(shell find . -name "*.go" | grep -v -e vendor \
 	-e ".*/\..*" \
-	-e "examples/.*" \
 	-e ".*/_.*")
 
 TEST_TIMEOUT := "-timeout=10s"
@@ -39,7 +38,7 @@ TEST_TIMEOUT := "-timeout=10s"
 test: $(COV_REPORT)
 
 TEST_IGNORES = vendor .git
-COVER_IGNORES = $(TEST_IGNORES) examples testutils
+COVER_IGNORES = $(TEST_IGNORES) testutils
 
 comma := ,
 null :=
@@ -157,7 +156,7 @@ dockersave:
 	docker save $(shell docker history -q $(DOCKER_IMAGE) | grep -v '<missing>') | gzip > $(DOCKER_CACHE_FILE)
 
 .PHONY: ci
-ci: lint examples $(CI_TEST_CMD)
+ci: lint $(CI_TEST_CMD)
 
 .PHONY: gendoc
 gendoc:
@@ -166,28 +165,18 @@ gendoc:
 		-not -path "./node_modules/*" | \
 		xargs -I% md-to-godoc -input=%
 
-.PHONY: genexamples
-genexamples:
-	@$(call label,Building examples)
-	@echo
-	$(ECHO_V)$(MAKE) -C examples/keyvalue ECHO_V=$(ECHO_V)
-
 .PHONY: license
 license:
 	$(ECHO_V)./.build/license.sh
 
 .PHONY: generate
-generate: gendoc genexamples license
+generate: gendoc license
 
 .PHONY: clean
 clean:
 	$(ECHO_V)rm -f $(COV_REPORT) $(COV_HTML) $(LINT_LOG) $(COV_TXT)
 	$(ECHO_V)find $(subst /...,,$(PKGS)) -name $(COVER_OUT) -delete
 	$(ECHO_V)rm -rf .bin
-
-.PHONY: examples
-examples:
-	$(ECHO_V)go test ./examples/simple
 
 .PHONY: vendor
 vendor:
