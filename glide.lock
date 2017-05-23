@@ -1,5 +1,5 @@
-hash: 3ada2dfd445ff91bd21e86b765dcc78503df5ac2c755539cb252118102408220
-updated: 2017-05-22T15:40:04.704780979-07:00
+hash: b282b9437623f7b3d2662974847a7ee0ef3a366d02d5d45d77524a07fe1521e6
+updated: 2017-05-22T17:51:24.387369-07:00
 imports:
 - name: github.com/go-validator/validator
   version: 0a9835d809fb647a62611d30cb792e0b5dd65b11
@@ -9,6 +9,10 @@ imports:
   version: 645ef00459ed84a119197bfb8d8205042c6df63d
 - name: go.uber.org/atomic
   version: 4e336646b2ef9fc6e47be8e21594178f98e5ebcf
+- name: go.uber.org/dig
+  version: c4b875442cd7be80a6e3de4ad47d6b8787e79c2c
+  subpackages:
+  - internal/graph
 - name: go.uber.org/multierr
   version: a3d1fc1f1316d4132fc61f4ea1159ae0613fb474
 - name: gopkg.in/yaml.v2

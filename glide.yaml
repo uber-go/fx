@@ -8,6 +8,9 @@ import:
 - package: go.uber.org/multierr
   version: ~0.2.0
 - package: gopkg.in/yaml.v2
+- package: go.uber.org/dig
+  # TODO: cut v0.4 of dig, and get ready to solidify v1.0
+  version: master
 testImport:
 - package: github.com/google/gofuzz
 - package: github.com/stretchr/testify
