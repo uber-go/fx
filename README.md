@@ -14,15 +14,6 @@ application logic.
 Beta. Expect minor API changes and bug fixes. See [our changelog](CHANGELOG.md)
 for more.
 
-## Configuration
-
-UberFx introduces a simplified configuration model that provides a consistent
-interface to configuration from pluggable configuration sources. This interface
-defines methods for accessing values directly or into strongly
-typed structs.
-
-[Read more about configuration.](config/README.md)
-
 ## Compatibility
 
 UberFx is compatible with Go 1.7 and above.
