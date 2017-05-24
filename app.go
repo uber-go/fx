@@ -83,11 +83,12 @@ func (s *App) Provide(constructors ...interface{}) {
 	}
 }
 
-// Start the app by explicitly invoking all the user-provided constructors.
+// Run the app by explicitly invoking all the user-provided constructors.
 //
 // See dig.Invoke for moreinformation.
-func (s *App) Start(ctx context.Context, funcs ...interface{}) error {
-	return withTimeout(ctx, func() error { return s.start(funcs...) })
+func (s *App) Run(ctx context.Context, funcs ...interface{}) error {
+	log.Print("Starting the app")
+	return withTimeout(ctx, func() error { return s.run(funcs...) })
 }
 
 func withTimeout(ctx context.Context, f func() error) error {
@@ -101,7 +102,7 @@ func withTimeout(ctx context.Context, f func() error) error {
 	}
 }
 
-func (s *App) start(funcs ...interface{}) error {
+func (s *App) run(funcs ...interface{}) error {
 	// invoke all user-land constructors in order
 	for _, fn := range funcs {
 		if reflect.TypeOf(fn).Kind() != reflect.Func {
@@ -141,7 +142,7 @@ func (s *App) RunForever(funcs ...interface{}) {
 	defer cancelStart()
 
 	// start the app, rolling back on err
-	if err := s.Start(startCtx, funcs...); err != nil {
+	if err := s.Run(startCtx, funcs...); err != nil {
 		s.logger.Fatalf("ERROR\t\tFailed to start: %v", err)
 	}
 
