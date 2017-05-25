@@ -81,9 +81,9 @@ func (s *App) Provide(constructors ...interface{}) {
 		if reflect.TypeOf(c).Kind() == reflect.Func {
 			// Print the constructor signature, file and line number from where it has come
 			file, line := funcLocation(c)
-			logf("Type\t- %q from %v:%d", reflect.TypeOf(c).String(), file, line)
+			logf("Type\t%q from %v:%d", reflect.TypeOf(c).String(), file, line)
 		} else {
-			logf("Type\t- %q", reflect.TypeOf(c).String())
+			logf("Type\t%q", reflect.TypeOf(c).String())
 		}
 
 		// load module directly into the container and dont store in
@@ -100,7 +100,7 @@ func (s *App) Provide(constructors ...interface{}) {
 //
 // See dig.Invoke for moreinformation.
 func (s *App) Start(ctx context.Context, funcs ...interface{}) error {
-	logln("Event\t- App starting...")
+	logln("Event\tApp starting...")
 	return withTimeout(ctx, func() error { return s.start(funcs...) })
 }
 
@@ -123,7 +123,7 @@ func (s *App) start(funcs ...interface{}) error {
 		}
 
 		file, line := funcLocation(fn)
-		logf("Invoke  - %q from %v:%d", reflect.TypeOf(fn).String(), file, line)
+		logf("Invoke\t%q from %v:%d", reflect.TypeOf(fn).String(), file, line)
 
 		if err := s.container.Invoke(fn); err != nil {
 			return err
@@ -140,14 +140,14 @@ func (s *App) start(funcs ...interface{}) error {
 		return err
 	}
 
-	logln("Event   - App running...")
+	logln("Event\tApp running...")
 
 	return nil
 }
 
 // Stop the app
 func (s *App) Stop(ctx context.Context) error {
-	logln("App stopping...")
+	logln("Event\tApp stopping...")
 	return withTimeout(ctx, s.lifecycle.stop)
 }
 
@@ -158,20 +158,20 @@ func (s *App) RunForever(funcs ...interface{}) {
 
 	// start the app, rolling back on err
 	if err := s.Start(startCtx, funcs...); err != nil {
-		fatalf("Failed to start: %v", err)
+		fatalf("Err\tFailed to start: %v", err)
 	}
 
 	// block on SIGINT and SIGTERM
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, syscall.SIGINT, syscall.SIGTERM)
 	<-c
-	logln("Caught SIGINT or SIGTERM, shutting down...")
+	logln("Event\tCaught SIGINT or SIGTERM, shutting down...")
 
 	// gracefully shutdown the app
 	stopCtx, cancelStop := context.WithTimeout(context.Background(), DefaultStopTimeout)
 	defer cancelStop()
 	if err := s.Stop(stopCtx); err != nil {
-		fatalf("Failed to stop cleanly: %v", err)
+		fatalf("Err\tFailed to stop cleanly: %v", err)
 	}
 }
 
