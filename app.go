@@ -22,7 +22,6 @@ package fx
 
 import (
 	"context"
-	"log"
 	"os"
 	"os/signal"
 	"reflect"
@@ -43,6 +42,8 @@ type App struct {
 
 // New creates a new modular application
 func New(constructors ...interface{}) *App {
+	logln("Event\tApp creating...")
+
 	container := dig.New()
 
 	// keep a ref to a private lifecycle,
@@ -51,15 +52,15 @@ func New(constructors ...interface{}) *App {
 	err := container.Provide(func() Lifecycle {
 		return lifecycle
 	})
-
 	if err != nil {
-		log.Panic(err)
+		logpanic(err)
 	}
 
 	app := &App{
 		container: container,
 		lifecycle: lifecycle,
 	}
+
 	app.Provide(constructors...)
 
 	return app
@@ -76,15 +77,13 @@ var (
 // Provide constructors into the D.I. Container, their types will be available
 // to all other constructors, and called lazily at startup
 func (s *App) Provide(constructors ...interface{}) {
-	logCaller("Provide")
-
 	for _, c := range constructors {
 		if reflect.TypeOf(c).Kind() == reflect.Func {
 			// Print the constructor signature, file and line number from where it has come
 			file, line := funcLocation(c)
-			log.Printf("Providing constructor %q from %v:%d", reflect.TypeOf(c).String(), file, line)
+			logf("Type\t- %q from %v:%d", reflect.TypeOf(c).String(), file, line)
 		} else {
-			log.Printf("Providing object %q", reflect.TypeOf(c).String())
+			logf("Type\t- %q", reflect.TypeOf(c).String())
 		}
 
 		// load module directly into the container and dont store in
@@ -92,7 +91,7 @@ func (s *App) Provide(constructors ...interface{}) {
 		// be called unless a type in s.constructors directly relies on them
 		err := s.container.Provide(c)
 		if err != nil {
-			log.Panic(err)
+			logpanic(err)
 		}
 	}
 }
@@ -101,7 +100,7 @@ func (s *App) Provide(constructors ...interface{}) {
 //
 // See dig.Invoke for moreinformation.
 func (s *App) Start(ctx context.Context, funcs ...interface{}) error {
-	logln("Starting app...")
+	logln("Event\t- App starting...")
 	return withTimeout(ctx, func() error { return s.start(funcs...) })
 }
 
@@ -124,7 +123,7 @@ func (s *App) start(funcs ...interface{}) error {
 		}
 
 		file, line := funcLocation(fn)
-		log.Printf("Invoking constructor %q from %v:%d", reflect.TypeOf(fn).String(), file, line)
+		logf("Invoke  - %q from %v:%d", reflect.TypeOf(fn).String(), file, line)
 
 		if err := s.container.Invoke(fn); err != nil {
 			return err
@@ -133,20 +132,22 @@ func (s *App) start(funcs ...interface{}) error {
 
 	// start or rollback on err
 	if err := s.lifecycle.start(); err != nil {
-		log.Printf("Start failed, rolling back: %v", err)
+		logf("Start failed, rolling back: %v", err)
 		if stopErr := s.lifecycle.stop(); stopErr != nil {
-			log.Printf("Couldn't rollback cleanly: %v", stopErr)
+			logf("Couldn't rollback cleanly: %v", stopErr)
 			return multierr.Combine(err, stopErr)
 		}
 		return err
 	}
+
+	logln("Event   - App running...")
 
 	return nil
 }
 
 // Stop the app
 func (s *App) Stop(ctx context.Context) error {
-	logln("Stopping app...")
+	logln("App stopping...")
 	return withTimeout(ctx, s.lifecycle.stop)
 }
 
@@ -157,20 +158,20 @@ func (s *App) RunForever(funcs ...interface{}) {
 
 	// start the app, rolling back on err
 	if err := s.Start(startCtx, funcs...); err != nil {
-		log.Fatalf("Failed to start: %v", err)
+		fatalf("Failed to start: %v", err)
 	}
 
 	// block on SIGINT and SIGTERM
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, syscall.SIGINT, syscall.SIGTERM)
 	<-c
-	log.Printf("Caught SIGINT or SIGTERM, shutting down...")
+	logln("Caught SIGINT or SIGTERM, shutting down...")
 
 	// gracefully shutdown the app
 	stopCtx, cancelStop := context.WithTimeout(context.Background(), DefaultStopTimeout)
 	defer cancelStop()
 	if err := s.Stop(stopCtx); err != nil {
-		log.Fatalf("Failed to stop cleanly: %v", err)
+		fatalf("Failed to stop cleanly: %v", err)
 	}
 }
 
@@ -178,10 +179,4 @@ func (s *App) RunForever(funcs ...interface{}) {
 func funcLocation(c interface{}) (string, int) {
 	mfunc := runtime.FuncForPC(reflect.ValueOf(c).Pointer())
 	return mfunc.FileLine(mfunc.Entry())
-}
-
-func logCaller(name string) {
-	if _, file, line, ok := runtime.Caller(3); ok {
-		log.Printf("%s was called %s %d\n", name, file, line)
-	}
 }

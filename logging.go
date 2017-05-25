@@ -13,6 +13,14 @@ func logf(format string, v ...interface{}) {
 	log.Printf(prepend(format), v)
 }
 
+func logpanic(err error) {
+	log.Panic(prepend(err.Error()))
+}
+
+func fatalf(format string, v ...interface{}) {
+	log.Fatalf(prepend(format), v)
+}
+
 func prepend(str string) string {
 	return fmt.Sprintf("[Fx] %v", str)
 }
