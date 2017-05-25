@@ -101,7 +101,7 @@ func (s *App) Provide(constructors ...interface{}) {
 //
 // See dig.Invoke for moreinformation.
 func (s *App) Start(ctx context.Context, funcs ...interface{}) error {
-	log.Print("Starting the app")
+	logln("Starting app...")
 	return withTimeout(ctx, func() error { return s.start(funcs...) })
 }
 
@@ -146,7 +146,7 @@ func (s *App) start(funcs ...interface{}) error {
 
 // Stop the app
 func (s *App) Stop(ctx context.Context) error {
-	log.Print("Stopping the app")
+	logln("Stopping app...")
 	return withTimeout(ctx, s.lifecycle.stop)
 }
 
