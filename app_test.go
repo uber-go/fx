@@ -139,4 +139,8 @@ func TestApp(t *testing.T) {
 		err = s.Stop(stopCtx)
 		assert.Contains(t, err.Error(), "context deadline exceeded")
 	})
+	t.Run("ProvideDoesn'tPanicForObjectInstances", func(t *testing.T) {
+		type empty struct{}
+		assert.NotPanics(t, func() { New().Provide(&empty{}) })
+	})
 }

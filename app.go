@@ -77,9 +77,13 @@ var (
 // to all other constructors, and called lazily at startup
 func (s *App) Provide(constructors ...interface{}) {
 	for _, c := range constructors {
-		// Print the constructor signature, file and line number from where it has come
-		file, line := funcLocation(c)
-		log.Printf("Providing constructor %q from %v:%d", reflect.TypeOf(c).String(), file, line)
+		if reflect.TypeOf(c).Kind() == reflect.Func {
+			// Print the constructor signature, file and line number from where it has come
+			file, line := funcLocation(c)
+			log.Printf("Providing constructor %q from %v:%d", reflect.TypeOf(c).String(), file, line)
+		} else {
+			log.Printf("Providing object %q", c)
+		}
 
 		// load module directly into the container and dont store in
 		// s.constructors - this makes the module "free" because they wont
