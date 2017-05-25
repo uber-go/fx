@@ -181,10 +181,7 @@ func funcLocation(c interface{}) (string, int) {
 }
 
 func logCaller(name string) {
-	_, file, line, ok := runtime.Caller(3)
-	if !ok {
-		panic("can't determine caller")
+	if _, file, line, ok := runtime.Caller(3); ok {
+		log.Printf("%s was called %s %d\n", name, file, line)
 	}
-
-	log.Printf("%s was called %s %d\n", name, file, line)
 }
