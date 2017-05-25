@@ -76,13 +76,15 @@ var (
 // Provide constructors into the D.I. Container, their types will be available
 // to all other constructors, and called lazily at startup
 func (s *App) Provide(constructors ...interface{}) {
+	logCaller("Provide")
+
 	for _, c := range constructors {
 		if reflect.TypeOf(c).Kind() == reflect.Func {
 			// Print the constructor signature, file and line number from where it has come
 			file, line := funcLocation(c)
 			log.Printf("Providing constructor %q from %v:%d", reflect.TypeOf(c).String(), file, line)
 		} else {
-			log.Printf("Providing object %q", c)
+			log.Printf("Providing object %q", reflect.TypeOf(c).String())
 		}
 
 		// load module directly into the container and dont store in
@@ -120,6 +122,7 @@ func (s *App) start(funcs ...interface{}) error {
 		if reflect.TypeOf(fn).Kind() != reflect.Func {
 			return errors.Errorf("%T %q is not a function", fn, fn)
 		}
+
 		file, line := funcLocation(fn)
 		log.Printf("Invoking constructor %q from %v:%d", reflect.TypeOf(fn).String(), file, line)
 
@@ -175,4 +178,13 @@ func (s *App) RunForever(funcs ...interface{}) {
 func funcLocation(c interface{}) (string, int) {
 	mfunc := runtime.FuncForPC(reflect.ValueOf(c).Pointer())
 	return mfunc.FileLine(mfunc.Entry())
+}
+
+func logCaller(name string) {
+	_, file, line, ok := runtime.Caller(2)
+	if !ok {
+		panic("can't determine caller")
+	}
+
+	log.Printf("%s was called %s %d\n", name, file, line)
 }
