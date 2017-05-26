@@ -50,8 +50,6 @@ func New(constructors ...interface{}) *App {
 		lifecycle: lifecycle,
 	}
 
-	logln("\tApp created...")
-
 	app.Provide(&lifecycle)
 	app.Provide(constructors...)
 
@@ -86,7 +84,6 @@ func (s *App) Provide(constructors ...interface{}) {
 //
 // See dig.Invoke for moreinformation.
 func (s *App) Start(ctx context.Context, funcs ...interface{}) error {
-	logln("\tApp starting...")
 	return withTimeout(ctx, func() error { return s.start(funcs...) })
 }
 
@@ -108,7 +105,7 @@ func (s *App) start(funcs ...interface{}) error {
 			return errors.Errorf("%T %q is not a function", fn, fn)
 		}
 
-		logf("CALL\t%s()\t\t%s", fnName(fn), fnLoc(fn))
+		logf("INVOKE\t\t%s()\t\t\t%s", fnName(fn), fnLoc(fn))
 
 		if err := s.container.Invoke(fn); err != nil {
 			return err
@@ -125,14 +122,11 @@ func (s *App) start(funcs ...interface{}) error {
 		return err
 	}
 
-	logln("\tApp running...")
-
 	return nil
 }
 
 // Stop the app
 func (s *App) Stop(ctx context.Context) error {
-	logln("\tApp stopping...")
 	return withTimeout(ctx, s.lifecycle.stop)
 }
 
@@ -150,7 +144,6 @@ func (s *App) RunForever(funcs ...interface{}) {
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, syscall.SIGINT, syscall.SIGTERM)
 	<-c
-	logln("\tCaught SIGINT or SIGTERM, shutting down...")
 
 	// gracefully shutdown the app
 	stopCtx, cancelStop := context.WithTimeout(context.Background(), DefaultStopTimeout)

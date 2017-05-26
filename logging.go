@@ -45,10 +45,10 @@ func fnLoc(fn interface{}) string {
 func logProvideType(t interface{}) {
 	if reflect.TypeOf(t).Kind() == reflect.Func {
 		// LOAD - *p from func main.provide in ./main.go:20
-		logf("LOAD\tConstructor %s @ %s", fnName(t), fnLoc(t))
+		logf("PROVIDE\t%s()\t\t\t%s", fnName(t), fnLoc(t))
 	} else {
 		// LOAD - *fx.Lifecycle from func fx.newLifecycle in ./lifecycle.go:25
-		logf("LOAD\tType %s", reflect.TypeOf(t).String())
+		logf("PROVIDE\t%s", reflect.TypeOf(t).String())
 	}
 }
 
