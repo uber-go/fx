@@ -22,6 +22,7 @@ package fx
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"os/signal"
 	"reflect"
@@ -50,7 +51,10 @@ func New(constructors ...interface{}) *App {
 		lifecycle: lifecycle,
 	}
 
-	app.Provide(&lifecycle)
+	// TODO the log for this is not understandeable
+	app.Provide(func() Lifecycle {
+		return lifecycle
+	})
 	app.Provide(constructors...)
 
 	return app
@@ -144,6 +148,7 @@ func (s *App) RunForever(funcs ...interface{}) {
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, syscall.SIGINT, syscall.SIGTERM)
 	<-c
+	fmt.Println("")
 
 	// gracefully shutdown the app
 	stopCtx, cancelStop := context.WithTimeout(context.Background(), DefaultStopTimeout)

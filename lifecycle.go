@@ -37,6 +37,10 @@ type Hook struct {
 	OnStop  func() error
 }
 
+func newLifecycle() Lifecycle {
+	return &lifecycle{}
+}
+
 type lifecycle struct {
 	hooks    []Hook
 	position int
@@ -52,6 +56,7 @@ func (l *lifecycle) Append(hook Hook) {
 func (l *lifecycle) start() error {
 	for i, hook := range l.hooks {
 		if hook.OnStart != nil {
+			logf("START\t\t")
 			if err := hook.OnStart(); err != nil {
 				return err
 			}
@@ -74,6 +79,7 @@ func (l *lifecycle) stop() error {
 		if l.hooks[i].OnStop == nil {
 			continue
 		}
+		logf("STOP\t\t")
 		if err := l.hooks[i].OnStop(); err != nil {
 			errs = append(errs, err)
 		}
