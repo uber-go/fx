@@ -22,7 +22,6 @@ package fx
 
 import (
 	"context"
-	"fmt"
 	"os"
 	"os/signal"
 	"reflect"
@@ -126,6 +125,8 @@ func (s *App) start(funcs ...interface{}) error {
 		return err
 	}
 
+	logln("RUNNING")
+
 	return nil
 }
 
@@ -147,8 +148,7 @@ func (s *App) RunForever(funcs ...interface{}) {
 	// block on SIGINT and SIGTERM
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, syscall.SIGINT, syscall.SIGTERM)
-	<-c
-	fmt.Println("")
+	logSignal(<-c)
 
 	// gracefully shutdown the app
 	stopCtx, cancelStop := context.WithTimeout(context.Background(), DefaultStopTimeout)

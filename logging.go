@@ -3,6 +3,7 @@ package fx
 import (
 	"fmt"
 	"log"
+	"os"
 	"path"
 	"reflect"
 	"runtime"
@@ -78,4 +79,9 @@ func caller() string {
 
 	// return its name
 	return fun.Name()
+}
+
+func logSignal(signal os.Signal) {
+	fmt.Println("")
+	logln(strings.ToUpper(signal.String()))
 }
