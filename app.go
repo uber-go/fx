@@ -119,9 +119,9 @@ func (s *App) start(funcs ...interface{}) error {
 
 	// start or rollback on err
 	if err := s.lifecycle.start(); err != nil {
-		fxlog.Printf("Start failed, rolling back: %v", err)
+		fxlog.Printf("ERROR\t\tStart failed, rolling back: %v", err)
 		if stopErr := s.lifecycle.stop(); stopErr != nil {
-			fxlog.Printf("Couldn't rollback cleanly: %v", stopErr)
+			fxlog.Printf("ERROR\t\tCouldn't rollback cleanly: %v", stopErr)
 			return multierr.Combine(err, stopErr)
 		}
 		return err
@@ -144,7 +144,7 @@ func (s *App) RunForever(funcs ...interface{}) {
 
 	// start the app, rolling back on err
 	if err := s.Start(startCtx, funcs...); err != nil {
-		fxlog.Printf("ERRO\tFailed to start: %v", err)
+		fxlog.Printf("ERROR\t\tFailed to start: %v", err)
 	}
 
 	// block on SIGINT and SIGTERM
@@ -156,7 +156,7 @@ func (s *App) RunForever(funcs ...interface{}) {
 	stopCtx, cancelStop := context.WithTimeout(context.Background(), DefaultStopTimeout)
 	defer cancelStop()
 	if err := s.Stop(stopCtx); err != nil {
-		fxlog.Fatalf("ERRO\tFailed to stop cleanly: %v", err)
+		fxlog.Fatalf("ERROR\t\tFailed to stop cleanly: %v", err)
 	}
 }
 
