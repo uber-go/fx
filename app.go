@@ -108,7 +108,7 @@ func (s *App) start(funcs ...interface{}) error {
 			return errors.Errorf("%T %q is not a function", fn, fn)
 		}
 
-		logf("CALL\tfunc %s @ %s", fnName(fn), fnLoc(fn))
+		logf("CALL\tFunc %s @ %s", fnName(fn), fnLoc(fn))
 
 		if err := s.container.Invoke(fn); err != nil {
 			return err
