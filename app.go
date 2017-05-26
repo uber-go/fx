@@ -31,6 +31,7 @@ import (
 
 	"github.com/pkg/errors"
 	"go.uber.org/dig"
+	"go.uber.org/fx/internal/fxreflect"
 	"go.uber.org/multierr"
 )
 
@@ -108,7 +109,7 @@ func (s *App) start(funcs ...interface{}) error {
 			return errors.Errorf("%T %q is not a function", fn, fn)
 		}
 
-		logf("INVOKE\t\t%s()\t\t\t%s", fnName(fn), fnLoc(fn))
+		logf("INVOKE\t\t%s", fxreflect.FuncName(fn))
 
 		if err := s.container.Invoke(fn); err != nil {
 			return err

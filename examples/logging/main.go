@@ -11,6 +11,7 @@ func main() {
 		provide5,
 		provide6,
 		provide7,
+		provideMultiple,
 	)
 	app.RunForever(
 		invoke,
@@ -67,6 +68,13 @@ func provide7(p2 *p2, lifecycle fx.Lifecycle) *p7 {
 		},
 	})
 	return &p7{}
+}
+
+type p8 struct{}
+type p9 struct{}
+
+func provideMultiple() (*p8, *p9, error) {
+	return &p8{}, &p9{}, nil
 }
 
 func invoke() {}

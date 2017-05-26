@@ -21,6 +21,7 @@
 package fx
 
 import (
+	"go.uber.org/fx/internal/fxreflect"
 	"go.uber.org/multierr"
 )
 
@@ -48,7 +49,7 @@ type lifecycle struct {
 }
 
 func (l *lifecycle) Append(hook Hook) {
-	hook.caller = caller()
+	hook.caller = fxreflect.Caller()
 	l.hooks = append(l.hooks, hook)
 }
 
