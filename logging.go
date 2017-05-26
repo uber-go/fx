@@ -3,8 +3,7 @@ package fx
 import (
 	"fmt"
 	"log"
-	"os"
-	"path/filepath"
+	"path"
 	"reflect"
 	"runtime"
 	"strings"
@@ -38,36 +37,9 @@ func fnLoc(fn interface{}) string {
 	mfunc := runtime.FuncForPC(reflect.ValueOf(fn).Pointer())
 
 	file, line := mfunc.FileLine(mfunc.Entry())
-	file = strings.Replace(file, gopath(), "$GOPATH", 1)
+	file = strings.Replace(file, mainPath(), ".", 1)
 
 	return fmt.Sprintf("%s:%d", file, line)
-}
-
-func gopath() string {
-	gopath := os.Getenv("GOPATH")
-	if gopath == "" {
-		gopath = defaultGOPATH()
-	}
-	return gopath
-}
-
-func defaultGOPATH() string {
-	env := "HOME"
-	if runtime.GOOS == "windows" {
-		env = "USERPROFILE"
-	} else if runtime.GOOS == "plan9" {
-		env = "home"
-	}
-	if home := os.Getenv(env); home != "" {
-		def := filepath.Join(home, "go")
-		if filepath.Clean(def) == filepath.Clean(runtime.GOROOT()) {
-			// Don't set the default GOPATH to GOROOT,
-			// as that will trigger warnings from the go tool.
-			return ""
-		}
-		return def
-	}
-	return ""
 }
 
 func logProvideType(t interface{}) {
@@ -78,4 +50,12 @@ func logProvideType(t interface{}) {
 		// LOAD - *fx.Lifecycle from func fx.newLifecycle in ./lifecycle.go:25
 		logf("LOAD\tType %s", reflect.TypeOf(t).String())
 	}
+}
+
+func mainPath() string {
+	_, filename, _, ok := runtime.Caller(0)
+	if !ok {
+		panic("No caller information")
+	}
+	return path.Dir(filename)
 }
