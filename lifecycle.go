@@ -21,6 +21,8 @@
 package fx
 
 import (
+	"go.uber.org/fx/internal/fxlog"
+	"go.uber.org/fx/internal/fxreflect"
 	"go.uber.org/multierr"
 )
 
@@ -35,6 +37,11 @@ type Lifecycle interface {
 type Hook struct {
 	OnStart func() error
 	OnStop  func() error
+	caller  string
+}
+
+func newLifecycle() Lifecycle {
+	return &lifecycle{}
 }
 
 type lifecycle struct {
@@ -43,6 +50,7 @@ type lifecycle struct {
 }
 
 func (l *lifecycle) Append(hook Hook) {
+	hook.caller = fxreflect.Caller()
 	l.hooks = append(l.hooks, hook)
 }
 
@@ -52,6 +60,7 @@ func (l *lifecycle) Append(hook Hook) {
 func (l *lifecycle) start() error {
 	for i, hook := range l.hooks {
 		if hook.OnStart != nil {
+			fxlog.Printf("START\t\t%s()", hook.caller)
 			if err := hook.OnStart(); err != nil {
 				return err
 			}
@@ -74,6 +83,7 @@ func (l *lifecycle) stop() error {
 		if l.hooks[i].OnStop == nil {
 			continue
 		}
+		fxlog.Printf("STOP\t\t%s()", l.hooks[i].caller)
 		if err := l.hooks[i].OnStop(); err != nil {
 			errs = append(errs, err)
 		}
