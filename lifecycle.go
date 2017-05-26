@@ -40,6 +40,15 @@ type Hook struct {
 	caller  string
 }
 
+func newLifecycle(logger fxlog.Logger) *lifecycle {
+	if logger == nil {
+		logger = fxlog.New()
+	}
+	return &lifecycle{
+		logger: logger,
+	}
+}
+
 type lifecycle struct {
 	logger   fxlog.Logger
 	hooks    []Hook
@@ -91,9 +100,7 @@ func (l *lifecycle) stop() error {
 // NewTestLifecycle creates a new test lifecycle
 func NewTestLifecycle() Lifecycle {
 	return &TestLifecycle{
-		lifecycle{
-			logger: fxlog.New(),
-		},
+		newLifecycle(nil),
 	}
 }
 
@@ -101,7 +108,7 @@ func NewTestLifecycle() Lifecycle {
 // possible be exposing a Start and Stop func which can be
 // called manually in the context of a unit test.
 type TestLifecycle struct {
-	lifecycle
+	*lifecycle
 }
 
 // Start the lifecycle

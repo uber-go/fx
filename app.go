@@ -48,9 +48,7 @@ func New(constructors ...interface{}) *App {
 	logger := fxlog.New()
 
 	container := dig.New()
-	lifecycle := &lifecycle{
-		logger: logger,
-	}
+	lifecycle := newLifecycle(logger)
 
 	app := &App{
 		container: container,
