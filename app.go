@@ -31,6 +31,7 @@ import (
 
 	"github.com/pkg/errors"
 	"go.uber.org/dig"
+	"go.uber.org/fx/internal/fxlog"
 	"go.uber.org/fx/internal/fxreflect"
 	"go.uber.org/multierr"
 )
@@ -51,7 +52,7 @@ func New(constructors ...interface{}) *App {
 		lifecycle: lifecycle,
 	}
 
-	logf("PROVIDE\t*fx.Lifecycle")
+	fxlog.Println("PROVIDE\t*fx.Lifecycle")
 	container.Provide(func() Lifecycle {
 		return lifecycle
 	})
@@ -72,14 +73,14 @@ var (
 // to all other constructors, and called lazily at startup
 func (s *App) Provide(constructors ...interface{}) {
 	for _, c := range constructors {
-		logProvideType(c)
+		fxlog.PrintProvide(c)
 
 		// load module directly into the container and dont store in
 		// s.constructors - this makes the module "free" because they wont
 		// be called unless a type in s.constructors directly relies on them
 		err := s.container.Provide(c)
 		if err != nil {
-			logpanic(err)
+			fxlog.Panic(err)
 		}
 	}
 }
@@ -109,7 +110,7 @@ func (s *App) start(funcs ...interface{}) error {
 			return errors.Errorf("%T %q is not a function", fn, fn)
 		}
 
-		logf("INVOKE\t\t%s", fxreflect.FuncName(fn))
+		fxlog.Printf("INVOKE\t\t%s", fxreflect.FuncName(fn))
 
 		if err := s.container.Invoke(fn); err != nil {
 			return err
@@ -118,15 +119,15 @@ func (s *App) start(funcs ...interface{}) error {
 
 	// start or rollback on err
 	if err := s.lifecycle.start(); err != nil {
-		logf("Start failed, rolling back: %v", err)
+		fxlog.Printf("Start failed, rolling back: %v", err)
 		if stopErr := s.lifecycle.stop(); stopErr != nil {
-			logf("Couldn't rollback cleanly: %v", stopErr)
+			fxlog.Printf("Couldn't rollback cleanly: %v", stopErr)
 			return multierr.Combine(err, stopErr)
 		}
 		return err
 	}
 
-	logln("RUNNING")
+	fxlog.Printf("RUNNING")
 
 	return nil
 }
@@ -143,19 +144,19 @@ func (s *App) RunForever(funcs ...interface{}) {
 
 	// start the app, rolling back on err
 	if err := s.Start(startCtx, funcs...); err != nil {
-		fatalf("ERRO\tFailed to start: %v", err)
+		fxlog.Printf("ERRO\tFailed to start: %v", err)
 	}
 
 	// block on SIGINT and SIGTERM
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, syscall.SIGINT, syscall.SIGTERM)
-	logSignal(<-c)
+	fxlog.PrintSignal(<-c)
 
 	// gracefully shutdown the app
 	stopCtx, cancelStop := context.WithTimeout(context.Background(), DefaultStopTimeout)
 	defer cancelStop()
 	if err := s.Stop(stopCtx); err != nil {
-		fatalf("ERRO\tFailed to stop cleanly: %v", err)
+		fxlog.Fatalf("ERRO\tFailed to stop cleanly: %v", err)
 	}
 }
 
