@@ -43,16 +43,7 @@ type App struct {
 // New creates a new modular application
 func New(constructors ...interface{}) *App {
 	container := dig.New()
-
-	// keep a ref to a private lifecycle,
-	// make the Lifecycle interface available to the container
 	lifecycle := &lifecycle{}
-	err := container.Provide(func() Lifecycle {
-		return lifecycle
-	})
-	if err != nil {
-		logpanic(err)
-	}
 
 	app := &App{
 		container: container,
@@ -61,6 +52,7 @@ func New(constructors ...interface{}) *App {
 
 	logln("EVNT\tApp created...")
 
+	app.Provide(&lifecycle)
 	app.Provide(constructors...)
 
 	return app
@@ -78,11 +70,7 @@ var (
 // to all other constructors, and called lazily at startup
 func (s *App) Provide(constructors ...interface{}) {
 	for _, c := range constructors {
-		if reflect.TypeOf(c).Kind() == reflect.Func {
-			logf("LOAD\tconstructor %s @ %s", fnName(c), fnLoc(c))
-		} else {
-			logf("LOAD\t%q", reflect.TypeOf(c).String())
-		}
+		logProvideType(c)
 
 		// load module directly into the container and dont store in
 		// s.constructors - this makes the module "free" because they wont
