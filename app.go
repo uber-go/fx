@@ -81,9 +81,9 @@ func (s *App) Provide(constructors ...interface{}) {
 		if reflect.TypeOf(c).Kind() == reflect.Func {
 			// Print the constructor signature, file and line number from where it has come
 			file, line := funcLocation(c)
-			logf("Type\t%q from %v:%d", reflect.TypeOf(c).String(), file, line)
+			logf("Load\t%q from %v:%d", reflect.TypeOf(c).String(), file, line)
 		} else {
-			logf("Type\t%q", reflect.TypeOf(c).String())
+			logf("Load\t%q", reflect.TypeOf(c).String())
 		}
 
 		// load module directly into the container and dont store in
@@ -122,8 +122,7 @@ func (s *App) start(funcs ...interface{}) error {
 			return errors.Errorf("%T %q is not a function", fn, fn)
 		}
 
-		file, line := funcLocation(fn)
-		logf("Invoke\t%q from %v:%d", reflect.TypeOf(fn).String(), file, line)
+		logf("Invoke\t%s @ %s", fnName(fn), fnLoc(fn))
 
 		if err := s.container.Invoke(fn); err != nil {
 			return err
