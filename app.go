@@ -51,8 +51,8 @@ func New(constructors ...interface{}) *App {
 		lifecycle: lifecycle,
 	}
 
-	// TODO the log for this is not understandeable
-	app.Provide(func() Lifecycle {
+	logf("PROVIDE\t*fx.Lifecycle")
+	container.Provide(func() Lifecycle {
 		return lifecycle
 	})
 	app.Provide(constructors...)
