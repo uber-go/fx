@@ -79,9 +79,7 @@ var (
 func (s *App) Provide(constructors ...interface{}) {
 	for _, c := range constructors {
 		if reflect.TypeOf(c).Kind() == reflect.Func {
-			// Print the constructor signature, file and line number from where it has come
-			file, line := funcLocation(c)
-			logf("LOAD\t%q from %v:%d", reflect.TypeOf(c).String(), file, line)
+			logf("LOAD\tconstructor %s @ %s", fnName(c), fnLoc(c))
 		} else {
 			logf("LOAD\t%q", reflect.TypeOf(c).String())
 		}
