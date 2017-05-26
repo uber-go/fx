@@ -45,6 +45,7 @@ func newLifecycle() Lifecycle {
 }
 
 type lifecycle struct {
+	logger   fxlog.Logger
 	hooks    []Hook
 	position int
 }
@@ -60,7 +61,7 @@ func (l *lifecycle) Append(hook Hook) {
 func (l *lifecycle) start() error {
 	for i, hook := range l.hooks {
 		if hook.OnStart != nil {
-			fxlog.Printf("START\t\t%s()", hook.caller)
+			l.logger.Printf("START\t\t%s()", hook.caller)
 			if err := hook.OnStart(); err != nil {
 				return err
 			}
@@ -83,7 +84,7 @@ func (l *lifecycle) stop() error {
 		if l.hooks[i].OnStop == nil {
 			continue
 		}
-		fxlog.Printf("STOP\t\t%s()", l.hooks[i].caller)
+		l.logger.Printf("STOP\t\t%s()", l.hooks[i].caller)
 		if err := l.hooks[i].OnStop(); err != nil {
 			errs = append(errs, err)
 		}

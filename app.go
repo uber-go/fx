@@ -25,7 +25,6 @@ import (
 	"os"
 	"os/signal"
 	"reflect"
-	"runtime"
 	"syscall"
 	"time"
 
@@ -40,6 +39,7 @@ import (
 type App struct {
 	container *dig.Container
 	lifecycle *lifecycle
+	logger    fxlog.Logger
 }
 
 // New creates a new modular application
@@ -50,6 +50,9 @@ func New(constructors ...interface{}) *App {
 	app := &App{
 		container: container,
 		lifecycle: lifecycle,
+
+		// TODO need a way to inject a mock logger
+		logger: fxlog.New(),
 	}
 	app.Provide(func() Lifecycle {
 		return lifecycle
@@ -71,14 +74,14 @@ var (
 // to all other constructors, and called lazily at startup
 func (s *App) Provide(constructors ...interface{}) {
 	for _, c := range constructors {
-		fxlog.PrintProvide(c)
+		s.logger.PrintProvide(c)
 
 		// load module directly into the container and dont store in
 		// s.constructors - this makes the module "free" because they wont
 		// be called unless a type in s.constructors directly relies on them
 		err := s.container.Provide(c)
 		if err != nil {
-			fxlog.Panic(err)
+			s.logger.Panic(err)
 		}
 	}
 }
@@ -108,7 +111,7 @@ func (s *App) start(funcs ...interface{}) error {
 			return errors.Errorf("%T %q is not a function", fn, fn)
 		}
 
-		fxlog.Printf("INVOKE\t\t%s", fxreflect.FuncName(fn))
+		s.logger.Printf("INVOKE\t\t%s", fxreflect.FuncName(fn))
 
 		if err := s.container.Invoke(fn); err != nil {
 			return err
@@ -117,15 +120,15 @@ func (s *App) start(funcs ...interface{}) error {
 
 	// start or rollback on err
 	if err := s.lifecycle.start(); err != nil {
-		fxlog.Printf("ERROR\t\tStart failed, rolling back: %v", err)
+		s.logger.Printf("ERROR\t\tStart failed, rolling back: %v", err)
 		if stopErr := s.lifecycle.stop(); stopErr != nil {
-			fxlog.Printf("ERROR\t\tCouldn't rollback cleanly: %v", stopErr)
+			s.logger.Printf("ERROR\t\tCouldn't rollback cleanly: %v", stopErr)
 			return multierr.Combine(err, stopErr)
 		}
 		return err
 	}
 
-	fxlog.Printf("RUNNING")
+	s.logger.Printf("RUNNING")
 
 	return nil
 }
@@ -142,24 +145,18 @@ func (s *App) RunForever(funcs ...interface{}) {
 
 	// start the app, rolling back on err
 	if err := s.Start(startCtx, funcs...); err != nil {
-		fxlog.Fatalf("ERROR\t\tFailed to start: %v", err)
+		s.logger.Fatalf("ERROR\t\tFailed to start: %v", err)
 	}
 
 	// block on SIGINT and SIGTERM
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, syscall.SIGINT, syscall.SIGTERM)
-	fxlog.PrintSignal(<-c)
+	s.logger.PrintSignal(<-c)
 
 	// gracefully shutdown the app
 	stopCtx, cancelStop := context.WithTimeout(context.Background(), DefaultStopTimeout)
 	defer cancelStop()
 	if err := s.Stop(stopCtx); err != nil {
-		fxlog.Fatalf("ERROR\t\tFailed to stop cleanly: %v", err)
+		s.logger.Fatalf("ERROR\t\tFailed to stop cleanly: %v", err)
 	}
-}
-
-// Use runtime to inspect the function and get the import path and file of where it's defined
-func funcLocation(c interface{}) (string, int) {
-	mfunc := runtime.FuncForPC(reflect.ValueOf(c).Pointer())
-	return mfunc.FileLine(mfunc.Entry())
 }

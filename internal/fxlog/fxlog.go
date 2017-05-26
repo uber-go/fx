@@ -30,24 +30,47 @@ import (
 	"go.uber.org/fx/internal/fxreflect"
 )
 
+// Logger logs human-readable output
+type Logger interface {
+	Println(string)
+	Printf(string, ...interface{})
+	Panic(error)
+	Fatalf(string, ...interface{})
+
+	PrintProvide(interface{})
+	PrintSignal(os.Signal)
+}
+
+// New returns a new StdLogger
+func New() StdLogger {
+	return StdLogger{
+		l: log.New(os.Stderr, "", log.LstdFlags),
+	}
+}
+
+// StdLogger outputs logs to stderr
+type StdLogger struct {
+	l *log.Logger
+}
+
 // Println logs a single Fx line
-func Println(str string) {
-	log.Println(prepend(str))
+func (s StdLogger) Println(str string) {
+	s.l.Println(prepend(str))
 }
 
 // Printf logs a formatted Fx line
-func Printf(format string, v ...interface{}) {
-	log.Printf(prepend(format), v...)
+func (s StdLogger) Printf(format string, v ...interface{}) {
+	s.l.Printf(prepend(format), v...)
 }
 
 // Panic logs an Fx line then panics
-func Panic(err error) {
-	log.Panic(prepend(err.Error()))
+func (s StdLogger) Panic(err error) {
+	s.l.Panic(prepend(err.Error()))
 }
 
 // Fatalf logs an Fx line then fatals
-func Fatalf(format string, v ...interface{}) {
-	log.Fatalf(prepend(format), v...)
+func (s StdLogger) Fatalf(format string, v ...interface{}) {
+	s.l.Fatalf(prepend(format), v...)
 }
 
 func prepend(str string) string {
@@ -55,18 +78,19 @@ func prepend(str string) string {
 }
 
 // PrintProvide logs a type provided into the dig.Container
-func PrintProvide(t interface{}) {
+func (s StdLogger) PrintProvide(t interface{}) {
 	if reflect.TypeOf(t).Kind() == reflect.Func {
 		for _, rtype := range fxreflect.ReturnTypes(t) {
-			Printf("PROVIDE\t%s <= %s", rtype, fxreflect.FuncName(t))
+			s.l.Printf("PROVIDE\t%s <= %s", rtype, fxreflect.FuncName(t))
+			fmt.Println(rtype)
 		}
 	} else {
-		Printf("PROVIDE\t%s", reflect.TypeOf(t).String())
+		s.l.Printf("PROVIDE\t%s", reflect.TypeOf(t).String())
 	}
 }
 
 // PrintSignal logs an os.Signal
-func PrintSignal(signal os.Signal) {
+func (s StdLogger) PrintSignal(signal os.Signal) {
 	fmt.Println("")
-	Println(strings.ToUpper(signal.String()))
+	s.l.Println(strings.ToUpper(signal.String()))
 }
