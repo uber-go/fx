@@ -24,6 +24,7 @@ import (
 	"errors"
 	"testing"
 
+	"go.uber.org/fx/internal/fxlog"
 	"go.uber.org/multierr"
 
 	"github.com/stretchr/testify/assert"
@@ -31,7 +32,7 @@ import (
 
 func TestLifecycleStart(t *testing.T) {
 	t.Run("ExecutesInOrder", func(t *testing.T) {
-		l := &lifecycle{}
+		l := newLifecycle(nil)
 		count := 0
 
 		l.Append(Hook{
@@ -53,7 +54,7 @@ func TestLifecycleStart(t *testing.T) {
 		assert.Equal(t, 2, count)
 	})
 	t.Run("ErrHaltsChainAndRollsBack", func(t *testing.T) {
-		l := &lifecycle{}
+		l := newLifecycle(nil)
 		err := errors.New("a starter error")
 		starterCount := 0
 		stopperCount := 0
@@ -102,11 +103,15 @@ func TestLifecycleStart(t *testing.T) {
 
 func TestLifecycleStop(t *testing.T) {
 	t.Run("DoesNothingOn0Hooks", func(t *testing.T) {
-		l := &lifecycle{}
+		l := &lifecycle{
+			logger: fxlog.New(),
+		}
 		assert.Nil(t, l.stop(), "no lifecycle hooks should have resulted in stop returning nil")
 	})
 	t.Run("ExecutesInReverseOrder", func(t *testing.T) {
-		l := &lifecycle{}
+		l := &lifecycle{
+			logger: fxlog.New(),
+		}
 		count := 2
 
 		l.Append(Hook{
@@ -129,7 +134,7 @@ func TestLifecycleStop(t *testing.T) {
 		assert.Equal(t, 0, count)
 	})
 	t.Run("ErrDoesntHaltChain", func(t *testing.T) {
-		l := &lifecycle{}
+		l := newLifecycle(nil)
 		count := 0
 
 		l.Append(Hook{
@@ -151,7 +156,7 @@ func TestLifecycleStop(t *testing.T) {
 		assert.Equal(t, 2, count)
 	})
 	t.Run("GathersAllErrs", func(t *testing.T) {
-		l := &lifecycle{}
+		l := newLifecycle(nil)
 
 		err := errors.New("some stop error")
 		err2 := errors.New("some other stop error")

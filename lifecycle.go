@@ -40,11 +40,17 @@ type Hook struct {
 	caller  string
 }
 
-func newLifecycle() Lifecycle {
-	return &lifecycle{}
+func newLifecycle(logger fxlog.Logger) *lifecycle {
+	if logger == nil {
+		logger = fxlog.New()
+	}
+	return &lifecycle{
+		logger: logger,
+	}
 }
 
 type lifecycle struct {
+	logger   fxlog.Logger
 	hooks    []Hook
 	position int
 }
@@ -60,7 +66,7 @@ func (l *lifecycle) Append(hook Hook) {
 func (l *lifecycle) start() error {
 	for i, hook := range l.hooks {
 		if hook.OnStart != nil {
-			fxlog.Printf("START\t\t%s()", hook.caller)
+			l.logger.Printf("START\t\t%s()", hook.caller)
 			if err := hook.OnStart(); err != nil {
 				return err
 			}
@@ -83,7 +89,7 @@ func (l *lifecycle) stop() error {
 		if l.hooks[i].OnStop == nil {
 			continue
 		}
-		fxlog.Printf("STOP\t\t%s()", l.hooks[i].caller)
+		l.logger.Printf("STOP\t\t%s()", l.hooks[i].caller)
 		if err := l.hooks[i].OnStop(); err != nil {
 			errs = append(errs, err)
 		}
@@ -91,11 +97,18 @@ func (l *lifecycle) stop() error {
 	return multierr.Combine(errs...)
 }
 
+// NewTestLifecycle creates a new test lifecycle
+func NewTestLifecycle() Lifecycle {
+	return &TestLifecycle{
+		newLifecycle(nil),
+	}
+}
+
 // TestLifecycle makes testing funcs that rely on Lifecycle
 // possible be exposing a Start and Stop func which can be
 // called manually in the context of a unit test.
 type TestLifecycle struct {
-	lifecycle
+	*lifecycle
 }
 
 // Start the lifecycle
