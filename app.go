@@ -75,7 +75,7 @@ var (
 // to all other constructors, and called lazily at startup
 func (s *App) Provide(constructors ...interface{}) {
 	for _, c := range constructors {
-		s.logger.PrintProvide(c)
+		fxlog.PrintProvide(s.logger, c)
 		err := s.container.Provide(c)
 		if err != nil {
 			s.logger.Panic(err)
@@ -148,7 +148,7 @@ func (s *App) RunForever(funcs ...interface{}) {
 	// block on SIGINT and SIGTERM
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, syscall.SIGINT, syscall.SIGTERM)
-	s.logger.PrintSignal(<-c)
+	fxlog.PrintSignal(s.logger, <-c)
 
 	// gracefully shutdown the app
 	stopCtx, cancelStop := context.WithTimeout(context.Background(), DefaultStopTimeout)

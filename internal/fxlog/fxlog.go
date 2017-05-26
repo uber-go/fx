@@ -36,9 +36,6 @@ type Logger interface {
 	Printf(string, ...interface{})
 	Panic(error)
 	Fatalf(string, ...interface{})
-
-	PrintProvide(interface{})
-	PrintSignal(os.Signal)
 }
 
 // New returns a new StdLogger
@@ -78,18 +75,18 @@ func prepend(str string) string {
 }
 
 // PrintProvide logs a type provided into the dig.Container
-func (s StdLogger) PrintProvide(t interface{}) {
+func PrintProvide(l Logger, t interface{}) {
 	if reflect.TypeOf(t).Kind() == reflect.Func {
 		for _, rtype := range fxreflect.ReturnTypes(t) {
-			s.l.Printf("PROVIDE\t%s <= %s", rtype, fxreflect.FuncName(t))
+			l.Printf("PROVIDE\t%s <= %s", rtype, fxreflect.FuncName(t))
 		}
 	} else {
-		s.l.Printf("PROVIDE\t%s", reflect.TypeOf(t).String())
+		l.Printf("PROVIDE\t%s", reflect.TypeOf(t).String())
 	}
 }
 
 // PrintSignal logs an os.Signal
-func (s StdLogger) PrintSignal(signal os.Signal) {
+func PrintSignal(l Logger, signal os.Signal) {
 	fmt.Println("")
-	s.l.Println(strings.ToUpper(signal.String()))
+	l.Println(strings.ToUpper(signal.String()))
 }
