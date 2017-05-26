@@ -61,7 +61,6 @@ func PrintProvide(t interface{}) {
 			Printf("PROVIDE\t%s <= %s", rtype, fxreflect.FuncName(t))
 		}
 	} else {
-		// LOAD - *fx.Lifecycle from func fx.newLifecycle in ./lifecycle.go:25
 		Printf("PROVIDE\t%s", reflect.TypeOf(t).String())
 	}
 }
