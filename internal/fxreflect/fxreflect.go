@@ -28,15 +28,6 @@ import (
 	"strings"
 )
 
-// IsErr returns true when t implements the error interface
-func IsErr(t reflect.Type) bool {
-	errInterface := reflect.TypeOf((*error)(nil)).Elem()
-	if t.Implements(errInterface) {
-		return true
-	}
-	return false
-}
-
 // ReturnTypes takes a func and returns a slice of string'd types
 // TODO instead of duplicating the dig's reflect logic, trying to
 // determine which types actually made it into the container, have
@@ -46,7 +37,7 @@ func ReturnTypes(t interface{}) []string {
 	fn := reflect.ValueOf(t).Type()
 
 	for i := 0; i < fn.NumOut(); i++ {
-		if !IsErr(fn.Out(i)) {
+		if !isErr(fn.Out(i)) {
 			rtypes = append(rtypes, fn.Out(i).String())
 		}
 	}
@@ -95,4 +86,12 @@ func mainPath() string {
 		panic("No caller information")
 	}
 	return path.Dir(filename)
+}
+
+func isErr(t reflect.Type) bool {
+	errInterface := reflect.TypeOf((*error)(nil)).Elem()
+	if t.Implements(errInterface) {
+		return true
+	}
+	return false
 }

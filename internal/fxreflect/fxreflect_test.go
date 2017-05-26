@@ -2,21 +2,10 @@ package fxreflect
 
 import (
 	"errors"
-	"reflect"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
-
-func TestIsErr(t *testing.T) {
-	t.Run("ReturnsTrue", func(t *testing.T) {
-		assert.True(t, IsErr(reflect.TypeOf(errors.New("err"))))
-	})
-	t.Run("ReturnsFalse", func(t *testing.T) {
-		type s struct{}
-		assert.False(t, IsErr(reflect.TypeOf(&s{})))
-	})
-}
 
 func TestReturnTypes(t *testing.T) {
 	t.Run("Scalar", func(t *testing.T) {
