@@ -70,8 +70,5 @@ func FuncName(fn interface{}) string {
 
 func isErr(t reflect.Type) bool {
 	errInterface := reflect.TypeOf((*error)(nil)).Elem()
-	if t.Implements(errInterface) {
-		return true
-	}
-	return false
+	return t.Implements(errInterface)
 }
