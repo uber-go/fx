@@ -44,15 +44,18 @@ type App struct {
 
 // New creates a new modular application
 func New(constructors ...interface{}) *App {
+	// TODO need a way to inject logger, and other opts in the future
+	logger := fxlog.New()
+
 	container := dig.New()
-	lifecycle := &lifecycle{}
+	lifecycle := &lifecycle{
+		logger: logger,
+	}
 
 	app := &App{
 		container: container,
 		lifecycle: lifecycle,
-
-		// TODO need a way to inject a mock logger
-		logger: fxlog.New(),
+		logger:    logger,
 	}
 	app.Provide(func() Lifecycle {
 		return lifecycle
@@ -75,10 +78,6 @@ var (
 func (s *App) Provide(constructors ...interface{}) {
 	for _, c := range constructors {
 		s.logger.PrintProvide(c)
-
-		// load module directly into the container and dont store in
-		// s.constructors - this makes the module "free" because they wont
-		// be called unless a type in s.constructors directly relies on them
 		err := s.container.Provide(c)
 		if err != nil {
 			s.logger.Panic(err)

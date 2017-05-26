@@ -42,8 +42,8 @@ type Logger interface {
 }
 
 // New returns a new StdLogger
-func New() StdLogger {
-	return StdLogger{
+func New() *StdLogger {
+	return &StdLogger{
 		l: log.New(os.Stderr, "", log.LstdFlags),
 	}
 }
@@ -82,7 +82,6 @@ func (s StdLogger) PrintProvide(t interface{}) {
 	if reflect.TypeOf(t).Kind() == reflect.Func {
 		for _, rtype := range fxreflect.ReturnTypes(t) {
 			s.l.Printf("PROVIDE\t%s <= %s", rtype, fxreflect.FuncName(t))
-			fmt.Println(rtype)
 		}
 	} else {
 		s.l.Printf("PROVIDE\t%s", reflect.TypeOf(t).String())

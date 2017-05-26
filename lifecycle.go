@@ -40,10 +40,6 @@ type Hook struct {
 	caller  string
 }
 
-func newLifecycle() Lifecycle {
-	return &lifecycle{}
-}
-
 type lifecycle struct {
 	logger   fxlog.Logger
 	hooks    []Hook
@@ -90,6 +86,15 @@ func (l *lifecycle) stop() error {
 		}
 	}
 	return multierr.Combine(errs...)
+}
+
+// NewTestLifecycle creates a new test lifecycle
+func NewTestLifecycle() Lifecycle {
+	return &TestLifecycle{
+		lifecycle{
+			logger: fxlog.New(),
+		},
+	}
 }
 
 // TestLifecycle makes testing funcs that rely on Lifecycle
