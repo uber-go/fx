@@ -22,10 +22,8 @@ package fxreflect
 
 import (
 	"fmt"
-	"path"
 	"reflect"
 	"runtime"
-	"strings"
 )
 
 // ReturnTypes takes a func and returns a slice of string'd types
@@ -53,12 +51,12 @@ func Caller() string {
 	// skip 3 levels to get to the caller of whoever called Caller()
 	n := runtime.Callers(3, fpcs)
 	if n == 0 {
-		return "n/a" // TODO return error
+		return "n/a"
 	}
 
 	fn := runtime.FuncForPC(fpcs[0] - 1)
 	if fn == nil {
-		return "n/a" // TODO return error
+		return "n/a"
 	}
 
 	return fn.Name()
@@ -68,24 +66,6 @@ func Caller() string {
 func FuncName(fn interface{}) string {
 	fnName := runtime.FuncForPC(reflect.ValueOf(fn).Pointer()).Name()
 	return fmt.Sprintf("%s()", fnName)
-}
-
-// FuncLocation returns a funcs formatted relative filepath
-func FuncLocation(fn interface{}) string {
-	mfunc := runtime.FuncForPC(reflect.ValueOf(fn).Pointer())
-
-	file, line := mfunc.FileLine(mfunc.Entry())
-	file = strings.Replace(file, mainPath(), ".", 1)
-
-	return fmt.Sprintf("%s:%d", file, line)
-}
-
-func mainPath() string {
-	_, filename, _, ok := runtime.Caller(0)
-	if !ok {
-		panic("No caller information")
-	}
-	return path.Dir(filename)
 }
 
 func isErr(t reflect.Type) bool {

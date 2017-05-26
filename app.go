@@ -51,9 +51,7 @@ func New(constructors ...interface{}) *App {
 		container: container,
 		lifecycle: lifecycle,
 	}
-
-	fxlog.Println("PROVIDE\t*fx.Lifecycle")
-	container.Provide(func() Lifecycle {
+	app.Provide(func() Lifecycle {
 		return lifecycle
 	})
 	app.Provide(constructors...)
