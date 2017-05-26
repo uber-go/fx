@@ -42,8 +42,6 @@ type App struct {
 
 // New creates a new modular application
 func New(constructors ...interface{}) *App {
-	logln("EVNT\tApp creating...")
-
 	container := dig.New()
 
 	// keep a ref to a private lifecycle,
@@ -60,6 +58,8 @@ func New(constructors ...interface{}) *App {
 		container: container,
 		lifecycle: lifecycle,
 	}
+
+	logln("EVNT\tApp created...")
 
 	app.Provide(constructors...)
 
