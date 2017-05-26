@@ -142,7 +142,7 @@ func (s *App) RunForever(funcs ...interface{}) {
 
 	// start the app, rolling back on err
 	if err := s.Start(startCtx, funcs...); err != nil {
-		fxlog.Printf("ERROR\t\tFailed to start: %v", err)
+		fxlog.Fatalf("ERROR\t\tFailed to start: %v", err)
 	}
 
 	// block on SIGINT and SIGTERM
