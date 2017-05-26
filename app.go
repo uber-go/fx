@@ -42,7 +42,7 @@ type App struct {
 
 // New creates a new modular application
 func New(constructors ...interface{}) *App {
-	logln("Event\tApp creating...")
+	logln("EVNT\tApp creating...")
 
 	container := dig.New()
 
@@ -81,9 +81,9 @@ func (s *App) Provide(constructors ...interface{}) {
 		if reflect.TypeOf(c).Kind() == reflect.Func {
 			// Print the constructor signature, file and line number from where it has come
 			file, line := funcLocation(c)
-			logf("Load\t%q from %v:%d", reflect.TypeOf(c).String(), file, line)
+			logf("LOAD\t%q from %v:%d", reflect.TypeOf(c).String(), file, line)
 		} else {
-			logf("Load\t%q", reflect.TypeOf(c).String())
+			logf("LOAD\t%q", reflect.TypeOf(c).String())
 		}
 
 		// load module directly into the container and dont store in
@@ -100,7 +100,7 @@ func (s *App) Provide(constructors ...interface{}) {
 //
 // See dig.Invoke for moreinformation.
 func (s *App) Start(ctx context.Context, funcs ...interface{}) error {
-	logln("Event\tApp starting...")
+	logln("EVNT\tApp starting...")
 	return withTimeout(ctx, func() error { return s.start(funcs...) })
 }
 
@@ -122,7 +122,7 @@ func (s *App) start(funcs ...interface{}) error {
 			return errors.Errorf("%T %q is not a function", fn, fn)
 		}
 
-		logf("Invoke\t%s @ %s", fnName(fn), fnLoc(fn))
+		logf("CALL\t%s @ %s", fnName(fn), fnLoc(fn))
 
 		if err := s.container.Invoke(fn); err != nil {
 			return err
@@ -139,14 +139,14 @@ func (s *App) start(funcs ...interface{}) error {
 		return err
 	}
 
-	logln("Event\tApp running...")
+	logln("EVNT\tApp running...")
 
 	return nil
 }
 
 // Stop the app
 func (s *App) Stop(ctx context.Context) error {
-	logln("Event\tApp stopping...")
+	logln("EVNT\tApp stopping...")
 	return withTimeout(ctx, s.lifecycle.stop)
 }
 
@@ -157,20 +157,20 @@ func (s *App) RunForever(funcs ...interface{}) {
 
 	// start the app, rolling back on err
 	if err := s.Start(startCtx, funcs...); err != nil {
-		fatalf("Err\tFailed to start: %v", err)
+		fatalf("ERRO\tFailed to start: %v", err)
 	}
 
 	// block on SIGINT and SIGTERM
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, syscall.SIGINT, syscall.SIGTERM)
 	<-c
-	logln("Event\tCaught SIGINT or SIGTERM, shutting down...")
+	logln("EVNT\tCaught SIGINT or SIGTERM, shutting down...")
 
 	// gracefully shutdown the app
 	stopCtx, cancelStop := context.WithTimeout(context.Background(), DefaultStopTimeout)
 	defer cancelStop()
 	if err := s.Stop(stopCtx); err != nil {
-		fatalf("Err\tFailed to stop cleanly: %v", err)
+		fatalf("ERRO\tFailed to stop cleanly: %v", err)
 	}
 }
 
