@@ -98,7 +98,7 @@ func (l *lifecycle) stop() error {
 }
 
 // NewTestLifecycle creates a new test lifecycle
-func NewTestLifecycle() Lifecycle {
+func NewTestLifecycle() *TestLifecycle {
 	return &TestLifecycle{
 		newLifecycle(nil),
 	}
