@@ -111,6 +111,8 @@ type TestLifecycle struct {
 	*lifecycle
 }
 
+var _ Lifecycle = (*TestLifecycle)(nil)
+
 // Start the lifecycle
 func (l *TestLifecycle) Start() error {
 	return l.start()
