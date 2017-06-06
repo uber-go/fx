@@ -42,7 +42,7 @@ func TestApp(t *testing.T) {
 	t.Run("NewProvidesLifecycle", func(t *testing.T) {
 		found := false
 		s := New()
-		err := s.Start(context.Background(),
+		err := s.Run(context.Background(),
 			func(lifecycle Lifecycle) error {
 				assert.NotNil(t, lifecycle)
 				found = true
@@ -76,7 +76,7 @@ func TestApp(t *testing.T) {
 		}
 		s := New()
 		s.Provide(new1, new2, new3)
-		s.Start(context.Background(), biz)
+		s.Run(context.Background(), biz)
 		assert.Equal(t, 4, initOrder)
 	})
 	t.Run("ModulesLazyInit", func(t *testing.T) {
@@ -98,13 +98,13 @@ func TestApp(t *testing.T) {
 			return nil
 		}
 		s := New()
-		s.Provide(new1, new2, new3)        // these are lazy loaded
-		s.Start(context.Background(), biz) // this is invoked explicitly
+		s.Provide(new1, new2, new3)      // these are lazy loaded
+		s.Run(context.Background(), biz) // this is invoked explicitly
 		assert.Equal(t, 3, count)
 	})
 	t.Run("InvokeRequiresConstructors", func(t *testing.T) {
 		s := New()
-		err := s.Start(context.Background(), &type1{})
+		err := s.Run(context.Background(), &type1{})
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "*fx.type1 &{} is not a function")
 	})
@@ -114,7 +114,7 @@ func TestApp(t *testing.T) {
 		defer cancel()
 
 		type empty struct{}
-		err := s.Start(startCtx, func() (*empty, error) {
+		err := s.Run(startCtx, func() (*empty, error) {
 			select {}
 		})
 
@@ -124,7 +124,7 @@ func TestApp(t *testing.T) {
 	t.Run("StopTimeout", func(t *testing.T) {
 		s := New()
 		type empty struct{}
-		err := s.Start(context.Background(), func(l Lifecycle) (*empty, error) {
+		err := s.Run(context.Background(), func(l Lifecycle) (*empty, error) {
 			l.Append(Hook{
 				OnStop: func() error {
 					select {}
