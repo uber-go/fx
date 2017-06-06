@@ -87,7 +87,6 @@ func (s *App) Provide(constructors ...interface{}) {
 //
 // See dig.Invoke for moreinformation.
 func (s *App) Run(ctx context.Context, funcs ...interface{}) error {
-	log.Print("Starting the app")
 	return withTimeout(ctx, func() error { return s.run(funcs...) })
 }
 
