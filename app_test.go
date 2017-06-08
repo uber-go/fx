@@ -22,6 +22,7 @@ package fx
 
 import (
 	"context"
+	"errors"
 	"testing"
 	"time"
 
@@ -102,7 +103,7 @@ func TestApp(t *testing.T) {
 		s.Start(context.Background(), biz) // this is invoked explicitly
 		assert.Equal(t, 3, count)
 	})
-	t.Run("InvokeRequiresConstructors", func(t *testing.T) {
+	t.Run("StartRequiresConstructors", func(t *testing.T) {
 		s := New()
 		err := s.Start(context.Background(), &type1{})
 		require.Error(t, err)
@@ -142,5 +143,100 @@ func TestApp(t *testing.T) {
 	t.Run("ProvideDoesNotPanicForObjectInstances", func(t *testing.T) {
 		type empty struct{}
 		assert.NotPanics(t, func() { New().Provide(&empty{}) })
+	})
+}
+
+func TestInvoke(t *testing.T) {
+	t.Run("CalledAfterStart", func(t *testing.T) {
+		s := New()
+
+		var (
+			started bool
+			gave    *type1
+		)
+
+		construct := func(lc Lifecycle) *type1 {
+			gave = &type1{}
+			lc.Append(Hook{
+				OnStart: func() error {
+					started = true
+					return nil
+				},
+			})
+			return gave
+		}
+
+		s.Provide(construct)
+		require.NoError(t, s.Start(
+			context.Background(),
+			func(x *type1) {
+				require.NotNil(t, x, "value must not be nil")
+				require.True(t, x == gave, "value did not match")
+				require.False(t, started, "started too early")
+			},
+		), "failed to start")
+		defer func() {
+			assert.NoError(t, s.Stop(context.Background()), "failed to stop")
+		}()
+
+		require.NoError(t, s.Invoke(
+			func(x *type1) {
+				require.NotNil(t, x, "value must not be nil")
+				require.True(t, x == gave, "value did not match")
+				require.True(t, started, "must be started on invoke")
+			},
+		), "invoke failed")
+	})
+
+	t.Run("Error", func(t *testing.T) {
+		s := New()
+
+		calls := 0
+		new1 := func() *type1 { calls++; return &type1{} }
+		new2 := func() *type2 { calls++; return &type2{} }
+		new3 := func() *type3 { calls++; return &type3{} }
+
+		s.Provide(new1, new2, new3)
+		require.NoError(t, s.Start(
+			context.Background(),
+			func(x *type1, y *type2, z *type3) {
+				assert.Equal(t, 3, calls, "wrong number of calls")
+				require.NotNil(t, x, "type1 was nil")
+				require.NotNil(t, y, "type2 was nil")
+				require.NotNil(t, z, "type2 was nil")
+			},
+		), "start failed")
+		defer func() {
+			assert.NoError(t, s.Stop(context.Background()), "failed to stop")
+		}()
+
+		t.Run("FirstFail", func(t *testing.T) {
+			err := s.Invoke(
+				func(*type1) error {
+					return errors.New("great sadness")
+				},
+				func(*type2) error {
+					t.Fatal("second function must not be called")
+					return nil
+				},
+			)
+			assert.Equal(t, errors.New("great sadness"), err, "error must match")
+		})
+
+		t.Run("SecondFail", func(t *testing.T) {
+			err := s.Invoke(
+				func(*type1) error {
+					return nil
+				},
+				func(*type2) error {
+					return errors.New("great sadness")
+				},
+				func(*type3) error {
+					t.Fatal("third function must not be called")
+					return nil
+				},
+			)
+			assert.Equal(t, errors.New("great sadness"), err, "error must match")
+		})
 	})
 }

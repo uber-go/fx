@@ -130,6 +130,23 @@ func (s *App) start(funcs ...interface{}) error {
 	return nil
 }
 
+// Invoke calls the given functions in-order with objects from the D.I.
+// container. The function blocks until all functions have executed.
+//
+// Functions may optionally return errors. The error returned by the first
+// failing function will be returned to the caller as-is.
+//
+// This function MUST NOT be called before Start or after Stop.
+func (s *App) Invoke(funcs ...interface{}) error {
+	for _, fn := range funcs {
+		if err := s.container.Invoke(fn); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 // Stop the app
 func (s *App) Stop(ctx context.Context) error {
 	return withTimeout(ctx, s.lifecycle.stop)
