@@ -35,8 +35,18 @@ import (
 	"go.uber.org/multierr"
 )
 
+type appState int
+
+const (
+	stopped appState = iota // initial state
+	starting
+	started
+	stopping
+)
+
 // App models a modular application
 type App struct {
+	state     appState
 	container *dig.Container
 	lifecycle *lifecycle
 	logger    fxlog.Logger
@@ -74,6 +84,10 @@ var (
 // Provide constructors into the D.I. Container, their types will be available
 // to all other constructors, and called lazily at startup
 func (s *App) Provide(constructors ...interface{}) {
+	if s.state != stopped {
+		s.logger.Panic(errors.New("Provide can only be called before an App is started"))
+	}
+
 	for _, c := range constructors {
 		fxlog.PrintProvide(s.logger, c)
 		err := s.container.Provide(c)
@@ -87,7 +101,15 @@ func (s *App) Provide(constructors ...interface{}) {
 //
 // See dig.Invoke for moreinformation.
 func (s *App) Start(ctx context.Context, funcs ...interface{}) error {
-	return withTimeout(ctx, func() error { return s.start(funcs...) })
+	if s.state != stopped {
+		s.logger.Panic(errors.New("Start can not be called if the App is already running"))
+	}
+	s.state = starting
+	if err := withTimeout(ctx, func() error { return s.start(funcs...) }); err != nil {
+		return err
+	}
+	s.state = started
+	return nil
 }
 
 func withTimeout(ctx context.Context, f func() error) error {
@@ -138,6 +160,10 @@ func (s *App) start(funcs ...interface{}) error {
 //
 // This function MUST NOT be called before Start or after Stop.
 func (s *App) Invoke(funcs ...interface{}) error {
+	if s.state != started {
+		s.logger.Panic(errors.New("Invoke can only be called if the App is running"))
+	}
+
 	for _, fn := range funcs {
 		if err := s.container.Invoke(fn); err != nil {
 			return err
@@ -149,7 +175,16 @@ func (s *App) Invoke(funcs ...interface{}) error {
 
 // Stop the app
 func (s *App) Stop(ctx context.Context) error {
-	return withTimeout(ctx, s.lifecycle.stop)
+	if s.state != started {
+		s.logger.Panic(errors.New("Stop can only be called if the App is running"))
+	}
+
+	s.state = stopping
+	if err := withTimeout(ctx, s.lifecycle.stop); err != nil {
+		return err
+	}
+	s.state = stopped
+	return nil
 }
 
 // RunForever starts the app, blocks for SIGINT or SIGTERM, then gracefully stops
