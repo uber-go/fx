@@ -98,7 +98,7 @@ func TestApp(t *testing.T) {
 			return nil
 		}
 		s := New()
-		s.Provide(Constructors{new1, new2, new3})
+		s.Provide(Group{new1, new2, new3})
 		require.NoError(t, s.Start(context.Background(), biz))
 		assert.Equal(t, 3, count)
 	})
@@ -131,7 +131,7 @@ func TestApp(t *testing.T) {
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "*fx.type1 &{} is not a function")
 	})
-	t.Run("StartStack", func(t *testing.T) {
+	t.Run("StartGroup", func(t *testing.T) {
 		count := 0
 		new1 := func() *type1 {
 			return &type1{}
@@ -152,7 +152,7 @@ func TestApp(t *testing.T) {
 		}
 		s := New()
 		s.Provide(new1, new2, new3)
-		require.NoError(t, s.Start(context.Background(), Starters{biz1, biz3}))
+		require.NoError(t, s.Start(context.Background(), Group{biz1, biz3}))
 		assert.Equal(t, 2, count)
 	})
 	t.Run("StartTimeout", func(t *testing.T) {

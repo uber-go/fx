@@ -36,17 +36,10 @@ func unstack(funcs []interface{}) []interface{} {
 	return ret
 }
 
-// Constructors composes multiple constructors into a single Provide-able
+// A Group composes multiple constructors or invokable functions into a single
 // object.
-type Constructors []interface{}
+type Group []interface{}
 
-func (c Constructors) stack() []interface{} {
-	return []interface{}(c)
-}
-
-// Starters composes multiple functions into a single Start-able object.
-type Starters []interface{}
-
-func (s Starters) stack() []interface{} {
-	return []interface{}(s)
+func (g Group) stack() []interface{} {
+	return []interface{}(g)
 }
