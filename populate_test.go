@@ -1,0 +1,216 @@
+// Copyright (c) 2017 Uber Technologies, Inc.
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included in
+// all copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+// THE SOFTWARE.
+
+package fx
+
+import (
+	"bytes"
+	"context"
+	"fmt"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"go.uber.org/dig"
+)
+
+func TestPopulate(t *testing.T) {
+	type type1 struct{}
+	type type2 struct{}
+	type type3 struct{}
+
+	t.Run("Failures", func(t *testing.T) {
+		tests := []interface{}{
+			3,
+			func() {},
+			struct{}{},
+			struct{ Foo *bytes.Buffer }{},
+		}
+
+		for _, tt := range tests {
+			t.Run(fmt.Sprintf("%T", tt), func(t *testing.T) {
+				require.Panics(t, func() {
+					Populate(tt)
+				}, "expected panic")
+			})
+		}
+	})
+
+	t.Run("Empty", func(t *testing.T) {
+		new1 := func() *type1 { panic("new1 must not be called") }
+		new2 := func() *type2 { panic("new2 must not be called") }
+
+		app := New()
+		app.Provide(new1, new2)
+
+		var out struct{}
+		require.NoError(t, app.Start(context.Background(), Populate(&out)), "start failed")
+	})
+
+	t.Run("TopLevelDigIn", func(t *testing.T) {
+		new1 := func() *type1 { panic("new1 must not be called") }
+		new2 := func() *type2 { panic("new2 must not be called") }
+
+		app := New()
+		app.Provide(new1, new2)
+
+		var out struct{ dig.In }
+		require.NoError(t, app.Start(context.Background(), Populate(&out)), "start failed")
+	})
+
+	t.Run("StructIsPopulated", func(t *testing.T) {
+		var gave1 *type1
+		new1 := func() *type1 {
+			gave1 = &type1{}
+			return gave1
+		}
+
+		var gave2 *type2
+		new2 := func() *type2 {
+			gave2 = &type2{}
+			return gave2
+		}
+
+		app := New()
+		app.Provide(new1, new2)
+
+		var out struct {
+			T1 *type1
+			T2 *type2
+		}
+		require.NoError(t, app.Start(context.Background(), Populate(&out)),
+			"failed to start")
+
+		assert.NotNil(t, out.T1, "T1 must not be nil")
+		assert.NotNil(t, out.T2, "T2 must not be nil")
+		assert.True(t, gave1 == out.T1, "T1 must match")
+		assert.True(t, gave2 == out.T2, "T2 must match")
+	})
+
+	t.Run("SkipsUnexported", func(t *testing.T) {
+		var gave1 *type1
+		new1 := func() *type1 {
+			gave1 = &type1{}
+			return gave1
+		}
+
+		new2 := func() *type2 { panic("new2 must not be called") }
+
+		var gave3 *type3
+		new3 := func() *type3 {
+			gave3 = &type3{}
+			return gave3
+		}
+
+		app := New()
+		app.Provide(new1, new2, new3)
+
+		var out struct {
+			T1 *type1
+			t2 *type2
+			T3 *type3
+		}
+		require.NoError(t, app.Start(context.Background(), Populate(&out)),
+			"failed to start")
+
+		assert.NotNil(t, out.T1, "T1 must not be nil")
+		assert.Nil(t, out.t2, "t2 must be nil")
+		assert.NotNil(t, out.T3, "T3 must not be nil")
+
+		assert.True(t, gave1 == out.T1, "T1 must match")
+		assert.True(t, gave3 == out.T3, "T3 must match")
+	})
+
+	t.Run("DoesNotZeroUnexported", func(t *testing.T) {
+		var gave1 *type1
+		new1 := func() *type1 {
+			gave1 = &type1{}
+			return gave1
+		}
+
+		new2 := func() *type2 { panic("new2 must not be called") }
+
+		app := New()
+		app.Provide(new1, new2)
+
+		var out struct {
+			T1 *type1
+			t2 *type2
+		}
+		t2 := &type2{}
+		out.t2 = t2
+
+		require.NoError(t, app.Start(context.Background(), Populate(&out)),
+			"failed to start")
+
+		assert.NotNil(t, out.T1, "T1 must not be nil")
+		assert.NotNil(t, out.t2, "t2 must not be nil")
+
+		assert.True(t, gave1 == out.T1, "T1 must match")
+		assert.True(t, t2 == out.t2, "t2 must match")
+	})
+
+	t.Run("FieldsCanBeOptional", func(t *testing.T) {
+		var gave1 *type1
+		new1 := func() *type1 {
+			gave1 = &type1{}
+			return gave1
+		}
+
+		app := New()
+		app.Provide(new1)
+
+		var out struct {
+			T1 *type1
+			T2 *type2 `optional:"true"`
+		}
+		require.NoError(t, app.Start(context.Background(), Populate(&out)),
+			"failed to start")
+
+		assert.NotNil(t, out.T1, "T1 must not be nil")
+		assert.Nil(t, out.T2, "T2 must be nil")
+
+		assert.True(t, gave1 == out.T1, "T1 must match")
+	})
+
+	t.Run("NestedDigIn", func(t *testing.T) {
+		var gave1 *type1
+		new1 := func() *type1 {
+			gave1 = &type1{}
+			return gave1
+		}
+
+		app := New()
+		app.Provide(new1)
+
+		var out struct {
+			Result struct {
+				dig.In
+
+				T1 *type1
+			}
+		}
+		require.NoError(t, app.Start(context.Background(), Populate(&out)),
+			"failed to start")
+
+		assert.NotNil(t, out.Result.T1, "T1 must not be nil")
+		assert.True(t, gave1 == out.Result.T1, "T1 must match")
+	})
+}
