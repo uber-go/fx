@@ -135,6 +135,13 @@ func (s *App) Stop(ctx context.Context) error {
 	return withTimeout(ctx, s.lifecycle.stop)
 }
 
+// Done allows blocking on SIGINT or SIGTERM
+func (App) Done() <-chan os.Signal {
+	c := make(chan os.Signal, 1)
+	signal.Notify(c, syscall.SIGINT, syscall.SIGTERM)
+	return c
+}
+
 // RunForever starts the app, blocks for SIGINT or SIGTERM, then gracefully stops
 func (s *App) RunForever(funcs ...interface{}) {
 	startCtx, cancelStart := context.WithTimeout(context.Background(), DefaultStartTimeout)
@@ -146,9 +153,7 @@ func (s *App) RunForever(funcs ...interface{}) {
 	}
 
 	// block on SIGINT and SIGTERM
-	c := make(chan os.Signal, 1)
-	signal.Notify(c, syscall.SIGINT, syscall.SIGTERM)
-	fxlog.PrintSignal(s.logger, <-c)
+	fxlog.PrintSignal(s.logger, <-s.Done())
 
 	// gracefully shutdown the app
 	stopCtx, cancelStop := context.WithTimeout(context.Background(), DefaultStopTimeout)
