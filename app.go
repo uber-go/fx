@@ -142,8 +142,8 @@ func (App) Done() <-chan os.Signal {
 	return c
 }
 
-// RunForever starts the app, blocks for SIGINT or SIGTERM, then gracefully stops
-func (s *App) RunForever(funcs ...interface{}) {
+// Run starts the app, blocks for SIGINT or SIGTERM, then gracefully stops
+func (s *App) Run(funcs ...interface{}) {
 	startCtx, cancelStart := context.WithTimeout(context.Background(), DefaultStartTimeout)
 	defer cancelStart()
 
