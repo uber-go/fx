@@ -43,7 +43,7 @@ type App struct {
 }
 
 // New creates a new modular application
-func New(constructors ...interface{}) *App {
+func New() *App {
 	// TODO need a way to inject logger, and other opts in the future
 	logger := fxlog.New()
 
@@ -58,7 +58,6 @@ func New(constructors ...interface{}) *App {
 	app.Provide(func() Lifecycle {
 		return lifecycle
 	})
-	app.Provide(constructors...)
 
 	return app
 }
