@@ -42,9 +42,11 @@ type App struct {
 	logger    fxlog.Logger
 }
 
+// Option allows App to be customized
+type Option func(*App)
+
 // New creates a new modular application
-func New() *App {
-	// TODO need a way to inject logger, and other opts in the future
+func New(opts ...Option) *App {
 	logger := fxlog.New()
 
 	container := dig.New()
