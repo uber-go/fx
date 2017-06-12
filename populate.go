@@ -53,6 +53,7 @@ func Populate(target interface{}) interface{} {
 
 	fields := make([]reflect.StructField, 0, t.NumField()+1)
 	fields = append(fields, reflect.StructField{
+		Name:      "In",
 		Type:      reflect.TypeOf(dig.In{}),
 		Anonymous: true,
 	})
