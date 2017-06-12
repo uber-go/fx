@@ -38,8 +38,7 @@ var _digInType = reflect.TypeOf(dig.In{})
 // 	err := app.Start(ctx, Populate(&target))
 //
 // The target MUST be a pointer to a struct. Only exported fields will be
-// filled. All field tags supported by dig.In are supported on Populate
-// targets.
+// filled.
 func Populate(target interface{}) interface{} {
 	v := reflect.ValueOf(target)
 
@@ -50,21 +49,13 @@ func Populate(target interface{}) interface{} {
 	v = v.Elem()
 	t := v.Type()
 
-	// We generate a struct with the same fields as the target and an embedded
-	// dig.In field.
+	// We generate a function with one argument for each field in the target
+	// struct.
 
-	fields := make([]reflect.StructField, 0, t.NumField()+1)
+	argTypes := make([]reflect.Type, 0, t.NumField())
 
-	// The fix for https://github.com/golang/go/issues/18780 requires that
-	// StructField.Name is always set but older versions of Go expect Name to
-	// be empty for embedded fields.
-	//
-	// We use populate_go19 and populate_pre_go19 with build tags to support
-	// both behaviors.
-	fields = append(fields, digField())
-
-	// List of values in the target struct aligned with the fields of the
-	// generated struct.
+	// List of values in the target struct aligned with the arguments of the
+	// generated function.
 	//
 	// So for example, if the target is,
 	//
@@ -74,13 +65,9 @@ func Populate(target interface{}) interface{} {
 	// 		Baz io.Writer
 	// 	}
 	//
-	// The generated struct type is,
+	// The generated function has the shape,
 	//
-	// 	struct {
-	// 		dig.In
-	// 		Foo io.Reader
-	// 		Baz io.Writer
-	// 	}
+	// 	func(io.Reader, io.Writer)
 	//
 	// And `targets` is,
 	//
@@ -89,54 +76,33 @@ func Populate(target interface{}) interface{} {
 	// 		target.Field(2),  // Baz io.Writer
 	// 	]
 	//
-	// As we iterate through the fields of the generated structs (after
-	// skipping dig.In), we can simply copy the field into the corresponding
-	// value in the targets list.
+	// As we iterate through the arguments received by the function, we can
+	// simply copy the value into the corresponding value in the targets list.
 	targets := make([]reflect.Value, 0, t.NumField())
 
 	for i := 0; i < t.NumField(); i++ {
 		f := t.Field(i)
-
 		// Skip private fields.
 		if f.PkgPath != "" {
 			continue
 		}
 
-		if f.Type == _digInType && f.Anonymous {
-			// If the struct has dig.In already embedded, skip.
-			continue
-		}
-
-		fields = append(fields, reflect.StructField{
-			Name:      f.Name,
-			Type:      f.Type,
-			Tag:       f.Tag,
-			Anonymous: f.Anonymous,
-		})
+		argTypes = append(argTypes, f.Type)
 		targets = append(targets, v.Field(i))
 	}
 
 	// Equivalent to,
 	//
-	// 	func(args struct {
-	// 		dig.In
-	// 		Foo Foo
-	// 		Bar Bar
-	// 	}) {
-	// 		target.Foo = args.Foo
-	// 		target.Bar = args.Bar
+	// 	func(foo Foo, bar Bar) {
+	// 		target.Foo = foo
+	// 		target.Bar = bar
 	// 	}
 
 	fn := reflect.MakeFunc(
-		reflect.FuncOf(
-			[]reflect.Type{reflect.StructOf(fields)},
-			nil,   /* results */
-			false, /* variadic */
-		),
+		reflect.FuncOf(argTypes, nil /* results */, false /* variadic */),
 		func(args []reflect.Value) []reflect.Value {
-			got := args[0]
-			for i := 1; i < got.NumField(); i++ {
-				targets[i-1].Set(got.Field(i))
+			for i, arg := range args {
+				targets[i].Set(arg)
 			}
 			return nil
 		},
