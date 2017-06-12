@@ -31,7 +31,7 @@ import (
 	"go.uber.org/dig"
 )
 
-func TestPopulate(t *testing.T) {
+func TestInject(t *testing.T) {
 	type type1 struct{}
 	type type2 struct{}
 	type type3 struct{}
@@ -49,9 +49,9 @@ func TestPopulate(t *testing.T) {
 				app := New()
 				app.Provide(&bytes.Buffer{})
 
-				err := app.Start(context.Background(), Populate(&tt))
+				err := app.Start(context.Background(), Inject(&tt))
 				require.Error(t, err, "expected failure")
-				require.Contains(t, err.Error(), "Populate expected a pointer to a struct")
+				require.Contains(t, err.Error(), "Inject expected a pointer to a struct")
 			})
 		}
 	})
@@ -64,10 +64,10 @@ func TestPopulate(t *testing.T) {
 		app.Provide(new1, new2)
 
 		var out struct{}
-		require.NoError(t, app.Start(context.Background(), Populate(&out)), "start failed")
+		require.NoError(t, app.Start(context.Background(), Inject(&out)), "start failed")
 	})
 
-	t.Run("StructIsPopulated", func(t *testing.T) {
+	t.Run("StructIsInjected", func(t *testing.T) {
 		var gave1 *type1
 		new1 := func() *type1 {
 			gave1 = &type1{}
@@ -87,7 +87,7 @@ func TestPopulate(t *testing.T) {
 			T1 *type1
 			T2 *type2
 		}
-		require.NoError(t, app.Start(context.Background(), Populate(&out)),
+		require.NoError(t, app.Start(context.Background(), Inject(&out)),
 			"failed to start")
 
 		assert.NotNil(t, out.T1, "T1 must not be nil")
@@ -119,7 +119,7 @@ func TestPopulate(t *testing.T) {
 			t2 *type2
 			T3 *type3
 		}
-		require.NoError(t, app.Start(context.Background(), Populate(&out)),
+		require.NoError(t, app.Start(context.Background(), Inject(&out)),
 			"failed to start")
 
 		assert.NotNil(t, out.T1, "T1 must not be nil")
@@ -149,7 +149,7 @@ func TestPopulate(t *testing.T) {
 		t2 := &type2{}
 		out.t2 = t2
 
-		require.NoError(t, app.Start(context.Background(), Populate(&out)),
+		require.NoError(t, app.Start(context.Background(), Inject(&out)),
 			"failed to start")
 
 		assert.NotNil(t, out.T1, "T1 must not be nil")
@@ -176,7 +176,7 @@ func TestPopulate(t *testing.T) {
 				T1 *type1
 			}
 		}
-		require.NoError(t, app.Start(context.Background(), Populate(&out)),
+		require.NoError(t, app.Start(context.Background(), Inject(&out)),
 			"failed to start")
 
 		assert.NotNil(t, out.Result.T1, "T1 must not be nil")

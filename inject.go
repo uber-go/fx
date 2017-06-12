@@ -23,28 +23,24 @@ package fx
 import (
 	"fmt"
 	"reflect"
-
-	"go.uber.org/dig"
 )
 
-var _digInType = reflect.TypeOf(dig.In{})
-
-// Populate fills the given struct with values from the DI container when
-// passed to App.Start.
+// Inject fills the given struct with values from the DI container when passed
+// to App.Start.
 //
 // 	var target struct {
 // 		Dispatcher *yarpc.Dispatcher
 // 	}
-// 	err := app.Start(ctx, Populate(&target))
+// 	err := app.Start(ctx, Inject(&target))
 //
 // The target MUST be a pointer to a struct. Only exported fields will be
 // filled.
-func Populate(target interface{}) interface{} {
+func Inject(target interface{}) interface{} {
 	v := reflect.ValueOf(target)
 
 	if t := v.Type(); t.Kind() != reflect.Ptr || t.Elem().Kind() != reflect.Struct {
 		return func() error {
-			return fmt.Errorf("Populate expected a pointer to a struct, got a %v", t)
+			return fmt.Errorf("Inject expected a pointer to a struct, got a %v", t)
 		}
 	}
 
