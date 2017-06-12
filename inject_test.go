@@ -47,7 +47,7 @@ func TestInject(t *testing.T) {
 		for _, tt := range tests {
 			t.Run(fmt.Sprintf("%T", tt), func(t *testing.T) {
 				app := New()
-				app.Provide(&bytes.Buffer{})
+				app.Provide(func() *bytes.Buffer { return &bytes.Buffer{} })
 
 				err := app.Start(context.Background(), Inject(&tt))
 				require.Error(t, err, "expected failure")
