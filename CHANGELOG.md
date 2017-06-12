@@ -2,6 +2,8 @@
 
 ## v1.0.0-rc1-dev (unreleased)
 
+- Add `fx.Inject()` to pull values from the container into a struct.
+
 ## v1.0.0-beta4 (12 Jun 2017)
 
 - **[Breaking]** Monolithic framework, as released in initial betas, has been
