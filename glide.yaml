@@ -5,8 +5,7 @@ import:
 - package: go.uber.org/multierr
   version: ~0.2.0
 - package: go.uber.org/dig
-  # TODO: cut v0.4 of dig, and get ready to solidify v1.0
-  version: master
+  version: ~0.4.0
 testImport:
 - package: github.com/stretchr/testify
   version: ~1.1.4
