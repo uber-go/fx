@@ -6,6 +6,7 @@ go:
   - 1.7
   - 1.8
   - 1.8.x
+  - tip
 
 install:
   - make install
