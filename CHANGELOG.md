@@ -3,7 +3,7 @@
 ## v1.0.0-beta4 (12 Jun 2017)
 
 - **[Breaking]** Monolithic framework, as released in initial betas, has been
-  broken into smaller pieces as a result of recent advanced in `dig` library.
+  broken into smaller pieces as a result of recent advances in `dig` library.
   This is a radical departure from the previous direction, but it needed to
   be done for the long-term good of the project.
 - **[Breaking]** `Module interface` has been scoped all the way down to being
