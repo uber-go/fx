@@ -7,8 +7,8 @@
   This is a radical departure from the previous direction, but it needed to
   be done for the long-term good of the project.
 - **[Breaking]** `Module interface` has been scoped all the way down to being
-  *a single dig constructor*. This allows very sophisticated composition
-  patterns. See `uber-go/dig` for more information on the constructors.
+  *a single dig constructor*. This allows for very sophisticated module
+  compositions. See `uber-go/dig` for more information on the constructors.
 - **[Breaking]** `package config` has been moved to `github.com/uber-go/config`,
   importable via `go.uber.org/config`.
 - `fx.Lifecycle` has been added for modules to hook into the framework
