@@ -8,14 +8,14 @@
   be done for the long-term good of the project.
 - **[Breaking]** `Module interface` has been scoped all the way down to being
   *a single dig constructor*. This allows for very sophisticated module
-  compositions. See `uber-go/dig` for more information on the constructors.
-- **[Breaking]** `package config` has been moved to `github.com/uber-go/config`,
-  importable via `go.uber.org/config`.
+  compositions. See `go.uber.org/dig` for more information on the constructors.
+- **[Breaking]** `package config` has been moved to it's own repository.
+  see `go.uber.org/config` for more information.
 - `fx.Lifecycle` has been added for modules to hook into the framework
   lifecycle events.
 - `service.Host` interface which composed a number of primitives together
-  (configuration, metrics, tracing) has been deprecated with the top-level
-  construct renamed to `fx.App`.
+  (configuration, metrics, tracing) has been deprecated in favor of
+  `fx.App`.
 
 ## v1.0.0-beta3 (28 Mar 2017)
 
