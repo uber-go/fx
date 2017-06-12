@@ -96,6 +96,46 @@ func TestInject(t *testing.T) {
 		assert.True(t, gave2 == out.T2, "T2 must match")
 	})
 
+	t.Run("EmbeddedExportedField", func(t *testing.T) {
+		type T1 struct{}
+
+		var gave1 *T1
+		new1 := func() *T1 {
+			gave1 = &T1{}
+			return gave1
+		}
+
+		app := New()
+		app.Provide(new1)
+
+		var out struct{ *T1 }
+
+		require.NoError(t, app.Start(context.Background(), Inject(&out)),
+			"failed to start")
+
+		assert.NotNil(t, out.T1, "T1 must not be nil")
+		assert.True(t, gave1 == out.T1, "T1 must match")
+	})
+
+	t.Run("EmbeddedUnexportedField", func(t *testing.T) {
+		var gave1 *type1
+		new1 := func() *type1 {
+			gave1 = &type1{}
+			return gave1
+		}
+
+		app := New()
+		app.Provide(new1)
+
+		var out struct{ *type1 }
+
+		require.NoError(t, app.Start(context.Background(), Inject(&out)),
+			"failed to start")
+		assert.NotNil(t, out.type1, "type1 must not be nil")
+		assert.True(t, gave1 == out.type1, "type1 must match")
+
+	})
+
 	t.Run("SkipsUnexported", func(t *testing.T) {
 		var gave1 *type1
 		new1 := func() *type1 {
