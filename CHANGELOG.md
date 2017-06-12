@@ -1,30 +1,21 @@
 # Changelog
 
-## v1.0.0-beta4 (unreleased)
+## v1.0.0-beta4 (12 Jun 2017)
 
-- **[Breaking]** Introduce a config loader, this will allow to override config loading
-  and use custom dirs to load from. In order to load configs calls to `config.Load()`
-  should be replaced with `config.NewLoader().Load()`.
-- Added `metrics.NopScope` for tests on service.NopHost with tagging capabilities
-  turned on by default
-- Added a command line provider `config.NewCommandLineProvider()`, which can be used
-  to pass configuration parameters through command line.
-- **[Breaking]** `uhttp module` now accepts `http.Handler` as part of module setup.
-  As part of refactor, RouteHandler is removed from the module registration.
-- `Loader.Path() string` is now `Loader.Paths() []string`, to better reflect that
-  configuration is loaded from multiple directories.
-- **[Breaking]** Removed `CreateAuthInfo` interface from auth package. package auth
-  RegisterFunc now accepts `config.Provider` and `tally.Scope` for initialization.
-- **[Breaking]** Removed `auth.Client` access from `service.Host`. `auth.Client`
-  can now be accessed via `auth.Load()` call.
-- **[Breaking]** Removed service.Host altogether. Metrics, config etc. are used
-  explicitly where required.
-- **[Breaking]** Module providers take in a `tally.Scope` so they can be
-  propagated through module creation.
-- **[Breaking]** Remove lookup function from the YAML provider constructor and add
-  explicit constructors `WithExpand` to use interpolation. Only values in the YAML
-  files are replaced, comments and keys are ignored.
-- Add a SetStaticConfigFiles method to load yaml files that should not be interpolated.
+- **[Breaking]** Monolithic framework, as released in initial betas, has been
+  broken into smaller pieces as a result of recent advances in `dig` library.
+  This is a radical departure from the previous direction, but it needed to
+  be done for the long-term good of the project.
+- **[Breaking]** `Module interface` has been scoped all the way down to being
+  *a single dig constructor*. This allows for very sophisticated module
+  compositions. See `go.uber.org/dig` for more information on the constructors.
+- **[Breaking]** `package config` has been moved to it's own repository.
+  see `go.uber.org/config` for more information.
+- `fx.Lifecycle` has been added for modules to hook into the framework
+  lifecycle events.
+- `service.Host` interface which composed a number of primitives together
+  (configuration, metrics, tracing) has been deprecated in favor of
+  `fx.App`.
 
 ## v1.0.0-beta3 (28 Mar 2017)
 
