@@ -27,6 +27,8 @@ import (
 	"go.uber.org/dig"
 )
 
+var _digInType = reflect.TypeOf(dig.In{})
+
 // Populate fills the given struct with values from the DI container when
 // passed to App.Start.
 //
@@ -52,11 +54,14 @@ func Populate(target interface{}) interface{} {
 	// dig.In field.
 
 	fields := make([]reflect.StructField, 0, t.NumField()+1)
-	fields = append(fields, reflect.StructField{
-		Name:      "In",
-		Type:      reflect.TypeOf(dig.In{}),
-		Anonymous: true,
-	})
+
+	// The fix for https://github.com/golang/go/issues/18780 requires that
+	// StructField.Name is always set but older versions of Go expect Name to
+	// be empty for embedded fields.
+	//
+	// We use populate_go19 and populate_pre_go19 with build tags to support
+	// both behaviors.
+	fields = append(fields, digField())
 
 	// List of values in the target struct aligned with the fields of the
 	// generated struct.
@@ -91,8 +96,15 @@ func Populate(target interface{}) interface{} {
 
 	for i := 0; i < t.NumField(); i++ {
 		f := t.Field(i)
+
+		// Skip private fields.
 		if f.PkgPath != "" {
-			continue // skip private fields
+			continue
+		}
+
+		if f.Type == _digInType && f.Anonymous {
+			// If the struct has dig.In already embedded, skip.
+			continue
 		}
 
 		fields = append(fields, reflect.StructField{
