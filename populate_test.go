@@ -46,9 +46,12 @@ func TestPopulate(t *testing.T) {
 
 		for _, tt := range tests {
 			t.Run(fmt.Sprintf("%T", tt), func(t *testing.T) {
-				require.Panics(t, func() {
-					Populate(tt)
-				}, "expected panic")
+				app := New()
+				app.Provide(&bytes.Buffer{})
+
+				err := app.Start(context.Background(), Populate(&tt))
+				require.Error(t, err, "expected failure")
+				require.Contains(t, err.Error(), "Populate expected a pointer to a struct")
 			})
 		}
 	})

@@ -43,7 +43,9 @@ func Populate(target interface{}) interface{} {
 	v := reflect.ValueOf(target)
 
 	if t := v.Type(); t.Kind() != reflect.Ptr || t.Elem().Kind() != reflect.Struct {
-		panic(fmt.Sprintf("expected a pointer to a struct, got a %v", t))
+		return func() error {
+			return fmt.Errorf("Populate expected a pointer to a struct, got a %v", t)
+		}
 	}
 
 	v = v.Elem()
