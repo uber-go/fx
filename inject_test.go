@@ -241,12 +241,14 @@ func TestInject(t *testing.T) {
 				dig.In
 
 				T1 *type1
+				T2 *type2 `optional:"true"`
 			}
 		}
 		require.NoError(t, app.Start(context.Background(), Inject(&out)),
 			"failed to start")
 
 		assert.NotNil(t, out.Result.T1, "T1 must not be nil")
+		assert.Nil(t, out.Result.T2, "T2 must be nil")
 		assert.True(t, gave1 == out.Result.T1, "T1 must match")
 	})
 }
