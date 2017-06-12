@@ -65,10 +65,10 @@ func New(opts ...Option) *App {
 }
 
 var (
-	// DefaultStartTimeout will be used to start app in RunForever
+	// DefaultStartTimeout will be used to start app in Run
 	DefaultStartTimeout = 15 * time.Second
 
-	// DefaultStopTimeout will be used to stop app in RunForever
+	// DefaultStopTimeout will be used to stop app in Run
 	DefaultStopTimeout = 5 * time.Second
 )
 
@@ -143,8 +143,8 @@ func (App) Done() <-chan os.Signal {
 	return c
 }
 
-// RunForever starts the app, blocks for SIGINT or SIGTERM, then gracefully stops
-func (s *App) RunForever(funcs ...interface{}) {
+// Run starts the app, blocks for SIGINT or SIGTERM, then gracefully stops
+func (s *App) Run(funcs ...interface{}) {
 	startCtx, cancelStart := context.WithTimeout(context.Background(), DefaultStartTimeout)
 	defer cancelStart()
 
