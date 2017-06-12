@@ -9,7 +9,7 @@
 - **[Breaking]** `Module interface` has been scoped all the way down to being
   *a single dig constructor*. This allows for very sophisticated module
   compositions. See `go.uber.org/dig` for more information on the constructors.
-- **[Breaking]** `package config` has been moved to it's own repository.
+- **[Breaking]** `package config` has been moved to its own repository.
   see `go.uber.org/config` for more information.
 - `fx.Lifecycle` has been added for modules to hook into the framework
   lifecycle events.
