@@ -1,5 +1,7 @@
 # Changelog
 
+## v1.0.0-rc1-dev (unreleased)
+
 ## v1.0.0-beta4 (12 Jun 2017)
 
 - **[Breaking]** Monolithic framework, as released in initial betas, has been
