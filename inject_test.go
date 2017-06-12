@@ -136,6 +136,31 @@ func TestInject(t *testing.T) {
 
 	})
 
+	t.Run("DuplicateFields", func(t *testing.T) {
+		var gave *type1
+		new1 := func() *type1 {
+			require.Nil(t, gave, "gave must be nil")
+			gave = &type1{}
+			return gave
+		}
+
+		app := New()
+		app.Provide(new1)
+
+		var out struct {
+			X *type1
+			Y *type1
+		}
+
+		require.NoError(t, app.Start(context.Background(), Inject(&out)),
+			"failed to start")
+
+		assert.NotNil(t, out.X, "X must not be nil")
+		assert.NotNil(t, out.Y, "Y must not be nil")
+		assert.True(t, gave == out.X, "X must match")
+		assert.True(t, gave == out.Y, "Y must match")
+	})
+
 	t.Run("SkipsUnexported", func(t *testing.T) {
 		var gave1 *type1
 		new1 := func() *type1 {
