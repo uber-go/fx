@@ -75,7 +75,7 @@ var (
 // Provide constructors into the D.I. Container, their types will be available
 // to all other constructors, and called lazily at startup
 func (s *App) Provide(constructors ...interface{}) {
-	for _, c := range unstack(constructors) {
+	for _, c := range ungroup(constructors) {
 		fxlog.PrintProvide(s.logger, c)
 		err := s.container.Provide(c)
 		if err != nil {
@@ -104,7 +104,7 @@ func withTimeout(ctx context.Context, f func() error) error {
 
 func (s *App) start(funcs ...interface{}) error {
 	// invoke all user-land constructors in order
-	for _, fn := range unstack(funcs) {
+	for _, fn := range ungroup(funcs) {
 		if reflect.TypeOf(fn).Kind() != reflect.Func {
 			return errors.Errorf("%T %q is not a function", fn, fn)
 		}

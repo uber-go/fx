@@ -20,15 +20,15 @@
 
 package fx
 
-type stack interface {
-	stack() []interface{}
+type grouper interface {
+	group() []interface{}
 }
 
-func unstack(funcs []interface{}) []interface{} {
+func ungroup(funcs []interface{}) []interface{} {
 	ret := make([]interface{}, 0, len(funcs))
 	for _, f := range funcs {
-		if stack, ok := f.(stack); ok {
-			ret = append(ret, unstack(stack.stack())...)
+		if group, ok := f.(grouper); ok {
+			ret = append(ret, ungroup(group.group())...)
 		} else {
 			ret = append(ret, f)
 		}
@@ -40,6 +40,6 @@ func unstack(funcs []interface{}) []interface{} {
 // object.
 type Group []interface{}
 
-func (g Group) stack() []interface{} {
+func (g Group) group() []interface{} {
 	return []interface{}(g)
 }
