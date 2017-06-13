@@ -20,9 +20,16 @@
 
 package fx
 
-// SemanticVersion is a semantic version, represented as a string. See
-// http://semver.org/.
-type SemanticVersion string
+import (
+	"context"
+	"testing"
 
-// Version is exported for runtime compatibility checks.
-const Version SemanticVersion = "1.0.0-rc1-dev"
+	"github.com/stretchr/testify/assert"
+)
+
+func TestVersion(t *testing.T) {
+	err := New().Start(context.Background(), func(semver SemanticVersion) {
+		assert.Equal(t, Version, semver, "Unexpected version in container.")
+	})
+	assert.NoError(t, err, "Error resolving Version from container.")
+}
