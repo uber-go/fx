@@ -57,9 +57,8 @@ func New(opts ...Option) *App {
 		lifecycle: lifecycle,
 		logger:    logger,
 	}
-	app.Provide(func() Lifecycle {
-		return lifecycle
-	})
+	app.Provide(func() Lifecycle { return lifecycle })
+	app.Provide(func() SemanticVersion { return Version })
 
 	return app
 }
