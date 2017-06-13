@@ -79,7 +79,7 @@ func TestApp(t *testing.T) {
 		s.Start(context.Background(), biz)
 		assert.Equal(t, 4, initOrder)
 	})
-	t.Run("ProvideStack", func(t *testing.T) {
+	t.Run("ProvideGroup", func(t *testing.T) {
 		count := 0
 		new1 := func() *type1 {
 			t.Error("this module should not init: no provided type relies on it")
