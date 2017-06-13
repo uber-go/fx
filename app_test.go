@@ -98,7 +98,7 @@ func TestApp(t *testing.T) {
 			return nil
 		}
 		s := New()
-		s.Provide(Group{new1, new2, new3})
+		s.Provide(Group{new1, Group{new2, new3}})
 		require.NoError(t, s.Start(context.Background(), biz))
 		assert.Equal(t, 3, count)
 	})
