@@ -29,29 +29,28 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-type type1 struct{}
-type type2 struct{}
-type type3 struct{}
-
 func TestApp(t *testing.T) {
+	type type1 struct{}
+	type type2 struct{}
+	type type3 struct{}
+
 	t.Run("NewCreatesApp", func(t *testing.T) {
 		s := New()
 		assert.NotNil(t, s.container)
 		assert.NotNil(t, s.lifecycle)
+		assert.NotNil(t, s.logger)
 	})
+
 	t.Run("NewProvidesLifecycle", func(t *testing.T) {
 		found := false
-		s := New()
-		err := s.Start(context.Background(),
-			func(lifecycle Lifecycle) error {
-				assert.NotNil(t, lifecycle)
-				found = true
-				return nil
-			})
-
-		require.NoError(t, err)
+		s := New(Invoke(func(lc Lifecycle) {
+			assert.NotNil(t, lc)
+			found = true
+		}))
+		require.NoError(t, s.Start(context.Background()))
 		assert.True(t, found)
 	})
+
 	t.Run("InitsInOrder", func(t *testing.T) {
 		initOrder := 0
 		new1 := func() *type1 {
@@ -74,11 +73,14 @@ func TestApp(t *testing.T) {
 			assert.Equal(t, 4, initOrder)
 			return nil
 		}
-		s := New()
-		s.Provide(new1, new2, new3)
-		s.Start(context.Background(), biz)
+		s := New(
+			Provide(new1, new2, new3),
+			Invoke(biz),
+		)
+		s.Start(context.Background())
 		assert.Equal(t, 4, initOrder)
 	})
+
 	t.Run("ModulesLazyInit", func(t *testing.T) {
 		count := 0
 		new1 := func() *type1 {
@@ -97,46 +99,38 @@ func TestApp(t *testing.T) {
 			count++
 			return nil
 		}
-		s := New()
-		s.Provide(new1, new2, new3)        // these are lazy loaded
-		s.Start(context.Background(), biz) // this is invoked explicitly
+		s := New(
+			Provide(new1, new2, new3),
+			Invoke(biz),
+		)
+		s.Start(context.Background())
 		assert.Equal(t, 3, count)
 	})
-	t.Run("InvokeRequiresConstructors", func(t *testing.T) {
-		s := New()
-		err := s.Start(context.Background(), &type1{})
-		require.Error(t, err)
-		assert.Contains(t, err.Error(), "*fx.type1 &{} is not a function")
-	})
+
 	t.Run("StartTimeout", func(t *testing.T) {
-		s := New()
-		startCtx, cancel := context.WithTimeout(context.Background(), time.Millisecond)
+		block := func() { select {} }
+		s := New(Invoke(block))
+
+		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond)
 		defer cancel()
 
-		type empty struct{}
-		err := s.Start(startCtx, func() (*empty, error) {
-			select {}
-		})
-
+		err := s.Start(ctx)
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "context deadline exceeded")
 	})
+
 	t.Run("StopTimeout", func(t *testing.T) {
-		s := New()
-		type empty struct{}
-		err := s.Start(context.Background(), func(l Lifecycle) (*empty, error) {
-			l.Append(Hook{
-				OnStop: func() error {
-					select {}
-				}})
+		block := func() error { select {} }
+		s := New(Invoke(func(l Lifecycle) {
+			l.Append(Hook{OnStop: block})
+		}))
+		require.NoError(t, s.Start(context.Background()))
 
-			return &empty{}, nil
-		})
-		require.NoError(t, err)
-
-		stopCtx, cancel := context.WithTimeout(context.Background(), time.Millisecond)
+		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond)
 		defer cancel()
-		err = s.Stop(stopCtx)
+
+		err := s.Stop(ctx)
+		require.Error(t, err)
 		assert.Contains(t, err.Error(), "context deadline exceeded")
 	})
 }

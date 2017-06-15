@@ -24,6 +24,8 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"log"
+	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -46,10 +48,12 @@ func TestInject(t *testing.T) {
 
 		for _, tt := range tests {
 			t.Run(fmt.Sprintf("%T", tt), func(t *testing.T) {
-				app := New()
-				app.Provide(func() *bytes.Buffer { return &bytes.Buffer{} })
+				app := New(
+					Provide(func() *bytes.Buffer { return &bytes.Buffer{} }),
+					Inject(&tt),
+				)
 
-				err := app.Start(context.Background(), Inject(&tt))
+				err := app.Start(context.Background())
 				require.Error(t, err, "expected failure")
 				require.Contains(t, err.Error(), "Inject expected a pointer to a struct")
 			})
@@ -60,11 +64,13 @@ func TestInject(t *testing.T) {
 		new1 := func() *type1 { panic("new1 must not be called") }
 		new2 := func() *type2 { panic("new2 must not be called") }
 
-		app := New()
-		app.Provide(new1, new2)
-
 		var out struct{}
-		require.NoError(t, app.Start(context.Background(), Inject(&out)), "start failed")
+		app := New(
+			Provide(new1, new2),
+			Inject(&out),
+		)
+
+		require.NoError(t, app.Start(context.Background()), "start failed")
 	})
 
 	t.Run("StructIsInjected", func(t *testing.T) {
@@ -80,16 +86,17 @@ func TestInject(t *testing.T) {
 			return gave2
 		}
 
-		app := New()
-		app.Provide(new1, new2)
-
 		var out struct {
 			T1 *type1
 			T2 *type2
 		}
-		require.NoError(t, app.Start(context.Background(), Inject(&out)),
-			"failed to start")
 
+		app := New(
+			Provide(new1, new2),
+			Inject(&out),
+		)
+
+		require.NoError(t, app.Start(context.Background()), "failed to start")
 		assert.NotNil(t, out.T1, "T1 must not be nil")
 		assert.NotNil(t, out.T2, "T2 must not be nil")
 		assert.True(t, gave1 == out.T1, "T1 must match")
@@ -105,14 +112,14 @@ func TestInject(t *testing.T) {
 			return gave1
 		}
 
-		app := New()
-		app.Provide(new1)
-
 		var out struct{ *T1 }
 
-		require.NoError(t, app.Start(context.Background(), Inject(&out)),
-			"failed to start")
+		app := New(
+			Provide(new1),
+			Inject(&out),
+		)
 
+		require.NoError(t, app.Start(context.Background()), "failed to start")
 		assert.NotNil(t, out.T1, "T1 must not be nil")
 		assert.True(t, gave1 == out.T1, "T1 must match")
 	})
@@ -124,16 +131,16 @@ func TestInject(t *testing.T) {
 			return gave1
 		}
 
-		app := New()
-		app.Provide(new1)
-
 		var out struct{ *type1 }
 
-		require.NoError(t, app.Start(context.Background(), Inject(&out)),
-			"failed to start")
+		app := New(
+			Provide(new1),
+			Inject(&out),
+		)
+
+		require.NoError(t, app.Start(context.Background()), "failed to start")
 		assert.NotNil(t, out.type1, "type1 must not be nil")
 		assert.True(t, gave1 == out.type1, "type1 must match")
-
 	})
 
 	t.Run("DuplicateFields", func(t *testing.T) {
@@ -144,17 +151,17 @@ func TestInject(t *testing.T) {
 			return gave
 		}
 
-		app := New()
-		app.Provide(new1)
-
 		var out struct {
 			X *type1
 			Y *type1
 		}
 
-		require.NoError(t, app.Start(context.Background(), Inject(&out)),
-			"failed to start")
+		app := New(
+			Provide(new1),
+			Inject(&out),
+		)
 
+		require.NoError(t, app.Start(context.Background()), "failed to start")
 		assert.NotNil(t, out.X, "X must not be nil")
 		assert.NotNil(t, out.Y, "Y must not be nil")
 		assert.True(t, gave == out.X, "X must match")
@@ -176,21 +183,21 @@ func TestInject(t *testing.T) {
 			return gave3
 		}
 
-		app := New()
-		app.Provide(new1, new2, new3)
-
 		var out struct {
 			T1 *type1
 			t2 *type2
 			T3 *type3
 		}
-		require.NoError(t, app.Start(context.Background(), Inject(&out)),
-			"failed to start")
 
+		app := New(
+			Provide(new1, new2, new3),
+			Inject(&out),
+		)
+
+		require.NoError(t, app.Start(context.Background()), "failed to start")
 		assert.NotNil(t, out.T1, "T1 must not be nil")
 		assert.Nil(t, out.t2, "t2 must be nil")
 		assert.NotNil(t, out.T3, "T3 must not be nil")
-
 		assert.True(t, gave1 == out.T1, "T1 must match")
 		assert.True(t, gave3 == out.T3, "T3 must match")
 	})
@@ -204,19 +211,19 @@ func TestInject(t *testing.T) {
 			return gave1
 		}
 
-		app := New()
-		app.Provide(new1)
-
 		var out struct {
 			T1 *type1
 		}
 
+		app := New(
+			Provide(new1),
+			Inject(&out),
+		)
+
 		old := &type1{value: "bar"}
 		out.T1 = old
 
-		require.NoError(t, app.Start(context.Background(), Inject(&out)),
-			"failed to start")
-
+		require.NoError(t, app.Start(context.Background()), "failed to start")
 		assert.NotNil(t, out.T1, "T1 must not be nil")
 		assert.False(t, old == out.T1, "old value must have been overwritten")
 		assert.True(t, gave1 == out.T1, "T1 must match")
@@ -231,9 +238,6 @@ func TestInject(t *testing.T) {
 
 		new2 := func() *type2 { panic("new2 must not be called") }
 
-		app := New()
-		app.Provide(new1, new2)
-
 		var out struct {
 			T1 *type1
 			t2 *type2
@@ -241,12 +245,14 @@ func TestInject(t *testing.T) {
 		t2 := &type2{}
 		out.t2 = t2
 
-		require.NoError(t, app.Start(context.Background(), Inject(&out)),
-			"failed to start")
+		app := New(
+			Provide(new1, new2),
+			Inject(&out),
+		)
 
+		require.NoError(t, app.Start(context.Background()), "failed to start")
 		assert.NotNil(t, out.T1, "T1 must not be nil")
 		assert.NotNil(t, out.t2, "t2 must not be nil")
-
 		assert.True(t, gave1 == out.T1, "T1 must match")
 		assert.True(t, t2 == out.t2, "t2 must match")
 	})
@@ -258,9 +264,6 @@ func TestInject(t *testing.T) {
 			return gave1
 		}
 
-		app := New()
-		app.Provide(new1)
-
 		var out struct {
 			Result struct {
 				dig.In
@@ -269,11 +272,32 @@ func TestInject(t *testing.T) {
 				T2 *type2 `optional:"true"`
 			}
 		}
-		require.NoError(t, app.Start(context.Background(), Inject(&out)),
-			"failed to start")
 
+		app := New(
+			Provide(new1),
+			Inject(&out),
+		)
+
+		require.NoError(t, app.Start(context.Background()), "failed to start")
 		assert.NotNil(t, out.Result.T1, "T1 must not be nil")
 		assert.Nil(t, out.Result.T2, "T2 must be nil")
 		assert.True(t, gave1 == out.Result.T1, "T1 must match")
 	})
+}
+
+func ExampleInject() {
+	var target struct {
+		Logger *log.Logger
+	}
+
+	app := New(
+		Provide(func() *log.Logger { return log.New(os.Stdout, "", 0) }),
+		Inject(&target),
+	)
+
+	app.Start(context.Background())
+	target.Logger.Print("Injected!")
+
+	// Output:
+	// Injected!
 }

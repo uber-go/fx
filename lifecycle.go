@@ -26,14 +26,16 @@ import (
 	"go.uber.org/multierr"
 )
 
-// Lifecycle enables appending Events, OnStart and OnStop
-// func pairs, to be executed on Service start and stop
+// Lifecycle allows constructors to register callbacks that are executed on
+// application start and stop.
 type Lifecycle interface {
 	Append(Hook)
 }
 
-// Hook is a pair of Start and Stop funcs that get
-// executed as part of Lifecycle start and stop.
+// A Hook is a pair of start and stop callbacks, either of which can be nil.
+// If a Hook's OnStart callback isn't executed (because a previous OnStart
+// failure short-circuited application start), its OnStop callback won't be
+// executed.
 type Hook struct {
 	OnStart func() error
 	OnStop  func() error
@@ -60,9 +62,8 @@ func (l *lifecycle) Append(hook Hook) {
 	l.hooks = append(l.hooks, hook)
 }
 
-// start calls all OnStarts in order, halting on
-// the first OnStart that fails and marking that position
-// so that stop can rollback.
+// start calls all OnStarts in order, halting on the first OnStart that fails
+// and marking that position so that stop can rollback.
 func (l *lifecycle) start() error {
 	for i, hook := range l.hooks {
 		if hook.OnStart != nil {
@@ -76,9 +77,8 @@ func (l *lifecycle) start() error {
 	return nil
 }
 
-// stop calls all OnStops from the position of the
-// last succeeding OnStart. If any OnStops fail, stop
-// continues, doing a best-try cleanup. All errs are
+// stop calls all OnStops from the position of the last succeeding OnStart. If
+// any OnStops fail, stop continues, doing a best-try cleanup. All errs are
 // gathered and returned as a single error.
 func (l *lifecycle) stop() error {
 	if len(l.hooks) == 0 {
@@ -97,16 +97,15 @@ func (l *lifecycle) stop() error {
 	return multierr.Combine(errs...)
 }
 
-// NewTestLifecycle creates a new test lifecycle
+// NewTestLifecycle creates a new test lifecycle.
 func NewTestLifecycle() *TestLifecycle {
 	return &TestLifecycle{
 		newLifecycle(nil),
 	}
 }
 
-// TestLifecycle makes testing funcs that rely on Lifecycle
-// possible be exposing a Start and Stop func which can be
-// called manually in the context of a unit test.
+// TestLifecycle makes testing funcs that rely on Lifecycle possible by
+// exposing a Start and Stop func which can be called manually in unit tests.
 type TestLifecycle struct {
 	*lifecycle
 }
