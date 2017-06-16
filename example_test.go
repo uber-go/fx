@@ -21,7 +21,6 @@
 package fx_test
 
 import (
-	"context"
 	"log"
 	"net/http"
 	"os"
@@ -61,7 +60,7 @@ func NewMux(lc fx.Lifecycle, logger *log.Logger) *http.ServeMux {
 		},
 		OnStop: func() error {
 			logger.Print("Stopping HTTP server.")
-			return server.Shutdown(context.Background())
+			return server.Close()
 		},
 	})
 
