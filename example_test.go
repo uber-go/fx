@@ -39,7 +39,7 @@ func NewLogger() *log.Logger {
 func NewHandler(logger *log.Logger) http.Handler {
 	logger.Print("Executing NewHandler.")
 	return http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-		log.Print("Got a request.")
+		logger.Print("Got a request.")
 		w.Write([]byte("Your lucky number is 42."))
 	})
 }
