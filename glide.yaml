@@ -15,3 +15,9 @@ testImport:
 - package: go.uber.org/tools
   subpackages:
   - update-license
+- package: golang.org/x/tools
+  subpackages:
+  - cover
+- package: github.com/golang/lint
+  subpackages:
+  - golint

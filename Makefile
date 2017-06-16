@@ -10,10 +10,19 @@ ifneq ($(filter $(LINTABLE_MINOR_VERSIONS),$(GO_MINOR_VERSION)),)
 SHOULD_LINT := true
 endif
 
-.PHONY: install
-install:
-	glide --version || go get github.com/Masterminds/glide
+.PHONY: dependencies
+dependencies:
+	@echo "Installing Glide and locked dependencies..."
+	glide --version || go get -u -f github.com/Masterminds/glide
 	glide install
+	@echo "Installing uber-license tool..."
+	update-license || go get -u -f go.uber.org/tools/update-license
+ifdef SHOULD_LINT
+	@echo "Installing golint..."
+	go install ./vendor/github.com/golang/lint/golint
+else
+	@echo "Not installing golint, since we don't expect to lint on" $(GO_VERSION)
+endif
 
 .PHONY: test
 test:

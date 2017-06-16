@@ -9,7 +9,7 @@ go:
   - tip
 
 install:
-  - make install
+  - make dependencies
 
 script:
   - make lint
