@@ -1,5 +1,5 @@
-hash: b26e36d2f17167b9e5243944c11968146339fb19860612ee1eaa537302fbdc7e
-updated: 2017-06-12T13:06:57.507743594-07:00
+hash: 3acb30e681823a2201a43c76e9238f4ee8c2b7687edcfb352c337a319e9210b3
+updated: 2017-06-16T13:42:47.89097052-07:00
 imports:
 - name: github.com/pkg/errors
   version: 645ef00459ed84a119197bfb8d8205042c6df63d
@@ -14,6 +14,10 @@ testImports:
   version: 6d212800a42e8ab5c146b8ace3490ee17e5225f9
   subpackages:
   - spew
+- name: github.com/golang/lint
+  version: a5f4a247366d8fc436941822e14fc3eac7727015
+  subpackages:
+  - golint
 - name: github.com/pmezard/go-difflib
   version: d8ed2627bdf02c080bf22230dbb337003b7aba2d
   subpackages:
@@ -27,3 +31,7 @@ testImports:
   version: ce2550dad7144b81ae2f67dc5e55597643f6902b
   subpackages:
   - update-license
+- name: golang.org/x/tools
+  version: bc6db94186c03835daa5c1c679fba599dc1f3b79
+  subpackages:
+  - cover
