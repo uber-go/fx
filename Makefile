@@ -44,15 +44,7 @@ ifdef SHOULD_LINT
 	@git grep -i fixme | grep -v -e vendor -e Makefile -e .md | tee -a lint.log
 	@echo "Checking for license headers..."
 	@DRY_RUN=1 .build/check_license.sh | tee -a lint.log
-	@$(MAKE) gendoc
 	@[ ! -s lint.log ]
 else
 	@echo "Skipping linters on" $(GO_VERSION)
 endif
-
-.PHONY: gendoc
-gendoc:
-	@echo "Generating doc.go from README.md..."
-	@find . -name README.md -not -path "./vendor/*" | xargs -I% md-to-godoc -input=%
-	@# doc.go gets regenerated, so refresh its license
-	@update-license doc.go

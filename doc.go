@@ -18,25 +18,6 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-// Package fx is the UberFx Service Framework.
-//
-// UberFx is a flexible, modularized framework for building robust and performant
-// services. It takes care of the boilerplate code and lets you focus on your
-// application logic.
-//
-//
-// Status
-//
-// Beta. Expect minor API changes and bug fixes. See our changelog (CHANGELOG.md)for more.
-//
-//
-// Compatibility
-//
-// UberFx is compatible with Go 1.7 and above.
-//
-// License
-//
-// MIT (LICENSE.txt)
-//
-//
+// Package fx is a modular service framework that makes it easy to create
+// services and re-usable, composable modules.
 package fx
