@@ -21,7 +21,7 @@ test:
 
 .PHONY: license
 license:
-	$(ECHO_V)./.build/license.sh
+	$(ECHO_V).build/check_license.sh
 
 .PHONY: ci
 ci: SHELL := /bin/bash
@@ -41,7 +41,7 @@ ifdef SHOULD_LINT
 	@echo "Checking lint..."
 	@$(foreach dir,$(PKGS),golint $(dir) 2>&1 | tee -a lint.log;)
 	@echo "Checking for unresolved FIXMEs..."
-	@git grep -i fixme | grep -v -e vendor -e Makefile | tee -a lint.log
+	@git grep -i fixme | grep -v -e vendor -e Makefile -e .md | tee -a lint.log
 	@echo "Checking for license headers..."
 	@DRY_RUN=1 .build/check_license.sh | tee -a lint.log
 	@$(MAKE) gendoc
@@ -49,3 +49,10 @@ ifdef SHOULD_LINT
 else
 	@echo "Skipping linters on" $(GO_VERSION)
 endif
+
+.PHONY: gendoc
+gendoc:
+	@echo "Generating doc.go from README.md..."
+	@find . -name README.md -not -path "./vendor/*" | xargs -I% md-to-godoc -input=%
+	@# doc.go gets regenerated, so refresh its license
+	@update-license doc.go
