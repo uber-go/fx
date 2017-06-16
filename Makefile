@@ -7,8 +7,13 @@ install:
 
 .PHONY: test
 test:
-	go test -race $(PACKAGES)
+	@.build/test.sh
 
 .PHONY: license
 license:
 	$(ECHO_V)./.build/license.sh
+
+.PHONY: ci
+ci: SHELL := /bin/bash
+ci: test
+	bash <(curl -s https://codecov.io/bash)
