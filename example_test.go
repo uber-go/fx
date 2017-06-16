@@ -37,9 +37,8 @@ func NewLogger() *log.Logger {
 
 func NewHandler(logger *log.Logger) http.Handler {
 	logger.Print("Executing NewHandler.")
-	return http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+	return http.HandlerFunc(func(http.ResponseWriter, *http.Request) {
 		logger.Print("Got a request.")
-		w.Write([]byte("Your lucky number is 42."))
 	})
 }
 
@@ -47,7 +46,7 @@ func NewMux(lc fx.Lifecycle, logger *log.Logger) *http.ServeMux {
 	logger.Print("Executing NewMux.")
 	mux := http.NewServeMux()
 	server := &http.Server{
-		Addr:    ":0",
+		Addr:    ":8080",
 		Handler: mux,
 	}
 	// If NewMux is called, we know that someone is using the mux. In that case,
@@ -89,6 +88,7 @@ func Example() {
 	}
 
 	// Normally, we'd block here with <-app.Done().
+	http.Get("http://localhost:8080/")
 
 	if err := app.Stop(fx.Timeout(time.Second)); err != nil {
 		log.Fatal(err)
@@ -98,5 +98,6 @@ func Example() {
 	// [Example] Executing NewMux.
 	// [Example] Executing NewHandler.
 	// [Example] Starting HTTP server.
+	// [Example] Got a request.
 	// [Example] Stopping HTTP server.
 }
