@@ -1,12 +1,12 @@
-hash: 3acb30e681823a2201a43c76e9238f4ee8c2b7687edcfb352c337a319e9210b3
-updated: 2017-06-16T13:42:47.89097052-07:00
+hash: 3b78aa133d70210c6178ef7fc985a9619fc02637507d44983392d80a8230149b
+updated: 2017-06-19T14:45:33.424505016-07:00
 imports:
 - name: github.com/pkg/errors
   version: 645ef00459ed84a119197bfb8d8205042c6df63d
 - name: go.uber.org/atomic
   version: 4e336646b2ef9fc6e47be8e21594178f98e5ebcf
 - name: go.uber.org/dig
-  version: fcffab823601a06af61a329ac219db42ae71b69d
+  version: 43c121eb365508b0432165abe4c2830cace693df
 - name: go.uber.org/multierr
   version: a3d1fc1f1316d4132fc61f4ea1159ae0613fb474
 testImports:
