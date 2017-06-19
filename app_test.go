@@ -29,11 +29,11 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-type type1 struct{}
-type type2 struct{}
-type type3 struct{}
-
 func TestApp(t *testing.T) {
+	type type1 struct{}
+	type type2 struct{}
+	type type3 struct{}
+
 	t.Run("NewCreatesApp", func(t *testing.T) {
 		s := New()
 		assert.NotNil(t, s.container)
@@ -79,6 +79,29 @@ func TestApp(t *testing.T) {
 		s.Start(context.Background(), biz)
 		assert.Equal(t, 4, initOrder)
 	})
+	t.Run("ProvideGroup", func(t *testing.T) {
+		count := 0
+		new1 := func() *type1 {
+			t.Error("this module should not init: no provided type relies on it")
+			return nil
+		}
+		new2 := func() *type2 {
+			count++
+			return &type2{}
+		}
+		new3 := func(*type2) *type3 {
+			count++
+			return &type3{}
+		}
+		biz := func(s2 *type2, s3 *type3) error {
+			count++
+			return nil
+		}
+		s := New()
+		s.Provide(Group{new1, Group{new2, new3}})
+		require.NoError(t, s.Start(context.Background(), biz))
+		assert.Equal(t, 3, count)
+	})
 	t.Run("ModulesLazyInit", func(t *testing.T) {
 		count := 0
 		new1 := func() *type1 {
@@ -107,6 +130,30 @@ func TestApp(t *testing.T) {
 		err := s.Start(context.Background(), &type1{})
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "*fx.type1 &{} is not a function")
+	})
+	t.Run("StartGroup", func(t *testing.T) {
+		count := 0
+		new1 := func() *type1 {
+			return &type1{}
+		}
+		new2 := func() *type2 {
+			return &type2{}
+		}
+		new3 := func(*type2) *type3 {
+			return &type3{}
+		}
+		biz1 := func(*type1) error {
+			count++
+			return nil
+		}
+		biz3 := func(*type3) error {
+			count++
+			return nil
+		}
+		s := New()
+		s.Provide(new1, new2, new3)
+		require.NoError(t, s.Start(context.Background(), Group{biz1, biz3}))
+		assert.Equal(t, 2, count)
 	})
 	t.Run("StartTimeout", func(t *testing.T) {
 		s := New()
