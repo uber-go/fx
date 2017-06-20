@@ -25,23 +25,18 @@ import (
 	"reflect"
 )
 
-// Inject fills the given struct with values from the DI container when passed
-// to App.Start.
-//
-// 	var target struct {
-// 		Dispatcher *yarpc.Dispatcher
-// 	}
-// 	err := app.Start(ctx, Inject(&target))
+// Inject fills the given struct with values from the dependency injection
+// container on application start.
 //
 // The target MUST be a pointer to a struct. Only exported fields will be
 // filled.
-func Inject(target interface{}) interface{} {
+func Inject(target interface{}) Option {
 	v := reflect.ValueOf(target)
 
 	if t := v.Type(); t.Kind() != reflect.Ptr || t.Elem().Kind() != reflect.Struct {
-		return func() error {
+		return Invoke(func() error {
 			return fmt.Errorf("Inject expected a pointer to a struct, got a %v", t)
-		}
+		})
 	}
 
 	v = v.Elem()
@@ -106,5 +101,5 @@ func Inject(target interface{}) interface{} {
 		},
 	)
 
-	return fn.Interface()
+	return Invoke(fn.Interface())
 }

@@ -1,7 +1,5 @@
 package: go.uber.org/fx
 import:
-- package: github.com/pkg/errors
-  version: ~0.8.0
 - package: go.uber.org/multierr
   version: ~0.2.0
 - package: go.uber.org/dig
