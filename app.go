@@ -30,6 +30,7 @@ import (
 	"go.uber.org/dig"
 	"go.uber.org/fx/internal/fxlog"
 	"go.uber.org/fx/internal/fxreflect"
+	"go.uber.org/fx/internal/lifecycle"
 	"go.uber.org/multierr"
 )
 
@@ -116,7 +117,7 @@ func Options(opts ...Option) Option {
 type App struct {
 	optionErr error
 	container *dig.Container
-	lifecycle *lifecycle
+	lifecycle *lifecycleWrapper
 	invokes   []interface{}
 	logger    fxlog.Logger
 }
@@ -125,15 +126,15 @@ type App struct {
 // Lifecycle type available in their dependency injection container.
 func New(opts ...Option) *App {
 	logger := fxlog.New()
-	lifecycle := newLifecycle(logger)
+	lc := &lifecycleWrapper{lifecycle.NewLifecycle(logger)}
 
 	app := &App{
 		container: dig.New(),
-		lifecycle: lifecycle,
+		lifecycle: lc,
 		logger:    logger,
 	}
 
-	app.provide(func() Lifecycle { return lifecycle })
+	app.provide(func() Lifecycle { return lc })
 
 	for _, opt := range opts {
 		opt.apply(app)
@@ -188,7 +189,7 @@ func (app *App) Start(ctx context.Context) error {
 // called are executed. However, all those hooks are always executed, even if
 // some fail.
 func (app *App) Stop(ctx context.Context) error {
-	return withTimeout(ctx, app.lifecycle.stop)
+	return withTimeout(ctx, app.lifecycle.Stop)
 }
 
 // Done returns a channel of signals to block on after starting the
@@ -224,10 +225,10 @@ func (app *App) start() error {
 	}
 
 	// Attempt to start cleanly.
-	if err := app.lifecycle.start(); err != nil {
+	if err := app.lifecycle.Start(); err != nil {
 		// Start failed, roll back.
 		app.logger.Printf("ERROR\t\tStart failed, rolling back: %v", err)
-		if stopErr := app.lifecycle.stop(); stopErr != nil {
+		if stopErr := app.lifecycle.Stop(); stopErr != nil {
 			app.logger.Printf("ERROR\t\tCouldn't rollback cleanly: %v", stopErr)
 			return multierr.Append(err, stopErr)
 		}

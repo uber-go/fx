@@ -18,57 +18,63 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package fxreflect
+package fxtest
 
 import (
 	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+
+	"go.uber.org/fx"
 )
 
-func TestReturnTypes(t *testing.T) {
-	t.Run("Primitive", func(t *testing.T) {
-		fn := func() (int, string) {
-			return 0, ""
-		}
-		assert.Equal(t, []string{"int", "string"}, ReturnTypes(fn))
+type tb struct{ n int }
+
+func (t *tb) Errorf(string, ...interface{}) {}
+func (t *tb) FailNow()                      { t.n++ }
+
+func TestSuccess(t *testing.T) {
+	lc := NewLifecycle(t)
+
+	var count int
+	lc.Append(fx.Hook{
+		OnStart: func() error {
+			count++
+			return nil
+		},
+		OnStop: func() error {
+			count++
+			return nil
+		},
 	})
-	t.Run("Pointer", func(t *testing.T) {
-		type s struct{}
-		fn := func() *s {
-			return &s{}
-		}
-		assert.Equal(t, []string{"*fxreflect.s"}, ReturnTypes(fn))
-	})
-	t.Run("Interface", func(t *testing.T) {
-		fn := func() hollerer {
-			return impl{}
-		}
-		assert.Equal(t, []string{"fxreflect.hollerer"}, ReturnTypes(fn))
-	})
-	t.Run("SkipsErr", func(t *testing.T) {
-		fn := func() (string, error) {
-			return "", errors.New("err")
-		}
-		assert.Equal(t, []string{"string"}, ReturnTypes(fn))
-	})
+
+	lc.MustStart()
+	assert.Equal(t, 1, count, "Expected OnStart hook to run.")
+	lc.MustStop()
+	assert.Equal(t, 2, count, "Expected OnStart hook to run.")
 }
 
-type hollerer interface {
-	Holler()
+func TestStartFail(t *testing.T) {
+	spy := &tb{}
+	lc := NewLifecycle(spy)
+	lc.Append(fx.Hook{OnStart: func() error { return errors.New("fail") }})
+
+	lc.MustStart()
+	assert.Equal(t, 1, spy.n, "Expected lifecycle start to fail.")
+
+	lc.MustStop()
+	assert.Equal(t, 1, spy.n, "Expected lifecycle stop to succeed.")
 }
 
-type impl struct{}
+func TestStopFail(t *testing.T) {
+	spy := &tb{}
+	lc := NewLifecycle(spy)
+	lc.Append(fx.Hook{OnStop: func() error { return errors.New("fail") }})
 
-func (impl) Holler() {}
+	lc.MustStart()
+	assert.Equal(t, 0, spy.n, "Expected lifecycle start to succeed.")
 
-func TestCaller(t *testing.T) {
-	assert.Equal(t, "go.uber.org/fx/internal/fxreflect.TestCaller", Caller())
-}
-
-func someFunc() {}
-
-func TestFuncName(t *testing.T) {
-	assert.Equal(t, "go.uber.org/fx/internal/fxreflect.someFunc()", FuncName(someFunc))
+	lc.MustStop()
+	assert.Equal(t, 1, spy.n, "Expected lifecycle stop to fail.")
 }
