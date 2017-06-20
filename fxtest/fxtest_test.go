@@ -52,7 +52,7 @@ func TestSuccess(t *testing.T) {
 	lc.MustStart()
 	assert.Equal(t, 1, count, "Expected OnStart hook to run.")
 	lc.MustStop()
-	assert.Equal(t, 2, count, "Expected OnStart hook to run.")
+	assert.Equal(t, 2, count, "Expected OnStop hook to run.")
 }
 
 func TestStartFail(t *testing.T) {
