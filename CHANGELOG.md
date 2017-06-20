@@ -1,7 +1,11 @@
 # Changelog
 
-## v1.0.0-rc1-dev (unreleased)
+## v1.0.0-rc1 (20 Jun 2017)
 
+- **[Breaking]** Providing types into `fx.App` and invoking functions are now
+  options passed during application construction. This makes users'
+  interactions with modules and collections of modules identical.
+- **[Breaking]** `TestLifecycle` is now in a separate `fxtest` subpackage.
 - Add `fx.Inject()` to pull values from the container into a struct.
 
 ## v1.0.0-beta4 (12 Jun 2017)
