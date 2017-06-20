@@ -295,7 +295,10 @@ func ExampleInject() {
 		Inject(&target),
 	)
 
-	app.Start(context.Background())
+	if err := app.Start(context.Background()); err != nil {
+		log.Fatal(err)
+	}
+
 	target.Logger.Print("Injected!")
 
 	// Output:

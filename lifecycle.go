@@ -104,8 +104,8 @@ func NewTestLifecycle() *TestLifecycle {
 	}
 }
 
-// TestLifecycle makes testing funcs that rely on Lifecycle possible by
-// exposing a Start and Stop func which can be called manually in unit tests.
+// TestLifecycle exposes Start and Stop methods, which allows unit tests to
+// exercise Lifecycle hooks.
 type TestLifecycle struct {
 	*lifecycle
 }

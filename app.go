@@ -89,9 +89,7 @@ func Provide(constructors ...interface{}) Option {
 
 // Invoke registers functions that are executed eagerly on application start.
 // Arguments for these functions are provided from the application's
-// dependency injection container, so the arguments form the leaves of the
-// dependency resolution graph. That is, only constructors whose returned
-// types are required to invoke these functions are executed.
+// dependency injection container.
 //
 // Unlike constructors, invoked functions are always executed, and they're
 // always run in order. Invoked functions may have any number of returned
@@ -231,7 +229,7 @@ func (app *App) start() error {
 		app.logger.Printf("ERROR\t\tStart failed, rolling back: %v", err)
 		if stopErr := app.lifecycle.stop(); stopErr != nil {
 			app.logger.Printf("ERROR\t\tCouldn't rollback cleanly: %v", stopErr)
-			return multierr.Combine(err, stopErr)
+			return multierr.Append(err, stopErr)
 		}
 		return err
 	}
