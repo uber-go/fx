@@ -24,6 +24,7 @@ import (
 	"fmt"
 	"reflect"
 	"runtime"
+	"strings"
 )
 
 // ReturnTypes takes a func and returns a slice of string'd types
@@ -45,21 +46,23 @@ func ReturnTypes(t interface{}) []string {
 
 // Caller returns the formatted calling func name
 func Caller() string {
-	// we get the callers as uintptrs - but we just need 1
-	fpcs := make([]uintptr, 1)
+	// Ascend at most 8 frames looking for a caller outside fx.
+	pcs := make([]uintptr, 8)
 
-	// skip 3 levels to get to the caller of whoever called Caller()
-	n := runtime.Callers(3, fpcs)
+	// Don't include this frame.
+	n := runtime.Callers(1, pcs)
 	if n == 0 {
 		return "n/a"
 	}
 
-	fn := runtime.FuncForPC(fpcs[0] - 1)
-	if fn == nil {
-		return "n/a"
+	frames := runtime.CallersFrames(pcs)
+	for f, more := frames.Next(); more; f, more = frames.Next() {
+		if shouldIgnoreFrame(f) {
+			continue
+		}
+		return f.Function
 	}
-
-	return fn.Name()
+	return "n/a"
 }
 
 // FuncName returns a funcs formatted name
@@ -71,4 +74,17 @@ func FuncName(fn interface{}) string {
 func isErr(t reflect.Type) bool {
 	errInterface := reflect.TypeOf((*error)(nil)).Elem()
 	return t.Implements(errInterface)
+}
+
+// Ascend the call stack until we leave the Fx production code. This allows us
+// to avoid hard-coding a frame skip, which makes this code work well even
+// when it's wrapped.
+func shouldIgnoreFrame(f runtime.Frame) bool {
+	if strings.Contains(f.File, "_test.go") {
+		return false
+	}
+	if strings.Contains(f.File, "go.uber.org/fx") {
+		return true
+	}
+	return false
 }

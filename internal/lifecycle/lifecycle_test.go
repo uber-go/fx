@@ -18,7 +18,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package fx
+package lifecycle
 
 import (
 	"errors"
@@ -32,7 +32,7 @@ import (
 
 func TestLifecycleStart(t *testing.T) {
 	t.Run("ExecutesInOrder", func(t *testing.T) {
-		l := newLifecycle(nil)
+		l := New(nil)
 		count := 0
 
 		l.Append(Hook{
@@ -50,11 +50,11 @@ func TestLifecycleStart(t *testing.T) {
 			},
 		})
 
-		assert.NoError(t, l.start())
+		assert.NoError(t, l.Start())
 		assert.Equal(t, 2, count)
 	})
 	t.Run("ErrHaltsChainAndRollsBack", func(t *testing.T) {
-		l := newLifecycle(nil)
+		l := New(nil)
 		err := errors.New("a starter error")
 		starterCount := 0
 		stopperCount := 0
@@ -93,8 +93,8 @@ func TestLifecycleStart(t *testing.T) {
 			},
 		})
 
-		assert.Error(t, err, l.start())
-		assert.NoError(t, l.stop())
+		assert.Error(t, err, l.Start())
+		assert.NoError(t, l.Stop())
 
 		assert.Equal(t, 2, starterCount, "expected the first and second starter to execute")
 		assert.Equal(t, 1, stopperCount, "expected the first stopper to execute since the second starter failed")
@@ -103,15 +103,11 @@ func TestLifecycleStart(t *testing.T) {
 
 func TestLifecycleStop(t *testing.T) {
 	t.Run("DoesNothingOn0Hooks", func(t *testing.T) {
-		l := &lifecycle{
-			logger: fxlog.New(),
-		}
-		assert.Nil(t, l.stop(), "no lifecycle hooks should have resulted in stop returning nil")
+		l := &Lifecycle{logger: fxlog.New()}
+		assert.Nil(t, l.Stop(), "no lifecycle hooks should have resulted in stop returning nil")
 	})
 	t.Run("ExecutesInReverseOrder", func(t *testing.T) {
-		l := &lifecycle{
-			logger: fxlog.New(),
-		}
+		l := &Lifecycle{logger: fxlog.New()}
 		count := 2
 
 		l.Append(Hook{
@@ -129,12 +125,12 @@ func TestLifecycleStop(t *testing.T) {
 			},
 		})
 
-		assert.NoError(t, l.start())
-		assert.NoError(t, l.stop())
+		assert.NoError(t, l.Start())
+		assert.NoError(t, l.Stop())
 		assert.Equal(t, 0, count)
 	})
 	t.Run("ErrDoesntHaltChain", func(t *testing.T) {
-		l := newLifecycle(nil)
+		l := New(nil)
 		count := 0
 
 		l.Append(Hook{
@@ -151,12 +147,12 @@ func TestLifecycleStop(t *testing.T) {
 			},
 		})
 
-		assert.NoError(t, l.start())
-		assert.Equal(t, err, l.stop())
+		assert.NoError(t, l.Start())
+		assert.Equal(t, err, l.Stop())
 		assert.Equal(t, 2, count)
 	})
 	t.Run("GathersAllErrs", func(t *testing.T) {
-		l := newLifecycle(nil)
+		l := New(nil)
 
 		err := errors.New("some stop error")
 		err2 := errors.New("some other stop error")
@@ -172,7 +168,7 @@ func TestLifecycleStop(t *testing.T) {
 			},
 		})
 
-		assert.NoError(t, l.start())
-		assert.Equal(t, multierr.Combine(err, err2), l.stop())
+		assert.NoError(t, l.Start())
+		assert.Equal(t, multierr.Combine(err, err2), l.Stop())
 	})
 }

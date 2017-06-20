@@ -20,11 +20,7 @@
 
 package fx
 
-import (
-	"go.uber.org/fx/internal/fxlog"
-	"go.uber.org/fx/internal/fxreflect"
-	"go.uber.org/multierr"
-)
+import "go.uber.org/fx/internal/lifecycle"
 
 // Lifecycle allows constructors to register callbacks that are executed on
 // application start and stop.
@@ -39,85 +35,13 @@ type Lifecycle interface {
 type Hook struct {
 	OnStart func() error
 	OnStop  func() error
-	caller  string
 }
 
-func newLifecycle(logger fxlog.Logger) *lifecycle {
-	if logger == nil {
-		logger = fxlog.New()
-	}
-	return &lifecycle{
-		logger: logger,
-	}
-}
+type lifecycleWrapper struct{ *lifecycle.Lifecycle }
 
-type lifecycle struct {
-	logger   fxlog.Logger
-	hooks    []Hook
-	position int
-}
-
-func (l *lifecycle) Append(hook Hook) {
-	hook.caller = fxreflect.Caller()
-	l.hooks = append(l.hooks, hook)
-}
-
-// start calls all OnStarts in order, halting on the first OnStart that fails
-// and marking that position so that stop can rollback.
-func (l *lifecycle) start() error {
-	for i, hook := range l.hooks {
-		if hook.OnStart != nil {
-			l.logger.Printf("START\t\t%s()", hook.caller)
-			if err := hook.OnStart(); err != nil {
-				return err
-			}
-		}
-		l.position = i
-	}
-	return nil
-}
-
-// stop calls all OnStops from the position of the last succeeding OnStart. If
-// any OnStops fail, stop continues, doing a best-try cleanup. All errs are
-// gathered and returned as a single error.
-func (l *lifecycle) stop() error {
-	if len(l.hooks) == 0 {
-		return nil
-	}
-	var errs []error
-	for i := l.position; i >= 0; i-- {
-		if l.hooks[i].OnStop == nil {
-			continue
-		}
-		l.logger.Printf("STOP\t\t%s()", l.hooks[i].caller)
-		if err := l.hooks[i].OnStop(); err != nil {
-			errs = append(errs, err)
-		}
-	}
-	return multierr.Combine(errs...)
-}
-
-// NewTestLifecycle creates a new test lifecycle.
-func NewTestLifecycle() *TestLifecycle {
-	return &TestLifecycle{
-		newLifecycle(nil),
-	}
-}
-
-// TestLifecycle exposes Start and Stop methods, which allows unit tests to
-// exercise Lifecycle hooks.
-type TestLifecycle struct {
-	*lifecycle
-}
-
-var _ Lifecycle = (*TestLifecycle)(nil)
-
-// Start the lifecycle
-func (l *TestLifecycle) Start() error {
-	return l.start()
-}
-
-// Stop the lifecycle
-func (l *TestLifecycle) Stop() error {
-	return l.stop()
+func (l *lifecycleWrapper) Append(h Hook) {
+	l.Lifecycle.Append(lifecycle.Hook{
+		OnStart: h.OnStart,
+		OnStop:  h.OnStop,
+	})
 }
