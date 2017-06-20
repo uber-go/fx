@@ -28,30 +28,33 @@ import (
 // TB is a subset of the standard library's testing.TB interface. It's
 // satisfied by both *testing.T and *testing.B.
 type TB interface {
+	// TODO: Use Logf to implement an fxlog.Logger that doesn't spam the console
+	Logf(string, ...interface{})
 	Errorf(string, ...interface{})
 	FailNow()
 }
+
+var _ fx.Lifecycle = (*Lifecycle)(nil)
 
 // Lifecycle is a testing spy for fx.Lifecycle. It exposes Start and Stop
 // methods (and some test-specific helpers) so that unit tests can exercise
 // hooks.
 type Lifecycle struct {
-	*lifecycle.Lifecycle
-
-	t TB
+	t  TB
+	lc *lifecycle.Lifecycle
 }
 
 // NewLifecycle creates a new test lifecycle.
 func NewLifecycle(t TB) *Lifecycle {
 	return &Lifecycle{
-		Lifecycle: lifecycle.New(nil),
-		t:         t,
+		lc: lifecycle.New(nil),
+		t:  t,
 	}
 }
 
 // Start executes all registered OnStart hooks in order, halting at the first
 // hook that doesn't succeed.
-func (l *Lifecycle) Start() error { return l.Lifecycle.Start() }
+func (l *Lifecycle) Start() error { return l.lc.Start() }
 
 // MustStart calls Start, failing the test if an error is encountered.
 func (l *Lifecycle) MustStart() {
@@ -67,7 +70,7 @@ func (l *Lifecycle) MustStart() {
 // If any hook returns an error, execution continues for a best-effort
 // cleanup. Any errors encountered are collected into a single error and
 // returned.
-func (l *Lifecycle) Stop() error { return l.Lifecycle.Stop() }
+func (l *Lifecycle) Stop() error { return l.lc.Stop() }
 
 // MustStop calls Stop, failing the test if an error is encountered.
 func (l *Lifecycle) MustStop() {
@@ -79,7 +82,7 @@ func (l *Lifecycle) MustStop() {
 
 // Append registers a new Hook.
 func (l *Lifecycle) Append(h fx.Hook) {
-	l.Lifecycle.Append(lifecycle.Hook{
+	l.lc.Append(lifecycle.Hook{
 		OnStart: h.OnStart,
 		OnStop:  h.OnStop,
 	})

@@ -24,13 +24,14 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
-
 	"go.uber.org/fx"
+
+	"github.com/stretchr/testify/assert"
 )
 
 type tb struct{ n int }
 
+func (t *tb) Logf(string, ...interface{})   {}
 func (t *tb) Errorf(string, ...interface{}) {}
 func (t *tb) FailNow()                      { t.n++ }
 
