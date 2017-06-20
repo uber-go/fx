@@ -41,8 +41,8 @@ type Lifecycle struct {
 	position int
 }
 
-// NewLifecycle constructs a new Lifecycle.
-func NewLifecycle(logger fxlog.Logger) *Lifecycle {
+// New constructs a new Lifecycle.
+func New(logger fxlog.Logger) *Lifecycle {
 	if logger == nil {
 		logger = fxlog.New()
 	}

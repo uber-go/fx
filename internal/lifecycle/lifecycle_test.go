@@ -32,7 +32,7 @@ import (
 
 func TestLifecycleStart(t *testing.T) {
 	t.Run("ExecutesInOrder", func(t *testing.T) {
-		l := NewLifecycle(nil)
+		l := New(nil)
 		count := 0
 
 		l.Append(Hook{
@@ -54,7 +54,7 @@ func TestLifecycleStart(t *testing.T) {
 		assert.Equal(t, 2, count)
 	})
 	t.Run("ErrHaltsChainAndRollsBack", func(t *testing.T) {
-		l := NewLifecycle(nil)
+		l := New(nil)
 		err := errors.New("a starter error")
 		starterCount := 0
 		stopperCount := 0
@@ -130,7 +130,7 @@ func TestLifecycleStop(t *testing.T) {
 		assert.Equal(t, 0, count)
 	})
 	t.Run("ErrDoesntHaltChain", func(t *testing.T) {
-		l := NewLifecycle(nil)
+		l := New(nil)
 		count := 0
 
 		l.Append(Hook{
@@ -152,7 +152,7 @@ func TestLifecycleStop(t *testing.T) {
 		assert.Equal(t, 2, count)
 	})
 	t.Run("GathersAllErrs", func(t *testing.T) {
-		l := NewLifecycle(nil)
+		l := New(nil)
 
 		err := errors.New("some stop error")
 		err2 := errors.New("some other stop error")

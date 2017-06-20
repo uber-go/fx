@@ -44,7 +44,7 @@ type Lifecycle struct {
 // NewLifecycle creates a new test lifecycle.
 func NewLifecycle(t TB) *Lifecycle {
 	return &Lifecycle{
-		Lifecycle: lifecycle.NewLifecycle(nil),
+		Lifecycle: lifecycle.New(nil),
 		t:         t,
 	}
 }

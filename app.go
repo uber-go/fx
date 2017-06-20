@@ -126,7 +126,7 @@ type App struct {
 // Lifecycle type available in their dependency injection container.
 func New(opts ...Option) *App {
 	logger := fxlog.New()
-	lc := &lifecycleWrapper{lifecycle.NewLifecycle(logger)}
+	lc := &lifecycleWrapper{lifecycle.New(logger)}
 
 	app := &App{
 		container: dig.New(),
