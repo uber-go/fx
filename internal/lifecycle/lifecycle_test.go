@@ -171,4 +171,12 @@ func TestLifecycleStop(t *testing.T) {
 		assert.NoError(t, l.Start())
 		assert.Equal(t, multierr.Combine(err, err2), l.Stop())
 	})
+	t.Run("AllowEmptyHooks", func(t *testing.T) {
+		l := New(nil)
+		l.Append(Hook{})
+		l.Append(Hook{})
+
+		assert.NoError(t, l.Start())
+		assert.NoError(t, l.Stop())
+	})
 }
