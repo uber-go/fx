@@ -1,5 +1,9 @@
 # Changelog
 
+## v1.0.0-rc2 (unreleased)
+
+- No changes yet.
+
 ## v1.0.0-rc1 (20 Jun 2017)
 
 - **[Breaking]** Providing types into `fx.App` and invoking functions are now
