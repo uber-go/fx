@@ -73,10 +73,10 @@ func TestApp(t *testing.T) {
 			assert.Equal(t, 4, initOrder)
 			return nil
 		}
-		s := New(
+		s := New(Options(
 			Provide(new1, new2, new3),
 			Invoke(biz),
-		)
+		))
 		s.Start(context.Background())
 		assert.Equal(t, 4, initOrder)
 	})
