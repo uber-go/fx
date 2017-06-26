@@ -30,63 +30,53 @@ import (
 	"go.uber.org/fx/internal/fxreflect"
 )
 
-// Logger logs human-readable output
-type Logger interface {
-	Println(string)
-	Printf(string, ...interface{})
-	Panic(error)
-	Fatalf(string, ...interface{})
+// New returns a new Logger.
+func New() *Logger {
+	return &Logger{log.New(os.Stderr, "", log.LstdFlags)}
 }
 
-// New returns a new StdLogger
-func New() *StdLogger {
-	return &StdLogger{
-		l: log.New(os.Stderr, "", log.LstdFlags),
+// A Logger writes output to standard error.
+type Logger struct {
+	std *log.Logger
+}
+
+// Println logs a single Fx line.
+func (l *Logger) Println(str string) {
+	l.std.Println(prepend(str))
+}
+
+// Printf logs a formatted Fx line.
+func (l *Logger) Printf(format string, v ...interface{}) {
+	l.std.Printf(prepend(format), v...)
+}
+
+// PrintProvide logs a type provided into the dig.Container.
+func (l *Logger) PrintProvide(t interface{}) {
+	if reflect.TypeOf(t).Kind() != reflect.Func {
+		// Invalid provide, will be logged as an error.
+		return
+	}
+	for _, rtype := range fxreflect.ReturnTypes(t) {
+		l.Printf("PROVIDE\t%s <= %s", rtype, fxreflect.FuncName(t))
 	}
 }
 
-// StdLogger outputs logs to stderr
-type StdLogger struct {
-	l *log.Logger
+// PrintSignal logs an os.Signal.
+func (l *Logger) PrintSignal(signal os.Signal) {
+	fmt.Println("")
+	l.Println(strings.ToUpper(signal.String()))
 }
 
-// Println logs a single Fx line
-func (s StdLogger) Println(str string) {
-	s.l.Println(prepend(str))
+// Panic logs an Fx line then panics.
+func (l *Logger) Panic(err error) {
+	l.std.Panic(prepend(err.Error()))
 }
 
-// Printf logs a formatted Fx line
-func (s StdLogger) Printf(format string, v ...interface{}) {
-	s.l.Printf(prepend(format), v...)
-}
-
-// Panic logs an Fx line then panics
-func (s StdLogger) Panic(err error) {
-	s.l.Panic(prepend(err.Error()))
-}
-
-// Fatalf logs an Fx line then fatals
-func (s StdLogger) Fatalf(format string, v ...interface{}) {
-	s.l.Fatalf(prepend(format), v...)
+// Fatalf logs an Fx line then fatals.
+func (l *Logger) Fatalf(format string, v ...interface{}) {
+	l.std.Fatalf(prepend(format), v...)
 }
 
 func prepend(str string) string {
 	return fmt.Sprintf("[Fx] %s", str)
-}
-
-// PrintProvide logs a type provided into the dig.Container
-func PrintProvide(l Logger, t interface{}) {
-	if reflect.TypeOf(t).Kind() == reflect.Func {
-		for _, rtype := range fxreflect.ReturnTypes(t) {
-			l.Printf("PROVIDE\t%s <= %s", rtype, fxreflect.FuncName(t))
-		}
-	} else {
-		l.Printf("PROVIDE\t%s", reflect.TypeOf(t).String())
-	}
-}
-
-// PrintSignal logs an os.Signal
-func PrintSignal(l Logger, signal os.Signal) {
-	fmt.Println("")
-	l.Println(strings.ToUpper(signal.String()))
 }
