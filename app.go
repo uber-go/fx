@@ -119,7 +119,7 @@ type App struct {
 	container *dig.Container
 	lifecycle *lifecycleWrapper
 	invokes   []interface{}
-	logger    fxlog.Logger
+	logger    *fxlog.Logger
 }
 
 // New creates and initializes an App. All applications begin with the
@@ -153,7 +153,7 @@ func (app *App) Run() {
 		app.logger.Fatalf("ERROR\t\tFailed to start: %v", err)
 	}
 
-	fxlog.PrintSignal(app.logger, <-app.Done())
+	app.logger.PrintSignal(<-app.Done())
 
 	if err := app.Stop(Timeout(DefaultTimeout)); err != nil {
 		app.logger.Fatalf("ERROR\t\tFailed to stop cleanly: %v", err)
@@ -204,7 +204,7 @@ func (app *App) provide(constructor interface{}) {
 	if app.optionErr != nil {
 		return
 	}
-	fxlog.PrintProvide(app.logger, constructor)
+	app.logger.PrintProvide(constructor)
 	if err := app.container.Provide(constructor); err != nil {
 		app.optionErr = multierr.Append(app.optionErr, err)
 	}

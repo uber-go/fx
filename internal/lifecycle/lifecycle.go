@@ -36,13 +36,13 @@ type Hook struct {
 
 // Lifecycle coordinates application lifecycle hooks.
 type Lifecycle struct {
-	logger   fxlog.Logger
+	logger   *fxlog.Logger
 	hooks    []Hook
 	position int
 }
 
 // New constructs a new Lifecycle.
-func New(logger fxlog.Logger) *Lifecycle {
+func New(logger *fxlog.Logger) *Lifecycle {
 	if logger == nil {
 		logger = fxlog.New()
 	}
