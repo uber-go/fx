@@ -113,22 +113,13 @@ func Options(opts ...Option) Option {
 	})
 }
 
-// stopOn sets the OS signals that trigger application stop. By default,
-// applications stop on SIGINT and SIGTERM.
-func stopOn(signals ...os.Signal) Option {
-	return optionFunc(func(app *App) {
-		app.stopSignals = signals
-	})
-}
-
 // An App is a modular application built around dependency injection.
 type App struct {
-	optionErr   error
-	container   *dig.Container
-	lifecycle   *lifecycleWrapper
-	invokes     []interface{}
-	stopSignals []os.Signal
-	logger      *fxlog.Logger
+	optionErr error
+	container *dig.Container
+	lifecycle *lifecycleWrapper
+	invokes   []interface{}
+	logger    *fxlog.Logger
 }
 
 // New creates and initializes an App. All applications begin with the
@@ -138,10 +129,9 @@ func New(opts ...Option) *App {
 	lc := &lifecycleWrapper{lifecycle.New(logger)}
 
 	app := &App{
-		container:   dig.New(),
-		lifecycle:   lc,
-		logger:      logger,
-		stopSignals: []os.Signal{syscall.SIGINT, syscall.SIGTERM},
+		container: dig.New(),
+		lifecycle: lc,
+		logger:    logger,
 	}
 
 	app.provide(func() Lifecycle { return lc })
@@ -206,7 +196,7 @@ func (app *App) Stop(ctx context.Context) error {
 // application.
 func (app *App) Done() <-chan os.Signal {
 	c := make(chan os.Signal, 1)
-	signal.Notify(c, app.stopSignals...)
+	signal.Notify(c, syscall.SIGINT, syscall.SIGTERM)
 	return c
 }
 
