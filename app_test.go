@@ -21,6 +21,7 @@
 package fx
 
 import (
+	"bytes"
 	"context"
 	"testing"
 	"time"
@@ -29,19 +30,15 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestApp(t *testing.T) {
-	type type1 struct{}
-	type type2 struct{}
-	type type3 struct{}
-
-	t.Run("NewCreatesApp", func(t *testing.T) {
+func TestNewApp(t *testing.T) {
+	t.Run("InitializesFields", func(t *testing.T) {
 		s := New()
 		assert.NotNil(t, s.container)
 		assert.NotNil(t, s.lifecycle)
 		assert.NotNil(t, s.logger)
 	})
 
-	t.Run("NewProvidesLifecycle", func(t *testing.T) {
+	t.Run("ProvidesLifecycle", func(t *testing.T) {
 		found := false
 		s := New(Invoke(func(lc Lifecycle) {
 			assert.NotNil(t, lc)
@@ -50,28 +47,33 @@ func TestApp(t *testing.T) {
 		require.NoError(t, s.Start(context.Background()))
 		assert.True(t, found)
 	})
+}
 
-	t.Run("InitsInOrder", func(t *testing.T) {
+func TestOptions(t *testing.T) {
+	t.Run("ProvidesCalledInGraphOrder", func(t *testing.T) {
+		type type1 struct{}
+		type type2 struct{}
+		type type3 struct{}
+
 		initOrder := 0
-		new1 := func() *type1 {
+		new1 := func() type1 {
 			initOrder++
 			assert.Equal(t, 1, initOrder)
-			return &type1{}
+			return type1{}
 		}
-		new2 := func(*type1) *type2 {
+		new2 := func(type1) type2 {
 			initOrder++
 			assert.Equal(t, 2, initOrder)
-			return &type2{}
+			return type2{}
 		}
-		new3 := func(*type1, *type2) *type3 {
+		new3 := func(type1, type2) type3 {
 			initOrder++
 			assert.Equal(t, 3, initOrder)
-			return &type3{}
+			return type3{}
 		}
-		biz := func(s1 *type1, s2 *type2, s3 *type3) error {
+		biz := func(s1 type1, s2 type2, s3 type3) {
 			initOrder++
 			assert.Equal(t, 4, initOrder)
-			return nil
 		}
 		s := New(Options(
 			Provide(new1, new2, new3),
@@ -81,56 +83,48 @@ func TestApp(t *testing.T) {
 		assert.Equal(t, 4, initOrder)
 	})
 
-	t.Run("ModulesLazyInit", func(t *testing.T) {
+	t.Run("ProvidesCalledLazily", func(t *testing.T) {
 		count := 0
-		new1 := func() *type1 {
+		newBuffer := func() *bytes.Buffer {
 			t.Error("this module should not init: no provided type relies on it")
 			return nil
 		}
-		new2 := func() *type2 {
+		newEmpty := func() struct{} {
 			count++
-			return &type2{}
-		}
-		new3 := func(*type2) *type3 {
-			count++
-			return &type3{}
-		}
-		biz := func(s2 *type2, s3 *type3) error {
-			count++
-			return nil
+			return struct{}{}
 		}
 		s := New(
-			Provide(new1, new2, new3),
-			Invoke(biz),
+			Provide(newBuffer, newEmpty),
+			Invoke(func(struct{}) { count++ }),
 		)
 		s.Start(context.Background())
-		assert.Equal(t, 3, count)
+		assert.Equal(t, 2, count)
 	})
+}
 
-	t.Run("StartTimeout", func(t *testing.T) {
-		block := func() { select {} }
-		s := New(Invoke(block))
+func TestAppStartTimeout(t *testing.T) {
+	block := func() { select {} }
+	s := New(Invoke(block))
 
-		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond)
-		defer cancel()
+	ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond)
+	defer cancel()
 
-		err := s.Start(ctx)
-		require.Error(t, err)
-		assert.Contains(t, err.Error(), "context deadline exceeded")
-	})
+	err := s.Start(ctx)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "context deadline exceeded")
+}
 
-	t.Run("StopTimeout", func(t *testing.T) {
-		block := func() error { select {} }
-		s := New(Invoke(func(l Lifecycle) {
-			l.Append(Hook{OnStop: block})
-		}))
-		require.NoError(t, s.Start(context.Background()))
+func TestAppStopTimeout(t *testing.T) {
+	block := func() error { select {} }
+	s := New(Invoke(func(l Lifecycle) {
+		l.Append(Hook{OnStop: block})
+	}))
+	require.NoError(t, s.Start(context.Background()))
 
-		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond)
-		defer cancel()
+	ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond)
+	defer cancel()
 
-		err := s.Stop(ctx)
-		require.Error(t, err)
-		assert.Contains(t, err.Error(), "context deadline exceeded")
-	})
+	err := s.Stop(ctx)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "context deadline exceeded")
 }
