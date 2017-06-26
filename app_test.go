@@ -5,7 +5,7 @@
 // in the Software without restriction, including without limitation the rights
 // to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
 // copies of the Software, and to permit persons to whom the Software is
-// furnished to do so, subject to the following conditions:
+
 //
 // The above copyright notice and this permission notice shall be included in
 // all copies or substantial portions of the Software.
@@ -23,6 +23,7 @@ package fx
 import (
 	"bytes"
 	"context"
+	"errors"
 	"testing"
 	"time"
 
@@ -32,19 +33,19 @@ import (
 
 func TestNewApp(t *testing.T) {
 	t.Run("InitializesFields", func(t *testing.T) {
-		s := New()
-		assert.NotNil(t, s.container)
-		assert.NotNil(t, s.lifecycle)
-		assert.NotNil(t, s.logger)
+		app := New()
+		assert.NotNil(t, app.container)
+		assert.NotNil(t, app.lifecycle)
+		assert.NotNil(t, app.logger)
 	})
 
 	t.Run("ProvidesLifecycle", func(t *testing.T) {
 		found := false
-		s := New(Invoke(func(lc Lifecycle) {
+		app := New(Invoke(func(lc Lifecycle) {
 			assert.NotNil(t, lc)
 			found = true
 		}))
-		require.NoError(t, s.Start(context.Background()))
+		require.NoError(t, app.Start(context.Background()))
 		assert.True(t, found)
 	})
 }
@@ -75,11 +76,11 @@ func TestOptions(t *testing.T) {
 			initOrder++
 			assert.Equal(t, 4, initOrder)
 		}
-		s := New(Options(
+		app := New(Options(
 			Provide(new1, new2, new3),
 			Invoke(biz),
 		))
-		s.Start(context.Background())
+		app.Start(context.Background())
 		assert.Equal(t, 4, initOrder)
 	})
 
@@ -93,38 +94,106 @@ func TestOptions(t *testing.T) {
 			count++
 			return struct{}{}
 		}
-		s := New(
+		app := New(
 			Provide(newBuffer, newEmpty),
 			Invoke(func(struct{}) { count++ }),
 		)
-		s.Start(context.Background())
+		app.Start(context.Background())
 		assert.Equal(t, 2, count)
+	})
+
+	t.Run("Error", func(t *testing.T) {
+		app := New(
+			Provide(&bytes.Buffer{}), // error, not a constructor
+			Provide(func() int {
+				t.Fatal("shouldn't be called")
+				return 0
+			}),
+		)
+		err := app.Start(context.Background())
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "must provide constructor function")
 	})
 }
 
-func TestAppStartTimeout(t *testing.T) {
-	block := func() { select {} }
-	s := New(Invoke(block))
+func TestAppStart(t *testing.T) {
+	t.Run("Timeout", func(t *testing.T) {
+		block := func() { select {} }
+		app := New(Invoke(block))
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond)
-	defer cancel()
+		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond)
+		defer cancel()
 
-	err := s.Start(ctx)
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "context deadline exceeded")
+		err := app.Start(ctx)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "context deadline exceeded")
+	})
+
+	t.Run("StartError", func(t *testing.T) {
+		failStart := func(lc Lifecycle) struct{} {
+			lc.Append(Hook{OnStart: func() error {
+				return errors.New("OnStart fail")
+			}})
+			return struct{}{}
+		}
+		app := New(
+			Provide(failStart),
+			Invoke(func(struct{}) {}),
+		)
+		err := app.Start(context.Background())
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "OnStart fail")
+	})
+
+	t.Run("StartAndStopErrors", func(t *testing.T) {
+		fail := func(lc Lifecycle) struct{} {
+			lc.Append(Hook{
+				OnStart: func() error { return errors.New("OnStart fail") },
+				OnStop:  func() error { return errors.New("OnStop fail") },
+			})
+			return struct{}{}
+		}
+		app := New(
+			Provide(fail),
+			Invoke(func(struct{}) {}),
+		)
+		err := app.Start(context.Background())
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "OnStart fail")
+		assert.Contains(t, err.Error(), "OnStop fail")
+	})
 }
 
-func TestAppStopTimeout(t *testing.T) {
-	block := func() error { select {} }
-	s := New(Invoke(func(l Lifecycle) {
-		l.Append(Hook{OnStop: block})
-	}))
-	require.NoError(t, s.Start(context.Background()))
+func TestAppStop(t *testing.T) {
+	t.Run("Timeout", func(t *testing.T) {
+		block := func() error { select {} }
+		app := New(Invoke(func(l Lifecycle) {
+			l.Append(Hook{OnStop: block})
+		}))
+		require.NoError(t, app.Start(context.Background()))
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond)
-	defer cancel()
+		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond)
+		defer cancel()
 
-	err := s.Stop(ctx)
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "context deadline exceeded")
+		err := app.Stop(ctx)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "context deadline exceeded")
+	})
+
+	t.Run("StopError", func(t *testing.T) {
+		failStop := func(lc Lifecycle) struct{} {
+			lc.Append(Hook{OnStop: func() error {
+				return errors.New("OnStop fail")
+			}})
+			return struct{}{}
+		}
+		app := New(
+			Provide(failStop),
+			Invoke(func(struct{}) {}),
+		)
+		assert.NoError(t, app.Start(context.Background()))
+		err := app.Stop(context.Background())
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "OnStop fail")
+	})
 }
