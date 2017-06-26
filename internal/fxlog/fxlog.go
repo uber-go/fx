@@ -32,7 +32,7 @@ import (
 
 var _exit = func() { os.Exit(1) }
 
-type standard interface {
+type printer interface {
 	Printf(string, ...interface{})
 }
 
@@ -43,7 +43,7 @@ func New() *Logger {
 
 // A Logger writes output to standard error.
 type Logger struct {
-	std standard
+	std printer
 }
 
 // Println logs a single Fx line.
