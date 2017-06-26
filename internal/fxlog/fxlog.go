@@ -30,6 +30,12 @@ import (
 	"go.uber.org/fx/internal/fxreflect"
 )
 
+var _exit = func() { os.Exit(1) }
+
+type standard interface {
+	Printf(string, ...interface{})
+}
+
 // New returns a new Logger.
 func New() *Logger {
 	return &Logger{log.New(os.Stderr, "", log.LstdFlags)}
@@ -37,12 +43,12 @@ func New() *Logger {
 
 // A Logger writes output to standard error.
 type Logger struct {
-	std *log.Logger
+	std standard
 }
 
 // Println logs a single Fx line.
 func (l *Logger) Println(str string) {
-	l.std.Println(prepend(str))
+	l.std.Printf(prepend(str))
 }
 
 // Printf logs a formatted Fx line.
@@ -63,18 +69,19 @@ func (l *Logger) PrintProvide(t interface{}) {
 
 // PrintSignal logs an os.Signal.
 func (l *Logger) PrintSignal(signal os.Signal) {
-	fmt.Println("")
 	l.Println(strings.ToUpper(signal.String()))
 }
 
 // Panic logs an Fx line then panics.
 func (l *Logger) Panic(err error) {
-	l.std.Panic(prepend(err.Error()))
+	l.std.Printf(prepend(err.Error()))
+	panic(err)
 }
 
 // Fatalf logs an Fx line then fatals.
 func (l *Logger) Fatalf(format string, v ...interface{}) {
-	l.std.Fatalf(prepend(format), v...)
+	l.std.Printf(prepend(format), v...)
+	_exit()
 }
 
 func prepend(str string) string {
