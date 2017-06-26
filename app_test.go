@@ -51,6 +51,20 @@ func TestNewApp(t *testing.T) {
 }
 
 func TestOptions(t *testing.T) {
+	t.Run("OptionsComposition", func(t *testing.T) {
+		var n int
+		construct := func() struct{} {
+			n++
+			return struct{}{}
+		}
+		use := func(struct{}) {
+			n++
+		}
+		opts := Options(Provide(construct), Invoke(use))
+		require.NoError(t, New(opts).Start(context.Background()))
+		assert.Equal(t, 2, n)
+	})
+
 	t.Run("ProvidesCalledInGraphOrder", func(t *testing.T) {
 		type type1 struct{}
 		type type2 struct{}
@@ -76,10 +90,10 @@ func TestOptions(t *testing.T) {
 			initOrder++
 			assert.Equal(t, 4, initOrder)
 		}
-		app := New(Options(
+		app := New(
 			Provide(new1, new2, new3),
 			Invoke(biz),
-		))
+		)
 		app.Start(context.Background())
 		assert.Equal(t, 4, initOrder)
 	})
