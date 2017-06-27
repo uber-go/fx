@@ -21,6 +21,8 @@
 package fxtest
 
 import (
+	"context"
+
 	"go.uber.org/fx"
 	"go.uber.org/fx/internal/lifecycle"
 )
@@ -28,10 +30,53 @@ import (
 // TB is a subset of the standard library's testing.TB interface. It's
 // satisfied by both *testing.T and *testing.B.
 type TB interface {
-	// TODO: Use Logf to implement an fxlog.Logger that doesn't spam the console
 	Logf(string, ...interface{})
 	Errorf(string, ...interface{})
 	FailNow()
+}
+
+type testPrinter struct {
+	TB
+}
+
+func (p *testPrinter) Printf(format string, args ...interface{}) {
+	p.Logf(format, args...)
+}
+
+// App is a wrapper around fx.App that provides some testing helpers. By
+// default, it uses the provided TB as the application's logging backend.
+type App struct {
+	*fx.App
+
+	tb TB
+}
+
+// New creates a new test application.
+func New(tb TB, opts ...fx.Option) *App {
+	allOpts := make([]fx.Option, 0, len(opts)+1)
+	allOpts = append(allOpts, fx.Logger(&testPrinter{tb}))
+	allOpts = append(allOpts, opts...)
+	return &App{
+		App: fx.New(allOpts...),
+		tb:  tb,
+	}
+}
+
+// MustStart calls Start, failing the test if an error is encountered.
+func (app *App) MustStart() *App {
+	if err := app.Start(context.Background()); err != nil {
+		app.tb.Errorf("application didn't start cleanly: %v", err)
+		app.tb.FailNow()
+	}
+	return app
+}
+
+// MustStop calls Stop, failing the test if an error is encountered.
+func (app *App) MustStop() {
+	if err := app.Stop(context.Background()); err != nil {
+		app.tb.Errorf("application didn't stop cleanly: %v", err)
+		app.tb.FailNow()
+	}
 }
 
 var _ fx.Lifecycle = (*Lifecycle)(nil)
@@ -57,11 +102,12 @@ func NewLifecycle(t TB) *Lifecycle {
 func (l *Lifecycle) Start() error { return l.lc.Start() }
 
 // MustStart calls Start, failing the test if an error is encountered.
-func (l *Lifecycle) MustStart() {
+func (l *Lifecycle) MustStart() *Lifecycle {
 	if err := l.Start(); err != nil {
 		l.t.Errorf("lifecycle didn't start cleanly: %v", err)
 		l.t.FailNow()
 	}
+	return l
 }
 
 // Stop calls all OnStop hooks whose OnStart counterpart was called, running

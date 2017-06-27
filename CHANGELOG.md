@@ -2,7 +2,10 @@
 
 ## v1.0.0-rc2 (unreleased)
 
-- No changes yet.
+- Add a `Logger` option, which allows users to send Fx's logs to different
+  sink.
+- Add `fxtest.App`, which redirects log output to the user's `testing.TB` and
+  provides some lifecycle helpers.
 
 ## v1.0.0-rc1 (20 Jun 2017)
 
