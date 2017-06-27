@@ -5,7 +5,7 @@ This doc is intended for contributors to UberFx (hopefully that's you!).
 ## Development environment
 
 * **Go**. Install on OS X with `brew install go`. Make sure `go version` returns at
-  least `1.7` since we're going to be using 1.7+ features like subtests.
+  least `1.8` since we're going to be using 1.8+ features like subtests.
 
 * **[overcommit](https://github.com/brigade/overcommit)**, a git hook manager.
   Install `overcommit` into your path with `sudo gem install overcommit`.
@@ -33,12 +33,8 @@ This project is open source software and requires a header at the beginning of
 every source file. This is enforced by commit hooks and TravisCI.
 
 To add license headers, use
-[uber-licence](https://github.com/uber/uber-licence):
-
-```lang=bash
-make add-uber-licence
-```
-Note that `uber-licence` is spelled with two c's for historical reasons.
+[update-licence](go.uber.org/tools/update-license), which is included in
+`make dependencies`.
 
 ## Commit Messages
 
@@ -74,18 +70,6 @@ The race detector makes the tests run way slower. To disable it:
 ```bash
 make test
 ```
-
-### Docker
-
-You can run the same steps that we do for continuous integration:
-
-```bash
-make dockerci
-```
-
-If this passes, you can expect continuous integration to pass.
-
-TODO(gs) come up with something better for this.
 
 ### Viewing HTML coverage
 
