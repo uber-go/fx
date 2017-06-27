@@ -30,7 +30,6 @@ import (
 // TB is a subset of the standard library's testing.TB interface. It's
 // satisfied by both *testing.T and *testing.B.
 type TB interface {
-	// TODO: Use Logf to implement an fxlog.Logger that doesn't spam the console
 	Logf(string, ...interface{})
 	Errorf(string, ...interface{})
 	FailNow()
@@ -54,7 +53,7 @@ type App struct {
 
 // New creates a new test application.
 func New(tb TB, opts ...fx.Option) *App {
-	allOpts := make([]fx.Option, 0, len(opts))
+	allOpts := make([]fx.Option, 0, len(opts)+1)
 	allOpts = append(allOpts, fx.Logger(&testPrinter{tb}))
 	allOpts = append(allOpts, opts...)
 	return &App{

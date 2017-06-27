@@ -62,12 +62,6 @@ func TestPrint(t *testing.T) {
 	sink := newSpy()
 	logger := &Logger{sink}
 
-	t.Run("println", func(t *testing.T) {
-		sink.Reset()
-		logger.Println("foo")
-		assert.Equal(t, "[Fx] foo\n", sink.String())
-	})
-
 	t.Run("printf", func(t *testing.T) {
 		sink.Reset()
 		logger.Printf("foo %d", 42)

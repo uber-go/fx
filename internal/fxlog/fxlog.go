@@ -47,11 +47,6 @@ type Logger struct {
 	Printer
 }
 
-// Println logs a single Fx line.
-func (l *Logger) Println(str string) {
-	l.Printer.Printf(prepend(str))
-}
-
 // Printf logs a formatted Fx line.
 func (l *Logger) Printf(format string, v ...interface{}) {
 	l.Printer.Printf(prepend(format), v...)
@@ -70,7 +65,7 @@ func (l *Logger) PrintProvide(t interface{}) {
 
 // PrintSignal logs an os.Signal.
 func (l *Logger) PrintSignal(signal os.Signal) {
-	l.Println(strings.ToUpper(signal.String()))
+	l.Printf(strings.ToUpper(signal.String()))
 }
 
 // Panic logs an Fx line then panics.
