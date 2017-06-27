@@ -178,7 +178,7 @@ func (app *App) Run() {
 // its dependencies' start hooks complete. If any of the start hooks return an
 // error, start short-circuits.
 func (app *App) Start(ctx context.Context) error {
-	return withTimeout(ctx, func() error { return app.start() })
+	return withTimeout(ctx, app.start)
 }
 
 // Stop gracefully stops the application. It executes any registered OnStop
