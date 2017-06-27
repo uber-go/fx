@@ -21,61 +21,126 @@
 package fxtest
 
 import (
+	"bytes"
 	"errors"
+	"fmt"
 	"testing"
 
-	"go.uber.org/fx"
-
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/fx"
 )
 
-type tb struct{ n int }
+type tb struct {
+	failures int
+	errors   *bytes.Buffer
+	logs     *bytes.Buffer
+}
 
-func (t *tb) Logf(string, ...interface{})   {}
-func (t *tb) Errorf(string, ...interface{}) {}
-func (t *tb) FailNow()                      { t.n++ }
+func newTB() *tb {
+	return &tb{0, &bytes.Buffer{}, &bytes.Buffer{}}
+}
 
-func TestSuccess(t *testing.T) {
-	lc := NewLifecycle(t)
+func (t *tb) FailNow() {
+	t.failures++
+}
 
-	var count int
-	lc.Append(fx.Hook{
-		OnStart: func() error {
-			count++
-			return nil
-		},
-		OnStop: func() error {
-			count++
-			return nil
-		},
+func (t *tb) Errorf(format string, args ...interface{}) {
+	fmt.Fprintf(t.errors, format, args...)
+	t.errors.WriteRune('\n')
+}
+
+func (t *tb) Logf(format string, args ...interface{}) {
+	fmt.Fprintf(t.logs, format, args...)
+	t.logs.WriteRune('\n')
+}
+
+func (t *tb) Reset() {
+	t.failures = 0
+	t.errors.Reset()
+	t.logs.Reset()
+}
+
+func TestApp(t *testing.T) {
+	spy := newTB()
+
+	t.Run("Success", func(t *testing.T) {
+		spy.Reset()
+
+		New(spy).MustStart().MustStop()
+
+		assert.Zero(t, spy.failures, "App didn't start and stop cleanly.")
+		assert.Contains(t, spy.logs.String(), "RUNNING", "Expected to write logs to TB.")
 	})
 
-	lc.MustStart()
-	assert.Equal(t, 1, count, "Expected OnStart hook to run.")
-	lc.MustStop()
-	assert.Equal(t, 2, count, "Expected OnStop hook to run.")
+	t.Run("StartFailure", func(t *testing.T) {
+		spy.Reset()
+
+		New(
+			spy,
+			fx.Invoke(func() error { return errors.New("fail") }),
+		).MustStart()
+
+		assert.Equal(t, 1, spy.failures, "Expected app to error on start.")
+		assert.Contains(t, spy.errors.String(), "didn't start cleanly", "Expected to write errors to TB.")
+	})
+
+	t.Run("StopFailure", func(t *testing.T) {
+		spy.Reset()
+
+		construct := func(lc fx.Lifecycle) struct{} {
+			lc.Append(fx.Hook{OnStop: func() error { return errors.New("fail") }})
+			return struct{}{}
+		}
+		New(
+			spy,
+			fx.Provide(construct),
+			fx.Invoke(func(struct{}) {}),
+		).MustStart().MustStop()
+
+		assert.Equal(t, 1, spy.failures, "Expected Stop to fail.")
+		assert.Contains(t, spy.errors.String(), "didn't stop cleanly", "Expected to write errors to TB.")
+	})
 }
 
-func TestStartFail(t *testing.T) {
-	spy := &tb{}
-	lc := NewLifecycle(spy)
-	lc.Append(fx.Hook{OnStart: func() error { return errors.New("fail") }})
+func TestLifecycle(t *testing.T) {
+	spy := newTB()
 
-	lc.MustStart()
-	assert.Equal(t, 1, spy.n, "Expected lifecycle start to fail.")
+	t.Run("Success", func(t *testing.T) {
+		spy.Reset()
 
-	lc.MustStop()
-	assert.Equal(t, 1, spy.n, "Expected lifecycle stop to succeed.")
-}
+		n := 0
+		lc := NewLifecycle(spy)
+		lc.Append(fx.Hook{
+			OnStart: func() error { n++; return nil },
+			OnStop:  func() error { n++; return nil },
+		})
+		lc.MustStart().MustStop()
 
-func TestStopFail(t *testing.T) {
-	spy := &tb{}
-	lc := NewLifecycle(spy)
-	lc.Append(fx.Hook{OnStop: func() error { return errors.New("fail") }})
+		assert.Zero(t, spy.failures, "Lifecycle start/stop failed.")
+		assert.Equal(t, 2, n, "Didn't run start and stop hooks.")
+	})
 
-	lc.MustStart()
-	assert.Equal(t, 0, spy.n, "Expected lifecycle start to succeed.")
+	t.Run("StartFailure", func(t *testing.T) {
+		spy.Reset()
+		lc := NewLifecycle(spy)
+		lc.Append(fx.Hook{OnStart: func() error { return errors.New("fail") }})
 
-	lc.MustStop()
-	assert.Equal(t, 1, spy.n, "Expected lifecycle stop to fail.")
+		lc.MustStart()
+		assert.Equal(t, 1, spy.failures, "Expected lifecycle start to fail.")
+
+		lc.MustStop()
+		assert.Equal(t, 1, spy.failures, "Expected lifecycle stop to succeed.")
+	})
+
+	t.Run("StopFailure", func(t *testing.T) {
+		spy.Reset()
+		lc := NewLifecycle(spy)
+		lc.Append(fx.Hook{OnStop: func() error { return errors.New("fail") }})
+
+		lc.MustStart()
+		assert.Equal(t, 0, spy.failures, "Expected lifecycle start to succeed.")
+
+		lc.MustStop()
+		assert.Equal(t, 1, spy.failures, "Expected lifecycle stop to fail.")
+	})
 }
