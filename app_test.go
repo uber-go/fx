@@ -24,6 +24,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"fmt"
 	"testing"
 	"time"
 
@@ -206,4 +207,21 @@ func TestAppStop(t *testing.T) {
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "OnStop fail")
 	})
+}
+
+type printerSpy struct {
+	*bytes.Buffer
+}
+
+func (ps printerSpy) Printf(format string, args ...interface{}) {
+	fmt.Fprintf(ps.Buffer, format, args...)
+	ps.Buffer.WriteRune('\n')
+}
+
+func TestReplaceLogger(t *testing.T) {
+	spy := printerSpy{&bytes.Buffer{}}
+	app := New(Logger(spy))
+	require.NoError(t, app.Start(context.Background()))
+	require.NoError(t, app.Stop(context.Background()))
+	assert.Contains(t, spy.String(), "RUNNING")
 }

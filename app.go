@@ -113,6 +113,20 @@ func Options(opts ...Option) Option {
 	})
 }
 
+// Printer is the interface required by fx's logging backend. It's implemented
+// by most loggers, including the standard library's.
+type Printer interface {
+	Printf(string, ...interface{})
+}
+
+// Logger redirects the application's log output to the provided printer.
+func Logger(p Printer) Option {
+	return optionFunc(func(app *App) {
+		app.logger = &fxlog.Logger{Printer: p}
+		app.lifecycle = &lifecycleWrapper{lifecycle.New(app.logger)}
+	})
+}
+
 // An App is a modular application built around dependency injection.
 type App struct {
 	optionErr error
@@ -134,12 +148,11 @@ func New(opts ...Option) *App {
 		logger:    logger,
 	}
 
-	app.provide(func() Lifecycle { return lc })
-
 	for _, opt := range opts {
 		opt.apply(app)
 	}
 
+	app.provide(func() Lifecycle { return app.lifecycle })
 	return app
 }
 
