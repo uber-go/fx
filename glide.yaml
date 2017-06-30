@@ -3,13 +3,13 @@ import:
 - package: go.uber.org/zap
   version: ^1
 - package: github.com/uber-go/tally
-  version: ^2.1.0
+  version: ^3.0.2
 - package: github.com/gorilla/mux
   version: ^1.1.0
 - package: github.com/gorilla/context
   version: ^1.1.0
 - package: go.uber.org/yarpc
-  version: ^v1.4.0
+  version: ^1
 - package: go.uber.org/dig
   version: ~0.1
 - package: go.uber.org/thriftrw
@@ -17,7 +17,7 @@ import:
 - package: github.com/go-validator/validator
   version: v2
 - package: github.com/pkg/errors
-  version: ^0.8.0
+  version: ~0.8.0
 - package: github.com/getsentry/raven-go
   version: master
 - package: github.com/uber/jaeger-client-go
@@ -27,7 +27,7 @@ import:
   - assert
   - require
 - package: github.com/uber/cherami-client-go
-  version: ^v0.1.0
+  version: ^1
   subpackages:
   - client/cherami
   - common
