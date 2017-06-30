@@ -57,7 +57,7 @@
 //
 // Service Model
 //
-// A service is a container for a set of **modules** and controls their lifecycle.
+// A service is a container for a set of modules and controls their lifecycle.
 // A service can have any number of modules, each responsible for a specific type
 // of functionality, such as a Kafka message ingestion, exposing an HTTP server,
 // or a set of RPC service endpoints.

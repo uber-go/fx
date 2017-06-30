@@ -33,7 +33,7 @@
 //
 // Nesting
 //
-// The configuration system wraps a set of *providers* that each know how to get
+// The configuration system wraps a set of providers that each know how to get
 // values from an underlying source:
 //
 //
@@ -108,7 +108,7 @@
 // be useful, so UberFx treats them specially. Dynamic configuration providers
 // conform to the
 // Provider interface, but they're instantiated
-// **after** the Static Providers on order to read bootstrap values.
+// after the Static Providers on order to read bootstrap values.
 //
 // For example, if you were to implement a ZooKeeper-backed
 // Provider, you'd likely need to specify (via YAML or environment

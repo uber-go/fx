@@ -94,7 +94,7 @@
 //
 // • ./myservice or ./myservice --roles "service,worker": Runs all modules
 //
-// • ./myservice --roles "worker": Runs only the **Kakfa** module
+// • ./myservice --roles "worker": Runs only the Kakfa module
 //
 // • Etc...
 //

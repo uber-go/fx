@@ -259,10 +259,6 @@ testImports:
   version: b5351b59507f266319400d92db9ed195c6aec9b3
 - name: github.com/mattn/goveralls
   version: a2cbbd7cdce4f5e051016fedf639c64bb05ef031
-- name: github.com/mvdan/interfacer
-  version: 22c51662ff476dfd97944f74db1b263ed920ee83
-  subpackages:
-  - cmd/interfacer
 - name: github.com/russross/blackfriday
   version: 70c446a327c4e69c0f661dc092d9729c3af7472c
 - name: github.com/sectioneight/md-to-godoc

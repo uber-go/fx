@@ -16,8 +16,6 @@ deps: libdeps
 	$(ECHO_V)go install ./vendor/github.com/kisielk/errcheck
 	@$(call label,Installing md-to-godoc...)
 	$(ECHO_V)go install ./vendor/github.com/sectioneight/md-to-godoc
-	@$(call label,Installing interfacer...)
-	$(ECHO_V)go install ./vendor/github.com/mvdan/interfacer/cmd/interfacer
 	@$(call label,Installing richgo...)
 	$(ECHO_V)go install ./vendor/github.com/kyoh86/richgo
 
