@@ -82,20 +82,3 @@ You'll need to have [gocov-html](https://github.com/matm/gocov-html) installed:
 ```bash
 go get -u gopkg.in/matm/v1/gocov-html
 ```
-
-## Package documentation
-
-Fx uses [md-to-godoc](https://github.com/sectioneight/md-to-godoc) to
-generate `doc.go` package documentation from `README.md` Markdown syntax. This
-means that all package-level documentation is viewable both on GitHub and
-[godoc.org](https://godoc.org/go.uber.org/fx).
-
-To document a new package, create a `README.md` in the package directory.
-Once you're satisfied with its contents, run `make gendoc` from the root of the
-project to rebuild the `doc.go` files.
-
-Note that changes to documentation may take a while to propagate to godoc.org.
-If you check in a change to package documentation, you can manually trigger a
-refresh by scrolling to the bottom of the page on godoc.org and clicking
-"Refresh Now."
-Fx
