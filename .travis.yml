@@ -1,14 +1,23 @@
 language: go
+sudo: false
 
 go_import_path: go.uber.org/fx
-
 go:
   - 1.8.x
   - tip
+
+env:
+  global:
+    - DRY_RUN=1
+
+cache:
+  directories:
+    - vendor
 
 install:
   - make dependencies
 
 script:
   - make lint
+  - make license
   - make ci
