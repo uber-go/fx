@@ -1,5 +1,5 @@
-hash: 4f5f0eb2da87875e137311cfb5657bef34638bb570573b4151ef0b77950e85c4
-updated: 2017-06-30T12:52:06.633269278-07:00
+hash: 79169a881a25f59e6e608e852fe134fe01d21fb87128eedacd2cd1b1f6c74369
+updated: 2017-06-30T15:10:36.537732583-07:00
 imports:
 - name: github.com/apache/thrift
   version: 9549b25c77587b29be4e0b5c258221a4ed85d37a
@@ -18,7 +18,7 @@ imports:
 - name: github.com/codahale/hdrhistogram
   version: 3a0bb77429bd3a61596f5e8a3172445844342120
 - name: github.com/davecgh/go-spew
-  version: 04cdfd42973bb9c8589fd6a731800cf222fde1a9
+  version: 6d212800a42e8ab5c146b8ace3490ee17e5225f9
   subpackages:
   - spew
 - name: github.com/facebookgo/clock

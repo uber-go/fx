@@ -27,11 +27,7 @@ import:
   - assert
   - require
 - package: github.com/uber/cherami-client-go
-  version: ^1
-  subpackages:
-  - client/cherami
-  - common
-  - common/metrics
+  version: ^2
 - package: github.com/uber/cherami-thrift
   subpackages:
   - .generated/go/cherami
