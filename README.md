@@ -1,11 +1,11 @@
-# UberFx Service Framework
+# Fx Service Framework
 
 [![GoDoc][doc-img]][doc]
 [![Coverage Status][cov-img]][cov]
 [![Build Status][ci-img]][ci]
 [![Report Card][report-card-img]][report-card]
 
-UberFx is a flexible, modularized framework for building robust and performant
+Fx is a flexible, modularized framework for building robust and performant
 services. It takes care of the boilerplate code and lets you focus on your
 application logic.
 
@@ -16,7 +16,7 @@ for more.
 
 ## Compatibility
 
-UberFx is compatible with Go 1.7 and above.
+Fx is compatible with Go 1.7 and above.
 
 ## License
 

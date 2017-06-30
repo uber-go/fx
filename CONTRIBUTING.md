@@ -1,6 +1,6 @@
-# Developing UberFx
+# Developing Fx
 
-This doc is intended for contributors to UberFx (hopefully that's you!).
+This doc is intended for contributors to Fx (hopefully that's you!).
 
 ## Development environment
 
@@ -9,7 +9,7 @@ This doc is intended for contributors to UberFx (hopefully that's you!).
 
 * **[overcommit](https://github.com/brigade/overcommit)**, a git hook manager.
   Install `overcommit` into your path with `sudo gem install overcommit`.
-  Enable it on the UberFx repo with `overcommit --install`.
+  Enable it on the Fx repo with `overcommit --install`.
   We use overcommit to enforce a variety of style, semantic, and legal things
   (for example, license headers on all source files).
 
@@ -85,7 +85,7 @@ go get -u gopkg.in/matm/v1/gocov-html
 
 ## Package documentation
 
-UberFx uses [md-to-godoc](https://github.com/sectioneight/md-to-godoc) to
+Fx uses [md-to-godoc](https://github.com/sectioneight/md-to-godoc) to
 generate `doc.go` package documentation from `README.md` Markdown syntax. This
 means that all package-level documentation is viewable both on GitHub and
 [godoc.org](https://godoc.org/go.uber.org/fx).
@@ -98,3 +98,4 @@ Note that changes to documentation may take a while to propagate to godoc.org.
 If you check in a change to package documentation, you can manually trigger a
 refresh by scrolling to the bottom of the page on godoc.org and clicking
 "Refresh Now."
+Fx
