@@ -1,84 +1,80 @@
-# Developing Fx
+# Contributing
 
-This doc is intended for contributors to Fx (hopefully that's you!).
+Thanks for helping to make Fx better for everyone!
 
-## Development environment
+If you'd like to add new exported APIs, please [open an issue][open-issue]
+describing your proposal &mdash; discussing API changes ahead of time makes
+pull request review much smoother.
 
-* **Go**. Install on OS X with `brew install go`. Make sure `go version` returns at
-  least `1.8` since we're going to be using 1.8+ features like subtests.
+Note that you'll need to sign [Uber's Contributor License Agreement][cla]
+before we can accept any of your contributions. If necessary, a bot will remind
+you to accept the CLA when you open your pull request.
 
-* **[overcommit](https://github.com/brigade/overcommit)**, a git hook manager.
-  Install `overcommit` into your path with `sudo gem install overcommit`.
-  Enable it on the Fx repo with `overcommit --install`.
-  We use overcommit to enforce a variety of style, semantic, and legal things
-  (for example, license headers on all source files).
+## Setup
 
-## Checking out the code
+[Fork][fork], then clone the repository:
 
-Make sure the repository is cloned to the correct location:
-
-```bash
-go get go.uber.org/fx/...
-cd $GOPATH/src/go.uber.org/fx
+```
+mkdir -p $GOPATH/src/go.uber.org
+cd $GOPATH/src/go.uber.org
+git clone git@github.com:your_github_username/fx.git
+cd fx
+git remote add upstream https://github.com/uber-go/fx.git
+git fetch upstream
 ```
 
-## Dependency management
+Install Fx's dependencies:
 
-Dependencies are tracked via `glide.yaml`. If you're not familiar with `glide`,
-[read the docs](https://github.com/Masterminds/glide#usage).
-
-## License headers
-
-This project is open source software and requires a header at the beginning of
-every source file. This is enforced by commit hooks and TravisCI.
-
-To add license headers, use
-[update-licence](go.uber.org/tools/update-license), which is included in
-`make dependencies`.
-
-## Commit Messages
-
-Overcommit adds some requirements to your commit messages. At Uber, we follow the
-[Chris Beams](http://chris.beams.io/posts/git-commit/) guide to writing Git
-commit messages. Read it, follow it, learn it, love it.
-
-## FIXMEs
-
-If you ever are in the middle of writing code and remember a thing you need to
-do, leave a comment like:
-
-```go
-// FIXME(ai) make this actually work
+```
+make dependencies
 ```
 
-Your initials in parens are optional but good practice. This is better
-than a TODO because our CI checks for unresolved FIXMEs. If you forget to fix
-a FIXME, your code won't get merged.
+Make sure that the tests and the style checkers pass:
 
-## Testing
-
-Run all the tests with coverage and race detector enabled:
-
-```bash
-make test RACE=-race
 ```
-
-### Disabling the race detector
-
-The race detector makes the tests run way slower. To disable it:
-
-```bash
 make test
+make lint
 ```
 
-### Viewing HTML coverage
+If you're not using the minor version of Go specified in the Makefile's
+`LINTABLE_MINOR_VERSIONS` variable, `make lint` doesn't do anything. This is
+fine, but it means that you'll only discover style violations after you open
+your pull request.
 
-```bash
-make coverage.html && open coverage.html
+## Making Changes
+
+Start by creating a new branch for your changes:
+
+```
+cd $GOPATH/src/go.uber.org/fx
+git checkout master
+git fetch upstream
+git rebase upstream/master
+git checkout -b cool_new_feature
 ```
 
-You'll need to have [gocov-html](https://github.com/matm/gocov-html) installed:
+Make your changes, then ensure that `make lint` and `make test` still pass. If
+you're satisfied with your changes, push them to your fork.
 
-```bash
-go get -u gopkg.in/matm/v1/gocov-html
 ```
+git push origin cool_new_feature
+```
+
+Then use the GitHub UI to [open a pull request][pr].
+
+At this point, you're waiting on us to review your changes. We *try* to respond
+to issues and pull requests within a few business days, and we may suggest some
+improvements or alternatives. Once your changes are approved, one of the
+project maintainers will merge them.
+
+We're much more likely to approve your changes if you:
+
+* Add tests for new functionality.
+* Write a [good commit message][commit-message].
+* Maintain backward compatibility.
+
+[fork]: https://github.com/uber-go/fx/fork
+[open-issue]: https://github.com/uber-go/fx/issues/new
+[cla]: https://cla-assistant.io/uber-go/fx
+[commit-message]: http://tbaggery.com/2008/04/19/a-note-about-git-commit-messages.html
+[pr]: https://github.com/uber-go/fx/compare
