@@ -85,19 +85,19 @@ func verifyMetrics(t *testing.T, scope tally.TestScope, withGC bool) {
 	snapshot := scope.Snapshot()
 	// Check gauges
 	gauges := snapshot.Gauges()
-	assert.NotNil(t, gauges["num-goroutines"].Value())
-	assert.NotNil(t, gauges["gomaxprocs"].Value())
-	assert.NotNil(t, gauges["memory.allocated"].Value())
-	assert.NotNil(t, gauges["memory.heap"].Value())
-	assert.NotNil(t, gauges["memory.heapidle"].Value())
-	assert.NotNil(t, gauges["memory.heapinuse"].Value())
-	assert.NotNil(t, gauges["memory.stack"].Value())
+	assert.NotNil(t, gauges["num-goroutines+"].Value())
+	assert.NotNil(t, gauges["gomaxprocs+"].Value())
+	assert.NotNil(t, gauges["memory.allocated+"].Value())
+	assert.NotNil(t, gauges["memory.heap+"].Value())
+	assert.NotNil(t, gauges["memory.heapidle+"].Value())
+	assert.NotNil(t, gauges["memory.heapinuse+"].Value())
+	assert.NotNil(t, gauges["memory.stack+"].Value())
 	if withGC {
 		// Check counters
 		counters := snapshot.Counters()
-		assert.NotZero(t, counters["memory.num-gc"].Value())
+		assert.NotZero(t, counters["memory.num-gc+"].Value())
 		// Check timers
 		timers := snapshot.Timers()
-		assert.NotEmpty(t, timers["memory.gc-pause-ms"].Values())
+		assert.NotEmpty(t, timers["memory.gc-pause-ms+"].Values())
 	}
 }
