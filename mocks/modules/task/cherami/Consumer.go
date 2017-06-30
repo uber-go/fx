@@ -84,4 +84,14 @@ func (_m *Consumer) Open(deliveryCh chan cherami.Delivery) (chan cherami.Deliver
 	return r0, r1
 }
 
+// Pause provides a mock function with given fields:
+func (_m *Consumer) Pause() {
+	_m.Called()
+}
+
+// Resume provides a mock function with given fields:
+func (_m *Consumer) Resume() {
+	_m.Called()
+}
+
 var _ cherami.Consumer = (*Consumer)(nil)
