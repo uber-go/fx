@@ -8,8 +8,8 @@ cd "${DIR}"
 run_update_license() {
   go install ./vendor/go.uber.org/tools/update-license
   # doing this because of SC2046 warning
-  for file in $(find . -name '*.go' | grep -v \.\/vendor); do
-    update-license $@ "${file}"
+  for file in $(find . -name '*.go' | grep -v \./vendor); do
+    update-license "$@" "${file}"
   done
 }
 

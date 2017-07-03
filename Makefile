@@ -1,4 +1,4 @@
-PKGS ?= $(shell glide novendor | grep -v examples)
+PKGS ?= $(shell glide novendor)
 PKG_FILES ?= *.go
 
 # The linting tools evolve with each Go version, so run them only on the latest
@@ -34,7 +34,7 @@ license:
 
 .PHONY: ci
 ci: SHELL := /bin/bash
-ci: test
+ci: test lint
 	bash <(curl -s https://codecov.io/bash)
 
 .PHONY: lint
