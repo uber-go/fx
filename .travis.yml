@@ -4,6 +4,7 @@ sudo: false
 go_import_path: go.uber.org/fx
 go:
   - 1.8.x
+  - 1.9.x
   - tip
 
 cache:
@@ -14,5 +15,4 @@ install:
   - make dependencies
 
 script:
-  - make lint
   - make ci
