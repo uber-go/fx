@@ -34,7 +34,7 @@ license:
 
 .PHONY: ci
 ci: SHELL := /bin/bash
-ci: test
+ci: test lint
 	bash <(curl -s https://codecov.io/bash)
 
 .PHONY: lint
