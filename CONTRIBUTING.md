@@ -41,7 +41,7 @@ If you're not using the minor version of Go specified in the Makefile's
 fine, but it means that you'll only discover style violations after you open
 your pull request.
 
-## Making Changes
+## Making changes
 
 Start by creating a new branch for your changes:
 
