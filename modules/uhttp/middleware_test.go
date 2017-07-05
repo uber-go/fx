@@ -197,7 +197,7 @@ func testPanicInbound(t *testing.T, host service.Host) {
 	testScope := host.Metrics()
 	snapshot := testScope.(tally.TestScope).Snapshot()
 	counters := snapshot.Counters()
-	assert.True(t, counters["panic"].Value() > 0)
+	assert.True(t, counters["panic+module=http,type=request"].Value() > 0)
 }
 
 func testMetricsInbound(t *testing.T, host service.Host) {
@@ -211,8 +211,8 @@ func testMetricsInbound(t *testing.T, host service.Host) {
 	snapshot := testScope.(tally.TestScope).Snapshot()
 	counters := snapshot.Counters()
 	timers := snapshot.Timers()
-	assert.True(t, counters["total"].Value() > 0)
-	assert.NotNil(t, timers["GET"].Values())
+	assert.True(t, counters["total+module=http,status=,type=request"].Value() > 0)
+	assert.NotNil(t, timers["GET+module=http,type=request"].Values())
 }
 
 func testServeHTTP(chain inboundMiddlewareChain) *httptest.ResponseRecorder {

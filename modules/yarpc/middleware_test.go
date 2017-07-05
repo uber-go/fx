@@ -132,7 +132,7 @@ func testPanicHandler(t *testing.T, testScope tally.Scope) {
 
 	snapshot := testScope.(tally.TestScope).Snapshot()
 	counters := snapshot.Counters()
-	assert.True(t, counters["panic"].Value() > 0)
+	assert.True(t, counters["panic+module=rpc,type=request"].Value() > 0)
 }
 
 type fakeEnveloper struct {

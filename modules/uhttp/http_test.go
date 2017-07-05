@@ -240,8 +240,11 @@ func verifyMetrics(t *testing.T, scope tally.Scope) {
 	timers := snapshot.Timers()
 	counters := snapshot.Counters()
 
-	require.NotNil(t, timers["GET"])
-	assert.NotNil(t, timers["GET"].Values())
-	require.NotNil(t, counters["fail"])
-	assert.NotNil(t, counters["fail"].Value())
+	c := "GET+module=http,type=request"
+	require.NotNil(t, timers[c])
+	assert.NotNil(t, timers[c].Values())
+
+	f := "fail+middleware=auth,module=http,type=request"
+	require.NotNil(t, counters[f])
+	assert.NotNil(t, counters[f].Value())
 }

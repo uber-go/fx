@@ -17,8 +17,6 @@ lint:
 	$(ECHO_V)rm -rf $(LINT_LOG)
 	@echo "Installing test dependencies for vet..."
 	$(ECHO_V)go test -i $(PKGS)
-	@echo "Running interfacer..."
-	$(ECHO_V)interfacer $(LIST_PKGS) | tee -a $(LINT_LOG)
 	@echo "Checking formatting..."
 	$(ECHO_V)gofmt -d -s $(PKG_FILES) 2>&1 | tee $(LINT_LOG)
 	@echo "Checking vet..."

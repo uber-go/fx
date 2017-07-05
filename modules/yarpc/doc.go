@@ -26,7 +26,7 @@
 //
 // This module works in a way that's pretty similar to existing RPC projects:
 //
-// • Create an IDL file and run the appropriate tools on it (e.g. **thriftrw**) to
+// • Create an IDL file and run the appropriate tools on it (e.g. thriftrw) to
 // generate the service and handler interfaces
 //
 //
