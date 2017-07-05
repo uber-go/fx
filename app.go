@@ -138,7 +138,13 @@ type App struct {
 
 // New creates and initializes an App. All applications begin with the
 // Lifecycle type available in their dependency injection container.
+//
+// It then executes all functions supplied via the Invoke option. Supplying
+// arguments to these functions requires calling some of the constructors
+// supplied by the Provide option. If any invoked function fails, an error is
+// returned immediately.
 func New(opts ...Option) *App {
+	// TODO(glib): New should probably return (*App, error)
 	logger := fxlog.New()
 	lc := &lifecycleWrapper{lifecycle.New(logger)}
 
@@ -153,6 +159,24 @@ func New(opts ...Option) *App {
 	}
 
 	app.provide(func() Lifecycle { return app.lifecycle })
+
+	if app.optionErr != nil {
+		// Some provides failed, short-circuit immediately.
+		app.logger.Printf("Error after options were applied: %v", app.optionErr)
+		return nil
+	}
+
+	// Execute invokes.
+	// TODO(glib): wrap in timeout?
+	for _, fn := range app.invokes {
+		fname := fxreflect.FuncName(fn)
+		app.logger.Printf("INVOKE\t\t%s", fname)
+		if err := app.container.Invoke(fn); err != nil {
+			app.logger.Printf("Error during %q invoke: %v", fname, err)
+			return nil
+		}
+	}
+
 	return app
 }
 
@@ -173,15 +197,10 @@ func (app *App) Run() {
 	}
 }
 
-// Start starts the application.
+// Start executes all the onStart hooks of the fx.Lifecycle.
 //
 // First, Start checks whether any errors were encountered while applying
 // Options. If so, it returns immediately.
-//
-// It then executes all functions supplied via the Invoke option. Supplying
-// arguments to these functions requires calling some of the constructors
-// supplied by the Provide option. If any invoked function fails, an error is
-// returned immediately.
 //
 // By taking a dependency on the Lifecycle type, some of the executed
 // constructors may register start and stop hooks. After executing all Invoke
@@ -224,19 +243,6 @@ func (app *App) provide(constructor interface{}) {
 }
 
 func (app *App) start() error {
-	if app.optionErr != nil {
-		// Some provides failed, short-circuit immediately.
-		return app.optionErr
-	}
-
-	// Execute invokes.
-	for _, fn := range app.invokes {
-		app.logger.Printf("INVOKE\t\t%s", fxreflect.FuncName(fn))
-		if err := app.container.Invoke(fn); err != nil {
-			return err
-		}
-	}
-
 	// Attempt to start cleanly.
 	if err := app.lifecycle.Start(); err != nil {
 		// Start failed, roll back.
