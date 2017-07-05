@@ -36,10 +36,9 @@ make test
 make lint
 ```
 
-If you're not using the minor version of Go specified in the Makefile's
-`LINTABLE_MINOR_VERSIONS` variable, `make lint` doesn't do anything. This is
-fine, but it means that you'll only discover style violations after you open
-your pull request.
+For `make lint` to work, you must be using the minor version of Go specified in
+the Makefile's `LINTABLE_MINOR_VERSIONS` variable. This is fine, but it means
+that you'll only discover style violations after you open your pull request.
 
 ## Making changes
 
@@ -53,8 +52,8 @@ git rebase upstream/master
 git checkout -b cool_new_feature
 ```
 
-Make your changes, then ensure that `make lint` and `make test` still pass. If
-you're satisfied with your changes, push them to your fork.
+Make your changes, and then check that `make lint` and `make test` still pass.
+If you're satisfied with your changes, push them to your fork.
 
 ```
 git push origin cool_new_feature
