@@ -8,7 +8,7 @@ An application framework for Go that:
 
 ## Status
 
-v1.0.0-rc1. Expect minor API changes and bug fixes. See [our changelog](CHANGELOG.md)
+Almost stable: `v1.0.0-rc1`. Expect minor API changes and bug fixes. See [our changelog](CHANGELOG.md)
 
 [doc]: https://godoc.org/go.uber.org/fx
 [doc-img]: https://godoc.org/go.uber.org/fx?status.svg
