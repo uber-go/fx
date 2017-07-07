@@ -10,6 +10,12 @@ An application framework for Go that:
 
 Almost stable: `v1.0.0-rc1`. Expect minor API changes and bug fixes. See [our changelog](CHANGELOG.md)
 
+## Install
+
+```
+go get -u go.uber.org/fx
+```
+
 [doc]: https://godoc.org/go.uber.org/fx
 [doc-img]: https://godoc.org/go.uber.org/fx?status.svg
 [cov]: https://codecov.io/gh/uber-go/fx/branch/dev
