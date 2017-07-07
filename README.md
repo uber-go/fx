@@ -1,4 +1,4 @@
-# :sparkles: Fx [![GoDoc][doc-img]][doc] [![Build Status][ci-img]][ci] [![Coverage Status][cov-img]][cov] [![Report Card][report-card-img]][report-card]
+# :unicorn: Fx [![GoDoc][doc-img]][doc] [![Build Status][ci-img]][ci] [![Coverage Status][cov-img]][cov] [![Report Card][report-card-img]][report-card]
 
 An application framework for Go that:
 
@@ -8,7 +8,7 @@ An application framework for Go that:
 
 ## Status
 
-Almost stable: `v1.0.0-rc1`. Expect minor API changes and bug fixes. See [our changelog](CHANGELOG.md)
+Almost stable: `v1.0.0-rc1`. Some breaking changes might occur before `v1.0.0`. See [CHANGELOG.md](CHANGELOG.md) for more info.
 
 ## Install
 
