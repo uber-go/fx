@@ -49,6 +49,23 @@ func TestNewApp(t *testing.T) {
 		require.NoError(t, app.Start(context.Background()))
 		assert.True(t, found)
 	})
+
+	t.Run("OptionsHappensBeforeProvides", func(t *testing.T) {
+		optionRun := false
+
+		p := func() struct{} {
+			assert.True(t, optionRun, "Option must run before provides")
+			return struct{}{}
+		}
+		inv := func(struct{}) {}
+
+		anOption := optionFunc(func(app *App) {
+			optionRun = true
+		})
+
+		app := New(Provide(p), Invoke(inv), anOption)
+		app.Start(Timeout(1 * time.Second))
+	})
 }
 
 func TestOptions(t *testing.T) {
