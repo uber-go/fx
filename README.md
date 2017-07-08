@@ -2,9 +2,9 @@
 
 An application framework for Go that:
 
-* Makes it easy to write composable and testable apps using dependency injection.
-* Removes boilerplate in main and the need for global state and package-level init functions.
-* Eliminates the need for service owners to manually install and manage individual libraries.
+* Makes dependency injection easy.
+* Eliminates the need for global state and `func init()`.
+* Consolidates setup in `main()` across your apps.
 
 ## Status
 
