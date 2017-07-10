@@ -4,7 +4,7 @@ An application framework for Go that:
 
 * Makes dependency injection easy.
 * Eliminates the need for global state and `func init()`.
-* Consolidates setup in `main()` across your apps.
+* Enables a consistent platform across your apps.
 
 ## Status
 
