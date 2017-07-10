@@ -99,11 +99,12 @@ func NewLifecycle(t TB) *Lifecycle {
 
 // Start executes all registered OnStart hooks in order, halting at the first
 // hook that doesn't succeed.
-func (l *Lifecycle) Start() error { return l.lc.Start() }
+func (l *Lifecycle) Start(ctx context.Context) error { return l.lc.Start(ctx) }
 
-// MustStart calls Start, failing the test if an error is encountered.
+// MustStart calls Start with context.Background(), failing the test if an
+// error is encountered.
 func (l *Lifecycle) MustStart() *Lifecycle {
-	if err := l.Start(); err != nil {
+	if err := l.Start(context.Background()); err != nil {
 		l.t.Errorf("lifecycle didn't start cleanly: %v", err)
 		l.t.FailNow()
 	}
@@ -116,11 +117,12 @@ func (l *Lifecycle) MustStart() *Lifecycle {
 // If any hook returns an error, execution continues for a best-effort
 // cleanup. Any errors encountered are collected into a single error and
 // returned.
-func (l *Lifecycle) Stop() error { return l.lc.Stop() }
+func (l *Lifecycle) Stop(ctx context.Context) error { return l.lc.Stop(ctx) }
 
-// MustStop calls Stop, failing the test if an error is encountered.
+// MustStop calls Stop with context.Background(), failing the test if an error
+// is encountered.
 func (l *Lifecycle) MustStop() {
-	if err := l.Stop(); err != nil {
+	if err := l.Stop(context.Background()); err != nil {
 		l.t.Errorf("lifecycle didn't stop cleanly: %v", err)
 		l.t.FailNow()
 	}

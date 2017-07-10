@@ -6,6 +6,7 @@
   sink.
 - Add `fxtest.App`, which redirects log output to the user's `testing.TB` and
   provides some lifecycle helpers.
+- Alter lifecycle hook signatures to accept a context.
 
 ## v1.0.0-rc1 (20 Jun 2017)
 
