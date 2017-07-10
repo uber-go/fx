@@ -82,9 +82,7 @@ func (f optionFunc) apply(app *App) { f(app) }
 // See the documentation for go.uber.org/dig for further details.
 func Provide(constructors ...interface{}) Option {
 	return optionFunc(func(app *App) {
-		for _, c := range constructors {
-			app.provide(c)
-		}
+		app.provides = append(app.provides, constructors...)
 	})
 }
 
@@ -132,6 +130,7 @@ type App struct {
 	optionErr error
 	container *dig.Container
 	lifecycle *lifecycleWrapper
+	provides  []interface{}
 	invokes   []interface{}
 	logger    *fxlog.Logger
 }
@@ -152,6 +151,9 @@ func New(opts ...Option) *App {
 		opt.apply(app)
 	}
 
+	for _, p := range app.provides {
+		app.provide(p)
+	}
 	app.provide(func() Lifecycle { return app.lifecycle })
 	return app
 }
