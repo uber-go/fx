@@ -18,7 +18,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package fx
+package fx_test
 
 import (
 	"bytes"
@@ -28,36 +28,42 @@ import (
 	"testing"
 	"time"
 
+	. "go.uber.org/fx"
+	"go.uber.org/fx/fxtest"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
+type printerSpy struct {
+	*bytes.Buffer
+}
+
+func (ps printerSpy) Printf(format string, args ...interface{}) {
+	fmt.Fprintf(ps.Buffer, format, args...)
+	ps.Buffer.WriteRune('\n')
+}
+
 func TestNewApp(t *testing.T) {
 	t.Run("ProvidesLifecycle", func(t *testing.T) {
 		found := false
-		app := New(Invoke(func(lc Lifecycle) {
+		app := fxtest.New(t, Invoke(func(lc Lifecycle) {
 			assert.NotNil(t, lc)
 			found = true
 		}))
-		require.NoError(t, app.Start(context.Background()))
+		defer app.MustStart().MustStop()
 		assert.True(t, found)
 	})
 
 	t.Run("OptionsHappensBeforeProvides", func(t *testing.T) {
-		optionRun := false
+		// Should be grouping all provides and pushing them into the container
+		// after applying other options. This prevents the app configuration
+		// (e.g., logging) from changing halfway through our provides.
 
-		p := func() struct{} {
-			assert.True(t, optionRun, "Option must run before provides")
-			return struct{}{}
-		}
-		inv := func(struct{}) {}
-
-		anOption := optionFunc(func(app *App) {
-			optionRun = true
-		})
-
-		app := New(Provide(p), Invoke(inv), anOption)
-		app.Start(Timeout(1 * time.Second))
+		spy := &printerSpy{&bytes.Buffer{}}
+		app := fxtest.New(t, Provide(func() struct{} { return struct{}{} }), Logger(spy))
+		defer app.MustStart().MustStop()
+		assert.Contains(t, spy.String(), "PROVIDE\tstruct {}")
 	})
 }
 
@@ -71,8 +77,8 @@ func TestOptions(t *testing.T) {
 		use := func(struct{}) {
 			n++
 		}
-		opts := Options(Provide(construct), Invoke(use))
-		require.NoError(t, New(opts).Start(context.Background()))
+		app := fxtest.New(t, Options(Provide(construct), Invoke(use)))
+		defer app.MustStart().MustStop()
 		assert.Equal(t, 2, n)
 	})
 
@@ -101,11 +107,11 @@ func TestOptions(t *testing.T) {
 			initOrder++
 			assert.Equal(t, 4, initOrder)
 		}
-		app := New(
+		app := fxtest.New(t,
 			Provide(new1, new2, new3),
 			Invoke(biz),
 		)
-		app.Start(context.Background())
+		defer app.MustStart().MustStop()
 		assert.Equal(t, 4, initOrder)
 	})
 
@@ -119,16 +125,16 @@ func TestOptions(t *testing.T) {
 			count++
 			return struct{}{}
 		}
-		app := New(
+		app := fxtest.New(t,
 			Provide(newBuffer, newEmpty),
 			Invoke(func(struct{}) { count++ }),
 		)
-		app.Start(context.Background())
+		defer app.MustStart().MustStop()
 		assert.Equal(t, 2, count)
 	})
 
 	t.Run("Error", func(t *testing.T) {
-		app := New(
+		app := fxtest.New(t,
 			Provide(&bytes.Buffer{}), // error, not a constructor
 		)
 		err := app.Start(context.Background())
@@ -140,7 +146,7 @@ func TestOptions(t *testing.T) {
 func TestAppStart(t *testing.T) {
 	t.Run("Timeout", func(t *testing.T) {
 		block := func() { select {} }
-		app := New(Invoke(block))
+		app := fxtest.New(t, Invoke(block))
 
 		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond)
 		defer cancel()
@@ -157,7 +163,7 @@ func TestAppStart(t *testing.T) {
 			}})
 			return struct{}{}
 		}
-		app := New(
+		app := fxtest.New(t,
 			Provide(failStart),
 			Invoke(func(struct{}) {}),
 		)
@@ -174,7 +180,7 @@ func TestAppStart(t *testing.T) {
 			})
 			return struct{}{}
 		}
-		app := New(
+		app := fxtest.New(t,
 			Provide(fail),
 			Invoke(func(struct{}) {}),
 		)
@@ -188,10 +194,10 @@ func TestAppStart(t *testing.T) {
 func TestAppStop(t *testing.T) {
 	t.Run("Timeout", func(t *testing.T) {
 		block := func(context.Context) error { select {} }
-		app := New(Invoke(func(l Lifecycle) {
+		app := fxtest.New(t, Invoke(func(l Lifecycle) {
 			l.Append(Hook{OnStop: block})
 		}))
-		require.NoError(t, app.Start(context.Background()))
+		app.MustStart()
 
 		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond)
 		defer cancel()
@@ -208,30 +214,20 @@ func TestAppStop(t *testing.T) {
 			}})
 			return struct{}{}
 		}
-		app := New(
+		app := fxtest.New(t,
 			Provide(failStop),
 			Invoke(func(struct{}) {}),
 		)
-		assert.NoError(t, app.Start(context.Background()))
+		app.MustStart()
 		err := app.Stop(context.Background())
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "OnStop fail")
 	})
 }
 
-type printerSpy struct {
-	*bytes.Buffer
-}
-
-func (ps printerSpy) Printf(format string, args ...interface{}) {
-	fmt.Fprintf(ps.Buffer, format, args...)
-	ps.Buffer.WriteRune('\n')
-}
-
 func TestReplaceLogger(t *testing.T) {
 	spy := printerSpy{&bytes.Buffer{}}
-	app := New(Logger(spy))
-	require.NoError(t, app.Start(context.Background()))
-	require.NoError(t, app.Stop(context.Background()))
+	app := fxtest.New(t, Logger(spy))
+	app.MustStart().MustStop()
 	assert.Contains(t, spy.String(), "RUNNING")
 }
