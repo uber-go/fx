@@ -233,11 +233,9 @@ func TestAppRun(t *testing.T) {
 		go func() {
 			app.Run()
 		}()
-
 		// 100ms sleep makes sure that app is in RUNNING state
 		time.Sleep(100 * time.Millisecond)
 	}
-
 	t.Run("BlocksOnSignals", func(t *testing.T) {
 		app := New()
 
@@ -249,7 +247,6 @@ func TestAppRun(t *testing.T) {
 
 		run(app)
 		assert.NoError(t, proc.Signal(syscall.SIGTERM), "Could not send syscall.SIGTERM")
-
 	})
 }
 
