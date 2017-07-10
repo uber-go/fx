@@ -33,13 +33,6 @@ import (
 )
 
 func TestNewApp(t *testing.T) {
-	t.Run("InitializesFields", func(t *testing.T) {
-		app := New()
-		assert.NotNil(t, app.container)
-		assert.NotNil(t, app.lifecycle)
-		assert.NotNil(t, app.logger)
-	})
-
 	t.Run("ProvidesLifecycle", func(t *testing.T) {
 		found := false
 		app := New(Invoke(func(lc Lifecycle) {
