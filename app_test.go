@@ -159,7 +159,7 @@ func TestAppStart(t *testing.T) {
 
 	t.Run("StartError", func(t *testing.T) {
 		failStart := func(lc Lifecycle) struct{} {
-			lc.Append(Hook{OnStart: func() error {
+			lc.Append(Hook{OnStart: func(context.Context) error {
 				return errors.New("OnStart fail")
 			}})
 			return struct{}{}
@@ -176,8 +176,8 @@ func TestAppStart(t *testing.T) {
 	t.Run("StartAndStopErrors", func(t *testing.T) {
 		fail := func(lc Lifecycle) struct{} {
 			lc.Append(Hook{
-				OnStart: func() error { return errors.New("OnStart fail") },
-				OnStop:  func() error { return errors.New("OnStop fail") },
+				OnStart: func(context.Context) error { return errors.New("OnStart fail") },
+				OnStop:  func(context.Context) error { return errors.New("OnStop fail") },
 			})
 			return struct{}{}
 		}
@@ -194,7 +194,7 @@ func TestAppStart(t *testing.T) {
 
 func TestAppStop(t *testing.T) {
 	t.Run("Timeout", func(t *testing.T) {
-		block := func() error { select {} }
+		block := func(context.Context) error { select {} }
 		app := New(Invoke(func(l Lifecycle) {
 			l.Append(Hook{OnStop: block})
 		}))
@@ -210,7 +210,7 @@ func TestAppStop(t *testing.T) {
 
 	t.Run("StopError", func(t *testing.T) {
 		failStop := func(lc Lifecycle) struct{} {
-			lc.Append(Hook{OnStop: func() error {
+			lc.Append(Hook{OnStop: func(context.Context) error {
 				return errors.New("OnStop fail")
 			}})
 			return struct{}{}

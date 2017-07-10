@@ -225,7 +225,7 @@ func (app *App) provide(constructor interface{}) {
 	}
 }
 
-func (app *App) start() error {
+func (app *App) start(ctx context.Context) error {
 	if app.optionErr != nil {
 		// Some provides failed, short-circuit immediately.
 		return app.optionErr
@@ -240,10 +240,10 @@ func (app *App) start() error {
 	}
 
 	// Attempt to start cleanly.
-	if err := app.lifecycle.Start(); err != nil {
+	if err := app.lifecycle.Start(ctx); err != nil {
 		// Start failed, roll back.
 		app.logger.Printf("ERROR\t\tStart failed, rolling back: %v", err)
-		if stopErr := app.lifecycle.Stop(); stopErr != nil {
+		if stopErr := app.lifecycle.Stop(ctx); stopErr != nil {
 			app.logger.Printf("ERROR\t\tCouldn't rollback cleanly: %v", stopErr)
 			return multierr.Append(err, stopErr)
 		}
@@ -254,7 +254,7 @@ func (app *App) start() error {
 	return nil
 }
 
-func withTimeout(ctx context.Context, f func() error) error {
+func withTimeout(ctx context.Context, f func(context.Context) error) error {
 	stop := make(chan struct{})
 	defer close(stop)
 
@@ -262,7 +262,7 @@ func withTimeout(ctx context.Context, f func() error) error {
 	go func() {
 		select {
 		case <-stop:
-		case c <- f():
+		case c <- f(ctx):
 		}
 	}()
 

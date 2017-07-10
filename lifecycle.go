@@ -20,7 +20,11 @@
 
 package fx
 
-import "go.uber.org/fx/internal/lifecycle"
+import (
+	"context"
+
+	"go.uber.org/fx/internal/lifecycle"
+)
 
 // Lifecycle allows constructors to register callbacks that are executed on
 // application start and stop.
@@ -33,8 +37,8 @@ type Lifecycle interface {
 // failure short-circuited application start), its OnStop callback won't be
 // executed.
 type Hook struct {
-	OnStart func() error
-	OnStop  func() error
+	OnStart func(context.Context) error
+	OnStop  func(context.Context) error
 }
 
 type lifecycleWrapper struct{ *lifecycle.Lifecycle }
