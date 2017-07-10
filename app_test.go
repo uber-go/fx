@@ -25,6 +25,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
+	"syscall"
 	"testing"
 	"time"
 
@@ -223,6 +225,28 @@ func TestAppStop(t *testing.T) {
 		err := app.Stop(context.Background())
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "OnStop fail")
+	})
+}
+
+func TestAppRun(t *testing.T) {
+	run := func(app *App) {
+		go func() {
+			app.Run()
+		}()
+		// 100ms sleep makes sure that app is in RUNNING state
+		time.Sleep(100 * time.Millisecond)
+	}
+	t.Run("BlocksOnSignals", func(t *testing.T) {
+		app := New()
+
+		proc, err := os.FindProcess(os.Getpid())
+		assert.NoError(t, err, "Could not find process")
+
+		run(app)
+		assert.NoError(t, proc.Signal(os.Interrupt), "Could not send os.Interrupt")
+
+		run(app)
+		assert.NoError(t, proc.Signal(syscall.SIGTERM), "Could not send syscall.SIGTERM")
 	})
 }
 
