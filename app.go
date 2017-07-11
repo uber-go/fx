@@ -260,7 +260,7 @@ func (app *App) provide(constructor interface{}) {
 	app.logger.PrintProvide(constructor)
 
 	if _, ok := constructor.(Option); ok {
-		app.optionErr = fmt.Errorf("cannot Provide fx.Option: %v", constructor)
+		app.optionErr = fmt.Errorf("fx.Option should be passed to fx.New directly, not to fx.Provide: fx.Provide received %v", constructor)
 		return
 	}
 
@@ -280,7 +280,7 @@ func (app *App) start(ctx context.Context) error {
 		app.logger.Printf("INVOKE\t\t%s", fxreflect.FuncName(fn))
 
 		if _, ok := fn.(Option); ok {
-			return fmt.Errorf("cannot Invoke fx.Option: %v", fn)
+			return fmt.Errorf("fx.Option should be passed to fx.New directly, not to fx.Invoke: fx.Invoke received %v", fn)
 		}
 
 		if err := app.container.Invoke(fn); err != nil {

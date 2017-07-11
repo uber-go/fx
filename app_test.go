@@ -197,7 +197,7 @@ func TestAppStart(t *testing.T) {
 		assert.Contains(t, err.Error(), "can't invoke non-function")
 	})
 
-	t.Run("ProvideProvide", func(t *testing.T) {
+	t.Run("ProvidingAProvideShouldFail", func(t *testing.T) {
 		type type1 struct{}
 		type type2 struct{}
 		type type3 struct{}
@@ -214,11 +214,11 @@ func TestAppStart(t *testing.T) {
 
 		err := app.Start(context.Background())
 		require.Error(t, err, "expected start failure")
-		assert.Contains(t, err.Error(), "cannot Provide fx.Option:")
-		assert.Contains(t, err.Error(), "fx.Provide(go.uber.org/fx_test.TestAppStart")
+		assert.Contains(t, err.Error(), "fx.Option should be passed to fx.New directly, not to fx.Provide")
+		assert.Contains(t, err.Error(), "fx.Provide received fx.Provide(go.uber.org/fx_test.TestAppStart")
 	})
 
-	t.Run("InvokeInvoke", func(t *testing.T) {
+	t.Run("InvokingAnInvokeShouldFail", func(t *testing.T) {
 		type type1 struct{}
 
 		app := fxtest.New(t,
@@ -228,11 +228,11 @@ func TestAppStart(t *testing.T) {
 		)
 		err := app.Start(context.Background())
 		require.Error(t, err, "expected start failure")
-		assert.Contains(t, err.Error(), "cannot Invoke fx.Option:")
-		assert.Contains(t, err.Error(), "fx.Invoke(go.uber.org/fx_test.TestAppStart")
+		assert.Contains(t, err.Error(), "fx.Option should be passed to fx.New directly, not to fx.Invoke")
+		assert.Contains(t, err.Error(), "fx.Invoke received fx.Invoke(go.uber.org/fx_test.TestAppStart")
 	})
 
-	t.Run("ProvideOptions", func(t *testing.T) {
+	t.Run("ProvidingOptionsShouldFail", func(t *testing.T) {
 		type type1 struct{}
 		type type2 struct{}
 		type type3 struct{}
@@ -255,8 +255,8 @@ func TestAppStart(t *testing.T) {
 		)
 		err := app.Start(context.Background())
 		require.Error(t, err, "expected start failure")
-		assert.Contains(t, err.Error(), "cannot Provide fx.Option:")
-		assert.Contains(t, err.Error(), "fx.Options(fx.Provide(go.uber.org/fx_test.TestAppStart")
+		assert.Contains(t, err.Error(), "fx.Option should be passed to fx.New directly, not to fx.Provide")
+		assert.Contains(t, err.Error(), "fx.Provide received fx.Options(fx.Provide(go.uber.org/fx_test.TestAppStart")
 	})
 }
 
