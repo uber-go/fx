@@ -22,8 +22,10 @@ package fx
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
@@ -81,9 +83,21 @@ func (f optionFunc) apply(app *App) { f(app) }
 //
 // See the documentation for go.uber.org/dig for further details.
 func Provide(constructors ...interface{}) Option {
-	return optionFunc(func(app *App) {
-		app.provides = append(app.provides, constructors...)
-	})
+	return provideOption(constructors)
+}
+
+type provideOption []interface{}
+
+func (po provideOption) apply(app *App) {
+	app.provides = append(app.provides, po...)
+}
+
+func (po provideOption) String() string {
+	items := make([]string, len(po))
+	for i, c := range po {
+		items[i] = fxreflect.FuncName(c)
+	}
+	return fmt.Sprintf("fx.Provide(%v)", strings.Join(items, ", "))
 }
 
 // Invoke registers functions that are executed eagerly on application start.
@@ -97,18 +111,42 @@ func Provide(constructors ...interface{}) Option {
 //
 // See the documentation for go.uber.org/dig for further details.
 func Invoke(funcs ...interface{}) Option {
-	return optionFunc(func(app *App) {
-		app.invokes = append(app.invokes, funcs...)
-	})
+	return invokeOption(funcs)
+}
+
+type invokeOption []interface{}
+
+func (io invokeOption) apply(app *App) {
+	app.invokes = append(app.invokes, io...)
+}
+
+func (io invokeOption) String() string {
+	items := make([]string, len(io))
+	for i, f := range io {
+		items[i] = fxreflect.FuncName(f)
+	}
+	return fmt.Sprintf("fx.Invoke(%v)", strings.Join(items, ", "))
 }
 
 // Options composes a collection of Options into a single Option.
 func Options(opts ...Option) Option {
-	return optionFunc(func(app *App) {
-		for _, opt := range opts {
-			opt.apply(app)
-		}
-	})
+	return optionGroup(opts)
+}
+
+type optionGroup []Option
+
+func (og optionGroup) apply(app *App) {
+	for _, opt := range og {
+		opt.apply(app)
+	}
+}
+
+func (og optionGroup) String() string {
+	items := make([]string, len(og))
+	for i, opt := range og {
+		items[i] = fmt.Sprint(opt)
+	}
+	return fmt.Sprintf("fx.Options(%v)", strings.Join(items, ", "))
 }
 
 // Printer is the interface required by fx's logging backend. It's implemented
@@ -220,8 +258,14 @@ func (app *App) provide(constructor interface{}) {
 		return
 	}
 	app.logger.PrintProvide(constructor)
+
+	if _, ok := constructor.(Option); ok {
+		app.optionErr = fmt.Errorf("cannot Provide fx.Option: %v", constructor)
+		return
+	}
+
 	if err := app.container.Provide(constructor); err != nil {
-		app.optionErr = multierr.Append(app.optionErr, err)
+		app.optionErr = err
 	}
 }
 
@@ -234,6 +278,11 @@ func (app *App) start(ctx context.Context) error {
 	// Execute invokes.
 	for _, fn := range app.invokes {
 		app.logger.Printf("INVOKE\t\t%s", fxreflect.FuncName(fn))
+
+		if _, ok := fn.(Option); ok {
+			return fmt.Errorf("cannot Invoke fx.Option: %v", fn)
+		}
+
 		if err := app.container.Invoke(fn); err != nil {
 			return err
 		}

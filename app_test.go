@@ -196,6 +196,68 @@ func TestAppStart(t *testing.T) {
 		require.Error(t, err, "expected start failure")
 		assert.Contains(t, err.Error(), "can't invoke non-function")
 	})
+
+	t.Run("ProvideProvide", func(t *testing.T) {
+		type type1 struct{}
+		type type2 struct{}
+		type type3 struct{}
+
+		app := fxtest.New(t,
+			Provide(
+				func() type1 { return type1{} },
+				Provide(
+					func() type2 { return type2{} },
+					func() type3 { return type3{} },
+				),
+			),
+		)
+
+		err := app.Start(context.Background())
+		require.Error(t, err, "expected start failure")
+		assert.Contains(t, err.Error(), "cannot Provide fx.Option:")
+		assert.Contains(t, err.Error(), "fx.Provide(go.uber.org/fx_test.TestAppStart")
+	})
+
+	t.Run("InvokeInvoke", func(t *testing.T) {
+		type type1 struct{}
+
+		app := fxtest.New(t,
+			Provide(func() type1 { return type1{} }),
+			Invoke(Invoke(func(type1) {
+			})),
+		)
+		err := app.Start(context.Background())
+		require.Error(t, err, "expected start failure")
+		assert.Contains(t, err.Error(), "cannot Invoke fx.Option:")
+		assert.Contains(t, err.Error(), "fx.Invoke(go.uber.org/fx_test.TestAppStart")
+	})
+
+	t.Run("ProvideOptions", func(t *testing.T) {
+		type type1 struct{}
+		type type2 struct{}
+		type type3 struct{}
+
+		module := Options(
+			Provide(
+				func() type1 { return type1{} },
+				func() type2 { return type2{} },
+			),
+			Invoke(func(type1) {
+				require.FailNow(t, "module Invoke must not be called")
+			}),
+		)
+
+		app := fxtest.New(t,
+			Provide(
+				func() type3 { return type3{} },
+				module,
+			),
+		)
+		err := app.Start(context.Background())
+		require.Error(t, err, "expected start failure")
+		assert.Contains(t, err.Error(), "cannot Provide fx.Option:")
+		assert.Contains(t, err.Error(), "fx.Options(fx.Provide(go.uber.org/fx_test.TestAppStart")
+	})
 }
 
 func TestAppStop(t *testing.T) {
