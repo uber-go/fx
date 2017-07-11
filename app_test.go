@@ -189,6 +189,13 @@ func TestAppStart(t *testing.T) {
 		assert.Contains(t, err.Error(), "OnStart fail")
 		assert.Contains(t, err.Error(), "OnStop fail")
 	})
+
+	t.Run("InvokeNonFunction", func(t *testing.T) {
+		app := fxtest.New(t, Invoke(struct{}{}))
+		err := app.Start(context.Background())
+		require.Error(t, err, "expected start failure")
+		assert.Contains(t, err.Error(), "can't invoke non-function")
+	})
 }
 
 func TestAppStop(t *testing.T) {

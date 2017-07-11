@@ -67,7 +67,12 @@ func Caller() string {
 
 // FuncName returns a funcs formatted name
 func FuncName(fn interface{}) string {
-	fnName := runtime.FuncForPC(reflect.ValueOf(fn).Pointer()).Name()
+	fnV := reflect.ValueOf(fn)
+	if fnV.Kind() != reflect.Func {
+		return "n/a"
+	}
+
+	fnName := runtime.FuncForPC(fnV.Pointer()).Name()
 	return fmt.Sprintf("%s()", fnName)
 }
 
