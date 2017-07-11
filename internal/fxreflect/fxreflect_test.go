@@ -71,4 +71,5 @@ func someFunc() {}
 
 func TestFuncName(t *testing.T) {
 	assert.Equal(t, "go.uber.org/fx/internal/fxreflect.someFunc()", FuncName(someFunc))
+	assert.Equal(t, "n/a", FuncName(struct{}{}))
 }
