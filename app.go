@@ -204,20 +204,20 @@ func New(opts ...Option) *App {
 		return app
 	}
 
-	if err := app.runInvokes(); err != nil {
+	if err := app.executeInvokes(); err != nil {
 		app.err = err
 	}
 
 	return app
 }
 
-// runInvokes will execute invokes in order.
+// Execute invokes in order.
 //
 // It might be worthwhile to consider adding context.Context to this function
 // so we can handle the infinite-invokes.
 //
 // Returns the first error encountered. Maybe shoul multiErr them together.
-func (app *App) runInvokes() error {
+func (app *App) executeInvokes() error {
 	for _, fn := range app.invokes {
 		fname := fxreflect.FuncName(fn)
 		app.logger.Printf("INVOKE\t\t%s", fname)
