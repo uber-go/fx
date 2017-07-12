@@ -252,7 +252,11 @@ func (app *App) Run() {
 	}
 }
 
-// Start executes all the onStart hooks of the fx.Lifecycle.
+// Start executes all the OnStart hooks of the resolved object graph
+// in the intantiation order.
+//
+// This typically starts all the long-running goroutines, like network
+// servers or message queue consumers.
 //
 // First, Start checks whether any errors were encountered while applying
 // Options. If so, it returns immediately.
