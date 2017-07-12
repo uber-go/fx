@@ -1,26 +1,19 @@
-# Fx Service Framework
+# :unicorn: Fx [![GoDoc][doc-img]][doc] [![Build Status][ci-img]][ci] [![Coverage Status][cov-img]][cov] [![Report Card][report-card-img]][report-card]
 
-[![GoDoc][doc-img]][doc]
-[![Coverage Status][cov-img]][cov]
-[![Build Status][ci-img]][ci]
-[![Report Card][report-card-img]][report-card]
+An application framework for Go that:
 
-Fx is a flexible, modularized framework for building robust and performant
-services. It takes care of the boilerplate code and lets you focus on your
-application logic.
+* Makes dependency injection easy.
+* Eliminates the need for global state and `func init()`.
 
 ## Status
 
-Beta. Expect minor API changes and bug fixes. See [our changelog](CHANGELOG.md)
-for more.
+Almost stable: `v1.0.0-rc1`. Some breaking changes might occur before `v1.0.0`. See [CHANGELOG.md](CHANGELOG.md) for more info.
 
-## Compatibility
+## Install
 
-Fx is compatible with Go 1.7 and above.
-
-## License
-
-[MIT](LICENSE.txt)
+```
+go get -u go.uber.org/fx
+```
 
 [doc]: https://godoc.org/go.uber.org/fx
 [doc-img]: https://godoc.org/go.uber.org/fx?status.svg

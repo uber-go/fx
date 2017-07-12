@@ -18,7 +18,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package fx
+package fx_test
 
 import (
 	"bytes"
@@ -28,26 +28,42 @@ import (
 	"testing"
 	"time"
 
+	. "go.uber.org/fx"
+	"go.uber.org/fx/fxtest"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-func TestNewApp(t *testing.T) {
-	t.Run("InitializesFields", func(t *testing.T) {
-		app := New()
-		assert.NotNil(t, app.container)
-		assert.NotNil(t, app.lifecycle)
-		assert.NotNil(t, app.logger)
-	})
+type printerSpy struct {
+	*bytes.Buffer
+}
 
+func (ps printerSpy) Printf(format string, args ...interface{}) {
+	fmt.Fprintf(ps.Buffer, format, args...)
+	ps.Buffer.WriteRune('\n')
+}
+
+func TestNewApp(t *testing.T) {
 	t.Run("ProvidesLifecycle", func(t *testing.T) {
 		found := false
-		app := New(Invoke(func(lc Lifecycle) {
+		app := fxtest.New(t, Invoke(func(lc Lifecycle) {
 			assert.NotNil(t, lc)
 			found = true
 		}))
-		require.NoError(t, app.Start(context.Background()))
+		defer app.MustStart().MustStop()
 		assert.True(t, found)
+	})
+
+	t.Run("OptionsHappensBeforeProvides", func(t *testing.T) {
+		// Should be grouping all provides and pushing them into the container
+		// after applying other options. This prevents the app configuration
+		// (e.g., logging) from changing halfway through our provides.
+
+		spy := &printerSpy{&bytes.Buffer{}}
+		app := fxtest.New(t, Provide(func() struct{} { return struct{}{} }), Logger(spy))
+		defer app.MustStart().MustStop()
+		assert.Contains(t, spy.String(), "PROVIDE\tstruct {}")
 	})
 }
 
@@ -61,8 +77,8 @@ func TestOptions(t *testing.T) {
 		use := func(struct{}) {
 			n++
 		}
-		opts := Options(Provide(construct), Invoke(use))
-		require.NoError(t, New(opts).Start(context.Background()))
+		app := fxtest.New(t, Options(Provide(construct), Invoke(use)))
+		defer app.MustStart().MustStop()
 		assert.Equal(t, 2, n)
 	})
 
@@ -91,11 +107,11 @@ func TestOptions(t *testing.T) {
 			initOrder++
 			assert.Equal(t, 4, initOrder)
 		}
-		app := New(
+		app := fxtest.New(t,
 			Provide(new1, new2, new3),
 			Invoke(biz),
 		)
-		app.Start(context.Background())
+		defer app.MustStart().MustStop()
 		assert.Equal(t, 4, initOrder)
 	})
 
@@ -109,17 +125,17 @@ func TestOptions(t *testing.T) {
 			count++
 			return struct{}{}
 		}
-		app := New(
+		app := fxtest.New(t,
 			Provide(newBuffer, newEmpty),
 			Invoke(func(struct{}) { count++ }),
 		)
-		app.Start(context.Background())
+		defer app.MustStart().MustStop()
 		assert.Equal(t, 2, count)
 	})
 
 	t.Run("Error", func(t *testing.T) {
 		spy := printerSpy{&bytes.Buffer{}}
-		New(
+		fxtest.New(t,
 			Provide(&bytes.Buffer{}), // error, not a constructor
 			Logger(spy),
 		)
@@ -131,7 +147,7 @@ func TestAppStart(t *testing.T) {
 	t.Skip("Timeout", func(t *testing.T) {
 		// TODO(glib): fix me
 		block := func() { select {} }
-		app := New(Invoke(block))
+		app := fxtest.New(t, Invoke(block))
 
 		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond)
 		defer cancel()
@@ -143,12 +159,12 @@ func TestAppStart(t *testing.T) {
 
 	t.Run("StartError", func(t *testing.T) {
 		failStart := func(lc Lifecycle) struct{} {
-			lc.Append(Hook{OnStart: func() error {
+			lc.Append(Hook{OnStart: func(context.Context) error {
 				return errors.New("OnStart fail")
 			}})
 			return struct{}{}
 		}
-		app := New(
+		app := fxtest.New(t,
 			Provide(failStart),
 			Invoke(func(struct{}) {}),
 		)
@@ -160,12 +176,12 @@ func TestAppStart(t *testing.T) {
 	t.Run("StartAndStopErrors", func(t *testing.T) {
 		fail := func(lc Lifecycle) struct{} {
 			lc.Append(Hook{
-				OnStart: func() error { return errors.New("OnStart fail") },
-				OnStop:  func() error { return errors.New("OnStop fail") },
+				OnStart: func(context.Context) error { return errors.New("OnStart fail") },
+				OnStop:  func(context.Context) error { return errors.New("OnStop fail") },
 			})
 			return struct{}{}
 		}
-		app := New(
+		app := fxtest.New(t,
 			Provide(fail),
 			Invoke(func(struct{}) {}),
 		)
@@ -174,15 +190,84 @@ func TestAppStart(t *testing.T) {
 		assert.Contains(t, err.Error(), "OnStart fail")
 		assert.Contains(t, err.Error(), "OnStop fail")
 	})
+
+	t.Run("InvokeNonFunction", func(t *testing.T) {
+		app := fxtest.New(t, Invoke(struct{}{}))
+		err := app.Start(context.Background())
+		require.Error(t, err, "expected start failure")
+		assert.Contains(t, err.Error(), "can't invoke non-function")
+	})
+
+	t.Run("ProvidingAProvideShouldFail", func(t *testing.T) {
+		type type1 struct{}
+		type type2 struct{}
+		type type3 struct{}
+
+		app := fxtest.New(t,
+			Provide(
+				func() type1 { return type1{} },
+				Provide(
+					func() type2 { return type2{} },
+					func() type3 { return type3{} },
+				),
+			),
+		)
+
+		err := app.Start(context.Background())
+		require.Error(t, err, "expected start failure")
+		assert.Contains(t, err.Error(), "fx.Option should be passed to fx.New directly, not to fx.Provide")
+		assert.Contains(t, err.Error(), "fx.Provide received fx.Provide(go.uber.org/fx_test.TestAppStart")
+	})
+
+	t.Run("InvokingAnInvokeShouldFail", func(t *testing.T) {
+		type type1 struct{}
+
+		app := fxtest.New(t,
+			Provide(func() type1 { return type1{} }),
+			Invoke(Invoke(func(type1) {
+			})),
+		)
+		err := app.Start(context.Background())
+		require.Error(t, err, "expected start failure")
+		assert.Contains(t, err.Error(), "fx.Option should be passed to fx.New directly, not to fx.Invoke")
+		assert.Contains(t, err.Error(), "fx.Invoke received fx.Invoke(go.uber.org/fx_test.TestAppStart")
+	})
+
+	t.Run("ProvidingOptionsShouldFail", func(t *testing.T) {
+		type type1 struct{}
+		type type2 struct{}
+		type type3 struct{}
+
+		module := Options(
+			Provide(
+				func() type1 { return type1{} },
+				func() type2 { return type2{} },
+			),
+			Invoke(func(type1) {
+				require.FailNow(t, "module Invoke must not be called")
+			}),
+		)
+
+		app := fxtest.New(t,
+			Provide(
+				func() type3 { return type3{} },
+				module,
+			),
+		)
+		err := app.Start(context.Background())
+		require.Error(t, err, "expected start failure")
+		assert.Contains(t, err.Error(), "fx.Option should be passed to fx.New directly, not to fx.Provide")
+		assert.Contains(t, err.Error(), "fx.Provide received fx.Options(fx.Provide(go.uber.org/fx_test.TestAppStart")
+	})
 }
 
 func TestAppStop(t *testing.T) {
 	t.Run("Timeout", func(t *testing.T) {
-		block := func() error { select {} }
-		app := New(Invoke(func(l Lifecycle) {
+		block := func(context.Context) error { select {} }
+		app := fxtest.New(t, Invoke(func(l Lifecycle) {
 			l.Append(Hook{OnStop: block})
 		}))
-		require.NoError(t, app.Start(context.Background()))
+		app.MustStart()
 
 		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond)
 		defer cancel()
@@ -194,35 +279,25 @@ func TestAppStop(t *testing.T) {
 
 	t.Run("StopError", func(t *testing.T) {
 		failStop := func(lc Lifecycle) struct{} {
-			lc.Append(Hook{OnStop: func() error {
+			lc.Append(Hook{OnStop: func(context.Context) error {
 				return errors.New("OnStop fail")
 			}})
 			return struct{}{}
 		}
-		app := New(
+		app := fxtest.New(t,
 			Provide(failStop),
 			Invoke(func(struct{}) {}),
 		)
-		assert.NoError(t, app.Start(context.Background()))
+		app.MustStart()
 		err := app.Stop(context.Background())
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "OnStop fail")
 	})
 }
 
-type printerSpy struct {
-	*bytes.Buffer
-}
-
-func (ps printerSpy) Printf(format string, args ...interface{}) {
-	fmt.Fprintf(ps.Buffer, format, args...)
-	ps.Buffer.WriteRune('\n')
-}
-
 func TestReplaceLogger(t *testing.T) {
 	spy := printerSpy{&bytes.Buffer{}}
-	app := New(Logger(spy))
-	require.NoError(t, app.Start(context.Background()))
-	require.NoError(t, app.Stop(context.Background()))
+	app := fxtest.New(t, Logger(spy))
+	app.MustStart().MustStop()
 	assert.Contains(t, spy.String(), "RUNNING")
 }

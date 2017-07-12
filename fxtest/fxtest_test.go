@@ -22,6 +22,7 @@ package fxtest
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"fmt"
 	"testing"
@@ -88,7 +89,7 @@ func TestApp(t *testing.T) {
 		spy.Reset()
 
 		construct := func(lc fx.Lifecycle) struct{} {
-			lc.Append(fx.Hook{OnStop: func() error { return errors.New("fail") }})
+			lc.Append(fx.Hook{OnStop: func(context.Context) error { return errors.New("fail") }})
 			return struct{}{}
 		}
 		New(
@@ -111,8 +112,8 @@ func TestLifecycle(t *testing.T) {
 		n := 0
 		lc := NewLifecycle(spy)
 		lc.Append(fx.Hook{
-			OnStart: func() error { n++; return nil },
-			OnStop:  func() error { n++; return nil },
+			OnStart: func(context.Context) error { n++; return nil },
+			OnStop:  func(context.Context) error { n++; return nil },
 		})
 		lc.MustStart().MustStop()
 
@@ -123,7 +124,7 @@ func TestLifecycle(t *testing.T) {
 	t.Run("StartFailure", func(t *testing.T) {
 		spy.Reset()
 		lc := NewLifecycle(spy)
-		lc.Append(fx.Hook{OnStart: func() error { return errors.New("fail") }})
+		lc.Append(fx.Hook{OnStart: func(context.Context) error { return errors.New("fail") }})
 
 		lc.MustStart()
 		assert.Equal(t, 1, spy.failures, "Expected lifecycle start to fail.")
@@ -135,7 +136,7 @@ func TestLifecycle(t *testing.T) {
 	t.Run("StopFailure", func(t *testing.T) {
 		spy.Reset()
 		lc := NewLifecycle(spy)
-		lc.Append(fx.Hook{OnStop: func() error { return errors.New("fail") }})
+		lc.Append(fx.Hook{OnStop: func(context.Context) error { return errors.New("fail") }})
 
 		lc.MustStart()
 		assert.Equal(t, 0, spy.failures, "Expected lifecycle start to succeed.")

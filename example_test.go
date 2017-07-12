@@ -21,6 +21,7 @@
 package fx_test
 
 import (
+	"context"
 	"log"
 	"net/http"
 	"os"
@@ -52,14 +53,14 @@ func NewMux(lc fx.Lifecycle, logger *log.Logger) *http.ServeMux {
 	// If NewMux is called, we know that someone is using the mux. In that case,
 	// start up and shut down an HTTP server with the application.
 	lc.Append(fx.Hook{
-		OnStart: func() error {
+		OnStart: func(context.Context) error {
 			logger.Print("Starting HTTP server.")
 			go server.ListenAndServe()
 			return nil
 		},
-		OnStop: func() error {
+		OnStop: func(ctx context.Context) error {
 			logger.Print("Stopping HTTP server.")
-			return server.Close()
+			return server.Shutdown(ctx)
 		},
 	})
 

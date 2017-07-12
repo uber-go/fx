@@ -21,6 +21,7 @@
 package lifecycle
 
 import (
+	"context"
 	"errors"
 	"testing"
 
@@ -36,21 +37,21 @@ func TestLifecycleStart(t *testing.T) {
 		count := 0
 
 		l.Append(Hook{
-			OnStart: func() error {
+			OnStart: func(context.Context) error {
 				count++
 				assert.Equal(t, 1, count, "expected this starter to be executed first")
 				return nil
 			},
 		})
 		l.Append(Hook{
-			OnStart: func() error {
+			OnStart: func(context.Context) error {
 				count++
 				assert.Equal(t, 2, count, "expected this starter to be executed second")
 				return nil
 			},
 		})
 
-		assert.NoError(t, l.Start())
+		assert.NoError(t, l.Start(context.Background()))
 		assert.Equal(t, 2, count)
 	})
 	t.Run("ErrHaltsChainAndRollsBack", func(t *testing.T) {
@@ -61,40 +62,40 @@ func TestLifecycleStart(t *testing.T) {
 
 		// this event's starter succeeded, so no matter what the stopper should run
 		l.Append(Hook{
-			OnStart: func() error {
+			OnStart: func(context.Context) error {
 				starterCount++
 				return nil
 			},
-			OnStop: func() error {
+			OnStop: func(context.Context) error {
 				stopperCount++
 				return nil
 			},
 		})
 		// this event's starter fails, so the stopper shouldnt run
 		l.Append(Hook{
-			OnStart: func() error {
+			OnStart: func(context.Context) error {
 				starterCount++
 				return err
 			},
-			OnStop: func() error {
+			OnStop: func(context.Context) error {
 				t.Error("this stopper shouldnt run, since the starter in this event failed")
 				return nil
 			},
 		})
 		// this event is last in the chain, so it should never run since the previous failed
 		l.Append(Hook{
-			OnStart: func() error {
+			OnStart: func(context.Context) error {
 				t.Error("this starter should never run, since the previous event failed")
 				return nil
 			},
-			OnStop: func() error {
+			OnStop: func(context.Context) error {
 				t.Error("this stopper should never run, since the previous event failed")
 				return nil
 			},
 		})
 
-		assert.Error(t, err, l.Start())
-		assert.NoError(t, l.Stop())
+		assert.Error(t, err, l.Start(context.Background()))
+		assert.NoError(t, l.Stop(context.Background()))
 
 		assert.Equal(t, 2, starterCount, "expected the first and second starter to execute")
 		assert.Equal(t, 1, stopperCount, "expected the first stopper to execute since the second starter failed")
@@ -102,53 +103,55 @@ func TestLifecycleStart(t *testing.T) {
 }
 
 func TestLifecycleStop(t *testing.T) {
-	t.Run("DoesNothingOn0Hooks", func(t *testing.T) {
+	t.Run("DoesNothingWithoutHooks", func(t *testing.T) {
 		l := &Lifecycle{logger: fxlog.New()}
-		assert.Nil(t, l.Stop(), "no lifecycle hooks should have resulted in stop returning nil")
+		assert.Nil(t, l.Stop(context.Background()), "no lifecycle hooks should have resulted in stop returning nil")
 	})
+
 	t.Run("ExecutesInReverseOrder", func(t *testing.T) {
 		l := &Lifecycle{logger: fxlog.New()}
 		count := 2
 
 		l.Append(Hook{
-			OnStop: func() error {
+			OnStop: func(context.Context) error {
 				count--
 				assert.Equal(t, 0, count, "this stopper was added first, so should execute last")
 				return nil
 			},
 		})
 		l.Append(Hook{
-			OnStop: func() error {
+			OnStop: func(context.Context) error {
 				count--
 				assert.Equal(t, 1, count, "this stopper was added last, so should execute first")
 				return nil
 			},
 		})
 
-		assert.NoError(t, l.Start())
-		assert.NoError(t, l.Stop())
+		assert.NoError(t, l.Start(context.Background()))
+		assert.NoError(t, l.Stop(context.Background()))
 		assert.Equal(t, 0, count)
 	})
+
 	t.Run("ErrDoesntHaltChain", func(t *testing.T) {
 		l := New(nil)
 		count := 0
 
 		l.Append(Hook{
-			OnStop: func() error {
+			OnStop: func(context.Context) error {
 				count++
 				return nil
 			},
 		})
 		err := errors.New("some stop error")
 		l.Append(Hook{
-			OnStop: func() error {
+			OnStop: func(context.Context) error {
 				count++
 				return err
 			},
 		})
 
-		assert.NoError(t, l.Start())
-		assert.Equal(t, err, l.Stop())
+		assert.NoError(t, l.Start(context.Background()))
+		assert.Equal(t, err, l.Stop(context.Background()))
 		assert.Equal(t, 2, count)
 	})
 	t.Run("GathersAllErrs", func(t *testing.T) {
@@ -158,25 +161,25 @@ func TestLifecycleStop(t *testing.T) {
 		err2 := errors.New("some other stop error")
 
 		l.Append(Hook{
-			OnStop: func() error {
+			OnStop: func(context.Context) error {
 				return err2
 			},
 		})
 		l.Append(Hook{
-			OnStop: func() error {
+			OnStop: func(context.Context) error {
 				return err
 			},
 		})
 
-		assert.NoError(t, l.Start())
-		assert.Equal(t, multierr.Combine(err, err2), l.Stop())
+		assert.NoError(t, l.Start(context.Background()))
+		assert.Equal(t, multierr.Combine(err, err2), l.Stop(context.Background()))
 	})
 	t.Run("AllowEmptyHooks", func(t *testing.T) {
 		l := New(nil)
 		l.Append(Hook{})
 		l.Append(Hook{})
 
-		assert.NoError(t, l.Start())
-		assert.NoError(t, l.Stop())
+		assert.NoError(t, l.Start(context.Background()))
+		assert.NoError(t, l.Stop(context.Background()))
 	})
 }

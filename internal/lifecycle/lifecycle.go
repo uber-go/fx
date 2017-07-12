@@ -21,6 +21,8 @@
 package lifecycle
 
 import (
+	"context"
+
 	"go.uber.org/fx/internal/fxlog"
 	"go.uber.org/fx/internal/fxreflect"
 	"go.uber.org/multierr"
@@ -29,8 +31,8 @@ import (
 // A Hook is a pair of start and stop callbacks, either of which can be nil,
 // plus a string identifying the supplier of the hook.
 type Hook struct {
-	OnStart func() error
-	OnStop  func() error
+	OnStart func(context.Context) error
+	OnStop  func(context.Context) error
 	caller  string
 }
 
@@ -57,11 +59,11 @@ func (l *Lifecycle) Append(hook Hook) {
 
 // Start runs all OnStart hooks, returning immediately if it encounters an
 // error.
-func (l *Lifecycle) Start() error {
+func (l *Lifecycle) Start(ctx context.Context) error {
 	for i, hook := range l.hooks {
 		if hook.OnStart != nil {
 			l.logger.Printf("START\t\t%s()", hook.caller)
-			if err := hook.OnStart(); err != nil {
+			if err := hook.OnStart(ctx); err != nil {
 				return err
 			}
 		}
@@ -73,7 +75,7 @@ func (l *Lifecycle) Start() error {
 
 // Stop runs any OnStop hooks whose OnStart counterpart succeeded. OnStop
 // hooks run in reverse order.
-func (l *Lifecycle) Stop() error {
+func (l *Lifecycle) Stop(ctx context.Context) error {
 	if len(l.hooks) == 0 {
 		return nil
 	}
@@ -84,7 +86,7 @@ func (l *Lifecycle) Stop() error {
 			continue
 		}
 		l.logger.Printf("STOP\t\t%s()", l.hooks[i].caller)
-		if err := l.hooks[i].OnStop(); err != nil {
+		if err := l.hooks[i].OnStop(ctx); err != nil {
 			// For best-effort cleanup, keep going after errors.
 			errs = append(errs, err)
 		}

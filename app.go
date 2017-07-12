@@ -22,8 +22,10 @@ package fx
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
@@ -81,11 +83,21 @@ func (f optionFunc) apply(app *App) { f(app) }
 //
 // See the documentation for go.uber.org/dig for further details.
 func Provide(constructors ...interface{}) Option {
-	return optionFunc(func(app *App) {
-		for _, c := range constructors {
-			app.provide(c)
-		}
-	})
+	return provideOption(constructors)
+}
+
+type provideOption []interface{}
+
+func (po provideOption) apply(app *App) {
+	app.provides = append(app.provides, po...)
+}
+
+func (po provideOption) String() string {
+	items := make([]string, len(po))
+	for i, c := range po {
+		items[i] = fxreflect.FuncName(c)
+	}
+	return fmt.Sprintf("fx.Provide(%s)", strings.Join(items, ", "))
 }
 
 // Invoke registers functions that are executed eagerly on application start.
@@ -99,18 +111,42 @@ func Provide(constructors ...interface{}) Option {
 //
 // See the documentation for go.uber.org/dig for further details.
 func Invoke(funcs ...interface{}) Option {
-	return optionFunc(func(app *App) {
-		app.invokes = append(app.invokes, funcs...)
-	})
+	return invokeOption(funcs)
+}
+
+type invokeOption []interface{}
+
+func (io invokeOption) apply(app *App) {
+	app.invokes = append(app.invokes, io...)
+}
+
+func (io invokeOption) String() string {
+	items := make([]string, len(io))
+	for i, f := range io {
+		items[i] = fxreflect.FuncName(f)
+	}
+	return fmt.Sprintf("fx.Invoke(%s)", strings.Join(items, ", "))
 }
 
 // Options composes a collection of Options into a single Option.
 func Options(opts ...Option) Option {
-	return optionFunc(func(app *App) {
-		for _, opt := range opts {
-			opt.apply(app)
-		}
-	})
+	return optionGroup(opts)
+}
+
+type optionGroup []Option
+
+func (og optionGroup) apply(app *App) {
+	for _, opt := range og {
+		opt.apply(app)
+	}
+}
+
+func (og optionGroup) String() string {
+	items := make([]string, len(og))
+	for i, opt := range og {
+		items[i] = fmt.Sprint(opt)
+	}
+	return fmt.Sprintf("fx.Options(%s)", strings.Join(items, ", "))
 }
 
 // Printer is the interface required by fx's logging backend. It's implemented
@@ -132,6 +168,7 @@ type App struct {
 	optionErr error
 	container *dig.Container
 	lifecycle *lifecycleWrapper
+	provides  []interface{}
 	invokes   []interface{}
 	logger    *fxlog.Logger
 }
@@ -158,6 +195,9 @@ func New(opts ...Option) *App {
 		opt.apply(app)
 	}
 
+	for _, p := range app.provides {
+		app.provide(p)
+	}
 	app.provide(func() Lifecycle { return app.lifecycle })
 
 	if app.optionErr != nil {
@@ -237,17 +277,28 @@ func (app *App) provide(constructor interface{}) {
 		return
 	}
 	app.logger.PrintProvide(constructor)
+
+	if _, ok := constructor.(Option); ok {
+		app.optionErr = fmt.Errorf("fx.Option should be passed to fx.New directly, not to fx.Provide: fx.Provide received %v", constructor)
+		return
+	}
+
 	if err := app.container.Provide(constructor); err != nil {
-		app.optionErr = multierr.Append(app.optionErr, err)
+		app.optionErr = err
 	}
 }
 
-func (app *App) start() error {
+func (app *App) start(ctx context.Context) error {
+	if app.optionErr != nil {
+		// Some provides failed, short-circuit immediately.
+		return app.optionErr
+	}
+
 	// Attempt to start cleanly.
-	if err := app.lifecycle.Start(); err != nil {
+	if err := app.lifecycle.Start(ctx); err != nil {
 		// Start failed, roll back.
 		app.logger.Printf("ERROR\t\tStart failed, rolling back: %v", err)
-		if stopErr := app.lifecycle.Stop(); stopErr != nil {
+		if stopErr := app.lifecycle.Stop(ctx); stopErr != nil {
 			app.logger.Printf("ERROR\t\tCouldn't rollback cleanly: %v", stopErr)
 			return multierr.Append(err, stopErr)
 		}
@@ -258,7 +309,7 @@ func (app *App) start() error {
 	return nil
 }
 
-func withTimeout(ctx context.Context, f func() error) error {
+func withTimeout(ctx context.Context, f func(context.Context) error) error {
 	stop := make(chan struct{})
 	defer close(stop)
 
@@ -266,7 +317,7 @@ func withTimeout(ctx context.Context, f func() error) error {
 	go func() {
 		select {
 		case <-stop:
-		case c <- f():
+		case c <- f(ctx):
 		}
 	}()
 

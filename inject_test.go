@@ -18,7 +18,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package fx
+package fx_test
 
 import (
 	"bytes"
@@ -27,6 +27,9 @@ import (
 	"log"
 	"os"
 	"testing"
+
+	. "go.uber.org/fx"
+	"go.uber.org/fx/fxtest"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -48,13 +51,13 @@ func TestInject(t *testing.T) {
 
 		for _, tt := range tests {
 			t.Run(fmt.Sprintf("%T", tt), func(t *testing.T) {
-				spy := printerSpy{&bytes.Buffer{}}
-				New(
+				app := fxtest.New(t,
 					Provide(func() *bytes.Buffer { return &bytes.Buffer{} }),
 					Inject(&tt),
-					Logger(spy),
 				)
-				require.Contains(t, spy.String(), "Inject expected a pointer to a struct")
+				err := app.Start(context.Background())
+				require.Error(t, err)
+				assert.Contains(t, err.Error(), "Inject expected a pointer to a struct")
 			})
 		}
 	})
@@ -64,12 +67,11 @@ func TestInject(t *testing.T) {
 		new2 := func() *type2 { panic("new2 must not be called") }
 
 		var out struct{}
-		app := New(
+		app := fxtest.New(t,
 			Provide(new1, new2),
 			Inject(&out),
 		)
-
-		require.NoError(t, app.Start(context.Background()), "start failed")
+		app.MustStart().MustStop()
 	})
 
 	t.Run("StructIsInjected", func(t *testing.T) {
@@ -90,12 +92,12 @@ func TestInject(t *testing.T) {
 			T2 *type2
 		}
 
-		app := New(
+		app := fxtest.New(t,
 			Provide(new1, new2),
 			Inject(&out),
 		)
 
-		require.NoError(t, app.Start(context.Background()), "failed to start")
+		defer app.MustStart().MustStop()
 		assert.NotNil(t, out.T1, "T1 must not be nil")
 		assert.NotNil(t, out.T2, "T2 must not be nil")
 		assert.True(t, gave1 == out.T1, "T1 must match")
@@ -113,12 +115,12 @@ func TestInject(t *testing.T) {
 
 		var out struct{ *T1 }
 
-		app := New(
+		app := fxtest.New(t,
 			Provide(new1),
 			Inject(&out),
 		)
 
-		require.NoError(t, app.Start(context.Background()), "failed to start")
+		defer app.MustStart().MustStop()
 		assert.NotNil(t, out.T1, "T1 must not be nil")
 		assert.True(t, gave1 == out.T1, "T1 must match")
 	})
@@ -132,12 +134,12 @@ func TestInject(t *testing.T) {
 
 		var out struct{ *type1 }
 
-		app := New(
+		app := fxtest.New(t,
 			Provide(new1),
 			Inject(&out),
 		)
 
-		require.NoError(t, app.Start(context.Background()), "failed to start")
+		defer app.MustStart().MustStop()
 		assert.NotNil(t, out.type1, "type1 must not be nil")
 		assert.True(t, gave1 == out.type1, "type1 must match")
 	})
@@ -155,12 +157,12 @@ func TestInject(t *testing.T) {
 			Y *type1
 		}
 
-		app := New(
+		app := fxtest.New(t,
 			Provide(new1),
 			Inject(&out),
 		)
 
-		require.NoError(t, app.Start(context.Background()), "failed to start")
+		defer app.MustStart().MustStop()
 		assert.NotNil(t, out.X, "X must not be nil")
 		assert.NotNil(t, out.Y, "Y must not be nil")
 		assert.True(t, gave == out.X, "X must match")
@@ -188,17 +190,44 @@ func TestInject(t *testing.T) {
 			T3 *type3
 		}
 
-		app := New(
+		app := fxtest.New(t,
 			Provide(new1, new2, new3),
 			Inject(&out),
 		)
 
-		require.NoError(t, app.Start(context.Background()), "failed to start")
+		defer app.MustStart().MustStop()
 		assert.NotNil(t, out.T1, "T1 must not be nil")
 		assert.Nil(t, out.t2, "t2 must be nil")
 		assert.NotNil(t, out.T3, "T3 must not be nil")
 		assert.True(t, gave1 == out.T1, "T1 must match")
 		assert.True(t, gave3 == out.T3, "T3 must match")
+	})
+
+	t.Run("OverwritesExisting", func(t *testing.T) {
+		type type1 struct{ value string }
+
+		var gave1 *type1
+		new1 := func() *type1 {
+			gave1 = &type1{value: "foo"}
+			return gave1
+		}
+
+		var out struct {
+			T1 *type1
+		}
+
+		app := fxtest.New(t,
+			Provide(new1),
+			Inject(&out),
+		)
+
+		old := &type1{value: "bar"}
+		out.T1 = old
+
+		defer app.MustStart().MustStop()
+		assert.NotNil(t, out.T1, "T1 must not be nil")
+		assert.False(t, old == out.T1, "old value must have been overwritten")
+		assert.True(t, gave1 == out.T1, "T1 must match")
 	})
 
 	t.Run("DoesNotZeroUnexported", func(t *testing.T) {
@@ -217,12 +246,12 @@ func TestInject(t *testing.T) {
 		t2 := &type2{}
 		out.t2 = t2
 
-		app := New(
+		app := fxtest.New(t,
 			Provide(new1, new2),
 			Inject(&out),
 		)
 
-		require.NoError(t, app.Start(context.Background()), "failed to start")
+		defer app.MustStart().MustStop()
 		assert.NotNil(t, out.T1, "T1 must not be nil")
 		assert.NotNil(t, out.t2, "t2 must not be nil")
 		assert.True(t, gave1 == out.T1, "T1 must match")
@@ -245,12 +274,12 @@ func TestInject(t *testing.T) {
 			}
 		}
 
-		app := New(
+		app := fxtest.New(t,
 			Provide(new1),
 			Inject(&out),
 		)
 
-		require.NoError(t, app.Start(context.Background()), "failed to start")
+		defer app.MustStart().MustStop()
 		assert.NotNil(t, out.Result.T1, "T1 must not be nil")
 		assert.Nil(t, out.Result.T2, "T2 must be nil")
 		assert.True(t, gave1 == out.Result.T1, "T1 must match")
