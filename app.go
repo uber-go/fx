@@ -265,10 +265,6 @@ func (app *App) Run() {
 // its dependencies' start hooks complete. If any of the start hooks return an
 // error, start short-circuits.
 func (app *App) Start(ctx context.Context) error {
-	if app.err != nil {
-		return app.err
-	}
-
 	return withTimeout(ctx, app.start)
 }
 
