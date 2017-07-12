@@ -165,7 +165,7 @@ func Logger(p Printer) Option {
 
 // An App is a modular application built around dependency injection.
 type App struct {
-	optionErr error
+	err       error
 	container *dig.Container
 	lifecycle *lifecycleWrapper
 	provides  []interface{}
@@ -200,9 +200,9 @@ func New(opts ...Option) *App {
 	}
 	app.provide(func() Lifecycle { return app.lifecycle })
 
-	if app.optionErr != nil {
+	if app.err != nil {
 		// Some provides failed, short-circuit immediately.
-		app.logger.Printf("Error after options were applied: %v", app.optionErr)
+		app.logger.Printf("Error after options were applied: %v", app.err)
 		return nil
 	}
 
@@ -273,25 +273,25 @@ func (app *App) Done() <-chan os.Signal {
 }
 
 func (app *App) provide(constructor interface{}) {
-	if app.optionErr != nil {
+	if app.err != nil {
 		return
 	}
 	app.logger.PrintProvide(constructor)
 
 	if _, ok := constructor.(Option); ok {
-		app.optionErr = fmt.Errorf("fx.Option should be passed to fx.New directly, not to fx.Provide: fx.Provide received %v", constructor)
+		app.err = fmt.Errorf("fx.Option should be passed to fx.New directly, not to fx.Provide: fx.Provide received %v", constructor)
 		return
 	}
 
 	if err := app.container.Provide(constructor); err != nil {
-		app.optionErr = err
+		app.err = err
 	}
 }
 
 func (app *App) start(ctx context.Context) error {
-	if app.optionErr != nil {
+	if app.err != nil {
 		// Some provides failed, short-circuit immediately.
-		return app.optionErr
+		return app.err
 	}
 
 	// Attempt to start cleanly.
