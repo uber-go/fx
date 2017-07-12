@@ -181,7 +181,6 @@ type App struct {
 // supplied by the Provide option. If any invoked function fails, an error is
 // returned immediately.
 func New(opts ...Option) *App {
-	// TODO(glib): New should probably return (*App, error)
 	logger := fxlog.New()
 	lc := &lifecycleWrapper{lifecycle.New(logger)}
 
@@ -201,25 +200,39 @@ func New(opts ...Option) *App {
 	app.provide(func() Lifecycle { return app.lifecycle })
 
 	if app.err != nil {
-		// Some provides failed, short-circuit immediately.
 		app.logger.Printf("Error after options were applied: %v", app.err)
-		return nil
+		return app
 	}
 
-	// Execute invokes.
-	for _, fn := range app.invokes {
-		fname := fxreflect.FuncName(fn)
-		app.logger.Printf("INVOKE\t\t%s", fname)
-		if err := app.container.Invoke(fn); err != nil {
-			app.logger.Printf("Error during %q invoke: %v", fname, err)
-
-			// TODO(glib): multiErr this?
-			app.err = err
-			break
-		}
+	if err := app.runInvokes(); err != nil {
+		app.err = err
 	}
 
 	return app
+}
+
+// runInvokes will execute invokes in order.
+//
+// It might be worthwhile to consider adding context.Context to this function
+// so we can handle the infinite-invokes.
+//
+// Returns the first error encountered. Maybe shoul multiErr them together.
+func (app *App) runInvokes() error {
+	for _, fn := range app.invokes {
+		fname := fxreflect.FuncName(fn)
+		app.logger.Printf("INVOKE\t\t%s", fname)
+
+		if _, ok := fn.(Option); ok {
+			return fmt.Errorf("fx.Option should be passed to fx.New directly, not to fx.Invoke: fx.Invoke received %v", fn)
+		}
+
+		if err := app.container.Invoke(fn); err != nil {
+			app.logger.Printf("Error during %q invoke: %v", fname, err)
+			return err
+		}
+	}
+
+	return nil
 }
 
 // Run starts the application, blocks on the signals channel, and then

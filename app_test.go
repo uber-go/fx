@@ -144,10 +144,23 @@ func TestOptions(t *testing.T) {
 }
 
 func TestAppStart(t *testing.T) {
-	t.Skip("Timeout", func(t *testing.T) {
-		// TODO(glib): fix me
-		block := func() { select {} }
-		app := fxtest.New(t, Invoke(block))
+	t.Run("Timeout", func(t *testing.T) {
+		type A struct{}
+		blocker := func(lc Lifecycle) *A {
+			lc.Append(
+				Hook{
+					OnStart: func(context.Context) error {
+						select {}
+					},
+				},
+			)
+			return &A{}
+		}
+		app := fxtest.New(
+			t,
+			Provide(blocker),
+			Invoke(func(*A) {}),
+		)
 
 		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond)
 		defer cancel()
