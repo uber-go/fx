@@ -211,7 +211,7 @@ func New(opts ...Option) *App {
 	return app
 }
 
-// Execute invokes in order.
+// Execute invokes in order supplied to New.
 //
 // It might be worthwhile to consider adding context.Context to this function
 // so we can handle the infinite-invokes.
