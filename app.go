@@ -97,7 +97,7 @@ func (po provideOption) String() string {
 	for i, c := range po {
 		items[i] = fxreflect.FuncName(c)
 	}
-	return fmt.Sprintf("fx.Provide(%v)", strings.Join(items, ", "))
+	return fmt.Sprintf("fx.Provide(%s)", strings.Join(items, ", "))
 }
 
 // Invoke registers functions that are executed eagerly on application start.
@@ -125,7 +125,7 @@ func (io invokeOption) String() string {
 	for i, f := range io {
 		items[i] = fxreflect.FuncName(f)
 	}
-	return fmt.Sprintf("fx.Invoke(%v)", strings.Join(items, ", "))
+	return fmt.Sprintf("fx.Invoke(%s)", strings.Join(items, ", "))
 }
 
 // Options composes a collection of Options into a single Option.
@@ -146,7 +146,7 @@ func (og optionGroup) String() string {
 	for i, opt := range og {
 		items[i] = fmt.Sprint(opt)
 	}
-	return fmt.Sprintf("fx.Options(%v)", strings.Join(items, ", "))
+	return fmt.Sprintf("fx.Options(%s)", strings.Join(items, ", "))
 }
 
 // Printer is the interface required by fx's logging backend. It's implemented
