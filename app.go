@@ -207,13 +207,15 @@ func New(opts ...Option) *App {
 	}
 
 	// Execute invokes.
-	// TODO(glib): wrap in timeout?
 	for _, fn := range app.invokes {
 		fname := fxreflect.FuncName(fn)
 		app.logger.Printf("INVOKE\t\t%s", fname)
 		if err := app.container.Invoke(fn); err != nil {
 			app.logger.Printf("Error during %q invoke: %v", fname, err)
-			return nil
+
+			// TODO(glib): multiErr this?
+			app.err = err
+			break
 		}
 	}
 
@@ -250,6 +252,10 @@ func (app *App) Run() {
 // its dependencies' start hooks complete. If any of the start hooks return an
 // error, start short-circuits.
 func (app *App) Start(ctx context.Context) error {
+	if app.err != nil {
+		return app.err
+	}
+
 	return withTimeout(ctx, app.start)
 }
 
