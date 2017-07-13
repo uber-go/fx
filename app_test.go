@@ -65,6 +65,18 @@ func TestNewApp(t *testing.T) {
 		defer app.MustStart().MustStop()
 		assert.Contains(t, spy.String(), "PROVIDE\tstruct {}")
 	})
+
+	t.Run("CircularGraphReturnsError", func(t *testing.T) {
+		type A struct{}
+		type B struct{}
+		app := fxtest.New(t,
+			Provide(func(A) B { return B{} }),
+			Provide(func(B) A { return A{} }),
+		)
+		err := app.Err()
+		require.Error(t, err, "fx.New should return an error")
+		assert.Contains(t, err.Error(), "fx_test.A ->fx_test.B ->fx_test.A")
+	})
 }
 
 func TestOptions(t *testing.T) {
@@ -240,8 +252,13 @@ func TestAppStart(t *testing.T) {
 			Invoke(Invoke(func(type1) {
 			})),
 		)
+		newErr := app.Err()
+		require.Error(t, newErr)
+
 		err := app.Start(context.Background())
 		require.Error(t, err, "expected start failure")
+		assert.Equal(t, err, newErr, "start should return the same error fx.New encountered")
+
 		assert.Contains(t, err.Error(), "fx.Option should be passed to fx.New directly, not to fx.Invoke")
 		assert.Contains(t, err.Error(), "fx.Invoke received fx.Invoke(go.uber.org/fx_test.TestAppStart")
 	})

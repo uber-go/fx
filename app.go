@@ -211,6 +211,15 @@ func New(opts ...Option) *App {
 	return app
 }
 
+// Err returns an error that may have been encountered during the
+// graph resolution.
+//
+// This includes things like incomplete graphs, circular dependencies,
+// missing dependencies, invalid constructors, etc.
+func (app *App) Err() error {
+	return app.err
+}
+
 // Execute invokes in order supplied to New.
 //
 // It might be worthwhile to consider adding context.Context to this function
@@ -218,21 +227,24 @@ func New(opts ...Option) *App {
 //
 // Returns the first error encountered. Maybe shoul multiErr them together.
 func (app *App) executeInvokes() error {
+	var err error
+
 	for _, fn := range app.invokes {
 		fname := fxreflect.FuncName(fn)
 		app.logger.Printf("INVOKE\t\t%s", fname)
 
 		if _, ok := fn.(Option); ok {
-			return fmt.Errorf("fx.Option should be passed to fx.New directly, not to fx.Invoke: fx.Invoke received %v", fn)
+			err = fmt.Errorf("fx.Option should be passed to fx.New directly, not to fx.Invoke: fx.Invoke received %v", fn)
+		} else {
+			err = app.container.Invoke(fn)
 		}
 
-		if err := app.container.Invoke(fn); err != nil {
+		if err != nil {
 			app.logger.Printf("Error during %q invoke: %v", fname, err)
-			return err
 		}
 	}
 
-	return nil
+	return err
 }
 
 // Run starts the application, blocks on the signals channel, and then
