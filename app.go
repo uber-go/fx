@@ -211,6 +211,15 @@ func New(opts ...Option) *App {
 	return app
 }
 
+// Error returns an error that may have been encountered during the
+// graph resolution.
+//
+// This includes things like incomplete graphs, circular dependencies,
+// missing dependencies, invalid constructors, etc.
+func (app *App) Error() error {
+	return app.err
+}
+
 // Execute invokes in order supplied to New.
 //
 // It might be worthwhile to consider adding context.Context to this function
