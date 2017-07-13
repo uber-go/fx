@@ -227,21 +227,24 @@ func (app *App) Err() error {
 //
 // Returns the first error encountered. Maybe shoul multiErr them together.
 func (app *App) executeInvokes() error {
+	var err error
+
 	for _, fn := range app.invokes {
 		fname := fxreflect.FuncName(fn)
 		app.logger.Printf("INVOKE\t\t%s", fname)
 
 		if _, ok := fn.(Option); ok {
-			return fmt.Errorf("fx.Option should be passed to fx.New directly, not to fx.Invoke: fx.Invoke received %v", fn)
+			err = fmt.Errorf("fx.Option should be passed to fx.New directly, not to fx.Invoke: fx.Invoke received %v", fn)
+		} else {
+			err = app.container.Invoke(fn)
 		}
 
-		if err := app.container.Invoke(fn); err != nil {
+		if err != nil {
 			app.logger.Printf("Error during %q invoke: %v", fname, err)
-			return err
 		}
 	}
 
-	return nil
+	return err
 }
 
 // Run starts the application, blocks on the signals channel, and then
