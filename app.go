@@ -211,12 +211,12 @@ func New(opts ...Option) *App {
 	return app
 }
 
-// Error returns an error that may have been encountered during the
+// Err returns an error that may have been encountered during the
 // graph resolution.
 //
 // This includes things like incomplete graphs, circular dependencies,
 // missing dependencies, invalid constructors, etc.
-func (app *App) Error() error {
+func (app *App) Err() error {
 	return app.err
 }
 

@@ -73,7 +73,7 @@ func TestNewApp(t *testing.T) {
 			Provide(func(A) B { return B{} }),
 			Provide(func(B) A { return A{} }),
 		)
-		err := app.Error()
+		err := app.Err()
 		require.Error(t, err, "fx.New should return an error")
 		assert.Contains(t, err.Error(), "fx_test.A ->fx_test.B ->fx_test.A")
 	})
@@ -252,7 +252,7 @@ func TestAppStart(t *testing.T) {
 			Invoke(Invoke(func(type1) {
 			})),
 		)
-		newErr := app.Error()
+		newErr := app.Err()
 		require.Error(t, newErr)
 
 		err := app.Start(context.Background())

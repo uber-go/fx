@@ -7,8 +7,8 @@
 - Add `fxtest.App`, which redirects log output to the user's `testing.TB` and
   provides some lifecycle helpers.
 - **[Breaking]** Alter lifecycle hooks to accept a context.
-- Add an `Error` method to retrieve the underlying errors during the dependency
-  graph construction. The same error is also returned from the `Start` method.
+- Add an `Err` method to retrieve the underlying errors during the dependency
+  graph construction. The same error is also returned from `Start`.
 
 ## v1.0.0-rc1 (20 Jun 2017)
 
