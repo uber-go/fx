@@ -265,7 +265,7 @@ func (app *App) Run() {
 }
 
 // Start executes all the OnStart hooks of the resolved object graph
-// in the intantiation order.
+// in the instantiation order.
 //
 // This typically starts all the long-running goroutines, like network
 // servers or message queue consumers.
