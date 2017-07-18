@@ -65,6 +65,34 @@ func TestNewApp(t *testing.T) {
 		defer app.MustStart().MustStop()
 		assert.Contains(t, spy.String(), "PROVIDE\tstruct {}")
 	})
+
+	t.Run("CircularGraphReturnsError", func(t *testing.T) {
+		type A struct{}
+		type B struct{}
+		app := fxtest.New(t,
+			Provide(func(A) B { return B{} }),
+			Provide(func(B) A { return A{} }),
+		)
+		err := app.Err()
+		require.Error(t, err, "fx.New should return an error")
+		assert.Contains(t, err.Error(), "fx_test.A ->fx_test.B ->fx_test.A")
+	})
+}
+
+func TestInvokes(t *testing.T) {
+	t.Run("ErrorsAreNotOverriden", func(t *testing.T) {
+		type A struct{}
+		type B struct{}
+
+		app := fxtest.New(t,
+			Provide(func() B { return B{} }), // B inserted into the graph
+			Invoke(func(A) {}),               // failed A invoke
+			Invoke(func(B) {}),               // successful B invoke
+		)
+		err := app.Err()
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "A isn't in the container")
+	})
 }
 
 func TestOptions(t *testing.T) {
@@ -134,19 +162,33 @@ func TestOptions(t *testing.T) {
 	})
 
 	t.Run("Error", func(t *testing.T) {
-		app := fxtest.New(t,
+		spy := printerSpy{&bytes.Buffer{}}
+		fxtest.New(t,
 			Provide(&bytes.Buffer{}), // error, not a constructor
+			Logger(spy),
 		)
-		err := app.Start(context.Background())
-		require.Error(t, err)
-		assert.Contains(t, err.Error(), "must provide constructor function")
+		assert.Contains(t, spy.String(), "must provide constructor function")
 	})
 }
 
 func TestAppStart(t *testing.T) {
 	t.Run("Timeout", func(t *testing.T) {
-		block := func() { select {} }
-		app := fxtest.New(t, Invoke(block))
+		type A struct{}
+		blocker := func(lc Lifecycle) *A {
+			lc.Append(
+				Hook{
+					OnStart: func(context.Context) error {
+						select {}
+					},
+				},
+			)
+			return &A{}
+		}
+		app := fxtest.New(
+			t,
+			Provide(blocker),
+			Invoke(func(*A) {}),
+		)
 
 		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond)
 		defer cancel()
@@ -226,8 +268,13 @@ func TestAppStart(t *testing.T) {
 			Invoke(Invoke(func(type1) {
 			})),
 		)
+		newErr := app.Err()
+		require.Error(t, newErr)
+
 		err := app.Start(context.Background())
 		require.Error(t, err, "expected start failure")
+		assert.Equal(t, err, newErr, "start should return the same error fx.New encountered")
+
 		assert.Contains(t, err.Error(), "fx.Option should be passed to fx.New directly, not to fx.Invoke")
 		assert.Contains(t, err.Error(), "fx.Invoke received fx.Invoke(go.uber.org/fx_test.TestAppStart")
 	})

@@ -55,10 +55,9 @@ func TestInject(t *testing.T) {
 					Provide(func() *bytes.Buffer { return &bytes.Buffer{} }),
 					Inject(&tt),
 				)
-
 				err := app.Start(context.Background())
-				require.Error(t, err, "expected failure")
-				require.Contains(t, err.Error(), "Inject expected a pointer to a struct")
+				require.Error(t, err)
+				assert.Contains(t, err.Error(), "Inject expected a pointer to a struct")
 			})
 		}
 	})
@@ -202,33 +201,6 @@ func TestInject(t *testing.T) {
 		assert.NotNil(t, out.T3, "T3 must not be nil")
 		assert.True(t, gave1 == out.T1, "T1 must match")
 		assert.True(t, gave3 == out.T3, "T3 must match")
-	})
-
-	t.Run("OverwritesExisting", func(t *testing.T) {
-		type type1 struct{ value string }
-
-		var gave1 *type1
-		new1 := func() *type1 {
-			gave1 = &type1{value: "foo"}
-			return gave1
-		}
-
-		var out struct {
-			T1 *type1
-		}
-
-		app := fxtest.New(t,
-			Provide(new1),
-			Inject(&out),
-		)
-
-		old := &type1{value: "bar"}
-		out.T1 = old
-
-		defer app.MustStart().MustStop()
-		assert.NotNil(t, out.T1, "T1 must not be nil")
-		assert.False(t, old == out.T1, "old value must have been overwritten")
-		assert.True(t, gave1 == out.T1, "T1 must match")
 	})
 
 	t.Run("DoesNotZeroUnexported", func(t *testing.T) {

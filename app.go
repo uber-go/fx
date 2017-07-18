@@ -165,7 +165,7 @@ func Logger(p Printer) Option {
 
 // An App is a modular application built around dependency injection.
 type App struct {
-	optionErr error
+	err       error
 	container *dig.Container
 	lifecycle *lifecycleWrapper
 	provides  []interface{}
@@ -175,6 +175,11 @@ type App struct {
 
 // New creates and initializes an App. All applications begin with the
 // Lifecycle type available in their dependency injection container.
+//
+// It then executes all functions supplied via the Invoke option. Supplying
+// arguments to these functions requires calling some of the constructors
+// supplied by the Provide option. If any invoked function fails, an error is
+// returned immediately.
 func New(opts ...Option) *App {
 	logger := fxlog.New()
 	lc := &lifecycleWrapper{lifecycle.New(logger)}
@@ -193,7 +198,54 @@ func New(opts ...Option) *App {
 		app.provide(p)
 	}
 	app.provide(func() Lifecycle { return app.lifecycle })
+
+	if app.err != nil {
+		app.logger.Printf("Error after options were applied: %v", app.err)
+		return app
+	}
+
+	if err := app.executeInvokes(); err != nil {
+		app.err = err
+	}
+
 	return app
+}
+
+// Err returns an error that may have been encountered during the
+// graph resolution.
+//
+// This includes things like incomplete graphs, circular dependencies,
+// missing dependencies, invalid constructors, and invoke errors.
+func (app *App) Err() error {
+	return app.err
+}
+
+// Execute invokes in order supplied to New.
+//
+// It might be worthwhile to consider adding context.Context to this function
+// so we can handle the infinite-invokes.
+//
+// Returns the first error encountered.
+func (app *App) executeInvokes() error {
+	var err error
+
+	for _, fn := range app.invokes {
+		fname := fxreflect.FuncName(fn)
+		app.logger.Printf("INVOKE\t\t%s", fname)
+
+		if _, ok := fn.(Option); ok {
+			err = fmt.Errorf("fx.Option should be passed to fx.New directly, not to fx.Invoke: fx.Invoke received %v", fn)
+		} else {
+			err = app.container.Invoke(fn)
+		}
+
+		if err != nil {
+			app.logger.Printf("Error during %q invoke: %v", fname, err)
+			break
+		}
+	}
+
+	return err
 }
 
 // Run starts the application, blocks on the signals channel, and then
@@ -213,15 +265,14 @@ func (app *App) Run() {
 	}
 }
 
-// Start starts the application.
+// Start executes all the OnStart hooks of the resolved object graph
+// in the instantiation order.
+//
+// This typically starts all the long-running goroutines, like network
+// servers or message queue consumers.
 //
 // First, Start checks whether any errors were encountered while applying
 // Options. If so, it returns immediately.
-//
-// It then executes all functions supplied via the Invoke option. Supplying
-// arguments to these functions requires calling some of the constructors
-// supplied by the Provide option. If any invoked function fails, an error is
-// returned immediately.
 //
 // By taking a dependency on the Lifecycle type, some of the executed
 // constructors may register start and stop hooks. After executing all Invoke
@@ -254,38 +305,25 @@ func (app *App) Done() <-chan os.Signal {
 }
 
 func (app *App) provide(constructor interface{}) {
-	if app.optionErr != nil {
+	if app.err != nil {
 		return
 	}
 	app.logger.PrintProvide(constructor)
 
 	if _, ok := constructor.(Option); ok {
-		app.optionErr = fmt.Errorf("fx.Option should be passed to fx.New directly, not to fx.Provide: fx.Provide received %v", constructor)
+		app.err = fmt.Errorf("fx.Option should be passed to fx.New directly, not to fx.Provide: fx.Provide received %v", constructor)
 		return
 	}
 
 	if err := app.container.Provide(constructor); err != nil {
-		app.optionErr = err
+		app.err = err
 	}
 }
 
 func (app *App) start(ctx context.Context) error {
-	if app.optionErr != nil {
+	if app.err != nil {
 		// Some provides failed, short-circuit immediately.
-		return app.optionErr
-	}
-
-	// Execute invokes.
-	for _, fn := range app.invokes {
-		app.logger.Printf("INVOKE\t\t%s", fxreflect.FuncName(fn))
-
-		if _, ok := fn.(Option); ok {
-			return fmt.Errorf("fx.Option should be passed to fx.New directly, not to fx.Invoke: fx.Invoke received %v", fn)
-		}
-
-		if err := app.container.Invoke(fn); err != nil {
-			return err
-		}
+		return app.err
 	}
 
 	// Attempt to start cleanly.
