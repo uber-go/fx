@@ -342,16 +342,8 @@ func (app *App) start(ctx context.Context) error {
 }
 
 func withTimeout(ctx context.Context, f func(context.Context) error) error {
-	stop := make(chan struct{})
-	defer close(stop)
-
-	c := make(chan error)
-	go func() {
-		select {
-		case <-stop:
-		case c <- f(ctx):
-		}
-	}()
+	c := make(chan error, 1)
+	go func() { c <- f(ctx) }()
 
 	select {
 	case <-ctx.Done():
