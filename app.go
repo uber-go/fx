@@ -215,7 +215,7 @@ func New(opts ...Option) *App {
 // graph resolution.
 //
 // This includes things like incomplete graphs, circular dependencies,
-// missing dependencies, invalid constructors, etc.
+// missing dependencies, invalid constructors, and invoke errors.
 func (app *App) Err() error {
 	return app.err
 }
@@ -225,7 +225,7 @@ func (app *App) Err() error {
 // It might be worthwhile to consider adding context.Context to this function
 // so we can handle the infinite-invokes.
 //
-// Returns the first error encountered. Maybe shoul multiErr them together.
+// Returns the first error encountered.
 func (app *App) executeInvokes() error {
 	var err error
 
