@@ -241,6 +241,7 @@ func (app *App) executeInvokes() error {
 
 		if err != nil {
 			app.logger.Printf("Error during %q invoke: %v", fname, err)
+			break
 		}
 	}
 

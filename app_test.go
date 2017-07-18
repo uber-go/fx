@@ -79,6 +79,22 @@ func TestNewApp(t *testing.T) {
 	})
 }
 
+func TestInvokes(t *testing.T) {
+	t.Run("ErrorsAreNotOverriden", func(t *testing.T) {
+		type A struct{}
+		type B struct{}
+
+		app := fxtest.New(t,
+			Provide(func() B { return B{} }), // B inserted into the graph
+			Invoke(func(A) {}),               // failed A invoke
+			Invoke(func(B) {}),               // successful B invoke
+		)
+		err := app.Err()
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "A isn't in the container")
+	})
+}
+
 func TestOptions(t *testing.T) {
 	t.Run("OptionsComposition", func(t *testing.T) {
 		var n int
