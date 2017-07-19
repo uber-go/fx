@@ -92,6 +92,7 @@ func TestPrint(t *testing.T) {
 		s := sink.String()
 		assert.Contains(t, s, "[Fx] PROVIDE\t*fxlog.A <=")
 		assert.Contains(t, s, "[Fx] PROVIDE\t~fxlog.B <=")
+		assert.Contains(t, s, "[Fx] PROVIDE\tfxlog.C:foo <=")
 	})
 
 	t.Run("printOutNamedTypes", func(t *testing.T) {
