@@ -28,6 +28,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/dig"
 )
 
 type spy struct {
@@ -72,6 +73,45 @@ func TestPrint(t *testing.T) {
 		sink.Reset()
 		logger.PrintProvide(bytes.NewBuffer)
 		assert.Equal(t, "[Fx] PROVIDE\t*bytes.Buffer <= bytes.NewBuffer()\n", sink.String())
+	})
+
+	t.Run("printOutProvideTypesSeparately", func(t *testing.T) {
+		sink.Reset()
+
+		type A struct{}
+		type B struct{}
+		type C struct{}
+		type Ret struct {
+			dig.Out
+			*A
+			B `optional:"true"`
+			C `name:"foo"`
+		}
+		logger.PrintProvide(func() Ret { return Ret{} })
+
+		s := sink.String()
+		assert.Contains(t, s, "[Fx] PROVIDE\t*fxlog.A <=")
+		assert.Contains(t, s, "[Fx] PROVIDE\t~fxlog.B <=")
+	})
+
+	t.Run("printOutNamedTypes", func(t *testing.T) {
+		sink.Reset()
+
+		type A struct{}
+		type B struct{}
+		type Ret struct {
+			dig.Out
+			*B `name:"foo"`
+
+			A1 *A `name:"primary"`
+			A2 *A `name:"secondary" optional:"true"`
+		}
+		logger.PrintProvide(func() Ret { return Ret{} })
+
+		s := sink.String()
+		assert.Contains(t, s, "[Fx] PROVIDE\t*fxlog.A:primary <=")
+		assert.Contains(t, s, "[Fx] PROVIDE\t~*fxlog.A:secondary <=")
+		assert.Contains(t, s, "[Fx] PROVIDE\t*fxlog.B:foo <=")
 	})
 
 	t.Run("printProvideInvalid", func(t *testing.T) {

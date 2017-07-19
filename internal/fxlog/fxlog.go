@@ -24,7 +24,6 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"reflect"
 	"strings"
 
 	"go.uber.org/fx/internal/fxreflect"
@@ -54,10 +53,6 @@ func (l *Logger) Printf(format string, v ...interface{}) {
 
 // PrintProvide logs a type provided into the dig.Container.
 func (l *Logger) PrintProvide(t interface{}) {
-	if reflect.TypeOf(t).Kind() != reflect.Func {
-		// Invalid provide, will be logged as an error.
-		return
-	}
 	for _, rtype := range fxreflect.ReturnTypes(t) {
 		l.Printf("PROVIDE\t%s <= %s", rtype, fxreflect.FuncName(t))
 	}

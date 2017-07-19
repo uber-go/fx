@@ -21,27 +21,99 @@
 package fxreflect
 
 import (
+	"bytes"
 	"fmt"
 	"reflect"
 	"runtime"
+	"strconv"
 	"strings"
+
+	"go.uber.org/dig"
 )
 
-// ReturnTypes takes a func and returns a slice of string'd types
-// TODO instead of duplicating the dig's reflect logic, trying to
-// determine which types actually made it into the container, have
-// dig return a Result struct which could contain the ProvidedTypes
+// ReturnTypes takes a func and returns a slice of string'd types.
 func ReturnTypes(t interface{}) []string {
-	rtypes := []string{}
-	fn := reflect.ValueOf(t).Type()
+	// TODO(grayson): instead of duplicating the dig's reflect logic, trying to
+	// determine which types actually made it into the container, have
+	// dig return a Result struct which could contain the ProvidedTypes
 
-	for i := 0; i < fn.NumOut(); i++ {
-		if !isErr(fn.Out(i)) {
-			rtypes = append(rtypes, fn.Out(i).String())
-		}
+	if reflect.TypeOf(t).Kind() != reflect.Func {
+		// Invalid provide, will be logged as an error.
+		return []string{}
+	}
+
+	rtypes := []string{}
+	ft := reflect.ValueOf(t).Type()
+
+	for i := 0; i < ft.NumOut(); i++ {
+		t := ft.Out(i)
+
+		traverseOuts(edge{t: t}, func(s string) {
+			rtypes = append(rtypes, s)
+		})
 	}
 
 	return rtypes
+}
+
+// this type is basically straight out of dig, which is a strong signal
+// that exporting it could really DRY up some things for fx-dig relationship.
+type edge struct {
+	t        reflect.Type
+	name     string
+	optional bool
+}
+
+func (e *edge) String() string {
+	b := &bytes.Buffer{}
+	if e.optional {
+		fmt.Fprint(b, "~")
+	}
+
+	fmt.Fprint(b, e.t.String())
+
+	if e.name != "" {
+		fmt.Fprint(b, ":", e.name)
+	}
+
+	return b.String()
+}
+
+func traverseOuts(e edge, f func(s string)) {
+	// skip errors
+	if isErr(e.t) {
+		return
+	}
+
+	// call funtion on non-Out types
+	if dig.IsOut(e.t) {
+		// keep recursing down on field memebers in case they are ins
+		for i := 0; i < e.t.NumField(); i++ {
+			field := e.t.Field(i)
+			ft := field.Type
+
+			if field.PkgPath != "" {
+				continue // skip private fields
+			}
+
+			// keep recursing to traverse all the embedded objects
+			opt, _ := strconv.ParseBool(field.Tag.Get("optional"))
+			e := edge{
+				t:        ft,
+				name:     field.Tag.Get("name"),
+				optional: opt,
+			}
+			traverseOuts(e, f)
+		}
+
+		return
+	}
+
+	// TODO(glib): this logic is extremely similar to the stingers that
+	// dig implements for `key` and `edge` types. It may be worthwhile
+	// to consider exporting both and including them in the outcome of
+	// Provide and Invokes, i.e. added keys A:foo and B to container.
+	f(e.String())
 }
 
 // Caller returns the formatted calling func name
