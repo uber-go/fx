@@ -84,14 +84,14 @@ func TestPrint(t *testing.T) {
 		type Ret struct {
 			dig.Out
 			*A
-			B `optional:"true"`
+			B
 			C `name:"foo"`
 		}
 		logger.PrintProvide(func() Ret { return Ret{} })
 
 		s := sink.String()
 		assert.Contains(t, s, "[Fx] PROVIDE\t*fxlog.A <=")
-		assert.Contains(t, s, "[Fx] PROVIDE\t~fxlog.B <=")
+		assert.Contains(t, s, "[Fx] PROVIDE\tfxlog.B <=")
 		assert.Contains(t, s, "[Fx] PROVIDE\tfxlog.C:foo <=")
 	})
 
@@ -105,13 +105,13 @@ func TestPrint(t *testing.T) {
 			*B `name:"foo"`
 
 			A1 *A `name:"primary"`
-			A2 *A `name:"secondary" optional:"true"`
+			A2 *A `name:"secondary"`
 		}
 		logger.PrintProvide(func() Ret { return Ret{} })
 
 		s := sink.String()
 		assert.Contains(t, s, "[Fx] PROVIDE\t*fxlog.A:primary <=")
-		assert.Contains(t, s, "[Fx] PROVIDE\t~*fxlog.A:secondary <=")
+		assert.Contains(t, s, "[Fx] PROVIDE\t*fxlog.A:secondary <=")
 		assert.Contains(t, s, "[Fx] PROVIDE\t*fxlog.B:foo <=")
 	})
 

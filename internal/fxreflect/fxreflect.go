@@ -21,11 +21,9 @@
 package fxreflect
 
 import (
-	"bytes"
 	"fmt"
 	"reflect"
 	"runtime"
-	"strconv"
 	"strings"
 
 	"go.uber.org/dig"
@@ -48,7 +46,7 @@ func ReturnTypes(t interface{}) []string {
 	for i := 0; i < ft.NumOut(); i++ {
 		t := ft.Out(i)
 
-		traverseOuts(edge{t: t}, func(s string) {
+		traverseOuts(key{t: t}, func(s string) {
 			rtypes = append(rtypes, s)
 		})
 	}
@@ -58,38 +56,29 @@ func ReturnTypes(t interface{}) []string {
 
 // this type is basically straight out of dig, which is a strong signal
 // that exporting it could really DRY up some things for fx-dig relationship.
-type edge struct {
-	t        reflect.Type
-	name     string
-	optional bool
+type key struct {
+	t    reflect.Type
+	name string
 }
 
-func (e *edge) String() string {
-	b := &bytes.Buffer{}
-	if e.optional {
-		fmt.Fprint(b, "~")
+func (k *key) String() string {
+	if k.name != "" {
+		return fmt.Sprintf("%v:%s", k.t, k.name)
 	}
-
-	fmt.Fprint(b, e.t.String())
-
-	if e.name != "" {
-		fmt.Fprint(b, ":", e.name)
-	}
-
-	return b.String()
+	return k.t.String()
 }
 
-func traverseOuts(e edge, f func(s string)) {
+func traverseOuts(k key, f func(s string)) {
 	// skip errors
-	if isErr(e.t) {
+	if isErr(k.t) {
 		return
 	}
 
 	// call funtion on non-Out types
-	if dig.IsOut(e.t) {
+	if dig.IsOut(k.t) {
 		// keep recursing down on field memebers in case they are ins
-		for i := 0; i < e.t.NumField(); i++ {
-			field := e.t.Field(i)
+		for i := 0; i < k.t.NumField(); i++ {
+			field := k.t.Field(i)
 			ft := field.Type
 
 			if field.PkgPath != "" {
@@ -97,13 +86,11 @@ func traverseOuts(e edge, f func(s string)) {
 			}
 
 			// keep recursing to traverse all the embedded objects
-			opt, _ := strconv.ParseBool(field.Tag.Get("optional"))
-			e := edge{
-				t:        ft,
-				name:     field.Tag.Get("name"),
-				optional: opt,
+			k := key{
+				t:    ft,
+				name: field.Tag.Get("name"),
 			}
-			traverseOuts(e, f)
+			traverseOuts(k, f)
 		}
 
 		return
@@ -113,7 +100,7 @@ func traverseOuts(e edge, f func(s string)) {
 	// dig implements for `key` and `edge` types. It may be worthwhile
 	// to consider exporting both and including them in the outcome of
 	// Provide and Invokes, i.e. added keys A:foo and B to container.
-	f(e.String())
+	f(k.String())
 }
 
 // Caller returns the formatted calling func name
