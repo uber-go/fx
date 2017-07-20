@@ -37,7 +37,7 @@ func TestOptionalTypes(t *testing.T) {
 	type bar struct{}
 	newBar := func() *bar { return &bar{} }
 
-	type params struct {
+	type in struct {
 		fx.In
 
 		Foo *foo
@@ -48,9 +48,9 @@ func TestOptionalTypes(t *testing.T) {
 		t.Parallel()
 
 		ran := false
-		app := fxtest.New(t, fx.Provide(newFoo), fx.Invoke(func(params params) {
-			assert.NotNil(t, params.Foo, "foo was not optional and provided, expected not nil")
-			assert.Nil(t, params.Bar, "bar was optional and not provided, expected nil")
+		app := fxtest.New(t, fx.Provide(newFoo), fx.Invoke(func(in in) {
+			assert.NotNil(t, in.Foo, "foo was not optional and provided, expected not nil")
+			assert.Nil(t, in.Bar, "bar was optional and not provided, expected nil")
 			ran = true
 		}))
 		app.MustStart().MustStop()
@@ -61,9 +61,9 @@ func TestOptionalTypes(t *testing.T) {
 		t.Parallel()
 
 		ran := false
-		app := fxtest.New(t, fx.Provide(newFoo, newBar), fx.Invoke(func(params params) {
-			assert.NotNil(t, params.Foo, "foo was not optional and provided, expected not nil")
-			assert.NotNil(t, params.Bar, "bar was optional and provided, expected not nil")
+		app := fxtest.New(t, fx.Provide(newFoo, newBar), fx.Invoke(func(in in) {
+			assert.NotNil(t, in.Foo, "foo was not optional and provided, expected not nil")
+			assert.NotNil(t, in.Bar, "bar was optional and provided, expected not nil")
 			ran = true
 		}))
 		app.MustStart().MustStop()
