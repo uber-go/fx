@@ -21,7 +21,6 @@
 package fx_test
 
 import (
-	"reflect"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -34,14 +33,14 @@ func TestIn(t *testing.T) {
 	type in struct {
 		fx.In
 	}
-	assert.True(t, dig.IsIn(reflect.TypeOf(in{})), "Expected dig.In to work with fx.In")
+	assert.True(t, dig.IsIn(in{}), "Expected dig.In to work with fx.In")
 }
 
 func TestOut(t *testing.T) {
 	type out struct {
 		fx.Out
 	}
-	assert.True(t, dig.IsOut(reflect.TypeOf(out{})), "expected dig.Out to work with fx.Out")
+	assert.True(t, dig.IsOut(out{}), "expected dig.Out to work with fx.Out")
 }
 
 func TestOptionalTypes(t *testing.T) {

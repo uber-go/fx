@@ -4,7 +4,7 @@ imports:
 - name: go.uber.org/atomic
   version: 4e336646b2ef9fc6e47be8e21594178f98e5ebcf
 - name: go.uber.org/dig
-  version: f407770ddd130b106a6c615fca31f4b040ed7b1a
+  version: 7a1b19ea9358a95d389397b4e494e891db3adee6
 - name: go.uber.org/multierr
   version: 3c4937480c32f4c13a875a1829af76c98ca3d40a
 testImports:
