@@ -117,7 +117,6 @@ func TestNamedTypes(t *testing.T) {
 		}))
 		app.MustStart().MustStop()
 		assert.True(t, ran, "expected invoke to run")
-
 	})
 
 	t.Run("ResolveBar", func(t *testing.T) {
