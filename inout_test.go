@@ -126,7 +126,6 @@ func TestNamedTypes(t *testing.T) {
 		// an invoke that resolves type a of name "foo"
 		type fooIn struct {
 			fx.In
-
 			A *a `name:"foo"`
 		}
 		ran := false
@@ -145,7 +144,6 @@ func TestNamedTypes(t *testing.T) {
 		// another invoke that resolves the same type a of name "bar"
 		type barIn struct {
 			fx.In
-
 			A *a `name:"bar"`
 		}
 		ran := false
