@@ -11,70 +11,67 @@ import (
 )
 
 func TestIn(t *testing.T) {
-	t.Run("IsDigIn", func(t *testing.T) {
-		t.Parallel()
+	t.Parallel()
 
-		type in struct {
-			fx.In
-		}
-		assert.True(t, dig.IsIn(reflect.TypeOf(in{})), "Expected dig.In to work with fx.In")
-	})
-	t.Run("Optionals", func(t *testing.T) {
-		t.Parallel()
-
-		type foo struct{}
-		newFoo := func() *foo { return &foo{} }
-
-		type bar struct{}
-		newBar := func() *bar { return &bar{} }
-
-		type params struct {
-			fx.In
-
-			Foo *foo
-			Bar *bar `optional:"true"`
-		}
-
-		t.Run("NotProvided", func(t *testing.T) {
-			t.Parallel()
-
-			ran := false
-			app := fxtest.New(t, fx.Provide(newFoo), fx.Invoke(func(params params) {
-				assert.NotNil(t, params.Foo, "foo was not optional and provided, expected not nil")
-				assert.Nil(t, params.Bar, "bar was optional and not provided, expected nil")
-				ran = true
-			}))
-			app.MustStart().MustStop()
-			assert.True(t, ran, "expected invoke to run")
-		})
-
-		t.Run("Provided", func(t *testing.T) {
-			t.Parallel()
-
-			ran := false
-			app := fxtest.New(t, fx.Provide(newFoo, newBar), fx.Invoke(func(params params) {
-				assert.NotNil(t, params.Foo, "foo was not optional and provided, expected not nil")
-				assert.NotNil(t, params.Bar, "bar was optional and provided, expected not nil")
-				ran = true
-			}))
-			app.MustStart().MustStop()
-			assert.True(t, ran, "expected invoke to run")
-		})
-	})
+	type in struct {
+		fx.In
+	}
+	assert.True(t, dig.IsIn(reflect.TypeOf(in{})), "Expected dig.In to work with fx.In")
 }
 
 func TestOut(t *testing.T) {
-	t.Run("IsDigOut", func(t *testing.T) {
+	t.Parallel()
+
+	type out struct {
+		fx.Out
+	}
+	assert.True(t, dig.IsOut(reflect.TypeOf(out{})), "expected dig.Out to work with fx.Out")
+}
+
+func TestOptionalTypes(t *testing.T) {
+	t.Parallel()
+
+	type foo struct{}
+	newFoo := func() *foo { return &foo{} }
+
+	type bar struct{}
+	newBar := func() *bar { return &bar{} }
+
+	type params struct {
+		fx.In
+
+		Foo *foo
+		Bar *bar `optional:"true"`
+	}
+
+	t.Run("NotProvided", func(t *testing.T) {
 		t.Parallel()
 
-		type out struct {
-			fx.Out
-		}
-		assert.True(t, dig.IsOut(reflect.TypeOf(out{})), "expected dig.Out to work with fx.Out")
+		ran := false
+		app := fxtest.New(t, fx.Provide(newFoo), fx.Invoke(func(params params) {
+			assert.NotNil(t, params.Foo, "foo was not optional and provided, expected not nil")
+			assert.Nil(t, params.Bar, "bar was optional and not provided, expected nil")
+			ran = true
+		}))
+		app.MustStart().MustStop()
+		assert.True(t, ran, "expected invoke to run")
+	})
+
+	t.Run("Provided", func(t *testing.T) {
+		t.Parallel()
+
+		ran := false
+		app := fxtest.New(t, fx.Provide(newFoo, newBar), fx.Invoke(func(params params) {
+			assert.NotNil(t, params.Foo, "foo was not optional and provided, expected not nil")
+			assert.NotNil(t, params.Bar, "bar was optional and provided, expected not nil")
+			ran = true
+		}))
+		app.MustStart().MustStop()
+		assert.True(t, ran, "expected invoke to run")
 	})
 }
 
-func TestNamed(t *testing.T) {
+func TestNamedTypes(t *testing.T) {
 	t.Parallel()
 
 	type a struct {
