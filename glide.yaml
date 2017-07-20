@@ -3,7 +3,7 @@ import:
 - package: go.uber.org/multierr
   version: ^1
 - package: go.uber.org/dig
-  version: v1.0.0-rc1
+  version: f407770ddd130b106a6c615fca31f4b040ed7b1a # TODO 1.0.0-rc2
 testImport:
 - package: github.com/stretchr/testify
   version: ~1.1.4
