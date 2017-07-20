@@ -89,7 +89,7 @@ func TestNamedTypes(t *testing.T) {
 		}
 	}
 
-	// another constructor that returns the type a with name "bar"
+	// another constructor that returns the same type a with name "bar"
 	type barOut struct {
 		fx.Out
 		A *a `name:"bar"`
@@ -100,10 +100,10 @@ func TestNamedTypes(t *testing.T) {
 		}
 	}
 
-	t.Run("InjectFoo", func(t *testing.T) {
+	t.Run("ResolveFoo", func(t *testing.T) {
 		t.Parallel()
 
-		// an invoke expects to get type a with name "foo"
+		// an invoke that resolves type a of name "foo"
 		type fooIn struct {
 			fx.In
 
@@ -120,10 +120,10 @@ func TestNamedTypes(t *testing.T) {
 
 	})
 
-	t.Run("InjectBar", func(t *testing.T) {
+	t.Run("ResolveBar", func(t *testing.T) {
 		t.Parallel()
 
-		// another expects to get type a with name "bar"
+		// another invoke that resolves the same type a of name "bar"
 		type barIn struct {
 			fx.In
 
