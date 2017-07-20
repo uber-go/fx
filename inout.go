@@ -11,7 +11,7 @@ import "go.uber.org/dig"
 type In struct{ dig.In }
 
 // Out can be embedded in return structs in order to
-// name types and provide
+// provide named types.
 //
 // Modules should return a single results struct that embeds
 // an Out in order to provide a forwards-compatible API where
