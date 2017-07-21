@@ -25,23 +25,82 @@ import (
 	"reflect"
 	"runtime"
 	"strings"
+
+	"go.uber.org/dig"
 )
 
-// ReturnTypes takes a func and returns a slice of string'd types
-// TODO instead of duplicating the dig's reflect logic, trying to
-// determine which types actually made it into the container, have
-// dig return a Result struct which could contain the ProvidedTypes
+// ReturnTypes takes a func and returns a slice of string'd types.
 func ReturnTypes(t interface{}) []string {
-	rtypes := []string{}
-	fn := reflect.ValueOf(t).Type()
+	// TODO(grayson): instead of duplicating the dig's reflect logic, trying to
+	// determine which types actually made it into the container, have
+	// dig return a Result struct which could contain the ProvidedTypes
 
-	for i := 0; i < fn.NumOut(); i++ {
-		if !isErr(fn.Out(i)) {
-			rtypes = append(rtypes, fn.Out(i).String())
-		}
+	if reflect.TypeOf(t).Kind() != reflect.Func {
+		// Invalid provide, will be logged as an error.
+		return []string{}
+	}
+
+	rtypes := []string{}
+	ft := reflect.ValueOf(t).Type()
+
+	for i := 0; i < ft.NumOut(); i++ {
+		t := ft.Out(i)
+
+		traverseOuts(key{t: t}, func(s string) {
+			rtypes = append(rtypes, s)
+		})
 	}
 
 	return rtypes
+}
+
+// this type is basically straight out of dig, which is a strong signal
+// that exporting it could really DRY up some things for fx-dig relationship.
+type key struct {
+	t    reflect.Type
+	name string
+}
+
+func (k *key) String() string {
+	if k.name != "" {
+		return fmt.Sprintf("%v:%s", k.t, k.name)
+	}
+	return k.t.String()
+}
+
+func traverseOuts(k key, f func(s string)) {
+	// skip errors
+	if isErr(k.t) {
+		return
+	}
+
+	// call funtion on non-Out types
+	if dig.IsOut(k.t) {
+		// keep recursing down on field members in case they are ins
+		for i := 0; i < k.t.NumField(); i++ {
+			field := k.t.Field(i)
+			ft := field.Type
+
+			if field.PkgPath != "" {
+				continue // skip private fields
+			}
+
+			// keep recursing to traverse all the embedded objects
+			k := key{
+				t:    ft,
+				name: field.Tag.Get("name"),
+			}
+			traverseOuts(k, f)
+		}
+
+		return
+	}
+
+	// TODO(glib): this logic is extremely similar to the stingers that
+	// dig implements for `key` and `edge` types. It may be worthwhile
+	// to consider exporting both and including them in the outcome of
+	// Provide and Invokes, i.e. added keys A:foo and B to container.
+	f(k.String())
 }
 
 // Caller returns the formatted calling func name
