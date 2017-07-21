@@ -76,7 +76,7 @@ func traverseOuts(k key, f func(s string)) {
 
 	// call funtion on non-Out types
 	if dig.IsOut(k.t) {
-		// keep recursing down on field memebers in case they are ins
+		// keep recursing down on field members in case they are ins
 		for i := 0; i < k.t.NumField(); i++ {
 			field := k.t.Field(i)
 			ft := field.Type
