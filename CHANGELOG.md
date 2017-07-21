@@ -1,8 +1,8 @@
 # Changelog
 
-## v1.0.0-rc2 (unreleased)
+## v1.0.0-rc2 (21 Jul 2017)
 
-- **[Breaking]** Alter lifecycle hooks to accept a context.
+- **[Breaking]** Lifecycle hooks now take a context.
 - Add `fx.In` and `fx.Out` which exposes optional and named types.
   Modules should embed these types instead of relying on `dig.In` and `dig.Out`.
 - Add an `Err` method to retrieve the underlying errors during the dependency
