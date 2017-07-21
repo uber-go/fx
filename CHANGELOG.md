@@ -1,5 +1,9 @@
 # Changelog
 
+## v1.0.0-rc3 (unreleased)
+
+- No changes yet.
+
 ## v1.0.0-rc2 (21 Jul 2017)
 
 - **[Breaking]** Lifecycle hooks now take a context.
