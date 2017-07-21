@@ -1,5 +1,5 @@
 hash: 68b8eedb4fec962b983fe71047b999f5b1677abce573cde3d8f7fa20e1bb89dd
-updated: 2017-07-21T11:21:30.043814666-07:00
+updated: 2017-07-21T11:22:39.2555765-07:00
 imports:
 - name: go.uber.org/atomic
   version: 4e336646b2ef9fc6e47be8e21594178f98e5ebcf
