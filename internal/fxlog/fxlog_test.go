@@ -75,7 +75,7 @@ func TestPrint(t *testing.T) {
 		assert.Equal(t, "[Fx] PROVIDE\t*bytes.Buffer <= bytes.NewBuffer()\n", sink.String())
 	})
 
-	t.Run("printOutProvideTypesSeparately", func(t *testing.T) {
+	t.Run("printExpandsTypesInOut", func(t *testing.T) {
 		sink.Reset()
 
 		type A struct{}
