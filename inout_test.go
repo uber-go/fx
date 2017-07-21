@@ -109,14 +109,15 @@ func TestNamedTypes(t *testing.T) {
 		}
 	}
 
-	type fooIn struct {
+	// invoke with an fx.In that resolves both named types
+	type in struct {
 		fx.In
 
 		Foo *a `name:"foo"`
 		Bar *a `name:"bar"`
 	}
 	ran := false
-	app := fxtest.New(t, fx.Provide(newFoo, newBar), fx.Invoke(func(in fooIn) {
+	app := fxtest.New(t, fx.Provide(newFoo, newBar), fx.Invoke(func(in in) {
 		assert.NotNil(t, in.Foo, "expected in.Foo to be injected")
 		assert.Equal(t, "foo", in.Foo.name, "expected to get type 'a' of name 'foo'")
 
