@@ -2,16 +2,18 @@
 
 ## v1.0.0-rc2 (unreleased)
 
-- Add a `Logger` option, which allows users to send Fx's logs to different
-  sink.
-- Add `fxtest.App`, which redirects log output to the user's `testing.TB` and
-  provides some lifecycle helpers.
 - **[Breaking]** Alter lifecycle hooks to accept a context.
+- Add `fx.In` and `fx.Out` which exposes optional and named types.
+  Modules should embed these types instead of relying on `dig.In` and `dig.Out`.
 - Add an `Err` method to retrieve the underlying errors during the dependency
   graph construction. The same error is also returned from `Start`.
 - Graph resolution now happens as part of `fx.New`, rather than at the beginning
   of `app.Start`. This allows inspection of the graph errors through `app.Err()`
   before the decision to start the app.
+- Add a `Logger` option, which allows users to send Fx's logs to different
+  sink.
+- Add `fxtest.App`, which redirects log output to the user's `testing.TB` and
+  provides some lifecycle helpers.
 
 ## v1.0.0-rc1 (20 Jun 2017)
 
