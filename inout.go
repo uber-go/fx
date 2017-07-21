@@ -27,7 +27,7 @@ import "go.uber.org/dig"
 //
 // Modules should take a single param struct that embeds an In
 // in order to provide a forwards-compatible API where additional
-// optional properties can be added without breaking.
+// optional fields can be added without breaking.
 type In struct{ dig.In }
 
 // Out can be embedded in return structs in order to
