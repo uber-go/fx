@@ -88,6 +88,7 @@ func TestNamedTypes(t *testing.T) {
 	// a constructor that returns the type a with name "foo"
 	type fooOut struct {
 		fx.Out
+
 		A *a `name:"foo"`
 	}
 	newFoo := func() fooOut {
@@ -99,6 +100,7 @@ func TestNamedTypes(t *testing.T) {
 	// another constructor that returns the same type a with name "bar"
 	type barOut struct {
 		fx.Out
+
 		A *a `name:"bar"`
 	}
 	newBar := func() barOut {
@@ -107,35 +109,22 @@ func TestNamedTypes(t *testing.T) {
 		}
 	}
 
-	t.Run("ResolveFoo", func(t *testing.T) {
-		// an invoke that resolves type a of name "foo"
-		type fooIn struct {
-			fx.In
-			A *a `name:"foo"`
-		}
-		ran := false
-		app := fxtest.New(t, fx.Provide(newFoo, newBar), fx.Invoke(func(in fooIn) {
-			assert.NotNil(t, in.A, "expected in.a to be injected")
-			assert.Equal(t, "foo", in.A.name, "expected to get type a of name foo")
-			ran = true
-		}))
-		app.MustStart().MustStop()
-		assert.True(t, ran, "expected invoke to run")
-	})
+	type fooIn struct {
+		fx.In
 
-	t.Run("ResolveBar", func(t *testing.T) {
-		// another invoke that resolves the same type a of name "bar"
-		type barIn struct {
-			fx.In
-			A *a `name:"bar"`
-		}
-		ran := false
-		app := fxtest.New(t, fx.Provide(newFoo, newBar), fx.Invoke(func(in barIn) {
-			assert.NotNil(t, in.A, "expected in.a to be injected")
-			assert.Equal(t, "bar", in.A.name, "expected to get type a of name bar")
-			ran = true
-		}))
-		app.MustStart().MustStop()
-		assert.True(t, ran, "expected invoke to run")
-	})
+		Foo *a `name:"foo"`
+		Bar *a `name:"bar"`
+	}
+	ran := false
+	app := fxtest.New(t, fx.Provide(newFoo, newBar), fx.Invoke(func(in fooIn) {
+		assert.NotNil(t, in.Foo, "expected in.Foo to be injected")
+		assert.Equal(t, "foo", in.Foo.name, "expected to get type 'a' of name 'foo'")
+
+		assert.NotNil(t, in.Bar, "expected in.Bar to be injected")
+		assert.Equal(t, "bar", in.Bar.name, "expected to get a type 'a' of name 'bar'")
+
+		ran = true
+	}))
+	app.MustStart().MustStop()
+	assert.True(t, ran, "expected invoke to run")
 }
