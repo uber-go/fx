@@ -2,7 +2,7 @@
 
 ## v1.0.0-rc3 (unreleased)
 
-- No changes yet.
+- `fx.Inject` now supports `fx.In` tags on target structs.
 
 ## v1.0.0-rc2 (21 Jul 2017)
 
