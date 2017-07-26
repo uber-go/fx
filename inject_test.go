@@ -232,10 +232,16 @@ func TestInject(t *testing.T) {
 	})
 
 	t.Run("TopLevelDigIn", func(t *testing.T) {
+		var out struct{ dig.In }
+		app := fxtest.New(t, Inject(&out))
+		defer app.MustStart().MustStop()
+	})
+
+	t.Run("TopLevelFxIn", func(t *testing.T) {
 		new1 := func() *type1 { panic("new1 must not be called") }
 		new2 := func() *type2 { panic("new2 must not be called") }
 
-		var out struct{ dig.In }
+		var out struct{ In }
 		app := fxtest.New(t,
 			Provide(new1, new2),
 			Inject(&out),
@@ -244,7 +250,7 @@ func TestInject(t *testing.T) {
 		defer app.MustStart().MustStop()
 	})
 
-	t.Run("NestedDigIn", func(t *testing.T) {
+	t.Run("NestedFxIn", func(t *testing.T) {
 		var gave1 *type1
 		new1 := func() *type1 {
 			gave1 = &type1{}
@@ -253,7 +259,7 @@ func TestInject(t *testing.T) {
 
 		var out struct {
 			Result struct {
-				dig.In
+				In
 
 				T1 *type1
 				T2 *type2 `optional:"true"`
@@ -269,6 +275,25 @@ func TestInject(t *testing.T) {
 		assert.NotNil(t, out.Result.T1, "T1 must not be nil")
 		assert.Nil(t, out.Result.T2, "T2 must be nil")
 		assert.True(t, gave1 == out.Result.T1, "T1 must match")
+	})
+
+	t.Run("FurtherNestedFxIn", func(t *testing.T) {
+		var out struct {
+			In
+
+			B struct {
+				In
+
+				C int
+			}
+		}
+
+		app := fxtest.New(t,
+			Provide(func() int { return 42 }),
+			Inject(&out),
+		)
+		defer app.MustStart().MustStop()
+		assert.Equal(t, 42, out.B.C, "B.C must match")
 	})
 
 	t.Run("FieldsCanBeOptional", func(t *testing.T) {
