@@ -76,6 +76,7 @@ func Inject(target interface{}) Option {
 	//
 	// 	struct {
 	// 		fx.In
+	//
 	// 		F0 io.Reader
 	// 		F2 io.Writer
 	// 	}
@@ -123,7 +124,12 @@ func Inject(target interface{}) Option {
 
 	// Equivalent to,
 	//
-	// 	func(r struct{fx.In; F1 Foo; F2 Bar}) {
+	// 	func(r struct {
+	// 		fx.In
+	//
+	// 		F1 Foo
+	// 		F2 Bar
+	// 	}) {
 	// 		target.Foo = r.F1
 	// 		target.Bar = r.F2
 	// 	}
