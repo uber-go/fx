@@ -74,7 +74,7 @@ func TestExtract(t *testing.T) {
 		app.MustStart().MustStop()
 	})
 
-	t.Run("StructIsInjected", func(t *testing.T) {
+	t.Run("StructIsExtracted", func(t *testing.T) {
 		var gave1 *type1
 		new1 := func() *type1 {
 			gave1 = &type1{}
@@ -259,7 +259,7 @@ func TestExtract(t *testing.T) {
 	})
 }
 
-func ExampleInject() {
+func ExampleExtract() {
 	var target struct {
 		Logger *log.Logger
 	}
@@ -273,8 +273,8 @@ func ExampleInject() {
 		log.Fatal(err)
 	}
 
-	target.Logger.Print("Injected!")
+	target.Logger.Print("Extracted!")
 
 	// Output:
-	// Injected!
+	// Extracted!
 }
