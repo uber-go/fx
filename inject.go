@@ -44,11 +44,11 @@ func Inject(target interface{}) Option {
 	v = v.Elem()
 	t := v.Type()
 
-	// We generate a function which accepts a single dig.In struct as an
+	// We generate a function which accepts a single fx.In struct as an
 	// argument. This struct contains all exported fields of the target
 	// struct.
 
-	// Fields of the generated dig.In struct.
+	// Fields of the generated fx.In struct.
 	fields := make([]reflect.StructField, 0, t.NumField()+1)
 
 	// The fix for https://github.com/golang/go/issues/18780 requires that
@@ -73,7 +73,7 @@ func Inject(target interface{}) Option {
 	// The generated struct has the shape,
 	//
 	// 	struct {
-	// 		dig.In
+	// 		fx.In
 	// 		F0 io.Reader
 	// 		F2 io.Writer
 	// 	}
@@ -108,7 +108,7 @@ func Inject(target interface{}) Option {
 
 	// Equivalent to,
 	//
-	// 	func(r struct{dig.In; F1 Foo; F2 Bar}) {
+	// 	func(r struct{fx.In; F1 Foo; F2 Bar}) {
 	// 		target.Foo = r.F1
 	// 		target.Bar = r.F2
 	// 	}
