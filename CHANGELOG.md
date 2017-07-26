@@ -4,7 +4,7 @@
 
 - **[Breaking]** Rename `fx.Inject` to `fx.Extract` to avoid using the
   term "inject" outside of the ideal usecase. `fx.Extract` is a hammer to
-  break glass, not the way to achieve pure dependency injection.
+  break glass, not a way to achieve pure dependency injection.
 
 ## v1.0.0-rc2 (21 Jul 2017)
 
