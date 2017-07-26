@@ -25,17 +25,17 @@ import (
 	"reflect"
 )
 
-// Inject fills the given struct with values from the dependency injection
+// Extract fills the given struct with values from the dependency injection
 // container on application start.
 //
 // The target MUST be a pointer to a struct. Only exported fields will be
 // filled.
-func Inject(target interface{}) Option {
+func Extract(target interface{}) Option {
 	v := reflect.ValueOf(target)
 
 	if t := v.Type(); t.Kind() != reflect.Ptr || t.Elem().Kind() != reflect.Struct {
 		return Invoke(func() error {
-			return fmt.Errorf("Inject expected a pointer to a struct, got a %v", t)
+			return fmt.Errorf("Extract expected a pointer to a struct, got a %v", t)
 		})
 	}
 

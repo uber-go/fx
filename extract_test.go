@@ -36,7 +36,7 @@ import (
 	"go.uber.org/dig"
 )
 
-func TestInject(t *testing.T) {
+func TestExtract(t *testing.T) {
 	type type1 struct{}
 	type type2 struct{}
 	type type3 struct{}
@@ -53,11 +53,11 @@ func TestInject(t *testing.T) {
 			t.Run(fmt.Sprintf("%T", tt), func(t *testing.T) {
 				app := fxtest.New(t,
 					Provide(func() *bytes.Buffer { return &bytes.Buffer{} }),
-					Inject(&tt),
+					Extract(&tt),
 				)
 				err := app.Start(context.Background())
 				require.Error(t, err)
-				assert.Contains(t, err.Error(), "Inject expected a pointer to a struct")
+				assert.Contains(t, err.Error(), "Extract expected a pointer to a struct")
 			})
 		}
 	})
@@ -69,7 +69,7 @@ func TestInject(t *testing.T) {
 		var out struct{}
 		app := fxtest.New(t,
 			Provide(new1, new2),
-			Inject(&out),
+			Extract(&out),
 		)
 		app.MustStart().MustStop()
 	})
@@ -94,7 +94,7 @@ func TestInject(t *testing.T) {
 
 		app := fxtest.New(t,
 			Provide(new1, new2),
-			Inject(&out),
+			Extract(&out),
 		)
 
 		defer app.MustStart().MustStop()
@@ -117,7 +117,7 @@ func TestInject(t *testing.T) {
 
 		app := fxtest.New(t,
 			Provide(new1),
-			Inject(&out),
+			Extract(&out),
 		)
 
 		defer app.MustStart().MustStop()
@@ -136,7 +136,7 @@ func TestInject(t *testing.T) {
 
 		app := fxtest.New(t,
 			Provide(new1),
-			Inject(&out),
+			Extract(&out),
 		)
 
 		defer app.MustStart().MustStop()
@@ -159,7 +159,7 @@ func TestInject(t *testing.T) {
 
 		app := fxtest.New(t,
 			Provide(new1),
-			Inject(&out),
+			Extract(&out),
 		)
 
 		defer app.MustStart().MustStop()
@@ -192,7 +192,7 @@ func TestInject(t *testing.T) {
 
 		app := fxtest.New(t,
 			Provide(new1, new2, new3),
-			Inject(&out),
+			Extract(&out),
 		)
 
 		defer app.MustStart().MustStop()
@@ -221,7 +221,7 @@ func TestInject(t *testing.T) {
 
 		app := fxtest.New(t,
 			Provide(new1, new2),
-			Inject(&out),
+			Extract(&out),
 		)
 
 		defer app.MustStart().MustStop()
@@ -249,7 +249,7 @@ func TestInject(t *testing.T) {
 
 		app := fxtest.New(t,
 			Provide(new1),
-			Inject(&out),
+			Extract(&out),
 		)
 
 		defer app.MustStart().MustStop()
@@ -266,7 +266,7 @@ func ExampleInject() {
 
 	app := New(
 		Provide(func() *log.Logger { return log.New(os.Stdout, "", 0) }),
-		Inject(&target),
+		Extract(&target),
 	)
 
 	if err := app.Start(context.Background()); err != nil {
