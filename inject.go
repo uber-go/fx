@@ -88,8 +88,8 @@ func Inject(target interface{}) Option {
 	// 		target.Field(2),  // Baz io.Writer
 	// 	]
 	//
-	// As we iterate through the fields of the generated struct, we can simply
-	// copy the value into the corresponding value in the targets list.
+	// As we iterate through the fields of the generated struct, we can copy
+	// the value into the corresponding value in the targets list.
 	targets := make([]reflect.Value, 0, t.NumField())
 
 	for i := 0; i < t.NumField(); i++ {
