@@ -126,22 +126,26 @@ func TestInject(t *testing.T) {
 	})
 
 	t.Run("EmbeddedUnexportedField", func(t *testing.T) {
-		var gave1 *type1
-		new1 := func() *type1 {
-			gave1 = &type1{}
-			return gave1
-		}
-
+		new1 := func() *type1 { return &type1{} }
 		var out struct{ *type1 }
 
-		app := fxtest.New(t,
-			Provide(new1),
-			Inject(&out),
-		)
-
+		app := fxtest.New(t, Provide(new1), Inject(&out))
 		defer app.MustStart().MustStop()
-		assert.NotNil(t, out.type1, "type1 must not be nil")
-		assert.True(t, gave1 == out.type1, "type1 must match")
+
+		// Unexported fields are left unchanged.
+		assert.Nil(t, out.type1, "type1 must be nil")
+	})
+
+	t.Run("EmbeddedUnexportedFieldValue", func(t *testing.T) {
+		type type4 struct{ foo string }
+		new4 := func() type4 { return type4{"foo"} }
+		var out struct{ type4 }
+
+		app := fxtest.New(t, Provide(new4), Inject(&out))
+		defer app.MustStart().MustStop()
+
+		// Unexported fields are left unchanged.
+		assert.NotEqual(t, "foo", out.type4.foo)
 	})
 
 	t.Run("DuplicateFields", func(t *testing.T) {

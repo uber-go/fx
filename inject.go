@@ -23,6 +23,8 @@ package fx
 import (
 	"fmt"
 	"reflect"
+	"unicode"
+	"unicode/utf8"
 )
 
 var _typeOfIn = reflect.TypeOf(In{})
@@ -92,8 +94,21 @@ func Inject(target interface{}) Option {
 	for i := 0; i < t.NumField(); i++ {
 		f := t.Field(i)
 
-		// Skip private fields
-		if f.PkgPath != "" && !f.Anonymous {
+		// Skip unexported fields.
+		if f.Anonymous {
+			// If embedded, StructField.PkgPath is not a reliable indicator of
+			// whether the field is exported. See
+			// https://github.com/golang/go/issues/21122
+
+			t := f.Type
+			if t.Kind() == reflect.Ptr {
+				t = t.Elem()
+			}
+
+			if !isExported(t.Name()) {
+				continue
+			}
+		} else if f.PkgPath != "" {
 			continue
 		}
 
@@ -129,4 +144,10 @@ func Inject(target interface{}) Option {
 	)
 
 	return Invoke(fn.Interface())
+}
+
+// isExported reports whether the identifier is exported.
+func isExported(id string) bool {
+	r, _ := utf8.DecodeRuneInString(id)
+	return unicode.IsUpper(r)
 }
