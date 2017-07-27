@@ -2,7 +2,8 @@
 
 ## v1.0.0-rc3 (unreleased)
 
-- `fx.Inject` now supports `fx.In` tags on target structs.
+- **[Breaking]** Rename `fx.Inject` to `fx.Extract`.
+- `fx.Extract` now supports `fx.In` tags on target structs.
 
 ## v1.0.0-rc2 (21 Jul 2017)
 

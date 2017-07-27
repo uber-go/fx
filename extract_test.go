@@ -36,7 +36,7 @@ import (
 	"go.uber.org/dig"
 )
 
-func TestInject(t *testing.T) {
+func TestExtract(t *testing.T) {
 	type type1 struct{}
 	type type2 struct{}
 	type type3 struct{}
@@ -53,11 +53,11 @@ func TestInject(t *testing.T) {
 			t.Run(fmt.Sprintf("%T", tt), func(t *testing.T) {
 				app := fxtest.New(t,
 					Provide(func() *bytes.Buffer { return &bytes.Buffer{} }),
-					Inject(&tt),
+					Extract(&tt),
 				)
 				err := app.Start(context.Background())
 				require.Error(t, err)
-				assert.Contains(t, err.Error(), "Inject expected a pointer to a struct")
+				assert.Contains(t, err.Error(), "Extract expected a pointer to a struct")
 			})
 		}
 	})
@@ -69,12 +69,12 @@ func TestInject(t *testing.T) {
 		var out struct{}
 		app := fxtest.New(t,
 			Provide(new1, new2),
-			Inject(&out),
+			Extract(&out),
 		)
 		app.MustStart().MustStop()
 	})
 
-	t.Run("StructIsInjected", func(t *testing.T) {
+	t.Run("StructIsExtracted", func(t *testing.T) {
 		var gave1 *type1
 		new1 := func() *type1 {
 			gave1 = &type1{}
@@ -94,7 +94,7 @@ func TestInject(t *testing.T) {
 
 		app := fxtest.New(t,
 			Provide(new1, new2),
-			Inject(&out),
+			Extract(&out),
 		)
 
 		defer app.MustStart().MustStop()
@@ -117,7 +117,7 @@ func TestInject(t *testing.T) {
 
 		app := fxtest.New(t,
 			Provide(new1),
-			Inject(&out),
+			Extract(&out),
 		)
 
 		defer app.MustStart().MustStop()
@@ -129,7 +129,7 @@ func TestInject(t *testing.T) {
 		new1 := func() *type1 { return &type1{} }
 		var out struct{ *type1 }
 
-		app := fxtest.New(t, Provide(new1), Inject(&out))
+		app := fxtest.New(t, Provide(new1), Extract(&out))
 		defer app.MustStart().MustStop()
 
 		// Unexported fields are left unchanged.
@@ -141,7 +141,7 @@ func TestInject(t *testing.T) {
 		new4 := func() type4 { return type4{"foo"} }
 		var out struct{ type4 }
 
-		app := fxtest.New(t, Provide(new4), Inject(&out))
+		app := fxtest.New(t, Provide(new4), Extract(&out))
 		defer app.MustStart().MustStop()
 
 		// Unexported fields are left unchanged.
@@ -163,7 +163,7 @@ func TestInject(t *testing.T) {
 
 		app := fxtest.New(t,
 			Provide(new1),
-			Inject(&out),
+			Extract(&out),
 		)
 
 		defer app.MustStart().MustStop()
@@ -196,7 +196,7 @@ func TestInject(t *testing.T) {
 
 		app := fxtest.New(t,
 			Provide(new1, new2, new3),
-			Inject(&out),
+			Extract(&out),
 		)
 
 		defer app.MustStart().MustStop()
@@ -225,7 +225,7 @@ func TestInject(t *testing.T) {
 
 		app := fxtest.New(t,
 			Provide(new1, new2),
-			Inject(&out),
+			Extract(&out),
 		)
 
 		defer app.MustStart().MustStop()
@@ -237,7 +237,7 @@ func TestInject(t *testing.T) {
 
 	t.Run("TopLevelDigIn", func(t *testing.T) {
 		var out struct{ dig.In }
-		app := fxtest.New(t, Inject(&out))
+		app := fxtest.New(t, Extract(&out))
 		defer app.MustStart().MustStop()
 	})
 
@@ -248,7 +248,7 @@ func TestInject(t *testing.T) {
 		var out struct{ In }
 		app := fxtest.New(t,
 			Provide(new1, new2),
-			Inject(&out),
+			Extract(&out),
 		)
 
 		defer app.MustStart().MustStop()
@@ -272,7 +272,7 @@ func TestInject(t *testing.T) {
 
 		app := fxtest.New(t,
 			Provide(new1),
-			Inject(&out),
+			Extract(&out),
 		)
 
 		defer app.MustStart().MustStop()
@@ -294,7 +294,7 @@ func TestInject(t *testing.T) {
 
 		app := fxtest.New(t,
 			Provide(func() int { return 42 }),
-			Inject(&out),
+			Extract(&out),
 		)
 		defer app.MustStart().MustStop()
 		assert.Equal(t, 42, out.B.C, "B.C must match")
@@ -314,7 +314,7 @@ func TestInject(t *testing.T) {
 
 		app := fxtest.New(t,
 			Provide(new1),
-			Inject(&out),
+			Extract(&out),
 		)
 
 		defer app.MustStart().MustStop()
@@ -325,22 +325,22 @@ func TestInject(t *testing.T) {
 	})
 }
 
-func ExampleInject() {
+func ExampleExtract() {
 	var target struct {
 		Logger *log.Logger
 	}
 
 	app := New(
 		Provide(func() *log.Logger { return log.New(os.Stdout, "", 0) }),
-		Inject(&target),
+		Extract(&target),
 	)
 
 	if err := app.Start(context.Background()); err != nil {
 		log.Fatal(err)
 	}
 
-	target.Logger.Print("Injected!")
+	target.Logger.Print("Extracted!")
 
 	// Output:
-	// Injected!
+	// Extracted!
 }
