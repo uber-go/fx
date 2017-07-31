@@ -18,28 +18,30 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package fx
+package fxmigrate
 
 import (
 	"fmt"
 	"reflect"
 	"unicode"
 	"unicode/utf8"
+
+	"go.uber.org/fx"
 )
 
-var _typeOfIn = reflect.TypeOf(In{})
+var _typeOfIn = reflect.TypeOf(fx.In{})
 
-// Extract fills the given struct with values from the dependency injection
+// WithExtract fills the given struct with values from the dependency injection
 // container on application start.
 //
 // The target MUST be a pointer to a struct. Only exported fields will be
 // filled.
-func Extract(target interface{}) Option {
+func WithExtract(target interface{}) fx.Option {
 	v := reflect.ValueOf(target)
 
 	if t := v.Type(); t.Kind() != reflect.Ptr || t.Elem().Kind() != reflect.Struct {
-		return Invoke(func() error {
-			return fmt.Errorf("Extract expected a pointer to a struct, got a %v", t)
+		return fx.Invoke(func() error {
+			return fmt.Errorf("WithExtract expected a pointer to a struct, got a %v", t)
 		})
 	}
 
@@ -149,7 +151,7 @@ func Extract(target interface{}) Option {
 		},
 	)
 
-	return Invoke(fn.Interface())
+	return fx.Invoke(fn.Interface())
 }
 
 // isExported reports whether the identifier is exported.

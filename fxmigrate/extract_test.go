@@ -18,7 +18,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package fx_test
+package fxmigrate_test
 
 import (
 	"bytes"
@@ -28,7 +28,8 @@ import (
 	"os"
 	"testing"
 
-	. "go.uber.org/fx"
+	"go.uber.org/fx"
+	"go.uber.org/fx/fxmigrate"
 	"go.uber.org/fx/fxtest"
 
 	"github.com/stretchr/testify/assert"
@@ -36,7 +37,7 @@ import (
 	"go.uber.org/dig"
 )
 
-func TestExtract(t *testing.T) {
+func TestWithExtract(t *testing.T) {
 	type type1 struct{}
 	type type2 struct{}
 	type type3 struct{}
@@ -52,12 +53,12 @@ func TestExtract(t *testing.T) {
 		for _, tt := range tests {
 			t.Run(fmt.Sprintf("%T", tt), func(t *testing.T) {
 				app := fxtest.New(t,
-					Provide(func() *bytes.Buffer { return &bytes.Buffer{} }),
-					Extract(&tt),
+					fx.Provide(func() *bytes.Buffer { return &bytes.Buffer{} }),
+					fxmigrate.WithExtract(&tt),
 				)
 				err := app.Start(context.Background())
 				require.Error(t, err)
-				assert.Contains(t, err.Error(), "Extract expected a pointer to a struct")
+				assert.Contains(t, err.Error(), "WithExtract expected a pointer to a struct")
 			})
 		}
 	})
@@ -68,8 +69,8 @@ func TestExtract(t *testing.T) {
 
 		var out struct{}
 		app := fxtest.New(t,
-			Provide(new1, new2),
-			Extract(&out),
+			fx.Provide(new1, new2),
+			fxmigrate.WithExtract(&out),
 		)
 		app.MustStart().MustStop()
 	})
@@ -93,8 +94,8 @@ func TestExtract(t *testing.T) {
 		}
 
 		app := fxtest.New(t,
-			Provide(new1, new2),
-			Extract(&out),
+			fx.Provide(new1, new2),
+			fxmigrate.WithExtract(&out),
 		)
 
 		defer app.MustStart().MustStop()
@@ -116,8 +117,8 @@ func TestExtract(t *testing.T) {
 		var out struct{ *T1 }
 
 		app := fxtest.New(t,
-			Provide(new1),
-			Extract(&out),
+			fx.Provide(new1),
+			fxmigrate.WithExtract(&out),
 		)
 
 		defer app.MustStart().MustStop()
@@ -129,7 +130,7 @@ func TestExtract(t *testing.T) {
 		new1 := func() *type1 { return &type1{} }
 		var out struct{ *type1 }
 
-		app := fxtest.New(t, Provide(new1), Extract(&out))
+		app := fxtest.New(t, fx.Provide(new1), fxmigrate.WithExtract(&out))
 		defer app.MustStart().MustStop()
 
 		// Unexported fields are left unchanged.
@@ -141,7 +142,7 @@ func TestExtract(t *testing.T) {
 		new4 := func() type4 { return type4{"foo"} }
 		var out struct{ type4 }
 
-		app := fxtest.New(t, Provide(new4), Extract(&out))
+		app := fxtest.New(t, fx.Provide(new4), fxmigrate.WithExtract(&out))
 		defer app.MustStart().MustStop()
 
 		// Unexported fields are left unchanged.
@@ -162,8 +163,8 @@ func TestExtract(t *testing.T) {
 		}
 
 		app := fxtest.New(t,
-			Provide(new1),
-			Extract(&out),
+			fx.Provide(new1),
+			fxmigrate.WithExtract(&out),
 		)
 
 		defer app.MustStart().MustStop()
@@ -195,8 +196,8 @@ func TestExtract(t *testing.T) {
 		}
 
 		app := fxtest.New(t,
-			Provide(new1, new2, new3),
-			Extract(&out),
+			fx.Provide(new1, new2, new3),
+			fxmigrate.WithExtract(&out),
 		)
 
 		defer app.MustStart().MustStop()
@@ -224,8 +225,8 @@ func TestExtract(t *testing.T) {
 		out.t2 = t2
 
 		app := fxtest.New(t,
-			Provide(new1, new2),
-			Extract(&out),
+			fx.Provide(new1, new2),
+			fxmigrate.WithExtract(&out),
 		)
 
 		defer app.MustStart().MustStop()
@@ -237,7 +238,7 @@ func TestExtract(t *testing.T) {
 
 	t.Run("TopLevelDigIn", func(t *testing.T) {
 		var out struct{ dig.In }
-		app := fxtest.New(t, Extract(&out))
+		app := fxtest.New(t, fxmigrate.WithExtract(&out))
 		defer app.MustStart().MustStop()
 	})
 
@@ -245,10 +246,10 @@ func TestExtract(t *testing.T) {
 		new1 := func() *type1 { panic("new1 must not be called") }
 		new2 := func() *type2 { panic("new2 must not be called") }
 
-		var out struct{ In }
+		var out struct{ fx.In }
 		app := fxtest.New(t,
-			Provide(new1, new2),
-			Extract(&out),
+			fx.Provide(new1, new2),
+			fxmigrate.WithExtract(&out),
 		)
 
 		defer app.MustStart().MustStop()
@@ -263,7 +264,7 @@ func TestExtract(t *testing.T) {
 
 		var out struct {
 			Result struct {
-				In
+				fx.In
 
 				T1 *type1
 				T2 *type2 `optional:"true"`
@@ -271,8 +272,8 @@ func TestExtract(t *testing.T) {
 		}
 
 		app := fxtest.New(t,
-			Provide(new1),
-			Extract(&out),
+			fx.Provide(new1),
+			fxmigrate.WithExtract(&out),
 		)
 
 		defer app.MustStart().MustStop()
@@ -283,18 +284,18 @@ func TestExtract(t *testing.T) {
 
 	t.Run("FurtherNestedFxIn", func(t *testing.T) {
 		var out struct {
-			In
+			fx.In
 
 			B struct {
-				In
+				fx.In
 
 				C int
 			}
 		}
 
 		app := fxtest.New(t,
-			Provide(func() int { return 42 }),
-			Extract(&out),
+			fx.Provide(func() int { return 42 }),
+			fxmigrate.WithExtract(&out),
 		)
 		defer app.MustStart().MustStop()
 		assert.Equal(t, 42, out.B.C, "B.C must match")
@@ -313,8 +314,8 @@ func TestExtract(t *testing.T) {
 		}
 
 		app := fxtest.New(t,
-			Provide(new1),
-			Extract(&out),
+			fx.Provide(new1),
+			fxmigrate.WithExtract(&out),
 		)
 
 		defer app.MustStart().MustStop()
@@ -325,14 +326,14 @@ func TestExtract(t *testing.T) {
 	})
 }
 
-func ExampleExtract() {
+func ExampleWithExtract() {
 	var target struct {
 		Logger *log.Logger
 	}
 
-	app := New(
-		Provide(func() *log.Logger { return log.New(os.Stdout, "", 0) }),
-		Extract(&target),
+	app := fx.New(
+		fx.Provide(func() *log.Logger { return log.New(os.Stdout, "", 0) }),
+		fxmigrate.WithExtract(&target),
 	)
 
 	if err := app.Start(context.Background()); err != nil {

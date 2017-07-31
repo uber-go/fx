@@ -18,12 +18,12 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-// +build go1.9
+// +build !go1.9
 
-package fx
+package fxmigrate
 
 import "reflect"
 
 func anonymousField(t reflect.Type) reflect.StructField {
-	return reflect.StructField{Name: t.Name(), Anonymous: true, Type: t}
+	return reflect.StructField{Anonymous: true, Type: t}
 }
