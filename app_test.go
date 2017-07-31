@@ -95,8 +95,8 @@ func TestInvokes(t *testing.T) {
 	})
 }
 
-func TestOptions(t *testing.T) {
-	t.Run("OptionsComposition", func(t *testing.T) {
+func TestWithModule(t *testing.T) {
+	t.Run("WithModuleComposition", func(t *testing.T) {
 		var n int
 		construct := func() struct{} {
 			n++
@@ -105,7 +105,7 @@ func TestOptions(t *testing.T) {
 		use := func(struct{}) {
 			n++
 		}
-		app := fxtest.New(t, Options(Provide(construct), Invoke(use)))
+		app := fxtest.New(t, WithModule(Provide(construct), Invoke(use)))
 		defer app.MustStart().MustStop()
 		assert.Equal(t, 2, n)
 	})
@@ -284,7 +284,7 @@ func TestAppStart(t *testing.T) {
 		type type2 struct{}
 		type type3 struct{}
 
-		module := Options(
+		module := WithModule(
 			Provide(
 				func() type1 { return type1{} },
 				func() type2 { return type2{} },
