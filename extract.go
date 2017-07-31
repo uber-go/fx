@@ -38,7 +38,7 @@ func Extract(target interface{}) Option {
 	v := reflect.ValueOf(target)
 
 	if t := v.Type(); t.Kind() != reflect.Ptr || t.Elem().Kind() != reflect.Struct {
-		return Invoke(func() error {
+		return WithInvokes(func() error {
 			return fmt.Errorf("Extract expected a pointer to a struct, got a %v", t)
 		})
 	}
@@ -149,7 +149,7 @@ func Extract(target interface{}) Option {
 		},
 	)
 
-	return Invoke(fn.Interface())
+	return WithInvokes(fn.Interface())
 }
 
 // isExported reports whether the identifier is exported.
