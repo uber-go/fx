@@ -2,8 +2,9 @@
 
 ## v1.0.0-rc3 (unreleased)
 
-- **[Breaking]** Rename `fxtest.Must*` to `fxtest.Require*`.
 - **[Breaking]** Rename `fx.Inject` to `fx.Extract`.
+- **[Breaking]** Rename `fxtest.Must*` to `fxtest.Require*`.
+- **[Breaking]** Remove `fx.Timeout` and `fx.DefaultTimeout`.
 - `fx.Extract` now supports `fx.In` tags on target structs.
 
 ## v1.0.0-rc2 (21 Jul 2017)
