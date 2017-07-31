@@ -36,19 +36,7 @@ import (
 	"go.uber.org/multierr"
 )
 
-// DefaultTimeout is the start and stop timeout used by Run.
-const DefaultTimeout = 15 * time.Second
-
-// Timeout is a convenience function to construct a context with a timeout.
-// It's only intended to reduce noise in the main function; since it doesn't
-// expose context.CancelFunc, it may leak resources.
-func Timeout(d time.Duration) context.Context {
-	ctx, cancel := context.WithTimeout(context.Background(), d)
-	// Assign to the blank identifier on a separate line to convince the linter
-	// that we really don't want the cancel function.
-	_ = cancel
-	return ctx
-}
+const defaultTimeout = 15 * time.Second
 
 // An Option configures an App.
 type Option interface {
@@ -254,13 +242,19 @@ func (app *App) executeInvokes() error {
 //
 // See Start and Stop for application lifecycle details.
 func (app *App) Run() {
-	if err := app.Start(Timeout(DefaultTimeout)); err != nil {
+	startCtx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
+	defer cancel()
+
+	if err := app.Start(startCtx); err != nil {
 		app.logger.Fatalf("ERROR\t\tFailed to start: %v", err)
 	}
 
 	app.logger.PrintSignal(<-app.Done())
 
-	if err := app.Stop(Timeout(DefaultTimeout)); err != nil {
+	stopCtx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
+	defer cancel()
+
+	if err := app.Stop(stopCtx); err != nil {
 		app.logger.Fatalf("ERROR\t\tFailed to stop cleanly: %v", err)
 	}
 }
