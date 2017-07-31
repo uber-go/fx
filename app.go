@@ -253,16 +253,20 @@ func (app *App) executeInvokes() error {
 // and stop timeouts.
 //
 // See Start and Stop for application lifecycle details.
-func (app *App) Run() {
+func (app *App) Run() error {
 	if err := app.Start(Timeout(DefaultTimeout)); err != nil {
-		app.logger.Fatalf("ERROR\t\tFailed to start: %v", err)
+		app.logger.Printf("ERROR\t\tFailed to start: %v", err)
+		return err
 	}
 
 	app.logger.PrintSignal(<-app.Done())
 
 	if err := app.Stop(Timeout(DefaultTimeout)); err != nil {
-		app.logger.Fatalf("ERROR\t\tFailed to stop cleanly: %v", err)
+		app.logger.Printf("ERROR\t\tFailed to stop cleanly: %v", err)
+		return err
 	}
+
+	return nil
 }
 
 // Start executes all the OnStart hooks of the resolved object graph

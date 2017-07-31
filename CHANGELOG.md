@@ -2,6 +2,7 @@
 
 ## v1.0.0-rc3 (unreleased)
 
+- **[Breaking]** `fx.Run` now returns an `error`.
 - **[Breaking]** Rename `fx.Inject` to `fx.Extract`.
 - `fx.Extract` now supports `fx.In` tags on target structs.
 
