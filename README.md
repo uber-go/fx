@@ -5,15 +5,19 @@ An application framework for Go that:
 * Makes dependency injection easy.
 * Eliminates the need for global state and `func init()`.
 
-## Status
+## Installation
 
-Almost stable: `v1.0.0-rc2`. Some breaking changes might occur before `v1.0.0`. See [CHANGELOG.md](CHANGELOG.md) for more info.
-
-## Install
+We recommend locking to [SemVer](http://semver.org/) range `^1` using [Glide](https://github.com/Masterminds/glide):
 
 ```
-go get -u go.uber.org/fx
+glide get 'go.uber.org/fx#^1'
 ```
+
+## Stability
+
+This library is `v1` and follows [SemVer](http://semver.org/) strictly.
+
+No breaking changes will be made to exported APIs before `v2.0.0`.
 
 [doc]: https://godoc.org/go.uber.org/fx
 [doc-img]: https://godoc.org/go.uber.org/fx?status.svg
