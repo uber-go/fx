@@ -52,7 +52,7 @@ func TestExtract(t *testing.T) {
 		for _, tt := range tests {
 			t.Run(fmt.Sprintf("%T", tt), func(t *testing.T) {
 				app := fxtest.New(t,
-					Provide(func() *bytes.Buffer { return &bytes.Buffer{} }),
+					WithConstructors(func() *bytes.Buffer { return &bytes.Buffer{} }),
 					Extract(&tt),
 				)
 				err := app.Start(context.Background())
@@ -68,7 +68,7 @@ func TestExtract(t *testing.T) {
 
 		var out struct{}
 		app := fxtest.New(t,
-			Provide(new1, new2),
+			WithConstructors(new1, new2),
 			Extract(&out),
 		)
 		app.MustStart().MustStop()
@@ -93,7 +93,7 @@ func TestExtract(t *testing.T) {
 		}
 
 		app := fxtest.New(t,
-			Provide(new1, new2),
+			WithConstructors(new1, new2),
 			Extract(&out),
 		)
 
@@ -116,7 +116,7 @@ func TestExtract(t *testing.T) {
 		var out struct{ *T1 }
 
 		app := fxtest.New(t,
-			Provide(new1),
+			WithConstructors(new1),
 			Extract(&out),
 		)
 
@@ -129,7 +129,7 @@ func TestExtract(t *testing.T) {
 		new1 := func() *type1 { return &type1{} }
 		var out struct{ *type1 }
 
-		app := fxtest.New(t, Provide(new1), Extract(&out))
+		app := fxtest.New(t, WithConstructors(new1), Extract(&out))
 		defer app.MustStart().MustStop()
 
 		// Unexported fields are left unchanged.
@@ -141,7 +141,7 @@ func TestExtract(t *testing.T) {
 		new4 := func() type4 { return type4{"foo"} }
 		var out struct{ type4 }
 
-		app := fxtest.New(t, Provide(new4), Extract(&out))
+		app := fxtest.New(t, WithConstructors(new4), Extract(&out))
 		defer app.MustStart().MustStop()
 
 		// Unexported fields are left unchanged.
@@ -162,7 +162,7 @@ func TestExtract(t *testing.T) {
 		}
 
 		app := fxtest.New(t,
-			Provide(new1),
+			WithConstructors(new1),
 			Extract(&out),
 		)
 
@@ -195,7 +195,7 @@ func TestExtract(t *testing.T) {
 		}
 
 		app := fxtest.New(t,
-			Provide(new1, new2, new3),
+			WithConstructors(new1, new2, new3),
 			Extract(&out),
 		)
 
@@ -224,7 +224,7 @@ func TestExtract(t *testing.T) {
 		out.t2 = t2
 
 		app := fxtest.New(t,
-			Provide(new1, new2),
+			WithConstructors(new1, new2),
 			Extract(&out),
 		)
 
@@ -247,7 +247,7 @@ func TestExtract(t *testing.T) {
 
 		var out struct{ In }
 		app := fxtest.New(t,
-			Provide(new1, new2),
+			WithConstructors(new1, new2),
 			Extract(&out),
 		)
 
@@ -271,7 +271,7 @@ func TestExtract(t *testing.T) {
 		}
 
 		app := fxtest.New(t,
-			Provide(new1),
+			WithConstructors(new1),
 			Extract(&out),
 		)
 
@@ -293,7 +293,7 @@ func TestExtract(t *testing.T) {
 		}
 
 		app := fxtest.New(t,
-			Provide(func() int { return 42 }),
+			WithConstructors(func() int { return 42 }),
 			Extract(&out),
 		)
 		defer app.MustStart().MustStop()
@@ -313,7 +313,7 @@ func TestExtract(t *testing.T) {
 		}
 
 		app := fxtest.New(t,
-			Provide(new1),
+			WithConstructors(new1),
 			Extract(&out),
 		)
 
@@ -331,7 +331,7 @@ func ExampleExtract() {
 	}
 
 	app := New(
-		Provide(func() *log.Logger { return log.New(os.Stdout, "", 0) }),
+		WithConstructors(func() *log.Logger { return log.New(os.Stdout, "", 0) }),
 		Extract(&target),
 	)
 

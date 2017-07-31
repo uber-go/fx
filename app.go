@@ -59,7 +59,7 @@ type optionFunc func(*App)
 
 func (f optionFunc) apply(app *App) { f(app) }
 
-// Provide registers constructors with the application's dependency injection
+// WithConstructors registers constructors with the application's dependency injection
 // container. Constructors provide one or more types, can depend on other
 // types available in the container, and may optionally return an error. For
 // example:
@@ -82,7 +82,7 @@ func (f optionFunc) apply(app *App) { f(app) }
 // used.
 //
 // See the documentation for go.uber.org/dig for further details.
-func Provide(constructors ...interface{}) Option {
+func WithConstructors(constructors ...interface{}) Option {
 	return provideOption(constructors)
 }
 
@@ -97,7 +97,7 @@ func (po provideOption) String() string {
 	for i, c := range po {
 		items[i] = fxreflect.FuncName(c)
 	}
-	return fmt.Sprintf("fx.Provide(%s)", strings.Join(items, ", "))
+	return fmt.Sprintf("fx.WithConstructors(%s)", strings.Join(items, ", "))
 }
 
 // Invoke registers functions that are executed eagerly on application start.
@@ -311,7 +311,7 @@ func (app *App) provide(constructor interface{}) {
 	app.logger.PrintProvide(constructor)
 
 	if _, ok := constructor.(Option); ok {
-		app.err = fmt.Errorf("fx.Option should be passed to fx.New directly, not to fx.Provide: fx.Provide received %v", constructor)
+		app.err = fmt.Errorf("fx.Option should be passed to fx.New directly, not to fx.WithConstructors: received %v", constructor)
 		return
 	}
 

@@ -45,7 +45,7 @@ func (ps printerSpy) Printf(format string, args ...interface{}) {
 }
 
 func TestNewApp(t *testing.T) {
-	t.Run("ProvidesLifecycle", func(t *testing.T) {
+	t.Run("ConstructsLifecycle", func(t *testing.T) {
 		found := false
 		app := fxtest.New(t, Invoke(func(lc Lifecycle) {
 			assert.NotNil(t, lc)
@@ -55,23 +55,23 @@ func TestNewApp(t *testing.T) {
 		assert.True(t, found)
 	})
 
-	t.Run("OptionsHappensBeforeProvides", func(t *testing.T) {
-		// Should be grouping all provides and pushing them into the container
+	t.Run("OptionsHappensBeforeConstructors", func(t *testing.T) {
+		// Should be grouping all contructors and pushing them into the container
 		// after applying other options. This prevents the app configuration
-		// (e.g., logging) from changing halfway through our provides.
+		// (e.g., logging) from changing halfway through our constructors.
 
 		spy := &printerSpy{&bytes.Buffer{}}
-		app := fxtest.New(t, Provide(func() struct{} { return struct{}{} }), Logger(spy))
+		app := fxtest.New(t, WithConstructors(func() struct{} { return struct{}{} }), Logger(spy))
 		defer app.MustStart().MustStop()
-		assert.Contains(t, spy.String(), "PROVIDE\tstruct {}")
+		assert.Contains(t, spy.String(), "TYPE\t\tstruct {}")
 	})
 
 	t.Run("CircularGraphReturnsError", func(t *testing.T) {
 		type A struct{}
 		type B struct{}
 		app := fxtest.New(t,
-			Provide(func(A) B { return B{} }),
-			Provide(func(B) A { return A{} }),
+			WithConstructors(func(A) B { return B{} }),
+			WithConstructors(func(B) A { return A{} }),
 		)
 		err := app.Err()
 		require.Error(t, err, "fx.New should return an error")
@@ -85,9 +85,9 @@ func TestInvokes(t *testing.T) {
 		type B struct{}
 
 		app := fxtest.New(t,
-			Provide(func() B { return B{} }), // B inserted into the graph
-			Invoke(func(A) {}),               // failed A invoke
-			Invoke(func(B) {}),               // successful B invoke
+			WithConstructors(func() B { return B{} }), // B inserted into the graph
+			Invoke(func(A) {}),                        // failed A invoke
+			Invoke(func(B) {}),                        // successful B invoke
 		)
 		err := app.Err()
 		require.Error(t, err)
@@ -105,12 +105,12 @@ func TestOptions(t *testing.T) {
 		use := func(struct{}) {
 			n++
 		}
-		app := fxtest.New(t, Options(Provide(construct), Invoke(use)))
+		app := fxtest.New(t, Options(WithConstructors(construct), Invoke(use)))
 		defer app.MustStart().MustStop()
 		assert.Equal(t, 2, n)
 	})
 
-	t.Run("ProvidesCalledInGraphOrder", func(t *testing.T) {
+	t.Run("ConstructorsCalledInGraphOrder", func(t *testing.T) {
 		type type1 struct{}
 		type type2 struct{}
 		type type3 struct{}
@@ -136,14 +136,14 @@ func TestOptions(t *testing.T) {
 			assert.Equal(t, 4, initOrder)
 		}
 		app := fxtest.New(t,
-			Provide(new1, new2, new3),
+			WithConstructors(new1, new2, new3),
 			Invoke(biz),
 		)
 		defer app.MustStart().MustStop()
 		assert.Equal(t, 4, initOrder)
 	})
 
-	t.Run("ProvidesCalledLazily", func(t *testing.T) {
+	t.Run("ConstructorsCalledLazily", func(t *testing.T) {
 		count := 0
 		newBuffer := func() *bytes.Buffer {
 			t.Error("this module should not init: no provided type relies on it")
@@ -154,7 +154,7 @@ func TestOptions(t *testing.T) {
 			return struct{}{}
 		}
 		app := fxtest.New(t,
-			Provide(newBuffer, newEmpty),
+			WithConstructors(newBuffer, newEmpty),
 			Invoke(func(struct{}) { count++ }),
 		)
 		defer app.MustStart().MustStop()
@@ -164,7 +164,7 @@ func TestOptions(t *testing.T) {
 	t.Run("Error", func(t *testing.T) {
 		spy := printerSpy{&bytes.Buffer{}}
 		fxtest.New(t,
-			Provide(&bytes.Buffer{}), // error, not a constructor
+			WithConstructors(&bytes.Buffer{}), // error, not a constructor
 			Logger(spy),
 		)
 		assert.Contains(t, spy.String(), "must provide constructor function")
@@ -186,7 +186,7 @@ func TestAppStart(t *testing.T) {
 		}
 		app := fxtest.New(
 			t,
-			Provide(blocker),
+			WithConstructors(blocker),
 			Invoke(func(*A) {}),
 		)
 
@@ -206,7 +206,7 @@ func TestAppStart(t *testing.T) {
 			return struct{}{}
 		}
 		app := fxtest.New(t,
-			Provide(failStart),
+			WithConstructors(failStart),
 			Invoke(func(struct{}) {}),
 		)
 		err := app.Start(context.Background())
@@ -223,7 +223,7 @@ func TestAppStart(t *testing.T) {
 			return struct{}{}
 		}
 		app := fxtest.New(t,
-			Provide(fail),
+			WithConstructors(fail),
 			Invoke(func(struct{}) {}),
 		)
 		err := app.Start(context.Background())
@@ -239,15 +239,15 @@ func TestAppStart(t *testing.T) {
 		assert.Contains(t, err.Error(), "can't invoke non-function")
 	})
 
-	t.Run("ProvidingAProvideShouldFail", func(t *testing.T) {
+	t.Run("ProvidingAConstructorShouldFail", func(t *testing.T) {
 		type type1 struct{}
 		type type2 struct{}
 		type type3 struct{}
 
 		app := fxtest.New(t,
-			Provide(
+			WithConstructors(
 				func() type1 { return type1{} },
-				Provide(
+				WithConstructors(
 					func() type2 { return type2{} },
 					func() type3 { return type3{} },
 				),
@@ -256,15 +256,15 @@ func TestAppStart(t *testing.T) {
 
 		err := app.Start(context.Background())
 		require.Error(t, err, "expected start failure")
-		assert.Contains(t, err.Error(), "fx.Option should be passed to fx.New directly, not to fx.Provide")
-		assert.Contains(t, err.Error(), "fx.Provide received fx.Provide(go.uber.org/fx_test.TestAppStart")
+		assert.Contains(t, err.Error(), "fx.Option should be passed to fx.New directly, not to fx.WithConstructors")
+		assert.Contains(t, err.Error(), "received fx.WithConstructors(go.uber.org/fx_test.TestAppStart")
 	})
 
 	t.Run("InvokingAnInvokeShouldFail", func(t *testing.T) {
 		type type1 struct{}
 
 		app := fxtest.New(t,
-			Provide(func() type1 { return type1{} }),
+			WithConstructors(func() type1 { return type1{} }),
 			Invoke(Invoke(func(type1) {
 			})),
 		)
@@ -285,7 +285,7 @@ func TestAppStart(t *testing.T) {
 		type type3 struct{}
 
 		module := Options(
-			Provide(
+			WithConstructors(
 				func() type1 { return type1{} },
 				func() type2 { return type2{} },
 			),
@@ -295,15 +295,15 @@ func TestAppStart(t *testing.T) {
 		)
 
 		app := fxtest.New(t,
-			Provide(
+			WithConstructors(
 				func() type3 { return type3{} },
 				module,
 			),
 		)
 		err := app.Start(context.Background())
 		require.Error(t, err, "expected start failure")
-		assert.Contains(t, err.Error(), "fx.Option should be passed to fx.New directly, not to fx.Provide")
-		assert.Contains(t, err.Error(), "fx.Provide received fx.Options(fx.Provide(go.uber.org/fx_test.TestAppStart")
+		assert.Contains(t, err.Error(), "fx.Option should be passed to fx.New directly, not to fx.WithConstructors")
+		assert.Contains(t, err.Error(), "received fx.Options(fx.WithConstructors(go.uber.org/fx_test.TestAppStart")
 	})
 }
 
@@ -331,7 +331,7 @@ func TestAppStop(t *testing.T) {
 			return struct{}{}
 		}
 		app := fxtest.New(t,
-			Provide(failStop),
+			WithConstructors(failStop),
 			Invoke(func(struct{}) {}),
 		)
 		app.MustStart()

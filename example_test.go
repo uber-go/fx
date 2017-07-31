@@ -74,7 +74,7 @@ func Register(mux *http.ServeMux, h http.Handler) {
 func Example() {
 	app := fx.New(
 		// Provide all the constructors we need.
-		fx.Provide(NewLogger, NewHandler, NewMux),
+		fx.WithConstructors(NewLogger, NewHandler, NewMux),
 		// Before starting, register the handler. This forces resolution of all
 		// the types in the container. Since the mux is now being used, its
 		// startup hook gets registered and the application includes an HTTP

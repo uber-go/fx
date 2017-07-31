@@ -72,7 +72,7 @@ func TestPrint(t *testing.T) {
 	t.Run("printProvide", func(t *testing.T) {
 		sink.Reset()
 		logger.PrintProvide(bytes.NewBuffer)
-		assert.Equal(t, "[Fx] PROVIDE\t*bytes.Buffer <= bytes.NewBuffer()\n", sink.String())
+		assert.Equal(t, "[Fx] TYPE\t\t*bytes.Buffer <= bytes.NewBuffer()\n", sink.String())
 	})
 
 	t.Run("printExpandsTypesInOut", func(t *testing.T) {
@@ -90,9 +90,9 @@ func TestPrint(t *testing.T) {
 		logger.PrintProvide(func() Ret { return Ret{} })
 
 		s := sink.String()
-		assert.Contains(t, s, "[Fx] PROVIDE\t*fxlog.A <=")
-		assert.Contains(t, s, "[Fx] PROVIDE\tfxlog.B <=")
-		assert.Contains(t, s, "[Fx] PROVIDE\tfxlog.C:foo <=")
+		assert.Contains(t, s, "[Fx] TYPE\t\t*fxlog.A <=")
+		assert.Contains(t, s, "[Fx] TYPE\t\tfxlog.B <=")
+		assert.Contains(t, s, "[Fx] TYPE\t\tfxlog.C:foo <=")
 	})
 
 	t.Run("printOutNamedTypes", func(t *testing.T) {
@@ -110,9 +110,9 @@ func TestPrint(t *testing.T) {
 		logger.PrintProvide(func() Ret { return Ret{} })
 
 		s := sink.String()
-		assert.Contains(t, s, "[Fx] PROVIDE\t*fxlog.A:primary <=")
-		assert.Contains(t, s, "[Fx] PROVIDE\t*fxlog.A:secondary <=")
-		assert.Contains(t, s, "[Fx] PROVIDE\t*fxlog.B:foo <=")
+		assert.Contains(t, s, "[Fx] TYPE\t\t*fxlog.A:primary <=")
+		assert.Contains(t, s, "[Fx] TYPE\t\t*fxlog.A:secondary <=")
+		assert.Contains(t, s, "[Fx] TYPE\t\t*fxlog.B:foo <=")
 	})
 
 	t.Run("printProvideInvalid", func(t *testing.T) {
