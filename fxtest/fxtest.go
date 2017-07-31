@@ -54,7 +54,7 @@ type App struct {
 // New creates a new test application.
 func New(tb TB, opts ...fx.Option) *App {
 	allOpts := make([]fx.Option, 0, len(opts)+1)
-	allOpts = append(allOpts, fx.Logger(&testPrinter{tb}))
+	allOpts = append(allOpts, fx.WithLogger(&testPrinter{tb}))
 	allOpts = append(allOpts, opts...)
 	return &App{
 		App: fx.New(allOpts...),

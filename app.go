@@ -149,16 +149,16 @@ func (og optionGroup) String() string {
 	return fmt.Sprintf("fx.Options(%s)", strings.Join(items, ", "))
 }
 
-// Printer is the interface required by fx's logging backend. It's implemented
+// Logger is the interface required by fx's logging backend. It's implemented
 // by most loggers, including the standard library's.
-type Printer interface {
+type Logger interface {
 	Printf(string, ...interface{})
 }
 
-// Logger redirects the application's log output to the provided printer.
-func Logger(p Printer) Option {
+// WithLogger redirects the application's log output to the provided printer.
+func WithLogger(l Logger) Option {
 	return optionFunc(func(app *App) {
-		app.logger = &fxlog.Logger{Printer: p}
+		app.logger = &fxlog.Logger{Printer: l}
 		app.lifecycle = &lifecycleWrapper{lifecycle.New(app.logger)}
 	})
 }
