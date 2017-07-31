@@ -67,7 +67,7 @@ func TestApp(t *testing.T) {
 	t.Run("Success", func(t *testing.T) {
 		spy.Reset()
 
-		New(spy).MustStart().MustStop()
+		New(spy).RequireStart().RequireStop()
 
 		assert.Zero(t, spy.failures, "App didn't start and stop cleanly.")
 		assert.Contains(t, spy.logs.String(), "RUNNING", "Expected to write logs to TB.")
@@ -79,7 +79,7 @@ func TestApp(t *testing.T) {
 		New(
 			spy,
 			fx.Invoke(func() error { return errors.New("fail") }),
-		).MustStart()
+		).RequireStart()
 
 		assert.Equal(t, 1, spy.failures, "Expected app to error on start.")
 		assert.Contains(t, spy.errors.String(), "didn't start cleanly", "Expected to write errors to TB.")
@@ -96,7 +96,7 @@ func TestApp(t *testing.T) {
 			spy,
 			fx.Provide(construct),
 			fx.Invoke(func(struct{}) {}),
-		).MustStart().MustStop()
+		).RequireStart().RequireStop()
 
 		assert.Equal(t, 1, spy.failures, "Expected Stop to fail.")
 		assert.Contains(t, spy.errors.String(), "didn't stop cleanly", "Expected to write errors to TB.")
@@ -115,7 +115,7 @@ func TestLifecycle(t *testing.T) {
 			OnStart: func(context.Context) error { n++; return nil },
 			OnStop:  func(context.Context) error { n++; return nil },
 		})
-		lc.MustStart().MustStop()
+		lc.RequireStart().RequireStop()
 
 		assert.Zero(t, spy.failures, "Lifecycle start/stop failed.")
 		assert.Equal(t, 2, n, "Didn't run start and stop hooks.")
@@ -126,10 +126,10 @@ func TestLifecycle(t *testing.T) {
 		lc := NewLifecycle(spy)
 		lc.Append(fx.Hook{OnStart: func(context.Context) error { return errors.New("fail") }})
 
-		lc.MustStart()
+		lc.RequireStart()
 		assert.Equal(t, 1, spy.failures, "Expected lifecycle start to fail.")
 
-		lc.MustStop()
+		lc.RequireStop()
 		assert.Equal(t, 1, spy.failures, "Expected lifecycle stop to succeed.")
 	})
 
@@ -138,10 +138,10 @@ func TestLifecycle(t *testing.T) {
 		lc := NewLifecycle(spy)
 		lc.Append(fx.Hook{OnStop: func(context.Context) error { return errors.New("fail") }})
 
-		lc.MustStart()
+		lc.RequireStart()
 		assert.Equal(t, 0, spy.failures, "Expected lifecycle start to succeed.")
 
-		lc.MustStop()
+		lc.RequireStop()
 		assert.Equal(t, 1, spy.failures, "Expected lifecycle stop to fail.")
 	})
 }

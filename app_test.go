@@ -51,7 +51,7 @@ func TestNewApp(t *testing.T) {
 			assert.NotNil(t, lc)
 			found = true
 		}))
-		defer app.MustStart().MustStop()
+		defer app.RequireStart().RequireStop()
 		assert.True(t, found)
 	})
 
@@ -62,7 +62,7 @@ func TestNewApp(t *testing.T) {
 
 		spy := &printerSpy{&bytes.Buffer{}}
 		app := fxtest.New(t, Provide(func() struct{} { return struct{}{} }), Logger(spy))
-		defer app.MustStart().MustStop()
+		defer app.RequireStart().RequireStop()
 		assert.Contains(t, spy.String(), "PROVIDE\tstruct {}")
 	})
 
@@ -106,7 +106,7 @@ func TestOptions(t *testing.T) {
 			n++
 		}
 		app := fxtest.New(t, Options(Provide(construct), Invoke(use)))
-		defer app.MustStart().MustStop()
+		defer app.RequireStart().RequireStop()
 		assert.Equal(t, 2, n)
 	})
 
@@ -139,7 +139,7 @@ func TestOptions(t *testing.T) {
 			Provide(new1, new2, new3),
 			Invoke(biz),
 		)
-		defer app.MustStart().MustStop()
+		defer app.RequireStart().RequireStop()
 		assert.Equal(t, 4, initOrder)
 	})
 
@@ -157,7 +157,7 @@ func TestOptions(t *testing.T) {
 			Provide(newBuffer, newEmpty),
 			Invoke(func(struct{}) { count++ }),
 		)
-		defer app.MustStart().MustStop()
+		defer app.RequireStart().RequireStop()
 		assert.Equal(t, 2, count)
 	})
 
@@ -313,7 +313,7 @@ func TestAppStop(t *testing.T) {
 		app := fxtest.New(t, Invoke(func(l Lifecycle) {
 			l.Append(Hook{OnStop: block})
 		}))
-		app.MustStart()
+		app.RequireStart()
 
 		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond)
 		defer cancel()
@@ -334,7 +334,7 @@ func TestAppStop(t *testing.T) {
 			Provide(failStop),
 			Invoke(func(struct{}) {}),
 		)
-		app.MustStart()
+		app.RequireStart()
 		err := app.Stop(context.Background())
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "OnStop fail")
@@ -344,6 +344,6 @@ func TestAppStop(t *testing.T) {
 func TestReplaceLogger(t *testing.T) {
 	spy := printerSpy{&bytes.Buffer{}}
 	app := fxtest.New(t, Logger(spy))
-	app.MustStart().MustStop()
+	app.RequireStart().RequireStop()
 	assert.Contains(t, spy.String(), "RUNNING")
 }
