@@ -128,8 +128,8 @@ func (io invokeOption) String() string {
 	return fmt.Sprintf("fx.Invoke(%s)", strings.Join(items, ", "))
 }
 
-// Options composes a collection of Options into a single Option.
-func Options(opts ...Option) Option {
+// WithModule composes a collection of Options into a single Option.
+func WithModule(opts ...Option) Option {
 	return optionGroup(opts)
 }
 
