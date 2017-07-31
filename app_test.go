@@ -61,7 +61,7 @@ func TestNewApp(t *testing.T) {
 		// (e.g., logging) from changing halfway through our provides.
 
 		spy := &printerSpy{&bytes.Buffer{}}
-		app := fxtest.New(t, Provide(func() struct{} { return struct{}{} }), Logger(spy))
+		app := fxtest.New(t, Provide(func() struct{} { return struct{}{} }), WithLogger(spy))
 		defer app.MustStart().MustStop()
 		assert.Contains(t, spy.String(), "PROVIDE\tstruct {}")
 	})
@@ -165,7 +165,7 @@ func TestOptions(t *testing.T) {
 		spy := printerSpy{&bytes.Buffer{}}
 		fxtest.New(t,
 			Provide(&bytes.Buffer{}), // error, not a constructor
-			Logger(spy),
+			WithLogger(spy),
 		)
 		assert.Contains(t, spy.String(), "must provide constructor function")
 	})
@@ -343,7 +343,7 @@ func TestAppStop(t *testing.T) {
 
 func TestReplaceLogger(t *testing.T) {
 	spy := printerSpy{&bytes.Buffer{}}
-	app := fxtest.New(t, Logger(spy))
+	app := fxtest.New(t, WithLogger(spy))
 	app.MustStart().MustStop()
 	assert.Contains(t, spy.String(), "RUNNING")
 }
