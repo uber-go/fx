@@ -1,12 +1,14 @@
 # Changelog
 
-## v1.0.0-rc3 (unreleased)
+## v1.0.0 (2017-07-31)
+
+First stable release: no breaking changes will be made in the 1.x series.
 
 - **[Breaking]** Remove `fx.Timeout` and `fx.DefaultTimeout`.
 - **[Breaking]** Rename `fx.Inject` to `fx.Extract`.
 - `fx.Extract` now supports `fx.In` tags on target structs.
 
-## v1.0.0-rc2 (21 Jul 2017)
+## v1.0.0-rc2 (2017-07-21)
 
 - **[Breaking]** Lifecycle hooks now take a context.
 - Add `fx.In` and `fx.Out` which exposes optional and named types.
@@ -21,7 +23,7 @@
 - Add `fxtest.App`, which redirects log output to the user's `testing.TB` and
   provides some lifecycle helpers.
 
-## v1.0.0-rc1 (20 Jun 2017)
+## v1.0.0-rc1 (2017-06-20)
 
 - **[Breaking]** Providing types into `fx.App` and invoking functions are now
   options passed during application construction. This makes users'
@@ -29,7 +31,7 @@
 - **[Breaking]** `TestLifecycle` is now in a separate `fxtest` subpackage.
 - Add `fx.Inject()` to pull values from the container into a struct.
 
-## v1.0.0-beta4 (12 Jun 2017)
+## v1.0.0-beta4 (2017-06-12)
 
 - **[Breaking]** Monolithic framework, as released in initial betas, has been
   broken into smaller pieces as a result of recent advances in `dig` library.
@@ -46,7 +48,7 @@
   (configuration, metrics, tracing) has been deprecated in favor of
   `fx.App`.
 
-## v1.0.0-beta3 (28 Mar 2017)
+## v1.0.0-beta3 (2017-03-28)
 
 - **[Breaking]** Environment config provider was removed. If you were using
   environment variables to override YAML values, see
@@ -71,7 +73,7 @@
 - **[Breaking]** Pass a tracer the `uhttp/uhttpclient` constructor explicitly, instead
   of using a global tracer. This will allow to use http client in parallel tests.
 
-## v1.0.0-beta2 (09 Mar 2017)
+## v1.0.0-beta2 (2017-03-09)
 
 - **[Breaking]** Remove `ulog.Logger` interface and expose `*zap.Logger` directly.
 - **[Breaking]** Rename config and module from `modules.rpc` to `modules.yarpc`
@@ -96,7 +98,7 @@
 - DIG constructors now support returning a tuple with the second argument being
   an error.
 
-## v1.0.0-beta1 (20 Feb 2017)
+## v1.0.0-beta1 (2017-02-20)
 
 This is the first beta release of the framework, where we invite users to start
 building services on it and provide us feedback. **Warning** we are not
