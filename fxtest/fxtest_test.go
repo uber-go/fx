@@ -94,7 +94,7 @@ func TestApp(t *testing.T) {
 		}
 		New(
 			spy,
-			fx.Provide(construct),
+			fx.WithConstructors(construct),
 			fx.Invoke(func(struct{}) {}),
 		).MustStart().MustStop()
 

@@ -54,7 +54,7 @@ func (l *Logger) Printf(format string, v ...interface{}) {
 // PrintProvide logs a type provided into the dig.Container.
 func (l *Logger) PrintProvide(t interface{}) {
 	for _, rtype := range fxreflect.ReturnTypes(t) {
-		l.Printf("PROVIDE\t%s <= %s", rtype, fxreflect.FuncName(t))
+		l.Printf("TYPE\t\t%s <= %s", rtype, fxreflect.FuncName(t))
 	}
 }
 
