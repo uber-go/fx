@@ -47,7 +47,7 @@ func (ps printerSpy) Printf(format string, args ...interface{}) {
 func TestNewApp(t *testing.T) {
 	t.Run("ProvidesLifecycle", func(t *testing.T) {
 		found := false
-		app := fxtest.New(t, Invoke(func(lc Lifecycle) {
+		app := fxtest.New(t, WithInvokes(func(lc Lifecycle) {
 			assert.NotNil(t, lc)
 			found = true
 		}))
@@ -79,15 +79,15 @@ func TestNewApp(t *testing.T) {
 	})
 }
 
-func TestInvokes(t *testing.T) {
+func TestWithInvokess(t *testing.T) {
 	t.Run("ErrorsAreNotOverriden", func(t *testing.T) {
 		type A struct{}
 		type B struct{}
 
 		app := fxtest.New(t,
 			Provide(func() B { return B{} }), // B inserted into the graph
-			Invoke(func(A) {}),               // failed A invoke
-			Invoke(func(B) {}),               // successful B invoke
+			WithInvokes(func(A) {}),          // failed A WithInvokes
+			WithInvokes(func(B) {}),          // successful B invoke
 		)
 		err := app.Err()
 		require.Error(t, err)
@@ -105,7 +105,7 @@ func TestOptions(t *testing.T) {
 		use := func(struct{}) {
 			n++
 		}
-		app := fxtest.New(t, Options(Provide(construct), Invoke(use)))
+		app := fxtest.New(t, Options(Provide(construct), WithInvokes(use)))
 		defer app.MustStart().MustStop()
 		assert.Equal(t, 2, n)
 	})
@@ -137,7 +137,7 @@ func TestOptions(t *testing.T) {
 		}
 		app := fxtest.New(t,
 			Provide(new1, new2, new3),
-			Invoke(biz),
+			WithInvokes(biz),
 		)
 		defer app.MustStart().MustStop()
 		assert.Equal(t, 4, initOrder)
@@ -155,7 +155,7 @@ func TestOptions(t *testing.T) {
 		}
 		app := fxtest.New(t,
 			Provide(newBuffer, newEmpty),
-			Invoke(func(struct{}) { count++ }),
+			WithInvokes(func(struct{}) { count++ }),
 		)
 		defer app.MustStart().MustStop()
 		assert.Equal(t, 2, count)
@@ -187,7 +187,7 @@ func TestAppStart(t *testing.T) {
 		app := fxtest.New(
 			t,
 			Provide(blocker),
-			Invoke(func(*A) {}),
+			WithInvokes(func(*A) {}),
 		)
 
 		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond)
@@ -207,7 +207,7 @@ func TestAppStart(t *testing.T) {
 		}
 		app := fxtest.New(t,
 			Provide(failStart),
-			Invoke(func(struct{}) {}),
+			WithInvokes(func(struct{}) {}),
 		)
 		err := app.Start(context.Background())
 		require.Error(t, err)
@@ -224,7 +224,7 @@ func TestAppStart(t *testing.T) {
 		}
 		app := fxtest.New(t,
 			Provide(fail),
-			Invoke(func(struct{}) {}),
+			WithInvokes(func(struct{}) {}),
 		)
 		err := app.Start(context.Background())
 		require.Error(t, err)
@@ -232,8 +232,8 @@ func TestAppStart(t *testing.T) {
 		assert.Contains(t, err.Error(), "OnStop fail")
 	})
 
-	t.Run("InvokeNonFunction", func(t *testing.T) {
-		app := fxtest.New(t, Invoke(struct{}{}))
+	t.Run("WithInvokesNonFunction", func(t *testing.T) {
+		app := fxtest.New(t, WithInvokes(struct{}{}))
 		err := app.Start(context.Background())
 		require.Error(t, err, "expected start failure")
 		assert.Contains(t, err.Error(), "can't invoke non-function")
@@ -265,7 +265,7 @@ func TestAppStart(t *testing.T) {
 
 		app := fxtest.New(t,
 			Provide(func() type1 { return type1{} }),
-			Invoke(Invoke(func(type1) {
+			WithInvokes(WithInvokes(func(type1) {
 			})),
 		)
 		newErr := app.Err()
@@ -275,8 +275,8 @@ func TestAppStart(t *testing.T) {
 		require.Error(t, err, "expected start failure")
 		assert.Equal(t, err, newErr, "start should return the same error fx.New encountered")
 
-		assert.Contains(t, err.Error(), "fx.Option should be passed to fx.New directly, not to fx.Invoke")
-		assert.Contains(t, err.Error(), "fx.Invoke received fx.Invoke(go.uber.org/fx_test.TestAppStart")
+		assert.Contains(t, err.Error(), "fx.Option should be passed to fx.New directly, not to fx.WithInvokes")
+		assert.Contains(t, err.Error(), "received fx.WithInvokes(go.uber.org/fx_test.TestAppStart")
 	})
 
 	t.Run("ProvidingOptionsShouldFail", func(t *testing.T) {
@@ -289,8 +289,8 @@ func TestAppStart(t *testing.T) {
 				func() type1 { return type1{} },
 				func() type2 { return type2{} },
 			),
-			Invoke(func(type1) {
-				require.FailNow(t, "module Invoke must not be called")
+			WithInvokes(func(type1) {
+				require.FailNow(t, "module WithInvokes must not be called")
 			}),
 		)
 
@@ -310,7 +310,7 @@ func TestAppStart(t *testing.T) {
 func TestAppStop(t *testing.T) {
 	t.Run("Timeout", func(t *testing.T) {
 		block := func(context.Context) error { select {} }
-		app := fxtest.New(t, Invoke(func(l Lifecycle) {
+		app := fxtest.New(t, WithInvokes(func(l Lifecycle) {
 			l.Append(Hook{OnStop: block})
 		}))
 		app.MustStart()
@@ -332,7 +332,7 @@ func TestAppStop(t *testing.T) {
 		}
 		app := fxtest.New(t,
 			Provide(failStop),
-			Invoke(func(struct{}) {}),
+			WithInvokes(func(struct{}) {}),
 		)
 		app.MustStart()
 		err := app.Stop(context.Background())

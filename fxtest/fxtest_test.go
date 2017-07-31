@@ -78,7 +78,7 @@ func TestApp(t *testing.T) {
 
 		New(
 			spy,
-			fx.Invoke(func() error { return errors.New("fail") }),
+			fx.WithInvokes(func() error { return errors.New("fail") }),
 		).MustStart()
 
 		assert.Equal(t, 1, spy.failures, "Expected app to error on start.")
@@ -95,7 +95,7 @@ func TestApp(t *testing.T) {
 		New(
 			spy,
 			fx.Provide(construct),
-			fx.Invoke(func(struct{}) {}),
+			fx.WithInvokes(func(struct{}) {}),
 		).MustStart().MustStop()
 
 		assert.Equal(t, 1, spy.failures, "Expected Stop to fail.")

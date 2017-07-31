@@ -59,7 +59,7 @@ func TestOptionalTypes(t *testing.T) {
 
 	t.Run("NotProvided", func(t *testing.T) {
 		ran := false
-		app := fxtest.New(t, fx.Provide(newFoo), fx.Invoke(func(in in) {
+		app := fxtest.New(t, fx.Provide(newFoo), fx.WithInvokes(func(in in) {
 			assert.NotNil(t, in.Foo, "foo was not optional and provided, expected not nil")
 			assert.Nil(t, in.Bar, "bar was optional and not provided, expected nil")
 			ran = true
@@ -70,7 +70,7 @@ func TestOptionalTypes(t *testing.T) {
 
 	t.Run("Provided", func(t *testing.T) {
 		ran := false
-		app := fxtest.New(t, fx.Provide(newFoo, newBar), fx.Invoke(func(in in) {
+		app := fxtest.New(t, fx.Provide(newFoo, newBar), fx.WithInvokes(func(in in) {
 			assert.NotNil(t, in.Foo, "foo was not optional and provided, expected not nil")
 			assert.NotNil(t, in.Bar, "bar was optional and provided, expected not nil")
 			ran = true
@@ -117,7 +117,7 @@ func TestNamedTypes(t *testing.T) {
 		Bar *a `name:"bar"`
 	}
 	ran := false
-	app := fxtest.New(t, fx.Provide(newFoo, newBar), fx.Invoke(func(in in) {
+	app := fxtest.New(t, fx.Provide(newFoo, newBar), fx.WithInvokes(func(in in) {
 		assert.NotNil(t, in.Foo, "expected in.Foo to be injected")
 		assert.Equal(t, "foo", in.Foo.name, "expected to get type 'a' of name 'foo'")
 

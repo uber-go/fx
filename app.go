@@ -100,7 +100,7 @@ func (po provideOption) String() string {
 	return fmt.Sprintf("fx.Provide(%s)", strings.Join(items, ", "))
 }
 
-// Invoke registers functions that are executed eagerly on application start.
+// WithInvokes registers functions that are executed eagerly on application start.
 // Arguments for these functions are provided from the application's
 // dependency injection container.
 //
@@ -110,7 +110,7 @@ func (po provideOption) String() string {
 // success indicator. All other returned values are discarded.
 //
 // See the documentation for go.uber.org/dig for further details.
-func Invoke(funcs ...interface{}) Option {
+func WithInvokes(funcs ...interface{}) Option {
 	return invokeOption(funcs)
 }
 
@@ -125,7 +125,7 @@ func (io invokeOption) String() string {
 	for i, f := range io {
 		items[i] = fxreflect.FuncName(f)
 	}
-	return fmt.Sprintf("fx.Invoke(%s)", strings.Join(items, ", "))
+	return fmt.Sprintf("fx.WithInvokes(%s)", strings.Join(items, ", "))
 }
 
 // Options composes a collection of Options into a single Option.
@@ -234,7 +234,7 @@ func (app *App) executeInvokes() error {
 		app.logger.Printf("INVOKE\t\t%s", fname)
 
 		if _, ok := fn.(Option); ok {
-			err = fmt.Errorf("fx.Option should be passed to fx.New directly, not to fx.Invoke: fx.Invoke received %v", fn)
+			err = fmt.Errorf("fx.Option should be passed to fx.New directly, not to fx.WithInvokes: received %v", fn)
 		} else {
 			err = app.container.Invoke(fn)
 		}

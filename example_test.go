@@ -79,7 +79,7 @@ func Example() {
 		// the types in the container. Since the mux is now being used, its
 		// startup hook gets registered and the application includes an HTTP
 		// server.
-		fx.Invoke(Register),
+		fx.WithInvokes(Register),
 	)
 
 	// In a real application, we could just use app.Run() here. Since we don't
