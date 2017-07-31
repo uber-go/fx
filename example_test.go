@@ -84,14 +84,18 @@ func Example() {
 
 	// In a real application, we could just use app.Run() here. Since we don't
 	// want this example to run forever, we'll use Start and Stop.
-	if err := app.Start(fx.Timeout(time.Second)); err != nil {
+	startCtx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	defer cancel()
+	if err := app.Start(startCtx); err != nil {
 		log.Fatal(err)
 	}
 
 	// Normally, we'd block here with <-app.Done().
 	http.Get("http://localhost:8080/")
 
-	if err := app.Stop(fx.Timeout(time.Second)); err != nil {
+	stopCtx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	defer cancel()
+	if err := app.Stop(stopCtx); err != nil {
 		log.Fatal(err)
 	}
 	// Output:
