@@ -258,7 +258,9 @@ func (app *App) Run() {
 		app.logger.Fatalf("ERROR\t\tFailed to start: %v", err)
 	}
 
-	app.logger.PrintSignal(<-app.Done())
+	signals := make(chan os.Signal, 1)
+	signal.Notify(signals, syscall.SIGINT, syscall.SIGTERM)
+	app.logger.PrintSignal(<-signals)
 
 	if err := app.Stop(Timeout(DefaultTimeout)); err != nil {
 		app.logger.Fatalf("ERROR\t\tFailed to stop cleanly: %v", err)
@@ -294,14 +296,6 @@ func (app *App) Start(ctx context.Context) error {
 // some fail.
 func (app *App) Stop(ctx context.Context) error {
 	return withTimeout(ctx, app.lifecycle.Stop)
-}
-
-// Done returns a channel of signals to block on after starting the
-// application.
-func (app *App) Done() <-chan os.Signal {
-	c := make(chan os.Signal, 1)
-	signal.Notify(c, syscall.SIGINT, syscall.SIGTERM)
-	return c
 }
 
 func (app *App) provide(constructor interface{}) {
