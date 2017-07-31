@@ -64,7 +64,7 @@ func TestOptionalTypes(t *testing.T) {
 			assert.Nil(t, in.Bar, "bar was optional and not provided, expected nil")
 			ran = true
 		}))
-		app.MustStart().MustStop()
+		app.RequireStart().RequireStop()
 		assert.True(t, ran, "expected invoke to run")
 	})
 
@@ -75,7 +75,7 @@ func TestOptionalTypes(t *testing.T) {
 			assert.NotNil(t, in.Bar, "bar was optional and provided, expected not nil")
 			ran = true
 		}))
-		app.MustStart().MustStop()
+		app.RequireStart().RequireStop()
 		assert.True(t, ran, "expected invoke to run")
 	})
 }
@@ -126,6 +126,6 @@ func TestNamedTypes(t *testing.T) {
 
 		ran = true
 	}))
-	app.MustStart().MustStop()
+	app.RequireStart().RequireStop()
 	assert.True(t, ran, "expected invoke to run")
 }

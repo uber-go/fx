@@ -71,7 +71,7 @@ func TestExtract(t *testing.T) {
 			Provide(new1, new2),
 			Extract(&out),
 		)
-		app.MustStart().MustStop()
+		app.RequireStart().RequireStop()
 	})
 
 	t.Run("StructIsExtracted", func(t *testing.T) {
@@ -97,7 +97,7 @@ func TestExtract(t *testing.T) {
 			Extract(&out),
 		)
 
-		defer app.MustStart().MustStop()
+		defer app.RequireStart().RequireStop()
 		assert.NotNil(t, out.T1, "T1 must not be nil")
 		assert.NotNil(t, out.T2, "T2 must not be nil")
 		assert.True(t, gave1 == out.T1, "T1 must match")
@@ -120,7 +120,7 @@ func TestExtract(t *testing.T) {
 			Extract(&out),
 		)
 
-		defer app.MustStart().MustStop()
+		defer app.RequireStart().RequireStop()
 		assert.NotNil(t, out.T1, "T1 must not be nil")
 		assert.True(t, gave1 == out.T1, "T1 must match")
 	})
@@ -130,7 +130,7 @@ func TestExtract(t *testing.T) {
 		var out struct{ *type1 }
 
 		app := fxtest.New(t, Provide(new1), Extract(&out))
-		defer app.MustStart().MustStop()
+		defer app.RequireStart().RequireStop()
 
 		// Unexported fields are left unchanged.
 		assert.Nil(t, out.type1, "type1 must be nil")
@@ -142,7 +142,7 @@ func TestExtract(t *testing.T) {
 		var out struct{ type4 }
 
 		app := fxtest.New(t, Provide(new4), Extract(&out))
-		defer app.MustStart().MustStop()
+		defer app.RequireStart().RequireStop()
 
 		// Unexported fields are left unchanged.
 		assert.NotEqual(t, "foo", out.type4.foo)
@@ -166,7 +166,7 @@ func TestExtract(t *testing.T) {
 			Extract(&out),
 		)
 
-		defer app.MustStart().MustStop()
+		defer app.RequireStart().RequireStop()
 		assert.NotNil(t, out.X, "X must not be nil")
 		assert.NotNil(t, out.Y, "Y must not be nil")
 		assert.True(t, gave == out.X, "X must match")
@@ -199,7 +199,7 @@ func TestExtract(t *testing.T) {
 			Extract(&out),
 		)
 
-		defer app.MustStart().MustStop()
+		defer app.RequireStart().RequireStop()
 		assert.NotNil(t, out.T1, "T1 must not be nil")
 		assert.Nil(t, out.t2, "t2 must be nil")
 		assert.NotNil(t, out.T3, "T3 must not be nil")
@@ -228,7 +228,7 @@ func TestExtract(t *testing.T) {
 			Extract(&out),
 		)
 
-		defer app.MustStart().MustStop()
+		defer app.RequireStart().RequireStop()
 		assert.NotNil(t, out.T1, "T1 must not be nil")
 		assert.NotNil(t, out.t2, "t2 must not be nil")
 		assert.True(t, gave1 == out.T1, "T1 must match")
@@ -238,7 +238,7 @@ func TestExtract(t *testing.T) {
 	t.Run("TopLevelDigIn", func(t *testing.T) {
 		var out struct{ dig.In }
 		app := fxtest.New(t, Extract(&out))
-		defer app.MustStart().MustStop()
+		defer app.RequireStart().RequireStop()
 	})
 
 	t.Run("TopLevelFxIn", func(t *testing.T) {
@@ -251,7 +251,7 @@ func TestExtract(t *testing.T) {
 			Extract(&out),
 		)
 
-		defer app.MustStart().MustStop()
+		defer app.RequireStart().RequireStop()
 	})
 
 	t.Run("NestedFxIn", func(t *testing.T) {
@@ -275,7 +275,7 @@ func TestExtract(t *testing.T) {
 			Extract(&out),
 		)
 
-		defer app.MustStart().MustStop()
+		defer app.RequireStart().RequireStop()
 		assert.NotNil(t, out.Result.T1, "T1 must not be nil")
 		assert.Nil(t, out.Result.T2, "T2 must be nil")
 		assert.True(t, gave1 == out.Result.T1, "T1 must match")
@@ -296,7 +296,7 @@ func TestExtract(t *testing.T) {
 			Provide(func() int { return 42 }),
 			Extract(&out),
 		)
-		defer app.MustStart().MustStop()
+		defer app.RequireStart().RequireStop()
 		assert.Equal(t, 42, out.B.C, "B.C must match")
 	})
 
@@ -317,7 +317,7 @@ func TestExtract(t *testing.T) {
 			Extract(&out),
 		)
 
-		defer app.MustStart().MustStop()
+		defer app.RequireStart().RequireStop()
 		assert.NotNil(t, out.T1, "T1 must not be nil")
 		assert.Nil(t, out.T2, "T2 must be nil")
 

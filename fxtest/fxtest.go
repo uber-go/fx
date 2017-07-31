@@ -62,8 +62,8 @@ func New(tb TB, opts ...fx.Option) *App {
 	}
 }
 
-// MustStart calls Start, failing the test if an error is encountered.
-func (app *App) MustStart() *App {
+// RequireStart calls Start, failing the test if an error is encountered.
+func (app *App) RequireStart() *App {
 	if err := app.Start(context.Background()); err != nil {
 		app.tb.Errorf("application didn't start cleanly: %v", err)
 		app.tb.FailNow()
@@ -71,8 +71,8 @@ func (app *App) MustStart() *App {
 	return app
 }
 
-// MustStop calls Stop, failing the test if an error is encountered.
-func (app *App) MustStop() {
+// RequireStop calls Stop, failing the test if an error is encountered.
+func (app *App) RequireStop() {
 	if err := app.Stop(context.Background()); err != nil {
 		app.tb.Errorf("application didn't stop cleanly: %v", err)
 		app.tb.FailNow()
@@ -101,9 +101,9 @@ func NewLifecycle(t TB) *Lifecycle {
 // hook that doesn't succeed.
 func (l *Lifecycle) Start(ctx context.Context) error { return l.lc.Start(ctx) }
 
-// MustStart calls Start with context.Background(), failing the test if an
+// RequireStart calls Start with context.Background(), failing the test if an
 // error is encountered.
-func (l *Lifecycle) MustStart() *Lifecycle {
+func (l *Lifecycle) RequireStart() *Lifecycle {
 	if err := l.Start(context.Background()); err != nil {
 		l.t.Errorf("lifecycle didn't start cleanly: %v", err)
 		l.t.FailNow()
@@ -119,9 +119,9 @@ func (l *Lifecycle) MustStart() *Lifecycle {
 // returned.
 func (l *Lifecycle) Stop(ctx context.Context) error { return l.lc.Stop(ctx) }
 
-// MustStop calls Stop with context.Background(), failing the test if an error
+// RequireStop calls Stop with context.Background(), failing the test if an error
 // is encountered.
-func (l *Lifecycle) MustStop() {
+func (l *Lifecycle) RequireStop() {
 	if err := l.Stop(context.Background()); err != nil {
 		l.t.Errorf("lifecycle didn't stop cleanly: %v", err)
 		l.t.FailNow()
