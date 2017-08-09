@@ -2,7 +2,7 @@
 
 ## v1.1.0 (unreleased)
 
-- No changes yet.
+- Improve readability of start up logging.
 
 ## v1.0.0 (2017-07-31)
 
