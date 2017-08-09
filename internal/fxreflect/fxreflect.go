@@ -23,11 +23,14 @@ package fxreflect
 import (
 	"fmt"
 	"reflect"
+	"regexp"
 	"runtime"
 	"strings"
 
 	"go.uber.org/dig"
 )
+
+var vendorRe = regexp.MustCompile("^.*vendor/")
 
 // ReturnTypes takes a func and returns a slice of string'd types.
 func ReturnTypes(t interface{}) []string {
@@ -132,7 +135,9 @@ func FuncName(fn interface{}) string {
 	}
 
 	fnName := runtime.FuncForPC(fnV.Pointer()).Name()
-	return fmt.Sprintf("%s()", fnName)
+
+	// strip everything prior to the vendor
+	return fmt.Sprintf("%s()", vendorRe.ReplaceAllString(fnName, "vendor/"))
 }
 
 func isErr(t reflect.Type) bool {

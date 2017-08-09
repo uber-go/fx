@@ -123,6 +123,15 @@ func TestPrint(t *testing.T) {
 		assert.Equal(t, "", sink.String())
 	})
 
+	t.Run("printStripsVendorPath", func(t *testing.T) {
+		sink.Reset()
+		// assert is vendored within fx and is a good test case
+		logger.PrintProvide(assert.New)
+		assert.Contains(
+			t, sink.String(),
+			"*assert.Assertions <= vendor/github.com/stretchr/testify/assert.New()")
+	})
+
 	t.Run("printSignal", func(t *testing.T) {
 		sink.Reset()
 		logger.PrintSignal(os.Interrupt)
