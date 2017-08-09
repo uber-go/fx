@@ -76,7 +76,7 @@ func Example() {
 		// Provide all the constructors we need.
 		fx.Provide(NewLogger, NewHandler, NewMux),
 		// Before starting, register the handler. This forces resolution of all
-		// the Register function depends on: *http.ServeMux and http.Handler.
+		// the types Register function depends on: *http.ServeMux and http.Handler.
 		// Since the mux is now being used, its startup hook gets registered
 		// and the application includes an HTTP server.
 		fx.Invoke(Register),
