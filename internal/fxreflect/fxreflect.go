@@ -30,7 +30,7 @@ import (
 	"go.uber.org/dig"
 )
 
-var vendorRe = regexp.MustCompile("^.*vendor/")
+var vendorRe = regexp.MustCompile("^.*?vendor/")
 
 // ReturnTypes takes a func and returns a slice of string'd types.
 func ReturnTypes(t interface{}) []string {
