@@ -136,8 +136,7 @@ func FuncName(fn interface{}) string {
 
 	// Use the stdlib to un-escape any package import paths which can happen
 	// in the case of the "dot-git" postfix. Seems like a bug in stdlib =/
-	unescaped, err := url.QueryUnescape(fnName)
-	if err == nil {
+	if unescaped, err := url.QueryUnescape(fnName); err != nil {
 		fnName = unescaped
 	}
 
