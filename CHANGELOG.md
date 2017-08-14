@@ -1,5 +1,9 @@
 # Changelog
 
+## v1.1.0 (unreleased)
+
+- Improve readability of start up logging.
+
 ## v1.0.0 (2017-07-31)
 
 First stable release: no breaking changes will be made in the 1.x series.

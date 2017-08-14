@@ -29,6 +29,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/dig"
+	sample "go.uber.org/fx/internal/fxlog/sample.git"
 )
 
 type spy struct {
@@ -93,6 +94,13 @@ func TestPrint(t *testing.T) {
 		assert.Contains(t, s, "[Fx] PROVIDE\t*fxlog.A <=")
 		assert.Contains(t, s, "[Fx] PROVIDE\tfxlog.B <=")
 		assert.Contains(t, s, "[Fx] PROVIDE\tfxlog.C:foo <=")
+	})
+
+	t.Run("printHandlesDotGitCorrectly", func(t *testing.T) {
+		sink.Reset()
+		logger.PrintProvide(sample.New)
+		assert.NotContains(t, sink.String(), "%2e", "should not be url encoded")
+		assert.Contains(t, sink.String(), "sample.git", "should contain a dot")
 	})
 
 	t.Run("printOutNamedTypes", func(t *testing.T) {

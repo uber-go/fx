@@ -22,6 +22,7 @@ package fxreflect
 
 import (
 	"fmt"
+	"net/url"
 	"reflect"
 	"regexp"
 	"runtime"
@@ -136,6 +137,12 @@ func FuncName(fn interface{}) string {
 	}
 
 	fnName := runtime.FuncForPC(fnV.Pointer()).Name()
+
+	// Use the stdlib to un-escape any package import paths which can happen
+	// in the case of the "dot-git" postfix. Seems like a bug in stdlib =/
+	if unescaped, err := url.QueryUnescape(fnName); err == nil {
+		fnName = unescaped
+	}
 
 	// strip everything prior to the vendor
 	return fmt.Sprintf("%s()", vendorRe.ReplaceAllString(fnName, "vendor/"))

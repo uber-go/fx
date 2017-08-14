@@ -18,7 +18,9 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package fx
+package sample
 
-// Version is exported for runtime compatibility checks.
-const Version = "1.1.0"
+// New is a test constructor for a string
+func New() (string, error) {
+	return "Hi", nil
+}
