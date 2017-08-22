@@ -1,6 +1,6 @@
 # Changelog
 
-## v1.1.0 (unreleased)
+## v1.1.0 (2017-08-22)
 
 - Improve readability of start up logging.
 
