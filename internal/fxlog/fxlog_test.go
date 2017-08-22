@@ -29,6 +29,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/dig"
+	"go.uber.org/fx/internal/fxlog/foovendor"
 	sample "go.uber.org/fx/internal/fxlog/sample.git"
 )
 
@@ -129,6 +130,24 @@ func TestPrint(t *testing.T) {
 		// elsewhere.
 		logger.PrintProvide(bytes.NewBuffer(nil))
 		assert.Equal(t, "", sink.String())
+	})
+
+	t.Run("printStripsVendorPath", func(t *testing.T) {
+		sink.Reset()
+		// assert is vendored within fx and is a good test case
+		logger.PrintProvide(assert.New)
+		assert.Contains(
+			t, sink.String(),
+			"*assert.Assertions <= vendor/github.com/stretchr/testify/assert.New()")
+	})
+
+	t.Run("printFooVendorPath", func(t *testing.T) {
+		sink.Reset()
+		// assert is vendored within fx and is a good test case
+		logger.PrintProvide(foovendor.New)
+		assert.Contains(
+			t, sink.String(),
+			"string <= go.uber.org/fx/internal/fxlog/foovendor.New()")
 	})
 
 	t.Run("printSignal", func(t *testing.T) {
