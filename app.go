@@ -151,6 +151,18 @@ func Logger(p Printer) Option {
 	})
 }
 
+// NoopLogger is a no-op logger that implements the Printer interface.
+// When used with the Logger option, all Fx logs will be dropped.
+//
+// An application that wants to disable Fx logs should be created like so:
+//
+// app := fx.New(fx.Logger(fx.NoopLogger{}))
+type NoopLogger struct{}
+
+func (l NoopLogger) Printf(string, ...interface{}) {
+	return
+}
+
 // An App is a modular application built around dependency injection.
 type App struct {
 	err       error

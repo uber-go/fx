@@ -347,3 +347,8 @@ func TestReplaceLogger(t *testing.T) {
 	app.RequireStart().RequireStop()
 	assert.Contains(t, spy.String(), "RUNNING")
 }
+
+func TestNoopLogger(t *testing.T) {
+	app := fxtest.New(t, Logger(NoopLogger{}))
+	app.RequireStart().RequireStop()
+}
