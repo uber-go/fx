@@ -347,3 +347,8 @@ func TestReplaceLogger(t *testing.T) {
 	app.RequireStart().RequireStop()
 	assert.Contains(t, spy.String(), "RUNNING")
 }
+
+func TestNopLogger(t *testing.T) {
+	app := fxtest.New(t, NopLogger)
+	app.RequireStart().RequireStop()
+}
