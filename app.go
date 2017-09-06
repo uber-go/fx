@@ -151,6 +151,15 @@ func Logger(p Printer) Option {
 	})
 }
 
+// NopLogger disables the application's log output.
+var NopLogger = Logger(nopLogger{})
+
+type nopLogger struct{}
+
+func (l nopLogger) Printf(string, ...interface{}) {
+	return
+}
+
 // An App is a modular application built around dependency injection.
 type App struct {
 	err       error

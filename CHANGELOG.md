@@ -1,8 +1,12 @@
 # Changelog
 
-## v1.2.0 (unreleased)
+## v1.3.0 (unreleased)
 
 - Improve readability of hook logging in addition to provide and invoke.
+
+## v1.2.0 (2017-09-06)
+
+- Add `fx.NopLogger` which disables the Fx application's log output.
 
 ## v1.1.0 (2017-08-22)
 
