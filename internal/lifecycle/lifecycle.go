@@ -82,11 +82,12 @@ func (l *Lifecycle) Stop(ctx context.Context) error {
 	var errs []error
 	// Run backward from last successful OnStart.
 	for i := l.position; i >= 0; i-- {
-		if l.hooks[i].OnStop == nil {
+		hook := l.hooks[i]
+		if hook.OnStop == nil {
 			continue
 		}
-		l.logger.Printf("STOP\t\t%s()", l.hooks[i].caller)
-		if err := l.hooks[i].OnStop(ctx); err != nil {
+		l.logger.Printf("STOP\t\t%s()", hook.caller)
+		if err := hook.OnStop(ctx); err != nil {
 			// For best-effort cleanup, keep going after errors.
 			errs = append(errs, err)
 		}

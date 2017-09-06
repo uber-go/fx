@@ -26,9 +26,9 @@ import (
 	"testing"
 
 	"go.uber.org/fx/internal/fxlog"
-	"go.uber.org/multierr"
 
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/multierr"
 )
 
 func TestLifecycleStart(t *testing.T) {

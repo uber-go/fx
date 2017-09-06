@@ -108,6 +108,20 @@ func traverseOuts(k key, f func(s string)) {
 	f(k.String())
 }
 
+// sanitize makes the function name suitable for logging display.
+// It removes url-encoded elements from the `dot.git` package names
+// shortens the vendored paths.
+func sanitize(function string) string {
+	// Use the stdlib to un-escape any package import paths which can happen
+	// in the case of the "dot-git" postfix. Seems like a bug in stdlib =/
+	if unescaped, err := url.QueryUnescape(function); err == nil {
+		function = unescaped
+	}
+
+	// strip everything prior to the vendor
+	return vendorRe.ReplaceAllString(function, "vendor/")
+}
+
 // Caller returns the formatted calling func name
 func Caller() string {
 	// Ascend at most 8 frames looking for a caller outside fx.
@@ -124,7 +138,7 @@ func Caller() string {
 		if shouldIgnoreFrame(f) {
 			continue
 		}
-		return f.Function
+		return sanitize(f.Function)
 	}
 	return "n/a"
 }
@@ -136,16 +150,8 @@ func FuncName(fn interface{}) string {
 		return "n/a"
 	}
 
-	fnName := runtime.FuncForPC(fnV.Pointer()).Name()
-
-	// Use the stdlib to un-escape any package import paths which can happen
-	// in the case of the "dot-git" postfix. Seems like a bug in stdlib =/
-	if unescaped, err := url.QueryUnescape(fnName); err == nil {
-		fnName = unescaped
-	}
-
-	// strip everything prior to the vendor
-	return fmt.Sprintf("%s()", vendorRe.ReplaceAllString(fnName, "vendor/"))
+	function := runtime.FuncForPC(fnV.Pointer()).Name()
+	return fmt.Sprintf("%s()", sanitize(function))
 }
 
 func isErr(t reflect.Type) bool {
