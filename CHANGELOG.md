@@ -1,6 +1,6 @@
 # Changelog
 
-## v1.2.0 (unreleased)
+## v1.2.0 (2017-09-06)
 
 - Add `fx.NopLogger` which disables the Fx application's log output.
 
