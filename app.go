@@ -152,9 +152,7 @@ func Logger(p Printer) Option {
 }
 
 // NopLogger disables the application's log output.
-func NopLogger() Option {
-	return Logger(nopLogger{})
-}
+var NopLogger Option = Logger(nopLogger{})
 
 type nopLogger struct{}
 

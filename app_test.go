@@ -349,6 +349,6 @@ func TestReplaceLogger(t *testing.T) {
 }
 
 func TestNoopLogger(t *testing.T) {
-	app := fxtest.New(t, NopLogger())
+	app := fxtest.New(t, NopLogger)
 	app.RequireStart().RequireStop()
 }
