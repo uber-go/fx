@@ -73,3 +73,32 @@ func TestFuncName(t *testing.T) {
 	assert.Equal(t, "go.uber.org/fx/internal/fxreflect.someFunc()", FuncName(someFunc))
 	assert.Equal(t, "n/a", FuncName(struct{}{}))
 }
+
+func TestSanitizeFuncNames(t *testing.T) {
+	cases := []struct {
+		name     string
+		input    string
+		expected string
+	}{
+		{
+			"url encoding",
+			"go.uber.org/fx/sample%2egit/someFunc",
+			"go.uber.org/fx/sample.git/someFunc",
+		},
+		{
+			"vendor removal",
+			"go.uber.org/fx/vendor/github.com/some/lib.SomeFunc",
+			"vendor/github.com/some/lib.SomeFunc",
+		},
+		{
+			"package happens to be named vendor is untouched",
+			"go.uber.org/fx/foovendor/someFunc",
+			"go.uber.org/fx/foovendor/someFunc",
+		},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			assert.Equal(t, c.expected, sanitize(c.input))
+		})
+	}
+}

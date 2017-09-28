@@ -2,7 +2,7 @@
 
 ## v1.3.0 (unreleased)
 
-- No changes yet.
+- Improve readability of hook logging in addition to provide and invoke.
 
 ## v1.2.0 (2017-09-06)
 
