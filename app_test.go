@@ -229,7 +229,7 @@ func TestAppStart(t *testing.T) {
 		err := app.Start(context.Background())
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "OnStart fail")
-		assert.Contains(t, err.Error(), "OnStop fail")
+		assert.NotContains(t, err.Error(), "OnStop fail")
 	})
 
 	t.Run("InvokeNonFunction", func(t *testing.T) {

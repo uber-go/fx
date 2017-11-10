@@ -108,6 +108,18 @@ func TestLifecycleStop(t *testing.T) {
 		assert.Nil(t, l.Stop(context.Background()), "no lifecycle hooks should have resulted in stop returning nil")
 	})
 
+	t.Run("DoesNothingWhenNotStarted", func(t *testing.T) {
+		hook := Hook{
+			OnStop: func(context.Context) error {
+				assert.Fail(t, "OnStop should not be called if lifecycle was never started")
+				return nil
+			},
+		}
+		l := &Lifecycle{logger: fxlog.New()}
+		l.Append(hook)
+		l.Stop(context.Background())
+	})
+
 	t.Run("ExecutesInReverseOrder", func(t *testing.T) {
 		l := &Lifecycle{logger: fxlog.New()}
 		count := 2
@@ -181,5 +193,23 @@ func TestLifecycleStop(t *testing.T) {
 
 		assert.NoError(t, l.Start(context.Background()))
 		assert.NoError(t, l.Stop(context.Background()))
+	})
+
+	t.Run("DoesNothingIfStartFailed", func(t *testing.T) {
+		l := New(nil)
+		err := errors.New("some start error")
+
+		l.Append(Hook{
+			OnStart: func(context.Context) error {
+				return err
+			},
+			OnStop: func(context.Context) error {
+				assert.Fail(t, "OnStop should not be called if start failed")
+				return nil
+			},
+		})
+
+		assert.Equal(t, err, l.Start(context.Background()))
+		l.Stop(context.Background())
 	})
 }
