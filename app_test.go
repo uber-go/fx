@@ -30,6 +30,7 @@ import (
 
 	. "go.uber.org/fx"
 	"go.uber.org/fx/fxtest"
+	"go.uber.org/multierr"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -215,10 +216,16 @@ func TestAppStart(t *testing.T) {
 	})
 
 	t.Run("StartAndStopErrors", func(t *testing.T) {
+		errStop1 := errors.New("OnStop fail 1")
+		errStart2 := errors.New("OnStart fail 2")
 		fail := func(lc Lifecycle) struct{} {
 			lc.Append(Hook{
-				OnStart: func(context.Context) error { return errors.New("OnStart fail") },
-				OnStop:  func(context.Context) error { return errors.New("OnStop fail") },
+				OnStart: func(context.Context) error { return nil },
+				OnStop:  func(context.Context) error { return errStop1 },
+			})
+			lc.Append(Hook{
+				OnStart: func(context.Context) error { return errStart2 },
+				OnStop:  func(context.Context) error { assert.Fail(t, "should be never called"); return nil },
 			})
 			return struct{}{}
 		}
@@ -228,8 +235,7 @@ func TestAppStart(t *testing.T) {
 		)
 		err := app.Start(context.Background())
 		require.Error(t, err)
-		assert.Contains(t, err.Error(), "OnStart fail")
-		assert.NotContains(t, err.Error(), "OnStop fail")
+		assert.Equal(t, []error{errStart2, errStop1}, multierr.Errors(err))
 	})
 
 	t.Run("InvokeNonFunction", func(t *testing.T) {
