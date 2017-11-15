@@ -27,6 +27,7 @@ import (
 	"fmt"
 	"os/signal"
 	"strings"
+	"sync"
 	"syscall"
 	"testing"
 	"time"
@@ -40,14 +41,27 @@ import (
 
 type printerSpy struct {
 	*bytes.Buffer
+	sync.Mutex
 }
 
-func (ps printerSpy) Printf(format string, args ...interface{}) {
+func newPrinterSpy() *printerSpy {
+	return &printerSpy{Buffer: &bytes.Buffer{}}
+}
+
+func (ps *printerSpy) Printf(format string, args ...interface{}) {
+	ps.Lock()
+	defer ps.Unlock()
 	fmt.Fprintf(ps.Buffer, format, args...)
 	ps.Buffer.WriteRune('\n')
 }
 
-func (ps printerSpy) waitContains(substr string, timeout time.Duration) error {
+func (ps *printerSpy) String() string {
+	ps.Lock()
+	defer ps.Unlock()
+	return ps.Buffer.String()
+}
+
+func (ps *printerSpy) waitContains(substr string, timeout time.Duration) error {
 	done := time.After(timeout)
 	for !strings.Contains(ps.String(), substr) {
 		select {
@@ -75,7 +89,7 @@ func TestNewApp(t *testing.T) {
 		// after applying other options. This prevents the app configuration
 		// (e.g., logging) from changing halfway through our provides.
 
-		spy := &printerSpy{&bytes.Buffer{}}
+		spy := newPrinterSpy()
 		app := fxtest.New(t, Provide(func() struct{} { return struct{}{} }), Logger(spy))
 		defer app.RequireStart().RequireStop()
 		assert.Contains(t, spy.String(), "PROVIDE\tstruct {}")
@@ -177,7 +191,7 @@ func TestOptions(t *testing.T) {
 	})
 
 	t.Run("Error", func(t *testing.T) {
-		spy := printerSpy{&bytes.Buffer{}}
+		spy := newPrinterSpy()
 		fxtest.New(t,
 			Provide(&bytes.Buffer{}), // error, not a constructor
 			Logger(spy),
@@ -538,7 +552,7 @@ func TestExecute(t *testing.T) {
 
 func TestAppRun(t *testing.T) {
 	defer signal.Reset(syscall.SIGINT, syscall.SIGTERM)
-	spy := printerSpy{&bytes.Buffer{}}
+	spy := newPrinterSpy()
 	app := fxtest.New(t, Logger(spy))
 	go app.Run()
 	require.NoError(t, spy.waitContains("RUNNING", time.Second))
@@ -547,7 +561,7 @@ func TestAppRun(t *testing.T) {
 }
 
 func TestReplaceLogger(t *testing.T) {
-	spy := printerSpy{&bytes.Buffer{}}
+	spy := newPrinterSpy()
 	app := fxtest.New(t, Logger(spy))
 	app.RequireStart().RequireStop()
 	assert.Contains(t, spy.String(), "STARTED")
