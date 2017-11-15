@@ -25,6 +25,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os/signal"
+	"strings"
+	"syscall"
 	"testing"
 	"time"
 
@@ -42,6 +45,18 @@ type printerSpy struct {
 func (ps printerSpy) Printf(format string, args ...interface{}) {
 	fmt.Fprintf(ps.Buffer, format, args...)
 	ps.Buffer.WriteRune('\n')
+}
+
+func (ps printerSpy) waitContains(substr string, timeout time.Duration) error {
+	done := time.After(timeout)
+	for !strings.Contains(ps.String(), substr) {
+		select {
+		case <-done:
+			return fmt.Errorf("wait contains %q timeout", substr)
+		case <-time.After(10 * time.Millisecond):
+		}
+	}
+	return nil
 }
 
 func TestNewApp(t *testing.T) {
@@ -519,6 +534,16 @@ func TestExecute(t *testing.T) {
 		assert.Contains(t, err.Error(), "Execute fail")
 		assert.Equal(t, 2, n)
 	})
+}
+
+func TestAppRun(t *testing.T) {
+	defer signal.Reset(syscall.SIGINT, syscall.SIGTERM)
+	spy := printerSpy{&bytes.Buffer{}}
+	app := fxtest.New(t, Logger(spy))
+	go app.Run()
+	require.NoError(t, spy.waitContains("RUNNING", time.Second))
+	require.NoError(t, syscall.Kill(syscall.Getpid(), syscall.SIGINT))
+	require.NoError(t, spy.waitContains("INTERRUPT", time.Second))
 }
 
 func TestReplaceLogger(t *testing.T) {
