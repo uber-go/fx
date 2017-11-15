@@ -1,19 +1,19 @@
-hash: 69ea85b6b897ad4037a7ae81c67ff0e485b3867ae6c691da0f07e50cfcef16b8
-updated: 2017-07-31T11:51:01.198543645-07:00
+hash: 978e58bb7eb90f22e85c1f8f59a86d84263f4c6909b7718222ec5b6d2c64c2e8
+updated: 2017-11-15T11:26:38.99350717-08:00
 imports:
 - name: go.uber.org/atomic
-  version: 4e336646b2ef9fc6e47be8e21594178f98e5ebcf
+  version: 8474b86a5a6f79c443ce4b2992817ff32cf208b8
 - name: go.uber.org/dig
-  version: 5e65f1a430fd50d4291edc5ee9811f7dd520d77d
+  version: a752dd97d0e0718ba977eaaca94a23a4d28b7a08
 - name: go.uber.org/multierr
   version: 3c4937480c32f4c13a875a1829af76c98ca3d40a
 testImports:
 - name: github.com/davecgh/go-spew
-  version: 6d212800a42e8ab5c146b8ace3490ee17e5225f9
+  version: 04cdfd42973bb9c8589fd6a731800cf222fde1a9
   subpackages:
   - spew
 - name: github.com/golang/lint
-  version: c5fb716d6688a859aae56d26d3e6070808df29f7
+  version: e5d664eb928e9d79eea4a648ca451da7208d5789
   subpackages:
   - golint
 - name: github.com/pmezard/go-difflib
@@ -30,6 +30,6 @@ testImports:
   subpackages:
   - update-license
 - name: golang.org/x/tools
-  version: bc6db94186c03835daa5c1c679fba599dc1f3b79
+  version: 4e70a1b26a7875f00ca1916637a876b5ffaeec59
   subpackages:
   - cover

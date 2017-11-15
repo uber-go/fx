@@ -128,7 +128,7 @@ func Caller() string {
 	pcs := make([]uintptr, 8)
 
 	// Don't include this frame.
-	n := runtime.Callers(1, pcs)
+	n := runtime.Callers(2, pcs)
 	if n == 0 {
 		return "n/a"
 	}

@@ -75,7 +75,7 @@ func TestNewApp(t *testing.T) {
 		)
 		err := app.Err()
 		require.Error(t, err, "fx.New should return an error")
-		assert.Contains(t, err.Error(), "fx_test.A ->fx_test.B ->fx_test.A")
+		assert.Contains(t, err.Error(), "fx_test.A -> fx_test.B -> fx_test.A")
 	})
 }
 
