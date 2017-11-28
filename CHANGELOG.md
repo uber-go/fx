@@ -3,6 +3,8 @@
 ## v1.3.0 (unreleased)
 
 - Improve readability of hook logging in addition to provide and invoke.
+- Fix bug which caused the OnStop for a lifecycle hook to be called even if it
+  failed to start.
 
 ## v1.2.0 (2017-09-06)
 
