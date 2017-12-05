@@ -41,7 +41,7 @@ func TestPopulate(t *testing.T) {
 			Provide(func() *t1 { panic("should not be called ") }),
 			Populate(),
 		)
-		require.NoError(t, app.Err())
+		app.RequireStart().RequireStop()
 	})
 
 	t.Run("populate single", func(t *testing.T) {
@@ -50,7 +50,7 @@ func TestPopulate(t *testing.T) {
 			Provide(func() *t1 { return &t1{} }),
 			Populate(&v1),
 		)
-		require.NoError(t, app.Err())
+		app.RequireStart().RequireStop()
 		require.NotNil(t, v1, "did not populate value")
 	})
 
@@ -60,7 +60,7 @@ func TestPopulate(t *testing.T) {
 			Provide(func() io.Reader { return strings.NewReader("hello world") }),
 			Populate(&reader),
 		)
-		require.NoError(t, app.Err())
+		app.RequireStart().RequireStop()
 
 		bs, err := ioutil.ReadAll(reader)
 		require.NoError(t, err, "Failed to use populated io.Reader")
@@ -79,7 +79,8 @@ func TestPopulate(t *testing.T) {
 			Populate(&v1),
 			Populate(&v2),
 		)
-		require.NoError(t, app.Err())
+		app.RequireStart().RequireStop()
+
 		require.NotNil(t, v1, "did not populate argument 1")
 		require.NotNil(t, v2, "did not populate argument 2")
 	})
@@ -98,7 +99,8 @@ func TestPopulate(t *testing.T) {
 
 			Populate(&targets),
 		)
-		require.NoError(t, app.Err())
+		app.RequireStart().RequireStop()
+
 		require.NotNil(t, targets.V1, "did not populate field 1")
 		require.NotNil(t, targets.V2, "did not populate field 2")
 	})
