@@ -21,6 +21,7 @@
 package fx_test
 
 import (
+	"context"
 	"fmt"
 
 	"go.uber.org/fx"
@@ -33,11 +34,16 @@ func ExamplePopulate() {
 
 	// We want to get the user out of the dependency injection container.
 	var user Username
-	fx.New(
+	app := fx.New(
 		UserModule,
 
 		fx.Populate(&user),
 	)
+	if err := app.Start(context.Background()); err != nil {
+		panic(err)
+	}
+	defer app.Stop(context.Background())
+
 	fmt.Println(user)
 
 	// Output:
