@@ -38,9 +38,7 @@ func Extract(target interface{}) Option {
 	v := reflect.ValueOf(target)
 
 	if t := v.Type(); t.Kind() != reflect.Ptr || t.Elem().Kind() != reflect.Struct {
-		return Invoke(func() error {
-			return fmt.Errorf("Extract expected a pointer to a struct, got a %v", t)
-		})
+		return invokeErr(fmt.Errorf("Extract expected a pointer to a struct, got a %v", t))
 	}
 
 	v = v.Elem()
