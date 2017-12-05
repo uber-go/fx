@@ -33,7 +33,11 @@ import (
 )
 
 func TestPopulate(t *testing.T) {
-	type t1 struct{}
+	// We make sure t1 has a size so when we compare pointers, 2 different
+	// objects are not equal.
+	type t1 struct {
+		buf [1024]byte
+	}
 	type t2 struct{}
 
 	t.Run("populate nothing", func(t *testing.T) {
@@ -104,6 +108,73 @@ func TestPopulate(t *testing.T) {
 		require.NotNil(t, targets.V1, "did not populate field 1")
 		require.NotNil(t, targets.V2, "did not populate field 2")
 	})
+
+	t.Run("populate named field", func(t *testing.T) {
+		type result struct {
+			Out
+
+			V1 *t1 `name:"n1"`
+			V2 *t1 `name:"n2"`
+		}
+
+		targets := struct {
+			In
+
+			V1 *t1 `name:"n1"`
+			V2 *t1 `name:"n2"`
+		}{}
+
+		app := fxtest.New(t,
+			Provide(func() result {
+				return result{
+					V1: &t1{},
+					V2: &t1{},
+				}
+			}),
+
+			Populate(&targets),
+		)
+		app.RequireStart().RequireStop()
+
+		require.NotNil(t, targets.V1, "did not populate field 1")
+		require.NotNil(t, targets.V2, "did not populate field 2")
+		// Cannot use assert.Equal here as we want to compare pointers.
+		assert.False(t, targets.V1 == targets.V2, "fields should be different")
+	})
+
+	t.Run("populate group", func(t *testing.T) {
+		type result struct {
+			Out
+
+			V1 *t1 `group:"g"`
+			V2 *t1 `group:"g"`
+		}
+
+		targets := struct {
+			In
+
+			Group []*t1 `group:"g"`
+		}{}
+
+		app := fxtest.New(t,
+			Provide(func() result {
+				return result{
+					V1: &t1{},
+					V2: &t1{},
+				}
+			}),
+
+			Populate(&targets),
+		)
+		app.RequireStart().RequireStop()
+
+		require.Len(t, targets.Group, 2, "Expected group to have 2 values")
+		require.NotNil(t, targets.Group[0], "did not populate group value 1")
+		require.NotNil(t, targets.Group[1], "did not populate group value 2")
+		// Cannot use assert.Equal here as we want to compare pointers.
+		assert.False(t, targets.Group[0] == targets.Group[1], "group values should be different")
+	})
+
 }
 
 func TestPopulateErrors(t *testing.T) {
