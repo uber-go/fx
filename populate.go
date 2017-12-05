@@ -25,8 +25,8 @@ import (
 	"reflect"
 )
 
-// Populate sets values with values from the dependency injection container
-// before application start. All arguments must be pointers to the values
+// Populate sets targets with values from the dependency injection container
+// before application start. All targets must be pointers to the values
 // that must be populated. Pointers to structs that embed In are supported,
 // which can be used to populate multiple values in a struct.
 func Populate(targets ...interface{}) Option {
@@ -34,11 +34,11 @@ func Populate(targets ...interface{}) Option {
 	targetTypes := make([]reflect.Type, len(targets))
 	for i, t := range targets {
 		if t == nil {
-			return invokeErr(fmt.Errorf("argument %v is nil", i+1))
+			return invokeErr(fmt.Errorf("failed to Populate: target %v is nil", i+1))
 		}
 		rt := reflect.TypeOf(t)
 		if rt.Kind() != reflect.Ptr {
-			return invokeErr(fmt.Errorf("argument %v is not a pointer type, got %T", i+1, t))
+			return invokeErr(fmt.Errorf("failed to Populate: target %v is not a pointer type, got %T", i+1, t))
 		}
 
 		targetTypes[i] = reflect.TypeOf(t).Elem()
