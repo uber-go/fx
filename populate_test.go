@@ -223,12 +223,12 @@ func TestPopulateErrors(t *testing.T) {
 		{
 			msg:     "invalid last argument",
 			opt:     Populate(&v, t1{}),
-			wantErr: "argument 2 is not a pointer type",
+			wantErr: "target 2 is not a pointer type",
 		},
 		{
 			msg:     "nil argument",
 			opt:     Populate(&v, nil, &v),
-			wantErr: "argument 2 is nil",
+			wantErr: "target 2 is nil",
 		},
 	}
 
