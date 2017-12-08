@@ -1,5 +1,9 @@
 # Changelog
 
+## v1.5.0 (unreleased)
+
+- No changes yet.
+
 ## v1.4.0 (2017-12-07)
 
 - Add `fx.Populate` to populate variables with values from the dependency
