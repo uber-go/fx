@@ -1,6 +1,6 @@
 # Changelog
 
-## v1.4.0 (unreleased)
+## v1.4.0 (2017-12-07)
 
 - Add `fx.Populate` to populate variables with values from the dependency
   injection container without requiring intermediate structs.
