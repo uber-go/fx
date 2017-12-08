@@ -25,6 +25,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os/signal"
+	"strings"
+	"sync"
+	"syscall"
 	"testing"
 	"time"
 
@@ -38,11 +42,36 @@ import (
 
 type printerSpy struct {
 	*bytes.Buffer
+	sync.Mutex
 }
 
-func (ps printerSpy) Printf(format string, args ...interface{}) {
+func newPrinterSpy() *printerSpy {
+	return &printerSpy{Buffer: &bytes.Buffer{}}
+}
+
+func (ps *printerSpy) Printf(format string, args ...interface{}) {
+	ps.Lock()
+	defer ps.Unlock()
 	fmt.Fprintf(ps.Buffer, format, args...)
 	ps.Buffer.WriteRune('\n')
+}
+
+func (ps *printerSpy) String() string {
+	ps.Lock()
+	defer ps.Unlock()
+	return ps.Buffer.String()
+}
+
+func (ps *printerSpy) waitContains(substr string, timeout time.Duration) error {
+	done := time.After(timeout)
+	for !strings.Contains(ps.String(), substr) {
+		select {
+		case <-done:
+			return fmt.Errorf("wait contains %q timeout", substr)
+		case <-time.After(10 * time.Millisecond):
+		}
+	}
+	return nil
 }
 
 func TestNewApp(t *testing.T) {
@@ -61,7 +90,7 @@ func TestNewApp(t *testing.T) {
 		// after applying other options. This prevents the app configuration
 		// (e.g., logging) from changing halfway through our provides.
 
-		spy := &printerSpy{&bytes.Buffer{}}
+		spy := newPrinterSpy()
 		app := fxtest.New(t, Provide(func() struct{} { return struct{}{} }), Logger(spy))
 		defer app.RequireStart().RequireStop()
 		assert.Contains(t, spy.String(), "PROVIDE\tstruct {}")
@@ -163,7 +192,7 @@ func TestOptions(t *testing.T) {
 	})
 
 	t.Run("Error", func(t *testing.T) {
-		spy := printerSpy{&bytes.Buffer{}}
+		spy := newPrinterSpy()
 		fxtest.New(t,
 			Provide(&bytes.Buffer{}), // error, not a constructor
 			Logger(spy),
@@ -347,11 +376,201 @@ func TestAppStop(t *testing.T) {
 	})
 }
 
+func TestExecute(t *testing.T) {
+	type type1 struct{}
+	type type2 struct{}
+
+	t.Run("HappyPath", func(t *testing.T) {
+		var n int
+		hook := func(lc Lifecycle) {
+			lc.Append(Hook{
+				OnStart: func(context.Context) error {
+					n++
+					return nil
+				},
+				OnStop: func(context.Context) error {
+					n++
+					return nil
+				},
+			})
+		}
+		app := fxtest.New(t,
+			Provide(func() type1 { return type1{} }),
+			Provide(func() type2 { return type2{} }),
+			Invoke(hook),
+		)
+		err := app.Execute(
+			func(type1) { n++ },
+			func(type2) { n++ },
+		)
+		assert.NoError(t, err)
+		assert.Equal(t, 4, n)
+	})
+
+	t.Run("StartError", func(t *testing.T) {
+		var n int
+		failStart := func(lc Lifecycle) {
+			lc.Append(Hook{
+				OnStart: func(context.Context) error {
+					n++
+					return errors.New("OnStart fail")
+				},
+				OnStop: func(context.Context) error {
+					n++
+					return nil
+				},
+			})
+		}
+		app := fxtest.New(t,
+			Provide(func() type1 { return type1{} }),
+			Invoke(failStart),
+		)
+		err := app.Execute(
+			func(type1) {
+				require.FailNow(t, "Execute action must not be called")
+			},
+		)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "OnStart fail")
+		assert.Equal(t, 2, n)
+	})
+
+	t.Run("ExecuteError", func(t *testing.T) {
+		var n int
+		hook := func(lc Lifecycle) {
+			lc.Append(Hook{
+				OnStart: func(context.Context) error {
+					n++
+					return nil
+				},
+				OnStop: func(context.Context) error {
+					n++
+					return nil
+				},
+			})
+		}
+		app := fxtest.New(t,
+			Provide(func() type1 { return type1{} }),
+			Provide(func() type2 { return type2{} }),
+			Invoke(hook),
+		)
+		execErr := errors.New("Execute fail")
+		err := app.Execute(
+			func(type1) error {
+				n++
+				return execErr
+			},
+			func(type2) {
+				n++
+				require.FailNow(t, "Execute action must not be called")
+			},
+		)
+		require.Error(t, err)
+		assert.Equal(t, err, execErr)
+		assert.Equal(t, 3, n)
+	})
+
+	t.Run("ExecutePanic", func(t *testing.T) {
+		var n int
+		hook := func(lc Lifecycle) {
+			lc.Append(Hook{
+				OnStart: func(context.Context) error {
+					n++
+					return nil
+				},
+				OnStop: func(context.Context) error {
+					n++
+					return nil
+				},
+			})
+		}
+		app := fxtest.New(t,
+			Provide(func() type1 { return type1{} }),
+			Provide(func() type2 { return type2{} }),
+			Invoke(hook),
+		)
+		func() {
+			defer func() {
+				require.Equal(t, "Execute panic", recover())
+			}()
+			app.Execute(
+				func(type1) error {
+					n++
+					panic("Execute panic")
+				},
+				func(type2) {
+					n++
+					require.FailNow(t, "Execute action must not be called")
+				},
+			)
+		}()
+		assert.Equal(t, 3, n)
+	})
+
+	t.Run("StopError", func(t *testing.T) {
+		var n int
+		failStop := func(lc Lifecycle) {
+			lc.Append(Hook{
+				OnStop: func(context.Context) error {
+					n++
+					return errors.New("OnStop fail")
+				},
+			})
+		}
+		app := fxtest.New(t,
+			Provide(func() type1 { return type1{} }),
+			Invoke(failStop),
+		)
+		err := app.Execute(
+			func(type1) { n++ },
+		)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "OnStop fail")
+		assert.Equal(t, 2, n)
+	})
+
+	t.Run("ExecuteAndStopError", func(t *testing.T) {
+		var n int
+		failStop := func(lc Lifecycle) {
+			lc.Append(Hook{
+				OnStop: func(context.Context) error {
+					n++
+					return errors.New("OnStop fail")
+				},
+			})
+		}
+		app := fxtest.New(t,
+			Provide(func() type1 { return type1{} }),
+			Invoke(failStop),
+		)
+		err := app.Execute(
+			func(type1) error {
+				n++
+				return errors.New("Execute fail")
+			},
+		)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "OnStop fail")
+		assert.Contains(t, err.Error(), "Execute fail")
+		assert.Equal(t, 2, n)
+	})
+}
+
+func TestAppRun(t *testing.T) {
+	defer signal.Reset(syscall.SIGINT, syscall.SIGTERM)
+	spy := newPrinterSpy()
+	app := fxtest.New(t, Logger(spy))
+	go app.Run()
+	require.NoError(t, spy.waitContains("RUNNING", time.Second))
+	require.NoError(t, syscall.Kill(syscall.Getpid(), syscall.SIGINT))
+	require.NoError(t, spy.waitContains("INTERRUPT", time.Second))
+}
+
 func TestReplaceLogger(t *testing.T) {
-	spy := printerSpy{&bytes.Buffer{}}
+	spy := newPrinterSpy()
 	app := fxtest.New(t, Logger(spy))
 	app.RequireStart().RequireStop()
-	assert.Contains(t, spy.String(), "RUNNING")
+	assert.Contains(t, spy.String(), "STARTED")
 }
 
 func TestNopLogger(t *testing.T) {

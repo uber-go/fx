@@ -251,21 +251,61 @@ func (app *App) executeInvokes() error {
 //
 // See Start and Stop for application lifecycle details.
 func (app *App) Run() {
+	err := app.Execute(func() {
+		app.logger.Printf("RUNNING")
+		app.logger.PrintSignal(<-app.Done())
+	})
+	if err != nil {
+		// errors already logged in app.Execute()
+		os.Exit(1)
+	}
+}
+
+// Execute starts the application, invokes provided functions, and then
+// gracefully shuts the application down.
+//
+// Arguments for these functions are provided from the application's dependency
+// injection container.
+//
+// Invoked functions may have any number of returned values. If the final
+// returned object is an error, it's assumed to be a success indicator. All
+// other returned values are discarded. If one of invocations results in error,
+// the rest of the functions will not be invoked.
+//
+// Execute uses DefaultTimeout for the start and stop timeouts.
+//
+// See Start and Stop for application lifecycle details.
+func (app *App) Execute(funcs ...interface{}) (err error) {
 	startCtx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
 	defer cancel()
 
-	if err := app.Start(startCtx); err != nil {
-		app.logger.Fatalf("ERROR\t\tFailed to start: %v", err)
+	if err = app.Start(startCtx); err != nil {
+		return
 	}
 
-	app.logger.PrintSignal(<-app.Done())
+	defer func() {
+		stopCtx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
+		defer cancel()
 
-	stopCtx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
-	defer cancel()
+		if stopErr := app.Stop(stopCtx); stopErr != nil {
+			app.logger.Printf("ERROR\t\tFailed to stop cleanly: %v", stopErr)
+			err = multierr.Append(err, stopErr)
+		}
+	}()
 
-	if err := app.Stop(stopCtx); err != nil {
-		app.logger.Fatalf("ERROR\t\tFailed to stop cleanly: %v", err)
+	for _, fn := range funcs {
+		fname := fxreflect.FuncName(fn)
+		app.logger.Printf("EXECUTE\t%s", fname)
+
+		err = app.container.Invoke(fn)
+
+		if err != nil {
+			app.logger.Printf("Error executing %q: %v", fname, err)
+			return
+		}
 	}
+
+	return
 }
 
 // Start executes all the OnStart hooks of the resolved object graph
@@ -340,7 +380,7 @@ func (app *App) start(ctx context.Context) error {
 		return err
 	}
 
-	app.logger.Printf("RUNNING")
+	app.logger.Printf("STARTED")
 	return nil
 }
 

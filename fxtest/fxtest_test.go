@@ -70,7 +70,7 @@ func TestApp(t *testing.T) {
 		New(spy).RequireStart().RequireStop()
 
 		assert.Zero(t, spy.failures, "App didn't start and stop cleanly.")
-		assert.Contains(t, spy.logs.String(), "RUNNING", "Expected to write logs to TB.")
+		assert.Contains(t, spy.logs.String(), "STARTED", "Expected to write logs to TB.")
 	})
 
 	t.Run("StartFailure", func(t *testing.T) {
