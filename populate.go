@@ -26,9 +26,13 @@ import (
 )
 
 // Populate sets targets with values from the dependency injection container
-// before application start. All targets must be pointers to the values
-// that must be populated. Pointers to structs that embed In are supported,
-// which can be used to populate multiple values in a struct.
+// during application initialization. All targets must be pointers to the
+// values that must be populated. Pointers to structs that embed In are
+// supported, which can be used to populate multiple values in a struct.
+//
+// This is most helpful in unit tests: it lets tests leverage Fx's automatic
+// constructor wiring to build a few structs, but then extract those structs
+// for further testing.
 func Populate(targets ...interface{}) Option {
 	// Validate all targets are non-nil pointers.
 	targetTypes := make([]reflect.Type, len(targets))

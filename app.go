@@ -38,7 +38,9 @@ import (
 
 const defaultTimeout = 15 * time.Second
 
-// An Option configures an App.
+// An Option configures an App using the functional options paradigm
+// popularized by Rob Pike. If you're unfamiliar with this style, see
+// https://commandcenter.blogspot.com/2014/01/self-referential-functions-and-design.html.
 type Option interface {
 	apply(*App)
 }
@@ -47,29 +49,31 @@ type optionFunc func(*App)
 
 func (f optionFunc) apply(app *App) { f(app) }
 
-// Provide registers constructors with the application's dependency injection
-// container. Constructors provide one or more types, can depend on other
-// types available in the container, and may optionally return an error. For
-// example:
+// Provide registers any number of constructor functions, teaching the
+// application how to instantiate various types. The supplied constructor
+// functions must return one or more objects, may depend on other types
+// available in the application, and may return an error. For example:
 //
-//  // Provides type *C, depends on *A and *B.
+//  // Constructs type *C, depends on *A and *B.
 //  func(*A, *B) *C
 //
-//  // Provides type *C, depends on *A and *B, and indicates failure by
+//  // Constructs type *C, depends on *A and *B, and indicates failure by
 //  // returning an error.
 //  func(*A, *B) (*C, error)
 //
-//  // Provides type *B and *C, depends on *A, and can fail.
+//  // Constructs types *B and *C, depends on *A, and can fail.
 //  func(*A) (*B, *C, error)
 //
-// The order in which constructors are provided doesn't matter. Constructors
-// are called lazily and their results are cached for reuse.
+// The order in which constructors are provided doesn't matter, and passing
+// multiple Provide options appends to the application's collection of
+// constructors. Constructors are called lazily and their results are cached
+// for reuse (so instances of a type are effectively singletons within an
+// application). Taken together, these properties make it perfectly reasonable
+// to Provide a large number of constructors even if only a fraction of them
+// are used.
 //
-// Taken together, these properties make it perfectly reasonable to Provide a
-// large number of standard constructors even if only a fraction of them are
-// used.
-//
-// See the documentation for go.uber.org/dig for further details.
+// See the documentation of the In and Out types for advanced features,
+// including optional parameters and named instances.
 func Provide(constructors ...interface{}) Option {
 	return provideOption(constructors)
 }
@@ -89,15 +93,23 @@ func (po provideOption) String() string {
 }
 
 // Invoke registers functions that are executed eagerly on application start.
-// Arguments for these functions are provided from the application's
-// dependency injection container.
+// Arguments for these invocations are built using the constructors registered
+// by Provide. Passing multiple Invoke options appends the new invocations to
+// the application's existing list.
 //
-// Unlike constructors, invoked functions are always executed, and they're
-// always run in order. Invoked functions may have any number of returned
-// values. If the final returned object is an error, it's assumed to be a
-// success indicator. All other returned values are discarded.
+// Unlike constructors, invocations are always executed, and they're always
+// run in order. Invocations may have any number of returned values. If the
+// final returned object is an error, it's assumed to be a success indicator.
+// All other returned values are discarded.
 //
-// See the documentation for go.uber.org/dig for further details.
+// Typically, invoked functions take a handful of high-level objects (whose
+// constructors depend on lower-level objects) and introduce them to each
+// other. This kick-starts the application by forcing it to instantiate a
+// variety of types.
+//
+// To see an invocation in use, read through the package-level example. For
+// advanced features, including optional parameters and named instances, see
+// the documentation of the In and Out types.
 func Invoke(funcs ...interface{}) Option {
 	return invokeOption(funcs)
 }
@@ -116,7 +128,34 @@ func (io invokeOption) String() string {
 	return fmt.Sprintf("fx.Invoke(%s)", strings.Join(items, ", "))
 }
 
-// Options composes a collection of Options into a single Option.
+// Options composes a collection of Options into a single Option. This allows
+// packages to bundle sophisticated functionality into easy-to-use Fx modules.
+// For example, a logging package might export a simple option like this:
+//
+//  package logging
+//
+//  var Module = fx.Provide(func() *log.Logger {
+//    return log.New(os.Stdout, "", 0)
+//  })
+//
+// A shared all-in-one microservice package could then use Options to bundle
+// logging with similar metrics, tracing, and gRPC modules:
+//
+//  package server
+//
+//  var Module = fx.Options(
+//    logging.Module,
+//    metrics.Module,
+//    tracing.Module,
+//    grpc.Module,
+//  )
+//
+// Since this all-in-one module has a minimal API surface, it's easy to add
+// new functionality to it without breaking existing users. Individual
+// applications can take advantage of all this functionality with only one
+// line of code:
+//
+//  app := fx.New(server.Module)
 func Options(opts ...Option) Option {
 	return optionGroup(opts)
 }
@@ -137,7 +176,7 @@ func (og optionGroup) String() string {
 	return fmt.Sprintf("fx.Options(%s)", strings.Join(items, ", "))
 }
 
-// Printer is the interface required by fx's logging backend. It's implemented
+// Printer is the interface required by Fx's logging backend. It's implemented
 // by most loggers, including the standard library's.
 type Printer interface {
 	Printf(string, ...interface{})
@@ -151,7 +190,8 @@ func Logger(p Printer) Option {
 	})
 }
 
-// NopLogger disables the application's log output.
+// NopLogger disables the application's log output. Note that this makes some
+// failures difficult to debug, since no errors are printed to console.
 var NopLogger = Logger(nopLogger{})
 
 type nopLogger struct{}
@@ -160,7 +200,38 @@ func (l nopLogger) Printf(string, ...interface{}) {
 	return
 }
 
-// An App is a modular application built around dependency injection.
+// An App is a modular application built around dependency injection. Most
+// users will only need to use the New constructor and the all-in-one Run
+// convenience method. In more unusual cases, users may need to use the Err,
+// Start, Done, and Stop methods by hand instead of relying on Run.
+//
+// New creates and initializes an App. All applications begin with a
+// constructor for the Lifecycle type already registered.
+//
+// In addition to that built-in functionality, users typically pass New a
+// handful of Provide options and one or more Invoke options. The Provide
+// options teach the application how to instantiate a variety of types, and
+// the Invoke options describe how to initialize the application.
+//
+// When created, the application immediately executes all the functions passed
+// via Invoke options. To supply these functions with the parameters they
+// need, the application looks for constructors that return the appropriate
+// types; if constructors for any required types are missing or any
+// invocations return an error, the application will fail to start (and Err
+// will return a descriptive error message).
+//
+// Once all the invocations (and any required constructors) have been called,
+// New returns and the application is ready to be started using Run or Start.
+// On startup, it executes any OnStart hooks registered with its Lifecycle.
+// OnStart hooks are executed one at a time, in order, and must all complete
+// within a configurable deadline (by default, 30 seconds).
+//
+// At this point, the application has successfully started up. If started via
+// Run, it will continue operating until it receives a shutdown signal from
+// Done; if started explicitly via Start, it will operate until the user calls
+// Stop. On shutdown, OnStop hooks execute one at a time, in reverse order,
+// and must all complete within a configurable deadline (again, 30 seconds by
+// default).
 type App struct {
 	err       error
 	container *dig.Container
@@ -170,13 +241,9 @@ type App struct {
 	logger    *fxlog.Logger
 }
 
-// New creates and initializes an App. All applications begin with the
-// Lifecycle type available in their dependency injection container.
-//
-// It then executes all functions supplied via the Invoke option. Supplying
-// arguments to these functions requires calling some of the constructors
-// supplied by the Provide option. If any invoked function fails, an error is
-// returned immediately.
+// New creates and initializes an App, immediately executing any functions
+// registered via Invoke options. See the documentation of the App struct for
+// details on the application's initialization, startup, and shutdown logic.
 func New(opts ...Option) *App {
 	logger := fxlog.New()
 	lc := &lifecycleWrapper{lifecycle.New(logger)}
@@ -208,48 +275,14 @@ func New(opts ...Option) *App {
 	return app
 }
 
-// Err returns an error that may have been encountered during the
-// graph resolution.
-//
-// This includes things like incomplete graphs, circular dependencies,
-// missing dependencies, invalid constructors, and invoke errors.
-func (app *App) Err() error {
-	return app.err
-}
-
-// Execute invokes in order supplied to New.
-//
-// It might be worthwhile to consider adding context.Context to this function
-// so we can handle the infinite-invokes.
-//
-// Returns the first error encountered.
-func (app *App) executeInvokes() error {
-	var err error
-
-	for _, fn := range app.invokes {
-		fname := fxreflect.FuncName(fn)
-		app.logger.Printf("INVOKE\t\t%s", fname)
-
-		if _, ok := fn.(Option); ok {
-			err = fmt.Errorf("fx.Option should be passed to fx.New directly, not to fx.Invoke: fx.Invoke received %v", fn)
-		} else {
-			err = app.container.Invoke(fn)
-		}
-
-		if err != nil {
-			app.logger.Printf("Error during %q invoke: %v", fname, err)
-			break
-		}
-	}
-
-	return err
-}
-
 // Run starts the application, blocks on the signals channel, and then
 // gracefully shuts the application down. It uses DefaultTimeout for the start
-// and stop timeouts.
+// and stop timeouts. It's designed to make typical applications simple to run.
 //
-// See Start and Stop for application lifecycle details.
+// However, all of Run's functionality is implemented in terms of the exported
+// Start, Done, and Stop methods. Applications with more specialized needs
+// (including custom start and stop timeouts) can use those methods directly
+// instead of relying on Run.
 func (app *App) Run() {
 	startCtx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
 	defer cancel()
@@ -268,33 +301,45 @@ func (app *App) Run() {
 	}
 }
 
-// Start executes all the OnStart hooks of the resolved object graph
-// in the instantiation order.
+// Err returns any error encountered during New's initialization. See the
+// documentation of the New method for details, but typical errors include
+// missing constructors, circular dependencies, constructor errors, and
+// invocation errors.
 //
-// This typically starts all the long-running goroutines, like network
-// servers or message queue consumers.
+// Most users won't need to use this method, since both Run and Start
+// short-circuit if initialization failed.
+func (app *App) Err() error {
+	return app.err
+}
+
+// Start kicks off all long-running goroutines, like network servers or
+// message queue consumers. It does this by interacting with the application's
+// Lifecycle.
 //
-// First, Start checks whether any errors were encountered while applying
-// Options. If so, it returns immediately.
+// By taking a dependency on the Lifecycle type, some of the user-supplied
+// functions called during initialization may have registered start and stop
+// hooks. Because initialization calls constructors serially and in dependency
+// order, hooks are naturally registered in dependency order too.
 //
-// By taking a dependency on the Lifecycle type, some of the executed
-// constructors may register start and stop hooks. After executing all Invoke
-// functions, Start executes all OnStart hooks registered with the
-// application's Lifecycle, starting with the root of the dependency graph.
-// This ensures that each constructor's start hooks aren't executed until all
-// its dependencies' start hooks complete. If any of the start hooks return an
-// error, start short-circuits.
+// Start executes all OnStart hooks registered with the application's
+// Lifecycle, one at a time and in order. This ensures that each constructor's
+// start hooks aren't executed until all its dependencies' start hooks
+// complete. If any of the start hooks return an error, Start short-circuits,
+// calls Stop, and returns the inciting error.
+//
+// Note that Start short-circuits immediately if the New constructor
+// encountered any errors in application initialization.
 func (app *App) Start(ctx context.Context) error {
 	return withTimeout(ctx, app.start)
 }
 
 // Stop gracefully stops the application. It executes any registered OnStop
-// hooks in reverse order (from the leaves of the dependency tree to the
-// roots), so that types are stopped before their dependencies.
+// hooks in reverse order, so that each constructor's stop hooks are called
+// before its dependencies'.
 //
 // If the application didn't start cleanly, only hooks whose OnStart phase was
-// called are executed. However, all those hooks are always executed, even if
-// some fail.
+// called are executed. However, all those hooks are executed, even if some
+// fail.
 func (app *App) Stop(ctx context.Context) error {
 	return withTimeout(ctx, app.lifecycle.Stop)
 }
@@ -321,6 +366,31 @@ func (app *App) provide(constructor interface{}) {
 	if err := app.container.Provide(constructor); err != nil {
 		app.err = err
 	}
+}
+
+// Execute invokes in order supplied to New, returning the first error
+// encountered.
+func (app *App) executeInvokes() error {
+	// TODO: consider taking a context to limit the time spent running invocations.
+	var err error
+
+	for _, fn := range app.invokes {
+		fname := fxreflect.FuncName(fn)
+		app.logger.Printf("INVOKE\t\t%s", fname)
+
+		if _, ok := fn.(Option); ok {
+			err = fmt.Errorf("fx.Option should be passed to fx.New directly, not to fx.Invoke: fx.Invoke received %v", fn)
+		} else {
+			err = app.container.Invoke(fn)
+		}
+
+		if err != nil {
+			app.logger.Printf("Error during %q invoke: %v", fname, err)
+			break
+		}
+	}
+
+	return err
 }
 
 func (app *App) start(ctx context.Context) error {

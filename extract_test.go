@@ -24,8 +24,6 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"log"
-	"os"
 	"testing"
 
 	. "go.uber.org/fx"
@@ -323,24 +321,4 @@ func TestExtract(t *testing.T) {
 
 		assert.True(t, gave1 == out.T1, "T1 must match")
 	})
-}
-
-func ExampleExtract() {
-	var target struct {
-		Logger *log.Logger
-	}
-
-	app := New(
-		Provide(func() *log.Logger { return log.New(os.Stdout, "", 0) }),
-		Extract(&target),
-	)
-
-	if err := app.Start(context.Background()); err != nil {
-		log.Fatal(err)
-	}
-
-	target.Logger.Print("Extracted!")
-
-	// Output:
-	// Extracted!
 }

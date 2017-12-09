@@ -30,10 +30,11 @@ import (
 var _typeOfIn = reflect.TypeOf(In{})
 
 // Extract fills the given struct with values from the dependency injection
-// container on application start.
+// container on application initialization. The target MUST be a pointer to a
+// struct. Only exported fields will be filled.
 //
-// The target MUST be a pointer to a struct. Only exported fields will be
-// filled.
+// Extract will be deprecated soon: use Populate instead, which doesn't
+// require defining a container struct.
 func Extract(target interface{}) Option {
 	v := reflect.ValueOf(target)
 
