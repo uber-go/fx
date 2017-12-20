@@ -347,6 +347,16 @@ func TestAppStop(t *testing.T) {
 	})
 }
 
+func TestDone(t *testing.T) {
+	done := fxtest.New(t).Done()
+	require.NotNil(t, done, "Got a nil channel.")
+	select {
+	case sig := <-done:
+		t.Fatalf("Got unexpected signal %v from application's Done channel.", sig)
+	default:
+	}
+}
+
 func TestReplaceLogger(t *testing.T) {
 	spy := printerSpy{&bytes.Buffer{}}
 	app := fxtest.New(t, Logger(spy))

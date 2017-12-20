@@ -290,21 +290,7 @@ func New(opts ...Option) *App {
 // (including custom start and stop timeouts) can use those methods directly
 // instead of relying on Run.
 func (app *App) Run() {
-	startCtx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
-	defer cancel()
-
-	if err := app.Start(startCtx); err != nil {
-		app.logger.Fatalf("ERROR\t\tFailed to start: %v", err)
-	}
-
-	app.logger.PrintSignal(<-app.Done())
-
-	stopCtx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
-	defer cancel()
-
-	if err := app.Stop(stopCtx); err != nil {
-		app.logger.Fatalf("ERROR\t\tFailed to stop cleanly: %v", err)
-	}
+	app.run(app.Done())
 }
 
 // Err returns any error encountered during New's initialization. See the
@@ -399,6 +385,24 @@ func (app *App) executeInvokes() error {
 	}
 
 	return err
+}
+
+func (app *App) run(done <-chan os.Signal) {
+	startCtx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
+	defer cancel()
+
+	if err := app.Start(startCtx); err != nil {
+		app.logger.Fatalf("ERROR\t\tFailed to start: %v", err)
+	}
+
+	app.logger.PrintSignal(<-done)
+
+	stopCtx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
+	defer cancel()
+
+	if err := app.Stop(stopCtx); err != nil {
+		app.logger.Fatalf("ERROR\t\tFailed to stop cleanly: %v", err)
+	}
 }
 
 func (app *App) start(ctx context.Context) error {

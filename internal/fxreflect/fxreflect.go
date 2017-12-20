@@ -36,10 +36,6 @@ var vendorRe = regexp.MustCompile("^.*?/vendor/")
 
 // ReturnTypes takes a func and returns a slice of string'd types.
 func ReturnTypes(t interface{}) []string {
-	// TODO(grayson): instead of duplicating the dig's reflect logic, trying to
-	// determine which types actually made it into the container, have
-	// dig return a Result struct which could contain the ProvidedTypes
-
 	if reflect.TypeOf(t).Kind() != reflect.Func {
 		// Invalid provide, will be logged as an error.
 		return []string{}
@@ -59,8 +55,6 @@ func ReturnTypes(t interface{}) []string {
 	return rtypes
 }
 
-// this type is basically straight out of dig, which is a strong signal
-// that exporting it could really DRY up some things for fx-dig relationship.
 type key struct {
 	t    reflect.Type
 	name string
@@ -101,16 +95,12 @@ func traverseOuts(k key, f func(s string)) {
 		return
 	}
 
-	// TODO(glib): this logic is extremely similar to the stingers that
-	// dig implements for `key` and `edge` types. It may be worthwhile
-	// to consider exporting both and including them in the outcome of
-	// Provide and Invokes, i.e. added keys A:foo and B to container.
 	f(k.String())
 }
 
-// sanitize makes the function name suitable for logging display.
-// It removes url-encoded elements from the `dot.git` package names
-// shortens the vendored paths.
+// sanitize makes the function name suitable for logging display. It removes
+// url-encoded elements from the `dot.git` package names and shortens the
+// vendored paths.
 func sanitize(function string) string {
 	// Use the stdlib to un-escape any package import paths which can happen
 	// in the case of the "dot-git" postfix. Seems like a bug in stdlib =/
