@@ -75,7 +75,10 @@ func NewLogger() *log.Logger {
 //   func NewHandlerAndLogger() (*log.Logger, http.Handler, error)
 //
 // Fx also understands this idiom, and would treat NewHandlerAndLogger as the
-// constructor for both the *log.Logger and http.Handler types.
+// constructor for both the *log.Logger and http.Handler types. Just like
+// constructors for a single type, NewHandlerAndLogger would be called at most
+// once, and both the handler and the logger would be cached and reused as
+// necessary.
 func NewHandler(logger *log.Logger) (http.Handler, error) {
 	logger.Print("Executing NewHandler.")
 	return http.HandlerFunc(func(http.ResponseWriter, *http.Request) {
@@ -179,7 +182,7 @@ func Example() {
 		// Provide all the constructors we need, which teaches Fx how we'd like to
 		// construct the *log.Logger, http.Handler, and *http.ServeMux types.
 		// Remember that constructors are called lazily, so this block doesn't do
-		// anything on its own.
+		// much on its own.
 		fx.Provide(
 			NewLogger,
 			NewHandler,

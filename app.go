@@ -51,8 +51,8 @@ func (f optionFunc) apply(app *App) { f(app) }
 
 // Provide registers any number of constructor functions, teaching the
 // application how to instantiate various types. The supplied constructor
-// functions must return one or more objects, may depend on other types
-// available in the application, and may return an error. For example:
+// function(s) may depend on other types available in the application, must
+// return one or more objects, and may return an error. For example:
 //
 //  // Constructs type *C, depends on *A and *B.
 //  func(*A, *B) *C
@@ -66,11 +66,11 @@ func (f optionFunc) apply(app *App) { f(app) }
 //
 // The order in which constructors are provided doesn't matter, and passing
 // multiple Provide options appends to the application's collection of
-// constructors. Constructors are called lazily and their results are cached
-// for reuse (so instances of a type are effectively singletons within an
-// application). Taken together, these properties make it perfectly reasonable
-// to Provide a large number of constructors even if only a fraction of them
-// are used.
+// constructors. Constructors are called only if one or more of their returned
+// types are needed, and their results are cached for reuse (so instances of a
+// type are effectively singletons within an application). Taken together,
+// these properties make it perfectly reasonable to Provide a large number of
+// constructors even if only a fraction of them are used.
 //
 // See the documentation of the In and Out types for advanced features,
 // including optional parameters and named instances.
@@ -128,7 +128,7 @@ func (io invokeOption) String() string {
 	return fmt.Sprintf("fx.Invoke(%s)", strings.Join(items, ", "))
 }
 
-// Options composes a collection of Options into a single Option. This allows
+// Options converts a collection of Options into a single Option. This allows
 // packages to bundle sophisticated functionality into easy-to-use Fx modules.
 // For example, a logging package might export a simple option like this:
 //
@@ -156,6 +156,9 @@ func (io invokeOption) String() string {
 // line of code:
 //
 //  app := fx.New(server.Module)
+//
+// Use this pattern sparingly, since it limits the user's ability to customize
+// their application.
 func Options(opts ...Option) Option {
 	return optionGroup(opts)
 }
@@ -177,7 +180,7 @@ func (og optionGroup) String() string {
 }
 
 // Printer is the interface required by Fx's logging backend. It's implemented
-// by most loggers, including the standard library's.
+// by most loggers, including the one bundled with the standard library.
 type Printer interface {
 	Printf(string, ...interface{})
 }
@@ -208,10 +211,10 @@ func (l nopLogger) Printf(string, ...interface{}) {
 // New creates and initializes an App. All applications begin with a
 // constructor for the Lifecycle type already registered.
 //
-// In addition to that built-in functionality, users typically pass New a
-// handful of Provide options and one or more Invoke options. The Provide
-// options teach the application how to instantiate a variety of types, and
-// the Invoke options describe how to initialize the application.
+// In addition to that built-in functionality, users typically pass a handful
+// of Provide options and one or more Invoke options. The Provide options
+// teach the application how to instantiate a variety of types, and the Invoke
+// options describe how to initialize the application.
 //
 // When created, the application immediately executes all the functions passed
 // via Invoke options. To supply these functions with the parameters they
@@ -224,14 +227,16 @@ func (l nopLogger) Printf(string, ...interface{}) {
 // New returns and the application is ready to be started using Run or Start.
 // On startup, it executes any OnStart hooks registered with its Lifecycle.
 // OnStart hooks are executed one at a time, in order, and must all complete
-// within a configurable deadline (by default, 30 seconds).
+// within a configurable deadline (by default, 15 seconds). For details on the
+// order in which OnStart hooks are executed, see the documentation for the
+// Start method.
 //
 // At this point, the application has successfully started up. If started via
 // Run, it will continue operating until it receives a shutdown signal from
-// Done; if started explicitly via Start, it will operate until the user calls
-// Stop. On shutdown, OnStop hooks execute one at a time, in reverse order,
-// and must all complete within a configurable deadline (again, 30 seconds by
-// default).
+// Done (see the Done documentation for details); if started explicitly via
+// Start, it will operate until the user calls Stop. On shutdown, OnStop hooks
+// execute one at a time, in reverse order, and must all complete within a
+// configurable deadline (again, 15 seconds by default).
 type App struct {
 	err       error
 	container *dig.Container
@@ -276,8 +281,9 @@ func New(opts ...Option) *App {
 }
 
 // Run starts the application, blocks on the signals channel, and then
-// gracefully shuts the application down. It uses DefaultTimeout for the start
-// and stop timeouts. It's designed to make typical applications simple to run.
+// gracefully shuts the application down. It uses the default value of 15
+// seconds for the start and stop timeouts. It's designed to make typical
+// applications simple to run.
 //
 // However, all of Run's functionality is implemented in terms of the exported
 // Start, Done, and Stop methods. Applications with more specialized needs
@@ -335,7 +341,7 @@ func (app *App) Start(ctx context.Context) error {
 
 // Stop gracefully stops the application. It executes any registered OnStop
 // hooks in reverse order, so that each constructor's stop hooks are called
-// before its dependencies'.
+// before its dependencies' stop hooks.
 //
 // If the application didn't start cleanly, only hooks whose OnStart phase was
 // called are executed. However, all those hooks are executed, even if some
@@ -345,7 +351,9 @@ func (app *App) Stop(ctx context.Context) error {
 }
 
 // Done returns a channel of signals to block on after starting the
-// application.
+// application. Applications listen for the SIGINT and SIGTERM signals; during
+// development, users can send the application SIGTERM by pressing Ctrl-C in
+// the same terminal as the running process.
 func (app *App) Done() <-chan os.Signal {
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, syscall.SIGINT, syscall.SIGTERM)

@@ -87,7 +87,7 @@ import "go.uber.org/dig"
 //
 //   func NewUserGateway(p UserGatewayParams, log *log.Logger) (*UserGateway, error) {
 //     if p.Cache != nil {
-//       log.Print("Logging disabled")
+//       log.Print("Caching disabled")
 //     }
 //     // ...
 //   }
@@ -100,28 +100,13 @@ import "go.uber.org/dig"
 //
 // Named Values
 //
-// Some use cases call for multiple values of the same type. Fx will allow
-// multiple values of the same type in an application's dependency injection
-// container via `name:".."` tags parameter and result structs.
+// Some use cases require the application container to hold multiple values of
+// the same type. For details on producing named values, see the documentation
+// for the Out type.
 //
-// A constructor that produces a result struct can tag any field with
-// `name:".."` to have the corresponding value added to the graph under the
-// specified name.
-//
-//   type ConnectionResult struct {
-//     fx.Out
-//
-//     ReadWrite *sql.DB `name:"rw"`
-//     ReadOnly  *sql.DB `name:"ro"`
-//   }
-//
-//   func ConnectToDatabase(...) (ConnectionResult, error) {
-//     // ...
-//     return ConnectionResult{ReadWrite: rw, ReadOnly:  ro}, nil
-//   }
-//
-// Another constructor can consume these values by adding fields to a
-// parameter struct with the same name AND type.
+// Fx allows functions to consume named values via the `name:".."` tag on
+// parameter structs. Note that both the name AND type of the fields on the
+// parameter struct must match the corresponding result struct.
 //
 //   type GatewayParams struct {
 //     fx.In
@@ -151,31 +136,15 @@ import "go.uber.org/dig"
 // Value Groups
 //
 // To make it easier to produce and consume many values of the same type, Fx
-// supports value groups. Value groups allow constructors to send values to a
-// named, unordered collection in the container. Other constructors can
-// request all values in this collection as a slice.
+// supports named, unordered collections called value groups. For details on
+// producing value groups, see the documentation for the Out type.
 //
-// Constructors can send values into value groups by returning a result struct
-// tagged with `group:".."`.
-//
-//   type HandlerResult struct {
-//     fx.Out
-//
-//     Handler Handler `group:"server"`
-//   }
-//
-//   func NewHelloHandler() HandlerResult {
-//     // ...
-//   }
-//
-//   func NewEchoHandler() HandlerResult {
-//     // ...
-//   }
-//
-// Any number of constructors may provide values to this named collection.
-// Other constructors can depend on this collection by requesting a slice
-// tagged with `group:".."`. This will execute all constructors that provide a
-// value to that group in an unspecified order.
+// Functions can depend on a value group by requesting a slice tagged with
+// `group:".."`. This will execute all constructors that provide a value to
+// that group in an unspecified order, then collect all the results into a
+// single slice. Keep in mind that this makes the types of the parameter and
+// result struct fields different: if a group of constructors each returns
+// type T, parameter structs consuming the group must use a field of type []T.
 //
 //   type ServerParams struct {
 //     fx.In
@@ -231,7 +200,55 @@ type In struct{ dig.In }
 //    // ...
 //  }
 //
-// Named Values and Value Groups
+// Named Values
 //
-// See the documentation of the In type.
+// Some use cases require the application container to hold multiple values of
+// the same type. For details on consuming named values, see the documentation
+// for the In type.
+//
+// A constructor that produces a result struct can tag any field with
+// `name:".."` to have the corresponding value added to the graph under the
+// specified name. An application may contain at most one unnamed value of a
+// given type, but may contain any number of named values of the same type.
+//
+//   type ConnectionResult struct {
+//     fx.Out
+//
+//     ReadWrite *sql.DB `name:"rw"`
+//     ReadOnly  *sql.DB `name:"ro"`
+//   }
+//
+//   func ConnectToDatabase(...) (ConnectionResult, error) {
+//     // ...
+//     return ConnectionResult{ReadWrite: rw, ReadOnly:  ro}, nil
+//   }
+//
+// Value Groups
+//
+// To make it easier to produce and consume many values of the same type, Fx
+// supports named, unordered collections called value groups. For details on
+// consuming value groups, see the documentation for the In type.
+//
+// Constructors can send values into value groups by returning a result struct
+// tagged with `group:".."`.
+//
+//   type HandlerResult struct {
+//     fx.Out
+//
+//     Handler Handler `group:"server"`
+//   }
+//
+//   func NewHelloHandler() HandlerResult {
+//     // ...
+//   }
+//
+//   func NewEchoHandler() HandlerResult {
+//     // ...
+//   }
+//
+// Any number of constructors may provide values to this named collection, but
+// the ordering of the final collection is unspecified. Keep in mind that
+// value groups require parameter and result structs to use fields with
+// different types: if a group of constructors each returns type T, parameter
+// structs consuming the group must use a field of type []T.
 type Out struct{ dig.Out }
