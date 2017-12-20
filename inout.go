@@ -171,7 +171,7 @@ type In struct{ dig.In }
 // provide a forward-compatible API: since adding fields to a struct is
 // backward-compatible, minor releases can provide additional types.
 //
-// Result structs
+// Result Structs
 //
 // Result structs are the inverse of parameter structs (discussed in the In
 // documentation). These structs represent multiple outputs from a
