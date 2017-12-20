@@ -27,14 +27,15 @@ import (
 )
 
 // Lifecycle allows constructors to register callbacks that are executed on
-// application start and stop.
+// application start and stop. See the documentation for App for details on Fx
+// applications' initialization, startup, and shutdown logic.
 type Lifecycle interface {
 	Append(Hook)
 }
 
 // A Hook is a pair of start and stop callbacks, either of which can be nil.
 // If a Hook's OnStart callback isn't executed (because a previous OnStart
-// failure short-circuited application start), its OnStop callback won't be
+// failure short-circuited application startup), its OnStop callback won't be
 // executed.
 type Hook struct {
 	OnStart func(context.Context) error
