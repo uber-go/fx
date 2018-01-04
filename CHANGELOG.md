@@ -1,38 +1,48 @@
 # Changelog
+All notable changes to this project will be documented in this file.
 
-## v1.5.0 (unreleased)
+The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
+and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
+
+## [Unreleased]
 
 - No changes yet.
 
-## v1.4.0 (2017-12-07)
-
+## [1.4.0] - 2017-12-07
+### Added
 - Add `fx.Populate` to populate variables with values from the dependency
   injection container without requiring intermediate structs.
 
-## v1.3.0 (2017-11-28)
-
+## [1.3.0] - 2017-11-28
+### Changed
 - Improve readability of hook logging in addition to provide and invoke.
+
+### Fixed
 - Fix bug which caused the OnStop for a lifecycle hook to be called even if it
   failed to start.
 
-## v1.2.0 (2017-09-06)
-
+## [1.2.0] - 2017-09-06
+### Added
 - Add `fx.NopLogger` which disables the Fx application's log output.
 
-## v1.1.0 (2017-08-22)
-
+## [1.1.0] - 2017-08-22
+### Changed
 - Improve readability of start up logging.
 
-## v1.0.0 (2017-07-31)
-
+## [1.0.0] - 2017-07-31
 First stable release: no breaking changes will be made in the 1.x series.
 
-- **[Breaking]** Rename `fx.Inject` to `fx.Extract`.
-- **[Breaking]** Rename `fxtest.Must*` to `fxtest.Require*`.
-- **[Breaking]** Remove `fx.Timeout` and `fx.DefaultTimeout`.
+### Added
 - `fx.Extract` now supports `fx.In` tags on target structs.
 
-## v1.0.0-rc2 (2017-07-21)
+### Changed
+- **[Breaking]** Rename `fx.Inject` to `fx.Extract`.
+- **[Breaking]** Rename `fxtest.Must*` to `fxtest.Require*`.
+
+### Removed
+- **[Breaking]** Remove `fx.Timeout` and `fx.DefaultTimeout`.
+
+## [1.0.0-rc2] - 2017-07-21
 
 - **[Breaking]** Lifecycle hooks now take a context.
 - Add `fx.In` and `fx.Out` which exposes optional and named types.
@@ -47,7 +57,7 @@ First stable release: no breaking changes will be made in the 1.x series.
 - Add `fxtest.App`, which redirects log output to the user's `testing.TB` and
   provides some lifecycle helpers.
 
-## v1.0.0-rc1 (2017-06-20)
+## [1.0.0-rc1] - 2017-06-20
 
 - **[Breaking]** Providing types into `fx.App` and invoking functions are now
   options passed during application construction. This makes users'
@@ -55,7 +65,7 @@ First stable release: no breaking changes will be made in the 1.x series.
 - **[Breaking]** `TestLifecycle` is now in a separate `fxtest` subpackage.
 - Add `fx.Inject()` to pull values from the container into a struct.
 
-## v1.0.0-beta4 (2017-06-12)
+## [1.0.0-beta4] - 2017-06-12
 
 - **[Breaking]** Monolithic framework, as released in initial betas, has been
   broken into smaller pieces as a result of recent advances in `dig` library.
@@ -72,7 +82,7 @@ First stable release: no breaking changes will be made in the 1.x series.
   (configuration, metrics, tracing) has been deprecated in favor of
   `fx.App`.
 
-## v1.0.0-beta3 (2017-03-28)
+## [1.0.0-beta3] - 2017-03-28
 
 - **[Breaking]** Environment config provider was removed. If you were using
   environment variables to override YAML values, see
@@ -97,7 +107,7 @@ First stable release: no breaking changes will be made in the 1.x series.
 - **[Breaking]** Pass a tracer the `uhttp/uhttpclient` constructor explicitly, instead
   of using a global tracer. This will allow to use http client in parallel tests.
 
-## v1.0.0-beta2 (2017-03-09)
+## [1.0.0-beta2] - 2017-03-09
 
 - **[Breaking]** Remove `ulog.Logger` interface and expose `*zap.Logger` directly.
 - **[Breaking]** Rename config and module from `modules.rpc` to `modules.yarpc`
@@ -122,10 +132,22 @@ First stable release: no breaking changes will be made in the 1.x series.
 - DIG constructors now support returning a tuple with the second argument being
   an error.
 
-## v1.0.0-beta1 (2017-02-20)
+## 1.0.0-beta1 - 2017-02-20
 
 This is the first beta release of the framework, where we invite users to start
 building services on it and provide us feedback. **Warning** we are not
 promising API compatibility between beta releases and the final 1.0.0 release.
 In fact, we expect our beta user feedback to require some changes to the way
 things work. Once we reach 1.0, we will provider proper version compatibility.
+
+[Unreleased]: https://github.com/uber-go/fx/compare/v1.4.0...HEAD
+[1.4.0]: https://github.com/uber-go/fx/compare/v1.3.0...v1.4.0
+[1.3.0]: https://github.com/uber-go/fx/compare/v1.2.0...v1.3.0
+[1.2.0]: https://github.com/uber-go/fx/compare/v1.1.0...v1.2.0
+[1.1.0]: https://github.com/uber-go/fx/compare/v1.0.0...v1.1.0
+[1.0.0]: https://github.com/uber-go/fx/compare/v1.0.0-rc2...v1.0.0
+[1.0.0-rc2]: https://github.com/uber-go/fx/compare/v1.0.0-rc1...v1.0.0-rc2
+[1.0.0-rc1]: https://github.com/uber-go/fx/compare/v1.0.0-beta4...v1.0.0-rc1
+[1.0.0-beta4]: https://github.com/uber-go/fx/compare/v1.0.0-beta3...v1.0.0-beta4
+[1.0.0-beta3]: https://github.com/uber-go/fx/compare/v1.0.0-beta2...v1.0.0-beta3
+[1.0.0-beta2]: https://github.com/uber-go/fx/compare/v1.0.0-beta1...v1.0.0-beta2
