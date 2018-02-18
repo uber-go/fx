@@ -172,6 +172,35 @@ func TestOptions(t *testing.T) {
 	})
 }
 
+func TestAppWithOnStartTimeout(t *testing.T) {
+	t.Run("Timeout", func(t *testing.T) {
+		type A struct{}
+		started := false
+		sleeper := func(lc Lifecycle) *A {
+			lc.Append(
+				Hook{
+					OnStart: func(context.Context) error {
+						time.Sleep(10 * time.Millisecond)
+						started = true
+						return nil
+					},
+				},
+			)
+			return &A{}
+		}
+		app := fxtest.New(
+			t,
+			Provide(sleeper),
+			Invoke(func(*A) {}),
+			OnStartTimeout(5*time.Second),
+			OnStopTimeout(5*time.Second),
+		)
+
+		defer app.RequireStart().RequireStop()
+		assert.True(t, started)
+	})
+}
+
 func TestAppStart(t *testing.T) {
 	t.Run("Timeout", func(t *testing.T) {
 		type A struct{}

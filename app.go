@@ -179,6 +179,36 @@ func (og optionGroup) String() string {
 	return fmt.Sprintf("fx.Options(%s)", strings.Join(items, ", "))
 }
 
+// OnStartTimeout changes the application's start timeout.
+func OnStartTimeout(v time.Duration) Option {
+	return optionFunc(func(app *App) {
+		app.onStartTimeout = v
+	})
+}
+
+// OnStopTimeout changes the application's start timeout.
+func OnStopTimeout(v time.Duration) Option {
+	return optionFunc(func(app *App) {
+		app.onStopTimeout = v
+	})
+}
+
+// GetStartTimeout returns on start timeout.
+//
+// Most users won't need to use this method, because they may set timeout if necessary.
+// This can be useful for unit tests when need to read it to pass then to Start method.
+func (app *App) GetStartTimeout() time.Duration {
+	return app.onStartTimeout
+}
+
+// GetStopTimeout returns on start timeout.
+//
+// Most users won't need to use this method, because they may set timeout if necessary.
+// This can be useful for unit tests when need to read it to pass then to Stop method.
+func (app *App) GetStopTimeout() time.Duration {
+	return app.onStopTimeout
+}
+
 // Printer is the interface required by Fx's logging backend. It's implemented
 // by most loggers, including the one bundled with the standard library.
 type Printer interface {
@@ -238,12 +268,14 @@ func (l nopLogger) Printf(string, ...interface{}) {
 // execute one at a time, in reverse order, and must all complete within a
 // configurable deadline (again, 15 seconds by default).
 type App struct {
-	err       error
-	container *dig.Container
-	lifecycle *lifecycleWrapper
-	provides  []interface{}
-	invokes   []interface{}
-	logger    *fxlog.Logger
+	err            error
+	container      *dig.Container
+	lifecycle      *lifecycleWrapper
+	provides       []interface{}
+	invokes        []interface{}
+	logger         *fxlog.Logger
+	onStartTimeout time.Duration
+	onStopTimeout  time.Duration
 }
 
 // New creates and initializes an App, immediately executing any functions
@@ -254,9 +286,11 @@ func New(opts ...Option) *App {
 	lc := &lifecycleWrapper{lifecycle.New(logger)}
 
 	app := &App{
-		container: dig.New(),
-		lifecycle: lc,
-		logger:    logger,
+		container:      dig.New(),
+		lifecycle:      lc,
+		logger:         logger,
+		onStartTimeout: defaultTimeout,
+		onStopTimeout:  defaultTimeout,
 	}
 
 	for _, opt := range opts {
@@ -287,8 +321,10 @@ func New(opts ...Option) *App {
 //
 // However, all of Run's functionality is implemented in terms of the exported
 // Start, Done, and Stop methods. Applications with more specialized needs
-// (including custom start and stop timeouts) can use those methods directly
-// instead of relying on Run.
+// can use those methods directly instead of relying on Run.
+//
+// Note that if you need custom start and stop timeouts, it's better to use
+// OnStartTimeout and OnStopTimeout options that solves namely this problem.
 func (app *App) Run() {
 	app.run(app.Done())
 }
@@ -388,7 +424,7 @@ func (app *App) executeInvokes() error {
 }
 
 func (app *App) run(done <-chan os.Signal) {
-	startCtx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
+	startCtx, cancel := context.WithTimeout(context.Background(), app.onStartTimeout)
 	defer cancel()
 
 	if err := app.Start(startCtx); err != nil {
@@ -397,7 +433,7 @@ func (app *App) run(done <-chan os.Signal) {
 
 	app.logger.PrintSignal(<-done)
 
-	stopCtx, cancel := context.WithTimeout(context.Background(), defaultTimeout)
+	stopCtx, cancel := context.WithTimeout(context.Background(), app.onStopTimeout)
 	defer cancel()
 
 	if err := app.Stop(stopCtx); err != nil {
