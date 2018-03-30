@@ -24,6 +24,7 @@ import (
 	"errors"
 	"testing"
 	"time"
+	"log"
 
 	"go.uber.org/fx/config"
 	"go.uber.org/fx/metrics"
@@ -287,7 +288,7 @@ func TestStartModule_NoErrors(t *testing.T) {
 	assert.Equal(t, s.state, Running)
 }
 
-func TestStartManager_WithErrors(t *testing.T) {
+func TestStartManager_WithError(t *testing.T) {
 	s := makeManager()
 	moduleProvider := &StubModuleProvider{
 		NameVal: "stubModule",
@@ -304,6 +305,42 @@ func TestStartManager_WithErrors(t *testing.T) {
 	go func() {
 		<-control.ExitChan
 	}()
+	assert.Error(t, control.ServiceError)
+}
+
+func TestStartManager_WithMultipleErrors(t *testing.T) {
+	s := makeManager()
+
+	moduleProvider1 := &StubModuleProvider{
+		NameVal: "stubModule1",
+		CreateVal: func(host Host) (Module, error) {
+			return &StubModule{
+				Host:       host,
+				StartError: errors.New("can't start stubModule1"),
+			}, nil
+		},
+	}
+	require.NoError(t, s.addModule(moduleProvider1))
+
+	moduleProvider2 := &StubModuleProvider{
+		NameVal: "stubModule2",
+		CreateVal: func(host Host) (Module, error) {
+			return &StubModule{
+				Host:       host,
+				StartError: errors.New("can't start stubModule2"),
+			}, nil
+		},
+	}
+	require.NoError(t, s.addModule(moduleProvider2))
+	time.AfterFunc(10*time.Second, func() {
+		log.Fatalf("Service dint shut down on its own for over 10 secs so forcefully killing it!")
+	})
+
+	control := s.StartAsync()
+	go func() {
+		<-control.ExitChan
+	}()
+
 	assert.Error(t, control.ServiceError)
 }
 

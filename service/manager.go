@@ -331,26 +331,28 @@ func (m *manager) start() Control {
 		m.registerSignalHandlers()
 		if len(errs) > 0 {
 			var serviceErr error
-			errChan := make(chan Exit, 1)
-			// grab the first error, shut down the service and return the error
+
+			// emit all errors over the errChan channel
+			errChan := make(chan Exit, len(errs))
 			for _, e := range errs {
 				errChan <- Exit{
 					Error:    e,
 					Reason:   "Module start failed",
 					ExitCode: 4,
 				}
-
-				m.shutdownMu.Unlock()
-				if _, err := m.shutdown(e, "", nil); err != nil {
-					zap.L().Error("Unable to shut down modules",
-						zap.NamedError("initialError", e),
-						zap.NamedError("shutdownError", err),
-					)
-				}
 				zap.L().Error("Error starting the module", zap.Error(e))
-				// return first service error
+
+				// if it is the first error, shut down the service
 				if serviceErr == nil {
 					serviceErr = e
+					m.shutdownMu.Unlock()
+
+					if _, err := m.shutdown(e, "", nil); err != nil {
+						zap.L().Error("Unable to shut down modules",
+							zap.NamedError("initialError", e),
+							zap.NamedError("shutdownError", err),
+						)
+					}
 				}
 			}
 			return Control{
