@@ -342,7 +342,7 @@ func (m *manager) start() Control {
 			}
 
 			// emit all errors over the errChan channel for logging purposes
-			errChan := make(chan Exit, 1)
+			errChan := make(chan Exit, len(errs))
 			for _, e := range errs {
 				errChan <- Exit{
 					Error:    e,
