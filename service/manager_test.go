@@ -1,4 +1,4 @@
-// Copyright (c) 2017 Uber Technologies, Inc.
+// Copyright (c) 2018 Uber Technologies, Inc.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -332,6 +332,7 @@ func TestStartManager_WithMultipleErrors(t *testing.T) {
 		},
 	}
 	require.NoError(t, s.addModule(moduleProvider2))
+
 	time.AfterFunc(10*time.Second, func() {
 		log.Fatalf("Service dint shut down on its own for over 10 secs so forcefully killing it!")
 	})

@@ -1,4 +1,4 @@
-// Copyright (c) 2017 Uber Technologies, Inc.
+// Copyright (c) 2018 Uber Technologies, Inc.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -330,10 +330,19 @@ func (m *manager) start() Control {
 		errs := m.startModules()
 		m.registerSignalHandlers()
 		if len(errs) > 0 {
-			var serviceErr error
+			// shut down the service using the first error
+			serviceErr := errs[0]
+			m.shutdownMu.Unlock()
 
-			// emit all errors over the errChan channel
-			errChan := make(chan Exit, len(errs))
+			if _, err := m.shutdown(serviceErr, "", nil); err != nil {
+				zap.L().Error("Unable to shut down modules",
+					zap.NamedError("initialError", serviceErr),
+					zap.NamedError("shutdownError", err),
+				)
+			}
+
+			// emit all errors over the errChan channel for logging purposes
+			errChan := make(chan Exit, 1)
 			for _, e := range errs {
 				errChan <- Exit{
 					Error:    e,
@@ -341,20 +350,8 @@ func (m *manager) start() Control {
 					ExitCode: 4,
 				}
 				zap.L().Error("Error starting the module", zap.Error(e))
-
-				// if it is the first error, shut down the service
-				if serviceErr == nil {
-					serviceErr = e
-					m.shutdownMu.Unlock()
-
-					if _, err := m.shutdown(e, "", nil); err != nil {
-						zap.L().Error("Unable to shut down modules",
-							zap.NamedError("initialError", e),
-							zap.NamedError("shutdownError", err),
-						)
-					}
-				}
 			}
+
 			return Control{
 				ExitChan:     errChan,
 				ReadyChan:    readyCh,
