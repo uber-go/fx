@@ -1,4 +1,4 @@
-// Copyright (c) 2018 Uber Technologies, Inc.
+// Copyright (c) 2017-2018 Uber Technologies, Inc.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -32,6 +32,7 @@ import (
 
 	"github.com/pkg/errors"
 	"go.uber.org/dig"
+	"go.uber.org/multierr"
 	"go.uber.org/zap"
 )
 
@@ -296,6 +297,7 @@ func (m *manager) addModule(provider ModuleProvider, options ...ModuleOption) er
 func (m *manager) start() Control {
 	m.locked = true
 	m.shutdownMu.Lock()
+	defer m.shutdownMu.Unlock()
 	m.transitionState(Starting)
 
 	readyCh := make(chan struct{}, 1)
@@ -303,13 +305,11 @@ func (m *manager) start() Control {
 		readyCh <- struct{}{}
 	}()
 	if m.inShutdown {
-		m.shutdownMu.Unlock()
 		return Control{
 			ReadyChan:    readyCh,
 			ServiceError: errors.New("shutting down the service"),
 		}
 	} else if m.IsRunning() {
-		m.shutdownMu.Unlock()
 		return Control{
 			ExitChan:     m.closeChan,
 			ReadyChan:    readyCh,
@@ -318,7 +318,6 @@ func (m *manager) start() Control {
 	} else {
 		if m.observer != nil {
 			if err := m.observer.OnInit(m); err != nil {
-				m.shutdownMu.Unlock()
 				return Control{
 					ReadyChan:    readyCh,
 					ServiceError: errors.Wrap(err, "failed to initialize the observer"),
@@ -329,39 +328,26 @@ func (m *manager) start() Control {
 		m.closeChan = make(chan Exit, 1)
 		errs := m.startModules()
 		m.registerSignalHandlers()
+
 		if len(errs) > 0 {
-			// shut down the service using the first error
-			serviceErr := errs[0]
-			m.shutdownMu.Unlock()
-
-			if _, err := m.shutdown(serviceErr, "", nil); err != nil {
-				zap.L().Error("Unable to shut down modules",
-					zap.NamedError("initialError", serviceErr),
-					zap.NamedError("shutdownError", err),
-				)
+			combined := multierr.Combine(errs...)
+			errChan := make(chan Exit, 1)
+			errChan <- Exit{
+				Error:    combined,
+				Reason:   "Module start failed",
+				ExitCode: 4,
 			}
-
-			// emit all errors over the errChan channel for logging purposes
-			errChan := make(chan Exit, len(errs))
-			for _, e := range errs {
-				errChan <- Exit{
-					Error:    e,
-					Reason:   "Module start failed",
-					ExitCode: 4,
-				}
-				zap.L().Error("Error starting the module", zap.Error(e))
-			}
+			zap.L().Error("Error starting modules", zap.Error(combined))
 
 			return Control{
 				ExitChan:     errChan,
 				ReadyChan:    readyCh,
-				ServiceError: serviceErr,
+				ServiceError: combined,
 			}
 		}
 	}
 
 	m.transitionState(Running)
-	m.shutdownMu.Unlock()
 
 	return Control{
 		ExitChan:  m.closeChan,

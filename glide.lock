@@ -1,12 +1,16 @@
-hash: 03dda616164575043fff9196cb586410a53906cceb2aa0a9105eb17b7a4a2e1f
-updated: 2017-03-28T11:36:43.637865373-07:00
+hash: 1f222df2d42d97cebb6cd806e7ce73b1980539082e4dd68a91065ee42348ba13
+updated: 2018-04-03T23:51:10.960397847-05:00
 imports:
 - name: github.com/apache/thrift
   version: 9549b25c77587b29be4e0b5c258221a4ed85d37a
   subpackages:
   - lib/go/thrift
+- name: github.com/beorn7/perks
+  version: 3a771d992973f24aa725d07868b467d1ddfceafb
+  subpackages:
+  - quantile
 - name: github.com/cactus/go-statsd-client
-  version: 91c326c3f7bd20f0226d3d1c289dd9f8ce28d33d
+  version: 138b925ccdf617776955904ba7759fce64406cec
   subpackages:
   - statsd
 - name: github.com/certifi/gocertifi
@@ -20,21 +24,29 @@ imports:
 - name: github.com/facebookgo/clock
   version: 600d898af40aa09a7a93ecb9265d87b0504b6f03
 - name: github.com/getsentry/raven-go
-  version: b68337dbf03e7fbb53d9fd9b63fd09b28e8f13f7
+  version: 7562301a6763c9ac631b0a2011b4aa0e064e45d4
 - name: github.com/go-validator/validator
-  version: 0a9835d809fb647a62611d30cb792e0b5dd65b11
+  version: 59c90c7046f643cbe0d4e7c8776c42a84ce75910
 - name: github.com/golang/mock
   version: bd3c8e81be01eef76d4b503f5e687d2d1354d2d9
   subpackages:
   - gomock
+- name: github.com/golang/protobuf
+  version: e09c5db296004fbe3f74490e84dcd62c3c5ddb1b
+  subpackages:
+  - proto
 - name: github.com/gorilla/context
   version: 1ea25387ff6f684839d82767c1733ff4d4d15d0a
 - name: github.com/gorilla/mux
-  version: 392c28fe23e1c45ddba891b0320b3b5df220beea
+  version: 53c1911da2b537f792e7cafcb446b05ffe33b996
 - name: github.com/gorilla/websocket
   version: 3ab3a8b8831546bd18fd182c20687ca853b2bb13
+- name: github.com/matttproud/golang_protobuf_extensions
+  version: c12348ce28de40eed0136aa2b644d0ee0650e56c
+  subpackages:
+  - pbutil
 - name: github.com/opentracing/opentracing-go
-  version: 6edb48674bd9467b8e91fda004f2bd7202d60ce4
+  version: 1949ddbfd147afd4d964a9f00b24eb291e0e7c38
   subpackages:
   - ext
   - log
@@ -46,6 +58,27 @@ imports:
   version: d8ed2627bdf02c080bf22230dbb337003b7aba2d
   subpackages:
   - difflib
+- name: github.com/prometheus/client_golang
+  version: 967789050ba94deca04a5e84cce8ad472ce313c1
+  subpackages:
+  - prometheus
+  - prometheus/promhttp
+- name: github.com/prometheus/client_model
+  version: 99fa1f4be8e564e8a6b613da7fa6f46c9edafc6c
+  subpackages:
+  - go
+- name: github.com/prometheus/common
+  version: 38c53a9f4bfcd932d1b00bfc65e256a7fba6b37a
+  subpackages:
+  - expfmt
+  - internal/bitbucket.org/ww/goautoneg
+  - model
+- name: github.com/prometheus/procfs
+  version: 780932d4fbbe0e69b84c34c20f5c8d0981e109ea
+  subpackages:
+  - internal/util
+  - nfs
+  - xfs
 - name: github.com/Sirupsen/logrus
   version: 08a8a7c27e3d058a8989316a850daad1c10bf4ab
 - name: github.com/stretchr/objx
@@ -60,6 +93,10 @@ imports:
   version: d52ffa061726911f47fcd3d9e8b9b55f22794772
 - name: github.com/uber-go/atomic
   version: e682c1008ac17bf26d2e4b5ad6cdd08520ed0b22
+- name: github.com/uber-go/mapdecode
+  version: 718b4994083e432669f44a00174c5f1bcdb1434d
+  subpackages:
+  - internal/mapstructure
 - name: github.com/uber-go/tally
   version: 34be4a565ce6286a0ba91a54a81be3f6181ca2e2
 - name: github.com/uber/cherami-client-go
@@ -76,26 +113,29 @@ imports:
   subpackages:
   - .generated/go/cherami
 - name: github.com/uber/jaeger-client-go
-  version: 465529424ed6b04a7fd2fcab6a9d6e96ea807fda
+  version: c107110d057826281414cb964f167bce5be17588
   subpackages:
   - config
+  - internal/baggage
+  - internal/baggage/remote
   - internal/spanlog
+  - internal/throttler
   - log
   - log/zap
   - rpcmetrics
   - thrift-gen/agent
+  - thrift-gen/baggage
+  - thrift-gen/jaeger
   - thrift-gen/sampling
   - thrift-gen/zipkincore
-  - transport
-  - transport/udp
   - utils
 - name: github.com/uber/jaeger-lib
-  version: 9dd8526f119f8cd8379427bfefdc406e81bc3b2f
+  version: 4267858c0679cd4e47cefed8d7f70fd386cfb567
   subpackages:
   - metrics
   - metrics/tally
 - name: github.com/uber/tchannel-go
-  version: 0b7f160817553b0bacb5b108dd84a5022dbdd1c4
+  version: cc0c40929b0dbdb755b727a8c253de2b5d4af46b
   subpackages:
   - hyperbahn
   - hyperbahn/gen-go/hyperbahn
@@ -105,33 +145,42 @@ imports:
   - thrift
   - thrift/gen-go/meta
   - tnet
+  - tos
   - trand
   - typed
 - name: go.uber.org/atomic
-  version: 3b8db5e93c4c02efbc313e17b2e796b0914a01fb
+  version: 8474b86a5a6f79c443ce4b2992817ff32cf208b8
 - name: go.uber.org/dig
   version: 869ade8e3afd0b6dee05418a8e165cdcb487070a
+- name: go.uber.org/multierr
+  version: a3d1fc1f1316d4132fc61f4ea1159ae0613fb474
+- name: go.uber.org/net/metrics
+  version: 1e19de5b971489a45d178e12a0f72a78c70e300e
+  subpackages:
+  - bucket
+  - push
+  - tallypush
 - name: go.uber.org/thriftrw
-  version: 05f870b3c56597d180af568a6392209cc33269e2
+  version: 43dfafd7bb1c99f0460d645a1959b73f6dfa536f
   subpackages:
   - envelope
-  - internal
   - internal/envelope
   - internal/envelope/exception
   - internal/frame
   - internal/goast
   - internal/multiplex
-  - internal/semver
   - plugin
   - plugin/api
   - protocol
   - protocol/binary
   - ptr
+  - thriftreflect
   - version
   - wire
 - name: go.uber.org/yarpc
-  version: 6ad92c34d7e982d4bb7299f20e6a27652116cf5d
+  version: 74cd4e7d2dee21702c2131968b04367850011d5d
   subpackages:
+  - api/backoff
   - api/encoding
   - api/middleware
   - api/peer
@@ -139,39 +188,54 @@ imports:
   - encoding/thrift
   - encoding/thrift/internal
   - internal
-  - internal/buffer
-  - internal/clientconfig
-  - internal/encoding
-  - internal/errors
+  - internal/backoff
+  - internal/bufferpool
+  - internal/config
+  - internal/digester
+  - internal/errorsync
+  - internal/humanize
   - internal/inboundmiddleware
+  - internal/interpolate
   - internal/introspection
   - internal/iopool
   - internal/net
+  - internal/observability
   - internal/outboundmiddleware
   - internal/request
-  - internal/sync
+  - internal/yarpcerrors
   - peer
   - peer/hostport
+  - pkg/encoding
+  - pkg/errors
+  - pkg/lifecycle
+  - pkg/procedure
   - transport/http
   - transport/tchannel
   - transport/tchannel/internal
+  - yarpcconfig
+  - yarpcerrors
 - name: go.uber.org/zap
-  version: 4257c7cf05477d92ec25c31cfd3d60e89575f18a
+  version: 35aad584952c3e7020db7b839f6b102de6271f89
   subpackages:
   - buffer
   - internal/bufferpool
   - internal/color
   - internal/exit
-  - internal/multierror
   - zapcore
   - zaptest
 - name: golang.org/x/net
-  version: a6577fac2d73be281a500b310739095313165611
+  version: b68f30494add4df6bd8ef5e82803f308e7f7c59c
+  repo: https://github.com/golang/net
   subpackages:
+  - bpf
   - context
-  - context/ctxhttp
+  - internal/iana
+  - internal/socket
+  - ipv4
+  - ipv6
 - name: golang.org/x/sys
-  version: d4feaf1a7e61e1d9e79e6c4e76c6349e9cab0a03
+  version: 378d26f46672a356c46195c28f61bdb4c0a781dd
+  repo: https://github.com/golang/sys
   subpackages:
   - unix
 - name: golang.org/x/tools
@@ -210,9 +274,9 @@ testImports:
   subpackages:
   - cmd/interfacer
 - name: github.com/russross/blackfriday
-  version: 5ebfae50aacdef0dacd1a1acc469c2c1c7a7d4d8
+  version: c455fd41c6baf2f78fd7ff0aadc4e4b4d52698b0
 - name: github.com/sectioneight/md-to-godoc
-  version: f274e5a4257c85a9eaf60ac820ee813b78cac6ab
+  version: 79157ff08f1acd5c5b1d13d71c0adb7908dbb8a2
 - name: github.com/shurcooL/sanitized_anchor_name
   version: 1dba4b3954bc059efc3991ec364f9f9a35f597d2
 - name: github.com/yookoala/realpath

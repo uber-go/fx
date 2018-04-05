@@ -35,6 +35,7 @@ import:
 - package: github.com/uber/cherami-thrift
   subpackages:
   - .generated/go/cherami
+- package: go.uber.org/multierr
 testImport:
 - package: golang.org/x/tools
   subpackages:
