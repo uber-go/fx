@@ -5,8 +5,8 @@ cache:
   directories:
     - .cache/docker
 env:
-  - DOCKER_GO_VERSION=1.7
-  - DOCKER_GO_VERSION=1.8 CI_TEST_CMD=coveralls
+  - DOCKER_GO_VERSION=1.9
+  - DOCKER_GO_VERSION=1.10 CI_TEST_CMD=coveralls
 before_install:
   - make dockerload
 script:
