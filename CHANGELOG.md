@@ -5,8 +5,13 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Added
+- Add `fx.StartTimeout` and `fx.StopTimeout` to make configuring application
+  start and stop timeouts easier.
+- Export the default start and stop timeout as `fx.DefaultTimeout`.
 
-- No changes yet.
+### Fixed
+- Make `fxtest` respect the application's start and stop timeouts.
 
 ## [1.4.0] - 2017-12-07
 ### Added

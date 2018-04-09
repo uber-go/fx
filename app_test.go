@@ -172,6 +172,45 @@ func TestOptions(t *testing.T) {
 	})
 }
 
+func TestTimeoutOptions(t *testing.T) {
+	const timeout = time.Minute
+	// Further assertions can't succeed unless the test timeout is greater than the default.
+	require.True(t, timeout > DefaultTimeout, "test assertions require timeout greater than default")
+
+	var started, stopped bool
+	assertCustomContext := func(ctx context.Context, phase string) {
+		deadline, ok := ctx.Deadline()
+		if assert.True(t, ok, "no %s deadline", phase) {
+			remaining := time.Until(deadline)
+			assert.True(t, remaining > DefaultTimeout, "didn't respect customized %s timeout", phase)
+		}
+	}
+	verify := func(lc Lifecycle) {
+		lc.Append(Hook{
+			OnStart: func(ctx context.Context) error {
+				assertCustomContext(ctx, "start")
+				started = true
+				return nil
+			},
+			OnStop: func(ctx context.Context) error {
+				assertCustomContext(ctx, "stop")
+				stopped = true
+				return nil
+			},
+		})
+	}
+	app := fxtest.New(
+		t,
+		Invoke(verify),
+		StartTimeout(timeout),
+		StopTimeout(timeout),
+	)
+
+	app.RequireStart().RequireStop()
+	assert.True(t, started, "app wasn't started")
+	assert.True(t, stopped, "app wasn't stopped")
+}
+
 func TestAppStart(t *testing.T) {
 	t.Run("Timeout", func(t *testing.T) {
 		type A struct{}
