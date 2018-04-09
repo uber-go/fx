@@ -30,11 +30,6 @@ lint:
 	$(ECHO_V)errcheck $(ERRCHECK_FLAGS) $(PKGS) 2>&1 | $(FILTER_LINT) | tee -a $(LINT_LOG)
 	@echo "Checking for unresolved FIXMEs..."
 	$(ECHO_V)git grep -i fixme | grep -v -e vendor -e $(_THIS_MAKEFILE) -e CONTRIBUTING.md | tee -a $(LINT_LOG)
-	@echo "Checking for license headers..."
-	$(ECHO_V)DRY_RUN=1 $(_THIS_DIR)/license.sh | tee -a $(LINT_LOG)
 	@echo "Checking for imports of log package"
 	$(ECHO_V)go list -f '{{ .ImportPath }}: {{ .Imports }}' $(shell glide nv) | grep -e "\blog\b" | $(FILTER_LOG) | tee -a $(LINT_LOG)
-	@echo "Ensuring generated doc.go are up to date"
-	$(ECHO_V)$(MAKE) gendoc
-	$(ECHO_V)[ -z "$(shell git status --porcelain | grep '\bdoc.go$$')" ] || echo "Commit updated doc.go changes" | tee -a $(LINT_LOG)
 	$(ECHO_V)[ ! -s $(LINT_LOG) ]
