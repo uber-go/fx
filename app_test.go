@@ -180,9 +180,10 @@ func TestTimeoutOptions(t *testing.T) {
 	var started, stopped bool
 	assertCustomContext := func(ctx context.Context, phase string) {
 		deadline, ok := ctx.Deadline()
-		require.True(t, ok, "no %s deadline", phase)
-		remaining := time.Until(deadline)
-		assert.True(t, remaining > DefaultTimeout, "didn't respect customized %s timeout", phase)
+		if assert.True(t, ok, "no %s deadline", phase) {
+			remaining := time.Until(deadline)
+			assert.True(t, remaining > DefaultTimeout, "didn't respect customized %s timeout", phase)
+		}
 	}
 	verify := func(lc Lifecycle) {
 		lc.Append(Hook{
