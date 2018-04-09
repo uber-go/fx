@@ -172,33 +172,42 @@ func TestOptions(t *testing.T) {
 	})
 }
 
-func TestAppWithOnStartTimeout(t *testing.T) {
-	t.Run("Timeout", func(t *testing.T) {
-		type A struct{}
-		started := false
-		sleeper := func(lc Lifecycle) *A {
-			lc.Append(
-				Hook{
-					OnStart: func(context.Context) error {
-						time.Sleep(10 * time.Millisecond)
-						started = true
-						return nil
-					},
-				},
-			)
-			return &A{}
-		}
-		app := fxtest.New(
-			t,
-			Provide(sleeper),
-			Invoke(func(*A) {}),
-			OnStartTimeout(5*time.Second),
-			OnStopTimeout(5*time.Second),
-		)
+func TestTimeoutOptions(t *testing.T) {
+	const timeout = time.Minute
+	// Further assertions can't succeed unless the test timeout is greater than the default.
+	require.True(t, timeout > DefaultTimeout, "test assertions require timeout greater than default")
 
-		defer app.RequireStart().RequireStop()
-		assert.True(t, started)
-	})
+	var started, stopped bool
+	assertCustomContext := func(ctx context.Context, phase string) {
+		deadline, ok := ctx.Deadline()
+		require.True(t, ok, "no %s deadline", phase)
+		remaining := time.Until(deadline)
+		assert.True(t, remaining > DefaultTimeout, "didn't respect customized %s timeout", phase)
+	}
+	verify := func(lc Lifecycle) {
+		lc.Append(Hook{
+			OnStart: func(ctx context.Context) error {
+				assertCustomContext(ctx, "start")
+				started = true
+				return nil
+			},
+			OnStop: func(ctx context.Context) error {
+				assertCustomContext(ctx, "stop")
+				stopped = true
+				return nil
+			},
+		})
+	}
+	app := fxtest.New(
+		t,
+		Invoke(verify),
+		StartTimeout(timeout),
+		StopTimeout(timeout),
+	)
+
+	app.RequireStart().RequireStop()
+	assert.True(t, started, "app wasn't started")
+	assert.True(t, stopped, "app wasn't stopped")
 }
 
 func TestAppStart(t *testing.T) {

@@ -36,7 +36,10 @@ import (
 	"go.uber.org/multierr"
 )
 
-const defaultTimeout = 15 * time.Second
+// DefaultTimeout is the default timeout for starting or stopping an
+// application. It can be configured with the StartTimeout and StopTimeout
+// options.
+const DefaultTimeout = 15 * time.Second
 
 // An Option configures an App using the functional options paradigm
 // popularized by Rob Pike. If you're unfamiliar with this style, see
@@ -179,34 +182,18 @@ func (og optionGroup) String() string {
 	return fmt.Sprintf("fx.Options(%s)", strings.Join(items, ", "))
 }
 
-// OnStartTimeout changes the application's start timeout.
-func OnStartTimeout(v time.Duration) Option {
+// StartTimeout changes the application's start timeout.
+func StartTimeout(v time.Duration) Option {
 	return optionFunc(func(app *App) {
-		app.onStartTimeout = v
+		app.startTimeout = v
 	})
 }
 
-// OnStopTimeout changes the application's start timeout.
-func OnStopTimeout(v time.Duration) Option {
+// StopTimeout changes the application's stop timeout.
+func StopTimeout(v time.Duration) Option {
 	return optionFunc(func(app *App) {
-		app.onStopTimeout = v
+		app.stopTimeout = v
 	})
-}
-
-// GetStartTimeout returns on start timeout.
-//
-// Most users won't need to use this method, because they may set timeout if necessary.
-// This can be useful for unit tests when need to read it to pass then to Start method.
-func (app *App) GetStartTimeout() time.Duration {
-	return app.onStartTimeout
-}
-
-// GetStopTimeout returns on start timeout.
-//
-// Most users won't need to use this method, because they may set timeout if necessary.
-// This can be useful for unit tests when need to read it to pass then to Stop method.
-func (app *App) GetStopTimeout() time.Duration {
-	return app.onStopTimeout
 }
 
 // Printer is the interface required by Fx's logging backend. It's implemented
@@ -268,14 +255,14 @@ func (l nopLogger) Printf(string, ...interface{}) {
 // execute one at a time, in reverse order, and must all complete within a
 // configurable deadline (again, 15 seconds by default).
 type App struct {
-	err            error
-	container      *dig.Container
-	lifecycle      *lifecycleWrapper
-	provides       []interface{}
-	invokes        []interface{}
-	logger         *fxlog.Logger
-	onStartTimeout time.Duration
-	onStopTimeout  time.Duration
+	err          error
+	container    *dig.Container
+	lifecycle    *lifecycleWrapper
+	provides     []interface{}
+	invokes      []interface{}
+	logger       *fxlog.Logger
+	startTimeout time.Duration
+	stopTimeout  time.Duration
 }
 
 // New creates and initializes an App, immediately executing any functions
@@ -286,11 +273,11 @@ func New(opts ...Option) *App {
 	lc := &lifecycleWrapper{lifecycle.New(logger)}
 
 	app := &App{
-		container:      dig.New(),
-		lifecycle:      lc,
-		logger:         logger,
-		onStartTimeout: defaultTimeout,
-		onStopTimeout:  defaultTimeout,
+		container:    dig.New(),
+		lifecycle:    lc,
+		logger:       logger,
+		startTimeout: DefaultTimeout,
+		stopTimeout:  DefaultTimeout,
 	}
 
 	for _, opt := range opts {
@@ -315,16 +302,14 @@ func New(opts ...Option) *App {
 }
 
 // Run starts the application, blocks on the signals channel, and then
-// gracefully shuts the application down. It uses the default value of 15
-// seconds for the start and stop timeouts. It's designed to make typical
-// applications simple to run.
+// gracefully shuts the application down. It uses DefaultTimeout to set a
+// deadline for application startup and shutdown, unless the user has
+// configured different timeouts with the StartTimeout or StopTimeout options.
+// It's designed to make typical applications simple to run.
 //
 // However, all of Run's functionality is implemented in terms of the exported
 // Start, Done, and Stop methods. Applications with more specialized needs
 // can use those methods directly instead of relying on Run.
-//
-// Note that if you need custom start and stop timeouts, it's better to use
-// OnStartTimeout and OnStopTimeout options that solves namely this problem.
 func (app *App) Run() {
 	app.run(app.Done())
 }
@@ -382,6 +367,20 @@ func (app *App) Done() <-chan os.Signal {
 	return c
 }
 
+// StartTimeout returns the configured startup timeout. Apps default to using
+// DefaultTimeout, but users can configure this behavior using the
+// StartTimeout option.
+func (app *App) StartTimeout() time.Duration {
+	return app.startTimeout
+}
+
+// StopTimeout returns the configured shutdown timeout. Apps default to using
+// DefaultTimeout, but users can configure this behavior using the StopTimeout
+// option.
+func (app *App) StopTimeout() time.Duration {
+	return app.stopTimeout
+}
+
 func (app *App) provide(constructor interface{}) {
 	if app.err != nil {
 		return
@@ -424,7 +423,7 @@ func (app *App) executeInvokes() error {
 }
 
 func (app *App) run(done <-chan os.Signal) {
-	startCtx, cancel := context.WithTimeout(context.Background(), app.onStartTimeout)
+	startCtx, cancel := context.WithTimeout(context.Background(), app.StartTimeout())
 	defer cancel()
 
 	if err := app.Start(startCtx); err != nil {
@@ -433,7 +432,7 @@ func (app *App) run(done <-chan os.Signal) {
 
 	app.logger.PrintSignal(<-done)
 
-	stopCtx, cancel := context.WithTimeout(context.Background(), app.onStopTimeout)
+	stopCtx, cancel := context.WithTimeout(context.Background(), app.StopTimeout())
 	defer cancel()
 
 	if err := app.Stop(stopCtx); err != nil {

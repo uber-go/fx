@@ -64,7 +64,7 @@ func New(tb TB, opts ...fx.Option) *App {
 
 // RequireStart calls Start, failing the test if an error is encountered.
 func (app *App) RequireStart() *App {
-	startCtx, cancel := context.WithTimeout(context.Background(), app.GetStartTimeout())
+	startCtx, cancel := context.WithTimeout(context.Background(), app.StartTimeout())
 	defer cancel()
 
 	if err := app.Start(startCtx); err != nil {
@@ -76,7 +76,7 @@ func (app *App) RequireStart() *App {
 
 // RequireStop calls Stop, failing the test if an error is encountered.
 func (app *App) RequireStop() {
-	stopCtx, cancel := context.WithTimeout(context.Background(), app.GetStopTimeout())
+	stopCtx, cancel := context.WithTimeout(context.Background(), app.StopTimeout())
 	defer cancel()
 
 	if err := app.Stop(stopCtx); err != nil {
