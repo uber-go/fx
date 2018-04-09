@@ -32,3 +32,4 @@ lint:
 	$(ECHO_V)git grep -i fixme | grep -v -e vendor -e $(_THIS_MAKEFILE) -e CONTRIBUTING.md | tee -a $(LINT_LOG)
 	@echo "Checking for imports of log package"
 	$(ECHO_V)go list -f '{{ .ImportPath }}: {{ .Imports }}' $(shell glide nv) | grep -e "\blog\b" | $(FILTER_LOG) | tee -a $(LINT_LOG)
+	$(ECHO_V)[ ! -s $(LINT_LOG) ]
