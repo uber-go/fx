@@ -22,7 +22,6 @@ package service
 
 import (
 	"errors"
-	"log"
 	"testing"
 	"time"
 
@@ -327,10 +326,6 @@ func TestStartManager_WithMultipleErrors(t *testing.T) {
 		},
 	}
 	require.NoError(t, s.addModule(moduleProvider2))
-
-	time.AfterFunc(10*time.Second, func() {
-		log.Fatalf("Service dint shut down on its own for over 10 secs so forcefully killing it!")
-	})
 
 	control := s.StartAsync()
 	<-control.ExitChan

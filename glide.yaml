@@ -36,6 +36,7 @@ import:
   subpackages:
   - .generated/go/cherami
 - package: go.uber.org/multierr
+  version: ^1
 testImport:
 - package: golang.org/x/tools
   subpackages:
