@@ -1,4 +1,4 @@
-// Copyright (c) 2017 Uber Technologies, Inc.
+// Copyright (c) 2017-2018 Uber Technologies, Inc.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -45,10 +45,8 @@ func TestOnCriticalError_NoObserver(t *testing.T) {
 	case <-control.ReadyChan:
 		// do nothing
 	}
-	go func() {
-		<-control.ExitChan
-	}()
 	sh.OnCriticalError(err)
+	<-control.ExitChan
 	assert.Equal(t, err, sh.shutdownReason.Error)
 }
 
@@ -275,11 +273,9 @@ func TestStartModule_NoErrors(t *testing.T) {
 	require.NoError(t, s.addModule(NewDefaultStubModuleProvider()))
 
 	control := s.StartAsync()
-	go func() {
-		<-control.ExitChan
-	}()
 	defer func() {
 		assert.NoError(t, s.Stop("test", 0))
+		<-control.ExitChan
 		assert.Equal(t, s.state, Stopped)
 	}()
 
@@ -287,7 +283,7 @@ func TestStartModule_NoErrors(t *testing.T) {
 	assert.Equal(t, s.state, Running)
 }
 
-func TestStartManager_WithErrors(t *testing.T) {
+func TestStartManager_WithError(t *testing.T) {
 	s := makeManager()
 	moduleProvider := &StubModuleProvider{
 		NameVal: "stubModule",
@@ -301,10 +297,41 @@ func TestStartManager_WithErrors(t *testing.T) {
 	require.NoError(t, s.addModule(moduleProvider))
 
 	control := s.StartAsync()
-	go func() {
-		<-control.ExitChan
-	}()
-	assert.Error(t, control.ServiceError)
+	<-control.ExitChan
+	require.Error(t, control.ServiceError)
+	assert.Contains(t, control.ServiceError.Error(), "can't start this")
+}
+
+func TestStartManager_WithMultipleErrors(t *testing.T) {
+	s := makeManager()
+
+	moduleProvider1 := &StubModuleProvider{
+		NameVal: "stubModule1",
+		CreateVal: func(host Host) (Module, error) {
+			return &StubModule{
+				Host:       host,
+				StartError: errors.New("can't start stubModule1"),
+			}, nil
+		},
+	}
+	require.NoError(t, s.addModule(moduleProvider1))
+
+	moduleProvider2 := &StubModuleProvider{
+		NameVal: "stubModule2",
+		CreateVal: func(host Host) (Module, error) {
+			return &StubModule{
+				Host:       host,
+				StartError: errors.New("can't start stubModule2"),
+			}, nil
+		},
+	}
+	require.NoError(t, s.addModule(moduleProvider2))
+
+	control := s.StartAsync()
+	<-control.ExitChan
+	require.Error(t, control.ServiceError)
+	assert.Contains(t, control.ServiceError.Error(), "can't start stubModule1")
+	assert.Contains(t, control.ServiceError.Error(), "can't start stubModule2")
 }
 
 func makeRunningManager() *manager {
