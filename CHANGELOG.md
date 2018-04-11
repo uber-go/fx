@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [1.5.0] - 2018-04-11
 ### Added
 - Add `fx.StartTimeout` and `fx.StopTimeout` to make configuring application
   start and stop timeouts easier.
@@ -146,6 +146,7 @@ In fact, we expect our beta user feedback to require some changes to the way
 things work. Once we reach 1.0, we will provider proper version compatibility.
 
 [Unreleased]: https://github.com/uber-go/fx/compare/v1.4.0...HEAD
+[1.5.0]: https://github.com/uber-go/fx/compare/v1.4.0...v1.5.0
 [1.4.0]: https://github.com/uber-go/fx/compare/v1.3.0...v1.4.0
 [1.3.0]: https://github.com/uber-go/fx/compare/v1.2.0...v1.3.0
 [1.2.0]: https://github.com/uber-go/fx/compare/v1.1.0...v1.2.0
