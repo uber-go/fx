@@ -19,6 +19,11 @@ This library is `v1` and follows [SemVer](http://semver.org/) strictly.
 
 No breaking changes will be made to exported APIs before `v2.0.0`.
 
+**Supported Go versions: 1.9, 1.10**
+
+This project follows the [Go Release Policy][release-policy]. Each major
+version of Go is supported until there are two newer major releases.
+
 [doc-img]: http://img.shields.io/badge/GoDoc-Reference-blue.svg
 [doc]: https://godoc.org/go.uber.org/fx
 
@@ -33,3 +38,5 @@ No breaking changes will be made to exported APIs before `v2.0.0`.
 
 [report-card-img]: https://goreportcard.com/badge/github.com/uber-go/fx
 [report-card]: https://goreportcard.com/report/github.com/uber-go/fx
+
+[release-policy]: https://golang.org/doc/devel/release.html#policy
