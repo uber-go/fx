@@ -208,7 +208,7 @@ func TestPopulateErrors(t *testing.T) {
 		{
 			msg:     "container pointer without fx.In",
 			opt:     Populate(&containerNoIn{}),
-			wantErr: "isn't in the container",
+			wantErr: "is not in the container",
 		},
 		{
 			msg:     "function",
@@ -218,7 +218,7 @@ func TestPopulateErrors(t *testing.T) {
 		{
 			msg:     "function pointer",
 			opt:     Populate(&fn),
-			wantErr: "isn't in the container",
+			wantErr: "is not in the container",
 		},
 		{
 			msg:     "invalid last argument",
