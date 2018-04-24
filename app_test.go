@@ -76,7 +76,11 @@ func TestNewApp(t *testing.T) {
 		)
 		err := app.Err()
 		require.Error(t, err, "fx.New should return an error")
-		assert.Contains(t, err.Error(), "fx_test.A -> fx_test.B -> fx_test.A")
+
+		errMsg := err.Error()
+		assert.Contains(t, errMsg, "this function introduces a cycle")
+		assert.Contains(t, errMsg, "depends on fx_test.A")
+		assert.Contains(t, errMsg, "depends on fx_test.B")
 	})
 }
 
@@ -92,7 +96,7 @@ func TestInvokes(t *testing.T) {
 		)
 		err := app.Err()
 		require.Error(t, err)
-		assert.Contains(t, err.Error(), "A isn't in the container")
+		assert.Contains(t, err.Error(), "fx_test.A is not in the container")
 	})
 }
 
