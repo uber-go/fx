@@ -52,13 +52,12 @@ func Extract(target interface{}) Option {
 	// Fields of the generated fx.In struct.
 	fields := make([]reflect.StructField, 0, t.NumField()+1)
 
-	// The fix for https://github.com/golang/go/issues/18780 requires that
-	// StructField.Name is always set but versions of Go older than 1.9 expect
-	// Name to be empty for embedded fields.
-	//
-	// We use reflect_go19 and reflect_pre_go19 with build tags to implement
-	// this behavior differently in the two Go versions.
-	fields = append(fields, anonymousField(_typeOfIn))
+	// Anonymous dig.In field.
+	fields = append(fields, reflect.StructField{
+		Name:      _typeOfIn.Name(),
+		Anonymous: true,
+		Type:      _typeOfIn,
+	})
 
 	// List of values in the target struct aligned with the fields of the
 	// generated struct.
