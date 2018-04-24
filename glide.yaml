@@ -16,6 +16,8 @@ testImport:
 - package: golang.org/x/tools
   subpackages:
   - cover
-- package: github.com/golang/lint
+- package: golang.org/x/lint
+  repo: https://github.com/golang/lint
+  vcs: git
   subpackages:
   - golint
