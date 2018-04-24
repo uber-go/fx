@@ -1,27 +1,25 @@
-hash: 978e58bb7eb90f22e85c1f8f59a86d84263f4c6909b7718222ec5b6d2c64c2e8
-updated: 2017-11-15T11:26:38.99350717-08:00
+hash: 7a10fdf94a677dc1a1ed50547a734e07fc72b8d700afb23e610251a86848282f
+updated: 2018-04-24T13:30:55.82212203-07:00
 imports:
 - name: go.uber.org/atomic
   version: 8474b86a5a6f79c443ce4b2992817ff32cf208b8
 - name: go.uber.org/dig
-  version: a752dd97d0e0718ba977eaaca94a23a4d28b7a08
+  version: d100de9c8cc8358591507951141bc107713ba671
+  subpackages:
+  - internal/digreflect
 - name: go.uber.org/multierr
   version: 3c4937480c32f4c13a875a1829af76c98ca3d40a
 testImports:
 - name: github.com/davecgh/go-spew
-  version: 04cdfd42973bb9c8589fd6a731800cf222fde1a9
+  version: 6d212800a42e8ab5c146b8ace3490ee17e5225f9
   subpackages:
   - spew
-- name: github.com/golang/lint
-  version: e5d664eb928e9d79eea4a648ca451da7208d5789
-  subpackages:
-  - golint
 - name: github.com/pmezard/go-difflib
   version: d8ed2627bdf02c080bf22230dbb337003b7aba2d
   subpackages:
   - difflib
 - name: github.com/stretchr/testify
-  version: 69483b4bd14f5845b5a1e55bca19e954e827f1d0
+  version: 12b6f73e6084dad08a7c6e575284b177ecafbc71
   subpackages:
   - assert
   - require
@@ -29,6 +27,12 @@ testImports:
   version: ce2550dad7144b81ae2f67dc5e55597643f6902b
   subpackages:
   - update-license
+- name: golang.org/x/lint
+  version: 85993ffd0a6cd043291f3f63d45d656d97b165bd
+  repo: https://github.com/golang/lint
+  vcs: git
+  subpackages:
+  - golint
 - name: golang.org/x/tools
   version: 4e70a1b26a7875f00ca1916637a876b5ffaeec59
   subpackages:
