@@ -55,7 +55,7 @@ func NewLogger() *log.Logger {
 // http.Handler, Fx will treat NewHandler as the constructor for the
 // http.Handler type.
 //
-// Like many Go functions, NewHander also returns an error. If the error is
+// Like many Go functions, NewHandler also returns an error. If the error is
 // non-nil, Go convention tells the caller to assume that NewHandler failed
 // and the other returned values aren't safe to use. Fx understands this
 // idiom, and assumes that any function whose last return value is an error
