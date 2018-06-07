@@ -112,18 +112,20 @@ func TestError(t *testing.T) {
 		require.NoError(t, err)
 		assert.True(t, invoked)
 	})
+
 	t.Run("SingleErrorOption", func(t *testing.T) {
 		var invoked bool
 
 		app := fxtest.New(t,
-			Error(fmt.Errorf("module A failure")),
+			Error(errors.New("module failure")),
 			Invoke(func() { invoked = true }),
 		)
 		err := app.Err()
 		require.Error(t, err)
-		assert.Contains(t, err.Error(), "module A failure")
+		assert.Contains(t, err.Error(), "module failure")
 		assert.False(t, invoked)
 	})
+
 	t.Run("MultipleErrorOption", func(t *testing.T) {
 		type A struct{}
 		panicFn := func(A) { panic("do not call me") }
@@ -132,8 +134,8 @@ func TestError(t *testing.T) {
 			Provide(func() A { return A{} }),
 			Invoke(panicFn),
 			Error(
-				fmt.Errorf("module A failure"),
-				fmt.Errorf("module B failure"),
+				errors.New("module A failure"),
+				errors.New("module B failure"),
 			),
 			Provide(panicFn),
 		)
@@ -385,6 +387,7 @@ func TestAppStart(t *testing.T) {
 			Invoke(func(type1) {
 				require.FailNow(t, "module Invoke must not be called")
 			}),
+			Error(errors.New("module failure")),
 		)
 
 		app := fxtest.New(t,
@@ -397,6 +400,7 @@ func TestAppStart(t *testing.T) {
 		require.Error(t, err, "expected start failure")
 		assert.Contains(t, err.Error(), "fx.Option should be passed to fx.New directly, not to fx.Provide")
 		assert.Contains(t, err.Error(), "fx.Provide received fx.Options(fx.Provide(go.uber.org/fx_test.TestAppStart")
+		assert.Contains(t, err.Error(), "fx.Error(module failure)")
 	})
 }
 
