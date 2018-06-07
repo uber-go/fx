@@ -100,6 +100,50 @@ func TestInvokes(t *testing.T) {
 	})
 }
 
+func TestError(t *testing.T) {
+	t.Run("NilErrorOption", func(t *testing.T) {
+		var invoked bool
+
+		app := fxtest.New(t,
+			Error(nil),
+			Invoke(func() { invoked = true }),
+		)
+		err := app.Err()
+		require.NoError(t, err)
+		assert.True(t, invoked)
+	})
+	t.Run("SingleErrorOption", func(t *testing.T) {
+		var invoked bool
+
+		app := fxtest.New(t,
+			Error(fmt.Errorf("module A failure")),
+			Invoke(func() { invoked = true }),
+		)
+		err := app.Err()
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "module A failure")
+		assert.False(t, invoked)
+	})
+	t.Run("MultipleErrorOption", func(t *testing.T) {
+		type A struct{}
+		panicFn := func(A) { panic("do not call me") }
+
+		app := fxtest.New(t,
+			Provide(func() A { return A{} }),
+			Invoke(panicFn),
+			Error(
+				fmt.Errorf("module A failure"),
+				fmt.Errorf("module B failure"),
+			),
+			Provide(panicFn),
+		)
+		err := app.Err()
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "module A failure")
+		assert.Contains(t, err.Error(), "module B failure")
+	})
+}
+
 func TestOptions(t *testing.T) {
 	t.Run("OptionsComposition", func(t *testing.T) {
 		var n int

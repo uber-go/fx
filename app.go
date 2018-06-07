@@ -131,6 +131,27 @@ func (io invokeOption) String() string {
 	return fmt.Sprintf("fx.Invoke(%s)", strings.Join(items, ", "))
 }
 
+// Error registers any number of errors with the application to short-circuit
+// startup. If more than one error is given, the errors are combined into a
+// single error, where each of the error messages are delimited by a newline.
+//
+// Similar to invocations, errors are applied in order. All Provide options
+// registered after an Error option will not be applied. Similarly, no
+// invokes will be run, including those that were registered before an Error.
+func Error(errs ...error) Option {
+	return errOption(errs)
+}
+
+type errOption []error
+
+func (eo errOption) apply(app *App) {
+	app.err = multierr.Append(app.err, multierr.Combine(eo...))
+}
+
+func (eo errOption) String() string {
+	return fmt.Sprintf("fx.Error(%s)", multierr.Combine(eo...).Error())
+}
+
 // Options converts a collection of Options into a single Option. This allows
 // packages to bundle sophisticated functionality into easy-to-use Fx modules.
 // For example, a logging package might export a simple option like this:
