@@ -36,7 +36,7 @@ func ExampleError() {
 	newHTTPServer := func() fx.Option {
 		port := os.Getenv("PORT")
 		if port == "" {
-			return fx.Error(errors.New("failed to build module: $PORT is not set"))
+			return fx.Error(errors.New("$PORT is not set"))
 		}
 		return fx.Provide(&http.Server{
 			Addr: fmt.Sprintf(":%s", port),
@@ -51,5 +51,5 @@ func ExampleError() {
 	fmt.Println(app.Err())
 
 	// Output:
-	// failed to build module: $PORT is not set
+	// $PORT is not set
 }

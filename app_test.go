@@ -106,7 +106,7 @@ func TestError(t *testing.T) {
 
 		app := fxtest.New(t,
 			Error(nil),
-			Invoke(func() { invoked = true }), // should not be called
+			Invoke(func() { invoked = true }),
 		)
 		err := app.Err()
 		require.NoError(t, err)
@@ -114,29 +114,25 @@ func TestError(t *testing.T) {
 	})
 
 	t.Run("SingleErrorOption", func(t *testing.T) {
-		var invoked bool
-
 		app := fxtest.New(t,
 			Error(errors.New("module failure")),
-			Invoke(func() { invoked = true }), // should not be called
+			Invoke(func() { t.Errorf("Invoke should not be called") }),
 		)
 		err := app.Err()
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "module failure")
-		assert.False(t, invoked)
 	})
 
 	t.Run("MultipleErrorOption", func(t *testing.T) {
 		type A struct{}
-		var provided, invoked bool
 
 		app := fxtest.New(t,
-			Provide(func() A { // should not be called
-				provided = true
+			Provide(func() A {
+				t.Errorf("Provide should not be called")
 				return A{}
 			},
 			),
-			Invoke(func(A) { invoked = true }), // should not be called
+			Invoke(func(A) { t.Errorf("Invoke should not be called") }),
 			Error(
 				errors.New("module A failure"),
 				errors.New("module B failure"),
@@ -146,8 +142,6 @@ func TestError(t *testing.T) {
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "module A failure")
 		assert.Contains(t, err.Error(), "module B failure")
-		assert.False(t, provided)
-		assert.False(t, invoked)
 	})
 }
 
