@@ -23,26 +23,33 @@ package fx_test
 import (
 	"errors"
 	"fmt"
+	"net/http"
+	"os"
 
 	"go.uber.org/fx"
 )
 
 func ExampleError() {
-	// A function that panics is both provided and invoked,
-	// but neither of these options will be called in the
-	// presence of an fx.Error.
-	panicFn := func() { panic("should not be called") }
+	// A module that provides a HTTP server depends on
+	// the $PORT environment variable. If the variable
+	// is unset, the module returns an fx.Error option.
+	newHTTPServer := func() fx.Option {
+		port := os.Getenv("PORT")
+		if port == "" {
+			return fx.Error(errors.New("failed to build module: $PORT is not set"))
+		}
+		return fx.Provide(&http.Server{
+			Addr: fmt.Sprintf(":%s", port),
+		})
+	}
 
 	app := fx.New(
-		fx.Provide(panicFn),
-		// An fx.Error option was registered with the application,
-		// so none of the Provide or Invoke options will be run.
-		fx.Error(errors.New("failed to build module")),
-		fx.Invoke(panicFn),
+		newHTTPServer(),
+		fx.Invoke(func(s *http.Server) error { return s.ListenAndServe() }),
 	)
 
 	fmt.Println(app.Err())
 
 	// Output:
-	// failed to build module
+	// failed to build module: $PORT is not set
 }

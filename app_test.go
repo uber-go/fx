@@ -131,11 +131,10 @@ func TestError(t *testing.T) {
 		var provided, invoked bool
 
 		app := fxtest.New(t,
-			Provide(
-				func() A { // should not be called
-					provided = true
-					return A{}
-				},
+			Provide(func() A { // should not be called
+				provided = true
+				return A{}
+			},
 			),
 			Invoke(func(A) { invoked = true }), // should not be called
 			Error(
