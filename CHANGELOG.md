@@ -4,9 +4,9 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
-## Unreleased
-
-- No changes yet.
+## [1.6.0] - 2018-06-12
+### Added
+- Add `fx.Error` option to short-circuit application startup.
 
 ## [1.5.0] - 2018-04-11
 ### Added
@@ -149,7 +149,8 @@ promising API compatibility between beta releases and the final 1.0.0 release.
 In fact, we expect our beta user feedback to require some changes to the way
 things work. Once we reach 1.0, we will provider proper version compatibility.
 
-[Unreleased]: https://github.com/uber-go/fx/compare/v1.4.0...HEAD
+[Unreleased]: https://github.com/uber-go/fx/compare/v1.6.0...HEAD
+[1.6.0]: https://github.com/uber-go/fx/compare/v1.5.0...v1.6.0
 [1.5.0]: https://github.com/uber-go/fx/compare/v1.4.0...v1.5.0
 [1.4.0]: https://github.com/uber-go/fx/compare/v1.3.0...v1.4.0
 [1.3.0]: https://github.com/uber-go/fx/compare/v1.2.0...v1.3.0
