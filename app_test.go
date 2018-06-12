@@ -119,7 +119,6 @@ func TestError(t *testing.T) {
 			Invoke(func() { t.Errorf("Invoke should not be called") }),
 		)
 		err := app.Err()
-		require.Error(t, err)
 		assert.EqualError(t, err, "module failure")
 	})
 
@@ -159,8 +158,7 @@ func TestError(t *testing.T) {
 			Invoke(func(A) { t.Errorf("A was not provided; Invoke should not be called") }),
 		)
 		err := app.Err()
-		require.Error(t, err)
-		assert.Equal(t, err.Error(), "module failure")
+		assert.EqualError(t, err, "module failure")
 	})
 }
 
