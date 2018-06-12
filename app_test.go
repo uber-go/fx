@@ -143,6 +143,24 @@ func TestError(t *testing.T) {
 		assert.Contains(t, err.Error(), "module A failure")
 		assert.Contains(t, err.Error(), "module B failure")
 	})
+
+	t.Run("ProvideAndInvokeErrorsAreIgnored", func(t *testing.T) {
+		type A struct{}
+		type B struct{}
+
+		app := fxtest.New(t,
+			Provide(func(b B) A {
+				t.Errorf("B is missing from the container; Provide should not be called")
+				return A{}
+			},
+			),
+			Error(errors.New("module failure")),
+			Invoke(func(A) { t.Errorf("A was not provided; Invoke should not be called") }),
+		)
+		err := app.Err()
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "module failure")
+	})
 }
 
 func TestOptions(t *testing.T) {
