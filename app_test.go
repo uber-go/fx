@@ -100,6 +100,68 @@ func TestInvokes(t *testing.T) {
 	})
 }
 
+func TestError(t *testing.T) {
+	t.Run("NilErrorOption", func(t *testing.T) {
+		var invoked bool
+
+		app := fxtest.New(t,
+			Error(nil),
+			Invoke(func() { invoked = true }),
+		)
+		err := app.Err()
+		require.NoError(t, err)
+		assert.True(t, invoked)
+	})
+
+	t.Run("SingleErrorOption", func(t *testing.T) {
+		app := fxtest.New(t,
+			Error(errors.New("module failure")),
+			Invoke(func() { t.Errorf("Invoke should not be called") }),
+		)
+		err := app.Err()
+		assert.EqualError(t, err, "module failure")
+	})
+
+	t.Run("MultipleErrorOption", func(t *testing.T) {
+		type A struct{}
+
+		app := fxtest.New(t,
+			Provide(func() A {
+				t.Errorf("Provide should not be called")
+				return A{}
+			},
+			),
+			Invoke(func(A) { t.Errorf("Invoke should not be called") }),
+			Error(
+				errors.New("module A failure"),
+				errors.New("module B failure"),
+			),
+		)
+		err := app.Err()
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "module A failure")
+		assert.Contains(t, err.Error(), "module B failure")
+		assert.NotContains(t, err.Error(), "not in the container")
+	})
+
+	t.Run("ProvideAndInvokeErrorsAreIgnored", func(t *testing.T) {
+		type A struct{}
+		type B struct{}
+
+		app := fxtest.New(t,
+			Provide(func(b B) A {
+				t.Errorf("B is missing from the container; Provide should not be called")
+				return A{}
+			},
+			),
+			Error(errors.New("module failure")),
+			Invoke(func(A) { t.Errorf("A was not provided; Invoke should not be called") }),
+		)
+		err := app.Err()
+		assert.EqualError(t, err, "module failure")
+	})
+}
+
 func TestOptions(t *testing.T) {
 	t.Run("OptionsComposition", func(t *testing.T) {
 		var n int
