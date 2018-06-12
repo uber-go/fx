@@ -120,7 +120,7 @@ func TestError(t *testing.T) {
 		)
 		err := app.Err()
 		require.Error(t, err)
-		assert.Contains(t, err.Error(), "module failure")
+		assert.Equal(t, err.Error(), "module failure")
 	})
 
 	t.Run("MultipleErrorOption", func(t *testing.T) {
@@ -142,6 +142,7 @@ func TestError(t *testing.T) {
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "module A failure")
 		assert.Contains(t, err.Error(), "module B failure")
+		assert.NotContains(t, err.Error(), "fx_test.A is not in the container")
 	})
 
 	t.Run("ProvideAndInvokeErrorsAreIgnored", func(t *testing.T) {
@@ -159,7 +160,7 @@ func TestError(t *testing.T) {
 		)
 		err := app.Err()
 		require.Error(t, err)
-		assert.Contains(t, err.Error(), "module failure")
+		assert.Equal(t, err.Error(), "module failure")
 	})
 }
 
