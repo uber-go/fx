@@ -84,6 +84,16 @@ func TestNewApp(t *testing.T) {
 	})
 }
 
+var errCount = 0
+
+type testErrHandler struct {
+	count int
+}
+
+func (eh testErrHandler) HandleError(err error) {
+	errCount++
+}
+
 func TestInvokes(t *testing.T) {
 	t.Run("ErrorsAreNotOverriden", func(t *testing.T) {
 		type A struct{}
@@ -97,6 +107,16 @@ func TestInvokes(t *testing.T) {
 		err := app.Err()
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "fx_test.A is not in the container")
+	})
+
+	t.Run("ErrorHooksAreCalled", func(t *testing.T) {
+		type A struct{}
+		errHandler := testErrHandler{}
+		fxtest.New(t,
+			Invoke(func(A) {}),
+			ErrorHook(errHandler),
+		)
+		assert.Equal(t, 1, errCount)
 	})
 }
 
@@ -472,4 +492,67 @@ func TestReplaceLogger(t *testing.T) {
 func TestNopLogger(t *testing.T) {
 	app := fxtest.New(t, NopLogger)
 	app.RequireStart().RequireStop()
+}
+
+type testWrappedErr struct{}
+
+func (we testWrappedErr) Graph() string {
+	return "graph"
+}
+
+func (we testWrappedErr) Error() string {
+	return "great sadness"
+}
+
+func TestVisualizeError(t *testing.T) {
+	t.Run("NotWrappedError", func(t *testing.T) {
+		err := fmt.Errorf("great sadness")
+		assert.Equal(t, "", VisualizeError(err))
+	})
+
+	t.Run("WrappedError", func(t *testing.T) {
+		err := testWrappedErr{}
+		assert.Equal(t, "graph", VisualizeError(err))
+	})
+}
+
+var errStr, graphStr string
+
+type graphErrHandler struct{}
+
+func (eh graphErrHandler) HandleError(err error) {
+	errStr = err.Error()
+	graphStr = VisualizeError(err)
+}
+
+func TestErrorHook(t *testing.T) {
+	t.Run("UnvisualizableError", func(t *testing.T) {
+		type A struct{}
+
+		errHandler := graphErrHandler{}
+		fxtest.New(t,
+			Provide(func() A { return A{} }),
+			Invoke(func(A) error { return fmt.Errorf("great sadness") }),
+			ErrorHook(errHandler),
+		)
+		assert.Equal(t, "great sadness", errStr)
+		assert.Equal(t, "", graphStr)
+
+	})
+
+	t.Run("GraphWithError", func(t *testing.T) {
+		type A struct{}
+		type B struct{}
+		type C struct{}
+
+		errHandler := graphErrHandler{}
+		fxtest.New(t,
+			Provide(func() (B, error) { return B{}, fmt.Errorf("great sadness") }),
+			Provide(func(B) A { return A{} }),
+			Invoke(func(A) {}),
+			ErrorHook(errHandler),
+		)
+		assert.Contains(t, graphStr, "\"fx_test.B\" [color=red];")
+		assert.Contains(t, graphStr, "\"fx_test.A\" [color=orange];")
+	})
 }

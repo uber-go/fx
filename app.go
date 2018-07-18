@@ -21,6 +21,7 @@
 package fx
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"os"
@@ -275,6 +276,32 @@ type App struct {
 	logger       *fxlog.Logger
 	startTimeout time.Duration
 	stopTimeout  time.Duration
+	errorHooks   errorHookOption
+}
+
+// ErrorHook registers error handlers that implement error handling functions.
+// They are executed on invoke failures. Passing multiple ErrorHandlers appends
+// the new handlers to the application's existing list.
+func ErrorHook(funcs ...ErrorHandler) Option {
+	return errorHookOption(funcs)
+}
+
+// ErrorHandler implements HandleError. They are used as error hooks and are
+// called on invoke errors.
+type ErrorHandler interface {
+	HandleError(error)
+}
+
+type errorHookOption []ErrorHandler
+
+func (eho errorHookOption) apply(app *App) {
+	app.errorHooks = append(app.errorHooks, eho...)
+}
+
+func (eho errorHookOption) onError(err error) {
+	for _, eh := range eho {
+		eh.HandleError(err)
+	}
 }
 
 // New creates and initializes an App, immediately executing any functions
@@ -308,9 +335,44 @@ func New(opts ...Option) *App {
 
 	if err := app.executeInvokes(); err != nil {
 		app.err = err
+		var b bytes.Buffer
+
+		if dig.CanVisualizeError(err) {
+			dig.Visualize(app.container, &b, dig.VisualizeError(err))
+		}
+
+		app.errorHooks.onError(wrappedErr{
+			graph: b.String(),
+			err:   err,
+		})
 	}
 
 	return app
+}
+
+type wrappedErr struct {
+	graph string
+	err   error
+}
+
+type isWrapped interface {
+	Graph() string
+}
+
+func (we wrappedErr) Graph() string {
+	return we.graph
+}
+
+func (we wrappedErr) Error() string {
+	return we.err.Error()
+}
+
+// VisualizeError returns the visualization of the error if available.
+func VisualizeError(err error) string {
+	if e, ok := err.(isWrapped); ok {
+		return e.Graph()
+	}
+	return ""
 }
 
 // Run starts the application, blocks on the signals channel, and then
