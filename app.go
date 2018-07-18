@@ -279,10 +279,15 @@ type App struct {
 	errorHooks   errorHookOption
 }
 
+// ErrorHook registers error handlers that implement error handling functions.
+// They are executed on invoke failures. Passing multiple ErrorHandlers appends
+// the new handlers to the application's existing list.
 func ErrorHook(funcs ...ErrorHandler) Option {
 	return errorHookOption(funcs)
 }
 
+// ErrorHandler implements HandleError. They are used as error hooks and are
+// called on invoke errors.
 type ErrorHandler interface {
 	HandleError(error)
 }
@@ -362,6 +367,7 @@ func (we wrappedErr) Error() string {
 	return we.err.Error()
 }
 
+// VisualizeError returns the visualization of the error if available.
 func VisualizeError(err error) string {
 	if e, ok := err.(isWrapped); ok {
 		return e.Graph()
