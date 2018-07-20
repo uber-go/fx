@@ -84,14 +84,12 @@ func TestNewApp(t *testing.T) {
 	})
 }
 
-var errCount = 0
-
 type testErrHandler struct {
 	count int
 }
 
-func (eh testErrHandler) HandleError(err error) {
-	errCount++
+func (eh *testErrHandler) Handle(err error) {
+	eh.count++
 }
 
 func TestInvokes(t *testing.T) {
@@ -114,9 +112,9 @@ func TestInvokes(t *testing.T) {
 		errHandler := testErrHandler{}
 		fxtest.New(t,
 			Invoke(func(A) {}),
-			ErrorHook(errHandler),
+			ErrorHook(&errHandler),
 		)
-		assert.Equal(t, 1, errCount)
+		assert.Equal(t, 1, errHandler.count)
 	})
 }
 
@@ -516,13 +514,14 @@ func TestVisualizeError(t *testing.T) {
 	})
 }
 
-var errStr, graphStr string
+type graphErrHandler struct {
+	errStr   string
+	graphStr string
+}
 
-type graphErrHandler struct{}
-
-func (eh graphErrHandler) HandleError(err error) {
-	errStr = err.Error()
-	graphStr = VisualizeError(err)
+func (eh *graphErrHandler) Handle(err error) {
+	eh.errStr = err.Error()
+	eh.graphStr = VisualizeError(err)
 }
 
 func TestErrorHook(t *testing.T) {
@@ -533,10 +532,10 @@ func TestErrorHook(t *testing.T) {
 		fxtest.New(t,
 			Provide(func() A { return A{} }),
 			Invoke(func(A) error { return fmt.Errorf("great sadness") }),
-			ErrorHook(errHandler),
+			ErrorHook(&errHandler),
 		)
-		assert.Equal(t, "great sadness", errStr)
-		assert.Equal(t, "", graphStr)
+		assert.Equal(t, "great sadness", errHandler.errStr)
+		assert.Equal(t, "", errHandler.graphStr)
 
 	})
 
@@ -550,9 +549,9 @@ func TestErrorHook(t *testing.T) {
 			Provide(func() (B, error) { return B{}, fmt.Errorf("great sadness") }),
 			Provide(func(B) A { return A{} }),
 			Invoke(func(A) {}),
-			ErrorHook(errHandler),
+			ErrorHook(&errHandler),
 		)
-		assert.Contains(t, graphStr, "\"fx_test.B\" [color=red];")
-		assert.Contains(t, graphStr, "\"fx_test.A\" [color=orange];")
+		assert.Contains(t, errHandler.graphStr, "\"fx_test.B\" [color=red];")
+		assert.Contains(t, errHandler.graphStr, "\"fx_test.A\" [color=orange];")
 	})
 }

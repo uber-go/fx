@@ -23,6 +23,7 @@ package fx
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"os/signal"
@@ -286,10 +287,10 @@ func ErrorHook(funcs ...ErrorHandler) Option {
 	return errorHookOption(funcs)
 }
 
-// ErrorHandler implements HandleError. They are used as error hooks and are
-// called on invoke errors.
+// ErrorHandler implements Handle. They are used as error hooks and are called
+// on invoke errors.
 type ErrorHandler interface {
-	HandleError(error)
+	Handle(error)
 }
 
 type errorHookOption []ErrorHandler
@@ -300,7 +301,7 @@ func (eho errorHookOption) apply(app *App) {
 
 func (eho errorHookOption) onError(err error) {
 	for _, eh := range eho {
-		eh.HandleError(err)
+		eh.Handle(err)
 	}
 }
 
@@ -368,11 +369,13 @@ func (we wrappedErr) Error() string {
 }
 
 // VisualizeError returns the visualization of the error if available.
-func VisualizeError(err error) string {
+func VisualizeError(err error) (string, error) {
 	if e, ok := err.(isWrapped); ok {
-		return e.Graph()
+		if e.Graph() != "" {
+			return e.Graph(), nil
+		}
 	}
-	return ""
+	return "", errors.New("unable to visualize error")
 }
 
 // Run starts the application, blocks on the signals channel, and then
