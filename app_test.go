@@ -492,10 +492,12 @@ func TestNopLogger(t *testing.T) {
 	app.RequireStart().RequireStop()
 }
 
-type testWrappedErr struct{}
+type testWrappedErr struct {
+	graph string
+}
 
 func (we testWrappedErr) Graph() string {
-	return "graph"
+	return we.graph
 }
 
 func (we testWrappedErr) Error() string {
@@ -504,13 +506,21 @@ func (we testWrappedErr) Error() string {
 
 func TestVisualizeError(t *testing.T) {
 	t.Run("NotWrappedError", func(t *testing.T) {
-		err := fmt.Errorf("great sadness")
-		assert.Equal(t, "", VisualizeError(err))
+		graph, err := VisualizeError(errors.New("great sadness"))
+		assert.Equal(t, "", graph)
+		require.Error(t, err)
+	})
+
+	t.Run("WrappedErrorWithEmptyGraph", func(t *testing.T) {
+		graph, err := VisualizeError(testWrappedErr{graph: ""})
+		assert.Equal(t, "", graph)
+		require.Error(t, err)
 	})
 
 	t.Run("WrappedError", func(t *testing.T) {
-		err := testWrappedErr{}
-		assert.Equal(t, "graph", VisualizeError(err))
+		graph, err := VisualizeError(testWrappedErr{graph: "graph"})
+		assert.Equal(t, "graph", graph)
+		require.NoError(t, err)
 	})
 }
 
@@ -521,7 +531,7 @@ type graphErrHandler struct {
 
 func (eh *graphErrHandler) Handle(err error) {
 	eh.errStr = err.Error()
-	eh.graphStr = VisualizeError(err)
+	eh.graphStr, _ = VisualizeError(err)
 }
 
 func TestErrorHook(t *testing.T) {
