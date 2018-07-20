@@ -404,6 +404,13 @@ func (app *App) provide(constructor interface{}) {
 		return
 	}
 
+	if a, ok := constructor.(Annotated); ok {
+		if err := app.container.Provide(a.Fn, dig.Name(a.Name)); err != nil {
+			app.err = err
+		}
+		return
+	}
+
 	if err := app.container.Provide(constructor); err != nil {
 		app.err = err
 	}
