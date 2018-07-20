@@ -20,5 +20,7 @@
 
 package fx
 
-// Version is exported for runtime compatibility checks.
-const Version = "1.8.0"
+type Annotated struct {
+	Name string
+	Fn   interface{}
+}
