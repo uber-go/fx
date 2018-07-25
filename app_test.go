@@ -88,7 +88,7 @@ type testErrHandler struct {
 	count int
 }
 
-func (eh *testErrHandler) Handle(err error) {
+func (eh *testErrHandler) HandleError(err error) {
 	eh.count++
 }
 
@@ -529,7 +529,7 @@ type graphErrHandler struct {
 	graphStr string
 }
 
-func (eh *graphErrHandler) Handle(err error) {
+func (eh *graphErrHandler) HandleError(err error) {
 	eh.errStr = err.Error()
 	eh.graphStr, _ = VisualizeError(err)
 }

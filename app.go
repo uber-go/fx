@@ -290,7 +290,7 @@ func ErrorHook(funcs ...ErrorHandler) Option {
 // ErrorHandler implements Handle. They are used as error hooks and are called
 // on invoke errors.
 type ErrorHandler interface {
-	Handle(error)
+	HandleError(error)
 }
 
 type errorHookOption []ErrorHandler
@@ -301,7 +301,7 @@ func (eho errorHookOption) apply(app *App) {
 
 func (eho errorHookOption) onError(err error) {
 	for _, eh := range eho {
-		eh.Handle(err)
+		eh.HandleError(err)
 	}
 }
 
