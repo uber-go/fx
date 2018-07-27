@@ -352,6 +352,7 @@ func New(opts ...Option) *App {
 	return app
 }
 
+// DotGraph is a Graphviz DOT format graph.
 type DotGraph string
 
 type errWithGraph interface {
