@@ -559,6 +559,7 @@ func TestErrorHook(t *testing.T) {
 			Invoke(func(A) {}),
 			ErrorHook(&h),
 		)
+		assert.Contains(t, errStr, "great sadness")
 		assert.Contains(t, graphStr, `"fx_test.B" [color=red];`)
 		assert.Contains(t, graphStr, `"fx_test.A" [color=orange];`)
 	})
