@@ -277,7 +277,7 @@ type App struct {
 	logger       *fxlog.Logger
 	startTimeout time.Duration
 	stopTimeout  time.Duration
-	errorHooks   errorHookOption
+	errorHooks   []ErrorHandler
 }
 
 // ErrorHook registers error handlers that implement error handling functions.
@@ -287,20 +287,21 @@ func ErrorHook(funcs ...ErrorHandler) Option {
 	return errorHookOption(funcs)
 }
 
-// ErrorHandler implements Handle. They are used as error hooks and are called
-// on invoke errors.
+// ErrorHandler handles Fx application startup errors.
 type ErrorHandler interface {
 	HandleError(error)
 }
 
 type errorHookOption []ErrorHandler
 
+type errorHandlerList []ErrorHandler
+
 func (eho errorHookOption) apply(app *App) {
 	app.errorHooks = append(app.errorHooks, eho...)
 }
 
-func (eho errorHookOption) onError(err error) {
-	for _, eh := range eho {
+func (ehl errorHandlerList) onError(err error) {
+	for _, eh := range ehl {
 		eh.HandleError(err)
 	}
 }
@@ -342,7 +343,7 @@ func New(opts ...Option) *App {
 			dig.Visualize(app.container, &b, dig.VisualizeError(err))
 		}
 
-		app.errorHooks.onError(wrappedErr{
+		errorHandlerList(app.errorHooks).onError(errorWithGraph{
 			graph: b.String(),
 			err:   err,
 		})
@@ -351,28 +352,30 @@ func New(opts ...Option) *App {
 	return app
 }
 
-type wrappedErr struct {
+type DotGraph string
+
+type errWithGraph interface {
+	Graph() DotGraph
+}
+
+type errorWithGraph struct {
 	graph string
 	err   error
 }
 
-type isWrapped interface {
-	Graph() string
+func (err errorWithGraph) Graph() DotGraph {
+	return DotGraph(err.graph)
 }
 
-func (we wrappedErr) Graph() string {
-	return we.graph
-}
-
-func (we wrappedErr) Error() string {
-	return we.err.Error()
+func (err errorWithGraph) Error() string {
+	return err.err.Error()
 }
 
 // VisualizeError returns the visualization of the error if available.
 func VisualizeError(err error) (string, error) {
-	if e, ok := err.(isWrapped); ok {
+	if e, ok := err.(errWithGraph); ok {
 		if e.Graph() != "" {
-			return e.Graph(), nil
+			return string(e.Graph()), nil
 		}
 	}
 	return "", errors.New("unable to visualize error")
