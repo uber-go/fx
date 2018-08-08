@@ -294,13 +294,13 @@ type ErrorHandler interface {
 
 type errorHookOption []ErrorHandler
 
-type errorHandlerList []ErrorHandler
-
 func (eho errorHookOption) apply(app *App) {
 	app.errorHooks = append(app.errorHooks, eho...)
 }
 
-func (ehl errorHandlerList) onError(err error) {
+type errorHandlerList []ErrorHandler
+
+func (ehl errorHandlerList) HandleError(err error) {
 	for _, eh := range ehl {
 		eh.HandleError(err)
 	}
@@ -337,16 +337,17 @@ func New(opts ...Option) *App {
 
 	if err := app.executeInvokes(); err != nil {
 		app.err = err
-		var b bytes.Buffer
 
 		if dig.CanVisualizeError(err) {
+			var b bytes.Buffer
 			dig.Visualize(app.container, &b, dig.VisualizeError(err))
+			err = errorWithGraph{
+				graph: b.String(),
+				err:   err,
+			}
 		}
 
-		errorHandlerList(app.errorHooks).onError(errorWithGraph{
-			graph: b.String(),
-			err:   err,
-		})
+		errorHandlerList(app.errorHooks).HandleError(err)
 	}
 
 	return app
@@ -374,10 +375,8 @@ func (err errorWithGraph) Error() string {
 
 // VisualizeError returns the visualization of the error if available.
 func VisualizeError(err error) (string, error) {
-	if e, ok := err.(errWithGraph); ok {
-		if e.Graph() != "" {
-			return string(e.Graph()), nil
-		}
+	if e, ok := err.(errWithGraph); ok && e.Graph() != "" {
+		return string(e.Graph()), nil
 	}
 	return "", errors.New("unable to visualize error")
 }

@@ -506,8 +506,7 @@ func (we testErrorWithGraph) Error() string {
 
 func TestVisualizeError(t *testing.T) {
 	t.Run("NotWrappedError", func(t *testing.T) {
-		graph, err := VisualizeError(errors.New("great sadness"))
-		assert.Empty(t, graph)
+		_, err := VisualizeError(errors.New("great sadness"))
 		require.Error(t, err)
 	})
 
@@ -528,19 +527,16 @@ func TestErrorHook(t *testing.T) {
 	t.Run("UnvisualizableError", func(t *testing.T) {
 		type A struct{}
 
-		var errStr, graphStr string
+		var graphErr error
 		h := errHandlerFunc(func(err error) {
-			errStr = err.Error()
-			graphStr, _ = VisualizeError(err)
+			_, graphErr = VisualizeError(err)
 		})
 		fxtest.New(t,
 			Provide(func() A { return A{} }),
-			Invoke(func(A) error { return fmt.Errorf("great sadness") }),
+			Invoke(func(A) error { return errors.New("great sadness") }),
 			ErrorHook(h),
 		)
-		assert.Equal(t, "great sadness", errStr)
-		assert.Empty(t, graphStr)
-
+		assert.Equal(t, errors.New("unable to visualize error"), graphErr)
 	})
 
 	t.Run("GraphWithError", func(t *testing.T) {
