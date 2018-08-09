@@ -22,7 +22,6 @@ package fx_test
 
 import (
 	"bytes"
-	"context"
 	"fmt"
 	"testing"
 
@@ -49,11 +48,11 @@ func TestExtract(t *testing.T) {
 
 		for _, tt := range tests {
 			t.Run(fmt.Sprintf("%T", tt), func(t *testing.T) {
-				app := fxtest.New(t,
+				app := New(
 					Provide(func() *bytes.Buffer { return &bytes.Buffer{} }),
 					Extract(&tt),
 				)
-				err := app.Start(context.Background())
+				err := app.Err()
 				require.Error(t, err)
 				assert.Contains(t, err.Error(), "Extract expected a pointer to a struct")
 			})

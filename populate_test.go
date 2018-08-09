@@ -233,7 +233,7 @@ func TestPopulateErrors(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		app := fxtest.New(t,
+		app := New(
 			NopLogger,
 			Provide(func() *t1 { return &t1{} }),
 

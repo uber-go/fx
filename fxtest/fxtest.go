@@ -56,8 +56,15 @@ func New(tb TB, opts ...fx.Option) *App {
 	allOpts := make([]fx.Option, 0, len(opts)+1)
 	allOpts = append(allOpts, fx.Logger(&testPrinter{tb}))
 	allOpts = append(allOpts, opts...)
+
+	app := fx.New(allOpts...)
+	if err := app.Err(); err != nil {
+		tb.Errorf("fx.New failed: %v", err)
+		tb.FailNow()
+	}
+
 	return &App{
-		App: fx.New(allOpts...),
+		App: app,
 		tb:  tb,
 	}
 }
