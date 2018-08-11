@@ -48,7 +48,7 @@ func TestExtract(t *testing.T) {
 
 		for _, tt := range tests {
 			t.Run(fmt.Sprintf("%T", tt), func(t *testing.T) {
-				app := New(
+				app := NewForTest(t,
 					Provide(func() *bytes.Buffer { return &bytes.Buffer{} }),
 					Extract(&tt),
 				)

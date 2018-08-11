@@ -45,6 +45,12 @@ func (ps printerSpy) Printf(format string, args ...interface{}) {
 	ps.Buffer.WriteRune('\n')
 }
 
+func NewForTest(t testing.TB, opts ...Option) *App {
+	testOpts := []Option{Logger(fxtest.NewTestPrinter(t))}
+	opts = append(testOpts, opts...)
+	return New(opts...)
+}
+
 func TestNewApp(t *testing.T) {
 	t.Run("ProvidesLifecycle", func(t *testing.T) {
 		found := false
@@ -70,7 +76,7 @@ func TestNewApp(t *testing.T) {
 	t.Run("CircularGraphReturnsError", func(t *testing.T) {
 		type A struct{}
 		type B struct{}
-		app := New(
+		app := NewForTest(t,
 			Provide(func(A) B { return B{} }),
 			Provide(func(B) A { return A{} }),
 		)
@@ -93,7 +99,7 @@ func TestInvokes(t *testing.T) {
 		type A struct{}
 		type B struct{}
 
-		app := New(
+		app := NewForTest(t,
 			Provide(func() B { return B{} }), // B inserted into the graph
 			Invoke(func(A) {}),               // failed A invoke
 			Invoke(func(B) {}),               // successful B invoke
@@ -122,7 +128,7 @@ func TestError(t *testing.T) {
 	t.Run("NilErrorOption", func(t *testing.T) {
 		var invoked bool
 
-		app := New(
+		app := NewForTest(t,
 			Error(nil),
 			Invoke(func() { invoked = true }),
 		)
@@ -132,7 +138,7 @@ func TestError(t *testing.T) {
 	})
 
 	t.Run("SingleErrorOption", func(t *testing.T) {
-		app := New(
+		app := NewForTest(t,
 			Error(errors.New("module failure")),
 			Invoke(func() { t.Errorf("Invoke should not be called") }),
 		)
@@ -143,7 +149,7 @@ func TestError(t *testing.T) {
 	t.Run("MultipleErrorOption", func(t *testing.T) {
 		type A struct{}
 
-		app := New(
+		app := NewForTest(t,
 			Provide(func() A {
 				t.Errorf("Provide should not be called")
 				return A{}
@@ -166,7 +172,7 @@ func TestError(t *testing.T) {
 		type A struct{}
 		type B struct{}
 
-		app := New(
+		app := NewForTest(t,
 			Provide(func(b B) A {
 				t.Errorf("B is missing from the container; Provide should not be called")
 				return A{}
@@ -352,7 +358,7 @@ func TestAppStart(t *testing.T) {
 			})
 			return struct{}{}
 		}
-		app := New(
+		app := NewForTest(t,
 			Provide(fail),
 			Invoke(func(struct{}) {}),
 		)
@@ -362,7 +368,7 @@ func TestAppStart(t *testing.T) {
 	})
 
 	t.Run("InvokeNonFunction", func(t *testing.T) {
-		app := New(Invoke(struct{}{}))
+		app := NewForTest(t, Invoke(struct{}{}))
 		err := app.Err()
 		require.Error(t, err, "expected start failure")
 		assert.Contains(t, err.Error(), "can't invoke non-function")
@@ -373,7 +379,7 @@ func TestAppStart(t *testing.T) {
 		type type2 struct{}
 		type type3 struct{}
 
-		app := New(
+		app := NewForTest(t,
 			Provide(
 				func() type1 { return type1{} },
 				Provide(
@@ -392,7 +398,7 @@ func TestAppStart(t *testing.T) {
 	t.Run("InvokingAnInvokeShouldFail", func(t *testing.T) {
 		type type1 struct{}
 
-		app := New(
+		app := NewForTest(t,
 			Provide(func() type1 { return type1{} }),
 			Invoke(Invoke(func(type1) {
 			})),
@@ -423,7 +429,7 @@ func TestAppStart(t *testing.T) {
 			}),
 		)
 
-		app := New(
+		app := NewForTest(t,
 			Provide(
 				func() type3 { return type3{} },
 				module,

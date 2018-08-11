@@ -35,13 +35,6 @@ type TB interface {
 	FailNow()
 }
 
-type testPrinter struct {
-	TB
-}
-
-func (p *testPrinter) Printf(format string, args ...interface{}) {
-	p.Logf(format, args...)
-}
 
 // App is a wrapper around fx.App that provides some testing helpers. By
 // default, it uses the provided TB as the application's logging backend.
@@ -54,7 +47,7 @@ type App struct {
 // New creates a new test application.
 func New(tb TB, opts ...fx.Option) *App {
 	allOpts := make([]fx.Option, 0, len(opts)+1)
-	allOpts = append(allOpts, fx.Logger(&testPrinter{tb}))
+	allOpts = append(allOpts, fx.Logger(NewTestPrinter(tb)))
 	allOpts = append(allOpts, opts...)
 
 	app := fx.New(allOpts...)
