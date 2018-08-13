@@ -84,6 +84,10 @@ func TestNewApp(t *testing.T) {
 	})
 }
 
+type errHandlerFunc func(error)
+
+func (f errHandlerFunc) HandleError(err error) { f(err) }
+
 func TestInvokes(t *testing.T) {
 	t.Run("ErrorsAreNotOverriden", func(t *testing.T) {
 		type A struct{}
@@ -97,6 +101,20 @@ func TestInvokes(t *testing.T) {
 		err := app.Err()
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "fx_test.A is not in the container")
+	})
+
+	t.Run("ErrorHooksAreCalled", func(t *testing.T) {
+		type A struct{}
+
+		count := 0
+		h := errHandlerFunc(func(err error) {
+			count++
+		})
+		fxtest.New(t,
+			Invoke(func(A) {}),
+			ErrorHook(h),
+		)
+		assert.Equal(t, 1, count)
 	})
 }
 
@@ -472,4 +490,73 @@ func TestReplaceLogger(t *testing.T) {
 func TestNopLogger(t *testing.T) {
 	app := fxtest.New(t, NopLogger)
 	app.RequireStart().RequireStop()
+}
+
+type testErrorWithGraph struct {
+	graph string
+}
+
+func (we testErrorWithGraph) Graph() DotGraph {
+	return DotGraph(we.graph)
+}
+
+func (we testErrorWithGraph) Error() string {
+	return "great sadness"
+}
+
+func TestVisualizeError(t *testing.T) {
+	t.Run("NotWrappedError", func(t *testing.T) {
+		_, err := VisualizeError(errors.New("great sadness"))
+		require.Error(t, err)
+	})
+
+	t.Run("WrappedErrorWithEmptyGraph", func(t *testing.T) {
+		graph, err := VisualizeError(testErrorWithGraph{graph: ""})
+		assert.Empty(t, graph)
+		require.Error(t, err)
+	})
+
+	t.Run("WrappedError", func(t *testing.T) {
+		graph, err := VisualizeError(testErrorWithGraph{graph: "graph"})
+		assert.Equal(t, "graph", graph)
+		require.NoError(t, err)
+	})
+}
+
+func TestErrorHook(t *testing.T) {
+	t.Run("UnvisualizableError", func(t *testing.T) {
+		type A struct{}
+
+		var graphErr error
+		h := errHandlerFunc(func(err error) {
+			_, graphErr = VisualizeError(err)
+		})
+		fxtest.New(t,
+			Provide(func() A { return A{} }),
+			Invoke(func(A) error { return errors.New("great sadness") }),
+			ErrorHook(h),
+		)
+		assert.Equal(t, errors.New("unable to visualize error"), graphErr)
+	})
+
+	t.Run("GraphWithError", func(t *testing.T) {
+		type A struct{}
+		type B struct{}
+		type C struct{}
+
+		var errStr, graphStr string
+		h := errHandlerFunc(func(err error) {
+			errStr = err.Error()
+			graphStr, _ = VisualizeError(err)
+		})
+		fxtest.New(t,
+			Provide(func() (B, error) { return B{}, fmt.Errorf("great sadness") }),
+			Provide(func(B) A { return A{} }),
+			Invoke(func(A) {}),
+			ErrorHook(&h),
+		)
+		assert.Contains(t, errStr, "great sadness")
+		assert.Contains(t, graphStr, `"fx_test.B" [color=red];`)
+		assert.Contains(t, graphStr, `"fx_test.A" [color=orange];`)
+	})
 }

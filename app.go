@@ -21,7 +21,9 @@
 package fx
 
 import (
+	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"os/signal"
@@ -275,6 +277,33 @@ type App struct {
 	logger       *fxlog.Logger
 	startTimeout time.Duration
 	stopTimeout  time.Duration
+	errorHooks   []ErrorHandler
+}
+
+// ErrorHook registers error handlers that implement error handling functions.
+// They are executed on invoke failures. Passing multiple ErrorHandlers appends
+// the new handlers to the application's existing list.
+func ErrorHook(funcs ...ErrorHandler) Option {
+	return errorHookOption(funcs)
+}
+
+// ErrorHandler handles Fx application startup errors.
+type ErrorHandler interface {
+	HandleError(error)
+}
+
+type errorHookOption []ErrorHandler
+
+func (eho errorHookOption) apply(app *App) {
+	app.errorHooks = append(app.errorHooks, eho...)
+}
+
+type errorHandlerList []ErrorHandler
+
+func (ehl errorHandlerList) HandleError(err error) {
+	for _, eh := range ehl {
+		eh.HandleError(err)
+	}
 }
 
 // New creates and initializes an App, immediately executing any functions
@@ -308,9 +337,48 @@ func New(opts ...Option) *App {
 
 	if err := app.executeInvokes(); err != nil {
 		app.err = err
+
+		if dig.CanVisualizeError(err) {
+			var b bytes.Buffer
+			dig.Visualize(app.container, &b, dig.VisualizeError(err))
+			err = errorWithGraph{
+				graph: b.String(),
+				err:   err,
+			}
+		}
+
+		errorHandlerList(app.errorHooks).HandleError(err)
 	}
 
 	return app
+}
+
+// DotGraph is a Graphviz DOT format graph.
+type DotGraph string
+
+type errWithGraph interface {
+	Graph() DotGraph
+}
+
+type errorWithGraph struct {
+	graph string
+	err   error
+}
+
+func (err errorWithGraph) Graph() DotGraph {
+	return DotGraph(err.graph)
+}
+
+func (err errorWithGraph) Error() string {
+	return err.err.Error()
+}
+
+// VisualizeError returns the visualization of the error if available.
+func VisualizeError(err error) (string, error) {
+	if e, ok := err.(errWithGraph); ok && e.Graph() != "" {
+		return string(e.Graph()), nil
+	}
+	return "", errors.New("unable to visualize error")
 }
 
 // Run starts the application, blocks on the signals channel, and then
