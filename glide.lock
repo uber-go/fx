@@ -1,10 +1,10 @@
-hash: b109f1605214e5820322fa162805b5eee245c3c805236f60f025d4e9b9f60892
-updated: 2018-07-17T17:31:31.587148403-07:00
+hash: 06ebd74b2928b92936b45c3d9ff7674d145fd9b61396ec8476d885037565edac
+updated: 2018-08-15T16:14:32.18027381-07:00
 imports:
 - name: go.uber.org/atomic
   version: 1ea20fb1cbb1cc08cbd0d913a96dead89aa18289
 - name: go.uber.org/dig
-  version: 42aa9c4a17b4f8faea42bc56688f50c5e730aebf
+  version: 8060c505c14c1f7ff4312261315cadaaba746b10
   subpackages:
   - internal/digreflect
   - internal/dot
@@ -35,6 +35,6 @@ testImports:
   subpackages:
   - golint
 - name: golang.org/x/tools
-  version: fd2d2c45eb2dff7b87eab4303a1016b4dbf95e81
+  version: 4e70a1b26a7875f00ca1916637a876b5ffaeec59
   subpackages:
   - cover
