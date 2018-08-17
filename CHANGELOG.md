@@ -5,8 +5,10 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
-
-- No changes yet.
+### Added
+- Add `fx.ErrorHook` option to allow users to provide `ErrorHandler`s on invoke
+  failures.
+- `VisualizeError` returns the visualization wrapped in the error if available.
 
 ## [1.6.0] - 2018-06-12
 ### Added
