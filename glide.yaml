@@ -3,7 +3,7 @@ import:
 - package: go.uber.org/multierr
   version: ^1
 - package: go.uber.org/dig
-  version: ^1
+  version: ^1.4
 testImport:
 - package: github.com/stretchr/testify
   version: ^1
