@@ -73,12 +73,31 @@ func TestApp(t *testing.T) {
 		assert.Contains(t, spy.logs.String(), "RUNNING", "Expected to write logs to TB.")
 	})
 
+	t.Run("NewFailure", func(t *testing.T) {
+		spy.Reset()
+
+		New(
+			spy,
+
+			// Missing string dependency in container.
+			fx.Invoke(func(string) {}),
+		)
+
+		assert.Equal(t, 1, spy.failures, "Expected app to error on New.")
+		assert.Contains(t, spy.errors.String(), "New failed", "Expected to write error to TB")
+	})
+
 	t.Run("StartFailure", func(t *testing.T) {
 		spy.Reset()
 
 		New(
 			spy,
-			fx.Invoke(func() error { return errors.New("fail") }),
+
+			fx.Invoke(func(lc fx.Lifecycle) {
+				lc.Append(fx.Hook{
+					OnStart: func(context.Context) error { return errors.New("fail") },
+				})
+			}),
 		).RequireStart()
 
 		assert.Equal(t, 1, spy.failures, "Expected app to error on start.")
