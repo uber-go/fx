@@ -116,7 +116,7 @@ func TestInvokes(t *testing.T) {
 		h := errHandlerFunc(func(err error) {
 			count++
 		})
-		fxtest.New(t,
+		NewForTest(t,
 			Invoke(func(A) {}),
 			ErrorHook(h),
 		)
@@ -537,7 +537,7 @@ func TestErrorHook(t *testing.T) {
 		h := errHandlerFunc(func(err error) {
 			_, graphErr = VisualizeError(err)
 		})
-		fxtest.New(t,
+		NewForTest(t,
 			Provide(func() A { return A{} }),
 			Invoke(func(A) error { return errors.New("great sadness") }),
 			ErrorHook(h),
@@ -555,7 +555,7 @@ func TestErrorHook(t *testing.T) {
 			errStr = err.Error()
 			graphStr, _ = VisualizeError(err)
 		})
-		fxtest.New(t,
+		NewForTest(t,
 			Provide(func() (B, error) { return B{}, fmt.Errorf("great sadness") }),
 			Provide(func(B) A { return A{} }),
 			Invoke(func(A) {}),
