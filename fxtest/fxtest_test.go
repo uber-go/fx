@@ -55,17 +55,10 @@ func (t *tb) Logf(format string, args ...interface{}) {
 	t.logs.WriteRune('\n')
 }
 
-func (t *tb) Reset() {
-	t.failures = 0
-	t.errors.Reset()
-	t.logs.Reset()
-}
-
 func TestApp(t *testing.T) {
-	spy := newTB()
 
 	t.Run("Success", func(t *testing.T) {
-		spy.Reset()
+		spy := newTB()
 
 		New(spy).RequireStart().RequireStop()
 
@@ -74,7 +67,7 @@ func TestApp(t *testing.T) {
 	})
 
 	t.Run("NewFailure", func(t *testing.T) {
-		spy.Reset()
+		spy := newTB()
 
 		New(
 			spy,
@@ -88,7 +81,7 @@ func TestApp(t *testing.T) {
 	})
 
 	t.Run("StartFailure", func(t *testing.T) {
-		spy.Reset()
+		spy := newTB()
 
 		New(
 			spy,
@@ -105,7 +98,7 @@ func TestApp(t *testing.T) {
 	})
 
 	t.Run("StopFailure", func(t *testing.T) {
-		spy.Reset()
+		spy := newTB()
 
 		construct := func(lc fx.Lifecycle) struct{} {
 			lc.Append(fx.Hook{OnStop: func(context.Context) error { return errors.New("fail") }})
@@ -123,10 +116,8 @@ func TestApp(t *testing.T) {
 }
 
 func TestLifecycle(t *testing.T) {
-	spy := newTB()
-
 	t.Run("Success", func(t *testing.T) {
-		spy.Reset()
+		spy := newTB()
 
 		n := 0
 		lc := NewLifecycle(spy)
@@ -141,7 +132,7 @@ func TestLifecycle(t *testing.T) {
 	})
 
 	t.Run("StartFailure", func(t *testing.T) {
-		spy.Reset()
+		spy := newTB()
 		lc := NewLifecycle(spy)
 		lc.Append(fx.Hook{OnStart: func(context.Context) error { return errors.New("fail") }})
 
@@ -153,7 +144,7 @@ func TestLifecycle(t *testing.T) {
 	})
 
 	t.Run("StopFailure", func(t *testing.T) {
-		spy.Reset()
+		spy := newTB()
 		lc := NewLifecycle(spy)
 		lc.Append(fx.Hook{OnStop: func(context.Context) error { return errors.New("fail") }})
 
