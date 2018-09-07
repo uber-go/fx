@@ -1,5 +1,5 @@
-hash: 13aa480ad0954c44f966a32cc9fe562d13a7a9e4e7d3aeb10f4f722b2a175ad1
-updated: 2018-08-16T17:29:48.12008944-07:00
+hash: 418ed52a31df11f2fde890439cbba9011454f0b9c35cd03bd7d846c43db5f557
+updated: 2018-09-07T14:07:46.665507-07:00
 imports:
 - name: go.uber.org/atomic
   version: 1ea20fb1cbb1cc08cbd0d913a96dead89aa18289
@@ -24,6 +24,10 @@ testImports:
   subpackages:
   - assert
   - require
+- name: go.uber.org/goleak
+  version: b12bb1eedf12e90b75899bf8a73ce2d8fc4d9938
+  subpackages:
+  - internal/stack
 - name: go.uber.org/tools
   version: ce2550dad7144b81ae2f67dc5e55597643f6902b
   subpackages:

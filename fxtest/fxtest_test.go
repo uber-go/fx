@@ -27,8 +27,10 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	"go.uber.org/fx"
+
+	"github.com/stretchr/testify/assert"
+	"go.uber.org/goleak"
 )
 
 type tb struct {
@@ -116,6 +118,8 @@ func TestApp(t *testing.T) {
 }
 
 func TestLifecycle(t *testing.T) {
+	defer goleak.VerifyNoLeaks(t)
+
 	t.Run("Success", func(t *testing.T) {
 		spy := newTB()
 
@@ -154,4 +158,27 @@ func TestLifecycle(t *testing.T) {
 		lc.RequireStop()
 		assert.Equal(t, 1, spy.failures, "Expected lifecycle stop to fail.")
 	})
+
+	t.Run("StopLeaks", func(t *testing.T) {
+		spy := newTB()
+		lc := NewLifecycle(spy)
+		// Ensure we do not leak a context goroutine and hide application Stop errors
+		// since the return statement below would never be reached if we are leaking the context
+		funcRunForever := func(ctx context.Context) error {
+			<-ctx.Done()
+			return ctx.Err()
+		}
+
+		lc.Append(fx.Hook{
+			OnStart: func(ctx context.Context) error { go funcRunForever(ctx); return nil },
+			OnStop:  func(ctx context.Context) error { return nil },
+		})
+
+		lc.RequireStart()
+		assert.Equal(t, 0, spy.failures, "Expected lifecycle start to succeed.")
+
+		lc.RequireStop()
+		assert.Equal(t, 0, spy.failures, "Expected lifecycle to stop.")
+	})
+
 }
