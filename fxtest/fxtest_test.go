@@ -159,19 +159,30 @@ func TestLifecycle(t *testing.T) {
 		assert.Equal(t, 1, spy.failures, "Expected lifecycle stop to fail.")
 	})
 
-	t.Run("StopLeaks", func(t *testing.T) {
+	t.Run("RequireLeakDetection", func(t *testing.T) {
 		spy := newTB()
 		lc := NewLifecycle(spy)
-		// Ensure we do not leak a context goroutine and hide application Stop errors
-		// since the return statement below would never be reached if we are leaking the context
-		funcRunForever := func(ctx context.Context) error {
-			<-ctx.Done()
+
+		stop := make(chan struct{})
+		stopped := make(chan struct{})
+
+		onStart := func(ctx context.Context) error {
+			go func() {
+				<-stop
+				close(stopped)
+			}()
+			return ctx.Err()
+		}
+
+		onStop := func(ctx context.Context) error {
+			close(stop)
+			<-stopped
 			return ctx.Err()
 		}
 
 		lc.Append(fx.Hook{
-			OnStart: func(ctx context.Context) error { go funcRunForever(ctx); return nil },
-			OnStop:  func(ctx context.Context) error { return nil },
+			OnStart: onStart,
+			OnStop:  onStop,
 		})
 
 		lc.RequireStart()
@@ -180,5 +191,4 @@ func TestLifecycle(t *testing.T) {
 		lc.RequireStop()
 		assert.Equal(t, 0, spy.failures, "Expected lifecycle to stop.")
 	})
-
 }

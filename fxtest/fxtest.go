@@ -90,21 +90,15 @@ var _ fx.Lifecycle = (*Lifecycle)(nil)
 // methods (and some test-specific helpers) so that unit tests can exercise
 // hooks.
 type Lifecycle struct {
-	t          TB
-	lc         *lifecycle.Lifecycle
-	ctx        context.Context
-	cancelFunc context.CancelFunc
+	t  TB
+	lc *lifecycle.Lifecycle
 }
 
 // NewLifecycle creates a new test lifecycle.
 func NewLifecycle(t TB) *Lifecycle {
-	ctx, cancel := context.WithCancel(context.Background())
-
 	return &Lifecycle{
-		lc:         lifecycle.New(nil),
-		t:          t,
-		ctx:        ctx,
-		cancelFunc: cancel,
+		lc: lifecycle.New(nil),
+		t:  t,
 	}
 }
 
@@ -112,10 +106,13 @@ func NewLifecycle(t TB) *Lifecycle {
 // hook that doesn't succeed.
 func (l *Lifecycle) Start(ctx context.Context) error { return l.lc.Start(ctx) }
 
-// RequireStart calls Start with context.Background(), failing the test if an
+// RequireStart calls Start with context.Background() defering a cancel, failing the test if an
 // error is encountered.
 func (l *Lifecycle) RequireStart() *Lifecycle {
-	if err := l.Start(l.ctx); err != nil {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	if err := l.Start(ctx); err != nil {
 		l.t.Errorf("lifecycle didn't start cleanly: %v", err)
 		l.t.FailNow()
 	}
@@ -130,12 +127,13 @@ func (l *Lifecycle) RequireStart() *Lifecycle {
 // returned.
 func (l *Lifecycle) Stop(ctx context.Context) error { return l.lc.Stop(ctx) }
 
-// RequireStop calls Stop and cancels the context passed in to Start, failing the test if an error
+// RequireStop calls Stop with context.Background() defering a cancel, failing the test if an error
 // is encountered.
 func (l *Lifecycle) RequireStop() {
-	defer l.cancelFunc()
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 
-	if err := l.Stop(l.ctx); err != nil {
+	if err := l.Stop(ctx); err != nil {
 		l.t.Errorf("lifecycle didn't stop cleanly: %v", err)
 		l.t.FailNow()
 	}
