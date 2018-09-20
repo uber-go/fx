@@ -1,10 +1,10 @@
-hash: 1080e596c67722028dc4e3b24defc5ac60e1a66952dc165fd446ebbfaefb5d02
-updated: 2018-09-13T13:11:57.381957-07:00
+hash: ffbe4433c17f5950ccc20db13b4cd175993666514d88ed24ba1e57e8a39b66c9
+updated: 2018-09-19T17:00:05.671949-07:00
 imports:
 - name: go.uber.org/atomic
   version: 1ea20fb1cbb1cc08cbd0d913a96dead89aa18289
 - name: go.uber.org/dig
-  version: d6ba99365e475c24e8ac02392eb3f78ccab2a6f3
+  version: 27eb30e15ef3e7f67cd86f2b65c618e3e308c104
   subpackages:
   - internal/digreflect
   - internal/dot

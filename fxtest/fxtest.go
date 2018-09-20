@@ -106,7 +106,7 @@ func NewLifecycle(t TB) *Lifecycle {
 // hook that doesn't succeed.
 func (l *Lifecycle) Start(ctx context.Context) error { return l.lc.Start(ctx) }
 
-// RequireStart calls Start with context.Background() defering a cancel, failing the test if an
+// RequireStart calls Start with context.Background(), failing the test if an
 // error is encountered.
 func (l *Lifecycle) RequireStart() *Lifecycle {
 	ctx, cancel := context.WithCancel(context.Background())
@@ -127,7 +127,7 @@ func (l *Lifecycle) RequireStart() *Lifecycle {
 // returned.
 func (l *Lifecycle) Stop(ctx context.Context) error { return l.lc.Stop(ctx) }
 
-// RequireStop calls Stop with context.Background() defering a cancel, failing the test if an error
+// RequireStop calls Stop with context.Background(), failing the test if an error
 // is encountered.
 func (l *Lifecycle) RequireStop() {
 	ctx, cancel := context.WithCancel(context.Background())
