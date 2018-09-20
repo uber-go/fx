@@ -1,5 +1,5 @@
-hash: 13aa480ad0954c44f966a32cc9fe562d13a7a9e4e7d3aeb10f4f722b2a175ad1
-updated: 2018-09-19T12:36:36.317712719-07:00
+hash: 71b848dcf5bde6b02fd7ca7cf3ac1e7628dd27e7248f3823900bce9a78005038
+updated: 2018-09-20T11:31:48.18331584-07:00
 imports:
 - name: go.uber.org/atomic
   version: 1ea20fb1cbb1cc08cbd0d913a96dead89aa18289
