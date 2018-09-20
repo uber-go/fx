@@ -27,8 +27,10 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	"go.uber.org/fx"
+
+	"github.com/stretchr/testify/assert"
+	"go.uber.org/goleak"
 )
 
 type tb struct {
@@ -116,6 +118,8 @@ func TestApp(t *testing.T) {
 }
 
 func TestLifecycle(t *testing.T) {
+	defer goleak.VerifyNoLeaks(t)
+
 	t.Run("Success", func(t *testing.T) {
 		spy := newTB()
 
@@ -153,5 +157,38 @@ func TestLifecycle(t *testing.T) {
 
 		lc.RequireStop()
 		assert.Equal(t, 1, spy.failures, "Expected lifecycle stop to fail.")
+	})
+
+	t.Run("RequireLeakDetection", func(t *testing.T) {
+		spy := newTB()
+		lc := NewLifecycle(spy)
+
+		stop := make(chan struct{})
+		stopped := make(chan struct{})
+
+		onStart := func(ctx context.Context) error {
+			go func() {
+				<-stop
+				close(stopped)
+			}()
+			return ctx.Err()
+		}
+
+		onStop := func(ctx context.Context) error {
+			close(stop)
+			<-stopped
+			return ctx.Err()
+		}
+
+		lc.Append(fx.Hook{
+			OnStart: onStart,
+			OnStop:  onStop,
+		})
+
+		lc.RequireStart()
+		assert.Equal(t, 0, spy.failures, "Expected lifecycle start to succeed.")
+
+		lc.RequireStop()
+		assert.Equal(t, 0, spy.failures, "Expected lifecycle to stop.")
 	})
 }

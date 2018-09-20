@@ -21,3 +21,5 @@ testImport:
   vcs: git
   subpackages:
   - golint
+- package: go.uber.org/goleak
+  version: ~0.10

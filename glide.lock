@@ -24,6 +24,10 @@ testImports:
   subpackages:
   - assert
   - require
+- name: go.uber.org/goleak
+  version: 1ac8aeca0a53163331564467638f6ffb639636bf
+  subpackages:
+  - internal/stack
 - name: go.uber.org/tools
   version: ce2550dad7144b81ae2f67dc5e55597643f6902b
   subpackages:
