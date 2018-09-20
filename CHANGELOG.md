@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   the error).
 - Update dig container to defer acyclic validation until after Invoke. Application
   startup time should improve proportional to the side of the dependency graph.
+- Fix a goroutine leak in `fxtest.Lifecycle`.
 
 ## [1.7.0] - 2018-08-16
 ### Added
