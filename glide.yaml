@@ -3,7 +3,7 @@ import:
 - package: go.uber.org/multierr
   version: ^1
 - package: go.uber.org/dig
-  version: ^1.5
+  version: ^1.5 # At least version 1.5 is required for the DeferAcyclicVerification functionality.
 testImport:
 - package: github.com/stretchr/testify
   version: ^1

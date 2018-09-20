@@ -9,7 +9,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Make `fxtest.New` ensure that the app was created successfully. Previously,
   it would return the app (similar to `fx.New`, which expects the user to verify
   the error).
-- Update dig container to defer acyclic validation until after Invoke.
+- Update dig container to defer acyclic validation until after Invoke. Application
+  startup time should improve proportional to the side of the dependency graph.
 
 ## [1.7.0] - 2018-08-16
 ### Added
