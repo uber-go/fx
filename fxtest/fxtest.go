@@ -35,7 +35,6 @@ type TB interface {
 	FailNow()
 }
 
-
 // App is a wrapper around fx.App that provides some testing helpers. By
 // default, it uses the provided TB as the application's logging backend.
 type App struct {
@@ -110,7 +109,10 @@ func (l *Lifecycle) Start(ctx context.Context) error { return l.lc.Start(ctx) }
 // RequireStart calls Start with context.Background(), failing the test if an
 // error is encountered.
 func (l *Lifecycle) RequireStart() *Lifecycle {
-	if err := l.Start(context.Background()); err != nil {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	if err := l.Start(ctx); err != nil {
 		l.t.Errorf("lifecycle didn't start cleanly: %v", err)
 		l.t.FailNow()
 	}
@@ -128,7 +130,10 @@ func (l *Lifecycle) Stop(ctx context.Context) error { return l.lc.Stop(ctx) }
 // RequireStop calls Stop with context.Background(), failing the test if an error
 // is encountered.
 func (l *Lifecycle) RequireStop() {
-	if err := l.Stop(context.Background()); err != nil {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	if err := l.Stop(ctx); err != nil {
 		l.t.Errorf("lifecycle didn't stop cleanly: %v", err)
 		l.t.FailNow()
 	}
