@@ -314,7 +314,7 @@ func New(opts ...Option) *App {
 	lc := &lifecycleWrapper{lifecycle.New(logger)}
 
 	app := &App{
-		container:    dig.New(),
+		container:    dig.New(dig.DeferAcyclicVerification()),
 		lifecycle:    lc,
 		logger:       logger,
 		startTimeout: DefaultTimeout,

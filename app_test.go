@@ -79,12 +79,13 @@ func TestNewApp(t *testing.T) {
 		app := NewForTest(t,
 			Provide(func(A) B { return B{} }),
 			Provide(func(B) A { return A{} }),
+			Invoke(func(B) {}),
 		)
 		err := app.Err()
 		require.Error(t, err, "fx.New should return an error")
 
 		errMsg := err.Error()
-		assert.Contains(t, errMsg, "this function introduces a cycle")
+		assert.Contains(t, errMsg, "cycle detected in dependency graph")
 		assert.Contains(t, errMsg, "depends on fx_test.A")
 		assert.Contains(t, errMsg, "depends on fx_test.B")
 	})
