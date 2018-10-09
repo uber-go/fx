@@ -25,6 +25,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"testing"
 	"time"
 
@@ -88,6 +89,30 @@ func TestNewApp(t *testing.T) {
 		assert.Contains(t, errMsg, "cycle detected in dependency graph")
 		assert.Contains(t, errMsg, "depends on fx_test.A")
 		assert.Contains(t, errMsg, "depends on fx_test.B")
+	})
+
+	t.Run("Visualizer", func(t *testing.T) {
+		found := false
+		fixture := "fxtest/graph.dot"
+		type A struct{}
+		type B struct{}
+		var g DotGraph
+		app := fxtest.New(t,
+			Option(Visualizer()),
+			Provide(func() A { return A{} }),
+			Provide(func() B { return B{} }),
+			Invoke(func(dg DotGraph) {
+				assert.NotNil(t, dg)
+				found = true
+			}),
+			Populate(&g),
+		)
+		defer app.RequireStart().RequireStop()
+		require.NoError(t, app.Err())
+		assert.True(t, found)
+		bs, err := ioutil.ReadFile(fixture)
+		require.NoError(t, err, "Failed to read fixture.")
+		assert.Equal(t, string(bs), fmt.Sprintf("%s", g), "Unexpected DotGraph.")
 	})
 }
 

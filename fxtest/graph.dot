@@ -1,0 +1,37 @@
+digraph {
+	graph [compound=true];
+	
+		subgraph cluster_0 {
+			constructor_0 [shape=plaintext label="TestNewApp.func4.1"];
+			
+			"fx_test.A" [label=<fx_test.A>];
+			
+		}
+		
+		
+		subgraph cluster_1 {
+			constructor_1 [shape=plaintext label="TestNewApp.func4.2"];
+			
+			"fx_test.B" [label=<fx_test.B>];
+			
+		}
+		
+		
+		subgraph cluster_2 {
+			constructor_2 [shape=plaintext label="New.func1"];
+			
+			"fx.Lifecycle" [label=<fx.Lifecycle>];
+			
+		}
+		
+		
+		subgraph cluster_3 {
+			constructor_3 [shape=plaintext label="(*App).DotGraph-fm"];
+			
+			"fx.DotGraph" [label=<fx.DotGraph>];
+			
+		}
+		
+		
+	
+}
