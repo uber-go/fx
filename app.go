@@ -213,7 +213,7 @@ func StopTimeout(v time.Duration) Option {
 // Visualizer enables providing visualization of the container dependency graph.
 func Visualizer() Option {
 	return optionFunc(func(app *App) {
-		app.visualize = true
+		app.provides = append(app.provides, app.visualizeDOT)
 	})
 }
 
@@ -285,7 +285,6 @@ type App struct {
 	startTimeout time.Duration
 	stopTimeout  time.Duration
 	errorHooks   []ErrorHandler
-	visualize    bool
 	dotgraph     *DotGraph
 }
 
@@ -342,11 +341,6 @@ func New(opts ...Option) *App {
 	if app.err != nil {
 		app.logger.Printf("Error after options were applied: %v", app.err)
 		return app
-	}
-
-	if app.visualize {
-		app.provide(app.DotGraph)
-		app.invokes = append(app.invokes, app.DotGraph) // must be invoked last
 	}
 
 	if err := app.executeInvokes(); err != nil {
@@ -473,9 +467,7 @@ func (app *App) StopTimeout() time.Duration {
 	return app.stopTimeout
 }
 
-// DotGraph provides a graph of dependencies in the container as a string in DOT
-// syntax.
-func (app *App) DotGraph() DotGraph {
+func (app *App) visualizeDOT() DotGraph {
 	// Memoize the graph
 	if app.dotgraph != nil {
 		return *app.dotgraph
