@@ -473,7 +473,14 @@ func (app *App) visualizeDOT() DotGraph {
 		return *app.dotgraph
 	}
 	b := &bytes.Buffer{}
-	dig.Visualize(app.container, b) // TODO: handle errors gracefully
+	if err := dig.Visualize(app.container, b); err != nil {
+		b.WriteString(`digraph {
+  graph [];
+  
+  error  [shape=plaintext label="Error graphing container"];
+}
+`)
+	}
 	g := DotGraph(b.String())
 	app.dotgraph = &g
 	return *app.dotgraph
