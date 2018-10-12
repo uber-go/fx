@@ -25,7 +25,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"testing"
 	"time"
 
@@ -92,7 +91,6 @@ func TestNewApp(t *testing.T) {
 	})
 
 	t.Run("Visualizer", func(t *testing.T) {
-		fixture := "fxtest/graph.dot"
 		type A struct{}
 		type B struct{}
 		type C struct{}
@@ -106,9 +104,13 @@ func TestNewApp(t *testing.T) {
 		)
 		defer app.RequireStart().RequireStop()
 		require.NoError(t, app.Err())
-		bs, err := ioutil.ReadFile(fixture)
-		require.NoError(t, err, "Failed to read fixture.")
-		assert.Equal(t, string(bs), fmt.Sprintf("%s", g), "Unexpected DotGraph.")
+		assert.Contains(t, g, `"fx_test.A" [label=<fx_test.A>];`)
+		assert.Contains(t, g, `"fx_test.B" [label=<fx_test.B>];`)
+		assert.Contains(t, g, `"fx_test.C" [label=<fx_test.C>];`)
+		assert.Contains(t, g, `-> "fx_test.A" [ltail=`)
+		assert.Contains(t, g, `-> "fx_test.B" [ltail=`)
+		assert.Contains(t, g, `"fx.Lifecycle" [label=<fx.Lifecycle>];`)
+		assert.Contains(t, g, `"fx.DotGraph" [label=<fx.DotGraph>];`)
 	})
 }
 
