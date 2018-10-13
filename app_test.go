@@ -90,13 +90,12 @@ func TestNewApp(t *testing.T) {
 		assert.Contains(t, errMsg, "depends on fx_test.B")
 	})
 
-	t.Run("Visualizer", func(t *testing.T) {
+	t.Run("ProvidesDotGraph", func(t *testing.T) {
 		type A struct{}
 		type B struct{}
 		type C struct{}
 		var g DotGraph
 		app := fxtest.New(t,
-			Option(Visualizer()),
 			Provide(func() A { return A{} }),
 			Provide(func(A) B { return B{} }),
 			Provide(func(A, B) C { return C{} }),

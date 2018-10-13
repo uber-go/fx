@@ -6,7 +6,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 ### Added
-- Add `fx.Visualizer` option to provide DOT graph of container.
+- Provide DOT graph of dependencies in the container.
 
 ## [1.7.1] - 2018-09-26
 ### Fixed

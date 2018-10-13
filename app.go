@@ -210,13 +210,6 @@ func StopTimeout(v time.Duration) Option {
 	})
 }
 
-// Visualizer enables providing visualization of the container dependency graph.
-func Visualizer() Option {
-	return optionFunc(func(app *App) {
-		app.provides = append(app.provides, app.visualizeDOT)
-	})
-}
-
 // Printer is the interface required by Fx's logging backend. It's implemented
 // by most loggers, including the one bundled with the standard library.
 type Printer interface {
@@ -285,7 +278,6 @@ type App struct {
 	startTimeout time.Duration
 	stopTimeout  time.Duration
 	errorHooks   []ErrorHandler
-	dotgraph     *DotGraph
 }
 
 // ErrorHook registers error handlers that implement error handling functions.
@@ -337,6 +329,7 @@ func New(opts ...Option) *App {
 		app.provide(p)
 	}
 	app.provide(func() Lifecycle { return app.lifecycle })
+	app.provide(app.dotGraph)
 
 	if app.err != nil {
 		app.logger.Printf("Error after options were applied: %v", app.err)
@@ -467,23 +460,16 @@ func (app *App) StopTimeout() time.Duration {
 	return app.stopTimeout
 }
 
-func (app *App) visualizeDOT() DotGraph {
-	// Memoize the graph
-	if app.dotgraph != nil {
-		return *app.dotgraph
+func (app *App) dotGraph() DotGraph {
+	var b bytes.Buffer
+	if err := dig.Visualize(app.container, &b); err != nil {
+		return app.dotGraphErr(err)
 	}
-	b := &bytes.Buffer{}
-	if err := dig.Visualize(app.container, b); err != nil {
-		b.WriteString(`digraph {
-  graph [];
-  
-  error  [shape=plaintext label="Error graphing container"];
+	return DotGraph(b.String())
 }
-`)
-	}
-	g := DotGraph(b.String())
-	app.dotgraph = &g
-	return *app.dotgraph
+
+func (app *App) dotGraphErr(err error) DotGraph {
+	return DotGraph(fmt.Sprintf("digraph { graph []; error [shape=plaintext label=\"%q\"]; }", err))
 }
 
 func (app *App) provide(constructor interface{}) {
