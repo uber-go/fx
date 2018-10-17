@@ -103,12 +103,6 @@ func TestNewApp(t *testing.T) {
 		)
 		defer app.RequireStart().RequireStop()
 		require.NoError(t, app.Err())
-		assert.Contains(t, g, `"fx_test.A" [label=<fx_test.A>];`)
-		assert.Contains(t, g, `"fx_test.B" [label=<fx_test.B>];`)
-		assert.Contains(t, g, `"fx_test.C" [label=<fx_test.C>];`)
-		assert.Contains(t, g, `-> "fx_test.A" [ltail=`)
-		assert.Contains(t, g, `-> "fx_test.B" [ltail=`)
-		assert.Contains(t, g, `"fx.Lifecycle" [label=<fx.Lifecycle>];`)
 		assert.Contains(t, g, `"fx.DotGraph" [label=<fx.DotGraph>];`)
 	})
 }

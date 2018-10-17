@@ -460,14 +460,10 @@ func (app *App) StopTimeout() time.Duration {
 	return app.stopTimeout
 }
 
-func (app *App) dotGraph() DotGraph {
+func (app *App) dotGraph() (DotGraph, error) {
 	var b bytes.Buffer
-	msg := "digraph { graph []; error [shape=plaintext label=\"%q\"]; }"
-	if err := dig.Visualize(app.container, &b); err != nil {
-		err = fmt.Errorf(msg, err)
-		dig.Visualize(app.container, &b, dig.VisualizeError(err))
-	}
-	return DotGraph(b.String())
+	err := dig.Visualize(app.container, &b)
+	return DotGraph(b.String()), err
 }
 
 func (app *App) provide(constructor interface{}) {
