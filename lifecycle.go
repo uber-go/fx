@@ -31,6 +31,7 @@ import (
 // applications' initialization, startup, and shutdown logic.
 type Lifecycle interface {
 	Append(Hook)
+	Shutdown()
 }
 
 // A Hook is a pair of start and stop callbacks, either of which can be nil.
@@ -49,4 +50,8 @@ func (l *lifecycleWrapper) Append(h Hook) {
 		OnStart: h.OnStart,
 		OnStop:  h.OnStop,
 	})
+}
+
+func (l *lifecycleWrapper) Shutdown() {
+	l.Lifecycle.Shutdown()
 }

@@ -23,7 +23,11 @@ package lifecycle
 import (
 	"context"
 	"errors"
+	"os"
+	"sync"
+	"syscall"
 	"testing"
+	"time"
 
 	"go.uber.org/fx/internal/fxlog"
 
@@ -211,5 +215,38 @@ func TestLifecycleStop(t *testing.T) {
 
 		assert.Equal(t, err, l.Start(context.Background()))
 		l.Stop(context.Background())
+	})
+}
+
+func TestLifecycleRun(t *testing.T) {
+	t.Run("ShutdownToStopLifecycleRun", func(t *testing.T) {
+		l := New(nil)
+
+		var wg sync.WaitGroup
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			l.Run(time.Second, time.Second)
+		}()
+
+		l.Shutdown()
+
+		wg.Wait()
+
+	})
+
+	t.Run("SignalToStopLifecycleRun", func(t *testing.T) {
+		l := New(nil)
+		done := make(chan os.Signal)
+
+		var wg sync.WaitGroup
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			l.run(time.Second, time.Second, done)
+		}()
+
+		done <- syscall.SIGINT
+		wg.Wait()
 	})
 }

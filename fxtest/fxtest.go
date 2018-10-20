@@ -146,3 +146,8 @@ func (l *Lifecycle) Append(h fx.Hook) {
 		OnStop:  h.OnStop,
 	})
 }
+
+// Shutdown stops
+func (l *Lifecycle) Shutdown() {
+	l.lc.Shutdown()
+}

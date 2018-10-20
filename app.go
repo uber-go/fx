@@ -26,9 +26,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"os/signal"
 	"strings"
-	"syscall"
 	"time"
 
 	"go.uber.org/dig"
@@ -391,7 +389,7 @@ func VisualizeError(err error) (string, error) {
 // Start, Done, and Stop methods. Applications with more specialized needs
 // can use those methods directly instead of relying on Run.
 func (app *App) Run() {
-	app.run(app.Done())
+	app.run()
 }
 
 // Err returns any error encountered during New's initialization. See the
@@ -442,9 +440,7 @@ func (app *App) Stop(ctx context.Context) error {
 // development, users can send the application SIGTERM by pressing Ctrl-C in
 // the same terminal as the running process.
 func (app *App) Done() <-chan os.Signal {
-	c := make(chan os.Signal, 1)
-	signal.Notify(c, syscall.SIGINT, syscall.SIGTERM)
-	return c
+	return app.lifecycle.Done()
 }
 
 // StartTimeout returns the configured startup timeout. Apps default to using
@@ -502,21 +498,15 @@ func (app *App) executeInvokes() error {
 	return err
 }
 
-func (app *App) run(done <-chan os.Signal) {
-	startCtx, cancel := context.WithTimeout(context.Background(), app.StartTimeout())
-	defer cancel()
-
-	if err := app.Start(startCtx); err != nil {
-		app.logger.Fatalf("ERROR\t\tFailed to start: %v", err)
+func (app *App) run() {
+	if app.err != nil {
+		// Some provides failed, short-circuit immediately.
+		app.logger.Fatalf("ERROR\t\tFailed to run: %v", app.err)
+		return
 	}
 
-	app.logger.PrintSignal(<-done)
-
-	stopCtx, cancel := context.WithTimeout(context.Background(), app.StopTimeout())
-	defer cancel()
-
-	if err := app.Stop(stopCtx); err != nil {
-		app.logger.Fatalf("ERROR\t\tFailed to stop cleanly: %v", err)
+	if err := app.lifecycle.Run(app.startTimeout, app.stopTimeout); err != nil {
+		app.logger.Fatalf("ERROR\t\tFailed to run: %v", err)
 	}
 }
 

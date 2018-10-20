@@ -22,10 +22,13 @@ package lifecycle
 
 import (
 	"context"
-
 	"go.uber.org/fx/internal/fxlog"
 	"go.uber.org/fx/internal/fxreflect"
 	"go.uber.org/multierr"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
 )
 
 // A Hook is a pair of start and stop callbacks, either of which can be nil,
@@ -41,6 +44,7 @@ type Lifecycle struct {
 	logger     *fxlog.Logger
 	hooks      []Hook
 	numStarted int
+	stop       chan struct{}
 }
 
 // New constructs a new Lifecycle.
@@ -48,7 +52,10 @@ func New(logger *fxlog.Logger) *Lifecycle {
 	if logger == nil {
 		logger = fxlog.New()
 	}
-	return &Lifecycle{logger: logger}
+	return &Lifecycle{
+		logger: logger,
+		stop:   make(chan struct{}, 1),
+	}
 }
 
 // Append adds a Hook to the lifecycle.
@@ -89,4 +96,63 @@ func (l *Lifecycle) Stop(ctx context.Context) error {
 		}
 	}
 	return multierr.Combine(errs...)
+}
+
+// Run ...
+func (l *Lifecycle) Run(startTimeout time.Duration, stopTimeout time.Duration) (err error) {
+	return l.run(startTimeout, stopTimeout, l.Done())
+}
+
+// Shutdown stops
+func (l *Lifecycle) Shutdown() {
+	l.stop <- struct{}{}
+}
+
+// Done returns a channel of signals to block on after starting the
+// application. Applications listen for the SIGINT and SIGTERM signals; during
+// development, users can send the application SIGTERM by pressing Ctrl-C in
+// the same terminal as the running process.
+func (l *Lifecycle) Done() <-chan os.Signal {
+	c := make(chan os.Signal, 1)
+	signal.Notify(c, syscall.SIGINT, syscall.SIGTERM)
+	return c
+}
+
+// Run ...
+func (l *Lifecycle) run(startTimeout time.Duration, stopTimeout time.Duration, done <-chan os.Signal) (err error) {
+	startCtx, startCancel := context.WithTimeout(context.Background(), startTimeout)
+	defer startCancel()
+
+	if err = withTimeout(startCtx, l.Start); err != nil {
+		return err
+	}
+
+	l.logger.Printf("RUNNING")
+
+	select {
+	case s := <-done:
+		l.logger.PrintSignal(s)
+	case <-l.stop:
+	}
+
+	stopCtx, stopCancel := context.WithTimeout(context.Background(), stopTimeout)
+	defer stopCancel()
+
+	if err = withTimeout(stopCtx, l.Stop); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func withTimeout(ctx context.Context, f func(context.Context) error) error {
+	c := make(chan error, 1)
+	go func() { c <- f(ctx) }()
+
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	case err := <-c:
+		return err
+	}
 }
