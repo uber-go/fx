@@ -352,7 +352,11 @@ func New(opts ...Option) *App {
 	return app
 }
 
-// DotGraph is a Graphviz DOT format graph.
+// DotGraph contains a DOT language visualization of the dependency graph in
+// an Fx application. It is provided in the container by default at
+// initialization. On failure to build the dependency graph, it is attached
+// to the error and if possible, colorized to highlight the root cause of the
+// failure.
 type DotGraph string
 
 type errWithGraph interface {
