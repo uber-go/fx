@@ -329,6 +329,7 @@ func New(opts ...Option) *App {
 		app.provide(p)
 	}
 	app.provide(func() Lifecycle { return app.lifecycle })
+	app.provide(app.dotGraph)
 
 	if app.err != nil {
 		app.logger.Printf("Error after options were applied: %v", app.err)
@@ -346,14 +347,16 @@ func New(opts ...Option) *App {
 				err:   err,
 			}
 		}
-
 		errorHandlerList(app.errorHooks).HandleError(err)
 	}
-
 	return app
 }
 
-// DotGraph is a Graphviz DOT format graph.
+// DotGraph contains a DOT language visualization of the dependency graph in
+// an Fx application. It is provided in the container by default at
+// initialization. On failure to build the dependency graph, it is attached
+// to the error and if possible, colorized to highlight the root cause of the
+// failure.
 type DotGraph string
 
 type errWithGraph interface {
@@ -459,6 +462,12 @@ func (app *App) StartTimeout() time.Duration {
 // option.
 func (app *App) StopTimeout() time.Duration {
 	return app.stopTimeout
+}
+
+func (app *App) dotGraph() (DotGraph, error) {
+	var b bytes.Buffer
+	err := dig.Visualize(app.container, &b)
+	return DotGraph(b.String()), err
 }
 
 func (app *App) provide(constructor interface{}) {

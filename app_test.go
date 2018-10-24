@@ -89,6 +89,22 @@ func TestNewApp(t *testing.T) {
 		assert.Contains(t, errMsg, "depends on fx_test.A")
 		assert.Contains(t, errMsg, "depends on fx_test.B")
 	})
+
+	t.Run("ProvidesDotGraph", func(t *testing.T) {
+		type A struct{}
+		type B struct{}
+		type C struct{}
+		var g DotGraph
+		app := fxtest.New(t,
+			Provide(func() A { return A{} }),
+			Provide(func(A) B { return B{} }),
+			Provide(func(A, B) C { return C{} }),
+			Populate(&g),
+		)
+		defer app.RequireStart().RequireStop()
+		require.NoError(t, app.Err())
+		assert.Contains(t, g, `"fx.DotGraph" [label=<fx.DotGraph>];`)
+	})
 }
 
 type errHandlerFunc func(error)
