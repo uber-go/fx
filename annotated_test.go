@@ -68,7 +68,7 @@ func TestAnnotatedWrongUsage(t *testing.T) {
 		return &a{name: "foo"}
 	}
 
-	t.Run("Provided", func(t *testing.T) {
+	t.Run("In Constructor", func(t *testing.T) {
 		var in in
 		app := fx.New(
 			fx.Provide(
@@ -82,5 +82,19 @@ func TestAnnotatedWrongUsage(t *testing.T) {
 			fx.Populate(&in),
 		)
 		assert.Error(t, app.Err(), "expected to return an error for wrong usage")
+	})
+
+	t.Run("Result Type", func(t *testing.T) {
+		app := fx.New(
+			fx.Provide(
+				fx.Annotated{
+					Name: "foo",
+					Fn: func() in {
+						return in{A: &a{name: "foo"}}
+					},
+				},
+			),
+		)
+		assert.Error(t, app.Err(), "expected error when return types were annotated")
 	})
 }
