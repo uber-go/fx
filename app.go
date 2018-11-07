@@ -27,6 +27,7 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"reflect"
 	"strings"
 	"syscall"
 	"time"
@@ -479,6 +480,26 @@ func (app *App) provide(constructor interface{}) {
 	if _, ok := constructor.(Option); ok {
 		app.err = fmt.Errorf("fx.Option should be passed to fx.New directly, not to fx.Provide: fx.Provide received %v", constructor)
 		return
+	}
+
+	if a, ok := constructor.(Annotated); ok {
+		if err := app.container.Provide(a.Fn, dig.Name(a.Name)); err != nil {
+			app.err = err
+		}
+		return
+	}
+
+	if reflect.TypeOf(constructor).Kind() == reflect.Func {
+		ft := reflect.ValueOf(constructor).Type()
+
+		for i := 0; i < ft.NumOut(); i++ {
+			t := ft.Out(i)
+
+			if t == reflect.TypeOf(Annotated{}) {
+				app.err = fmt.Errorf("fx.Annotated should be passed to fx.Provide directly, it should not be returned by the constructor: fx.Provide received %v", constructor)
+				return
+			}
+		}
 	}
 
 	if err := app.container.Provide(constructor); err != nil {
