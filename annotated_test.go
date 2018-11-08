@@ -83,7 +83,7 @@ func TestAnnotatedWrongUsage(t *testing.T) {
 			),
 			fx.Populate(&in),
 		)
-		assert.Contains(t, app.Err().Error(), "fx.Annotated should be passed to fx.Provide directly, it should not be returned by the constructor")
+		assert.Contains(t, app.Err().Error(), "fx.Annotated should be passed to fx.Provide directly", "expected error when return types were annotated")
 	})
 
 	t.Run("Result Type", func(t *testing.T) {
@@ -97,6 +97,6 @@ func TestAnnotatedWrongUsage(t *testing.T) {
 				},
 			),
 		)
-		assert.Contains(t, app.Err().Error(), "embeds a dig.In")
+		assert.Contains(t, app.Err().Error(), "embeds a dig.In", "expected error when result types were annotated")
 	})
 }
