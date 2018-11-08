@@ -20,33 +20,35 @@
 
 package fx
 
-// Annotated is a special provide type that specifies that all values produced by a
-// constructor should have the given name. See also In and Out documentation
-// about Named Values.
-//
-// Given,
-//
-//   func NewReadOnlyConnection(...) (*Connection, error)
-//   func NewReadWriteConnection(...) (*Connection, error)
-//
-// The following will provide two connections to the container: one under the
-// name "ro" and the other under the name "rw".
-//
-//   fx.Provide(
-//      fx.Annotated{
-//         Name: "ro",
-//         Fn: NewReadOnlyConnection,
-//      },
-//      fx.Annotated{
-//         Name: "rw",
-//         Fn: NewReadOnlyConnection,
-//      },
-//   )
-//
-// This option cannot be provided for constructors which produce result
-// objects.
-//
+// Annotated annotates a constructor provided to Fx with additional options.
+// Annotated cannot be used with constructors which produce fx.Out objects.
 type Annotated struct {
+	// If specified, this will be used as the name of the value. For more
+	// information on named values, see the documentation for the fx.Out type.
+	//
+	// The following,
+	//
+	//   func NewReadOnlyConnection(...) (*Connection, error)
+	//
+	//   fx.Provide(fx.Annotated{
+	//     Name: "ro",
+	//     Target: NewReadOnlyConnection,
+	//   })
+	//
+	// Is equivalent to,
+	//
+	//   type result struct {
+	//     fx.Out
+	//
+	//     Connection *Connection `name:"ro"`
+	//   }
+	//
+	//   fx.Provide(func(...) (Result, error) {
+	//     conn, err := NewReadOnlyConnection(...)
+	//     return Result{Connection: conn}, err
+	//   })
 	Name string
-	Fn   interface{}
+
+	// Target is the constructor being annotated with fx.Annotated.
+	Target interface{}
 }
