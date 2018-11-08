@@ -45,8 +45,8 @@ func TestAnnotated(t *testing.T) {
 		app := fxtest.New(t,
 			fx.Provide(
 				fx.Annotated{
-					Name: "foo",
-					Fn:   newA,
+					Name:   "foo",
+					Target: newA,
 				},
 			),
 			fx.Populate(&in),
@@ -76,8 +76,8 @@ func TestAnnotatedWrongUsage(t *testing.T) {
 			fx.Provide(
 				func() fx.Annotated {
 					return fx.Annotated{
-						Name: "foo",
-						Fn:   newA,
+						Name:   "foo",
+						Target: newA,
 					}
 				},
 			),
@@ -91,7 +91,7 @@ func TestAnnotatedWrongUsage(t *testing.T) {
 			fx.Provide(
 				fx.Annotated{
 					Name: "foo",
-					Fn: func() in {
+					Target: func() in {
 						return in{A: &a{name: "foo"}}
 					},
 				},
