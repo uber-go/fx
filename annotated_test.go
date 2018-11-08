@@ -34,6 +34,7 @@ func TestAnnotated(t *testing.T) {
 	}
 	type in struct {
 		fx.In
+
 		A *a `name:"foo"`
 	}
 	newA := func() *a {
@@ -62,6 +63,7 @@ func TestAnnotatedWrongUsage(t *testing.T) {
 	}
 	type in struct {
 		fx.In
+
 		A *a `name:"foo"`
 	}
 	newA := func() *a {
@@ -81,7 +83,7 @@ func TestAnnotatedWrongUsage(t *testing.T) {
 			),
 			fx.Populate(&in),
 		)
-		assert.Error(t, app.Err(), "expected to return an error for wrong usage")
+		assert.Contains(t, app.Err().Error(), "fx.Annotated should be passed to fx.Provide directly, it should not be returned by the constructor")
 	})
 
 	t.Run("Result Type", func(t *testing.T) {
@@ -95,6 +97,6 @@ func TestAnnotatedWrongUsage(t *testing.T) {
 				},
 			),
 		)
-		assert.Error(t, app.Err(), "expected error when return types were annotated")
+		assert.Contains(t, app.Err().Error(), "embeds a dig.In")
 	})
 }
