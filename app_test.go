@@ -62,6 +62,16 @@ func TestNewApp(t *testing.T) {
 		assert.True(t, found)
 	})
 
+	t.Run("ProvidesShutdowner", func(t *testing.T) {
+		found := false
+		app := fxtest.New(t, Invoke(func(s Shutdowner) {
+			assert.NotNil(t, s)
+			found = true
+		}))
+		defer app.RequireStart().RequireStop()
+		assert.True(t, found)
+	})
+
 	t.Run("OptionsHappensBeforeProvides", func(t *testing.T) {
 		// Should be grouping all provides and pushing them into the container
 		// after applying other options. This prevents the app configuration
