@@ -19,8 +19,6 @@ This library is `v1` and follows [SemVer](http://semver.org/) strictly.
 
 No breaking changes will be made to exported APIs before `v2.0.0`.
 
-**Supported Go versions: 1.9, 1.10**
-
 This project follows the [Go Release Policy][release-policy]. Each major
 version of Go is supported until there are two newer major releases.
 
