@@ -173,6 +173,7 @@ promising API compatibility between beta releases and the final 1.0.0 release.
 In fact, we expect our beta user feedback to require some changes to the way
 things work. Once we reach 1.0, we will provider proper version compatibility.
 
+[Unreleased]: https://github.com/uber-go/fx/compare/v1.8.0...HEAD
 [1.8.0]: https://github.com/uber-go/fx/compare/v1.7.1...v1.8.0
 [1.7.1]: https://github.com/uber-go/fx/compare/v1.7.0...v1.7.1
 [1.7.0]: https://github.com/uber-go/fx/compare/v1.6.0...v1.7.0
