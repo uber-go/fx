@@ -72,7 +72,8 @@ func TestShutdown(t *testing.T) {
 		defer cancel()
 		assert.NoError(t, app.Start(startCtx), "error in app start")
 
-		assert.NoError(t, app.shutdowner().Shutdown(), "error in app shutdown")
+		s := app.shutdowner()
+		assert.NoError(t, s.Shutdown(), "error in app shutdown")
 
 		assert.Equal(t, syscall.SIGTERM, <-done1, "done channel 1 did not receive a sigterm signal")
 		assert.Equal(t, syscall.SIGTERM, <-done2, "done channel 2 did not receive a sigterm signal")
@@ -100,15 +101,13 @@ func TestShutdown(t *testing.T) {
 		}))
 
 		done := app.Done()
-		s := app.shutdowner().(*shutdowner)
-		s.broadcastSignal(syscall.SIGINT)
+		app.broadcastSignal(syscall.SIGINT)
 
 		startCtx, cancel := context.WithTimeout(context.Background(), app.StartTimeout())
 		assert.NoError(t, app.Start(startCtx), "error in app start")
 		defer cancel()
 
-		err := s.Shutdown()
-		assert.Error(t, err, "no error returned from unsent signal")
+		assert.Error(t, app.shutdowner().Shutdown(), "no error returned from unsent signal")
 		assert.Equal(t, syscall.SIGINT, <-done)
 
 		stopCtx, cancel := context.WithTimeout(context.Background(), app.StartTimeout())

@@ -41,43 +41,38 @@ type ShutdownOption interface {
 }
 
 type shutdowner struct {
-	broadcastSignal func(os.Signal) error
+	app *App
 }
 
 // Shutdown broadcasts a signal to all of the application's Done channels
 // and begins the Stop process.
 func (s *shutdowner) Shutdown(opts ...ShutdownOption) error {
-	return s.broadcastSignal(syscall.SIGTERM)
+	return s.app.broadcastSignal(syscall.SIGTERM)
 }
 
 func (app *App) shutdowner() Shutdowner {
-	return &shutdowner{
-		broadcastSignal: app.signalBroadcaster(),
-	}
+	return &shutdowner{app: app}
 }
 
-func (app *App) signalBroadcaster() func(os.Signal) error {
-	return func(signal os.Signal) error {
-		app.donesMu.RLock()
-		defer app.donesMu.RUnlock()
+func (app *App) broadcastSignal(signal os.Signal) error {
+	app.donesMu.RLock()
+	defer app.donesMu.RUnlock()
 
-		var unsent int
-		for i, done := range app.dones {
-			select {
-			case done <- signal:
-			default:
-				// shutdown called when done channel has already received a
-				// termination signal that has not been cleared
-				unsent++
-				app.logger.Printf("done channel %d at capacity, did not receive signal %v", i, signal)
-			}
+	var unsent int
+	for _, done := range app.dones {
+		select {
+		case done <- signal:
+		default:
+			// shutdown called when done channel has already received a
+			// termination signal that has not been cleared
+			unsent++
 		}
-
-		if unsent != 0 {
-			err := fmt.Errorf("failed to send %v signal to %v out of %v channels", signal, unsent, len(app.dones))
-			return err
-		}
-
-		return nil
 	}
+
+	if unsent != 0 {
+		err := fmt.Errorf("failed to send %v signal to %v out of %v channels", signal, unsent, len(app.dones))
+		return err
+	}
+
+	return nil
 }
