@@ -1,4 +1,4 @@
-// Copyright (c) 2018 Uber Technologies, Inc.
+// Copyright (c) 2019 Uber Technologies, Inc.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -72,10 +72,10 @@ func TestShutdown(t *testing.T) {
 		defer cancel()
 		assert.NoError(t, app.Start(startCtx), "error in app start")
 
-		assert.NoError(t, app.shutdowner().Shutdown())
+		assert.NoError(t, app.shutdowner().Shutdown(), "error in app shutdown")
 
-		assert.Equal(t, syscall.SIGTERM, <-done1)
-		assert.Equal(t, syscall.SIGTERM, <-done2)
+		assert.Equal(t, syscall.SIGTERM, <-done1, "done channel 1 did not receive a sigterm signal")
+		assert.Equal(t, syscall.SIGTERM, <-done2, "done channel 2 did not receive a sigterm signal")
 
 		stopCtx, cancel := context.WithTimeout(context.Background(), app.StartTimeout())
 		defer cancel()

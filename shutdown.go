@@ -1,4 +1,4 @@
-// Copyright (c) 2018 Uber Technologies, Inc.
+// Copyright (c) 2019 Uber Technologies, Inc.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -28,13 +28,14 @@ import (
 
 // Shutdowner provides a method that can manually trigger the shutdown of the
 // application by sending a signal to all open Done channels. Shutdowner works
-// both on applications using Run as well as Start, Done, and Stop.
+// on applications using Run as well as Start, Done, and Stop. The Shutdowner is
+// provided to all Fx applications.
 type Shutdowner interface {
 	Shutdown(...ShutdownOption) error
 }
 
-// Shutdown broadcasts a signal to all of the Done channels on the application
-// thereby enabling the start of the Stop process.
+// Shutdown broadcasts a signal to all of the application's Done channels
+// and begins the Stop process.
 func (s *shutdowner) Shutdown(opts ...ShutdownOption) error {
 	return s.broadcastSignal(syscall.SIGTERM)
 }
@@ -65,14 +66,15 @@ func (app *App) signalBroadcaster() func(os.Signal) error {
 			select {
 			case done <- signal:
 			default:
-				// signal was never sent to channel
+				// shutdown called when done channel has already received a
+				// termination signal that has not been cleared
 				unsent++
-				app.logger.Printf("done channel %d at capacity, did not receive shutdown signal", i)
+				app.logger.Printf("done channel %d at capacity, did not receive signal %v", i, signal)
 			}
 		}
 
 		if unsent != 0 {
-			err := fmt.Errorf("failed to communicate with %v out of %v channels", unsent, len(app.dones))
+			err := fmt.Errorf("failed to send %v signal to %v out of %v channels", signal, unsent, len(app.dones))
 			return err
 		}
 
