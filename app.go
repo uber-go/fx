@@ -271,8 +271,6 @@ func (l nopLogger) Printf(string, ...interface{}) {
 // execute one at a time, in reverse order, and must all complete within a
 // configurable deadline (again, 15 seconds by default).
 type App struct {
-	mu sync.RWMutex
-
 	err          error
 	container    *dig.Container
 	lifecycle    *lifecycleWrapper
@@ -282,7 +280,9 @@ type App struct {
 	startTimeout time.Duration
 	stopTimeout  time.Duration
 	errorHooks   []ErrorHandler
-	dones        []chan os.Signal
+
+	donesMu sync.RWMutex
+	dones   []chan os.Signal
 }
 
 // ErrorHook registers error handlers that implement error handling functions.
@@ -324,7 +324,6 @@ func New(opts ...Option) *App {
 		logger:       logger,
 		startTimeout: DefaultTimeout,
 		stopTimeout:  DefaultTimeout,
-		dones:        []chan os.Signal{},
 	}
 
 	for _, opt := range opts {
@@ -335,7 +334,7 @@ func New(opts ...Option) *App {
 		app.provide(p)
 	}
 	app.provide(func() Lifecycle { return app.lifecycle })
-	app.provide(func() Shutdowner { return app.shutdowner() })
+	app.provide(app.shutdowner)
 	app.provide(app.dotGraph)
 
 	if app.err != nil {
@@ -457,9 +456,9 @@ func (app *App) Done() <-chan os.Signal {
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, syscall.SIGINT, syscall.SIGTERM)
 
-	app.mu.Lock()
-	defer app.mu.Unlock()
+	app.donesMu.Lock()
 	app.dones = append(app.dones, c)
+	app.donesMu.Unlock()
 	return c
 }
 

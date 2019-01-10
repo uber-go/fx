@@ -34,12 +34,6 @@ type Shutdowner interface {
 	Shutdown(...ShutdownOption) error
 }
 
-// Shutdown broadcasts a signal to all of the application's Done channels
-// and begins the Stop process.
-func (s *shutdowner) Shutdown(opts ...ShutdownOption) error {
-	return s.broadcastSignal(syscall.SIGTERM)
-}
-
 // ShutdownOption provides a way to configure properties of the shutdown
 // process. Currently, no options have been implemented.
 type ShutdownOption interface {
@@ -50,6 +44,12 @@ type shutdowner struct {
 	broadcastSignal func(os.Signal) error
 }
 
+// Shutdown broadcasts a signal to all of the application's Done channels
+// and begins the Stop process.
+func (s *shutdowner) Shutdown(opts ...ShutdownOption) error {
+	return s.broadcastSignal(syscall.SIGTERM)
+}
+
 func (app *App) shutdowner() Shutdowner {
 	return &shutdowner{
 		broadcastSignal: app.signalBroadcaster(),
@@ -58,8 +58,8 @@ func (app *App) shutdowner() Shutdowner {
 
 func (app *App) signalBroadcaster() func(os.Signal) error {
 	return func(signal os.Signal) error {
-		app.mu.RLock()
-		defer app.mu.RUnlock()
+		app.donesMu.RLock()
+		defer app.donesMu.RUnlock()
 
 		var unsent int
 		for i, done := range app.dones {
