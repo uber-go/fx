@@ -18,7 +18,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package fx
+package fx_test
 
 import (
 	"context"
@@ -26,94 +26,83 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/fx"
+	"go.uber.org/fx/fxtest"
 )
 
 func TestShutdown(t *testing.T) {
-	t.Run("ShutsDownApp", func(t *testing.T) {
-		var started, stopped bool
-		app := New(Invoke(func(l Lifecycle, s Shutdowner) {
-			l.Append(Hook{
-				OnStart: func(ctx context.Context) error {
-					started = true
-					return nil
-				},
-				OnStop: func(ctx context.Context) error {
-					stopped = true
-					return nil
-				},
-			})
-			l.Append(Hook{
-				OnStart: func(ctx context.Context) error { return s.Shutdown() },
-			})
-		}))
-
-		app.Run()
-		assert.True(t, started, "app wasn't started")
-		assert.True(t, stopped, "app wasn't stopped")
-	})
-
 	t.Run("BroadcastsToMultipleChannels", func(t *testing.T) {
-		var started, stopped bool
-		app := New(Invoke(func(l Lifecycle, s Shutdowner) {
-			l.Append(Hook{
-				OnStart: func(ctx context.Context) error {
-					started = true
-					return nil
-				},
-				OnStop: func(ctx context.Context) error {
-					stopped = true
-					return nil
-				},
-			})
-		}))
+		var s fx.Shutdowner
+		lv := newLifecycleVerifier(t)
+		app := fxtest.New(
+			t,
+			lv,
+			fx.Populate(&s),
+		)
 
 		done1, done2 := app.Done(), app.Done()
-		startCtx, cancel := context.WithTimeout(context.Background(), app.StartTimeout())
-		defer cancel()
-		assert.NoError(t, app.Start(startCtx), "error in app start")
-
-		s := app.shutdowner()
+		app.RequireStart()
 		assert.NoError(t, s.Shutdown(), "error in app shutdown")
 
-		assert.Equal(t, syscall.SIGTERM, <-done1, "done channel 1 did not receive a sigterm signal")
-		assert.Equal(t, syscall.SIGTERM, <-done2, "done channel 2 did not receive a sigterm signal")
+		assert.Equal(t, syscall.SIGTERM, <-done1, "done channel 1 did not receive signal")
+		assert.Equal(t, syscall.SIGTERM, <-done2, "done channel 2 did not receive signal")
 
-		stopCtx, cancel := context.WithTimeout(context.Background(), app.StartTimeout())
-		defer cancel()
-		assert.NoError(t, app.Stop(stopCtx), "error in app stop")
-		assert.True(t, started, "app wasn't started")
-		assert.True(t, stopped, "app wasn't stopped")
+		app.RequireStop()
+		lv.verifyStartAndStopHooks()
 	})
 
 	t.Run("ErrorOnUnsentSignal", func(t *testing.T) {
-		var started, stopped bool
-		app := New(Invoke(func(l Lifecycle, s Shutdowner) {
-			l.Append(Hook{
-				OnStart: func(ctx context.Context) error {
-					started = true
-					return nil
-				},
-				OnStop: func(ctx context.Context) error {
-					stopped = true
-					return nil
-				},
-			})
-		}))
+		var s fx.Shutdowner
+		lv := newLifecycleVerifier(t)
+		app := fxtest.New(
+			t,
+			lv,
+			fx.Populate(&s),
+		)
 
 		done := app.Done()
-		app.broadcastSignal(syscall.SIGINT)
+		assert.NoError(t, s.Shutdown(), "error returned from first shutdown call")
+		app.RequireStart()
 
-		startCtx, cancel := context.WithTimeout(context.Background(), app.StartTimeout())
-		assert.NoError(t, app.Start(startCtx), "error in app start")
-		defer cancel()
+		assert.Error(t, s.Shutdown(), "no error returned when shutdown is called with a blocked channel")
+		assert.Equal(t, syscall.SIGTERM, <-done, "done channel did not receive signal")
 
-		assert.Error(t, app.shutdowner().Shutdown(), "no error returned from unsent signal")
-		assert.Equal(t, syscall.SIGINT, <-done)
-
-		stopCtx, cancel := context.WithTimeout(context.Background(), app.StartTimeout())
-		defer cancel()
-		assert.NoError(t, app.Stop(stopCtx), "error in app stop")
-		assert.True(t, started, "app wasn't started")
-		assert.True(t, stopped, "app wasn't stopped")
+		app.RequireStop()
+		lv.verifyStartAndStopHooks()
 	})
+}
+
+type lifecycleVerifier struct {
+	fx.Option
+
+	started, stopped bool
+
+	tb testing.TB
+}
+
+func newLifecycleVerifier(tb testing.TB) *lifecycleVerifier {
+	lv := &lifecycleVerifier{tb: tb}
+	lv.Option = fx.Invoke(func(l fx.Lifecycle) {
+		l.Append(fx.Hook{
+			OnStart: func(context.Context) error {
+				lv.started = true
+				return nil
+			},
+			OnStop: func(context.Context) error {
+				lv.stopped = true
+				return nil
+			},
+		})
+	})
+
+	return lv
+}
+
+func (lv *lifecycleVerifier) verifyStartAndStopHooks() {
+	if lv.started != true {
+		lv.tb.Errorf("app OnStart hooks were never triggered")
+	}
+	if lv.stopped != true {
+		lv.tb.Errorf("app OnStop hooks were never triggered")
+	}
 }
