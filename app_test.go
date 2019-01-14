@@ -112,9 +112,11 @@ func TestNewApp(t *testing.T) {
 		type B struct {
 			In
 
-			Foo A `name:"foo"`
-			Bar A `name:"bar"`
+			Foo  A   `name:"foo"`
+			Bar  A   `name:"bar"`
+			Foos []A `group:"foo"`
 		}
+
 		app := fxtest.New(t,
 			Provide(
 				Annotated{
@@ -125,11 +127,42 @@ func TestNewApp(t *testing.T) {
 					Target: func() A { return A{} },
 					Name:   "bar",
 				},
+				Annotated{
+					Target: func() A { return A{} },
+					Group:  "foo",
+				},
 			),
 			Invoke(
 				func(b B) {
 					assert.NotNil(t, b.Foo)
 					assert.NotNil(t, b.Bar)
+					assert.Len(t, b.Foos, 1)
+				},
+			),
+		)
+
+		defer app.RequireStart().RequireStop()
+		require.NoError(t, app.Err())
+	})
+
+	t.Run("ProvidesWithEmptyAnnotate", func(t *testing.T) {
+		type A struct{}
+
+		type B struct {
+			In
+
+			Foo A
+		}
+
+		app := fxtest.New(t,
+			Provide(
+				Annotated{
+					Target: func() A { return A{} },
+				},
+			),
+			Invoke(
+				func(b B) {
+					assert.NotNil(t, b.Foo)
 				},
 			),
 		)
