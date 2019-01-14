@@ -482,8 +482,8 @@ func (app *App) provide(constructor interface{}) {
 		return
 	}
 
-	var opts []dig.ProvideOption
 	if a, ok := constructor.(Annotated); ok {
+		var opts []dig.ProvideOption
 		switch {
 		case len(a.Group) > 0 && len(a.Name) > 0:
 			app.err = fmt.Errorf("fx.Annotate may not specify both name and group for %v", constructor)
