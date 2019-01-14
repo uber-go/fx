@@ -482,18 +482,21 @@ func (app *App) provide(constructor interface{}) {
 		return
 	}
 
+	var opts []dig.ProvideOption
 	if a, ok := constructor.(Annotated); ok {
 		switch {
 		case len(a.Group) > 0 && len(a.Name) > 0:
 			app.err = fmt.Errorf("fx.Annotate may not specify both name and group for %v", constructor)
+			return
 		case len(a.Name) > 0:
-			if err := app.container.Provide(a.Target, dig.Name(a.Name)); err != nil {
-				app.err = err
-			}
+			opts = append(opts, dig.Name(a.Name))
 		case len(a.Group) > 0:
-			if err := app.container.Provide(a.Target, dig.Group(a.Group)); err != nil {
-				app.err = err
-			}
+			opts = append(opts, dig.Group(a.Group))
+
+		}
+
+		if err := app.container.Provide(a.Target, opts...); err != nil {
+			app.err = err
 		}
 		return
 	}
