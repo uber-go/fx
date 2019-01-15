@@ -53,12 +53,13 @@ func NewForTest(t testing.TB, opts ...Option) *App {
 
 func TestNewApp(t *testing.T) {
 	t.Run("ProvidesLifecycleAndShutdowner", func(t *testing.T) {
-		var l Lifecycle
-		var s Shutdowner
+		var (
+			l Lifecycle
+			s Shutdowner
+		)
 		fxtest.New(
 			t,
-			Populate(&l),
-			Populate(&s),
+			Populate(&l, &s),
 		)
 		assert.NotNil(t, l)
 		assert.NotNil(t, s)
