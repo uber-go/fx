@@ -70,8 +70,9 @@ func (app *App) broadcastSignal(signal os.Signal) error {
 	}
 
 	if unsent != 0 {
-		err := fmt.Errorf("failed to send %v signal to %v out of %v channels", signal, unsent, len(app.dones))
-		return err
+		return fmt.Errorf("failed to send %v signal to %v out of %v channels",
+			signal, unsent, len(app.dones),
+		)
 	}
 
 	return nil

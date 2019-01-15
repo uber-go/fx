@@ -21,7 +21,6 @@
 package fx_test
 
 import (
-	"context"
 	"syscall"
 	"testing"
 
@@ -33,76 +32,32 @@ import (
 func TestShutdown(t *testing.T) {
 	t.Run("BroadcastsToMultipleChannels", func(t *testing.T) {
 		var s fx.Shutdowner
-		lv := newLifecycleVerifier(t)
 		app := fxtest.New(
 			t,
-			lv,
 			fx.Populate(&s),
 		)
 
 		done1, done2 := app.Done(), app.Done()
-		app.RequireStart()
-		assert.NoError(t, s.Shutdown(), "error in app shutdown")
+		defer app.RequireStart().RequireStop()
 
+		assert.NoError(t, s.Shutdown(), "error in app shutdown")
 		assert.Equal(t, syscall.SIGTERM, <-done1, "done channel 1 did not receive signal")
 		assert.Equal(t, syscall.SIGTERM, <-done2, "done channel 2 did not receive signal")
-
-		app.RequireStop()
-		lv.verifyStartAndStopHooks()
 	})
 
 	t.Run("ErrorOnUnsentSignal", func(t *testing.T) {
 		var s fx.Shutdowner
-		lv := newLifecycleVerifier(t)
 		app := fxtest.New(
 			t,
-			lv,
 			fx.Populate(&s),
 		)
 
 		done := app.Done()
 		assert.NoError(t, s.Shutdown(), "error returned from first shutdown call")
-		app.RequireStart()
+		defer app.RequireStart().RequireStop()
 
-		assert.Error(t, s.Shutdown(), "no error returned when shutdown is called with a blocked channel")
+		assert.EqualError(t, s.Shutdown(), "failed to send terminated signal to 1 out of 1 channels",
+			"unexpected error returned when shutdown is called with a blocked channel")
 		assert.Equal(t, syscall.SIGTERM, <-done, "done channel did not receive signal")
-
-		app.RequireStop()
-		lv.verifyStartAndStopHooks()
 	})
-}
-
-type lifecycleVerifier struct {
-	fx.Option
-
-	started, stopped bool
-
-	tb testing.TB
-}
-
-func newLifecycleVerifier(tb testing.TB) *lifecycleVerifier {
-	lv := &lifecycleVerifier{tb: tb}
-	lv.Option = fx.Invoke(func(l fx.Lifecycle) {
-		l.Append(fx.Hook{
-			OnStart: func(context.Context) error {
-				lv.started = true
-				return nil
-			},
-			OnStop: func(context.Context) error {
-				lv.stopped = true
-				return nil
-			},
-		})
-	})
-
-	return lv
-}
-
-func (lv *lifecycleVerifier) verifyStartAndStopHooks() {
-	if lv.started != true {
-		lv.tb.Errorf("app OnStart hooks were never triggered")
-	}
-	if lv.stopped != true {
-		lv.tb.Errorf("app OnStop hooks were never triggered")
-	}
 }
