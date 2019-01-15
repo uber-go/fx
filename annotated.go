@@ -21,33 +21,43 @@
 package fx
 
 // Annotated annotates a constructor provided to Fx with additional options.
+//
+// For example,
+//
+//   func NewReadOnlyConnection(...) (*Connection, error)
+//
+//   fx.Provide(fx.Annotated{
+//     Name: "ro",
+//     Target: NewReadOnlyConnection,
+//   })
+//
+// Is equivalent to,
+//
+//   type result struct {
+//     fx.Out
+//
+//     Connection *Connection `name:"ro"`
+//   }
+//
+//   fx.Provide(func(...) (Result, error) {
+//     conn, err := NewReadOnlyConnection(...)
+//     return Result{Connection: conn}, err
+//   })
+//
 // Annotated cannot be used with constructors which produce fx.Out objects.
 type Annotated struct {
-	// If specified, this will be used as the name of the value. For more
-	// information on named values, see the documentation for the fx.Out type.
+	// If specified, this will be used as the name for all non-error values returned
+	// by the constructor. For more information on named values, see the documentation
+	// for the fx.Out type.
 	//
-	// The following,
-	//
-	//   func NewReadOnlyConnection(...) (*Connection, error)
-	//
-	//   fx.Provide(fx.Annotated{
-	//     Name: "ro",
-	//     Target: NewReadOnlyConnection,
-	//   })
-	//
-	// Is equivalent to,
-	//
-	//   type result struct {
-	//     fx.Out
-	//
-	//     Connection *Connection `name:"ro"`
-	//   }
-	//
-	//   fx.Provide(func(...) (Result, error) {
-	//     conn, err := NewReadOnlyConnection(...)
-	//     return Result{Connection: conn}, err
-	//   })
+	// A name option may not be provided if a group option is provided.
 	Name string
+
+	// If specified, this will be used as the group name for all non-error values returned
+	// by the constructor. For more information on value groups, see the package documentation.
+	//
+	// A group option may not be provided if a name option is provided.
+	Group string
 
 	// Target is the constructor being annotated with fx.Annotated.
 	Target interface{}
