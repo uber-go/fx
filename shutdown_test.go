@@ -53,8 +53,8 @@ func TestShutdown(t *testing.T) {
 		)
 
 		done := app.Done()
-		assert.NoError(t, s.Shutdown(), "error returned from first shutdown call")
 		defer app.RequireStart().RequireStop()
+		assert.NoError(t, s.Shutdown(), "error returned from first shutdown call")
 
 		assert.EqualError(t, s.Shutdown(), "failed to send terminated signal to 1 out of 1 channels",
 			"unexpected error returned when shutdown is called with a blocked channel")
