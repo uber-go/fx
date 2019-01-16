@@ -52,14 +52,17 @@ func NewForTest(t testing.TB, opts ...Option) *App {
 }
 
 func TestNewApp(t *testing.T) {
-	t.Run("ProvidesLifecycle", func(t *testing.T) {
-		found := false
-		app := fxtest.New(t, Invoke(func(lc Lifecycle) {
-			assert.NotNil(t, lc)
-			found = true
-		}))
-		defer app.RequireStart().RequireStop()
-		assert.True(t, found)
+	t.Run("ProvidesLifecycleAndShutdowner", func(t *testing.T) {
+		var (
+			l Lifecycle
+			s Shutdowner
+		)
+		fxtest.New(
+			t,
+			Populate(&l, &s),
+		)
+		assert.NotNil(t, l)
+		assert.NotNil(t, s)
 	})
 
 	t.Run("OptionsHappensBeforeProvides", func(t *testing.T) {

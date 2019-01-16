@@ -29,6 +29,7 @@ import (
 	"os/signal"
 	"reflect"
 	"strings"
+	"sync"
 	"syscall"
 	"time"
 
@@ -279,6 +280,9 @@ type App struct {
 	startTimeout time.Duration
 	stopTimeout  time.Duration
 	errorHooks   []ErrorHandler
+
+	donesMu sync.RWMutex
+	dones   []chan os.Signal
 }
 
 // ErrorHook registers error handlers that implement error handling functions.
@@ -330,6 +334,7 @@ func New(opts ...Option) *App {
 		app.provide(p)
 	}
 	app.provide(func() Lifecycle { return app.lifecycle })
+	app.provide(app.shutdowner)
 	app.provide(app.dotGraph)
 
 	if app.err != nil {
@@ -445,9 +450,16 @@ func (app *App) Stop(ctx context.Context) error {
 // application. Applications listen for the SIGINT and SIGTERM signals; during
 // development, users can send the application SIGTERM by pressing Ctrl-C in
 // the same terminal as the running process.
+//
+// Alternatively, a signal can be broadcast to all done channels manually by
+// using the Shutdown functionality (see the Shutdowner documentation for details).
 func (app *App) Done() <-chan os.Signal {
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, syscall.SIGINT, syscall.SIGTERM)
+
+	app.donesMu.Lock()
+	app.dones = append(app.dones, c)
+	app.donesMu.Unlock()
 	return c
 }
 

@@ -6,6 +6,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 ### Added
+- Add the ability to shutdown Fx applications from inside the container. See
+  the Shutdowner documentation for details.
 - Add `fx.Annotated` to allow users to provide named values without creating a
   new constructor.
 
