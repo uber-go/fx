@@ -81,6 +81,11 @@ func (f optionFunc) apply(app *App) { f(app) }
 //
 // See the documentation of the In and Out types for advanced features,
 // including optional parameters and named instances.
+//
+// Constructor functions should perform as little external interaction as
+// possible, and should avoid spawning goroutines. Things like server listen
+// loops, background timer loops, and background processing goroutines should
+// instead be managed using Lifecycle callbacks.
 func Provide(constructors ...interface{}) Option {
 	return provideOption(constructors)
 }
