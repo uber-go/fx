@@ -29,7 +29,7 @@ version of Go is supported until there are two newer major releases.
 [release]: https://github.com/uber-go/fx/releases
 
 [ci-img]: https://img.shields.io/travis/uber-go/fx/master.svg
-[ci]: https://travis-ci.org/uber-go/fx/branches
+[ci]: https://travis-ci.com/uber-go/fx/branches
 
 [cov-img]: https://codecov.io/gh/uber-go/fx/branch/dev/graph/badge.svg
 [cov]: https://codecov.io/gh/uber-go/fx/branch/dev
