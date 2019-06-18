@@ -86,7 +86,7 @@ import "go.uber.org/dig"
 // receives the field's zero value.
 //
 //   func NewUserGateway(p UserGatewayParams, log *log.Logger) (*UserGateway, error) {
-//     if p.Cache != nil {
+//     if p.Cache == nil {
 //       log.Print("Caching disabled")
 //     }
 //     // ...
