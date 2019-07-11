@@ -153,6 +153,11 @@ func TestOnStartInvalidType(t *testing.T) {
 		wantErr string
 	}{
 		{
+			msg:     "onstart is not a function",
+			onStart: "onStart",
+			wantErr: "OnStart must be passed a function, got string",
+		},
+		{
 			msg:     "ctx is not first arg and not in graph",
 			onStart: func(s string, ctx context.Context) {},
 			wantErr: "type context.Context is not in the container",
