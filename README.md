@@ -13,6 +13,12 @@ We recommend locking to [SemVer](http://semver.org/) range `^1` using [Glide](ht
 glide get 'go.uber.org/fx#^1'
 ```
 
+Alternatively you can add it as a dependency using [go mod](https://github.com/golang/go/wiki/Modules):
+
+```
+go get github.com/uber-go/fx@v1
+```
+
 ## Stability
 
 This library is `v1` and follows [SemVer](http://semver.org/) strictly.
