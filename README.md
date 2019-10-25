@@ -19,6 +19,11 @@ Alternatively you can add it as a dependency using [go mod](https://github.com/g
 go get github.com/uber-go/fx@v1
 ```
 
+Or by using [dep](https://github.com/golang/dep):
+```
+dep ensure -add github.com/uber-go/fx@1.0.0
+```
+
 ## Stability
 
 This library is `v1` and follows [SemVer](http://semver.org/) strictly.
