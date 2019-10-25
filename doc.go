@@ -36,4 +36,4 @@
 // To test functions that use the Lifecycle type or to write end-to-end tests
 // of your Fx application, use the helper functions and types provided by the
 // go.uber.org/fx/fxtest package.
-package fx
+package fx // import "go.uber.org/fx"
