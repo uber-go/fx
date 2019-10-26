@@ -21,7 +21,7 @@ go get go.uber.org/fx@v1
 
 Or by using [dep](https://github.com/golang/dep):
 ```
-dep ensure -add github.com/uber-go/fx@1.0.0
+dep ensure -add go.uber.org/fx@1.0.0
 ```
 
 ## Stability
