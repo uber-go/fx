@@ -16,7 +16,12 @@ glide get 'go.uber.org/fx#^1'
 Alternatively you can add it as a dependency using [go mod](https://github.com/golang/go/wiki/Modules):
 
 ```
-go get github.com/uber-go/fx@v1
+go get go.uber.org/fx@v1
+```
+
+Or by using [dep](https://github.com/golang/dep):
+```
+dep ensure -add go.uber.org/fx@1.0.0
 ```
 
 ## Stability
