@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+### Changed
+- Migrated to Go modules.
+
 ## [1.9.0] - 2019-01-22
 ### Added
 - Add the ability to shutdown Fx applications from inside the container. See
@@ -175,6 +179,7 @@ promising API compatibility between beta releases and the final 1.0.0 release.
 In fact, we expect our beta user feedback to require some changes to the way
 things work. Once we reach 1.0, we will provider proper version compatibility.
 
+[Unreleased]: https://github.com/uber-go/fx/compare/v1.9.0...HEAD
 [1.9.0]: https://github.com/uber-go/fx/compare/v1.8.0...v1.9.0
 [1.8.0]: https://github.com/uber-go/fx/compare/v1.7.1...v1.8.0
 [1.7.1]: https://github.com/uber-go/fx/compare/v1.7.0...v1.7.1

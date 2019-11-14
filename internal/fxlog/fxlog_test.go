@@ -138,7 +138,7 @@ func TestPrint(t *testing.T) {
 		logger.PrintProvide(assert.New)
 		assert.Contains(
 			t, sink.String(),
-			"*assert.Assertions <= vendor/github.com/stretchr/testify/assert.New()")
+			"*assert.Assertions <= github.com/stretchr/testify/assert.New()")
 	})
 
 	t.Run("printFooVendorPath", func(t *testing.T) {
