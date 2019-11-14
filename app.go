@@ -52,10 +52,6 @@ type Option interface {
 	apply(*App)
 }
 
-type optionFunc func(*App)
-
-func (f optionFunc) apply(app *App) { f(app) }
-
 // Provide registers any number of constructor functions, teaching the
 // application how to instantiate various types. The supplied constructor
 // function(s) may depend on other types available in the application, must
@@ -147,9 +143,17 @@ func (io invokeOption) String() string {
 // Similar to invocations, errors are applied in order. All Provide and Invoke
 // options registered before or after an Error option will not be applied.
 func Error(errs ...error) Option {
-	return optionFunc(func(app *App) {
-		app.err = multierr.Append(app.err, multierr.Combine(errs...))
-	})
+	return errorOption(errs)
+}
+
+type errorOption []error
+
+func (errs errorOption) apply(app *App) {
+	app.err = multierr.Append(app.err, multierr.Combine(errs...))
+}
+
+func (errs errorOption) String() string {
+	return fmt.Sprintf("fx.Error(%v)", multierr.Combine(errs...))
 }
 
 // Options converts a collection of Options into a single Option. This allows
@@ -205,16 +209,32 @@ func (og optionGroup) String() string {
 
 // StartTimeout changes the application's start timeout.
 func StartTimeout(v time.Duration) Option {
-	return optionFunc(func(app *App) {
-		app.startTimeout = v
-	})
+	return startTimeoutOption(v)
+}
+
+type startTimeoutOption time.Duration
+
+func (t startTimeoutOption) apply(app *App) {
+	app.startTimeout = time.Duration(t)
+}
+
+func (t startTimeoutOption) String() string {
+	return fmt.Sprintf("fx.StartTimeout(%v)", time.Duration(t))
 }
 
 // StopTimeout changes the application's stop timeout.
 func StopTimeout(v time.Duration) Option {
-	return optionFunc(func(app *App) {
-		app.stopTimeout = v
-	})
+	return stopTimeoutOption(v)
+}
+
+type stopTimeoutOption time.Duration
+
+func (t stopTimeoutOption) apply(app *App) {
+	app.stopTimeout = time.Duration(t)
+}
+
+func (t stopTimeoutOption) String() string {
+	return fmt.Sprintf("fx.StopTimeout(%v)", time.Duration(t))
 }
 
 // Printer is the interface required by Fx's logging backend. It's implemented
@@ -225,10 +245,18 @@ type Printer interface {
 
 // Logger redirects the application's log output to the provided printer.
 func Logger(p Printer) Option {
-	return optionFunc(func(app *App) {
-		app.logger = &fxlog.Logger{Printer: p}
-		app.lifecycle = &lifecycleWrapper{lifecycle.New(app.logger)}
-	})
+	return loggerOption{p}
+}
+
+type loggerOption struct{ p Printer }
+
+func (l loggerOption) apply(app *App) {
+	app.logger = &fxlog.Logger{Printer: l.p}
+	app.lifecycle = &lifecycleWrapper{lifecycle.New(app.logger)}
+}
+
+func (l loggerOption) String() string {
+	return fmt.Sprintf("fx.Logger(%v)", l.p)
 }
 
 // NopLogger disables the application's log output. Note that this makes some
@@ -240,6 +268,8 @@ type nopLogger struct{}
 func (l nopLogger) Printf(string, ...interface{}) {
 	return
 }
+
+func (nopLogger) String() string { return "NopLogger" }
 
 // An App is a modular application built around dependency injection. Most
 // users will only need to use the New constructor and the all-in-one Run
@@ -290,6 +320,11 @@ type App struct {
 	dones   []chan os.Signal
 }
 
+// ErrorHandler handles Fx application startup errors.
+type ErrorHandler interface {
+	HandleError(error)
+}
+
 // ErrorHook registers error handlers that implement error handling functions.
 // They are executed on invoke failures. Passing multiple ErrorHandlers appends
 // the new handlers to the application's existing list.
@@ -297,15 +332,18 @@ func ErrorHook(funcs ...ErrorHandler) Option {
 	return errorHookOption(funcs)
 }
 
-// ErrorHandler handles Fx application startup errors.
-type ErrorHandler interface {
-	HandleError(error)
-}
-
 type errorHookOption []ErrorHandler
 
 func (eho errorHookOption) apply(app *App) {
 	app.errorHooks = append(app.errorHooks, eho...)
+}
+
+func (eho errorHookOption) String() string {
+	items := make([]string, len(eho))
+	for i, eh := range eho {
+		items[i] = fmt.Sprint(eh)
+	}
+	return fmt.Sprintf("fx.ErrorHook(%v)", strings.Join(items, ", "))
 }
 
 type errorHandlerList []ErrorHandler

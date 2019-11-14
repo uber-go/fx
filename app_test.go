@@ -25,6 +25,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"testing"
 	"time"
 
@@ -667,4 +668,109 @@ func TestErrorHook(t *testing.T) {
 		assert.Contains(t, graphStr, `"fx_test.B" [color=red];`)
 		assert.Contains(t, graphStr, `"fx_test.A" [color=orange];`)
 	})
+}
+
+func TestOptionString(t *testing.T) {
+	tests := []struct {
+		desc string
+		give Option
+		want string
+	}{
+		{
+			desc: "Provide",
+			give: Provide(bytes.NewReader),
+			want: "fx.Provide(bytes.NewReader())",
+		},
+		{
+			desc: "Invoke",
+			give: Invoke(func(c io.Closer) error {
+				return c.Close()
+			}),
+			want: "fx.Invoke(go.uber.org/fx_test.TestOptionString.func1())",
+		},
+		{
+			desc: "Error/single",
+			give: Error(errors.New("great sadness")),
+			want: "fx.Error(great sadness)",
+		},
+		{
+			desc: "Error/multiple",
+			give: Error(errors.New("foo"), errors.New("bar")),
+			want: "fx.Error(foo; bar)",
+		},
+		{
+			desc: "Options/single",
+			give: Options(Provide(bytes.NewBuffer)),
+			// NOTE: We don't prune away fx.Options for the empty
+			// case because we want to attach additional
+			// information to the fx.Options object in the future.
+			want: "fx.Options(fx.Provide(bytes.NewBuffer()))",
+		},
+		{
+			desc: "Options/multiple",
+			give: Options(
+				Provide(bytes.NewBufferString),
+				Invoke(func(buf *bytes.Buffer) {
+					buf.WriteString("hello")
+				}),
+			),
+			want: "fx.Options(" +
+				"fx.Provide(bytes.NewBufferString()), " +
+				"fx.Invoke(go.uber.org/fx_test.TestOptionString.func2())" +
+				")",
+		},
+		{
+			desc: "StartTimeout",
+			give: StartTimeout(time.Second),
+			want: "fx.StartTimeout(1s)",
+		},
+		{
+			desc: "StopTimeout",
+			give: StopTimeout(5 * time.Second),
+			want: "fx.StopTimeout(5s)",
+		},
+		{
+			desc: "Logger",
+			give: Logger(testLogger{t}),
+			want: "fx.Logger(TestOptionString)",
+		},
+		{
+			desc: "NopLogger",
+			give: NopLogger,
+			want: "fx.Logger(NopLogger)",
+		},
+		{
+			desc: "ErrorHook",
+			give: ErrorHook(testErrorHandler{t}),
+			want: "fx.ErrorHook(TestOptionString)",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.desc, func(t *testing.T) {
+			stringer, ok := tt.give.(fmt.Stringer)
+			require.True(t, ok, "option must implement stringer")
+			assert.Equal(t, tt.want, stringer.String())
+		})
+	}
+}
+
+type testLogger struct{ t *testing.T }
+
+func (l testLogger) Printf(s string, args ...interface{}) {
+	l.t.Logf(s, args...)
+}
+
+func (l testLogger) String() string {
+	return l.t.Name()
+}
+
+type testErrorHandler struct{ t *testing.T }
+
+func (h testErrorHandler) HandleError(err error) {
+	h.t.Error(err)
+}
+
+func (h testErrorHandler) String() string {
+	return h.t.Name()
 }
