@@ -49,6 +49,8 @@ const DefaultTimeout = 15 * time.Second
 // popularized by Rob Pike. If you're unfamiliar with this style, see
 // https://commandcenter.blogspot.com/2014/01/self-referential-functions-and-design.html.
 type Option interface {
+	fmt.Stringer
+
 	apply(*App)
 }
 
