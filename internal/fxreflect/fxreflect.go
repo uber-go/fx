@@ -114,23 +114,7 @@ func sanitize(function string) string {
 
 // Caller returns the formatted calling func name
 func Caller() string {
-	// Ascend at most 8 frames looking for a caller outside fx.
-	pcs := make([]uintptr, 8)
-
-	// Don't include this frame.
-	n := runtime.Callers(2, pcs)
-	if n == 0 {
-		return "n/a"
-	}
-
-	frames := runtime.CallersFrames(pcs)
-	for f, more := frames.Next(); more; f, more = frames.Next() {
-		if shouldIgnoreFrame(f) {
-			continue
-		}
-		return sanitize(f.Function)
-	}
-	return "n/a"
+	return CallerStack(1, 0).CallerName()
 }
 
 // FuncName returns a funcs formatted name
@@ -152,7 +136,7 @@ func isErr(t reflect.Type) bool {
 // Ascend the call stack until we leave the Fx production code. This allows us
 // to avoid hard-coding a frame skip, which makes this code work well even
 // when it's wrapped.
-func shouldIgnoreFrame(f runtime.Frame) bool {
+func shouldIgnoreFrame(f Frame) bool {
 	if strings.Contains(f.File, "_test.go") {
 		return false
 	}
