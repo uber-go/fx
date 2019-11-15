@@ -20,6 +20,13 @@
 
 package fx
 
+import (
+	"fmt"
+	"strings"
+
+	"go.uber.org/fx/internal/fxreflect"
+)
+
 // Annotated annotates a constructor provided to Fx with additional options.
 //
 // For example,
@@ -61,4 +68,18 @@ type Annotated struct {
 
 	// Target is the constructor being annotated with fx.Annotated.
 	Target interface{}
+}
+
+func (a Annotated) String() string {
+	var fields []string
+	if len(a.Name) > 0 {
+		fields = append(fields, fmt.Sprintf("Name: %q", a.Name))
+	}
+	if len(a.Group) > 0 {
+		fields = append(fields, fmt.Sprintf("Group: %q", a.Group))
+	}
+	if a.Target != nil {
+		fields = append(fields, fmt.Sprintf("Target: %v", fxreflect.FuncName(a.Target)))
+	}
+	return fmt.Sprintf("fx.Annotated{%v}", strings.Join(fields, ", "))
 }

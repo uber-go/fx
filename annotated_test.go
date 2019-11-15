@@ -100,3 +100,58 @@ func TestAnnotatedWrongUsage(t *testing.T) {
 		assert.Contains(t, app.Err().Error(), "embeds a dig.In", "expected error when result types were annotated")
 	})
 }
+
+func TestAnnotatedString(t *testing.T) {
+	tests := []struct {
+		desc string
+		give fx.Annotated
+		want string
+	}{
+		{
+			desc: "empty",
+			give: fx.Annotated{},
+			want: "fx.Annotated{}",
+		},
+		{
+			desc: "name",
+			give: fx.Annotated{Name: "foo"},
+			want: `fx.Annotated{Name: "foo"}`,
+		},
+		{
+			desc: "group",
+			give: fx.Annotated{Group: "foo"},
+			want: `fx.Annotated{Group: "foo"}`,
+		},
+		{
+			desc: "name and group",
+			give: fx.Annotated{Name: "foo", Group: "bar"},
+			want: `fx.Annotated{Name: "foo", Group: "bar"}`,
+		},
+		{
+			desc: "target",
+			give: fx.Annotated{Target: func() {}},
+			want: "fx.Annotated{Target: go.uber.org/fx_test.TestAnnotatedString.func1()}",
+		},
+		{
+			desc: "name and target",
+			give: fx.Annotated{Name: "foo", Target: func() {}},
+			want: `fx.Annotated{Name: "foo", Target: go.uber.org/fx_test.TestAnnotatedString.func2()}`,
+		},
+		{
+			desc: "group and target",
+			give: fx.Annotated{Group: "foo", Target: func() {}},
+			want: `fx.Annotated{Group: "foo", Target: go.uber.org/fx_test.TestAnnotatedString.func3()}`,
+		},
+		{
+			desc: "name, group and target",
+			give: fx.Annotated{Name: "foo", Group: "bar", Target: func() {}},
+			want: `fx.Annotated{Name: "foo", Group: "bar", Target: go.uber.org/fx_test.TestAnnotatedString.func4()}`,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.desc, func(t *testing.T) {
+			assert.Equal(t, tt.want, tt.give.String())
+		})
+	}
+}
