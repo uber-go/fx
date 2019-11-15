@@ -98,6 +98,34 @@ func TestStackCallerName(t *testing.T) {
 			want: "foo/bar.Baz()",
 		},
 		{
+			desc: "skip Fx in wrong directory",
+			give: Stack{
+				{
+					Function: "go.uber.org/fx.Foo()",
+					File:     "fx/foo.go",
+				},
+				{
+					Function: "foo/bar.Baz()",
+					File:     "foo/bar/baz.go",
+				},
+			},
+			want: "foo/bar.Baz()",
+		},
+		{
+			desc: "skip Fx subpackage",
+			give: Stack{
+				{
+					Function: "go.uber.org/fx/internal/fxreflect.Foo()",
+					File:     "fx/internal/fxreflect/foo.go",
+				},
+				{
+					Function: "foo/bar.Baz()",
+					File:     "foo/bar/baz.go",
+				},
+			},
+			want: "foo/bar.Baz()",
+		},
+		{
 			desc: "don't skip Fx tests",
 			give: Stack{
 				{
@@ -106,6 +134,16 @@ func TestStackCallerName(t *testing.T) {
 				},
 			},
 			want: "some/thing.Foo()",
+		},
+		{
+			desc: "don't skip fx prefix",
+			give: Stack{
+				{
+					Function: "go.uber.org/fxfoo.Bar()",
+					File:     "go.uber.org/fxfoo/bar.go",
+				},
+			},
+			want: "go.uber.org/fxfoo.Bar()",
 		},
 	}
 

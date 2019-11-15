@@ -137,11 +137,21 @@ func isErr(t reflect.Type) bool {
 // to avoid hard-coding a frame skip, which makes this code work well even
 // when it's wrapped.
 func shouldIgnoreFrame(f Frame) bool {
+	// Treat test files as leafs.
 	if strings.Contains(f.File, "_test.go") {
 		return false
 	}
-	if strings.Contains(f.File, "go.uber.org/fx") {
+
+	// The unique, fully-qualified name for all functions begins with
+	// "{{importPath}}.". We'll ignore Fx and its subpackages.
+	s := strings.TrimPrefix(f.Function, "go.uber.org/fx")
+	if len(s) > 0 && s[0] == '.' || s[0] == '/' {
+		// We want to match,
+		//   go.uber.org/fx.Foo
+		//   go.uber.org/fx/something.Foo
+		// But not, go.uber.org/fxfoo
 		return true
 	}
+
 	return false
 }
