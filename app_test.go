@@ -494,8 +494,17 @@ func TestAppStart(t *testing.T) {
 
 		err := app.Err()
 		require.Error(t, err, "expected start failure")
+
+		// Example:
+		// fx.Option should be passed to fx.New directly, not to fx.Provide: fx.Provide received fx.Provide(go.uber.org/fx_test.TestAppStart.func5.2(), go.uber.org/fx_test.TestAppStart.func5.3()) from:
+		// go.uber.org/fx_test.TestAppStart.func5
+		//         /.../fx/app_test.go:550
+		// testing.tRunner
+		//         /.../go/1.13.3/libexec/src/testing/testing.go:909
 		assert.Contains(t, err.Error(), "fx.Option should be passed to fx.New directly, not to fx.Provide")
 		assert.Contains(t, err.Error(), "fx.Provide received fx.Provide(go.uber.org/fx_test.TestAppStart")
+		assert.Contains(t, err.Error(), "go.uber.org/fx_test.TestAppStart")
+		assert.Contains(t, err.Error(), "fx/app_test.go")
 	})
 
 	t.Run("InvokingAnInvokeShouldFail", func(t *testing.T) {
@@ -540,8 +549,17 @@ func TestAppStart(t *testing.T) {
 		)
 		err := app.Err()
 		require.Error(t, err, "expected start failure")
+
+		// Example:
+		// fx.Annotated should be passed to fx.Provide directly, it should not be returned by the constructor: fx.Provide received go.uber.org/fx_test.TestAnnotatedWrongUsage.func2.1() from:
+		// go.uber.org/fx_test.TestAnnotatedWrongUsage.func2
+		//         /.../fx/annotated_test.go:76
+		// testing.tRunner
+		//         /.../go/1.13.3/libexec/src/testing/testing.go:909
 		assert.Contains(t, err.Error(), "fx.Option should be passed to fx.New directly, not to fx.Provide")
 		assert.Contains(t, err.Error(), "fx.Provide received fx.Options(fx.Provide(go.uber.org/fx_test.TestAppStart")
+		assert.Contains(t, err.Error(), "go.uber.org/fx_test.TestAppStart")
+		assert.Contains(t, err.Error(), "fx/app_test.go")
 	})
 }
 

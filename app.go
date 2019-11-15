@@ -581,7 +581,9 @@ func (app *App) provide(p provide) {
 	app.logger.PrintProvide(constructor)
 
 	if _, ok := constructor.(Option); ok {
-		app.err = fmt.Errorf("fx.Option should be passed to fx.New directly, not to fx.Provide: fx.Provide received %v", constructor)
+		app.err = fmt.Errorf("fx.Option should be passed to fx.New directly, "+
+			"not to fx.Provide: fx.Provide received %v from:\n%+v",
+			constructor, p.Stack)
 		return
 	}
 
