@@ -85,18 +85,29 @@ type Option interface {
 // loops, background timer loops, and background processing goroutines should
 // instead be managed using Lifecycle callbacks.
 func Provide(constructors ...interface{}) Option {
-	return provideOption(constructors)
+	return provideOption{
+		Targets: constructors,
+		Stack:   fxreflect.CallerStack(1, 0),
+	}
 }
 
-type provideOption []interface{}
-
-func (po provideOption) apply(app *App) {
-	app.provides = append(app.provides, po...)
+type provideOption struct {
+	Targets []interface{}
+	Stack   fxreflect.Stack
 }
 
-func (po provideOption) String() string {
-	items := make([]string, len(po))
-	for i, c := range po {
+func (o provideOption) apply(app *App) {
+	for _, target := range o.Targets {
+		app.provides = append(app.provides, provide{
+			Target: target,
+			Stack:  o.Stack,
+		})
+	}
+}
+
+func (o provideOption) String() string {
+	items := make([]string, len(o.Targets))
+	for i, c := range o.Targets {
 		items[i] = fxreflect.FuncName(c)
 	}
 	return fmt.Sprintf("fx.Provide(%s)", strings.Join(items, ", "))
@@ -121,18 +132,29 @@ func (po provideOption) String() string {
 // advanced features, including optional parameters and named instances, see
 // the documentation of the In and Out types.
 func Invoke(funcs ...interface{}) Option {
-	return invokeOption(funcs)
+	return invokeOption{
+		Targets: funcs,
+		Stack:   fxreflect.CallerStack(1, 0),
+	}
 }
 
-type invokeOption []interface{}
-
-func (io invokeOption) apply(app *App) {
-	app.invokes = append(app.invokes, io...)
+type invokeOption struct {
+	Targets []interface{}
+	Stack   fxreflect.Stack
 }
 
-func (io invokeOption) String() string {
-	items := make([]string, len(io))
-	for i, f := range io {
+func (o invokeOption) apply(app *App) {
+	for _, target := range o.Targets {
+		app.invokes = append(app.invokes, invoke{
+			Target: target,
+			Stack:  o.Stack,
+		})
+	}
+}
+
+func (o invokeOption) String() string {
+	items := make([]string, len(o.Targets))
+	for i, f := range o.Targets {
 		items[i] = fxreflect.FuncName(f)
 	}
 	return fmt.Sprintf("fx.Invoke(%s)", strings.Join(items, ", "))
@@ -311,8 +333,8 @@ type App struct {
 	err          error
 	container    *dig.Container
 	lifecycle    *lifecycleWrapper
-	provides     []interface{}
-	invokes      []interface{}
+	provides     []provide
+	invokes      []invoke
 	logger       *fxlog.Logger
 	startTimeout time.Duration
 	stopTimeout  time.Duration
@@ -320,6 +342,24 @@ type App struct {
 
 	donesMu sync.RWMutex
 	dones   []chan os.Signal
+}
+
+// provide is a single constructor provided to Fx.
+type provide struct {
+	// Constructor provided to Fx. This may be an fx.Annotated.
+	Target interface{}
+
+	// Stack trace of where this provide was made.
+	Stack fxreflect.Stack
+}
+
+// invoke is a single invocation request to Fx.
+type invoke struct {
+	// Function to invoke.
+	Target interface{}
+
+	// Stack trace of where this invoke was made.
+	Stack fxreflect.Stack
 }
 
 // ErrorHandler handles Fx application startup errors.
@@ -378,9 +418,14 @@ func New(opts ...Option) *App {
 	for _, p := range app.provides {
 		app.provide(p)
 	}
-	app.provide(func() Lifecycle { return app.lifecycle })
-	app.provide(app.shutdowner)
-	app.provide(app.dotGraph)
+
+	frames := fxreflect.CallerStack(0, 0) // include New in the stack for default Provides
+	app.provide(provide{
+		Target: func() Lifecycle { return app.lifecycle },
+		Stack:  frames,
+	})
+	app.provide(provide{Target: app.shutdowner, Stack: frames})
+	app.provide(provide{Target: app.dotGraph, Stack: frames})
 
 	if app.err != nil {
 		app.logger.Printf("Error after options were applied: %v", app.err)
@@ -528,7 +573,8 @@ func (app *App) dotGraph() (DotGraph, error) {
 	return DotGraph(b.String()), err
 }
 
-func (app *App) provide(constructor interface{}) {
+func (app *App) provide(p provide) {
+	constructor := p.Target
 	if app.err != nil {
 		return
 	}
@@ -580,12 +626,13 @@ func (app *App) provide(constructor interface{}) {
 // encountered.
 func (app *App) executeInvokes() error {
 	// TODO: consider taking a context to limit the time spent running invocations.
-	var err error
 
-	for _, fn := range app.invokes {
+	for _, i := range app.invokes {
+		fn := i.Target
 		fname := fxreflect.FuncName(fn)
 		app.logger.Printf("INVOKE\t\t%s", fname)
 
+		var err error
 		if _, ok := fn.(Option); ok {
 			err = fmt.Errorf("fx.Option should be passed to fx.New directly, not to fx.Invoke: fx.Invoke received %v", fn)
 		} else {
@@ -594,11 +641,11 @@ func (app *App) executeInvokes() error {
 
 		if err != nil {
 			app.logger.Printf("Error during %q invoke: %v", fname, err)
-			break
+			return err
 		}
 	}
 
-	return err
+	return nil
 }
 
 func (app *App) run(done <-chan os.Signal) {
