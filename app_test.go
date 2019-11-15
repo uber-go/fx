@@ -190,6 +190,16 @@ func TestNewApp(t *testing.T) {
 
 		err := app.Err()
 		require.Error(t, err)
+
+		// fx.Annotated may specify only one of Name or Group: received fx.Annotated{Name: "foo", Group: "bar", Target: go.uber.org/fx_test.TestAnnotatedWithGroupAndName.func1()} from:
+		// go.uber.org/fx_test.TestAnnotatedWithGroupAndName
+		//         /.../fx/annotated_test.go:164
+		// testing.tRunner
+		//         /.../go/1.13.3/libexec/src/testing/testing.go:909
+		assert.Contains(t, err.Error(), "fx.Annotated may specify only one of Name or Group:")
+		assert.Contains(t, err.Error(), `received fx.Annotated{Name: "foo", Group: "bar", Target: go.uber.org/fx_test.TestNewApp`)
+		assert.Contains(t, err.Error(), "go.uber.org/fx_test.TestNewApp")
+		assert.Contains(t, err.Error(), "fx/app_test.go")
 	})
 }
 

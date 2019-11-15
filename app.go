@@ -587,20 +587,22 @@ func (app *App) provide(p provide) {
 		return
 	}
 
-	if a, ok := constructor.(Annotated); ok {
+	if ann, ok := constructor.(Annotated); ok {
 		var opts []dig.ProvideOption
 		switch {
-		case len(a.Group) > 0 && len(a.Name) > 0:
-			app.err = fmt.Errorf("fx.Annotate may not specify both name and group for %v", constructor)
+		case len(ann.Group) > 0 && len(ann.Name) > 0:
+			app.err = fmt.Errorf(
+				"fx.Annotated may specify only one of Name or Group: received %v from:\n%+v",
+				ann, p.Stack)
 			return
-		case len(a.Name) > 0:
-			opts = append(opts, dig.Name(a.Name))
-		case len(a.Group) > 0:
-			opts = append(opts, dig.Group(a.Group))
+		case len(ann.Name) > 0:
+			opts = append(opts, dig.Name(ann.Name))
+		case len(ann.Group) > 0:
+			opts = append(opts, dig.Group(ann.Group))
 
 		}
 
-		if err := app.container.Provide(a.Target, opts...); err != nil {
+		if err := app.container.Provide(ann.Target, opts...); err != nil {
 			app.err = err
 		}
 		return
