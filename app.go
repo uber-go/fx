@@ -644,7 +644,7 @@ func (app *App) executeInvokes() error {
 		}
 
 		if err != nil {
-			app.logger.Printf("Error during %q invoke: %v", fname, err)
+			app.logger.Printf("fx.Invoke(%v) called from:\n%+vFailed: %v", fname, i.Stack, err)
 			return err
 		}
 	}
