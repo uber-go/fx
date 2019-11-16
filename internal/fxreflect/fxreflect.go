@@ -121,7 +121,7 @@ func Caller() string {
 func FuncName(fn interface{}) string {
 	fnV := reflect.ValueOf(fn)
 	if fnV.Kind() != reflect.Func {
-		return "n/a"
+		return fmt.Sprint(fn)
 	}
 
 	function := runtime.FuncForPC(fnV.Pointer()).Name()

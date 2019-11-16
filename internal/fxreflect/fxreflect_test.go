@@ -89,8 +89,28 @@ func TestCaller(t *testing.T) {
 func someFunc() {}
 
 func TestFuncName(t *testing.T) {
-	assert.Equal(t, "go.uber.org/fx/internal/fxreflect.someFunc()", FuncName(someFunc))
-	assert.Equal(t, "n/a", FuncName(struct{}{}))
+	tests := []struct {
+		desc string
+		give interface{}
+		want string
+	}{
+		{
+			desc: "function",
+			give: someFunc,
+			want: "go.uber.org/fx/internal/fxreflect.someFunc()",
+		},
+		{
+			desc: "not a function",
+			give: 42,
+			want: "42",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.desc, func(t *testing.T) {
+			assert.Equal(t, tt.want, FuncName(tt.give))
+		})
+	}
 }
 
 func TestSanitizeFuncNames(t *testing.T) {
