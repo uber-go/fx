@@ -622,7 +622,7 @@ func (app *App) provide(p provide) {
 	}
 
 	if err := app.container.Provide(constructor); err != nil {
-		app.err = err
+		app.err = fmt.Errorf("fx.Provide(%v) from:\n%+vFailed: %v", fxreflect.FuncName(constructor), p.Stack, err)
 	}
 }
 
