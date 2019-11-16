@@ -603,7 +603,7 @@ func (app *App) provide(p provide) {
 		}
 
 		if err := app.container.Provide(ann.Target, opts...); err != nil {
-			app.err = err
+			app.err = fmt.Errorf("fx.Provide(%v) from:\n%+vFailed: %v", ann, p.Stack, err)
 		}
 		return
 	}
