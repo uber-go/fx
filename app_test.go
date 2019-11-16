@@ -201,6 +201,28 @@ func TestNewApp(t *testing.T) {
 		assert.Contains(t, err.Error(), "go.uber.org/fx_test.TestNewApp")
 		assert.Contains(t, err.Error(), "fx/app_test.go")
 	})
+
+	t.Run("ErrorProvidingAnnotated", func(t *testing.T) {
+		app := NewForTest(t, Provide(Annotated{
+			Target: 42, // not a constructor
+			Name:   "foo",
+		}))
+
+		err := app.Err()
+		require.Error(t, err)
+
+		// Example:
+		// fx.Provide(fx.Annotated{...}) from:
+		//     go.uber.org/fx_test.TestNewApp.func8
+		//         /.../fx/app_test.go:206
+		//     testing.tRunner
+		//         /.../go/1.13.3/libexec/src/testing/testing.go:909
+		//     Failed: must provide constructor function, got 42 (type int)
+		assert.Contains(t, err.Error(), `fx.Provide(fx.Annotated{Name: "foo", Target: 42}) from:`)
+		assert.Contains(t, err.Error(), "go.uber.org/fx_test.TestNewApp")
+		assert.Contains(t, err.Error(), "fx/app_test.go")
+		assert.Contains(t, err.Error(), "Failed: must provide constructor function")
+	})
 }
 
 type errHandlerFunc func(error)
