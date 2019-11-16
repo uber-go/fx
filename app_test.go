@@ -223,6 +223,23 @@ func TestNewApp(t *testing.T) {
 		assert.Contains(t, err.Error(), "fx/app_test.go")
 		assert.Contains(t, err.Error(), "Failed: must provide constructor function")
 	})
+
+	t.Run("ErrorProviding", func(t *testing.T) {
+		err := NewForTest(t, Provide(42)).Err()
+		require.Error(t, err)
+
+		// Example:
+		// fx.Provide(..) from:
+		//     go.uber.org/fx_test.TestNewApp.func8
+		//         /.../fx/app_test.go:206
+		//     testing.tRunner
+		//         /.../go/1.13.3/libexec/src/testing/testing.go:909
+		//     Failed: must provide constructor function, got 42 (type int)
+		assert.Contains(t, err.Error(), "fx.Provide(42) from:")
+		assert.Contains(t, err.Error(), "go.uber.org/fx_test.TestNewApp")
+		assert.Contains(t, err.Error(), "fx/app_test.go")
+		assert.Contains(t, err.Error(), "Failed: must provide constructor function")
+	})
 }
 
 type errHandlerFunc func(error)
