@@ -520,10 +520,25 @@ func TestAppStart(t *testing.T) {
 	})
 
 	t.Run("InvokeNonFunction", func(t *testing.T) {
-		app := NewForTest(t, Invoke(struct{}{}))
+		spy := printerSpy{&bytes.Buffer{}}
+
+		app := New(Logger(spy), Invoke(struct{}{}))
 		err := app.Err()
 		require.Error(t, err, "expected start failure")
 		assert.Contains(t, err.Error(), "can't invoke non-function")
+
+		// Example
+		// fx.Invoke({}) called from:
+		// go.uber.org/fx_test.TestAppStart.func4
+		//         /.../fx/app_test.go:525
+		// testing.tRunner
+		//         /.../go/1.13.3/libexec/src/testing/testing.go:909
+		// Failed: can't invoke non-function {} (type struct {})
+		output := spy.String()
+		assert.Contains(t, output, "fx.Invoke({}) called from:")
+		assert.Contains(t, output, "go.uber.org/fx_test.TestAppStart")
+		assert.Contains(t, output, "fx/app_test.go")
+		assert.Contains(t, output, "Failed: can't invoke non-function")
 	})
 
 	t.Run("ProvidingAProvideShouldFail", func(t *testing.T) {
