@@ -24,6 +24,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.uber.org/fx"
 	"go.uber.org/fx/fxtest"
 )
@@ -83,7 +84,20 @@ func TestAnnotatedWrongUsage(t *testing.T) {
 			),
 			fx.Populate(&in),
 		)
-		assert.Contains(t, app.Err().Error(), "fx.Annotated should be passed to fx.Provide directly", "expected error when return types were annotated")
+
+		err := app.Err()
+		require.Error(t, err)
+
+		// Example:
+		// fx.Annotated should be passed to fx.Provide directly, it should not be returned by the constructor: fx.Provide received go.uber.org/fx_test.TestAnnotatedWrongUsage.func2.1() from:
+		// go.uber.org/fx_test.TestAnnotatedWrongUsage.func2
+		//         /.../fx/annotated_test.go:76
+		// testing.tRunner
+		//         /.../go/1.13.3/libexec/src/testing/testing.go:909
+		assert.Contains(t, err.Error(), "fx.Annotated should be passed to fx.Provide directly, it should not be returned by the constructor")
+		assert.Contains(t, err.Error(), "fx.Provide received go.uber.org/fx_test.TestAnnotatedWrongUsage")
+		assert.Contains(t, err.Error(), "go.uber.org/fx_test.TestAnnotatedWrongUsage")
+		assert.Contains(t, err.Error(), "/fx/annotated_test.go")
 	})
 
 	t.Run("Result Type", func(t *testing.T) {

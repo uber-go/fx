@@ -615,7 +615,11 @@ func (app *App) provide(p provide) {
 			t := ft.Out(i)
 
 			if t == reflect.TypeOf(Annotated{}) {
-				app.err = fmt.Errorf("fx.Annotated should be passed to fx.Provide directly, it should not be returned by the constructor: fx.Provide received %v", constructor)
+				app.err = fmt.Errorf(
+					"fx.Annotated should be passed to fx.Provide directly, "+
+						"it should not be returned by the constructor: "+
+						"fx.Provide received %v from:\n%+v",
+					fxreflect.FuncName(constructor), p.Stack)
 				return
 			}
 		}
