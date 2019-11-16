@@ -586,8 +586,16 @@ func TestAppStart(t *testing.T) {
 		require.Error(t, err, "expected start failure")
 		assert.Equal(t, err, newErr, "start should return the same error fx.New encountered")
 
+		// Example
+		// fx.Option should be passed to fx.New directly, not to fx.Invoke: fx.Invoke received fx.Invoke(go.uber.org/fx_test.TestAppStart.func6.2()) from:
+		// go.uber.org/fx_test.TestAppStart.func6
+		//         /.../fx/app_test.go:579
+		// testing.tRunner
+		//         /.../go/1.13.3/libexec/src/testing/testing.go:909
 		assert.Contains(t, err.Error(), "fx.Option should be passed to fx.New directly, not to fx.Invoke")
 		assert.Contains(t, err.Error(), "fx.Invoke received fx.Invoke(go.uber.org/fx_test.TestAppStart")
+		assert.Contains(t, err.Error(), "go.uber.org/fx_test.TestAppStart")
+		assert.Contains(t, err.Error(), "/fx/app_test.go")
 	})
 
 	t.Run("ProvidingOptionsShouldFail", func(t *testing.T) {

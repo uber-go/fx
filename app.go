@@ -638,7 +638,9 @@ func (app *App) executeInvokes() error {
 
 		var err error
 		if _, ok := fn.(Option); ok {
-			err = fmt.Errorf("fx.Option should be passed to fx.New directly, not to fx.Invoke: fx.Invoke received %v", fn)
+			err = fmt.Errorf("fx.Option should be passed to fx.New directly, "+
+				"not to fx.Invoke: fx.Invoke received %v from:\n%+v",
+				fn, i.Stack)
 		} else {
 			err = app.container.Invoke(fn)
 		}
