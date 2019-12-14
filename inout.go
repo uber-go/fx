@@ -252,3 +252,26 @@ type In struct{ dig.In }
 // different types: if a group of constructors each returns type T, parameter
 // structs consuming the group must use a field of type []T.
 type Out struct{ dig.Out }
+
+// Optional can be embedded in a constructor's parameter struct to take
+// advantage of advanced dependency injection features.
+//
+// Optional Parameters
+//
+// Fx constructors declare their dependencies as function parameters and fx.In
+// structs.  With optional parameter structs, users can either provide or not
+// provide a value without breaking the dependency chain.  In the example
+// below, the NewLogger provider may use a LoggerParams struct if provided.
+// Otherwise, it receives a zero value as parameter.
+//
+//   type LoggerParams struct {
+//     fx.Optional
+//
+//     Prefix string
+//   }
+//
+//   func NewLogger(p LoggerParams) *log.Logger {
+//     return log.New(os.Stdout, p.Prefix, 0 /* flags */)
+//   }
+//
+type Optional struct{ dig.Optional }

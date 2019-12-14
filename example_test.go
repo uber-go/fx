@@ -30,6 +30,13 @@ import (
 	"go.uber.org/fx"
 )
 
+// LoggerParams is an optional type for configuring the Logger.
+type LoggerParams struct {
+	fx.Optional
+
+	Prefix string
+}
+
 // NewLogger constructs a logger. It's just a regular Go function, without any
 // special relationship to Fx.
 //
@@ -45,8 +52,8 @@ import (
 //
 // By default, Fx applications only allow one constructor for each type. See
 // the documentation of the In and Out types for ways around this restriction.
-func NewLogger() *log.Logger {
-	logger := log.New(os.Stdout, "" /* prefix */, 0 /* flags */)
+func NewLogger(p LoggerParams) *log.Logger {
+	logger := log.New(os.Stdout, p.Prefix, 0 /* flags */)
 	logger.Print("Executing NewLogger.")
 	return logger
 }

@@ -50,29 +50,59 @@ func TestOptionalTypes(t *testing.T) {
 	type bar struct{}
 	newBar := func() *bar { return &bar{} }
 
+	type baz struct {
+		fx.Optional
+	}
+	newBaz := func() *baz { return &baz{} }
+
 	type in struct {
 		fx.In
 
 		Foo *foo
 		Bar *bar `optional:"true"`
+		Baz *baz
 	}
 
-	t.Run("NotProvided", func(t *testing.T) {
+	t.Run("NotProvidedField", func(t *testing.T) {
 		ran := false
 		app := fxtest.New(t, fx.Provide(newFoo), fx.Invoke(func(in in) {
 			assert.NotNil(t, in.Foo, "foo was not optional and provided, expected not nil")
 			assert.Nil(t, in.Bar, "bar was optional and not provided, expected nil")
+			assert.Nil(t, in.Baz, "baz was optional and not provided, expected nil")
 			ran = true
 		}))
 		app.RequireStart().RequireStop()
 		assert.True(t, ran, "expected invoke to run")
 	})
 
-	t.Run("Provided", func(t *testing.T) {
+	t.Run("ProvidedField", func(t *testing.T) {
 		ran := false
-		app := fxtest.New(t, fx.Provide(newFoo, newBar), fx.Invoke(func(in in) {
+		app := fxtest.New(t, fx.Provide(newFoo, newBar, newBaz), fx.Invoke(func(in in) {
 			assert.NotNil(t, in.Foo, "foo was not optional and provided, expected not nil")
 			assert.NotNil(t, in.Bar, "bar was optional and provided, expected not nil")
+			assert.NotNil(t, in.Baz, "baz was optional and provided, expected not nil")
+			ran = true
+		}))
+		app.RequireStart().RequireStop()
+		assert.True(t, ran, "expected invoke to run")
+	})
+
+	t.Run("NotProvidedParam", func(t *testing.T) {
+		ran := false
+		app := fxtest.New(t, fx.Provide(newFoo), fx.Invoke(func(f *foo, b *baz) {
+			assert.NotNil(t, f, "foo was not optional and provided, expected not nil")
+			assert.Nil(t, b, "baz was optional and not provided, expected nil")
+			ran = true
+		}))
+		app.RequireStart().RequireStop()
+		assert.True(t, ran, "expected invoke to run")
+	})
+
+	t.Run("ProvidedParam", func(t *testing.T) {
+		ran := false
+		app := fxtest.New(t, fx.Provide(newFoo, newBaz), fx.Invoke(func(f *foo, b *baz) {
+			assert.NotNil(t, f, "foo was not optional and provided, expected not nil")
+			assert.NotNil(t, b, "baz was optional and provided, expected not nil")
 			ran = true
 		}))
 		app.RequireStart().RequireStop()
