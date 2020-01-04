@@ -31,20 +31,12 @@ import (
 
 	. "go.uber.org/fx"
 	"go.uber.org/fx/fxtest"
+	"go.uber.org/fx/internal/fxlog"
 	"go.uber.org/multierr"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
-
-type printerSpy struct {
-	*bytes.Buffer
-}
-
-func (ps printerSpy) Printf(format string, args ...interface{}) {
-	fmt.Fprintf(ps.Buffer, format, args...)
-	ps.Buffer.WriteRune('\n')
-}
 
 func NewForTest(t testing.TB, opts ...Option) *App {
 	testOpts := []Option{Logger(fxtest.NewTestPrinter(t))}
@@ -71,7 +63,7 @@ func TestNewApp(t *testing.T) {
 		// after applying other options. This prevents the app configuration
 		// (e.g., logging) from changing halfway through our provides.
 
-		spy := &printerSpy{&bytes.Buffer{}}
+		spy := new(fxlog.Spy)
 		app := fxtest.New(t, Provide(func() struct{} { return struct{}{} }), Logger(spy))
 		defer app.RequireStart().RequireStop()
 		assert.Contains(t, spy.String(), "PROVIDE\tstruct {}")
@@ -405,7 +397,7 @@ func TestOptions(t *testing.T) {
 	})
 
 	t.Run("Error", func(t *testing.T) {
-		spy := printerSpy{&bytes.Buffer{}}
+		spy := new(fxlog.Spy)
 		New(
 			Provide(&bytes.Buffer{}), // error, not a constructor
 			Logger(spy),
@@ -520,7 +512,7 @@ func TestAppStart(t *testing.T) {
 	})
 
 	t.Run("InvokeNonFunction", func(t *testing.T) {
-		spy := printerSpy{&bytes.Buffer{}}
+		spy := new(fxlog.Spy)
 
 		app := New(Logger(spy), Invoke(struct{}{}))
 		err := app.Err()
@@ -680,7 +672,7 @@ func TestDone(t *testing.T) {
 }
 
 func TestReplaceLogger(t *testing.T) {
-	spy := printerSpy{&bytes.Buffer{}}
+	spy := new(fxlog.Spy)
 	app := fxtest.New(t, Logger(spy))
 	app.RequireStart().RequireStop()
 	assert.Contains(t, spy.String(), "RUNNING")
