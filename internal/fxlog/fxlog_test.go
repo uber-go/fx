@@ -23,7 +23,6 @@ package fxlog
 import (
 	"bytes"
 	"errors"
-	"fmt"
 	"os"
 	"testing"
 
@@ -32,18 +31,6 @@ import (
 	"go.uber.org/fx/internal/fxlog/foovendor"
 	sample "go.uber.org/fx/internal/fxlog/sample.git"
 )
-
-type spy struct {
-	*bytes.Buffer
-}
-
-func newSpy() *spy {
-	return &spy{bytes.NewBuffer(nil)}
-}
-
-func (s *spy) Printf(format string, is ...interface{}) {
-	fmt.Fprintln(s, fmt.Sprintf(format, is...))
-}
 
 // stubs the exit call, returns a function that restores a real exit function
 // and asserts that the stub was called.
@@ -62,7 +49,7 @@ func TestNew(t *testing.T) {
 }
 
 func TestPrint(t *testing.T) {
-	sink := newSpy()
+	sink := new(Spy)
 	logger := &Logger{sink}
 
 	t.Run("printf", func(t *testing.T) {
@@ -158,14 +145,14 @@ func TestPrint(t *testing.T) {
 }
 
 func TestPanic(t *testing.T) {
-	sink := newSpy()
+	sink := new(Spy)
 	logger := &Logger{sink}
 	assert.Panics(t, func() { logger.Panic(errors.New("foo")) })
 	assert.Equal(t, "[Fx] foo\n", sink.String())
 }
 
 func TestFatal(t *testing.T) {
-	sink := newSpy()
+	sink := new(Spy)
 	logger := &Logger{sink}
 
 	undo := stubExit()
