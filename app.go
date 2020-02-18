@@ -160,6 +160,55 @@ func (o invokeOption) String() string {
 	return fmt.Sprintf("fx.Invoke(%s)", strings.Join(items, ", "))
 }
 
+// Decorate decorates things
+func Decorate(funcs ...interface{}) Option {
+	return decorateOption{
+		Targets: funcs,
+		Stack:   fxreflect.CallerStack(1, 0),
+	}
+}
+
+type decorateOption struct {
+	Targets []interface{}
+	Stack   fxreflect.Stack
+}
+
+func (o decorateOption) apply(app *App) {
+	// TODO
+}
+
+func (o decorateOption) String() string {
+	items := make([]string, len(o.Targets))
+	for i, c := range o.Targets {
+		items[i] = fxreflect.FuncName(c)
+	}
+	return fmt.Sprintf("fx.Decorate(%s)", strings.Join(items, ", "))
+}
+
+// Module modulates things
+func Module(name string, opts ...Option) Option {
+	return moduleOptions{name: name, options: opts}
+}
+
+type moduleOptions struct {
+	name    string
+	options []Option
+}
+
+func (mo moduleOptions) apply(app *App) {
+	for _, opt := range mo.options {
+		opt.apply(app)
+	}
+}
+
+func (mo moduleOptions) String() string {
+	items := make([]string, len(mo.options))
+	for i, opt := range mo.options {
+		items[i] = fmt.Sprint(opt)
+	}
+	return fmt.Sprintf("fx.Module(%q, %s)", mo.name, strings.Join(items, ", "))
+}
+
 // Error registers any number of errors with the application to short-circuit
 // startup. If more than one error is given, the errors are combined into a
 // single error.
