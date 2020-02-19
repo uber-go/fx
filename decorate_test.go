@@ -118,6 +118,47 @@ func TestDecorate(t *testing.T) {
 					}
 			},
 		},
+		{
+			name: "circular issue",
+			test: func() (*fxtest.App, []expectation) {
+				var out int
+				return fxtest.New(t,
+						fx.Provide(func() string { return "thing" }),
+						fx.Provide(func(s string) int { return len(s) }),
+
+						// fine, not circular
+						fx.Decorate(func(s string, b int) int {
+							return 0
+						}),
+
+						// not fine, circular as wrapped string is and input to calculating bool
+						fx.Decorate(func(s string, b int) string {
+							return ""
+						}),
+						fx.Populate(&out),
+					), []expectation{
+						{0, out},
+					}
+			},
+		},
+		{
+			name: "decorate order?",
+			test: func() (*fxtest.App, []expectation) {
+				var out int
+				var outB bool
+				return fxtest.New(t,
+						fx.Provide(func() string { return "thing" }),
+						fx.Provide(func(s string) bool { return len(s) > 10 }),
+						fx.Decorate(func(s string) string { return "decorated " + s }),
+						fx.Provide(func(s string) int { return len(s) }),
+						fx.Populate(&out),
+						fx.Populate(&outB),
+					), []expectation{
+						{0 /* len("thing") or len("decorated thing") */, out},
+						{true /* runs before or after decorate? */, outB},
+					}
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
