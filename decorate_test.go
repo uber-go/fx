@@ -142,20 +142,20 @@ func TestDecorate(t *testing.T) {
 			},
 		},
 		{
-			name: "decorate order?",
+			name: "mixed decorate/provide order doesn't matter",
 			test: func() (*fxtest.App, []expectation) {
 				var out int
 				var outB bool
 				return fxtest.New(t,
 						fx.Provide(func() string { return "thing" }),
-						fx.Provide(func(s string) bool { return len(s) > 10 }),
+						fx.Provide(func(s string) bool { return len(s) == len("decorated thing") }),
 						fx.Decorate(func(s string) string { return "decorated " + s }),
 						fx.Provide(func(s string) int { return len(s) }),
 						fx.Populate(&out),
 						fx.Populate(&outB),
 					), []expectation{
-						{0 /* len("thing") or len("decorated thing") */, out},
-						{true /* runs before or after decorate? */, outB},
+						{len("decorated thing"), out},
+						{true, outB},
 					}
 			},
 		},
