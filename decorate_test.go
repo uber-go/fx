@@ -98,7 +98,7 @@ func TestDecorate(t *testing.T) {
 						),
 						fx.Populate(&outer),
 					), []expectation{
-						{"decorated: thing", inner},
+						{"decorate out: decorate in: thing", inner},
 						{"decorate out: decorate in: thing", middle},
 						{"thing", outer},
 					}
