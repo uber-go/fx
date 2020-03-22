@@ -276,6 +276,20 @@ func TestInvokes(t *testing.T) {
 	})
 }
 
+func TestSupply(t *testing.T) {
+	type A struct{}
+	type B struct{}
+
+	aIn, bIn := A{}, B{}
+	aOut, bOut := (*A)(nil), (*B)(nil)
+	app := fxtest.New(t, Supply(&aIn, &bIn), Populate(&aOut, &bOut))
+	defer app.RequireStart().RequireStop()
+
+	require.NoError(t, app.Err())
+	require.Equal(t, &aIn, aOut)
+	require.Equal(t, &bIn, bOut)
+}
+
 func TestError(t *testing.T) {
 	t.Run("NilErrorOption", func(t *testing.T) {
 		var invoked bool
