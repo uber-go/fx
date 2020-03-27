@@ -41,30 +41,58 @@ func TestSupply(t *testing.T) {
 	})
 
 	t.Run("SomethingIsSupplied", func(t *testing.T) {
-		aIn, bIn := A{}, B{}
+		aIn, bIn := &A{}, &B{}
 		aOut, bOut := (*A)(nil), (*B)(nil)
-		app := fxtest.New(t, fx.Supply(&aIn, &bIn), fx.Populate(&aOut, &bOut))
+
+		app := fxtest.New(t, fx.Supply(aIn, bIn), fx.Populate(&aOut, &bOut))
 		defer app.RequireStart().RequireStop()
 
 		require.NoError(t, app.Err())
-		require.Equal(t, &aIn, aOut)
-		require.Equal(t, &bIn, bOut)
+		require.Equal(t, aIn, aOut)
+		require.Equal(t, bIn, bOut)
+	})
+
+	t.Run("AnnotateIsSupplied", func(t *testing.T) {
+		firstIn, secondIn, thirdIn := &A{}, &A{}, &B{}
+		var out struct {
+			fx.In
+			First  *A `name:"first"`
+			Second *A `name:"second"`
+			Third  *B
+		}
+
+		app := fxtest.New(
+			t,
+			fx.Supply(
+				fx.Annotated{Name: "first", Target: firstIn},
+				fx.Annotated{Name: "second", Target: secondIn},
+				thirdIn),
+			fx.Populate(&out))
+		defer app.RequireStart().RequireStop()
+
+		require.NoError(t, app.Err())
+		require.Equal(t, firstIn, out.First)
+		require.Equal(t, secondIn, out.Second)
+		require.Equal(t, thirdIn, out.Third)
 	})
 
 	t.Run("InvalidArgumentIsSupplied", func(t *testing.T) {
 		require.PanicsWithValuef(
-			t, "untyped nil passed to fx.Supply",
+			t,
+			"untyped nil passed to fx.Supply",
 			func() { fx.Supply(A{}, nil) },
 			"a naked nil should panic")
 
 		require.NotPanicsf(
-			t, func() {
+			t,
+			func() {
 				fx.Supply(A{}, (*B)(nil))
 			},
-			"a non-naked nil should not panic")
+			"a wrapped nil should not panic")
 
 		require.PanicsWithValuef(
-			t, "error value passed to fx.Supply",
+			t,
+			"error value passed to fx.Supply",
 			func() { fx.Supply(A{}, errors.New("fail")) },
 			"an error value should panic")
 	})

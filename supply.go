@@ -25,56 +25,63 @@ import (
 )
 
 // Supply provides instantiated values for dependency injection as if
-// they had been provided by a nullary constructor returning most specific type
-// (as determined by reflection) of any given value. For example, given:
+// they had been provided using a constructor that simply returns them.
+// The most specific type of each value (as determined by reflection) is used.
+//
+// For example, given:
 //
 //  type (
-// 		TypeA struct{}
-//		TypeB struct{}
-//	)
-//  var a, b = &TypeA{}, TypeB{}
+//  	TypeA struct{}
+//  	TypeB struct{}
+//  	TypeC struct{}
+//  )
+//
+//  var a, b, c = &TypeA{}, TypeB{}, &TypeC{}
 //
 // The following two forms are equivalent:
 //
-//	fx.Provide(
-//		func() *TypeA { return a },
-//		func() TypeB { return b },
-//	)
+//  fx.Supply(a, b, fx.Annotate{Target: c})
 //
-//  fx.Supply(a, b)
+//  fx.Provide(
+//  	func() *TypeA { return a },
+//  	func() TypeB { return b },
+//  	fx.Annotate{Target: func() *TypeC { return c }},
+//  )
 //
-// Supply operates by devising a constructor of the first form based on
-// the types of the supplied values. Supply accepts any number of arguments,
-// but with the following caveats:
-//
-// (1) Supply panics when given a naked nil or an error value.
-// (2) When given a fx.Annotated, the target is expected to be a value.
-//     Supply replaces the target with a constructor function.
+// Supply panics if a value (or annotation target) is an untyped nil or an error.
 //
 func Supply(values ...interface{}) Option {
-	if len(values) == 0 {
-		return Options()
-	}
-
-	returnTypes := make([]reflect.Type, len(values))
-	returnValues := make([]reflect.Value, len(values))
+	constructors := make([]interface{}, len(values)) // one function per value
 
 	for i, value := range values {
-		switch value.(type) {
-		case nil:
-			panic("untyped nil passed to fx.Supply")
-		case error:
-			panic("error value passed to fx.Supply")
+		switch value := value.(type) {
+		case Annotated:
+			value.Target = newSupplyConstructor(value.Target)
+			constructors[i] = value
+		default:
+			constructors[i] = newSupplyConstructor(value)
 		}
-
-		returnTypes[i] = reflect.TypeOf(value)
-		returnValues[i] = reflect.ValueOf(value)
 	}
+
+	return Provide(constructors...)
+}
+
+// Returns a function that takes no parameters, and returns the given value.
+func newSupplyConstructor(value interface{}) interface{} {
+	switch value.(type) {
+	case nil:
+		panic("untyped nil passed to fx.Supply")
+	case error:
+		panic("error value passed to fx.Supply")
+	}
+
+	returnTypes := []reflect.Type{reflect.TypeOf(value)}
+	returnValues := []reflect.Value{reflect.ValueOf(value)}
 
 	ft := reflect.FuncOf([]reflect.Type{}, returnTypes, false)
 	fv := reflect.MakeFunc(ft, func([]reflect.Value) []reflect.Value {
 		return returnValues
 	})
 
-	return Provide(fv.Interface())
+	return fv.Interface()
 }
