@@ -47,7 +47,7 @@ import (
 // the types of the supplied values. Supply accepts any number of arguments,
 // but with the following caveats:
 //
-// (1) Supply panics when given a naked nil, or an error value.
+// (1) Supply panics when given a naked nil or an error value.
 // (2) When given a fx.Annotated, the target is expected to be a value.
 //     Supply replaces the target with a constructor function.
 //
@@ -60,6 +60,13 @@ func Supply(values ...interface{}) Option {
 	returnValues := make([]reflect.Value, len(values))
 
 	for i, value := range values {
+		switch value.(type) {
+		case nil:
+			panic("untyped nil passed to fx.Supply")
+		case error:
+			panic("error value passed to fx.Supply")
+		}
+
 		returnTypes[i] = reflect.TypeOf(value)
 		returnValues[i] = reflect.ValueOf(value)
 	}

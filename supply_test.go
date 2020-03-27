@@ -21,6 +21,7 @@
 package fx_test
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -30,6 +31,9 @@ import (
 )
 
 func TestSupply(t *testing.T) {
+	type A struct{}
+	type B struct{}
+
 	t.Run("NothingIsSupplied", func(t *testing.T) {
 		app := fxtest.New(t, fx.Supply())
 		defer app.RequireStart().RequireStop()
@@ -37,9 +41,6 @@ func TestSupply(t *testing.T) {
 	})
 
 	t.Run("SomethingIsSupplied", func(t *testing.T) {
-		type A struct{}
-		type B struct{}
-
 		aIn, bIn := A{}, B{}
 		aOut, bOut := (*A)(nil), (*B)(nil)
 		app := fxtest.New(t, fx.Supply(&aIn, &bIn), fx.Populate(&aOut, &bOut))
@@ -48,5 +49,23 @@ func TestSupply(t *testing.T) {
 		require.NoError(t, app.Err())
 		require.Equal(t, &aIn, aOut)
 		require.Equal(t, &bIn, bOut)
+	})
+
+	t.Run("InvalidArgumentIsSupplied", func(t *testing.T) {
+		require.PanicsWithValuef(
+			t, "untyped nil passed to fx.Supply",
+			func() { fx.Supply(A{}, nil) },
+			"a naked nil should panic")
+
+		require.NotPanicsf(
+			t, func() {
+				fx.Supply(A{}, (*B)(nil))
+			},
+			"a non-naked nil should not panic")
+
+		require.PanicsWithValuef(
+			t, "error value passed to fx.Supply",
+			func() { fx.Supply(A{}, errors.New("fail")) },
+			"an error value should panic")
 	})
 }
