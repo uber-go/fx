@@ -37,7 +37,6 @@ func TestSupply(t *testing.T) {
 	t.Run("NothingIsSupplied", func(t *testing.T) {
 		app := fxtest.New(t, fx.Supply())
 		defer app.RequireStart().RequireStop()
-		require.NoError(t, app.Err())
 	})
 
 	t.Run("SomethingIsSupplied", func(t *testing.T) {
@@ -47,9 +46,8 @@ func TestSupply(t *testing.T) {
 		app := fxtest.New(t, fx.Supply(aIn, bIn), fx.Populate(&aOut, &bOut))
 		defer app.RequireStart().RequireStop()
 
-		require.NoError(t, app.Err())
-		require.Equal(t, aIn, aOut)
-		require.Equal(t, bIn, bOut)
+		require.Same(t, aIn, aOut)
+		require.Same(t, bIn, bOut)
 	})
 
 	t.Run("AnnotateIsSupplied", func(t *testing.T) {
@@ -70,10 +68,9 @@ func TestSupply(t *testing.T) {
 			fx.Populate(&out))
 		defer app.RequireStart().RequireStop()
 
-		require.NoError(t, app.Err())
-		require.Equal(t, firstIn, out.First)
-		require.Equal(t, secondIn, out.Second)
-		require.Equal(t, thirdIn, out.Third)
+		require.Same(t, firstIn, out.First)
+		require.Same(t, secondIn, out.Second)
+		require.Same(t, thirdIn, out.Third)
 	})
 
 	t.Run("InvalidArgumentIsSupplied", func(t *testing.T) {
