@@ -208,7 +208,7 @@ func TestPopulateErrors(t *testing.T) {
 		{
 			msg:     "container pointer without fx.In",
 			opt:     Populate(&containerNoIn{}),
-			wantErr: "is not in the container",
+			wantErr: "missing type: fx_test.containerNoIn",
 		},
 		{
 			msg:     "function",
@@ -218,7 +218,7 @@ func TestPopulateErrors(t *testing.T) {
 		{
 			msg:     "function pointer",
 			opt:     Populate(&fn),
-			wantErr: "is not in the container",
+			wantErr: "missing type: func()",
 		},
 		{
 			msg:     "invalid last argument",

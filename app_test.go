@@ -250,7 +250,7 @@ func TestInvokes(t *testing.T) {
 		)
 		err := app.Err()
 		require.Error(t, err)
-		assert.Contains(t, err.Error(), "fx_test.A is not in the container")
+		assert.Contains(t, err.Error(), "missing type: fx_test.A")
 	})
 
 	t.Run("ErrorHooksAreCalled", func(t *testing.T) {
