@@ -8,7 +8,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Added
 - Value groups can use the `flatten` option to indicate values in a slice should
   be provided individually rather than providing the slice itself. See package
-  documentation for detail.
+  documentation for details.
 
 ## [1.10.0] - 2019-11-20
 ### Added
