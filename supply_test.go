@@ -41,9 +41,14 @@ func TestSupply(t *testing.T) {
 
 	t.Run("SomethingIsSupplied", func(t *testing.T) {
 		aIn, bIn := &A{}, &B{}
-		aOut, bOut := (*A)(nil), (*B)(nil)
+		var aOut *A
+		var bOut *B
 
-		app := fxtest.New(t, fx.Supply(aIn, bIn), fx.Populate(&aOut, &bOut))
+		app := fxtest.New(
+			t,
+			fx.Supply(aIn, bIn),
+			fx.Populate(&aOut, &bOut),
+		)
 		defer app.RequireStart().RequireStop()
 
 		require.Same(t, aIn, aOut)
@@ -54,6 +59,7 @@ func TestSupply(t *testing.T) {
 		firstIn, secondIn, thirdIn := &A{}, &A{}, &B{}
 		var out struct {
 			fx.In
+
 			First  *A `name:"first"`
 			Second *A `name:"second"`
 			Third  *B
@@ -65,7 +71,8 @@ func TestSupply(t *testing.T) {
 				fx.Annotated{Name: "first", Target: firstIn},
 				fx.Annotated{Name: "second", Target: secondIn},
 				thirdIn),
-			fx.Populate(&out))
+			fx.Populate(&out),
+		)
 		defer app.RequireStart().RequireStop()
 
 		require.Same(t, firstIn, out.First)
@@ -78,19 +85,20 @@ func TestSupply(t *testing.T) {
 			t,
 			"untyped nil passed to fx.Supply",
 			func() { fx.Supply(A{}, nil) },
-			"a naked nil should panic")
+			"a naked nil should panic",
+		)
 
 		require.NotPanicsf(
 			t,
-			func() {
-				fx.Supply(A{}, (*B)(nil))
-			},
-			"a wrapped nil should not panic")
+			func() { fx.Supply(A{}, (*B)(nil)) },
+			"a wrapped nil should not panic",
+		)
 
 		require.PanicsWithValuef(
 			t,
 			"error value passed to fx.Supply",
 			func() { fx.Supply(A{}, errors.New("fail")) },
-			"an error value should panic")
+			"an error value should panic",
+		)
 	})
 }

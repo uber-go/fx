@@ -49,7 +49,6 @@ import (
 //  )
 //
 // Supply panics if a value (or annotation target) is an untyped nil or an error.
-//
 func Supply(values ...interface{}) Option {
 	constructors := make([]interface{}, len(values)) // one function per value
 
