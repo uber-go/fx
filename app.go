@@ -28,6 +28,7 @@ import (
 	"os"
 	"os/signal"
 	"reflect"
+	"sort"
 	"strings"
 	"sync"
 	"syscall"
@@ -261,6 +262,32 @@ func (t stopTimeoutOption) String() string {
 	return fmt.Sprintf("fx.StopTimeout(%v)", time.Duration(t))
 }
 
+// SortOrder for invokes.
+type SortOrder string
+
+const (
+	SortDefault      SortOrder = "default"      // default invokes sorting mechanism
+	SortAlphabetical           = "alphabetical" // alphabetically sorts the invokes
+	SortLength                 = "length"       // invokes are sorted based on the function name length
+)
+
+// Sort the Invokes with the following order.
+func Sort(order SortOrder) Option {
+	return sortOption{order}
+}
+
+type sortOption struct {
+	order SortOrder
+}
+
+func (s sortOption) String() string {
+	return string(s.order)
+}
+
+func (s sortOption) apply(app *App) {
+	app.sortOrder = s.order
+}
+
 // Printer is the interface required by Fx's logging backend. It's implemented
 // by most loggers, including the one bundled with the standard library.
 type Printer interface {
@@ -342,6 +369,8 @@ type App struct {
 
 	donesMu sync.RWMutex
 	dones   []chan os.Signal
+
+	sortOrder SortOrder
 }
 
 // provide is a single constructor provided to Fx.
@@ -409,6 +438,7 @@ func New(opts ...Option) *App {
 		logger:       logger,
 		startTimeout: DefaultTimeout,
 		stopTimeout:  DefaultTimeout,
+		sortOrder:    SortDefault,
 	}
 
 	for _, opt := range opts {
@@ -635,6 +665,9 @@ func (app *App) provide(p provide) {
 func (app *App) executeInvokes() error {
 	// TODO: consider taking a context to limit the time spent running invocations.
 
+	// make sure that the invokes are properly sorted
+	sort.Sort(invokes{l: app.invokes, o: app.sortOrder})
+
 	for _, i := range app.invokes {
 		fn := i.Target
 		fname := fxreflect.FuncName(fn)
@@ -656,6 +689,29 @@ func (app *App) executeInvokes() error {
 	}
 
 	return nil
+}
+
+type invokes struct {
+	l []invoke
+	o SortOrder
+}
+
+func (s invokes) Len() int      { return len(s.l) }
+func (s invokes) Swap(i, j int) { s.l[i], s.l[j] = s.l[j], s.l[i] }
+func (s invokes) Less(i, j int) bool {
+	left := fxreflect.FuncName(s.l[i].Target)
+	right := fxreflect.FuncName(s.l[j].Target)
+
+	switch s.o {
+	case SortDefault:
+		return false
+	case SortAlphabetical:
+		return left < right
+	case SortLength:
+		return len(left) < len(right)
+	default:
+		panic("Unknown sort order")
+	}
 }
 
 func (app *App) run(done <-chan os.Signal) {

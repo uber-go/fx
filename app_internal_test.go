@@ -25,6 +25,12 @@ import (
 	"sync"
 	"syscall"
 	"testing"
+
+	"github.com/stretchr/testify/require"
+
+	"go.uber.org/fx/internal/fxreflect"
+	"go.uber.org/fx/testdata/one"
+	"go.uber.org/fx/testdata/two"
 )
 
 func TestAppRun(t *testing.T) {
@@ -40,4 +46,55 @@ func TestAppRun(t *testing.T) {
 
 	done <- syscall.SIGINT
 	wg.Wait()
+}
+
+func TestInvokeOrder(t *testing.T) {
+	getInvokeOrder := func(a *App) []string {
+		var order []string
+		for _, i := range a.invokes {
+			order = append(order, fxreflect.FuncName(i.Target))
+		}
+		return order
+	}
+
+	t.Run("default", func(t *testing.T) {
+		a := New(
+			Invoke(one.CreateFunction),
+			Invoke(two.Run),
+		)
+		require.Equal(t, []string{
+			"go.uber.org/fx/testdata/one.CreateFunction()",
+			"go.uber.org/fx/testdata/two.Run()",
+		}, getInvokeOrder(a))
+	})
+
+	t.Run("length", func(t *testing.T) {
+		a := New(
+			Invoke(one.CreateFunction),
+			Invoke(two.Run),
+			Sort(SortLength),
+		)
+		// note the invokes are sorted by length of the function
+		require.Equal(t, []string{
+			"go.uber.org/fx/testdata/two.Run()",
+			"go.uber.org/fx/testdata/one.CreateFunction()",
+		}, getInvokeOrder(a))
+	})
+
+	t.Run("alphabetical", func(t *testing.T) {
+		a := New(
+			// total mess of invoke ordering
+			Invoke(two.Run),
+			Invoke(one.CreateFunction),
+			Invoke(func() {}),
+			// but no matter, alphabetical sort will save the day
+			Sort(SortAlphabetical),
+		)
+		// note the invokes are sorted alphabetically.
+		require.Equal(t, []string{
+			"go.uber.org/fx.TestInvokeOrder.func4.1()",
+			"go.uber.org/fx/testdata/one.CreateFunction()",
+			"go.uber.org/fx/testdata/two.Run()",
+		}, getInvokeOrder(a))
+	})
 }
