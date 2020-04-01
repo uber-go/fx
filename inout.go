@@ -251,4 +251,15 @@ type In struct{ dig.In }
 // value groups require parameter and result structs to use fields with
 // different types: if a group of constructors each returns type T, parameter
 // structs consuming the group must use a field of type []T.
+//
+// To provide multiple values for a group from a result struct, produce a
+// slice and use the `,flatten` option on the group tag. This indicates that
+// each element in the slice should be injected into the group individually.
+//
+//   type IntResult struct {
+//     fx.Out
+//
+//     Handler []int `group:"server"`         // Consume as [][]int
+//     Handler []int `group:"server,flatten"` // Consume as []int
+//   }
 type Out struct{ dig.Out }
