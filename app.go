@@ -351,6 +351,9 @@ type provide struct {
 
 	// Stack trace of where this provide was made.
 	Stack fxreflect.Stack
+
+	// IsSupply is true when the Target constructor was emitted by fx.Supply.
+	IsSupply bool
 }
 
 // invoke is a single invocation request to Fx.
@@ -574,11 +577,18 @@ func (app *App) dotGraph() (DotGraph, error) {
 }
 
 func (app *App) provide(p provide) {
-	constructor := p.Target
 	if app.err != nil {
 		return
 	}
-	app.logger.PrintProvide(constructor)
+
+	constructor := p.Target
+
+	switch {
+	case p.IsSupply:
+		app.logger.PrintSupply(constructor)
+	default:
+		app.logger.PrintProvide(constructor)
+	}
 
 	if _, ok := constructor.(Option); ok {
 		app.err = fmt.Errorf("fx.Option should be passed to fx.New directly, "+

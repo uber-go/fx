@@ -826,6 +826,16 @@ func TestOptionString(t *testing.T) {
 			give: ErrorHook(testErrorHandler{t}),
 			want: "fx.ErrorHook(TestOptionString)",
 		},
+		{
+			desc: "Supply/simple",
+			give: Supply(bytes.NewReader(nil), bytes.NewBuffer(nil)),
+			want: "fx.Supply(*bytes.Reader, *bytes.Buffer)",
+		},
+		{
+			desc: "Supply/Annotated",
+			give: Supply(Annotated{Target: bytes.NewReader(nil)}),
+			want: "fx.Supply(*bytes.Reader)",
+		},
 	}
 
 	for _, tt := range tests {

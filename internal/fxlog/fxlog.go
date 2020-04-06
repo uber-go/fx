@@ -58,6 +58,14 @@ func (l *Logger) PrintProvide(t interface{}) {
 	}
 }
 
+// PrintSupply logs a type supplied directly into the dig.Container
+// by the given constructor function.
+func (l *Logger) PrintSupply(constructor interface{}) {
+	for _, rtype := range fxreflect.ReturnTypes(constructor) {
+		l.Printf("SUPPLY\t%s", rtype)
+	}
+}
+
 // PrintSignal logs an os.Signal.
 func (l *Logger) PrintSignal(signal os.Signal) {
 	l.Printf(strings.ToUpper(signal.String()))

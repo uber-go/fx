@@ -21,7 +21,11 @@
 package fx
 
 import (
+	"fmt"
 	"reflect"
+	"strings"
+
+	"go.uber.org/fx/internal/fxreflect"
 )
 
 // Supply provides instantiated values for dependency injection as if
@@ -62,7 +66,39 @@ func Supply(values ...interface{}) Option {
 		}
 	}
 
-	return Provide(constructors...)
+	return supplyOption{
+		Targets: constructors,
+		Stack:   fxreflect.CallerStack(1, 0),
+	}
+}
+
+type supplyOption struct {
+	Targets []interface{}
+	Stack   fxreflect.Stack
+}
+
+func (o supplyOption) apply(app *App) {
+	for _, target := range o.Targets {
+		app.provides = append(app.provides, provide{
+			Target:   target,
+			Stack:    o.Stack,
+			IsSupply: true,
+		})
+	}
+}
+
+func (o supplyOption) String() string {
+	items := make([]string, 0, len(o.Targets))
+	for _, target := range o.Targets {
+		switch target := target.(type) {
+		case Annotated:
+			items = append(items, fxreflect.ReturnTypes(target.Target)...)
+		default:
+			items = append(items, fxreflect.ReturnTypes(target)...)
+		}
+	}
+
+	return fmt.Sprintf("fx.Supply(%s)", strings.Join(items, ", "))
 }
 
 // Returns a function that takes no parameters, and returns the given value.

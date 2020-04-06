@@ -64,6 +64,12 @@ func TestPrint(t *testing.T) {
 		assert.Equal(t, "[Fx] PROVIDE\t*bytes.Buffer <= bytes.NewBuffer()\n", sink.String())
 	})
 
+	t.Run("PrintSupply", func(t *testing.T) {
+		sink.Reset()
+		logger.PrintSupply(func() *bytes.Buffer { return bytes.NewBuffer(nil) })
+		assert.Equal(t, "[Fx] SUPPLY\t*bytes.Buffer\n", sink.String())
+	})
+
 	t.Run("printExpandsTypesInOut", func(t *testing.T) {
 		sink.Reset()
 
