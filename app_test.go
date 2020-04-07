@@ -141,6 +141,26 @@ func TestNewApp(t *testing.T) {
 		require.NoError(t, app.Err())
 	})
 
+	t.Run("ProvidesWithAnnotateFlattened", func(t *testing.T) {
+		app := fxtest.New(t,
+			Provide(Annotated{
+				Target: func() []int { return []int{1} },
+				Group:  "foo,flatten",
+			}),
+			Invoke(
+				func(b struct {
+					In
+					Foos []int `group:"foo"`
+				}) {
+					assert.Len(t, b.Foos, 1)
+				},
+			),
+		)
+
+		defer app.RequireStart().RequireStop()
+		require.NoError(t, app.Err())
+	})
+
 	t.Run("ProvidesWithEmptyAnnotate", func(t *testing.T) {
 		type A struct{}
 
@@ -250,7 +270,7 @@ func TestInvokes(t *testing.T) {
 		)
 		err := app.Err()
 		require.Error(t, err)
-		assert.Contains(t, err.Error(), "fx_test.A is not in the container")
+		assert.Contains(t, err.Error(), "missing type: fx_test.A")
 	})
 
 	t.Run("ErrorHooksAreCalled", func(t *testing.T) {
