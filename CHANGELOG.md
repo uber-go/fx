@@ -4,8 +4,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
-- No changes yet.
+## [1.12.0] - 2020-04-09
+### Added
+- Added `fx.Supply` to provide externally created values to Fx containers
+  without building anonymous constructors.
+
+### Changed
+- Drop library dependency on development tools.
 
 ## [1.11.0] - 2020-04-01
 ### Added
@@ -193,7 +198,7 @@ promising API compatibility between beta releases and the final 1.0.0 release.
 In fact, we expect our beta user feedback to require some changes to the way
 things work. Once we reach 1.0, we will provider proper version compatibility.
 
-[Unreleased]: https://github.com/uber-go/fx/compare/v1.11.0...HEAD
+[1.12.0]: https://github.com/uber-go/fx/compare/v1.11.0...v1.12.0
 [1.11.0]: https://github.com/uber-go/fx/compare/v1.10.0...1.11.0
 [1.10.0]: https://github.com/uber-go/fx/compare/v1.9.0...v1.10.0
 [1.9.0]: https://github.com/uber-go/fx/compare/v1.8.0...v1.9.0
