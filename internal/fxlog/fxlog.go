@@ -1,4 +1,4 @@
-// Copyright (c) 2019 Uber Technologies, Inc.
+// Copyright (c) 2020 Uber Technologies, Inc.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -55,6 +55,14 @@ func (l *Logger) Printf(format string, v ...interface{}) {
 func (l *Logger) PrintProvide(t interface{}) {
 	for _, rtype := range fxreflect.ReturnTypes(t) {
 		l.Printf("PROVIDE\t%s <= %s", rtype, fxreflect.FuncName(t))
+	}
+}
+
+// PrintSupply logs a type supplied directly into the dig.Container
+// by the given constructor function.
+func (l *Logger) PrintSupply(constructor interface{}) {
+	for _, rtype := range fxreflect.ReturnTypes(constructor) {
+		l.Printf("SUPPLY\t%s", rtype)
 	}
 }
 

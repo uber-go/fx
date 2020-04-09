@@ -1,4 +1,4 @@
-// Copyright (c) 2019 Uber Technologies, Inc.
+// Copyright (c) 2020 Uber Technologies, Inc.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -52,6 +52,8 @@ import (
 //   })
 //
 // Annotated cannot be used with constructors which produce fx.Out objects.
+//
+// When used with fx.Supply, the target is a value rather than a constructor function.
 type Annotated struct {
 	// If specified, this will be used as the name for all non-error values returned
 	// by the constructor. For more information on named values, see the documentation
@@ -70,7 +72,7 @@ type Annotated struct {
 	// constructor should be injected into the value group individually.
 	Group string
 
-	// Target is the constructor being annotated with fx.Annotated.
+	// Target is the constructor or value being annotated with fx.Annotated.
 	Target interface{}
 }
 

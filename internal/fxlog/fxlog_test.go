@@ -1,4 +1,4 @@
-// Copyright (c) 2019 Uber Technologies, Inc.
+// Copyright (c) 2020 Uber Technologies, Inc.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -62,6 +62,12 @@ func TestPrint(t *testing.T) {
 		sink.Reset()
 		logger.PrintProvide(bytes.NewBuffer)
 		assert.Equal(t, "[Fx] PROVIDE\t*bytes.Buffer <= bytes.NewBuffer()\n", sink.String())
+	})
+
+	t.Run("PrintSupply", func(t *testing.T) {
+		sink.Reset()
+		logger.PrintSupply(func() *bytes.Buffer { return bytes.NewBuffer(nil) })
+		assert.Equal(t, "[Fx] SUPPLY\t*bytes.Buffer\n", sink.String())
 	})
 
 	t.Run("printExpandsTypesInOut", func(t *testing.T) {

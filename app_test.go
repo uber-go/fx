@@ -1,4 +1,4 @@
-// Copyright (c) 2019 Uber Technologies, Inc.
+// Copyright (c) 2020 Uber Technologies, Inc.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -845,6 +845,16 @@ func TestOptionString(t *testing.T) {
 			desc: "ErrorHook",
 			give: ErrorHook(testErrorHandler{t}),
 			want: "fx.ErrorHook(TestOptionString)",
+		},
+		{
+			desc: "Supply/simple",
+			give: Supply(bytes.NewReader(nil), bytes.NewBuffer(nil)),
+			want: "fx.Supply(*bytes.Reader, *bytes.Buffer)",
+		},
+		{
+			desc: "Supply/Annotated",
+			give: Supply(Annotated{Target: bytes.NewReader(nil)}),
+			want: "fx.Supply(*bytes.Reader)",
 		},
 	}
 
