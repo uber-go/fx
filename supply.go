@@ -44,12 +44,12 @@ import (
 //
 // The following two forms are equivalent:
 //
-//  fx.Supply(a, b, fx.Annotate{Target: c})
+//  fx.Supply(a, b, fx.Annotated{Target: c})
 //
 //  fx.Provide(
 //  	func() *TypeA { return a },
 //  	func() TypeB { return b },
-//  	fx.Annotate{Target: func() *TypeC { return c }},
+//  	fx.Annotated{Target: func() *TypeC { return c }},
 //  )
 //
 // Supply panics if a value (or annotation target) is an untyped nil or an error.
