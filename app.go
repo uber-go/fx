@@ -339,6 +339,7 @@ type App struct {
 	startTimeout time.Duration
 	stopTimeout  time.Duration
 	errorHooks   []ErrorHandler
+	dry          bool
 
 	donesMu sync.RWMutex
 	dones   []chan os.Signal
@@ -399,6 +400,25 @@ func (ehl errorHandlerList) HandleError(err error) {
 	}
 }
 
+// Dry set *App into running in dry mode for graph validation without running invoked functions.
+func Dry(dry bool) Option {
+	return &dryOption{
+		dry: dry,
+	}
+}
+
+type dryOption struct {
+	dry bool
+}
+
+func (d dryOption) apply(app *App) {
+	app.dry = d.dry
+}
+
+func (d dryOption) String() string {
+	return fmt.Sprintf("fx.Dry(%v)", d.dry)
+}
+
 // New creates and initializes an App, immediately executing any functions
 // registered via Invoke options. See the documentation of the App struct for
 // details on the application's initialization, startup, and shutdown logic.
@@ -407,7 +427,6 @@ func New(opts ...Option) *App {
 	lc := &lifecycleWrapper{lifecycle.New(logger)}
 
 	app := &App{
-		container:    dig.New(dig.DeferAcyclicVerification()),
 		lifecycle:    lc,
 		logger:       logger,
 		startTimeout: DefaultTimeout,
@@ -417,6 +436,11 @@ func New(opts ...Option) *App {
 	for _, opt := range opts {
 		opt.apply(app)
 	}
+
+	app.container = dig.New(
+		dig.DeferAcyclicVerification(),
+		dig.Dry(app.dry),
+	)
 
 	for _, p := range app.provides {
 		app.provide(p)

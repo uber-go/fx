@@ -681,6 +681,48 @@ func TestAppStop(t *testing.T) {
 	})
 }
 
+func TestDryRun(t *testing.T) {
+	t.Run("provide depends on something not available", func(t *testing.T) {
+		type type1 struct{}
+		err := NewForTest(t,
+			Provide(func(type1) int { return 0 }),
+			Invoke(func(int) error { return nil }),
+			Dry(true),
+		).Err()
+		require.Error(t, err, "fx.New should error on argument not available")
+		errMsg := err.Error()
+		assert.Contains(t, errMsg, "could not build arguments for function")
+		assert.Contains(t, errMsg, "failed to build int: missing dependencies for function")
+		assert.Contains(t, errMsg, "missing type: fx_test.type1")
+	})
+	t.Run("provide introduces a cycle", func(t *testing.T) {
+		type A struct{}
+		type B struct{}
+		app := NewForTest(t,
+			Provide(func(A) B { return B{} }),
+			Provide(func(B) A { return A{} }),
+			Invoke(func(B) {}),
+			Dry(true),
+		)
+		err := app.Err()
+		require.Error(t, err, "fx.New should error on cycle")
+		errMsg := err.Error()
+		assert.Contains(t, errMsg, "cycle detected in dependency graph")
+	})
+	t.Run("invoke a type that's not available", func(t *testing.T) {
+		type A struct{}
+		app := NewForTest(t,
+			Invoke(func(A) {}),
+			Dry(true),
+		)
+		err := app.Err()
+		require.Error(t, err, "fx.New should return an error on missing invoke dep")
+		errMsg := err.Error()
+		assert.Contains(t, errMsg, "missing dependencies for function")
+		assert.Contains(t, errMsg, "missing type: fx_test.A")
+	})
+}
+
 func TestDone(t *testing.T) {
 	done := fxtest.New(t).Done()
 	require.NotNil(t, done, "Got a nil channel.")
