@@ -46,7 +46,7 @@ func TestAppRun(t *testing.T) {
 	wg.Wait()
 }
 
-// TestValidateString verified private option. Public options are tested in app_test.go.
+// TestValidateString verifies private option. Public options are tested in app_test.go.
 func TestValidateString(t *testing.T) {
 	stringer, ok := validate(true).(fmt.Stringer)
 	require.True(t, ok, "option must implement stringer")
