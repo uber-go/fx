@@ -716,6 +716,17 @@ func TestValidateApp(t *testing.T) {
 		assert.Contains(t, errMsg, "missing dependencies for function")
 		assert.Contains(t, errMsg, "missing type: fx_test.A")
 	})
+	t.Run("no error", func(t *testing.T) {
+		type A struct{}
+		err := ValidateApp(
+			Provide(func() A {
+				return A{}
+			}),
+			Invoke(func(A) {}),
+		)
+		require.NoError(t, err, "fx.New should not return an error")
+	})
+
 }
 
 func TestDone(t *testing.T) {
