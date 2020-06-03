@@ -681,14 +681,13 @@ func TestAppStop(t *testing.T) {
 	})
 }
 
-func TestDryRun(t *testing.T) {
+func TestValidateApp(t *testing.T) {
 	t.Run("provide depends on something not available", func(t *testing.T) {
 		type type1 struct{}
-		err := NewForTest(t,
+		err := ValidateApp(
 			Provide(func(type1) int { return 0 }),
 			Invoke(func(int) error { return nil }),
-			Dry(true),
-		).Err()
+		)
 		require.Error(t, err, "fx.New should error on argument not available")
 		errMsg := err.Error()
 		assert.Contains(t, errMsg, "could not build arguments for function")
@@ -698,24 +697,20 @@ func TestDryRun(t *testing.T) {
 	t.Run("provide introduces a cycle", func(t *testing.T) {
 		type A struct{}
 		type B struct{}
-		app := NewForTest(t,
+		err := ValidateApp(
 			Provide(func(A) B { return B{} }),
 			Provide(func(B) A { return A{} }),
 			Invoke(func(B) {}),
-			Dry(true),
 		)
-		err := app.Err()
 		require.Error(t, err, "fx.New should error on cycle")
 		errMsg := err.Error()
 		assert.Contains(t, errMsg, "cycle detected in dependency graph")
 	})
 	t.Run("invoke a type that's not available", func(t *testing.T) {
 		type A struct{}
-		app := NewForTest(t,
+		err := ValidateApp(
 			Invoke(func(A) {}),
-			Dry(true),
 		)
-		err := app.Err()
 		require.Error(t, err, "fx.New should return an error on missing invoke dep")
 		errMsg := err.Error()
 		assert.Contains(t, errMsg, "missing dependencies for function")

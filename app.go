@@ -339,7 +339,7 @@ type App struct {
 	startTimeout time.Duration
 	stopTimeout  time.Duration
 	errorHooks   []ErrorHandler
-	dry          bool
+	validate     bool
 
 	donesMu sync.RWMutex
 	dones   []chan os.Signal
@@ -400,23 +400,34 @@ func (ehl errorHandlerList) HandleError(err error) {
 	}
 }
 
-// Dry set *App into running in dry mode for graph validation without running invoked functions.
-func Dry(dry bool) Option {
-	return &dryOption{
-		dry: dry,
+// validate sets *App into validation mode without running invoked functions.
+func validate(validate bool) Option {
+	return &validateOption{
+		validate: validate,
 	}
 }
 
-type dryOption struct {
-	dry bool
+type validateOption struct {
+	validate bool
 }
 
-func (d dryOption) apply(app *App) {
-	app.dry = d.dry
+func (o validateOption) apply(app *App) {
+	app.validate = o.validate
 }
 
-func (d dryOption) String() string {
-	return fmt.Sprintf("fx.Dry(%v)", d.dry)
+func (o validateOption) String() string {
+	return fmt.Sprintf("fx.validate(%v)", o.validate)
+}
+
+// ValidateApp validates that supplied graph would run and is not missing any dependencies. This
+// method does not invoke actual input functions.
+func ValidateApp(opts ...Option) error {
+	opts = append(opts, validate(true))
+	app := New(opts...)
+	if err := app.Err(); err != nil {
+		return err
+	}
+	return nil
 }
 
 // New creates and initializes an App, immediately executing any functions
@@ -439,7 +450,7 @@ func New(opts ...Option) *App {
 
 	app.container = dig.New(
 		dig.DeferAcyclicVerification(),
-		dig.Dry(app.dry),
+		dig.Dry(app.validate),
 	)
 
 	for _, p := range app.provides {
