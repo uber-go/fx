@@ -21,10 +21,14 @@
 package fx
 
 import (
+	"fmt"
 	"os"
 	"sync"
 	"syscall"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestAppRun(t *testing.T) {
@@ -40,4 +44,11 @@ func TestAppRun(t *testing.T) {
 
 	done <- syscall.SIGINT
 	wg.Wait()
+}
+
+// TestValidateString verified private option. Public options are tested in app_test.go.
+func TestValidateString(t *testing.T) {
+	stringer, ok := validate(true).(fmt.Stringer)
+	require.True(t, ok, "option must implement stringer")
+	assert.Equal(t, "fx.validate(true)", stringer.String())
 }
