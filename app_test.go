@@ -697,7 +697,6 @@ func TestValidateApp(t *testing.T) {
 		err := ValidateApp(
 			Provide(func() *type1 {
 				panic("always")
-				return &type1{}
 			}),
 			Invoke(func(*type1) {
 				panic("always")
