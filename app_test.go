@@ -682,6 +682,29 @@ func TestAppStop(t *testing.T) {
 }
 
 func TestValidateApp(t *testing.T) {
+	t.Run("do not run provides on graph validation", func(t *testing.T) {
+		type type1 struct{}
+		err := ValidateApp(
+			Provide(func() *type1 {
+				panic("always")
+			}),
+			Invoke(func(*type1) {}),
+		)
+		require.NoError(t, err)
+	})
+	t.Run("do not run provides nor invokes on graph validation", func(t *testing.T) {
+		type type1 struct{}
+		err := ValidateApp(
+			Provide(func() *type1 {
+				panic("always")
+				return &type1{}
+			}),
+			Invoke(func(*type1) {
+				panic("always")
+			}),
+		)
+		require.NoError(t, err)
+	})
 	t.Run("provide depends on something not available", func(t *testing.T) {
 		type type1 struct{}
 		err := ValidateApp(

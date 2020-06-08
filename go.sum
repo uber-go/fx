@@ -16,6 +16,8 @@ github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZN
 github.com/rogpeppe/go-internal v1.3.0/go.mod h1:M8bDsm7K2OlrFYOpmOWEs/qY81heoFRclV5y23lUDJ4=
 github.com/shirchen/dig v0.0.0-20200529214545-dc068c8d04c4 h1:on13lVW177ghWKDX4atjwCyNA1T2g93qtPsclyQhNbY=
 github.com/shirchen/dig v0.0.0-20200529214545-dc068c8d04c4/go.mod h1:X34SnWGr8Fyla9zQNO2GSO2D+TIuqB14OS8JhYocIyw=
+github.com/shirchen/dig v0.0.0-20200608195101-1620aa01a7ff h1:zievDLhLznhn5VCzmluvZm8JBiUvccny9Xa3sqE38jo=
+github.com/shirchen/dig v0.0.0-20200608195101-1620aa01a7ff/go.mod h1:X34SnWGr8Fyla9zQNO2GSO2D+TIuqB14OS8JhYocIyw=
 github.com/shirchen/dig v1.9.1-0.20200529214545-dc068c8d04c4 h1:m4PjfR+RD5rkEVtU0xl6Qsh/yn/sh4OXmB5ufYUvb9I=
 github.com/shirchen/dig v1.9.1-0.20200529214545-dc068c8d04c4/go.mod h1:X34SnWGr8Fyla9zQNO2GSO2D+TIuqB14OS8JhYocIyw=
 github.com/stretchr/objx v0.1.0/go.mod h1:HFkY916IF+rwdDfMAkV7OtwuqBVzrE8GR6GFx+wExME=

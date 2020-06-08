@@ -12,5 +12,5 @@ require (
 )
 
 replace (
-	go.uber.org/dig => github.com/shirchen/dig v0.0.0-20200529214545-dc068c8d04c4
+	go.uber.org/dig => github.com/shirchen/dig v0.0.0-20200608195101-1620aa01a7ff
 )
