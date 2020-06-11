@@ -450,7 +450,7 @@ func New(opts ...Option) *App {
 
 	app.container = dig.New(
 		dig.DeferAcyclicVerification(),
-		dig.Dry(app.validate),
+		dig.DryRun(app.validate),
 	)
 
 	for _, p := range app.provides {
