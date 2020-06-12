@@ -4,13 +4,9 @@ go 1.13
 
 require (
 	github.com/stretchr/testify v1.4.0
-	go.uber.org/dig v1.9.0
+	go.uber.org/dig v1.9.1-0.20200612000736-d97f72157a80
 	go.uber.org/goleak v0.10.0
 	go.uber.org/multierr v1.4.0
 	golang.org/x/lint v0.0.0-20190930215403-16217165b5de
 	golang.org/x/tools v0.0.0-20191114200427-caa0b0f7d508 // indirect
-)
-
-replace (
-	go.uber.org/dig => github.com/shirchen/dig v0.0.0-20200611001011-8f8056169c5c
 )
