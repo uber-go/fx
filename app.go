@@ -339,6 +339,7 @@ type App struct {
 	startTimeout time.Duration
 	stopTimeout  time.Duration
 	errorHooks   []ErrorHandler
+	validate     bool
 
 	donesMu sync.RWMutex
 	dones   []chan os.Signal
@@ -399,6 +400,34 @@ func (ehl errorHandlerList) HandleError(err error) {
 	}
 }
 
+// validate sets *App into validation mode without running invoked functions.
+func validate(validate bool) Option {
+	return &validateOption{
+		validate: validate,
+	}
+}
+
+type validateOption struct {
+	validate bool
+}
+
+func (o validateOption) apply(app *App) {
+	app.validate = o.validate
+}
+
+func (o validateOption) String() string {
+	return fmt.Sprintf("fx.validate(%v)", o.validate)
+}
+
+// ValidateApp validates that supplied graph would run and is not missing any dependencies. This
+// method does not invoke actual input functions.
+func ValidateApp(opts ...Option) error {
+	opts = append(opts, validate(true))
+	app := New(opts...)
+
+	return app.Err()
+}
+
 // New creates and initializes an App, immediately executing any functions
 // registered via Invoke options. See the documentation of the App struct for
 // details on the application's initialization, startup, and shutdown logic.
@@ -407,7 +436,6 @@ func New(opts ...Option) *App {
 	lc := &lifecycleWrapper{lifecycle.New(logger)}
 
 	app := &App{
-		container:    dig.New(dig.DeferAcyclicVerification()),
 		lifecycle:    lc,
 		logger:       logger,
 		startTimeout: DefaultTimeout,
@@ -417,6 +445,11 @@ func New(opts ...Option) *App {
 	for _, opt := range opts {
 		opt.apply(app)
 	}
+
+	app.container = dig.New(
+		dig.DeferAcyclicVerification(),
+		dig.DryRun(app.validate),
+	)
 
 	for _, p := range app.provides {
 		app.provide(p)

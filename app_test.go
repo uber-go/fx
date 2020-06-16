@@ -681,6 +681,78 @@ func TestAppStop(t *testing.T) {
 	})
 }
 
+func TestValidateApp(t *testing.T) {
+	t.Run("do not run provides on graph validation", func(t *testing.T) {
+		type type1 struct{}
+		err := ValidateApp(
+			Provide(func() *type1 {
+				t.Error("provide must not be called")
+				return nil
+			}),
+			Invoke(func(*type1) {}),
+		)
+		require.NoError(t, err)
+	})
+	t.Run("do not run provides nor invokes on graph validation", func(t *testing.T) {
+		type type1 struct{}
+		err := ValidateApp(
+			Provide(func() *type1 {
+				t.Error("provide must not be called")
+				return nil
+			}),
+			Invoke(func(*type1) {
+				t.Error("invoke must not be called")
+			}),
+		)
+		require.NoError(t, err)
+	})
+	t.Run("provide depends on something not available", func(t *testing.T) {
+		type type1 struct{}
+		err := ValidateApp(
+			Provide(func(type1) int { return 0 }),
+			Invoke(func(int) error { return nil }),
+		)
+		require.Error(t, err, "fx.ValidateApp should error on argument not available")
+		errMsg := err.Error()
+		assert.Contains(t, errMsg, "could not build arguments for function")
+		assert.Contains(t, errMsg, "failed to build int: missing dependencies for function")
+		assert.Contains(t, errMsg, "missing type: fx_test.type1")
+	})
+	t.Run("provide introduces a cycle", func(t *testing.T) {
+		type A struct{}
+		type B struct{}
+		err := ValidateApp(
+			Provide(func(A) B { return B{} }),
+			Provide(func(B) A { return A{} }),
+			Invoke(func(B) {}),
+		)
+		require.Error(t, err, "fx.ValidateApp should error on cycle")
+		errMsg := err.Error()
+		assert.Contains(t, errMsg, "cycle detected in dependency graph")
+	})
+	t.Run("invoke a type that's not available", func(t *testing.T) {
+		type A struct{}
+		err := ValidateApp(
+			Invoke(func(A) {}),
+		)
+		require.Error(t, err, "fx.ValidateApp should return an error on missing invoke dep")
+		errMsg := err.Error()
+		assert.Contains(t, errMsg, "missing dependencies for function")
+		assert.Contains(t, errMsg, "missing type: fx_test.A")
+	})
+	t.Run("no error", func(t *testing.T) {
+		type A struct{}
+		err := ValidateApp(
+			Provide(func() A {
+				return A{}
+			}),
+			Invoke(func(A) {}),
+		)
+		require.NoError(t, err, "fx.ValidateApp should not return an error")
+	})
+
+}
+
 func TestDone(t *testing.T) {
 	done := fxtest.New(t).Done()
 	require.NotNil(t, done, "Got a nil channel.")
