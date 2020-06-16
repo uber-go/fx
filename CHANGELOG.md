@@ -5,7 +5,9 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
-- No changes yet.
+### Added
+- Added `fx.ValidateGraph` which allows graph cycle validation and dependency correctness
+ without running anything. This is useful if `fx.Invoke` has side effects, does I/O, etc.
 
 ## [1.12.0] - 2020-04-09
 ### Added
