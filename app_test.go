@@ -686,7 +686,8 @@ func TestValidateApp(t *testing.T) {
 		type type1 struct{}
 		err := ValidateApp(
 			Provide(func() *type1 {
-				panic("always")
+				t.Error("provide must not be called")
+				return nil
 			}),
 			Invoke(func(*type1) {}),
 		)
@@ -696,10 +697,11 @@ func TestValidateApp(t *testing.T) {
 		type type1 struct{}
 		err := ValidateApp(
 			Provide(func() *type1 {
-				panic("always")
+				t.Error("provide must not be called")
+				return nil
 			}),
 			Invoke(func(*type1) {
-				panic("always")
+				t.Error("invoke must not be called")
 			}),
 		)
 		require.NoError(t, err)

@@ -424,10 +424,8 @@ func (o validateOption) String() string {
 func ValidateApp(opts ...Option) error {
 	opts = append(opts, validate(true))
 	app := New(opts...)
-	if err := app.Err(); err != nil {
-		return err
-	}
-	return nil
+
+	return app.Err()
 }
 
 // New creates and initializes an App, immediately executing any functions
