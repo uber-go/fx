@@ -46,9 +46,9 @@ import (
 //     Connection *Connection `name:"ro"`
 //   }
 //
-//   fx.Provide(func(...) (Result, error) {
+//   fx.Provide(func(...) (result, error) {
 //     conn, err := NewReadOnlyConnection(...)
-//     return Result{Connection: conn}, err
+//     return result{Connection: conn}, err
 //   })
 //
 // Annotated cannot be used with constructors which produce fx.Out objects.
