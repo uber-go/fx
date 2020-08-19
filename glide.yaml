@@ -3,7 +3,7 @@ import:
 - package: go.uber.org/multierr
   version: ^1
 - package: go.uber.org/dig
-  version: ^1.7 # At least version 1.7 is required for fx/dig `Group` support.
+  version: ^1.10 # Required for fx.ValidateApp support.
 testImport:
 - package: github.com/stretchr/testify
   version: ^1
