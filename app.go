@@ -25,6 +25,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"go.uber.org/fx/internal/fxlog"
 	"os"
 	"os/signal"
 	"reflect"
@@ -34,7 +35,7 @@ import (
 	"time"
 
 	"go.uber.org/dig"
-	"go.uber.org/fx/internal/fxlog"
+	//"go.uber.org/fx/internal/fxlog"
 	"go.uber.org/fx/internal/fxreflect"
 	"go.uber.org/fx/internal/lifecycle"
 	"go.uber.org/multierr"
@@ -261,37 +262,37 @@ func (t stopTimeoutOption) String() string {
 	return fmt.Sprintf("fx.StopTimeout(%v)", time.Duration(t))
 }
 
-// Printer is the interface required by Fx's logging backend. It's implemented
+
+
+// Deprecated: Printer is the interface required by Fx's logging backend. It's implemented
 // by most loggers, including the one bundled with the standard library.
-type Printer interface {
-	Printf(string, ...interface{})
-}
+//type Printer interface {
+//	Printf(string, ...interface{})
+//}
 
-// Logger redirects the application's log output to the provided printer.
-func Logger(p Printer) Option {
-	return loggerOption{p}
-}
+// Deprecated: Logger redirects the application's log output to the provided printer.
+//func Logger(p Printer) Option {
+//	return loggerOption{p}
+//}
 
-type loggerOption struct{ p Printer }
-
-func (l loggerOption) apply(app *App) {
-	app.logger = &fxlog.Logger{Printer: l.p}
-	app.lifecycle = &lifecycleWrapper{lifecycle.New(app.logger)}
-}
-
-func (l loggerOption) String() string {
-	return fmt.Sprintf("fx.Logger(%v)", l.p)
-}
+//type loggerOption struct{ p Printer }
+//
+//func (l loggerOption) apply(app *App) {
+//	app.logger = &fxlog.Logger{Printer: l.p}
+//	app.lifecycle = &lifecycleWrapper{lifecycle.New(app.logger)}
+//}
+//
+//func (l loggerOption) String() string {
+//	return fmt.Sprintf("fx.Logger(%v)", l.p)
+//}
 
 // NopLogger disables the application's log output. Note that this makes some
 // failures difficult to debug, since no errors are printed to console.
-var NopLogger = Logger(nopLogger{})
+var NopLogger = fxlog.CoreLogger(nopLogger{})
 
 type nopLogger struct{}
 
-func (l nopLogger) Printf(string, ...interface{}) {
-	return
-}
+func (l nopLogger) Log(fxlog.LogEntry) {}
 
 func (nopLogger) String() string { return "NopLogger" }
 
@@ -335,7 +336,8 @@ type App struct {
 	lifecycle    *lifecycleWrapper
 	provides     []provide
 	invokes      []invoke
-	logger       *fxlog.Logger
+	log          *fxlog.Logger
+	//logger       *fxlog.Logger
 	startTimeout time.Duration
 	stopTimeout  time.Duration
 	errorHooks   []ErrorHandler
@@ -428,16 +430,37 @@ func ValidateApp(opts ...Option) error {
 	return app.Err()
 }
 
+// 3 modes:
+// no options for logging, then instantiate default zap logger
+// logger option with Printer was provided then init zap logger that prints to printer
+// WithLogger option is provided then use provided FxLogger.
+//func WithLogger(logger CoreLogger) Option {
+//	return loggerOption{logger}
+//}
+//
+//type loggerOption struct {
+//	logger CoreLogger
+//}
+//
+//func (l loggerOption) apply(app *App) {
+//	app.log = l.logger
+//}
+//
+//func (l loggerOption) String() string {
+//	return fmt.Sprintf("fx.Logger(%v)", l.p)
+//}
+
 // New creates and initializes an App, immediately executing any functions
 // registered via Invoke options. See the documentation of the App struct for
 // details on the application's initialization, startup, and shutdown logic.
 func New(opts ...Option) *App {
-	logger := fxlog.New()
+	//logger := fxlog.New()
+	logger := fxlog.DefaultLogger()
 	lc := &lifecycleWrapper{lifecycle.New(logger)}
 
 	app := &App{
 		lifecycle:    lc,
-		logger:       logger,
+		log:          logger,
 		startTimeout: DefaultTimeout,
 		stopTimeout:  DefaultTimeout,
 	}
@@ -464,7 +487,11 @@ func New(opts ...Option) *App {
 	app.provide(provide{Target: app.dotGraph, Stack: frames})
 
 	if app.err != nil {
-		app.logger.Printf("Error after options were applied: %v", app.err)
+		app.log.Error("after options were applied", fxlog.LogField{
+			Key:   "error",
+			Value: app.err,
+		})
+		//app.logger.Printf("Error after options were applied: %v", app.err)
 		return app
 	}
 
@@ -618,9 +645,18 @@ func (app *App) provide(p provide) {
 
 	switch {
 	case p.IsSupply:
-		app.logger.PrintSupply(constructor)
+		for _, rtype := range fxreflect.ReturnTypes(constructor) {
+			app.log.Info("supply", fxlog.LogField{"constructor", rtype, nil})
+		}
+		//app.logger.PrintSupply(constructor)
 	default:
-		app.logger.PrintProvide(constructor)
+		for _, rtype := range fxreflect.ReturnTypes(constructor) {
+			app.log.Info("provide",
+				fxlog.LogField{"constructor", rtype, nil},
+				fxlog.LogField{"return value", fxreflect.FuncName(constructor), nil},
+			)
+		}
+		//app.logger.PrintProvide(constructor)
 	}
 
 	if _, ok := constructor.(Option); ok {
@@ -681,7 +717,12 @@ func (app *App) executeInvokes() error {
 	for _, i := range app.invokes {
 		fn := i.Target
 		fname := fxreflect.FuncName(fn)
-		app.logger.Printf("INVOKE\t\t%s", fname)
+		app.log.Info("invoke",fxlog.LogField{
+			Key: "filename",
+			Value: fname,
+			Stack: nil,
+		})
+		//app.logger.Printf("INVOKE\t\t%s", fname)
 
 		var err error
 		if _, ok := fn.(Option); ok {
@@ -693,7 +734,25 @@ func (app *App) executeInvokes() error {
 		}
 
 		if err != nil {
-			app.logger.Printf("fx.Invoke(%v) called from:\n%+vFailed: %v", fname, i.Stack, err)
+			// TODO
+			app.log.Info("fx.Invoke failed",
+				fxlog.LogField{
+					Key:   "filename",
+					Value: fname,
+					Stack: nil,
+				},
+				fxlog.LogField{
+					Key:   "stack",
+					Value: nil,
+					Stack: i.Stack,
+				},
+				fxlog.LogField{
+					Key:   "error",
+					Value: err,
+					Stack: nil,
+				},
+			)
+			//app.logger.Printf("fx.Invoke(%v) called from:\n%+vFailed: %v", fname, i.Stack, err)
 			return err
 		}
 	}
@@ -706,16 +765,29 @@ func (app *App) run(done <-chan os.Signal) {
 	defer cancel()
 
 	if err := app.Start(startCtx); err != nil {
-		app.logger.Fatalf("ERROR\t\tFailed to start: %v", err)
+		app.log.Error("failed to start",fxlog.LogField{
+			Key: "error",
+			Value: err,
+			Stack: nil,
+		})
+		//app.logger.Fatalf("ERROR\t\tFailed to start: %v", err)
+		// TODO: add option to override os.Exit behavior.
+		os.Exit(1)
 	}
 
-	app.logger.PrintSignal(<-done)
+	app.log.Info(strings.ToUpper((<-done).String()))
 
 	stopCtx, cancel := context.WithTimeout(context.Background(), app.StopTimeout())
 	defer cancel()
 
 	if err := app.Stop(stopCtx); err != nil {
-		app.logger.Fatalf("ERROR\t\tFailed to stop cleanly: %v", err)
+		app.log.Error("failed to stop cleanly",fxlog.LogField{
+			Key:"error",
+			Value: err,
+			Stack: nil,
+		})
+		os.Exit(1)
+		//app.logger.Fatalf("ERROR\t\tFailed to stop cleanly: %v", err)
 	}
 }
 
@@ -728,15 +800,27 @@ func (app *App) start(ctx context.Context) error {
 	// Attempt to start cleanly.
 	if err := app.lifecycle.Start(ctx); err != nil {
 		// Start failed, roll back.
-		app.logger.Printf("ERROR\t\tStart failed, rolling back: %v", err)
+		app.log.Error("start failed, rolling back",fxlog.LogField{
+			Key: "error",
+			Value: err,
+			Stack: nil,
+		})
+		//app.logger.Printf("ERROR\t\tStart failed, rolling back: %v", err)
 		if stopErr := app.lifecycle.Stop(ctx); stopErr != nil {
-			app.logger.Printf("ERROR\t\tCouldn't rollback cleanly: %v", stopErr)
+			//app.logger.Printf("ERROR\t\tCouldn't rollback cleanly: %v", stopErr)
+			app.log.Error("couldn't rollback cleanly",fxlog.LogField{
+				Key: "error",
+				Value: stopErr,
+				Stack: nil,
+			})
+
 			return multierr.Append(err, stopErr)
 		}
 		return err
 	}
 
-	app.logger.Printf("RUNNING")
+	//app.logger.Printf("RUNNING")
+	app.log.Info("running")
 	return nil
 }
 

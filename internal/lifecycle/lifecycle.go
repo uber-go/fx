@@ -45,10 +45,13 @@ type Lifecycle struct {
 
 // New constructs a new Lifecycle.
 func New(logger *fxlog.Logger) *Lifecycle {
+//func New(logger *logger) *Lifecycle {
 	if logger == nil {
-		logger = fxlog.New()
+		logger = fxlog.DefaultLogger()
 	}
-	return &Lifecycle{logger: logger}
+
+	return &Lifecycle{logger : logger}
+
 }
 
 // Append adds a Hook to the lifecycle.
@@ -62,7 +65,12 @@ func (l *Lifecycle) Append(hook Hook) {
 func (l *Lifecycle) Start(ctx context.Context) error {
 	for _, hook := range l.hooks {
 		if hook.OnStart != nil {
-			l.logger.Printf("START\t\t%s()", hook.caller)
+			//l.logger.Printf("START\t\t%s()", hook.caller)
+			l.logger.Info("start", fxlog.LogField{
+				Key: "caller",
+				Value: hook.caller,
+				Stack: nil,
+			})
 			if err := hook.OnStart(ctx); err != nil {
 				return err
 			}
@@ -82,7 +90,12 @@ func (l *Lifecycle) Stop(ctx context.Context) error {
 		if hook.OnStop == nil {
 			continue
 		}
-		l.logger.Printf("STOP\t\t%s()", hook.caller)
+		//l.logger.Printf("STOP\t\t%s()", hook.caller)
+		l.logger.Info("stop", fxlog.LogField{
+			Key: "caller",
+			Value: hook.caller,
+			Stack: nil,
+		})
 		if err := hook.OnStop(ctx); err != nil {
 			// For best-effort cleanup, keep going after errors.
 			errs = append(errs, err)

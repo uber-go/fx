@@ -21,68 +21,174 @@
 package fxlog
 
 import (
-	"fmt"
-	"log"
-	"os"
-	"strings"
-
 	"go.uber.org/fx/internal/fxreflect"
+	"go.uber.org/zap"
 )
 
-var _exit = func() { os.Exit(1) }
+//type FxLogger interface {
+//	// Do fatal manually.
+//	Error(msg string)
+//	Info(msg string)
+//	WithFields(fields ...LogField) FxLogger
+//}
 
-// Printer is a formatting printer.
-type Printer interface {
-	Printf(string, ...interface{})
+// LogLevel is the level of logging used by
+type LogLevel int
+
+const (
+	LogLevelInfo = iota
+	LogLevelError
+)
+
+//// ^ or v
+type LogEntry struct {
+	Level LogLevel
+	Message string
+	Fields []LogField
+	Stack string
 }
 
-// New returns a new Logger backed by the standard library's log package.
-func New() *Logger {
-	return &Logger{log.New(os.Stderr, "", log.LstdFlags)}
+// TODO: make internal
+type LogField struct {
+	Key string
+
+	Value interface{}
+	// TODO: stack traces, errors, etc. need to be accounted for
+	Stack fxreflect.Stack
 }
 
-// A Logger writes output to standard error.
-type Logger struct {
-	Printer
+type CoreLogger interface {
+	//Log(level LogLevel, msg string, fields ...LogField)
+	Log(entry LogEntry)
 }
 
-// Printf logs a formatted Fx line.
-func (l *Logger) Printf(format string, v ...interface{}) {
-	l.Printer.Printf(prepend(format), v...)
+var _ CoreLogger = (*coreLogger)(nil)
+
+type coreLogger struct {
+	log *zap.Logger
 }
 
-// PrintProvide logs a type provided into the dig.Container.
-func (l *Logger) PrintProvide(t interface{}) {
-	for _, rtype := range fxreflect.ReturnTypes(t) {
-		l.Printf("PROVIDE\t%s <= %s", rtype, fxreflect.FuncName(t))
+
+func (c *coreLogger) encodeFields(fields []LogField) []zap.Field {
+	var fs []zap.Field
+	for _, field := range fields {
+		f := zap.Field{
+			Key: field.Key,
+			Interface: field.Value,
+		}
+		if field.Stack != nil {
+			f.Interface = field.Stack
+		}
+		fs = append(fs, f)
+	}
+
+	return fs
+}
+
+func (c *coreLogger) Log(entry LogEntry) {
+	switch entry.Level {
+	case LogLevelInfo:
+		c.log.Info(entry.Message, c.encodeFields(entry.Fields)...)
+	case LogLevelError:
+		c.log.Error(entry.Message, c.encodeFields(entry.Fields)...)
 	}
 }
 
-// PrintSupply logs a type supplied directly into the dig.Container
-// by the given constructor function.
-func (l *Logger) PrintSupply(constructor interface{}) {
-	for _, rtype := range fxreflect.ReturnTypes(constructor) {
-		l.Printf("SUPPLY\t%s", rtype)
+// Take printer as argument, maybe.
+func DefaultLogger() *Logger {
+	log, _ := zap.NewProduction()
+
+	return &Logger{
+		core: &coreLogger{
+			log: log,
+		},
 	}
 }
 
-// PrintSignal logs an os.Signal.
-func (l *Logger) PrintSignal(signal os.Signal) {
-	l.Printf(strings.ToUpper(signal.String()))
+type Logger struct{
+	core CoreLogger
 }
 
-// Panic logs an Fx line then panics.
-func (l *Logger) Panic(err error) {
-	l.Printer.Printf(prepend(err.Error()))
-	panic(err)
+func (l *Logger) Info(msg string, fields ...LogField) {
+	//l.core.Log(LogLevelInfo, msg, fields...)
+	l.core.Log(LogEntry{
+		Level:   LogLevelInfo,
+		Message: msg,
+		Fields:  fields,
+		Stack:   "",
+	})
+}
+func (l *Logger) Error(msg string, fields ...LogField) {
+	l.core.Log(LogEntry{
+		Level:   LogLevelError,
+		Message: msg,
+		Fields:  fields,
+		Stack:   "",
+	})
 }
 
-// Fatalf logs an Fx line then fatals.
-func (l *Logger) Fatalf(format string, v ...interface{}) {
-	l.Printer.Printf(prepend(format), v...)
-	_exit()
-}
+//func (*Logger) PrintProvide(x interface{}) {
+//
+//}
+//
+//func (*Logger) PrintSupply(x interface{}) {
+//
+//}
 
-func prepend(str string) string {
-	return fmt.Sprintf("[Fx] %s", str)
-}
+//var _exit = func() { os.Exit(1) }
+//
+//// Printer is a formatting printer.
+//type Printer interface {
+//	Printf(string, ...interface{})
+//}
+//
+//// New returns a new Logger backed by the standard library's log package.
+//func New() *Logger {
+//	return &Logger{log.New(os.Stderr, "", log.LstdFlags)}
+//}
+//
+//// A Logger writes output to standard error.
+//type Logger struct {
+//	Printer
+//}
+//
+//// Printf logs a formatted Fx line.
+//func (l *Logger) Printf(format string, v ...interface{}) {
+//	l.Printer.Printf(prepend(format), v...)
+//}
+//
+//// PrintProvide logs a type provided into the dig.Container.
+//func (l *Logger) PrintProvide(t interface{}) {
+//	for _, rtype := range fxreflect.ReturnTypes(t) {
+//		l.Printf("PROVIDE\t%s <= %s", rtype, fxreflect.FuncName(t))
+//	}
+//}
+//
+//// PrintSupply logs a type supplied directly into the dig.Container
+//// by the given constructor function.
+//func (l *Logger) PrintSupply(constructor interface{}) {
+//	for _, rtype := range fxreflect.ReturnTypes(constructor) {
+//		l.Printf("SUPPLY\t%s", rtype)
+//	}
+//}
+//
+//// PrintSignal logs an os.Signal.
+//func (l *Logger) PrintSignal(signal os.Signal) {
+//	l.Printf(strings.ToUpper(signal.String()))
+//}
+//
+//// Panic logs an Fx line then panics.
+////func (l *Logger) Panic(err error) {
+////	l.Printer.Printf(prepend(err.Error()))
+////	panic(err)
+////}
+//
+//// Fatalf logs an Fx line then fatals.
+////func (l *Logger) Fatalf(format string, v ...interface{}) {
+////	l.Printer.Printf(prepend(format), v...)
+////	_exit()
+////}
+//
+//func prepend(str string) string {
+//	return fmt.Sprintf("[Fx] %s", str)
+//}
