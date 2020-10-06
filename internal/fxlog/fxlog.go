@@ -21,7 +21,6 @@
 package fxlog
 
 import (
-	"go.uber.org/fx/internal/fxreflect"
 	"go.uber.org/zap"
 )
 
@@ -40,7 +39,6 @@ const (
 	LogLevelError
 )
 
-//// ^ or v
 type LogEntry struct {
 	Level LogLevel
 	Message string
@@ -48,17 +46,22 @@ type LogEntry struct {
 	Stack string
 }
 
-// TODO: make internal
+func (l LogEntry) WithStack(stack string) LogEntry {
+	l.Stack = stack
+
+	return l
+}
+
+func (l LogEntry) Write(logger *Logger) {
+	logger.core.Log(l)
+}
+
 type LogField struct {
 	Key string
-
 	Value interface{}
-	// TODO: stack traces, errors, etc. need to be accounted for
-	Stack fxreflect.Stack
 }
 
 type CoreLogger interface {
-	//Log(level LogLevel, msg string, fields ...LogField)
 	Log(entry LogEntry)
 }
 
@@ -68,16 +71,12 @@ type coreLogger struct {
 	log *zap.Logger
 }
 
-
-func (c *coreLogger) encodeFields(fields []LogField) []zap.Field {
+func EncodeFields(fields []LogField) []zap.Field {
 	var fs []zap.Field
 	for _, field := range fields {
 		f := zap.Field{
 			Key: field.Key,
 			Interface: field.Value,
-		}
-		if field.Stack != nil {
-			f.Interface = field.Stack
 		}
 		fs = append(fs, f)
 	}
@@ -88,9 +87,9 @@ func (c *coreLogger) encodeFields(fields []LogField) []zap.Field {
 func (c *coreLogger) Log(entry LogEntry) {
 	switch entry.Level {
 	case LogLevelInfo:
-		c.log.Info(entry.Message, c.encodeFields(entry.Fields)...)
+		c.log.Info(entry.Message, EncodeFields(entry.Fields)...)
 	case LogLevelError:
-		c.log.Error(entry.Message, c.encodeFields(entry.Fields)...)
+		c.log.Error(entry.Message, EncodeFields(entry.Fields)...)
 	}
 }
 
@@ -109,22 +108,21 @@ type Logger struct{
 	core CoreLogger
 }
 
-func (l *Logger) Info(msg string, fields ...LogField) {
-	//l.core.Log(LogLevelInfo, msg, fields...)
-	l.core.Log(LogEntry{
-		Level:   LogLevelInfo,
+func Info(msg string, fields ...LogField) LogEntry {
+	return LogEntry{
+		Level: LogLevelInfo,
 		Message: msg,
-		Fields:  fields,
-		Stack:   "",
-	})
+		Fields: fields,
+	}
 }
-func (l *Logger) Error(msg string, fields ...LogField) {
-	l.core.Log(LogEntry{
-		Level:   LogLevelError,
+
+func Error(msg string, fields ...LogField) LogEntry {
+	return LogEntry{
+		Level: LogLevelError,
 		Message: msg,
-		Fields:  fields,
-		Stack:   "",
-	})
+		Fields: fields,
+	}
+
 }
 
 //func (*Logger) PrintProvide(x interface{}) {

@@ -337,7 +337,6 @@ type App struct {
 	provides     []provide
 	invokes      []invoke
 	log          *fxlog.Logger
-	//logger       *fxlog.Logger
 	startTimeout time.Duration
 	stopTimeout  time.Duration
 	errorHooks   []ErrorHandler
@@ -487,10 +486,17 @@ func New(opts ...Option) *App {
 	app.provide(provide{Target: app.dotGraph, Stack: frames})
 
 	if app.err != nil {
-		app.log.Error("after options were applied", fxlog.LogField{
-			Key:   "error",
-			Value: app.err,
-		})
+		fxlog.Info(
+			"error encountered while applying options",
+			fxlog.LogField{
+				Key:   "error",
+				Value: app.err,
+			}).Write(app.log)
+		//le := &fxlog.LogEntry{
+		//	"error encountered while applying options", "", fxlog.LogField{
+		//	Key:   "error",
+		//	Value: app.err,
+		//}}
 		//app.logger.Printf("Error after options were applied: %v", app.err)
 		return app
 	}
@@ -646,14 +652,15 @@ func (app *App) provide(p provide) {
 	switch {
 	case p.IsSupply:
 		for _, rtype := range fxreflect.ReturnTypes(constructor) {
-			app.log.Info("supply", fxlog.LogField{"constructor", rtype, nil})
+
+			fxlog.Info("supply", fxlog.LogField{"constructor", rtype})
 		}
 		//app.logger.PrintSupply(constructor)
 	default:
 		for _, rtype := range fxreflect.ReturnTypes(constructor) {
-			app.log.Info("provide",
-				fxlog.LogField{"constructor", rtype, nil},
-				fxlog.LogField{"return value", fxreflect.FuncName(constructor), nil},
+			fxlog.Info("provide",
+				fxlog.LogField{"constructor", rtype},
+				fxlog.LogField{"return value", fxreflect.FuncName(constructor)},
 			)
 		}
 		//app.logger.PrintProvide(constructor)
@@ -717,11 +724,10 @@ func (app *App) executeInvokes() error {
 	for _, i := range app.invokes {
 		fn := i.Target
 		fname := fxreflect.FuncName(fn)
-		app.log.Info("invoke",fxlog.LogField{
+		fxlog.Info("invoke", fxlog.LogField{
 			Key: "filename",
 			Value: fname,
-			Stack: nil,
-		})
+		}).Write(app.log)
 		//app.logger.Printf("INVOKE\t\t%s", fname)
 
 		var err error
@@ -734,24 +740,21 @@ func (app *App) executeInvokes() error {
 		}
 
 		if err != nil {
-			// TODO
-			app.log.Info("fx.Invoke failed",
+			fxlog.Error(
+				"fx.Invoke failed",
 				fxlog.LogField{
 					Key:   "filename",
 					Value: fname,
-					Stack: nil,
 				},
 				fxlog.LogField{
 					Key:   "stack",
 					Value: nil,
-					Stack: i.Stack,
 				},
 				fxlog.LogField{
 					Key:   "error",
 					Value: err,
-					Stack: nil,
 				},
-			)
+			).WithStack(i.Stack.String()).Write(app.log)
 			//app.logger.Printf("fx.Invoke(%v) called from:\n%+vFailed: %v", fname, i.Stack, err)
 			return err
 		}
@@ -765,27 +768,26 @@ func (app *App) run(done <-chan os.Signal) {
 	defer cancel()
 
 	if err := app.Start(startCtx); err != nil {
-		app.log.Error("failed to start",fxlog.LogField{
+		fxlog.Error("failed to start", fxlog.LogField{
 			Key: "error",
 			Value: err,
-			Stack: nil,
-		})
+		}).Write(app.log)
 		//app.logger.Fatalf("ERROR\t\tFailed to start: %v", err)
 		// TODO: add option to override os.Exit behavior.
 		os.Exit(1)
 	}
 
-	app.log.Info(strings.ToUpper((<-done).String()))
+	fxlog.Info(strings.ToUpper((<-done).String())).Write(app.log)
 
 	stopCtx, cancel := context.WithTimeout(context.Background(), app.StopTimeout())
 	defer cancel()
 
 	if err := app.Stop(stopCtx); err != nil {
-		app.log.Error("failed to stop cleanly",fxlog.LogField{
+		fxlog.Error("failed to stop cleanly",
+			fxlog.LogField{
 			Key:"error",
 			Value: err,
-			Stack: nil,
-		})
+		}).Write(app.log)
 		os.Exit(1)
 		//app.logger.Fatalf("ERROR\t\tFailed to stop cleanly: %v", err)
 	}
@@ -800,19 +802,26 @@ func (app *App) start(ctx context.Context) error {
 	// Attempt to start cleanly.
 	if err := app.lifecycle.Start(ctx); err != nil {
 		// Start failed, roll back.
-		app.log.Error("start failed, rolling back",fxlog.LogField{
+		//app.log.Error("start failed, rolling back","", fxlog.LogField{
+		//	Key: "error",
+		//	Value: err,
+		//})
+		fxlog.Info("start failed, rolling back", fxlog.LogField{
 			Key: "error",
 			Value: err,
-			Stack: nil,
-		})
+		}).Write(app.log)
 		//app.logger.Printf("ERROR\t\tStart failed, rolling back: %v", err)
 		if stopErr := app.lifecycle.Stop(ctx); stopErr != nil {
 			//app.logger.Printf("ERROR\t\tCouldn't rollback cleanly: %v", stopErr)
-			app.log.Error("couldn't rollback cleanly",fxlog.LogField{
+			//app.log.Error("couldn't rollback cleanly","", fxlog.LogField{
+			//	Key: "error",
+			//	Value: stopErr,
+			//})
+
+			fxlog.Info("couldn't rollback cleanly", fxlog.LogField{
 				Key: "error",
 				Value: stopErr,
-				Stack: nil,
-			})
+			}).Write(app.log)
 
 			return multierr.Append(err, stopErr)
 		}
@@ -820,7 +829,8 @@ func (app *App) start(ctx context.Context) error {
 	}
 
 	//app.logger.Printf("RUNNING")
-	app.log.Info("running")
+	fxlog.Info("running").Write(app.log)
+	//app.log.Info("running", "")
 	return nil
 }
 
