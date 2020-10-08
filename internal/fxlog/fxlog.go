@@ -22,56 +22,52 @@ package fxlog
 
 import (
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
+	"os"
 )
 
-//type FxLogger interface {
-//	// Do fatal manually.
-//	Error(msg string)
-//	Info(msg string)
-//	WithFields(fields ...LogField) FxLogger
-//}
-
-// LogLevel is the level of logging used by
+// LogLevel is the level of logging used by Core.
 type LogLevel int
 
 const (
-	LogLevelInfo = iota
-	LogLevelError
+	InfoLevel = iota
+	ErrorLevel
 )
 
-type LogEntry struct {
+// Entry is an entry
+type Entry struct {
 	Level LogLevel
 	Message string
-	Fields []LogField
+	Fields []Field
 	Stack string
 }
 
-func (l LogEntry) WithStack(stack string) LogEntry {
-	l.Stack = stack
+func (e Entry) WithStack(stack string) Entry {
+	e.Stack = stack
 
-	return l
+	return e
 }
 
-func (l LogEntry) Write(logger *Logger) {
-	logger.core.Log(l)
+func (e Entry) Write(logger *Logger) {
+	logger.Core.Log(e)
 }
 
-type LogField struct {
+type Field struct {
 	Key string
 	Value interface{}
 }
 
-type CoreLogger interface {
-	Log(entry LogEntry)
+type Core interface {
+	Log(entry Entry)
 }
 
-var _ CoreLogger = (*coreLogger)(nil)
+var _ Core = (*LogCore)(nil)
 
-type coreLogger struct {
-	log *zap.Logger
+type LogCore struct {
+	Zlog *zap.Logger
 }
 
-func EncodeFields(fields []LogField) []zap.Field {
+func EncodeFields(fields []Field) []zap.Field {
 	var fs []zap.Field
 	for _, field := range fields {
 		f := zap.Field{
@@ -84,109 +80,48 @@ func EncodeFields(fields []LogField) []zap.Field {
 	return fs
 }
 
-func (c *coreLogger) Log(entry LogEntry) {
+func (c *LogCore) Log(entry Entry) {
 	switch entry.Level {
-	case LogLevelInfo:
-		c.log.Info(entry.Message, EncodeFields(entry.Fields)...)
-	case LogLevelError:
-		c.log.Error(entry.Message, EncodeFields(entry.Fields)...)
+	case InfoLevel:
+		c.Zlog.Info(entry.Message, EncodeFields(entry.Fields)...)
+	case ErrorLevel:
+		c.Zlog.Error(entry.Message, EncodeFields(entry.Fields)...)
 	}
 }
 
 // Take printer as argument, maybe.
 func DefaultLogger() *Logger {
-	log, _ := zap.NewProduction()
+	zcore := zapcore.NewCore(
+		zapcore.NewConsoleEncoder(zap.NewProductionEncoderConfig()),
+		zapcore.Lock(os.Stderr),
+		zap.NewAtomicLevel(),
+		)
+	log := zap.New(zcore)
 
 	return &Logger{
-		core: &coreLogger{
-			log: log,
+		Core: &LogCore{
+			Zlog: log,
 		},
 	}
 }
 
 type Logger struct{
-	core CoreLogger
+	Core Core
 }
 
-func Info(msg string, fields ...LogField) LogEntry {
-	return LogEntry{
-		Level: LogLevelInfo,
+func Info(msg string, fields ...Field) Entry {
+	return Entry{
+		Level:   InfoLevel,
 		Message: msg,
-		Fields: fields,
+		Fields:  fields,
 	}
 }
 
-func Error(msg string, fields ...LogField) LogEntry {
-	return LogEntry{
-		Level: LogLevelError,
+func Error(msg string, fields ...Field) Entry {
+	return Entry{
+		Level:   ErrorLevel,
 		Message: msg,
-		Fields: fields,
+		Fields:  fields,
 	}
 
 }
-
-//func (*Logger) PrintProvide(x interface{}) {
-//
-//}
-//
-//func (*Logger) PrintSupply(x interface{}) {
-//
-//}
-
-//var _exit = func() { os.Exit(1) }
-//
-//// Printer is a formatting printer.
-//type Printer interface {
-//	Printf(string, ...interface{})
-//}
-//
-//// New returns a new Logger backed by the standard library's log package.
-//func New() *Logger {
-//	return &Logger{log.New(os.Stderr, "", log.LstdFlags)}
-//}
-//
-//// A Logger writes output to standard error.
-//type Logger struct {
-//	Printer
-//}
-//
-//// Printf logs a formatted Fx line.
-//func (l *Logger) Printf(format string, v ...interface{}) {
-//	l.Printer.Printf(prepend(format), v...)
-//}
-//
-//// PrintProvide logs a type provided into the dig.Container.
-//func (l *Logger) PrintProvide(t interface{}) {
-//	for _, rtype := range fxreflect.ReturnTypes(t) {
-//		l.Printf("PROVIDE\t%s <= %s", rtype, fxreflect.FuncName(t))
-//	}
-//}
-//
-//// PrintSupply logs a type supplied directly into the dig.Container
-//// by the given constructor function.
-//func (l *Logger) PrintSupply(constructor interface{}) {
-//	for _, rtype := range fxreflect.ReturnTypes(constructor) {
-//		l.Printf("SUPPLY\t%s", rtype)
-//	}
-//}
-//
-//// PrintSignal logs an os.Signal.
-//func (l *Logger) PrintSignal(signal os.Signal) {
-//	l.Printf(strings.ToUpper(signal.String()))
-//}
-//
-//// Panic logs an Fx line then panics.
-////func (l *Logger) Panic(err error) {
-////	l.Printer.Printf(prepend(err.Error()))
-////	panic(err)
-////}
-//
-//// Fatalf logs an Fx line then fatals.
-////func (l *Logger) Fatalf(format string, v ...interface{}) {
-////	l.Printer.Printf(prepend(format), v...)
-////	_exit()
-////}
-//
-//func prepend(str string) string {
-//	return fmt.Sprintf("[Fx] %s", str)
-//}
