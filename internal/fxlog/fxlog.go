@@ -23,11 +23,11 @@ package fxlog
 import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
-	"os"
+	"io"
 )
 
-// LogLevel is the level of logging used by Core.
-type LogLevel int
+// Level is the level of logging used by Logger.
+type Level int
 
 const (
 	InfoLevel = iota
@@ -36,10 +36,10 @@ const (
 
 // Entry is an entry
 type Entry struct {
-	Level LogLevel
+	Level   Level
 	Message string
-	Fields []Field
-	Stack string
+	Fields  []Field
+	Stack   string
 }
 
 func (e Entry) WithStack(stack string) Entry {
@@ -48,8 +48,8 @@ func (e Entry) WithStack(stack string) Entry {
 	return e
 }
 
-func (e Entry) Write(logger *Logger) {
-	logger.Core.Log(e)
+func (e Entry) Write(logger Logger) {
+	logger.Log(e)
 }
 
 type Field struct {
@@ -57,17 +57,17 @@ type Field struct {
 	Value interface{}
 }
 
-type Core interface {
+type Logger interface {
 	Log(entry Entry)
 }
 
-var _ Core = (*LogCore)(nil)
+var _ Logger = (*zapCore)(nil)
 
-type LogCore struct {
-	Zlog *zap.Logger
+type zapCore struct {
+	zapLogger *zap.Logger
 }
 
-func EncodeFields(fields []Field) []zap.Field {
+func encodeFields(fields []Field) []zap.Field {
 	var fs []zap.Field
 	for _, field := range fields {
 		f := zap.Field{
@@ -80,34 +80,33 @@ func EncodeFields(fields []Field) []zap.Field {
 	return fs
 }
 
-func (c *LogCore) Log(entry Entry) {
+func (c *zapCore) Log(entry Entry) {
 	switch entry.Level {
 	case InfoLevel:
-		c.Zlog.Info(entry.Message, EncodeFields(entry.Fields)...)
+		c.zapLogger.Info(entry.Message, encodeFields(entry.Fields)...)
 	case ErrorLevel:
-		c.Zlog.Error(entry.Message, EncodeFields(entry.Fields)...)
+		c.zapLogger.Error(entry.Message, encodeFields(entry.Fields)...)
 	}
 }
 
-// Take printer as argument, maybe.
-func DefaultLogger() *Logger {
+// DefaultLogger constructs a Logger out of io.Writer.
+func DefaultLogger(w io.Writer) Logger {
+	ws := zapcore.AddSync(w)
 	zcore := zapcore.NewCore(
 		zapcore.NewConsoleEncoder(zap.NewProductionEncoderConfig()),
-		zapcore.Lock(os.Stderr),
+		zapcore.Lock(ws),
 		zap.NewAtomicLevel(),
-		)
+	)
 	log := zap.New(zcore)
 
-	return &Logger{
-		Core: &LogCore{
-			Zlog: log,
-		},
-	}
+	return &zapCore{
+			zapLogger: log,
+		}
 }
 
-type Logger struct{
-	Core Core
-}
+//type Logger struct{
+//	Logger Logger
+//}
 
 func Info(msg string, fields ...Field) Entry {
 	return Entry{

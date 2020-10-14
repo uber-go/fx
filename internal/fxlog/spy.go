@@ -51,7 +51,7 @@ func (s *Spy) String() string {
 		return ""
 	}
 
-	// trailing newline because all Zlog entries should have a newline
+	// trailing newline because all zapLogger entries should have a newline
 	// after them.
 	return strings.Join(s.msgs, "\n") + "\n"
 }

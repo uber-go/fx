@@ -22,6 +22,7 @@ package lifecycle
 
 import (
 	"context"
+	"os"
 
 	"go.uber.org/fx/internal/fxlog"
 	"go.uber.org/fx/internal/fxreflect"
@@ -38,15 +39,15 @@ type Hook struct {
 
 // Lifecycle coordinates application lifecycle hooks.
 type Lifecycle struct {
-	logger     *fxlog.Logger
+	logger     fxlog.Logger
 	hooks      []Hook
 	numStarted int
 }
 
 // New constructs a new Lifecycle.
-func New(logger *fxlog.Logger) *Lifecycle {
+func New(logger fxlog.Logger) *Lifecycle {
 	if logger == nil {
-		logger = fxlog.DefaultLogger()
+		logger = fxlog.DefaultLogger(os.Stderr)
 	}
 
 	return &Lifecycle{logger : logger}

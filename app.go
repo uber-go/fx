@@ -26,8 +26,6 @@ import (
 	"errors"
 	"fmt"
 	"go.uber.org/fx/internal/fxlog"
-	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
 	"io"
 	"os"
 	"os/signal"
@@ -280,21 +278,21 @@ func Logger(p Printer) Option {
 
 type loggerOption struct{ p Printer }
 
-type printerWrapper interface {
-	io.Writer
-}
+//type printerWrapper interface {
+//	io.Writer
+//}
 
-type pw struct {
+type PrinterWrapper struct {
 	p Printer
 }
 
-func NewPrinter(p Printer) *pw {
-	return &pw{
+func NewPrinter(p Printer) io.Writer {
+	return &PrinterWrapper{
 		p: p,
 	}
 }
 
-func (p *pw) Write(b []byte) (n int, err error) {
+func (p *PrinterWrapper) Write(b []byte) (n int, err error) {
 	p.p.Printf(string(b))
 
 	return len(b), nil
@@ -302,20 +300,7 @@ func (p *pw) Write(b []byte) (n int, err error) {
 
 func (l loggerOption) apply(app *App) {
 	np := NewPrinter(l.p)
-
-	zcore := zapcore.NewCore(
-		zapcore.NewConsoleEncoder(zap.NewProductionEncoderConfig()),
-		zapcore.Lock(zapcore.AddSync(np)),
-		zap.NewAtomicLevel(),
-	)
-	log := zap.New(zcore)
-
-	app.log = &fxlog.Logger{
-		Core:&fxlog.LogCore{
-			Zlog:log,
-		},
-	}
-
+	app.log = fxlog.DefaultLogger(np)
 	app.lifecycle = &lifecycleWrapper{lifecycle.New(app.log)}
 }
 
@@ -325,7 +310,7 @@ func (l loggerOption) String() string {
 
 // NopLogger disables the application's log output. Note that this makes some
 // failures difficult to debug, since no errors are printed to console.
-var NopLogger = fxlog.Core(nopLogger{})
+var NopLogger = fxlog.Logger(nopLogger{})
 
 type nopLogger struct{}
 
@@ -373,7 +358,7 @@ type App struct {
 	lifecycle    *lifecycleWrapper
 	provides     []provide
 	invokes      []invoke
-	log          *fxlog.Logger
+	log          fxlog.Logger
 	startTimeout time.Duration
 	stopTimeout  time.Duration
 	errorHooks   []ErrorHandler
@@ -470,12 +455,12 @@ func ValidateApp(opts ...Option) error {
 // no options for logging, then instantiate default zap logger
 // logger option with Printer was provided then init zap logger that prints to printer
 // WithLogger option is provided then use provided FxLogger.
-//func WithLogger(logger Core) Option {
+//func WithLogger(logger Logger) Option {
 //	return loggerOption{logger}
 //}
 //
 //type loggerOption struct {
-//	logger Core
+//	logger Logger
 //}
 //
 //func (l loggerOption) apply(app *App) {
@@ -491,7 +476,7 @@ func ValidateApp(opts ...Option) error {
 // details on the application's initialization, startup, and shutdown logic.
 func New(opts ...Option) *App {
 	//logger := fxlog.New()
-	logger := fxlog.DefaultLogger()
+	logger := fxlog.DefaultLogger(os.Stderr)
 	lc := &lifecycleWrapper{lifecycle.New(logger)}
 
 	app := &App{
