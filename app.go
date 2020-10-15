@@ -25,8 +25,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"go.uber.org/fx/internal/fxlog"
-	"io"
 	"os"
 	"os/signal"
 	"reflect"
@@ -36,10 +34,11 @@ import (
 	"time"
 
 	"go.uber.org/dig"
-	//"go.uber.org/fx/internal/fxlog"
+	"go.uber.org/fx/internal/fxlog"
 	"go.uber.org/fx/internal/fxreflect"
 	"go.uber.org/fx/internal/lifecycle"
 	"go.uber.org/multierr"
+	"go.uber.org/zap/zapcore"
 )
 
 // DefaultTimeout is the default timeout for starting or stopping an
@@ -263,43 +262,64 @@ func (t stopTimeoutOption) String() string {
 	return fmt.Sprintf("fx.StopTimeout(%v)", time.Duration(t))
 }
 
+func WithLogger(l fxlog.Logger) Option {
+	return WithLogger(l)
+}
+
+type withLoggerOption struct { l fxlog.Logger}
+
+func (l withLoggerOption) apply(app *App) {
+	app.log = l.l
+}
+
+func (l withLoggerOption) String() string {
+	return fmt.Sprintf("fx.WithLogger(%v)", l.l)
+}
 
 
-// Deprecated: Printer is the interface required by Fx's logging backend. It's implemented
+// Printer is the interface required by Fx's logging backend. It's implemented
 // by most loggers, including the one bundled with the standard library.
+//
+// Deprecated: Implement fxlog.Logger interface instead.
 type Printer interface {
 	Printf(string, ...interface{})
 }
 
-// Deprecated: Logger redirects the application's log output to the provided printer.
+// Logger redirects the application's log output to the provided printer.
+//
+// Deprecated: Use WithLogger instead.
 func Logger(p Printer) Option {
 	return loggerOption{p}
 }
 
 type loggerOption struct{ p Printer }
 
-//type printerWrapper interface {
-//	io.Writer
-//}
-
-type PrinterWrapper struct {
+type printerWrapper struct {
 	p Printer
 }
 
-func NewPrinter(p Printer) io.Writer {
-	return &PrinterWrapper{
+// NewPrinter returns an implementation of zapcore.WriteSyncer
+// used to support Logger option which implements Printer
+// interface.
+func NewPrinter(p Printer) zapcore.WriteSyncer {
+	return &printerWrapper{
 		p: p,
 	}
 }
 
-func (p *PrinterWrapper) Write(b []byte) (n int, err error) {
+func (p *printerWrapper) Write(b []byte) (n int, err error) {
 	p.p.Printf(string(b))
 
 	return len(b), nil
 }
 
+func (p *printerWrapper) Sync() error {
+	return nil
+}
+
 func (l loggerOption) apply(app *App) {
 	np := NewPrinter(l.p)
+
 	app.log = fxlog.DefaultLogger(np)
 	app.lifecycle = &lifecycleWrapper{lifecycle.New(app.log)}
 }
@@ -475,7 +495,6 @@ func ValidateApp(opts ...Option) error {
 // registered via Invoke options. See the documentation of the App struct for
 // details on the application's initialization, startup, and shutdown logic.
 func New(opts ...Option) *App {
-	//logger := fxlog.New()
 	logger := fxlog.DefaultLogger(os.Stderr)
 	lc := &lifecycleWrapper{lifecycle.New(logger)}
 
@@ -514,12 +533,6 @@ func New(opts ...Option) *App {
 				Key:   "error",
 				Value: app.err,
 			}).Write(app.log)
-		//le := &fxlog.Entry{
-		//	"error encountered while applying options", "", fxlog.Field{
-		//	Key:   "error",
-		//	Value: app.err,
-		//}}
-		//app.logger.Printf("Error after options were applied: %v", app.err)
 		return app
 	}
 
@@ -818,7 +831,7 @@ func (app *App) start(ctx context.Context) error {
 			Value: err,
 		}).Write(app.log)
 		if stopErr := app.lifecycle.Stop(ctx); stopErr != nil {
-			fxlog.Info("couldn't rollback cleanly", fxlog.Field{
+			fxlog.Info("could not rollback cleanly", fxlog.Field{
 				Key: "error",
 				Value: stopErr,
 			}).Write(app.log)

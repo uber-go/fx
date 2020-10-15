@@ -23,7 +23,6 @@ package fxlog
 import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
-	"io"
 )
 
 // Level is the level of logging used by Logger.
@@ -61,52 +60,44 @@ type Logger interface {
 	Log(entry Entry)
 }
 
-var _ Logger = (*zapCore)(nil)
+var _ Logger = (*zapLogger)(nil)
 
-type zapCore struct {
-	zapLogger *zap.Logger
+type zapLogger struct {
+	logger *zap.Logger
 }
 
 func encodeFields(fields []Field) []zap.Field {
 	var fs []zap.Field
 	for _, field := range fields {
-		f := zap.Field{
-			Key: field.Key,
-			Interface: field.Value,
-		}
-		fs = append(fs, f)
+		fs = append(fs, zap.Any(field.Key, field.Value))
 	}
 
 	return fs
 }
 
-func (c *zapCore) Log(entry Entry) {
+func (c *zapLogger) Log(entry Entry) {
 	switch entry.Level {
 	case InfoLevel:
-		c.zapLogger.Info(entry.Message, encodeFields(entry.Fields)...)
+		c.logger.Info(entry.Message, encodeFields(entry.Fields)...)
 	case ErrorLevel:
-		c.zapLogger.Error(entry.Message, encodeFields(entry.Fields)...)
+		c.logger.Error(entry.Message, encodeFields(entry.Fields)...)
 	}
 }
 
 // DefaultLogger constructs a Logger out of io.Writer.
-func DefaultLogger(w io.Writer) Logger {
-	ws := zapcore.AddSync(w)
+func DefaultLogger(ws zapcore.WriteSyncer) Logger {
+	//ws := zapcore.AddSync(w)
 	zcore := zapcore.NewCore(
-		zapcore.NewConsoleEncoder(zap.NewProductionEncoderConfig()),
+		zapcore.NewJSONEncoder(zap.NewProductionEncoderConfig()),
 		zapcore.Lock(ws),
 		zap.NewAtomicLevel(),
 	)
 	log := zap.New(zcore)
 
-	return &zapCore{
-			zapLogger: log,
+	return &zapLogger{
+			logger: log,
 		}
 }
-
-//type Logger struct{
-//	Logger Logger
-//}
 
 func Info(msg string, fields ...Field) Entry {
 	return Entry{
