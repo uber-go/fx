@@ -33,13 +33,13 @@ import (
 type Priority int
 
 const (
-	// PriorityLowest hooks are executed last.
+	// PriorityLowest hooks are started last and stoppped first.
 	// For example, hooks that start serving network traffic might wish to execute
 	// only after all other application components are initialized.
 	PriorityLowest Priority = -1000
 	// PriorityNormal is the default priority level
 	PriorityNormal = 0
-	// PriorityHighest hooks are executed first.
+	// PriorityHighest hooks are started first and stopped last.
 	PriorityHighest = 1000
 )
 
