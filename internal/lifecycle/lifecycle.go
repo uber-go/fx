@@ -70,15 +70,17 @@ func New(logger *fxlog.Logger) *Lifecycle {
 // Append adds a Hook to the lifecycle.
 func (l *Lifecycle) Append(hook Hook) {
 	hook.caller = fxreflect.Caller()
+	// Can be replaced with priority double ended queue,
+	// but is it really necessary?
 	l.hooks = append(l.hooks, hook)
+	sort.SliceStable(l.hooks, func(i, j int) bool {
+		return l.hooks[i].Priority > l.hooks[j].Priority
+	})
 }
 
 // Start runs all OnStart hooks, returning immediately if it encounters an
 // error.
 func (l *Lifecycle) Start(ctx context.Context) error {
-	sort.SliceStable(l.hooks, func(i, j int) bool {
-		return l.hooks[i].Priority > l.hooks[j].Priority
-	})
 	for _, hook := range l.hooks {
 		if hook.OnStart != nil {
 			l.logger.Printf("START\t\t%s()", hook.caller)
