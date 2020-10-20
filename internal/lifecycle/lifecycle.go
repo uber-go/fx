@@ -22,18 +22,34 @@ package lifecycle
 
 import (
 	"context"
+	"sort"
 
 	"go.uber.org/fx/internal/fxlog"
 	"go.uber.org/fx/internal/fxreflect"
 	"go.uber.org/multierr"
 )
 
+// Priority of a Hook in the Lifecycle queue
+type Priority int
+
+const (
+	// PriorityLowest hooks are executed last.
+	// For example, hooks that start serving network traffic might wish to execute
+	// only after all other application components are initialized.
+	PriorityLowest Priority = -1000
+	// PriorityNormal is the default priority level
+	PriorityNormal = 0
+	// PriorityHighest hooks are executed first.
+	PriorityHighest = 1000
+)
+
 // A Hook is a pair of start and stop callbacks, either of which can be nil,
 // plus a string identifying the supplier of the hook.
 type Hook struct {
-	OnStart func(context.Context) error
-	OnStop  func(context.Context) error
-	caller  string
+	OnStart  func(context.Context) error
+	OnStop   func(context.Context) error
+	Priority Priority
+	caller   string
 }
 
 // Lifecycle coordinates application lifecycle hooks.
@@ -60,6 +76,9 @@ func (l *Lifecycle) Append(hook Hook) {
 // Start runs all OnStart hooks, returning immediately if it encounters an
 // error.
 func (l *Lifecycle) Start(ctx context.Context) error {
+	sort.SliceStable(l.hooks, func(i, j int) bool {
+		return l.hooks[i].Priority > l.hooks[j].Priority
+	})
 	for _, hook := range l.hooks {
 		if hook.OnStart != nil {
 			l.logger.Printf("START\t\t%s()", hook.caller)
