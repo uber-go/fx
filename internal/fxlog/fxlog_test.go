@@ -22,7 +22,12 @@ package fxlog
 
 import (
 	"bytes"
-	"errors"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
+
+	//"go.uber.org/fx"
+	"go.uber.org/zap/zaptest"
+	"go.uber.org/zap/zaptest/observer"
 	"os"
 	"testing"
 
@@ -51,12 +56,18 @@ func TestNew(t *testing.T) {
 func TestPrint(t *testing.T) {
 	sink := new(Spy)
 	//logger := &Logger{sink}
-	logger := DefaultLogger(os.Stderr)
+	//logger := DefaultLogger(os.Stderr)
+	core, logs := observer.New(zapcore.DebugLevel)
+	z := zap.New(core)
+	//z := zaptest.NewLogger(t)
+	logger := &zapLogger{logger: z}
 
 	t.Run("printf", func(t *testing.T) {
 		sink.Reset()
 		//logger.Printf("foo %d", 42)
 		Info("foo 42").Write(logger)
+		l := logs.All()
+
 		assert.Equal(t, "[Fx] foo 42\n", sink.String())
 	})
 
@@ -147,21 +158,21 @@ func TestPrint(t *testing.T) {
 
 	t.Run("printSignal", func(t *testing.T) {
 		sink.Reset()
-		logger.PrintSignal(os.Interrupt)
+		//logger.Log(os.Interrupt)
 		assert.Equal(t, "[Fx] INTERRUPT\n", sink.String())
 	})
 }
 
 func TestPanic(t *testing.T) {
 	sink := new(Spy)
-	logger := &Logger{sink}
-	assert.Panics(t, func() { logger.Panic(errors.New("foo")) })
+	//logger := &Logger{sink}
+	//assert.Panics(t, func() { logger.Panic(errors.New("foo")) })
 	assert.Equal(t, "[Fx] foo\n", sink.String())
 }
 
 func TestFatal(t *testing.T) {
 	sink := new(Spy)
-	logger := &Logger{sink}
+	//logger := &Logger{sink}
 
 	undo := stubExit()
 	defer undo(t)

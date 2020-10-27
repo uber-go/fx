@@ -20,7 +20,10 @@
 
 package fxtest
 
-import "go.uber.org/fx"
+import (
+	"go.uber.org/fx"
+	"go.uber.org/fx/internal/fxlog"
+)
 
 type testPrinter struct {
 	TB
@@ -33,4 +36,24 @@ func NewTestPrinter(t TB) fx.Printer {
 
 func (p *testPrinter) Printf(format string, args ...interface{}) {
 	p.Logf(format, args...)
+}
+
+type testLogger struct {
+	TB
+}
+
+func (t *testLogger) Log(entry fxlog.Entry) {
+
+}
+
+func (t *testLogger) PrintSupply(interface{}) {
+
+}
+
+func (t *testLogger) PrintProvide(interface{}) {
+
+}
+
+func NewLogger(t TB) fxlog.Logger {
+	return &testLogger{t}
 }

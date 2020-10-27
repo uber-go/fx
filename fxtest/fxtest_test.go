@@ -47,6 +47,10 @@ func (t *tb) FailNow() {
 	t.failures++
 }
 
+func (t *tb) Error(format string) {
+
+}
+
 func (t *tb) Errorf(format string, args ...interface{}) {
 	fmt.Fprintf(t.errors, format, args...)
 	t.errors.WriteRune('\n')
@@ -65,7 +69,7 @@ func TestApp(t *testing.T) {
 		New(spy).RequireStart().RequireStop()
 
 		assert.Zero(t, spy.failures, "App didn't start and stop cleanly.")
-		assert.Contains(t, spy.logs.String(), "RUNNING", "Expected to write logs to TB.")
+		assert.Contains(t, spy.logs.String(), "running", "Expected to write logs to TB.")
 	})
 
 	t.Run("NewFailure", func(t *testing.T) {

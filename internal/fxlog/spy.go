@@ -37,7 +37,6 @@ func (s *Spy) Log(entry Entry) {
 	s.msgs = append(s.msgs, entry)
 }
 
-
 func (s *Spy) PrintProvide(interface{}) {
 
 }
@@ -63,7 +62,7 @@ func (s *Spy) String() string {
 	// trailing newline because all logger entries should have a newline
 	// after them.
 	for _, m := range s.msgs {
-		msg += m.Message
+		msg += m.Message + "\n"
 	}
 	//return strings.Join(s.msgs, "\n") + "\n"
 	return msg

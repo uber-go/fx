@@ -102,7 +102,9 @@ func (l *zapLogger) PrintProvide(t interface{}) {
 
 func (l *zapLogger) PrintSupply(t interface{}) {
 	for _, rtype := range fxreflect.ReturnTypes(t) {
-		Info("supplying", Field{Key: "constructor", Value: rtype}).Write(l)
+		Info("supplying",
+			Field{Key: "constructor", Value: rtype},
+		).Write(l)
 	}
 }
 

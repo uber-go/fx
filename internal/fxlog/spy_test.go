@@ -21,7 +21,6 @@
 package fxlog
 
 import (
-	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -35,20 +34,46 @@ func TestSpy(t *testing.T) {
 		assert.Empty(t, s.String(), "string must be empty")
 	})
 
-	s.Printf("foo bar")
-	s.Log()
+	s.Log(Entry{
+		Message: "foo bar",
+	})
 	t.Run("unformatted message", func(t *testing.T) {
-		assert.Equal(t, []string{"foo bar"}, s.Messages(), "messages must match")
+		assert.Equal(t, []Entry{
+			{Message: "foo bar"},
+		}, s.Messages(), "messages must match")
 		assert.Equal(t, "foo bar\n", s.String(), "string must match")
 	})
 
-	s.Printf("something went wrong: %v", errors.New("great sadness"))
+	s.Log(Entry{
+		Message: "something went wrong",
+		Fields: []Field{
+			{
+				Key:   "error",
+				Value: "great sadness",
+			},
+		},
+	})
+	//s.Printf("something went wrong: %v", errors.New("great sadness"))
 	t.Run("formatted message", func(t *testing.T) {
-		assert.Equal(t, []string{
-			"foo bar",
-			"something went wrong: great sadness",
+		//assert.Equal(t, []string{
+		//	"foo bar",
+		//	"something went wrong: great sadness",
+		//}, s.Messages())
+		assert.Equal(t, []Entry{
+			{
+				Message: "foo bar",
+			},
+			{
+				Message: "something went wrong",
+				Fields: []Field{
+					{
+						Key: "error",
+						Value: "great sadness",
+					},
+				},
+			},
 		}, s.Messages())
-		assert.Equal(t, "foo bar\nsomething went wrong: great sadness\n", s.String())
+		assert.Equal(t, "foo bar\nsomething went wrong\n", s.String())
 	})
 
 	s.Reset()
@@ -57,9 +82,16 @@ func TestSpy(t *testing.T) {
 		assert.Empty(t, s.String(), "string must be empty")
 	})
 
-	s.Printf("baz qux")
+	s.Log(Entry{
+		Message: "baz qux",
+	})
+	//s.Printf("baz qux")
 	t.Run("use after reset", func(t *testing.T) {
-		assert.Equal(t, []string{"baz qux"}, s.Messages(), "messages must match")
+		assert.Equal(t, []Entry{
+			{
+				Message:  "baz qux",
+			},
+			}, s.Messages(), "messages must match")
 		assert.Equal(t, "baz qux\n", s.String(), "string must match")
 	})
 }

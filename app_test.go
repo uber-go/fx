@@ -44,6 +44,12 @@ func NewForTest(t testing.TB, opts ...Option) *App {
 	return New(opts...)
 }
 
+func NewLoggerForTest(t testing.TB, opts ...Option) *App {
+	testOpts := []Option{WithLogger(fxtest.NewLogger(t))}
+	opts = append(testOpts, opts...)
+	return New(opts...)
+}
+
 func TestNewApp(t *testing.T) {
 	t.Run("ProvidesLifecycleAndShutdowner", func(t *testing.T) {
 		var (
@@ -767,7 +773,7 @@ func TestReplaceLogger(t *testing.T) {
 	spy := new(fxlog.Spy)
 	app := fxtest.New(t, WithLogger(spy))
 	app.RequireStart().RequireStop()
-	assert.Contains(t, spy.String(), "RUNNING")
+	assert.Contains(t, spy.String(), "running")
 }
 
 func TestNopLogger(t *testing.T) {
@@ -947,6 +953,14 @@ func (l testLogger) Printf(s string, args ...interface{}) {
 
 func (l testLogger) Log(entry fxlog.Entry) {
 	l.t.Logf(entry.Message)
+}
+
+func (l testLogger) PrintSupply(interface{}) {
+
+}
+
+func (l testLogger) PrintProvide(interface{}) {
+
 }
 
 func (l testLogger) String() string {
