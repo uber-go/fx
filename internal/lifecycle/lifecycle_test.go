@@ -23,6 +23,7 @@ package lifecycle
 import (
 	"context"
 	"errors"
+	"os"
 	"testing"
 
 	"go.uber.org/fx/internal/fxlog"
@@ -104,7 +105,7 @@ func TestLifecycleStart(t *testing.T) {
 
 func TestLifecycleStop(t *testing.T) {
 	t.Run("DoesNothingWithoutHooks", func(t *testing.T) {
-		l := &Lifecycle{logger: fxlog.New()}
+		l := &Lifecycle{logger: fxlog.DefaultLogger(os.Stderr)}
 		assert.Nil(t, l.Stop(context.Background()), "no lifecycle hooks should have resulted in stop returning nil")
 	})
 
@@ -115,13 +116,13 @@ func TestLifecycleStop(t *testing.T) {
 				return nil
 			},
 		}
-		l := &Lifecycle{logger: fxlog.New()}
+		l := &Lifecycle{logger: fxlog.DefaultLogger(os.Stderr)}
 		l.Append(hook)
 		l.Stop(context.Background())
 	})
 
 	t.Run("ExecutesInReverseOrder", func(t *testing.T) {
-		l := &Lifecycle{logger: fxlog.New()}
+		l := &Lifecycle{logger: fxlog.DefaultLogger(os.Stderr)}
 		count := 2
 
 		l.Append(Hook{

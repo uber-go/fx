@@ -263,7 +263,7 @@ func (t stopTimeoutOption) String() string {
 }
 
 func WithLogger(l fxlog.Logger) Option {
-	return WithLogger(l)
+	return withLoggerOption{l}
 }
 
 type withLoggerOption struct { l fxlog.Logger}
@@ -330,11 +330,13 @@ func (l loggerOption) String() string {
 
 // NopLogger disables the application's log output. Note that this makes some
 // failures difficult to debug, since no errors are printed to console.
-var NopLogger = fxlog.Logger(nopLogger{})
+var NopLogger = WithLogger(nopLogger{})
 
 type nopLogger struct{}
 
-func (l nopLogger) Log(fxlog.Entry) {}
+func (nopLogger) Log(fxlog.Entry) {}
+func (nopLogger) PrintProvide(interface{}) {}
+func (nopLogger) PrintSupply(interface{}) {}
 
 func (nopLogger) String() string { return "NopLogger" }
 
@@ -686,16 +688,18 @@ func (app *App) provide(p provide) {
 
 	switch {
 	case p.IsSupply:
-		for _, rtype := range fxreflect.ReturnTypes(constructor) {
-			fxlog.Info("supplying", fxlog.Field{Key: "constructor", Value: rtype})
-		}
+		app.log.PrintSupply(constructor)
+		//for _, rtype := range fxreflect.ReturnTypes(constructor) {
+		//	fxlog.Info("supplying", fxlog.Field{Key: "constructor", Value: rtype}).Write(app.log)
+		//}
 	default:
-		for _, rtype := range fxreflect.ReturnTypes(constructor) {
-			fxlog.Info("providing",
-				fxlog.Field{Key: "return value", Value:rtype},
-				fxlog.Field{Key: "constructor", Value: fxreflect.FuncName(constructor)},
-			)
-		}
+		app.log.PrintProvide(constructor)
+		//for _, rtype := range fxreflect.ReturnTypes(constructor) {
+		//	fxlog.Info("providing",
+		//		fxlog.Field{Key: "return value", Value:rtype},
+		//		fxlog.Field{Key: "constructor", Value: fxreflect.FuncName(constructor)},
+		//	)
+		//}
 	}
 
 	if _, ok := constructor.(Option); ok {

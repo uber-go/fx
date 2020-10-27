@@ -64,7 +64,7 @@ func TestNewApp(t *testing.T) {
 		// (e.g., logging) from changing halfway through our provides.
 
 		spy := new(fxlog.Spy)
-		app := fxtest.New(t, Provide(func() struct{} { return struct{}{} }), Logger(spy))
+		app := fxtest.New(t, Provide(func() struct{} { return struct{}{} }), WithLogger(spy))
 		defer app.RequireStart().RequireStop()
 		assert.Contains(t, spy.String(), "PROVIDE\tstruct {}")
 	})
@@ -420,7 +420,7 @@ func TestOptions(t *testing.T) {
 		spy := new(fxlog.Spy)
 		New(
 			Provide(&bytes.Buffer{}), // error, not a constructor
-			Logger(spy),
+			WithLogger(spy),
 		)
 		assert.Contains(t, spy.String(), "must provide constructor function")
 	})
@@ -534,7 +534,7 @@ func TestAppStart(t *testing.T) {
 	t.Run("InvokeNonFunction", func(t *testing.T) {
 		spy := new(fxlog.Spy)
 
-		app := New(Logger(spy), Invoke(struct{}{}))
+		app := New(WithLogger(spy), Invoke(struct{}{}))
 		err := app.Err()
 		require.Error(t, err, "expected start failure")
 		assert.Contains(t, err.Error(), "can't invoke non-function")
@@ -765,7 +765,7 @@ func TestDone(t *testing.T) {
 
 func TestReplaceLogger(t *testing.T) {
 	spy := new(fxlog.Spy)
-	app := fxtest.New(t, Logger(spy))
+	app := fxtest.New(t, WithLogger(spy))
 	app.RequireStart().RequireStop()
 	assert.Contains(t, spy.String(), "RUNNING")
 }
@@ -905,13 +905,13 @@ func TestOptionString(t *testing.T) {
 		},
 		{
 			desc: "Logger",
-			give: Logger(testLogger{t}),
-			want: "fx.Logger(TestOptionString)",
+			give: WithLogger(testLogger{t}),
+			want: "fx.WithLogger(TestOptionString)",
 		},
 		{
 			desc: "NopLogger",
 			give: NopLogger,
-			want: "fx.Logger(NopLogger)",
+			want: "fx.WithLogger(NopLogger)",
 		},
 		{
 			desc: "ErrorHook",
@@ -943,6 +943,10 @@ type testLogger struct{ t *testing.T }
 
 func (l testLogger) Printf(s string, args ...interface{}) {
 	l.t.Logf(s, args...)
+}
+
+func (l testLogger) Log(entry fxlog.Entry) {
+	l.t.Logf(entry.Message)
 }
 
 func (l testLogger) String() string {

@@ -36,6 +36,7 @@ func TestSpy(t *testing.T) {
 	})
 
 	s.Printf("foo bar")
+	s.Log()
 	t.Run("unformatted message", func(t *testing.T) {
 		assert.Equal(t, []string{"foo bar"}, s.Messages(), "messages must match")
 		assert.Equal(t, "foo bar\n", s.String(), "string must match")

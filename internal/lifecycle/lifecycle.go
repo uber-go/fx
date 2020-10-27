@@ -65,7 +65,7 @@ func (l *Lifecycle) Append(hook Hook) {
 func (l *Lifecycle) Start(ctx context.Context) error {
 	for _, hook := range l.hooks {
 		if hook.OnStart != nil {
-			fxlog.Info("start", fxlog.Field{
+			fxlog.Info("starting", fxlog.Field{
 				Key: "caller",
 				Value: hook.caller,
 			}).Write(l.logger)
@@ -88,7 +88,7 @@ func (l *Lifecycle) Stop(ctx context.Context) error {
 		if hook.OnStop == nil {
 			continue
 		}
-		fxlog.Info("stop", fxlog.Field{
+		fxlog.Info("stopping", fxlog.Field{
 			Key: "caller",
 			Value: hook.caller,
 		}).Write(l.logger)

@@ -21,9 +21,14 @@
 package fxlog
 
 import (
+	"go.uber.org/fx/internal/fxreflect"
+	"os"
+
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
+
+var _exit = func() { os.Exit(1) }
 
 // Level is the level of logging used by Logger.
 type Level int
@@ -58,6 +63,8 @@ type Field struct {
 
 type Logger interface {
 	Log(entry Entry)
+	PrintProvide(interface{})
+	PrintSupply(interface{})
 }
 
 var _ Logger = (*zapLogger)(nil)
@@ -75,18 +82,32 @@ func encodeFields(fields []Field) []zap.Field {
 	return fs
 }
 
-func (c *zapLogger) Log(entry Entry) {
+func (l *zapLogger) Log(entry Entry) {
 	switch entry.Level {
 	case InfoLevel:
-		c.logger.Info(entry.Message, encodeFields(entry.Fields)...)
+		l.logger.Info(entry.Message, encodeFields(entry.Fields)...)
 	case ErrorLevel:
-		c.logger.Error(entry.Message, encodeFields(entry.Fields)...)
+		l.logger.Error(entry.Message, encodeFields(entry.Fields)...)
+	}
+}
+
+func (l *zapLogger) PrintProvide(t interface{}) {
+	for _, rtype := range fxreflect.ReturnTypes(t) {
+		Info("providing",
+			Field{Key: "return value", Value:rtype},
+			Field{Key: "constructor", Value: fxreflect.FuncName(t)},
+		).Write(l)
+	}
+}
+
+func (l *zapLogger) PrintSupply(t interface{}) {
+	for _, rtype := range fxreflect.ReturnTypes(t) {
+		Info("supplying", Field{Key: "constructor", Value: rtype}).Write(l)
 	}
 }
 
 // DefaultLogger constructs a Logger out of io.Writer.
 func DefaultLogger(ws zapcore.WriteSyncer) Logger {
-	//ws := zapcore.AddSync(w)
 	zcore := zapcore.NewCore(
 		zapcore.NewJSONEncoder(zap.NewProductionEncoderConfig()),
 		zapcore.Lock(ws),
@@ -95,8 +116,8 @@ func DefaultLogger(ws zapcore.WriteSyncer) Logger {
 	log := zap.New(zcore)
 
 	return &zapLogger{
-			logger: log,
-		}
+		logger: log,
+	}
 }
 
 func Info(msg string, fields ...Field) Entry {

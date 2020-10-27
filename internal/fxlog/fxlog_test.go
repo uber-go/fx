@@ -45,16 +45,18 @@ func stubExit() func(testing.TB) {
 }
 
 func TestNew(t *testing.T) {
-	assert.NotPanics(t, func() { New() })
+	assert.NotPanics(t, func() { DefaultLogger(os.Stderr) })
 }
 
 func TestPrint(t *testing.T) {
 	sink := new(Spy)
-	logger := &Logger{sink}
+	//logger := &Logger{sink}
+	logger := DefaultLogger(os.Stderr)
 
 	t.Run("printf", func(t *testing.T) {
 		sink.Reset()
-		logger.Printf("foo %d", 42)
+		//logger.Printf("foo %d", 42)
+		Info("foo 42").Write(logger)
 		assert.Equal(t, "[Fx] foo 42\n", sink.String())
 	})
 

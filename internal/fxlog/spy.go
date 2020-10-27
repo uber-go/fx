@@ -20,27 +20,36 @@
 
 package fxlog
 
-import (
-	"fmt"
-	"strings"
-)
-
 // Spy is an Fx Printer that captures logged statements. It may be used in
 // tests of Fx logs.
 type Spy struct {
-	msgs []string
+	msgs []Entry
 }
 
-var _ Printer = &Spy{}
+var _ Logger = &Spy{}
 
 // Printf logs the given message, formatting it in printf-style.
-func (s *Spy) Printf(msg string, args ...interface{}) {
-	s.msgs = append(s.msgs, fmt.Sprintf(msg, args...))
+//func (s *Spy) Printf(msg string, args ...interface{}) {
+//	s.msgs = append(s.msgs, fmt.Sprintf(msg, args...))
+//}
+
+func (s *Spy) Log(entry Entry) {
+	s.msgs = append(s.msgs, entry)
+}
+
+
+func (s *Spy) PrintProvide(interface{}) {
+
+}
+
+func (s *Spy) PrintSupply(interface{}) {
+
 }
 
 // Messages returns a copy of all captured messages.
-func (s *Spy) Messages() []string {
-	msgs := make([]string, len(s.msgs))
+func (s *Spy) Messages() []Entry {
+	//msgs := make([]string, len(s.msgs))
+	msgs := make([]Entry, len(s.msgs))
 	copy(msgs, s.msgs)
 	return msgs
 }
@@ -50,10 +59,14 @@ func (s *Spy) String() string {
 	if len(s.msgs) == 0 {
 		return ""
 	}
-
+	var msg string
 	// trailing newline because all logger entries should have a newline
 	// after them.
-	return strings.Join(s.msgs, "\n") + "\n"
+	for _, m := range s.msgs {
+		msg += m.Message
+	}
+	//return strings.Join(s.msgs, "\n") + "\n"
+	return msg
 }
 
 // Reset clears all messages from the Spy.
