@@ -266,7 +266,7 @@ func WithLogger(l fxlog.Logger) Option {
 	return withLoggerOption{l}
 }
 
-type withLoggerOption struct { l fxlog.Logger}
+type withLoggerOption struct{ l fxlog.Logger }
 
 func (l withLoggerOption) apply(app *App) {
 	app.log = l.l
@@ -275,7 +275,6 @@ func (l withLoggerOption) apply(app *App) {
 func (l withLoggerOption) String() string {
 	return fmt.Sprintf("fx.WithLogger(%v)", l.l)
 }
-
 
 // Printer is the interface required by Fx's logging backend. It's implemented
 // by most loggers, including the one bundled with the standard library.
@@ -334,9 +333,9 @@ var NopLogger = WithLogger(nopLogger{})
 
 type nopLogger struct{}
 
-func (nopLogger) Log(fxlog.Entry) {}
+func (nopLogger) Log(fxlog.Entry)          {}
 func (nopLogger) PrintProvide(interface{}) {}
-func (nopLogger) PrintSupply(interface{}) {}
+func (nopLogger) PrintSupply(interface{})  {}
 
 func (nopLogger) String() string { return "NopLogger" }
 
@@ -761,7 +760,7 @@ func (app *App) executeInvokes() error {
 		fn := i.Target
 		fname := fxreflect.FuncName(fn)
 		fxlog.Info("invoke", fxlog.Field{
-			Key: "funcname",
+			Key:   "funcname",
 			Value: fname,
 		}).Write(app.log)
 
@@ -799,7 +798,7 @@ func (app *App) run(done <-chan os.Signal) {
 
 	if err := app.Start(startCtx); err != nil {
 		fxlog.Error("failed to start", fxlog.Field{
-			Key: "error",
+			Key:   "error",
 			Value: err,
 		}).Write(app.log)
 		// TODO: add option to override os.Exit behavior.
@@ -814,9 +813,9 @@ func (app *App) run(done <-chan os.Signal) {
 	if err := app.Stop(stopCtx); err != nil {
 		fxlog.Error("failed to stop cleanly",
 			fxlog.Field{
-			Key:"error",
-			Value: err,
-		}).Write(app.log)
+				Key:   "error",
+				Value: err,
+			}).Write(app.log)
 		os.Exit(1)
 	}
 }
@@ -831,12 +830,12 @@ func (app *App) start(ctx context.Context) error {
 	if err := app.lifecycle.Start(ctx); err != nil {
 		// Start failed, rolling back.
 		fxlog.Info("startup failed, rolling back", fxlog.Field{
-			Key: "error",
+			Key:   "error",
 			Value: err,
 		}).Write(app.log)
 		if stopErr := app.lifecycle.Stop(ctx); stopErr != nil {
 			fxlog.Info("could not rollback cleanly", fxlog.Field{
-				Key: "error",
+				Key:   "error",
 				Value: stopErr,
 			}).Write(app.log)
 

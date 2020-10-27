@@ -57,7 +57,7 @@ func (e Entry) Write(logger Logger) {
 }
 
 type Field struct {
-	Key string
+	Key   string
 	Value interface{}
 }
 
@@ -94,7 +94,7 @@ func (l *zapLogger) Log(entry Entry) {
 func (l *zapLogger) PrintProvide(t interface{}) {
 	for _, rtype := range fxreflect.ReturnTypes(t) {
 		Info("providing",
-			Field{Key: "return value", Value:rtype},
+			Field{Key: "return value", Value: rtype},
 			Field{Key: "constructor", Value: fxreflect.FuncName(t)},
 		).Write(l)
 	}

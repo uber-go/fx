@@ -50,7 +50,7 @@ func New(logger fxlog.Logger) *Lifecycle {
 		logger = fxlog.DefaultLogger(os.Stderr)
 	}
 
-	return &Lifecycle{logger : logger}
+	return &Lifecycle{logger: logger}
 
 }
 
@@ -66,7 +66,7 @@ func (l *Lifecycle) Start(ctx context.Context) error {
 	for _, hook := range l.hooks {
 		if hook.OnStart != nil {
 			fxlog.Info("starting", fxlog.Field{
-				Key: "caller",
+				Key:   "caller",
 				Value: hook.caller,
 			}).Write(l.logger)
 			if err := hook.OnStart(ctx); err != nil {
@@ -89,7 +89,7 @@ func (l *Lifecycle) Stop(ctx context.Context) error {
 			continue
 		}
 		fxlog.Info("stopping", fxlog.Field{
-			Key: "caller",
+			Key:   "caller",
 			Value: hook.caller,
 		}).Write(l.logger)
 		if err := hook.OnStop(ctx); err != nil {

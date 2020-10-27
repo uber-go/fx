@@ -67,7 +67,7 @@ func TestSpy(t *testing.T) {
 				Message: "something went wrong",
 				Fields: []Field{
 					{
-						Key: "error",
+						Key:   "error",
 						Value: "great sadness",
 					},
 				},
@@ -89,9 +89,9 @@ func TestSpy(t *testing.T) {
 	t.Run("use after reset", func(t *testing.T) {
 		assert.Equal(t, []Entry{
 			{
-				Message:  "baz qux",
+				Message: "baz qux",
 			},
-			}, s.Messages(), "messages must match")
+		}, s.Messages(), "messages must match")
 		assert.Equal(t, "baz qux\n", s.String(), "string must match")
 	})
 }
