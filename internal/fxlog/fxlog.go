@@ -21,8 +21,9 @@
 package fxlog
 
 import (
-	"go.uber.org/fx/internal/fxreflect"
 	"os"
+
+	"go.uber.org/fx/internal/fxreflect"
 
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"

@@ -34,11 +34,12 @@ import (
 	"time"
 
 	"go.uber.org/dig"
+	"go.uber.org/multierr"
+	"go.uber.org/zap/zapcore"
+
 	"go.uber.org/fx/internal/fxlog"
 	"go.uber.org/fx/internal/fxreflect"
 	"go.uber.org/fx/internal/lifecycle"
-	"go.uber.org/multierr"
-	"go.uber.org/zap/zapcore"
 )
 
 // DefaultTimeout is the default timeout for starting or stopping an
@@ -476,21 +477,21 @@ func ValidateApp(opts ...Option) error {
 // no options for logging, then instantiate default zap logger
 // logger option with Printer was provided then init zap logger that prints to printer
 // WithLogger option is provided then use provided FxLogger.
-//func WithLogger(logger Logger) Option {
+// func WithLogger(logger Logger) Option {
 //	return loggerOption{logger}
-//}
+// }
 //
-//type loggerOption struct {
+// type loggerOption struct {
 //	logger Logger
-//}
+// }
 //
-//func (l loggerOption) apply(app *App) {
+// func (l loggerOption) apply(app *App) {
 //	app.log = l.logger
-//}
+// }
 //
-//func (l loggerOption) String() string {
+// func (l loggerOption) String() string {
 //	return fmt.Sprintf("fx.Logger(%v)", l.p)
-//}
+// }
 
 // New creates and initializes an App, immediately executing any functions
 // registered via Invoke options. See the documentation of the App struct for
@@ -688,17 +689,17 @@ func (app *App) provide(p provide) {
 	switch {
 	case p.IsSupply:
 		app.log.PrintSupply(constructor)
-		//for _, rtype := range fxreflect.ReturnTypes(constructor) {
+		// for _, rtype := range fxreflect.ReturnTypes(constructor) {
 		//	fxlog.Info("supplying", fxlog.Field{Key: "constructor", Value: rtype}).Write(app.log)
-		//}
+		// }
 	default:
 		app.log.PrintProvide(constructor)
-		//for _, rtype := range fxreflect.ReturnTypes(constructor) {
+		// for _, rtype := range fxreflect.ReturnTypes(constructor) {
 		//	fxlog.Info("providing",
 		//		fxlog.Field{Key: "return value", Value:rtype},
 		//		fxlog.Field{Key: "constructor", Value: fxreflect.FuncName(constructor)},
 		//	)
-		//}
+		// }
 	}
 
 	if _, ok := constructor.(Option); ok {
