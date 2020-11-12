@@ -21,6 +21,7 @@
 package fx
 
 import (
+	"errors"
 	"fmt"
 	"reflect"
 )
@@ -61,7 +62,9 @@ func WithAnnotated(names ...string) func(interface{}) interface{} {
 		userFunc := reflect.ValueOf(f)
 		userFuncType := userFunc.Type()
 		if userFuncType.Kind() != reflect.Func {
-			panic("WithAnnotated returned function must be called with a function")
+			return func() error {
+				return errors.New("WithAnnotated returned function must be called with a function")
+			}
 		}
 		numArgs := userFuncType.NumIn()
 		digInStructFields := []reflect.StructField{{

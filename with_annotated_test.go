@@ -21,7 +21,6 @@
 package fx_test
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -92,8 +91,8 @@ func TestWithAnnotatedError(t *testing.T) {
 			),
 			fx.Invoke(fx.WithAnnotated("foo")("")),
 		)
-		err := app.Start(context.TODO())
+		err := app.Err()
 		require.Error(t, err)
-		assert.Contains(t, err.Error(), " WithAnnotated returned function must be called with a function")
+		assert.Contains(t, err.Error(), "WithAnnotated returned function must be called with a function")
 	})
 }
