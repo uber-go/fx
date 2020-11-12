@@ -35,7 +35,7 @@ var _exit = func() { os.Exit(1) }
 type Level int
 
 const (
-	InfoLevel = iota
+	InfoLevel Level = iota
 	ErrorLevel
 )
 
@@ -49,12 +49,18 @@ type Entry struct {
 
 func (e Entry) WithStack(stack string) Entry {
 	e.Stack = stack
-
 	return e
 }
 
 func (e Entry) Write(logger Logger) {
 	logger.Log(e)
+}
+
+func F(key string, value interface{}) Field {
+	return Field{
+		Key: key,
+		Value: value,
+	}
 }
 
 type Field struct {
@@ -74,10 +80,13 @@ type zapLogger struct {
 	logger *zap.Logger
 }
 
-func encodeFields(fields []Field) []zap.Field {
+func encodeFields(fields []Field, stack string) []zap.Field {
 	var fs []zap.Field
 	for _, field := range fields {
 		fs = append(fs, zap.Any(field.Key, field.Value))
+	}
+	if stack != "" {
+		fs = append(fs, zap.Stack(stack))
 	}
 
 	return fs
@@ -86,9 +95,9 @@ func encodeFields(fields []Field) []zap.Field {
 func (l *zapLogger) Log(entry Entry) {
 	switch entry.Level {
 	case InfoLevel:
-		l.logger.Info(entry.Message, encodeFields(entry.Fields)...)
+		l.logger.Info(entry.Message, encodeFields(entry.Fields, entry.Stack)...)
 	case ErrorLevel:
-		l.logger.Error(entry.Message, encodeFields(entry.Fields)...)
+		l.logger.Error(entry.Message, encodeFields(entry.Fields, entry.Stack)...)
 	}
 }
 
@@ -113,7 +122,7 @@ func (l *zapLogger) PrintSupply(t interface{}) {
 func DefaultLogger(ws zapcore.WriteSyncer) Logger {
 	zcore := zapcore.NewCore(
 		zapcore.NewJSONEncoder(zap.NewProductionEncoderConfig()),
-		zapcore.Lock(ws),
+		ws,
 		zap.NewAtomicLevel(),
 	)
 	log := zap.New(zcore)
@@ -137,5 +146,4 @@ func Error(msg string, fields ...Field) Entry {
 		Message: msg,
 		Fields:  fields,
 	}
-
 }

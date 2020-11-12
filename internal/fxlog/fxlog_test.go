@@ -177,6 +177,6 @@ func TestFatal(t *testing.T) {
 	undo := stubExit()
 	defer undo(t)
 
-	logger.Fatalf("foo %d", 42)
+	// logger.Fatalf("foo %d", 42)
 	assert.Equal(t, "[Fx] foo 42\n", sink.String())
 }

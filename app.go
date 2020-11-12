@@ -298,10 +298,10 @@ type printerWrapper struct {
 	p Printer
 }
 
-// NewPrinter returns an implementation of zapcore.WriteSyncer
+// newPrinter returns an implementation of zapcore.WriteSyncer
 // used to support Logger option which implements Printer
 // interface.
-func NewPrinter(p Printer) zapcore.WriteSyncer {
+func newPrinter(p Printer) zapcore.WriteSyncer {
 	return &printerWrapper{
 		p: p,
 	}
@@ -318,9 +318,9 @@ func (p *printerWrapper) Sync() error {
 }
 
 func (l loggerOption) apply(app *App) {
-	np := NewPrinter(l.p)
+	np := newPrinter(l.p)
 
-	app.log = fxlog.DefaultLogger(np)
+	app.log = fxlog.DefaultLogger(zapcore.Lock(np)) // assuming np isnt thread-safe.
 	app.lifecycle = &lifecycleWrapper{lifecycle.New(app.log)}
 }
 
@@ -531,10 +531,8 @@ func New(opts ...Option) *App {
 	if app.err != nil {
 		fxlog.Info(
 			"error encountered while applying options",
-			fxlog.Field{
-				Key:   "error",
-				Value: app.err,
-			}).Write(app.log)
+			fxlog.F("error", app.err),
+		).Write(app.log)
 		return app
 	}
 
@@ -760,10 +758,7 @@ func (app *App) executeInvokes() error {
 	for _, i := range app.invokes {
 		fn := i.Target
 		fname := fxreflect.FuncName(fn)
-		fxlog.Info("invoke", fxlog.Field{
-			Key:   "funcname",
-			Value: fname,
-		}).Write(app.log)
+		fxlog.Info("invoke", fxlog.F("funcname", fname)).Write(app.log)
 
 		var err error
 		if _, ok := fn.(Option); ok {
@@ -777,14 +772,8 @@ func (app *App) executeInvokes() error {
 		if err != nil {
 			fxlog.Error(
 				"fx.Invoke failed",
-				fxlog.Field{
-					Key:   "funcname",
-					Value: fname,
-				},
-				fxlog.Field{
-					Key:   "error",
-					Value: err,
-				},
+				fxlog.F( "funcname", fname),
+				fxlog.F("error", err),
 			).WithStack(i.Stack.String()).Write(app.log)
 			return err
 		}
@@ -798,25 +787,19 @@ func (app *App) run(done <-chan os.Signal) {
 	defer cancel()
 
 	if err := app.Start(startCtx); err != nil {
-		fxlog.Error("failed to start", fxlog.Field{
-			Key:   "error",
-			Value: err,
-		}).Write(app.log)
+		fxlog.Error("failed to start", fxlog.F("error", err)).Write(app.log)
 		// TODO: add option to override os.Exit behavior.
 		os.Exit(1)
 	}
-
-	fxlog.Info(strings.ToUpper((<-done).String())).Write(app.log)
+	sig := (<-done).String()
+	fxlog.Info("received signal", fxlog.F("signal", strings.ToUpper(sig))).Write(app.log)
 
 	stopCtx, cancel := context.WithTimeout(context.Background(), app.StopTimeout())
 	defer cancel()
 
 	if err := app.Stop(stopCtx); err != nil {
 		fxlog.Error("failed to stop cleanly",
-			fxlog.Field{
-				Key:   "error",
-				Value: err,
-			}).Write(app.log)
+			fxlog.F("error", err)).Write(app.log)
 		os.Exit(1)
 	}
 }
@@ -830,15 +813,9 @@ func (app *App) start(ctx context.Context) error {
 	// Attempt to start cleanly.
 	if err := app.lifecycle.Start(ctx); err != nil {
 		// Start failed, rolling back.
-		fxlog.Info("startup failed, rolling back", fxlog.Field{
-			Key:   "error",
-			Value: err,
-		}).Write(app.log)
+		fxlog.Info("startup failed, rolling back", fxlog.F("error", err)).Write(app.log)
 		if stopErr := app.lifecycle.Stop(ctx); stopErr != nil {
-			fxlog.Info("could not rollback cleanly", fxlog.Field{
-				Key:   "error",
-				Value: stopErr,
-			}).Write(app.log)
+			fxlog.Info("could not rollback cleanly", fxlog.F("error", stopErr)).Write(app.log)
 
 			return multierr.Append(err, stopErr)
 		}
