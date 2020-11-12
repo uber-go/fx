@@ -21,7 +21,10 @@
 package fx_test
 
 import (
+	"context"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/fx"
@@ -56,9 +59,10 @@ func TestWithAnnotated(t *testing.T) {
 				},
 				newB,
 			),
-			fx.Invoke(fx.WithAnnotated("foo")(func(aa *a, bb *b) {
+			fx.Invoke(fx.WithAnnotated("foo")(func(aa *a, bb *b) error {
 				inA = aa
 				inB = bb
+				return nil
 			})),
 		)
 		defer app.RequireStart().RequireStop()
@@ -66,5 +70,30 @@ func TestWithAnnotated(t *testing.T) {
 		assert.NotNil(t, inB, "expected b to be injected")
 		assert.Equal(t, "foo", inA.name, "expected to get a type 'a' of name 'foo'")
 		assert.Equal(t, "bar", inB.name, "expected to get a type 'b' of name 'bar'")
+	})
+}
+
+func TestWithAnnotatedError(t *testing.T) {
+	type a struct {
+		name string
+	}
+
+	newA := func() *a {
+		return &a{name: "foo"}
+	}
+
+	t.Run("Provided", func(t *testing.T) {
+		app := NewForTest(t,
+			fx.Provide(
+				fx.Annotated{
+					Name:   "foo",
+					Target: newA,
+				},
+			),
+			fx.Invoke(fx.WithAnnotated("foo")("")),
+		)
+		err := app.Start(context.TODO())
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), " WithAnnotated returned function must be called with a function")
 	})
 }
