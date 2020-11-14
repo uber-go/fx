@@ -20,55 +20,59 @@
 
 package fxlog
 
+import "go.uber.org/zap"
+
 // Spy is an Fx Printer that captures logged statements. It may be used in
 // tests of Fx logs.
 type Spy struct {
-	msgs []Entry
+	entries []Entry
 }
 
 var _ Logger = &Spy{}
 
 // Printf logs the given message, formatting it in printf-style.
 //func (s *Spy) Printf(msg string, args ...interface{}) {
-//	s.msgs = append(s.msgs, fmt.Sprintf(msg, args...))
+//	s.entries = append(s.entries, fmt.Sprintf(msg, args...))
 //}
 
 func (s *Spy) Log(entry Entry) {
-	s.msgs = append(s.msgs, entry)
-}
-
-func (s *Spy) PrintProvide(interface{}) {
-
-}
-
-func (s *Spy) PrintSupply(interface{}) {
-
+	s.entries = append(s.entries, entry)
 }
 
 // Messages returns a copy of all captured messages.
 func (s *Spy) Messages() []Entry {
-	//msgs := make([]string, len(s.msgs))
-	msgs := make([]Entry, len(s.msgs))
-	copy(msgs, s.msgs)
+	//entries := make([]string, len(s.entries))
+	msgs := make([]Entry, len(s.entries))
+	copy(msgs, s.entries)
 	return msgs
 }
 
 // String returns all logged messages as a single newline-delimited string.
 func (s *Spy) String() string {
-	if len(s.msgs) == 0 {
+	if len(s.entries) == 0 {
 		return ""
 	}
 	var msg string
 	// trailing newline because all logger entries should have a newline
 	// after them.
-	for _, m := range s.msgs {
+	for _, m := range s.entries {
 		msg += m.Message + "\n"
 	}
-	//return strings.Join(s.msgs, "\n") + "\n"
 	return msg
+}
+
+// Fields returns all Fields members of entries.
+func (s *Spy) Fields() []zap.Field {
+	var fields []zap.Field
+	for _, e := range s.entries {
+		fs := encodeFields(e.Fields, "")
+		fields = append(fields, fs...)
+	}
+
+	return fields
 }
 
 // Reset clears all messages from the Spy.
 func (s *Spy) Reset() {
-	s.msgs = s.msgs[:0]
+	s.entries = s.entries[:0]
 }

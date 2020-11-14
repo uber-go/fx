@@ -25,29 +25,15 @@ import (
 	"os"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+	"go.uber.org/dig"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
-	"go.uber.org/zap/zaptest/observer"
-
-	"github.com/stretchr/testify/assert"
-	"go.uber.org/dig"
-
 	"go.uber.org/fx/internal/fxlog/foovendor"
 	"go.uber.org/fx/internal/fxlog/sample.git"
+	"go.uber.org/fx/internal/fxreflect"
 )
-
-// stubs the exit call, returns a function that restores a real exit function
-// and asserts that the stub was called.
-func stubExit() func(testing.TB) {
-	prev := _exit
-	var called bool
-	_exit = func() { called = true }
-	return func(t testing.TB) {
-		assert.True(t, called, "Exit wasn't called.")
-		_exit = prev
-	}
-}
 
 func TestNew(t *testing.T) {
 	assert.NotPanics(t, func() { DefaultLogger(os.Stderr) })
@@ -55,32 +41,45 @@ func TestNew(t *testing.T) {
 
 func TestPrint(t *testing.T) {
 	sink := new(Spy)
-	// logger := &Logger{sink}
-	// logger := DefaultLogger(os.Stderr)
-	core, logs := observer.New(zapcore.DebugLevel)
-	z := zap.New(core)
-	// z := zaptest.NewLogger(t)
-	logger := &zapLogger{logger: z}
 
 	t.Run("printf", func(t *testing.T) {
 		sink.Reset()
-		// logger.Printf("foo %d", 42)
-		Info("foo 42").Write(logger)
-		l := logs.All()
-
-		assert.Equal(t, "[Fx] foo 42\n", sink.String())
+		Info("foo 42").Write(sink)
+		assert.Equal(t, "foo 42\n", sink.String())
 	})
 
 	t.Run("printProvide", func(t *testing.T) {
 		sink.Reset()
-		logger.PrintProvide(bytes.NewBuffer)
-		assert.Equal(t, "[Fx] PROVIDE\t*bytes.Buffer <= bytes.NewBuffer()\n", sink.String())
+		for _, rtype := range fxreflect.ReturnTypes(bytes.NewBuffer) {
+			Info("providing",
+				Field{Key: "return value", Value: rtype},
+				Field{Key: "constructor", Value: fxreflect.FuncName(bytes.NewBuffer)},
+			).Write(sink)
+		}
+		assert.Contains(t, sink.String(), "providing")
+		assert.Contains(t, sink.Fields(), zap.Field{
+			Key:       "return value",
+			Type:      zapcore.StringType,
+			String:    "*bytes.Buffer",
+		})
+		assert.Contains(t, sink.Fields(), zap.Field{
+			Key:       "constructor",
+			Type:      zapcore.StringType,
+			String:    "bytes.NewBuffer()",
+		})
 	})
 
 	t.Run("PrintSupply", func(t *testing.T) {
 		sink.Reset()
-		logger.PrintSupply(func() *bytes.Buffer { return bytes.NewBuffer(nil) })
-		assert.Equal(t, "[Fx] SUPPLY\t*bytes.Buffer\n", sink.String())
+		for _, rtype := range fxreflect.ReturnTypes(func() *bytes.Buffer { return bytes.NewBuffer(nil) }) {
+			Info("supplying", Field{Key: "constructor", Value: rtype}).Write(sink)
+		}
+		assert.Contains(t, sink.String(), "supplying")
+		assert.Contains(t, sink.Fields(), zap.Field{
+			Key:       "constructor",
+			Type:      zapcore.StringType,
+			String:    "*bytes.Buffer",
+		})
 	})
 
 	t.Run("printExpandsTypesInOut", func(t *testing.T) {
@@ -95,19 +94,45 @@ func TestPrint(t *testing.T) {
 			B
 			C `name:"foo"`
 		}
-		logger.PrintProvide(func() Ret { return Ret{} })
-
-		s := sink.String()
-		assert.Contains(t, s, "[Fx] PROVIDE\t*fxlog.A <=")
-		assert.Contains(t, s, "[Fx] PROVIDE\tfxlog.B <=")
-		assert.Contains(t, s, "[Fx] PROVIDE\tfxlog.C:foo <=")
+		for _, rtype := range fxreflect.ReturnTypes(func() Ret { return Ret{} }) {
+			Info("providing",
+				Field{Key: "return value", Value: rtype},
+				Field{Key: "constructor", Value: fxreflect.FuncName(func() Ret { return Ret{} })},
+			).Write(sink)
+		}
+		assert.Contains(t, sink.String(), "providing")
+		assert.Contains(t, sink.Fields(), zap.Field{
+			Key:       "return value",
+			Type:      zapcore.StringType,
+			String:    "*fxlog.A",
+		})
+		assert.Contains(t, sink.Fields(), zap.Field{
+			Key:       "return value",
+			Type:      zapcore.StringType,
+			String:    "fxlog.B",
+		})
+		assert.Contains(t, sink.Fields(), zap.Field{
+			Key:       "return value",
+			Type:      zapcore.StringType,
+			String:    "fxlog.C:foo",
+		})
 	})
 
 	t.Run("printHandlesDotGitCorrectly", func(t *testing.T) {
 		sink.Reset()
-		logger.PrintProvide(sample.New)
+		for _, rtype := range fxreflect.ReturnTypes(sample.New) {
+			Info("providing",
+				Field{Key: "return value", Value: rtype},
+				Field{Key: "constructor", Value: fxreflect.FuncName(sample.New)},
+			).Write(sink)
+		}
 		assert.NotContains(t, sink.String(), "%2e", "should not be url encoded")
-		assert.Contains(t, sink.String(), "sample.git", "should contain a dot")
+		assert.Contains(t, sink.String(), "providing", "should contain a dot")
+		assert.Contains(t, sink.Fields(), zap.Field{
+			Key:       "constructor",
+			Type:      zapcore.StringType,
+			String:    "go.uber.org/fx/internal/fxlog/sample.git.New()",
+		})
 	})
 
 	t.Run("printOutNamedTypes", func(t *testing.T) {
@@ -122,61 +147,91 @@ func TestPrint(t *testing.T) {
 			A1 *A `name:"primary"`
 			A2 *A `name:"secondary"`
 		}
-		logger.PrintProvide(func() Ret { return Ret{} })
-
-		s := sink.String()
-		assert.Contains(t, s, "[Fx] PROVIDE\t*fxlog.A:primary <=")
-		assert.Contains(t, s, "[Fx] PROVIDE\t*fxlog.A:secondary <=")
-		assert.Contains(t, s, "[Fx] PROVIDE\t*fxlog.B:foo <=")
+		for _, rtype := range fxreflect.ReturnTypes(func() Ret { return Ret{} }) {
+			Info("providing",
+				Field{Key: "return value", Value: rtype},
+				Field{Key: "constructor", Value: fxreflect.FuncName(func() Ret { return Ret{} })},
+			).Write(sink)
+		}
+		assert.Contains(t, sink.String(), "providing")
+		assert.Contains(t, sink.Fields(), zap.Field{
+			Key:       "return value",
+			Type:      zapcore.StringType,
+			String:    "*fxlog.A:primary",
+		})
+		assert.Contains(t, sink.Fields(), zap.Field{
+			Key:       "return value",
+			Type:      zapcore.StringType,
+			String:    "*fxlog.A:secondary",
+		})
+		assert.Contains(t, sink.Fields(), zap.Field{
+			Key:       "return value",
+			Type:      zapcore.StringType,
+			String:    "*fxlog.B:foo",
+		})
 	})
 
 	t.Run("printProvideInvalid", func(t *testing.T) {
 		sink.Reset()
 		// No logging on invalid provides, since we're already logging an error
 		// elsewhere.
-		logger.PrintProvide(bytes.NewBuffer(nil))
+		for _, rtype := range fxreflect.ReturnTypes(bytes.NewBuffer(nil)) {
+			Info("providing",
+				Field{Key: "return value", Value: rtype},
+				Field{Key:"constructor", Value: fxreflect.FuncName(bytes.NewBuffer(nil))},
+			).Write(sink)
+		}
 		assert.Equal(t, "", sink.String())
 	})
 
 	t.Run("printStripsVendorPath", func(t *testing.T) {
 		sink.Reset()
 		// assert is vendored within fx and is a good test case
-		logger.PrintProvide(assert.New)
-		assert.Contains(
-			t, sink.String(),
-			"*assert.Assertions <= github.com/stretchr/testify/assert.New()")
+		for _, rtype := range fxreflect.ReturnTypes(assert.New) {
+			Info("providing",
+				Field{Key: "return value", Value: rtype},
+				Field{Key: "constructor", Value: fxreflect.FuncName(assert.New)},
+			).Write(sink)
+		}
+		assert.Contains(t, sink.Fields(), zap.Field{
+			Key:"constructor",
+			Type: zapcore.StringType,
+			String: "github.com/stretchr/testify/assert.New()",
+		})
+		assert.Contains(t, sink.Fields(), zap.Field{
+			Key:"return value",
+			Type: zapcore.StringType,
+			String: "*assert.Assertions",
+		})
 	})
 
 	t.Run("printFooVendorPath", func(t *testing.T) {
 		sink.Reset()
 		// assert is vendored within fx and is a good test case
-		logger.PrintProvide(foovendor.New)
-		assert.Contains(
-			t, sink.String(),
-			"string <= go.uber.org/fx/internal/fxlog/foovendor.New()")
+		for _, rtype := range fxreflect.ReturnTypes(foovendor.New) {
+			Info("providing",
+				Field{Key: "return value", Value: rtype},
+				Field{Key: "constructor", Value: fxreflect.FuncName(foovendor.New)},
+			).Write(sink)
+		}
+		assert.Contains(t, sink.String(), "providing")
+		assert.Contains(t, sink.Fields(), zap.Field{
+			Key: "return value",
+			Type: zapcore.StringType,
+			String: "string",
+		})
+		assert.Contains(t, sink.Fields(), zap.Field{
+			Key: "constructor",
+			Type: zapcore.StringType,
+			String: "go.uber.org/fx/internal/fxlog/foovendor.New()",
+		})
 	})
 
 	t.Run("printSignal", func(t *testing.T) {
 		sink.Reset()
-		// logger.Log(os.Interrupt)
-		assert.Equal(t, "[Fx] INTERRUPT\n", sink.String())
+		sig := os.Interrupt.String()
+		Info(sig).Write(sink)
+		assert.Equal(t, "interrupt\n", sink.String())
 	})
 }
 
-func TestPanic(t *testing.T) {
-	sink := new(Spy)
-	// logger := &Logger{sink}
-	// assert.Panics(t, func() { logger.Panic(errors.New("foo")) })
-	assert.Equal(t, "[Fx] foo\n", sink.String())
-}
-
-func TestFatal(t *testing.T) {
-	sink := new(Spy)
-	// logger := &Logger{sink}
-
-	undo := stubExit()
-	defer undo(t)
-
-	// logger.Fatalf("foo %d", 42)
-	assert.Equal(t, "[Fx] foo 42\n", sink.String())
-}

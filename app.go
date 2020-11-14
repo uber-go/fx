@@ -263,6 +263,8 @@ func (t stopTimeoutOption) String() string {
 	return fmt.Sprintf("fx.StopTimeout(%v)", time.Duration(t))
 }
 
+// WithLogger will stay private until we export fxlog.Logger once
+// we finalize the API.
 func WithLogger(l fxlog.Logger) Option {
 	return withLoggerOption{l}
 }
@@ -280,14 +282,16 @@ func (l withLoggerOption) String() string {
 // Printer is the interface required by Fx's logging backend. It's implemented
 // by most loggers, including the one bundled with the standard library.
 //
-// Deprecated: Implement fxlog.Logger interface instead.
+// Note, this will be deprecate with next release and you will need to implement
+// fxlog.Logger interface instead.
 type Printer interface {
 	Printf(string, ...interface{})
 }
 
 // Logger redirects the application's log output to the provided printer.
 //
-// Deprecated: Use WithLogger instead.
+// Note, this will be deprecate with next release and you will need to use
+// WithLogger instead.
 func Logger(p Printer) Option {
 	return loggerOption{p}
 }
@@ -330,6 +334,8 @@ func (l loggerOption) String() string {
 
 // NopLogger disables the application's log output. Note that this makes some
 // failures difficult to debug, since no errors are printed to console.
+//
+// Note, when WithLogger is public we will make the change here as well.
 var NopLogger = WithLogger(nopLogger{})
 
 type nopLogger struct{}
@@ -472,26 +478,6 @@ func ValidateApp(opts ...Option) error {
 
 	return app.Err()
 }
-
-// 3 modes:
-// no options for logging, then instantiate default zap logger
-// logger option with Printer was provided then init zap logger that prints to printer
-// WithLogger option is provided then use provided FxLogger.
-// func WithLogger(logger Logger) Option {
-//	return loggerOption{logger}
-// }
-//
-// type loggerOption struct {
-//	logger Logger
-// }
-//
-// func (l loggerOption) apply(app *App) {
-//	app.log = l.logger
-// }
-//
-// func (l loggerOption) String() string {
-//	return fmt.Sprintf("fx.Logger(%v)", l.p)
-// }
 
 // New creates and initializes an App, immediately executing any functions
 // registered via Invoke options. See the documentation of the App struct for
@@ -686,18 +672,18 @@ func (app *App) provide(p provide) {
 
 	switch {
 	case p.IsSupply:
-		app.log.PrintSupply(constructor)
-		// for _, rtype := range fxreflect.ReturnTypes(constructor) {
-		//	fxlog.Info("supplying", fxlog.Field{Key: "constructor", Value: rtype}).Write(app.log)
-		// }
+		// app.log.PrintSupply(constructor)
+		for _, rtype := range fxreflect.ReturnTypes(constructor) {
+			fxlog.Info("supplying", fxlog.Field{Key: "constructor", Value: rtype}).Write(app.log)
+		}
 	default:
-		app.log.PrintProvide(constructor)
-		// for _, rtype := range fxreflect.ReturnTypes(constructor) {
-		//	fxlog.Info("providing",
-		//		fxlog.Field{Key: "return value", Value:rtype},
-		//		fxlog.Field{Key: "constructor", Value: fxreflect.FuncName(constructor)},
-		//	)
-		// }
+		// app.log.PrintProvide(constructor)
+		for _, rtype := range fxreflect.ReturnTypes(constructor) {
+			fxlog.Info("providing",
+				fxlog.Field{Key: "return value", Value:rtype},
+				fxlog.Field{Key: "constructor", Value: fxreflect.FuncName(constructor)},
+			).Write(app.log)
+		}
 	}
 
 	if _, ok := constructor.(Option); ok {

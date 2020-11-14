@@ -29,13 +29,15 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"go.uber.org/multierr"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
+
 	. "go.uber.org/fx"
 	"go.uber.org/fx/fxtest"
 	"go.uber.org/fx/internal/fxlog"
-	"go.uber.org/multierr"
-
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 func NewForTest(t testing.TB, opts ...Option) *App {
@@ -72,7 +74,12 @@ func TestNewApp(t *testing.T) {
 		spy := new(fxlog.Spy)
 		app := fxtest.New(t, Provide(func() struct{} { return struct{}{} }), WithLogger(spy))
 		defer app.RequireStart().RequireStop()
-		assert.Contains(t, spy.String(), "PROVIDE\tstruct {}")
+		assert.Contains(t, spy.String(), "providing")
+		assert.Contains(t, spy.Fields(), zap.Field{
+			Key:       "return value",
+			Type:      zapcore.StringType,
+			String:    "struct {}",
+		})
 	})
 
 	t.Run("CircularGraphReturnsError", func(t *testing.T) {
@@ -953,14 +960,6 @@ func (l testLogger) Printf(s string, args ...interface{}) {
 
 func (l testLogger) Log(entry fxlog.Entry) {
 	l.t.Logf(entry.Message)
-}
-
-func (l testLogger) PrintSupply(interface{}) {
-
-}
-
-func (l testLogger) PrintProvide(interface{}) {
-
 }
 
 func (l testLogger) String() string {
