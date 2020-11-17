@@ -53,12 +53,7 @@ func TestSpy(t *testing.T) {
 			},
 		},
 	})
-	//s.Printf("something went wrong: %v", errors.New("great sadness"))
 	t.Run("formatted message", func(t *testing.T) {
-		//assert.Equal(t, []string{
-		//	"foo bar",
-		//	"something went wrong: great sadness",
-		//}, s.Messages())
 		assert.Equal(t, []Entry{
 			{
 				Message: "foo bar",
@@ -73,7 +68,7 @@ func TestSpy(t *testing.T) {
 				},
 			},
 		}, s.Messages())
-		assert.Equal(t, "foo bar\nsomething went wrong\n", s.String())
+		assert.Equal(t, "foo bar\nsomething went wrong error: great sadness\n", s.String())
 	})
 
 	s.Reset()
@@ -85,7 +80,6 @@ func TestSpy(t *testing.T) {
 	s.Log(Entry{
 		Message: "baz qux",
 	})
-	//s.Printf("baz qux")
 	t.Run("use after reset", func(t *testing.T) {
 		assert.Equal(t, []Entry{
 			{

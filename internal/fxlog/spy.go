@@ -20,7 +20,11 @@
 
 package fxlog
 
-import "go.uber.org/zap"
+import (
+	"fmt"
+
+	"go.uber.org/zap"
+)
 
 // Spy is an Fx Printer that captures logged statements. It may be used in
 // tests of Fx logs.
@@ -30,18 +34,13 @@ type Spy struct {
 
 var _ Logger = &Spy{}
 
-// Printf logs the given message, formatting it in printf-style.
-//func (s *Spy) Printf(msg string, args ...interface{}) {
-//	s.entries = append(s.entries, fmt.Sprintf(msg, args...))
-//}
-
+// Log append an Entry.
 func (s *Spy) Log(entry Entry) {
 	s.entries = append(s.entries, entry)
 }
 
 // Messages returns a copy of all captured messages.
 func (s *Spy) Messages() []Entry {
-	//entries := make([]string, len(s.entries))
 	msgs := make([]Entry, len(s.entries))
 	copy(msgs, s.entries)
 	return msgs
@@ -53,11 +52,17 @@ func (s *Spy) String() string {
 		return ""
 	}
 	var msg string
-	// trailing newline because all logger entries should have a newline
-	// after them.
 	for _, m := range s.entries {
-		msg += m.Message + "\n"
+		msg += m.Message
+		for _, f := range m.Fields {
+			// msg += " " + f.Key + ": " + fmt.Sprintf("%v", f.Value)
+			// extra space before f.Key to separate out message.
+			msg += fmt.Sprintf(" %s: %v", f.Key, f.Value)
+		}
+		msg += m.Stack
+		msg += "\n"
 	}
+
 	return msg
 }
 

@@ -435,7 +435,13 @@ func TestOptions(t *testing.T) {
 			Provide(&bytes.Buffer{}), // error, not a constructor
 			WithLogger(spy),
 		)
-		assert.Contains(t, spy.String(), "must provide constructor function")
+		assert.Contains(t, spy.String(), "error encountered while applying options")
+		fields := spy.Fields()
+		assert.Len(t, fields, 1)
+		s := fields[0]
+		assert.Equal(t, "error", s.Key)
+		assert.Equal(t, zapcore.ErrorType, s.Type)
+		assert.Contains(t, fmt.Sprintf("%v", s.Interface), "must provide constructor function")
 	})
 }
 
@@ -560,10 +566,17 @@ func TestAppStart(t *testing.T) {
 		//         /.../go/1.13.3/libexec/src/testing/testing.go:909
 		// Failed: can't invoke non-function {} (type struct {})
 		output := spy.String()
-		assert.Contains(t, output, "fx.Invoke({}) called from:")
+		fields := spy.Fields()
+		assert.Len(t, fields, 9)
+		// s := fields[0]
+		// assert.Equal(t, "error", s.Key)
+		// assert.Equal(t, zapcore.ErrorType, s.Type)
+		// assert.Contains(t, fmt.Sprintf("%v", s.Interface), "can't invoke non-function")
+
+		assert.Contains(t, output, "fx.Invoke failed called from:")
 		assert.Contains(t, output, "go.uber.org/fx_test.TestAppStart")
 		assert.Contains(t, output, "fx/app_test.go")
-		assert.Contains(t, output, "Failed: can't invoke non-function")
+		assert.Contains(t, output, "can't invoke non-function")
 	})
 
 	t.Run("ProvidingAProvideShouldFail", func(t *testing.T) {

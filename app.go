@@ -758,7 +758,7 @@ func (app *App) executeInvokes() error {
 		if err != nil {
 			fxlog.Error(
 				"fx.Invoke failed",
-				fxlog.F( "funcname", fname),
+				fxlog.F("called from", fname),
 				fxlog.F("error", err),
 			).WithStack(i.Stack.String()).Write(app.log)
 			return err
