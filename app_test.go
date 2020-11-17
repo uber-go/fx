@@ -46,12 +46,6 @@ func NewForTest(t testing.TB, opts ...Option) *App {
 	return New(opts...)
 }
 
-func NewLoggerForTest(t testing.TB, opts ...Option) *App {
-	testOpts := []Option{WithLogger(fxtest.NewLogger(t))}
-	opts = append(testOpts, opts...)
-	return New(opts...)
-}
-
 func TestNewApp(t *testing.T) {
 	t.Run("ProvidesLifecycleAndShutdowner", func(t *testing.T) {
 		var (
@@ -568,10 +562,6 @@ func TestAppStart(t *testing.T) {
 		output := spy.String()
 		fields := spy.Fields()
 		assert.Len(t, fields, 9)
-		// s := fields[0]
-		// assert.Equal(t, "error", s.Key)
-		// assert.Equal(t, zapcore.ErrorType, s.Type)
-		// assert.Contains(t, fmt.Sprintf("%v", s.Interface), "can't invoke non-function")
 
 		assert.Contains(t, output, "fx.Invoke failed called from:")
 		assert.Contains(t, output, "go.uber.org/fx_test.TestAppStart")

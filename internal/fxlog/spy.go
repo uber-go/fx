@@ -55,7 +55,6 @@ func (s *Spy) String() string {
 	for _, m := range s.entries {
 		msg += m.Message
 		for _, f := range m.Fields {
-			// msg += " " + f.Key + ": " + fmt.Sprintf("%v", f.Value)
 			// extra space before f.Key to separate out message.
 			msg += fmt.Sprintf(" %s: %v", f.Key, f.Value)
 		}

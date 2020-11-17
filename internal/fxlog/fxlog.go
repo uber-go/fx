@@ -23,8 +23,6 @@ package fxlog
 import (
 	"os"
 
-	// "go.uber.org/fx/internal/fxreflect"
-
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
@@ -70,8 +68,6 @@ type Field struct {
 
 type Logger interface {
 	Log(entry Entry)
-	// PrintProvide(interface{})
-	// PrintSupply(interface{})
 }
 
 var _ Logger = (*zapLogger)(nil)
@@ -100,23 +96,6 @@ func (l *zapLogger) Log(entry Entry) {
 		l.logger.Error(entry.Message, encodeFields(entry.Fields, entry.Stack)...)
 	}
 }
-
-// func (l *zapLogger) PrintProvide(t interface{}) {
-// 	for _, rtype := range fxreflect.ReturnTypes(t) {
-// 		Info("providing",
-// 			Field{Key: "return value", Value: rtype},
-// 			Field{Key: "constructor", Value: fxreflect.FuncName(t)},
-// 		).Write(l)
-// 	}
-// }
-
-// func (l *zapLogger) PrintSupply(t interface{}) {
-// 	for _, rtype := range fxreflect.ReturnTypes(t) {
-// 		Info("supplying",
-// 			Field{Key: "constructor", Value: rtype},
-// 		).Write(l)
-// 	}
-// }
 
 // DefaultLogger constructs a Logger out of io.Writer.
 func DefaultLogger(ws zapcore.WriteSyncer) Logger {
