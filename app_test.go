@@ -76,9 +76,9 @@ func TestNewApp(t *testing.T) {
 		defer app.RequireStart().RequireStop()
 		assert.Contains(t, spy.String(), "providing")
 		assert.Contains(t, spy.Fields(), zap.Field{
-			Key:       "return value",
-			Type:      zapcore.StringType,
-			String:    "struct {}",
+			Key:    "return value",
+			Type:   zapcore.StringType,
+			String: "struct {}",
 		})
 	})
 

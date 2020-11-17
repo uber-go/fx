@@ -58,14 +58,14 @@ func TestPrint(t *testing.T) {
 		}
 		assert.Contains(t, sink.String(), "providing")
 		assert.Contains(t, sink.Fields(), zap.Field{
-			Key:       "return value",
-			Type:      zapcore.StringType,
-			String:    "*bytes.Buffer",
+			Key:    "return value",
+			Type:   zapcore.StringType,
+			String: "*bytes.Buffer",
 		})
 		assert.Contains(t, sink.Fields(), zap.Field{
-			Key:       "constructor",
-			Type:      zapcore.StringType,
-			String:    "bytes.NewBuffer()",
+			Key:    "constructor",
+			Type:   zapcore.StringType,
+			String: "bytes.NewBuffer()",
 		})
 	})
 
@@ -76,9 +76,9 @@ func TestPrint(t *testing.T) {
 		}
 		assert.Contains(t, sink.String(), "supplying")
 		assert.Contains(t, sink.Fields(), zap.Field{
-			Key:       "constructor",
-			Type:      zapcore.StringType,
-			String:    "*bytes.Buffer",
+			Key:    "constructor",
+			Type:   zapcore.StringType,
+			String: "*bytes.Buffer",
 		})
 	})
 
@@ -102,19 +102,19 @@ func TestPrint(t *testing.T) {
 		}
 		assert.Contains(t, sink.String(), "providing")
 		assert.Contains(t, sink.Fields(), zap.Field{
-			Key:       "return value",
-			Type:      zapcore.StringType,
-			String:    "*fxlog.A",
+			Key:    "return value",
+			Type:   zapcore.StringType,
+			String: "*fxlog.A",
 		})
 		assert.Contains(t, sink.Fields(), zap.Field{
-			Key:       "return value",
-			Type:      zapcore.StringType,
-			String:    "fxlog.B",
+			Key:    "return value",
+			Type:   zapcore.StringType,
+			String: "fxlog.B",
 		})
 		assert.Contains(t, sink.Fields(), zap.Field{
-			Key:       "return value",
-			Type:      zapcore.StringType,
-			String:    "fxlog.C:foo",
+			Key:    "return value",
+			Type:   zapcore.StringType,
+			String: "fxlog.C:foo",
 		})
 	})
 
@@ -129,9 +129,9 @@ func TestPrint(t *testing.T) {
 		assert.NotContains(t, sink.String(), "%2e", "should not be url encoded")
 		assert.Contains(t, sink.String(), "providing", "should contain a dot")
 		assert.Contains(t, sink.Fields(), zap.Field{
-			Key:       "constructor",
-			Type:      zapcore.StringType,
-			String:    "go.uber.org/fx/internal/fxlog/sample.git.New()",
+			Key:    "constructor",
+			Type:   zapcore.StringType,
+			String: "go.uber.org/fx/internal/fxlog/sample.git.New()",
 		})
 	})
 
@@ -155,19 +155,19 @@ func TestPrint(t *testing.T) {
 		}
 		assert.Contains(t, sink.String(), "providing")
 		assert.Contains(t, sink.Fields(), zap.Field{
-			Key:       "return value",
-			Type:      zapcore.StringType,
-			String:    "*fxlog.A:primary",
+			Key:    "return value",
+			Type:   zapcore.StringType,
+			String: "*fxlog.A:primary",
 		})
 		assert.Contains(t, sink.Fields(), zap.Field{
-			Key:       "return value",
-			Type:      zapcore.StringType,
-			String:    "*fxlog.A:secondary",
+			Key:    "return value",
+			Type:   zapcore.StringType,
+			String: "*fxlog.A:secondary",
 		})
 		assert.Contains(t, sink.Fields(), zap.Field{
-			Key:       "return value",
-			Type:      zapcore.StringType,
-			String:    "*fxlog.B:foo",
+			Key:    "return value",
+			Type:   zapcore.StringType,
+			String: "*fxlog.B:foo",
 		})
 	})
 
@@ -178,7 +178,7 @@ func TestPrint(t *testing.T) {
 		for _, rtype := range fxreflect.ReturnTypes(bytes.NewBuffer(nil)) {
 			Info("providing",
 				Field{Key: "return value", Value: rtype},
-				Field{Key:"constructor", Value: fxreflect.FuncName(bytes.NewBuffer(nil))},
+				Field{Key: "constructor", Value: fxreflect.FuncName(bytes.NewBuffer(nil))},
 			).Write(sink)
 		}
 		assert.Equal(t, "", sink.String())
@@ -194,13 +194,13 @@ func TestPrint(t *testing.T) {
 			).Write(sink)
 		}
 		assert.Contains(t, sink.Fields(), zap.Field{
-			Key:"constructor",
-			Type: zapcore.StringType,
+			Key:    "constructor",
+			Type:   zapcore.StringType,
 			String: "github.com/stretchr/testify/assert.New()",
 		})
 		assert.Contains(t, sink.Fields(), zap.Field{
-			Key:"return value",
-			Type: zapcore.StringType,
+			Key:    "return value",
+			Type:   zapcore.StringType,
 			String: "*assert.Assertions",
 		})
 	})
@@ -216,13 +216,13 @@ func TestPrint(t *testing.T) {
 		}
 		assert.Contains(t, sink.String(), "providing")
 		assert.Contains(t, sink.Fields(), zap.Field{
-			Key: "return value",
-			Type: zapcore.StringType,
+			Key:    "return value",
+			Type:   zapcore.StringType,
 			String: "string",
 		})
 		assert.Contains(t, sink.Fields(), zap.Field{
-			Key: "constructor",
-			Type: zapcore.StringType,
+			Key:    "constructor",
+			Type:   zapcore.StringType,
 			String: "go.uber.org/fx/internal/fxlog/foovendor.New()",
 		})
 	})
@@ -234,4 +234,3 @@ func TestPrint(t *testing.T) {
 		assert.Equal(t, "interrupt\n", sink.String())
 	})
 }
-

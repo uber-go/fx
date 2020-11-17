@@ -58,7 +58,7 @@ func (e Entry) Write(logger Logger) {
 
 func F(key string, value interface{}) Field {
 	return Field{
-		Key: key,
+		Key:   key,
 		Value: value,
 	}
 }

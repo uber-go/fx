@@ -680,7 +680,7 @@ func (app *App) provide(p provide) {
 		// app.log.PrintProvide(constructor)
 		for _, rtype := range fxreflect.ReturnTypes(constructor) {
 			fxlog.Info("providing",
-				fxlog.Field{Key: "return value", Value:rtype},
+				fxlog.Field{Key: "return value", Value: rtype},
 				fxlog.Field{Key: "constructor", Value: fxreflect.FuncName(constructor)},
 			).Write(app.log)
 		}
