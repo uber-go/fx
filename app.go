@@ -338,7 +338,7 @@ var NopLogger = withLogger(nopLogger{})
 
 type nopLogger struct{}
 
-func (nopLogger) Log(fxlog.Entry)          {}
+func (nopLogger) Log(fxlog.Entry) {}
 
 func (nopLogger) String() string { return "NopLogger" }
 

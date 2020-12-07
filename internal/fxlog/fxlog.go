@@ -29,7 +29,9 @@ import (
 type Level int
 
 const (
+	// InfoLevel is Info logging level used to log messages via zap.
 	InfoLevel Level = iota
+	// ErrorLevel is Info logging level used to log messages via zap.
 	ErrorLevel
 )
 
@@ -41,6 +43,7 @@ type Entry struct {
 	Stack   string
 }
 
+// WithStack mutates an Entry to add a Stack field.
 func (e Entry) WithStack(stack string) Entry {
 	e.Stack = stack
 	return e
@@ -50,11 +53,12 @@ func (e Entry) Write(logger Logger) {
 	logger.Log(e)
 }
 
-// Err is a helper. 
+// Err is a helper for error Fields.
 func Err(value interface{}) Field {
 	return F("error", value)
 }
 
+// F is a constructor for a Field.
 func F(key string, value interface{}) Field {
 	return Field{
 		Key:   key,
@@ -62,11 +66,13 @@ func F(key string, value interface{}) Field {
 	}
 }
 
+// Field defines a field used inside an internal logging Entry.
 type Field struct {
 	Key   string
 	Value interface{}
 }
 
+// Logger defines interface used for logging.
 type Logger interface {
 	Log(entry Entry)
 }
