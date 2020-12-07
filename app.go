@@ -290,7 +290,7 @@ type Printer interface {
 
 // Logger redirects the application's log output to the provided printer.
 //
-// Note, this will be deprecate with next release and you will need to use
+// Note, this will be deprecate with the next release and you will need to use
 // withLogger instead.
 func Logger(p Printer) Option {
 	return loggerOption{p}
@@ -313,7 +313,6 @@ func newPrinter(p Printer) zapcore.WriteSyncer {
 
 func (p *printerWrapper) Write(b []byte) (n int, err error) {
 	p.p.Printf(string(b))
-
 	return len(b), nil
 }
 
@@ -323,8 +322,7 @@ func (p *printerWrapper) Sync() error {
 
 func (l loggerOption) apply(app *App) {
 	np := newPrinter(l.p)
-
-	app.log = fxlog.DefaultLogger(zapcore.Lock(np)) // assuming np isnt thread-safe.
+	app.log = fxlog.DefaultLogger(np) // assuming np is thread-safe.
 	app.lifecycle = &lifecycleWrapper{lifecycle.New(app.log)}
 }
 
@@ -676,7 +674,7 @@ func (app *App) provide(p provide) {
 	default:
 		for _, rtype := range fxreflect.ReturnTypes(constructor) {
 			fxlog.Info("providing",
-				fxlog.Field{Key: "return value", Value: rtype},
+				fxlog.Field{Key: "returnValue", Value: rtype},
 				fxlog.Field{Key: "constructor", Value: fxreflect.FuncName(constructor)},
 			).Write(app.log)
 		}
@@ -740,7 +738,7 @@ func (app *App) executeInvokes() error {
 	for _, i := range app.invokes {
 		fn := i.Target
 		fname := fxreflect.FuncName(fn)
-		fxlog.Info("invoke", fxlog.F("funcname", fname)).Write(app.log)
+		fxlog.Info("invoke", fxlog.F("function", fname)).Write(app.log)
 
 		var err error
 		if _, ok := fn.(Option); ok {
@@ -754,7 +752,7 @@ func (app *App) executeInvokes() error {
 		if err != nil {
 			fxlog.Error(
 				"fx.Invoke failed",
-				fxlog.F("called from", fname),
+				fxlog.F("calledFrom", fname),
 				fxlog.F("error", err),
 			).WithStack(i.Stack.String()).Write(app.log)
 			return err

@@ -21,13 +21,9 @@
 package fxlog
 
 import (
-	"os"
-
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
-
-var _exit = func() { os.Exit(1) }
 
 // Level is the level of logging used by Logger.
 type Level int
@@ -37,7 +33,7 @@ const (
 	ErrorLevel
 )
 
-// Entry is an entry
+// Entry is an entry to be later serialized into zap message and fields.
 type Entry struct {
 	Level   Level
 	Message string
@@ -111,6 +107,7 @@ func DefaultLogger(ws zapcore.WriteSyncer) Logger {
 	}
 }
 
+// Info creates a logging Info entry.
 func Info(msg string, fields ...Field) Entry {
 	return Entry{
 		Level:   InfoLevel,
@@ -119,6 +116,7 @@ func Info(msg string, fields ...Field) Entry {
 	}
 }
 
+// Error creates a logging Error entry.
 func Error(msg string, fields ...Field) Entry {
 	return Entry{
 		Level:   ErrorLevel,

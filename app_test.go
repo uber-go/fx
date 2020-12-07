@@ -70,7 +70,7 @@ func TestNewApp(t *testing.T) {
 		defer app.RequireStart().RequireStop()
 		assert.Contains(t, spy.String(), "providing")
 		assert.Contains(t, spy.Fields(), zap.Field{
-			Key:    "return value",
+			Key:    "returnValue",
 			Type:   zapcore.StringType,
 			String: "struct {}",
 		})
@@ -563,7 +563,7 @@ func TestAppStart(t *testing.T) {
 		fields := spy.Fields()
 		assert.Len(t, fields, 9)
 
-		assert.Contains(t, output, "fx.Invoke failed called from:")
+		assert.Contains(t, output, "fx.Invoke failed calledFrom:")
 		assert.Contains(t, output, "go.uber.org/fx_test.TestAppStart")
 		assert.Contains(t, output, "fx/app_test.go")
 		assert.Contains(t, output, "can't invoke non-function")

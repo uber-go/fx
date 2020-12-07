@@ -52,13 +52,13 @@ func TestPrint(t *testing.T) {
 		sink.Reset()
 		for _, rtype := range fxreflect.ReturnTypes(bytes.NewBuffer) {
 			Info("providing",
-				Field{Key: "return value", Value: rtype},
+				Field{Key: "returnValue", Value: rtype},
 				Field{Key: "constructor", Value: fxreflect.FuncName(bytes.NewBuffer)},
 			).Write(sink)
 		}
 		assert.Contains(t, sink.String(), "providing")
 		assert.Contains(t, sink.Fields(), zap.Field{
-			Key:    "return value",
+			Key:    "returnValue",
 			Type:   zapcore.StringType,
 			String: "*bytes.Buffer",
 		})
@@ -96,23 +96,23 @@ func TestPrint(t *testing.T) {
 		}
 		for _, rtype := range fxreflect.ReturnTypes(func() Ret { return Ret{} }) {
 			Info("providing",
-				Field{Key: "return value", Value: rtype},
+				Field{Key: "returnValue", Value: rtype},
 				Field{Key: "constructor", Value: fxreflect.FuncName(func() Ret { return Ret{} })},
 			).Write(sink)
 		}
 		assert.Contains(t, sink.String(), "providing")
 		assert.Contains(t, sink.Fields(), zap.Field{
-			Key:    "return value",
+			Key:    "returnValue",
 			Type:   zapcore.StringType,
 			String: "*fxlog.A",
 		})
 		assert.Contains(t, sink.Fields(), zap.Field{
-			Key:    "return value",
+			Key:    "returnValue",
 			Type:   zapcore.StringType,
 			String: "fxlog.B",
 		})
 		assert.Contains(t, sink.Fields(), zap.Field{
-			Key:    "return value",
+			Key:    "returnValue",
 			Type:   zapcore.StringType,
 			String: "fxlog.C:foo",
 		})
@@ -122,7 +122,7 @@ func TestPrint(t *testing.T) {
 		sink.Reset()
 		for _, rtype := range fxreflect.ReturnTypes(sample.New) {
 			Info("providing",
-				Field{Key: "return value", Value: rtype},
+				Field{Key: "returnValue", Value: rtype},
 				Field{Key: "constructor", Value: fxreflect.FuncName(sample.New)},
 			).Write(sink)
 		}
@@ -149,23 +149,23 @@ func TestPrint(t *testing.T) {
 		}
 		for _, rtype := range fxreflect.ReturnTypes(func() Ret { return Ret{} }) {
 			Info("providing",
-				Field{Key: "return value", Value: rtype},
+				Field{Key: "returnValue", Value: rtype},
 				Field{Key: "constructor", Value: fxreflect.FuncName(func() Ret { return Ret{} })},
 			).Write(sink)
 		}
 		assert.Contains(t, sink.String(), "providing")
 		assert.Contains(t, sink.Fields(), zap.Field{
-			Key:    "return value",
+			Key:    "returnValue",
 			Type:   zapcore.StringType,
 			String: "*fxlog.A:primary",
 		})
 		assert.Contains(t, sink.Fields(), zap.Field{
-			Key:    "return value",
+			Key:    "returnValue",
 			Type:   zapcore.StringType,
 			String: "*fxlog.A:secondary",
 		})
 		assert.Contains(t, sink.Fields(), zap.Field{
-			Key:    "return value",
+			Key:    "returnValue",
 			Type:   zapcore.StringType,
 			String: "*fxlog.B:foo",
 		})
@@ -177,7 +177,7 @@ func TestPrint(t *testing.T) {
 		// elsewhere.
 		for _, rtype := range fxreflect.ReturnTypes(bytes.NewBuffer(nil)) {
 			Info("providing",
-				Field{Key: "return value", Value: rtype},
+				Field{Key: "returnValue", Value: rtype},
 				Field{Key: "constructor", Value: fxreflect.FuncName(bytes.NewBuffer(nil))},
 			).Write(sink)
 		}
@@ -189,7 +189,7 @@ func TestPrint(t *testing.T) {
 		// assert is vendored within fx and is a good test case
 		for _, rtype := range fxreflect.ReturnTypes(assert.New) {
 			Info("providing",
-				Field{Key: "return value", Value: rtype},
+				Field{Key: "returnValue", Value: rtype},
 				Field{Key: "constructor", Value: fxreflect.FuncName(assert.New)},
 			).Write(sink)
 		}
@@ -199,7 +199,7 @@ func TestPrint(t *testing.T) {
 			String: "github.com/stretchr/testify/assert.New()",
 		})
 		assert.Contains(t, sink.Fields(), zap.Field{
-			Key:    "return value",
+			Key:    "returnValue",
 			Type:   zapcore.StringType,
 			String: "*assert.Assertions",
 		})
@@ -210,13 +210,13 @@ func TestPrint(t *testing.T) {
 		// assert is vendored within fx and is a good test case
 		for _, rtype := range fxreflect.ReturnTypes(foovendor.New) {
 			Info("providing",
-				Field{Key: "return value", Value: rtype},
+				Field{Key: "returnValue", Value: rtype},
 				Field{Key: "constructor", Value: fxreflect.FuncName(foovendor.New)},
 			).Write(sink)
 		}
 		assert.Contains(t, sink.String(), "providing")
 		assert.Contains(t, sink.Fields(), zap.Field{
-			Key:    "return value",
+			Key:    "returnValue",
 			Type:   zapcore.StringType,
 			String: "string",
 		})
