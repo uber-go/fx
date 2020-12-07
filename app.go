@@ -263,9 +263,9 @@ func (t stopTimeoutOption) String() string {
 	return fmt.Sprintf("fx.StopTimeout(%v)", time.Duration(t))
 }
 
-// WithLogger will stay private until we export fxlog.Logger once
+// withLogger will stay private until we export fxlog.Logger once
 // we finalize the API.
-func WithLogger(l fxlog.Logger) Option {
+func withLogger(l fxlog.Logger) Option {
 	return withLoggerOption{l}
 }
 
@@ -276,7 +276,7 @@ func (l withLoggerOption) apply(app *App) {
 }
 
 func (l withLoggerOption) String() string {
-	return fmt.Sprintf("fx.WithLogger(%v)", l.l)
+	return fmt.Sprintf("fx.withLogger(%v)", l.l)
 }
 
 // Printer is the interface required by Fx's logging backend. It's implemented
@@ -291,7 +291,7 @@ type Printer interface {
 // Logger redirects the application's log output to the provided printer.
 //
 // Note, this will be deprecate with next release and you will need to use
-// WithLogger instead.
+// withLogger instead.
 func Logger(p Printer) Option {
 	return loggerOption{p}
 }
@@ -335,14 +335,12 @@ func (l loggerOption) String() string {
 // NopLogger disables the application's log output. Note that this makes some
 // failures difficult to debug, since no errors are printed to console.
 //
-// Note, when WithLogger is public we will make the change here as well.
-var NopLogger = WithLogger(nopLogger{})
+// Note, when withLogger is public we will make the change here as well.
+var NopLogger = withLogger(nopLogger{})
 
 type nopLogger struct{}
 
 func (nopLogger) Log(fxlog.Entry)          {}
-func (nopLogger) PrintProvide(interface{}) {}
-func (nopLogger) PrintSupply(interface{})  {}
 
 func (nopLogger) String() string { return "NopLogger" }
 
@@ -672,12 +670,10 @@ func (app *App) provide(p provide) {
 
 	switch {
 	case p.IsSupply:
-		// app.log.PrintSupply(constructor)
 		for _, rtype := range fxreflect.ReturnTypes(constructor) {
 			fxlog.Info("supplying", fxlog.Field{Key: "constructor", Value: rtype}).Write(app.log)
 		}
 	default:
-		// app.log.PrintProvide(constructor)
 		for _, rtype := range fxreflect.ReturnTypes(constructor) {
 			fxlog.Info("providing",
 				fxlog.Field{Key: "return value", Value: rtype},

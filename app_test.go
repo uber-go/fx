@@ -922,12 +922,12 @@ func TestOptionString(t *testing.T) {
 		{
 			desc: "Logger",
 			give: WithLogger(testLogger{t}),
-			want: "fx.WithLogger(TestOptionString)",
+			want: "fx.withLogger(TestOptionString)",
 		},
 		{
 			desc: "NopLogger",
 			give: NopLogger,
-			want: "fx.WithLogger(NopLogger)",
+			want: "fx.withLogger(NopLogger)",
 		},
 		{
 			desc: "ErrorHook",
