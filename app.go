@@ -513,7 +513,7 @@ func New(opts ...Option) *App {
 	if app.err != nil {
 		fxlog.Info(
 			"error encountered while applying options",
-			fxlog.F("error", app.err),
+			fxlog.Err(app.err),
 		).Write(app.log)
 		return app
 	}
@@ -753,7 +753,7 @@ func (app *App) executeInvokes() error {
 			fxlog.Error(
 				"fx.Invoke failed",
 				fxlog.F("calledFrom", fname),
-				fxlog.F("error", err),
+				fxlog.Err(err),
 			).WithStack(i.Stack.String()).Write(app.log)
 			return err
 		}
@@ -767,7 +767,7 @@ func (app *App) run(done <-chan os.Signal) {
 	defer cancel()
 
 	if err := app.Start(startCtx); err != nil {
-		fxlog.Error("failed to start", fxlog.F("error", err)).Write(app.log)
+		fxlog.Error("failed to start", fxlog.Err(err)).Write(app.log)
 		// TODO: add option to override os.Exit behavior.
 		os.Exit(1)
 	}
@@ -779,7 +779,7 @@ func (app *App) run(done <-chan os.Signal) {
 
 	if err := app.Stop(stopCtx); err != nil {
 		fxlog.Error("failed to stop cleanly",
-			fxlog.F("error", err)).Write(app.log)
+			fxlog.Err(err)).Write(app.log)
 		os.Exit(1)
 	}
 }
@@ -793,9 +793,9 @@ func (app *App) start(ctx context.Context) error {
 	// Attempt to start cleanly.
 	if err := app.lifecycle.Start(ctx); err != nil {
 		// Start failed, rolling back.
-		fxlog.Info("startup failed, rolling back", fxlog.F("error", err)).Write(app.log)
+		fxlog.Info("startup failed, rolling back", fxlog.Err(err)).Write(app.log)
 		if stopErr := app.lifecycle.Stop(ctx); stopErr != nil {
-			fxlog.Info("could not rollback cleanly", fxlog.F("error", stopErr)).Write(app.log)
+			fxlog.Info("could not rollback cleanly", fxlog.Err(stopErr)).Write(app.log)
 
 			return multierr.Append(err, stopErr)
 		}

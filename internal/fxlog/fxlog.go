@@ -50,6 +50,11 @@ func (e Entry) Write(logger Logger) {
 	logger.Log(e)
 }
 
+// Err is a helper. 
+func Err(value interface{}) Field {
+	return F("error", value)
+}
+
 func F(key string, value interface{}) Field {
 	return Field{
 		Key:   key,
