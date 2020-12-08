@@ -22,6 +22,7 @@ package fxlog
 
 import (
 	"fmt"
+	"strings"
 
 	"go.uber.org/zap"
 )
@@ -51,20 +52,21 @@ func (s *Spy) String() string {
 	if len(s.entries) == 0 {
 		return ""
 	}
-	var msg string
+	var msg strings.Builder
+
 	for _, m := range s.entries {
-		msg += m.Message
+		_, _ = fmt.Fprintf(&msg, m.Message)
 		for _, f := range m.Fields {
 			// extra space before f.Key to separate out message.
-			msg += fmt.Sprintf("\t%s: %v", f.Key, f.Value)
+			_, _ = fmt.Fprintf(&msg, "\t%s: %v", f.Key, f.Value)
 		}
 		if m.Stack != "" {
-			msg += fmt.Sprintf(msg, "%q", m.Stack)
+			_, _ = fmt.Fprintf(&msg, "%q", m.Stack)
 		}
-		msg += "\n"
+		_, _ = fmt.Fprintf(&msg, "\n")
 	}
 
-	return msg
+	return msg.String()
 }
 
 // Fields returns all Fields members of entries.
