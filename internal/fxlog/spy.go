@@ -53,17 +53,16 @@ func (s *Spy) String() string {
 		return ""
 	}
 	var msg strings.Builder
-
 	for _, m := range s.entries {
-		_, _ = fmt.Fprintf(&msg, m.Message)
+		fmt.Fprintf(&msg, m.Message)
 		for _, f := range m.Fields {
 			// extra space before f.Key to separate out message.
-			_, _ = fmt.Fprintf(&msg, "\t%s: %v", f.Key, f.Value)
+			fmt.Fprintf(&msg, "\t%s: %v", f.Key, f.Value)
 		}
 		if m.Stack != "" {
-			_, _ = fmt.Fprintf(&msg, "%q", m.Stack)
+			fmt.Fprintf(&msg, "\t%q", m.Stack)
 		}
-		_, _ = fmt.Fprintf(&msg, "\n")
+		msg.WriteString("\n")
 	}
 
 	return msg.String()
