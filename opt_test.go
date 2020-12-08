@@ -22,10 +22,13 @@ package fx
 
 import "go.uber.org/fx/internal/fxlog"
 
+// ExitCode exposes exitCode option for tests.
+func ExitCode(c int) Option {
+	return exitCode(c)
+}
+
+// WithLogger exposes logger option for tests.
 func WithLogger(l fxlog.Logger) Option {
 	return withLogger(l)
 }
 
-func ExitCode(c int) Option {
-	return exitCode(c)
-}
