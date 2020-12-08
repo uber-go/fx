@@ -38,7 +38,6 @@ import (
 	"go.uber.org/fx/internal/fxreflect"
 	"go.uber.org/fx/internal/lifecycle"
 	"go.uber.org/multierr"
-	"go.uber.org/zap/zapcore"
 )
 
 // DefaultTimeout is the default timeout for starting or stopping an
@@ -297,30 +296,8 @@ func Logger(p Printer) Option {
 
 type loggerOption struct{ p Printer }
 
-type printerWrapper struct {
-	p Printer
-}
-
-// newPrinter returns an implementation of zapcore.WriteSyncer
-// used to support Logger option which implements Printer
-// interface.
-func newPrinter(p Printer) zapcore.WriteSyncer {
-	return &printerWrapper{
-		p: p,
-	}
-}
-
-func (p *printerWrapper) Write(b []byte) (n int, err error) {
-	p.p.Printf(string(b))
-	return len(b), nil
-}
-
-func (p *printerWrapper) Sync() error {
-	return nil
-}
-
 func (l loggerOption) apply(app *App) {
-	np := newPrinter(l.p)
+	np := writeSyncerFromPrinter(l.p)
 	app.log = fxlog.DefaultLogger(np) // assuming np is thread-safe.
 }
 
