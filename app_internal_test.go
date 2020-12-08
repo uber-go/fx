@@ -46,29 +46,6 @@ func TestAppRun(t *testing.T) {
 	wg.Wait()
 }
 
-// TestAppRunStart tries to trigger a startup error when running an app and not exit(1).
-func TestAppRunStart(t *testing.T) {
-	// Setting exit code to be successful.
-	app := New(Invoke(struct{}{}), ExitCode(0))
-	done := make(chan os.Signal)
-
-	var wg sync.WaitGroup
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		app.run(done)
-	}()
-
-	done <- syscall.SIGINT
-	wg.Wait()
-}
-
-// TestAppDone is created for code coverage.
-func TestAppDone(t *testing.T) {
-	app := New()
-	assert.Nil(t, app.Done())
-}
-
 // TestValidateString verifies private option. Public options are tested in app_test.go.
 func TestValidateString(t *testing.T) {
 	stringer, ok := validate(true).(fmt.Stringer)

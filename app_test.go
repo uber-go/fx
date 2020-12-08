@@ -478,15 +478,6 @@ func TestTimeoutOptions(t *testing.T) {
 	assert.True(t, stopped, "app wasn't stopped")
 }
 
-func TestExitOption(t *testing.T) {
-	app := New(
-		Invoke(struct{}{}),
-		ExitCode(0),
-	)
-	err := app.Err()
-	assert.Error(t, err)
-}
-
 func TestAppStart(t *testing.T) {
 	t.Run("Timeout", func(t *testing.T) {
 		type A struct{}
