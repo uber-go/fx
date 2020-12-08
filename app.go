@@ -263,6 +263,22 @@ func (t stopTimeoutOption) String() string {
 	return fmt.Sprintf("fx.StopTimeout(%v)", time.Duration(t))
 }
 
+// exitCode set code to exit with on encountering an error when starting or
+// stopping an fx application. This is private until WithLogger is made public.
+func exitCode(c int) Option {
+	return exitCodeOption(c)
+}
+
+type exitCodeOption int
+
+func (e exitCodeOption) apply(app *App) {
+	app.exitCode = int(e)
+}
+
+func (e exitCodeOption) String() string {
+	return fmt.Sprintf("fx.exitCode(%v)", int(e))
+}
+
 // withLogger will stay private until we export fxlog.Logger once
 // we finalize the API.
 func withLogger(l fxlog.Logger) Option {
@@ -386,6 +402,7 @@ type App struct {
 	startTimeout time.Duration
 	stopTimeout  time.Duration
 	errorHooks   []ErrorHandler
+	exitCode     int
 	validate     bool
 
 	donesMu sync.RWMutex
@@ -487,6 +504,7 @@ func New(opts ...Option) *App {
 		log:          logger,
 		startTimeout: DefaultTimeout,
 		stopTimeout:  DefaultTimeout,
+		exitCode:     1,
 	}
 
 	for _, opt := range opts {
@@ -768,8 +786,7 @@ func (app *App) run(done <-chan os.Signal) {
 
 	if err := app.Start(startCtx); err != nil {
 		fxlog.Error("failed to start", fxlog.Err(err)).Write(app.log)
-		// TODO: add option to override os.Exit behavior.
-		os.Exit(1)
+		os.Exit(app.exitCode)
 	}
 	sig := (<-done).String()
 	fxlog.Info("received signal", fxlog.F("signal", strings.ToUpper(sig))).Write(app.log)
@@ -780,7 +797,7 @@ func (app *App) run(done <-chan os.Signal) {
 	if err := app.Stop(stopCtx); err != nil {
 		fxlog.Error("failed to stop cleanly",
 			fxlog.Err(err)).Write(app.log)
-		os.Exit(1)
+		os.Exit(app.exitCode)
 	}
 }
 
