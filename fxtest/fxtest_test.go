@@ -47,10 +47,6 @@ func (t *tb) FailNow() {
 	t.failures++
 }
 
-func (t *tb) Error(format string) {
-
-}
-
 func (t *tb) Errorf(format string, args ...interface{}) {
 	fmt.Fprintf(t.errors, format, args...)
 	t.errors.WriteRune('\n')

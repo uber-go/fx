@@ -322,7 +322,6 @@ func (p *printerWrapper) Sync() error {
 func (l loggerOption) apply(app *App) {
 	np := newPrinter(l.p)
 	app.log = fxlog.DefaultLogger(np) // assuming np is thread-safe.
-	app.lifecycle = &lifecycleWrapper{lifecycle.New(app.log)}
 }
 
 func (l loggerOption) String() string {
@@ -479,10 +478,8 @@ func ValidateApp(opts ...Option) error {
 // details on the application's initialization, startup, and shutdown logic.
 func New(opts ...Option) *App {
 	logger := fxlog.DefaultLogger(os.Stderr)
-	lc := &lifecycleWrapper{lifecycle.New(logger)}
 
 	app := &App{
-		lifecycle:    lc,
 		log:          logger,
 		startTimeout: DefaultTimeout,
 		stopTimeout:  DefaultTimeout,
@@ -491,6 +488,7 @@ func New(opts ...Option) *App {
 	for _, opt := range opts {
 		opt.apply(app)
 	}
+	app.lifecycle = &lifecycleWrapper{lifecycle.New(app.log)}
 
 	app.container = dig.New(
 		dig.DeferAcyclicVerification(),
@@ -668,12 +666,12 @@ func (app *App) provide(p provide) {
 	switch {
 	case p.IsSupply:
 		for _, rtype := range fxreflect.ReturnTypes(constructor) {
-			fxlog.Info("supplying", fxlog.Field{Key: "constructor", Value: rtype}).Write(app.log)
+			fxlog.Info("supplying", fxlog.Field{Key: "returnType", Value: rtype}).Write(app.log)
 		}
 	default:
 		for _, rtype := range fxreflect.ReturnTypes(constructor) {
 			fxlog.Info("providing",
-				fxlog.Field{Key: "returnValue", Value: rtype},
+				fxlog.Field{Key: "type", Value: rtype},
 				fxlog.Field{Key: "constructor", Value: fxreflect.FuncName(constructor)},
 			).Write(app.log)
 		}
@@ -751,7 +749,7 @@ func (app *App) executeInvokes() error {
 		if err != nil {
 			fxlog.Error(
 				"fx.Invoke failed",
-				fxlog.F("calledFrom", fname),
+				fxlog.F("function", fname),
 				fxlog.Err(err),
 			).WithStack(i.Stack.String()).Write(app.log)
 			return err

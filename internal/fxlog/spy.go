@@ -56,9 +56,11 @@ func (s *Spy) String() string {
 		msg += m.Message
 		for _, f := range m.Fields {
 			// extra space before f.Key to separate out message.
-			msg += fmt.Sprintf(" %s: %v", f.Key, f.Value)
+			msg += fmt.Sprintf("\t%s: %v", f.Key, f.Value)
 		}
-		msg += m.Stack
+		if m.Stack != "" {
+			msg += fmt.Sprintf(msg, "%q", m.Stack)
+		}
 		msg += "\n"
 	}
 
@@ -69,8 +71,7 @@ func (s *Spy) String() string {
 func (s *Spy) Fields() []zap.Field {
 	var fields []zap.Field
 	for _, e := range s.entries {
-		fs := encodeFields(e.Fields, "")
-		fields = append(fields, fs...)
+		fields = append(fields, encodeFields(e.Fields, "")...)
 	}
 
 	return fields

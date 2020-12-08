@@ -22,11 +22,11 @@ package lifecycle
 
 import (
 	"context"
-	"os"
+
+	"go.uber.org/multierr"
 
 	"go.uber.org/fx/internal/fxlog"
 	"go.uber.org/fx/internal/fxreflect"
-	"go.uber.org/multierr"
 )
 
 // A Hook is a pair of start and stop callbacks, either of which can be nil,
@@ -46,12 +46,7 @@ type Lifecycle struct {
 
 // New constructs a new Lifecycle.
 func New(logger fxlog.Logger) *Lifecycle {
-	if logger == nil {
-		logger = fxlog.DefaultLogger(os.Stderr)
-	}
-
 	return &Lifecycle{logger: logger}
-
 }
 
 // Append adds a Hook to the lifecycle.

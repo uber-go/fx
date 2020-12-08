@@ -31,13 +31,12 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.uber.org/multierr"
-	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
-
 	. "go.uber.org/fx"
 	"go.uber.org/fx/fxtest"
 	"go.uber.org/fx/internal/fxlog"
+	"go.uber.org/multierr"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 )
 
 func NewForTest(t testing.TB, opts ...Option) *App {
@@ -70,7 +69,7 @@ func TestNewApp(t *testing.T) {
 		defer app.RequireStart().RequireStop()
 		assert.Contains(t, spy.String(), "providing")
 		assert.Contains(t, spy.Fields(), zap.Field{
-			Key:    "returnValue",
+			Key:    "type",
 			Type:   zapcore.StringType,
 			String: "struct {}",
 		})
@@ -435,7 +434,7 @@ func TestOptions(t *testing.T) {
 		s := fields[0]
 		assert.Equal(t, "error", s.Key)
 		assert.Equal(t, zapcore.ErrorType, s.Type)
-		assert.Contains(t, fmt.Sprintf("%v", s.Interface), "must provide constructor function")
+		assert.Contains(t, fmt.Sprint(s.Interface), "must provide constructor function")
 	})
 }
 
@@ -563,7 +562,7 @@ func TestAppStart(t *testing.T) {
 		fields := spy.Fields()
 		assert.Len(t, fields, 9)
 
-		assert.Contains(t, output, "fx.Invoke failed calledFrom:")
+		assert.Contains(t, output, "fx.Invoke failed\tfunction:")
 		assert.Contains(t, output, "go.uber.org/fx_test.TestAppStart")
 		assert.Contains(t, output, "fx/app_test.go")
 		assert.Contains(t, output, "can't invoke non-function")

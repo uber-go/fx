@@ -68,7 +68,7 @@ func TestSpy(t *testing.T) {
 				},
 			},
 		}, s.Messages())
-		assert.Equal(t, "foo bar\nsomething went wrong error: great sadness\n", s.String())
+		assert.Equal(t, "foo bar\nsomething went wrong\terror: great sadness\n", s.String())
 	})
 
 	s.Reset()

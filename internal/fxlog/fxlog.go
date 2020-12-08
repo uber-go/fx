@@ -54,7 +54,7 @@ func (e Entry) Write(logger Logger) {
 }
 
 // Err is a helper for error Fields.
-func Err(value interface{}) Field {
+func Err(value error) Field {
 	return F("error", value)
 }
 
@@ -89,7 +89,7 @@ func encodeFields(fields []Field, stack string) []zap.Field {
 		fs = append(fs, zap.Any(field.Key, field.Value))
 	}
 	if stack != "" {
-		fs = append(fs, zap.Stack(stack))
+		fs = append(fs, zap.String("stack", stack))
 	}
 
 	return fs

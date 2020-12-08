@@ -20,9 +20,7 @@
 
 package fxtest
 
-import (
-	"go.uber.org/fx"
-)
+import "go.uber.org/fx"
 
 type testPrinter struct {
 	TB

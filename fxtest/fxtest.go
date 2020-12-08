@@ -22,8 +22,10 @@ package fxtest
 
 import (
 	"context"
+	"os"
 
 	"go.uber.org/fx"
+	"go.uber.org/fx/internal/fxlog"
 	"go.uber.org/fx/internal/lifecycle"
 )
 
@@ -97,7 +99,7 @@ type Lifecycle struct {
 // NewLifecycle creates a new test lifecycle.
 func NewLifecycle(t TB) *Lifecycle {
 	return &Lifecycle{
-		lc: lifecycle.New(nil),
+		lc: lifecycle.New(fxlog.DefaultLogger(os.Stderr)),
 		t:  t,
 	}
 }
