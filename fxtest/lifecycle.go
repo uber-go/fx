@@ -22,11 +22,11 @@ package fxtest
 
 import (
 	"context"
-	"os"
 
 	"go.uber.org/fx"
 	"go.uber.org/fx/internal/fxlog"
 	"go.uber.org/fx/internal/lifecycle"
+	"go.uber.org/fx/internal/testutil"
 )
 
 // Lifecycle is a testing spy for fx.Lifecycle. It exposes Start and Stop
@@ -41,8 +41,9 @@ var _ fx.Lifecycle = (*Lifecycle)(nil)
 
 // NewLifecycle creates a new test lifecycle.
 func NewLifecycle(t TB) *Lifecycle {
+	w := testutil.WriteSyncer{T: t}
 	return &Lifecycle{
-		lc: lifecycle.New(fxlog.DefaultLogger(os.Stderr)),
+		lc: lifecycle.New(fxlog.DefaultLogger(w)),
 		t:  t,
 	}
 }

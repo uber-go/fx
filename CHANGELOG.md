@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Changed
 - Fx now emits structured, JSON logs. These may be parsed and processed by
   log ingestion systems.
+- `fxtest.Lifecycle` now logs to the provided `testing.TB` instead of stderr.
 
 ## [1.13.1] - 2020-08-19
 ### Fixed
