@@ -666,7 +666,7 @@ func (app *App) provide(p provide) {
 	switch {
 	case p.IsSupply:
 		for _, rtype := range fxreflect.ReturnTypes(constructor) {
-			fxlog.Info("supplying", fxlog.Field{Key: "returnType", Value: rtype}).Write(app.log)
+			fxlog.Info("supplying", fxlog.Field{Key: "type", Value: rtype}).Write(app.log)
 		}
 	default:
 		for _, rtype := range fxreflect.ReturnTypes(constructor) {
