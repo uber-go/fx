@@ -71,7 +71,7 @@ func TestPrint(t *testing.T) {
 	t.Run("PrintSupply", func(t *testing.T) {
 		sink.Reset()
 		for _, rtype := range fxreflect.ReturnTypes(func() *bytes.Buffer { return bytes.NewBuffer(nil) }) {
-			Info("type", Field{Key: "constructor", Value: rtype}).Write(sink)
+			Info("supplying", Field{Key: "type", Value: rtype}).Write(sink)
 		}
 		assert.Contains(t, sink.String(), "supplying")
 		assert.Contains(t, sink.Fields(), zap.Field{
