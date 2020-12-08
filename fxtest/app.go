@@ -22,20 +22,9 @@ package fxtest
 
 import (
 	"context"
-	"os"
 
 	"go.uber.org/fx"
-	"go.uber.org/fx/internal/fxlog"
-	"go.uber.org/fx/internal/lifecycle"
 )
-
-// TB is a subset of the standard library's testing.TB interface. It's
-// satisfied by both *testing.T and *testing.B.
-type TB interface {
-	Logf(string, ...interface{})
-	Errorf(string, ...interface{})
-	FailNow()
-}
 
 // App is a wrapper around fx.App that provides some testing helpers. By
 // default, it uses the provided TB as the application's logging backend.
@@ -84,67 +73,4 @@ func (app *App) RequireStop() {
 		app.tb.Errorf("application didn't stop cleanly: %v", err)
 		app.tb.FailNow()
 	}
-}
-
-var _ fx.Lifecycle = (*Lifecycle)(nil)
-
-// Lifecycle is a testing spy for fx.Lifecycle. It exposes Start and Stop
-// methods (and some test-specific helpers) so that unit tests can exercise
-// hooks.
-type Lifecycle struct {
-	t  TB
-	lc *lifecycle.Lifecycle
-}
-
-// NewLifecycle creates a new test lifecycle.
-func NewLifecycle(t TB) *Lifecycle {
-	return &Lifecycle{
-		lc: lifecycle.New(fxlog.DefaultLogger(os.Stderr)),
-		t:  t,
-	}
-}
-
-// Start executes all registered OnStart hooks in order, halting at the first
-// hook that doesn't succeed.
-func (l *Lifecycle) Start(ctx context.Context) error { return l.lc.Start(ctx) }
-
-// RequireStart calls Start with context.Background(), failing the test if an
-// error is encountered.
-func (l *Lifecycle) RequireStart() *Lifecycle {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
-	if err := l.Start(ctx); err != nil {
-		l.t.Errorf("lifecycle didn't start cleanly: %v", err)
-		l.t.FailNow()
-	}
-	return l
-}
-
-// Stop calls all OnStop hooks whose OnStart counterpart was called, running
-// in reverse order.
-//
-// If any hook returns an error, execution continues for a best-effort
-// cleanup. Any errors encountered are collected into a single error and
-// returned.
-func (l *Lifecycle) Stop(ctx context.Context) error { return l.lc.Stop(ctx) }
-
-// RequireStop calls Stop with context.Background(), failing the test if an error
-// is encountered.
-func (l *Lifecycle) RequireStop() {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
-	if err := l.Stop(ctx); err != nil {
-		l.t.Errorf("lifecycle didn't stop cleanly: %v", err)
-		l.t.FailNow()
-	}
-}
-
-// Append registers a new Hook.
-func (l *Lifecycle) Append(h fx.Hook) {
-	l.lc.Append(lifecycle.Hook{
-		OnStart: h.OnStart,
-		OnStop:  h.OnStop,
-	})
 }
