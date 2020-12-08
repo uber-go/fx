@@ -31,4 +31,3 @@ func ExitCode(c int) Option {
 func WithLogger(l fxlog.Logger) Option {
 	return withLogger(l)
 }
-
