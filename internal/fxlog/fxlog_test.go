@@ -30,12 +30,15 @@ import (
 	"go.uber.org/fx/internal/fxlog/foovendor"
 	"go.uber.org/fx/internal/fxlog/sample.git"
 	"go.uber.org/fx/internal/fxreflect"
+	"go.uber.org/fx/internal/testutil"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
 
 func TestNew(t *testing.T) {
-	assert.NotPanics(t, func() { DefaultLogger(os.Stderr) })
+	assert.NotPanics(t, func() {
+		DefaultLogger(testutil.WriteSyncer{T: t})
+	})
 }
 
 func TestPrint(t *testing.T) {

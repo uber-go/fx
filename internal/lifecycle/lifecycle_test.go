@@ -23,18 +23,21 @@ package lifecycle
 import (
 	"context"
 	"errors"
-	"os"
 	"testing"
 
-	"go.uber.org/fx/internal/fxlog"
-
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/fx/internal/fxlog"
+	"go.uber.org/fx/internal/testutil"
 	"go.uber.org/multierr"
 )
 
+func testLogger(t *testing.T) fxlog.Logger {
+	return fxlog.DefaultLogger(testutil.WriteSyncer{T: t})
+}
+
 func TestLifecycleStart(t *testing.T) {
 	t.Run("ExecutesInOrder", func(t *testing.T) {
-		l := New(fxlog.DefaultLogger(os.Stderr))
+		l := New(testLogger(t))
 		count := 0
 
 		l.Append(Hook{
@@ -56,7 +59,7 @@ func TestLifecycleStart(t *testing.T) {
 		assert.Equal(t, 2, count)
 	})
 	t.Run("ErrHaltsChainAndRollsBack", func(t *testing.T) {
-		l := New(fxlog.DefaultLogger(os.Stderr))
+		l := New(testLogger(t))
 		err := errors.New("a starter error")
 		starterCount := 0
 		stopperCount := 0
@@ -105,7 +108,7 @@ func TestLifecycleStart(t *testing.T) {
 
 func TestLifecycleStop(t *testing.T) {
 	t.Run("DoesNothingWithoutHooks", func(t *testing.T) {
-		l := &Lifecycle{logger: fxlog.DefaultLogger(os.Stderr)}
+		l := &Lifecycle{logger: testLogger(t)}
 		assert.Nil(t, l.Stop(context.Background()), "no lifecycle hooks should have resulted in stop returning nil")
 	})
 
@@ -116,13 +119,13 @@ func TestLifecycleStop(t *testing.T) {
 				return nil
 			},
 		}
-		l := &Lifecycle{logger: fxlog.DefaultLogger(os.Stderr)}
+		l := &Lifecycle{logger: testLogger(t)}
 		l.Append(hook)
 		l.Stop(context.Background())
 	})
 
 	t.Run("ExecutesInReverseOrder", func(t *testing.T) {
-		l := &Lifecycle{logger: fxlog.DefaultLogger(os.Stderr)}
+		l := &Lifecycle{logger: testLogger(t)}
 		count := 2
 
 		l.Append(Hook{
@@ -146,7 +149,7 @@ func TestLifecycleStop(t *testing.T) {
 	})
 
 	t.Run("ErrDoesntHaltChain", func(t *testing.T) {
-		l := New(fxlog.DefaultLogger(os.Stderr))
+		l := New(testLogger(t))
 		count := 0
 
 		l.Append(Hook{
@@ -168,7 +171,7 @@ func TestLifecycleStop(t *testing.T) {
 		assert.Equal(t, 2, count)
 	})
 	t.Run("GathersAllErrs", func(t *testing.T) {
-		l := New(fxlog.DefaultLogger(os.Stderr))
+		l := New(testLogger(t))
 
 		err := errors.New("some stop error")
 		err2 := errors.New("some other stop error")
@@ -188,7 +191,7 @@ func TestLifecycleStop(t *testing.T) {
 		assert.Equal(t, multierr.Combine(err, err2), l.Stop(context.Background()))
 	})
 	t.Run("AllowEmptyHooks", func(t *testing.T) {
-		l := New(fxlog.DefaultLogger(os.Stderr))
+		l := New(testLogger(t))
 		l.Append(Hook{})
 		l.Append(Hook{})
 
@@ -197,7 +200,7 @@ func TestLifecycleStop(t *testing.T) {
 	})
 
 	t.Run("DoesNothingIfStartFailed", func(t *testing.T) {
-		l := New(fxlog.DefaultLogger(os.Stderr))
+		l := New(testLogger(t))
 		err := errors.New("some start error")
 
 		l.Append(Hook{
