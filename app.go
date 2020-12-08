@@ -34,12 +34,11 @@ import (
 	"time"
 
 	"go.uber.org/dig"
-	"go.uber.org/multierr"
-	"go.uber.org/zap/zapcore"
-
 	"go.uber.org/fx/internal/fxlog"
 	"go.uber.org/fx/internal/fxreflect"
 	"go.uber.org/fx/internal/lifecycle"
+	"go.uber.org/multierr"
+	"go.uber.org/zap/zapcore"
 )
 
 // DefaultTimeout is the default timeout for starting or stopping an
