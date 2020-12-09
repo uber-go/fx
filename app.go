@@ -261,13 +261,35 @@ func (t stopTimeoutOption) String() string {
 	return fmt.Sprintf("fx.StopTimeout(%v)", time.Duration(t))
 }
 
+// withLogger will stay private until we export fxlog.Logger once
+// we finalize the API.
+func withLogger(l fxlog.Logger) Option {
+	return withLoggerOption{l}
+}
+
+type withLoggerOption struct{ l fxlog.Logger }
+
+func (l withLoggerOption) apply(app *App) {
+	app.log = l.l
+}
+
+func (l withLoggerOption) String() string {
+	return fmt.Sprintf("fx.withLogger(%v)", l.l)
+}
+
 // Printer is the interface required by Fx's logging backend. It's implemented
 // by most loggers, including the one bundled with the standard library.
+//
+// Note, this will be deprecate with next release and you will need to implement
+// fxlog.Logger interface instead.
 type Printer interface {
 	Printf(string, ...interface{})
 }
 
 // Logger redirects the application's log output to the provided printer.
+//
+// Note, this will be deprecated with the next release and you will need to use
+// withLogger instead.
 func Logger(p Printer) Option {
 	return loggerOption{p}
 }
@@ -275,8 +297,8 @@ func Logger(p Printer) Option {
 type loggerOption struct{ p Printer }
 
 func (l loggerOption) apply(app *App) {
-	app.logger = &fxlog.Logger{Printer: l.p}
-	app.lifecycle = &lifecycleWrapper{lifecycle.New(app.logger)}
+	np := writeSyncerFromPrinter(l.p)
+	app.log = fxlog.DefaultLogger(np) // assuming np is thread-safe.
 }
 
 func (l loggerOption) String() string {
@@ -285,13 +307,13 @@ func (l loggerOption) String() string {
 
 // NopLogger disables the application's log output. Note that this makes some
 // failures difficult to debug, since no errors are printed to console.
-var NopLogger = Logger(nopLogger{})
+//
+// Note, when withLogger is public we will make the change here as well.
+var NopLogger = withLogger(nopLogger{})
 
 type nopLogger struct{}
 
-func (l nopLogger) Printf(string, ...interface{}) {
-	return
-}
+func (nopLogger) Log(fxlog.Entry) {}
 
 func (nopLogger) String() string { return "NopLogger" }
 
@@ -335,7 +357,7 @@ type App struct {
 	lifecycle    *lifecycleWrapper
 	provides     []provide
 	invokes      []invoke
-	logger       *fxlog.Logger
+	log          fxlog.Logger
 	startTimeout time.Duration
 	stopTimeout  time.Duration
 	errorHooks   []ErrorHandler
@@ -432,12 +454,10 @@ func ValidateApp(opts ...Option) error {
 // registered via Invoke options. See the documentation of the App struct for
 // details on the application's initialization, startup, and shutdown logic.
 func New(opts ...Option) *App {
-	logger := fxlog.New()
-	lc := &lifecycleWrapper{lifecycle.New(logger)}
+	logger := fxlog.DefaultLogger(os.Stderr)
 
 	app := &App{
-		lifecycle:    lc,
-		logger:       logger,
+		log:          logger,
 		startTimeout: DefaultTimeout,
 		stopTimeout:  DefaultTimeout,
 	}
@@ -445,6 +465,7 @@ func New(opts ...Option) *App {
 	for _, opt := range opts {
 		opt.apply(app)
 	}
+	app.lifecycle = &lifecycleWrapper{lifecycle.New(app.log)}
 
 	app.container = dig.New(
 		dig.DeferAcyclicVerification(),
@@ -464,7 +485,10 @@ func New(opts ...Option) *App {
 	app.provide(provide{Target: app.dotGraph, Stack: frames})
 
 	if app.err != nil {
-		app.logger.Printf("Error after options were applied: %v", app.err)
+		fxlog.Info(
+			"error encountered while applying options",
+			fxlog.Err(app.err),
+		).Write(app.log)
 		return app
 	}
 
@@ -618,9 +642,16 @@ func (app *App) provide(p provide) {
 
 	switch {
 	case p.IsSupply:
-		app.logger.PrintSupply(constructor)
+		for _, rtype := range fxreflect.ReturnTypes(constructor) {
+			fxlog.Info("supplying", fxlog.Field{Key: "type", Value: rtype}).Write(app.log)
+		}
 	default:
-		app.logger.PrintProvide(constructor)
+		for _, rtype := range fxreflect.ReturnTypes(constructor) {
+			fxlog.Info("providing",
+				fxlog.Field{Key: "type", Value: rtype},
+				fxlog.Field{Key: "constructor", Value: fxreflect.FuncName(constructor)},
+			).Write(app.log)
+		}
 	}
 
 	if _, ok := constructor.(Option); ok {
@@ -681,7 +712,7 @@ func (app *App) executeInvokes() error {
 	for _, i := range app.invokes {
 		fn := i.Target
 		fname := fxreflect.FuncName(fn)
-		app.logger.Printf("INVOKE\t\t%s", fname)
+		fxlog.Info("invoke", fxlog.F("function", fname)).Write(app.log)
 
 		var err error
 		if _, ok := fn.(Option); ok {
@@ -693,7 +724,11 @@ func (app *App) executeInvokes() error {
 		}
 
 		if err != nil {
-			app.logger.Printf("fx.Invoke(%v) called from:\n%+vFailed: %v", fname, i.Stack, err)
+			fxlog.Error(
+				"fx.Invoke failed",
+				fxlog.F("function", fname),
+				fxlog.Err(err),
+			).WithStack(i.Stack.String()).Write(app.log)
 			return err
 		}
 	}
@@ -706,16 +741,19 @@ func (app *App) run(done <-chan os.Signal) {
 	defer cancel()
 
 	if err := app.Start(startCtx); err != nil {
-		app.logger.Fatalf("ERROR\t\tFailed to start: %v", err)
+		fxlog.Error("failed to start", fxlog.Err(err)).Write(app.log)
+		os.Exit(1)
 	}
-
-	app.logger.PrintSignal(<-done)
+	sig := (<-done).String()
+	fxlog.Info("received signal", fxlog.F("signal", strings.ToUpper(sig))).Write(app.log)
 
 	stopCtx, cancel := context.WithTimeout(context.Background(), app.StopTimeout())
 	defer cancel()
 
 	if err := app.Stop(stopCtx); err != nil {
-		app.logger.Fatalf("ERROR\t\tFailed to stop cleanly: %v", err)
+		fxlog.Error("failed to stop cleanly",
+			fxlog.Err(err)).Write(app.log)
+		os.Exit(1)
 	}
 }
 
@@ -727,16 +765,17 @@ func (app *App) start(ctx context.Context) error {
 
 	// Attempt to start cleanly.
 	if err := app.lifecycle.Start(ctx); err != nil {
-		// Start failed, roll back.
-		app.logger.Printf("ERROR\t\tStart failed, rolling back: %v", err)
+		// Start failed, rolling back.
+		fxlog.Info("startup failed, rolling back", fxlog.Err(err)).Write(app.log)
 		if stopErr := app.lifecycle.Stop(ctx); stopErr != nil {
-			app.logger.Printf("ERROR\t\tCouldn't rollback cleanly: %v", stopErr)
+			fxlog.Info("could not rollback cleanly", fxlog.Err(stopErr)).Write(app.log)
+
 			return multierr.Append(err, stopErr)
 		}
 		return err
 	}
+	fxlog.Info("running").Write(app.log)
 
-	app.logger.Printf("RUNNING")
 	return nil
 }
 

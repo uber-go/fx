@@ -29,13 +29,14 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	. "go.uber.org/fx"
 	"go.uber.org/fx/fxtest"
 	"go.uber.org/fx/internal/fxlog"
 	"go.uber.org/multierr"
-
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 )
 
 func NewForTest(t testing.TB, opts ...Option) *App {
@@ -64,9 +65,14 @@ func TestNewApp(t *testing.T) {
 		// (e.g., logging) from changing halfway through our provides.
 
 		spy := new(fxlog.Spy)
-		app := fxtest.New(t, Provide(func() struct{} { return struct{}{} }), Logger(spy))
+		app := fxtest.New(t, Provide(func() struct{} { return struct{}{} }), WithLogger(spy))
 		defer app.RequireStart().RequireStop()
-		assert.Contains(t, spy.String(), "PROVIDE\tstruct {}")
+		assert.Contains(t, spy.String(), "providing")
+		assert.Contains(t, spy.Fields(), zap.Field{
+			Key:    "type",
+			Type:   zapcore.StringType,
+			String: "struct {}",
+		})
 	})
 
 	t.Run("CircularGraphReturnsError", func(t *testing.T) {
@@ -420,9 +426,15 @@ func TestOptions(t *testing.T) {
 		spy := new(fxlog.Spy)
 		New(
 			Provide(&bytes.Buffer{}), // error, not a constructor
-			Logger(spy),
+			WithLogger(spy),
 		)
-		assert.Contains(t, spy.String(), "must provide constructor function")
+		assert.Contains(t, spy.String(), "error encountered while applying options")
+		fields := spy.Fields()
+		assert.Len(t, fields, 1)
+		s := fields[0]
+		assert.Equal(t, "error", s.Key)
+		assert.Equal(t, zapcore.ErrorType, s.Type)
+		assert.Contains(t, fmt.Sprint(s.Interface), "must provide constructor function")
 	})
 }
 
@@ -534,7 +546,7 @@ func TestAppStart(t *testing.T) {
 	t.Run("InvokeNonFunction", func(t *testing.T) {
 		spy := new(fxlog.Spy)
 
-		app := New(Logger(spy), Invoke(struct{}{}))
+		app := New(WithLogger(spy), Invoke(struct{}{}))
 		err := app.Err()
 		require.Error(t, err, "expected start failure")
 		assert.Contains(t, err.Error(), "can't invoke non-function")
@@ -547,10 +559,13 @@ func TestAppStart(t *testing.T) {
 		//         /.../go/1.13.3/libexec/src/testing/testing.go:909
 		// Failed: can't invoke non-function {} (type struct {})
 		output := spy.String()
-		assert.Contains(t, output, "fx.Invoke({}) called from:")
+		fields := spy.Fields()
+		assert.Len(t, fields, 9)
+
+		assert.Contains(t, output, "fx.Invoke failed\tfunction:")
 		assert.Contains(t, output, "go.uber.org/fx_test.TestAppStart")
 		assert.Contains(t, output, "fx/app_test.go")
-		assert.Contains(t, output, "Failed: can't invoke non-function")
+		assert.Contains(t, output, "can't invoke non-function")
 	})
 
 	t.Run("ProvidingAProvideShouldFail", func(t *testing.T) {
@@ -765,9 +780,9 @@ func TestDone(t *testing.T) {
 
 func TestReplaceLogger(t *testing.T) {
 	spy := new(fxlog.Spy)
-	app := fxtest.New(t, Logger(spy))
+	app := fxtest.New(t, WithLogger(spy))
 	app.RequireStart().RequireStop()
-	assert.Contains(t, spy.String(), "RUNNING")
+	assert.Contains(t, spy.String(), "running")
 }
 
 func TestNopLogger(t *testing.T) {
@@ -905,13 +920,13 @@ func TestOptionString(t *testing.T) {
 		},
 		{
 			desc: "Logger",
-			give: Logger(testLogger{t}),
-			want: "fx.Logger(TestOptionString)",
+			give: WithLogger(testLogger{t}),
+			want: "fx.withLogger(TestOptionString)",
 		},
 		{
 			desc: "NopLogger",
 			give: NopLogger,
-			want: "fx.Logger(NopLogger)",
+			want: "fx.withLogger(NopLogger)",
 		},
 		{
 			desc: "ErrorHook",
@@ -943,6 +958,10 @@ type testLogger struct{ t *testing.T }
 
 func (l testLogger) Printf(s string, args ...interface{}) {
 	l.t.Logf(s, args...)
+}
+
+func (l testLogger) Log(entry fxlog.Entry) {
+	l.t.Logf(entry.Message)
 }
 
 func (l testLogger) String() string {

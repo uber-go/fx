@@ -23,9 +23,10 @@ package lifecycle
 import (
 	"context"
 
+	"go.uber.org/multierr"
+
 	"go.uber.org/fx/internal/fxlog"
 	"go.uber.org/fx/internal/fxreflect"
-	"go.uber.org/multierr"
 )
 
 // A Hook is a pair of start and stop callbacks, either of which can be nil,
@@ -38,16 +39,13 @@ type Hook struct {
 
 // Lifecycle coordinates application lifecycle hooks.
 type Lifecycle struct {
-	logger     *fxlog.Logger
+	logger     fxlog.Logger
 	hooks      []Hook
 	numStarted int
 }
 
 // New constructs a new Lifecycle.
-func New(logger *fxlog.Logger) *Lifecycle {
-	if logger == nil {
-		logger = fxlog.New()
-	}
+func New(logger fxlog.Logger) *Lifecycle {
 	return &Lifecycle{logger: logger}
 }
 
@@ -62,7 +60,10 @@ func (l *Lifecycle) Append(hook Hook) {
 func (l *Lifecycle) Start(ctx context.Context) error {
 	for _, hook := range l.hooks {
 		if hook.OnStart != nil {
-			l.logger.Printf("START\t\t%s()", hook.caller)
+			fxlog.Info("starting", fxlog.Field{
+				Key:   "caller",
+				Value: hook.caller,
+			}).Write(l.logger)
 			if err := hook.OnStart(ctx); err != nil {
 				return err
 			}
@@ -82,7 +83,10 @@ func (l *Lifecycle) Stop(ctx context.Context) error {
 		if hook.OnStop == nil {
 			continue
 		}
-		l.logger.Printf("STOP\t\t%s()", hook.caller)
+		fxlog.Info("stopping", fxlog.Field{
+			Key:   "caller",
+			Value: hook.caller,
+		}).Write(l.logger)
 		if err := hook.OnStop(ctx); err != nil {
 			// For best-effort cleanup, keep going after errors.
 			errs = append(errs, err)

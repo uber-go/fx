@@ -21,68 +21,117 @@
 package fxlog
 
 import (
-	"fmt"
-	"log"
-	"os"
-	"strings"
-
-	"go.uber.org/fx/internal/fxreflect"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 )
 
-var _exit = func() { os.Exit(1) }
+// Level is the level of logging used by Logger.
+type Level int
 
-// Printer is a formatting printer.
-type Printer interface {
-	Printf(string, ...interface{})
+const (
+	// InfoLevel is Info logging level used to log messages via zap.
+	InfoLevel Level = iota
+	// ErrorLevel is Info logging level used to log messages via zap.
+	ErrorLevel
+)
+
+// Entry is an entry to be later serialized into zap message and fields.
+type Entry struct {
+	Level   Level
+	Message string
+	Fields  []Field
+	Stack   string
 }
 
-// New returns a new Logger backed by the standard library's log package.
-func New() *Logger {
-	return &Logger{log.New(os.Stderr, "", log.LstdFlags)}
+// WithStack mutates an Entry to add a Stack field.
+func (e Entry) WithStack(stack string) Entry {
+	e.Stack = stack
+	return e
 }
 
-// A Logger writes output to standard error.
-type Logger struct {
-	Printer
+func (e Entry) Write(logger Logger) {
+	logger.Log(e)
 }
 
-// Printf logs a formatted Fx line.
-func (l *Logger) Printf(format string, v ...interface{}) {
-	l.Printer.Printf(prepend(format), v...)
+// Err is a helper for error Fields.
+func Err(value error) Field {
+	return F("error", value)
 }
 
-// PrintProvide logs a type provided into the dig.Container.
-func (l *Logger) PrintProvide(t interface{}) {
-	for _, rtype := range fxreflect.ReturnTypes(t) {
-		l.Printf("PROVIDE\t%s <= %s", rtype, fxreflect.FuncName(t))
+// F is a constructor for a Field.
+func F(key string, value interface{}) Field {
+	return Field{
+		Key:   key,
+		Value: value,
 	}
 }
 
-// PrintSupply logs a type supplied directly into the dig.Container
-// by the given constructor function.
-func (l *Logger) PrintSupply(constructor interface{}) {
-	for _, rtype := range fxreflect.ReturnTypes(constructor) {
-		l.Printf("SUPPLY\t%s", rtype)
+// Field defines a field used inside an internal logging Entry.
+type Field struct {
+	Key   string
+	Value interface{}
+}
+
+// Logger defines interface used for logging.
+type Logger interface {
+	Log(entry Entry)
+}
+
+var _ Logger = (*zapLogger)(nil)
+
+type zapLogger struct {
+	logger *zap.Logger
+}
+
+func encodeFields(fields []Field, stack string) []zap.Field {
+	var fs []zap.Field
+	for _, field := range fields {
+		fs = append(fs, zap.Any(field.Key, field.Value))
+	}
+	if stack != "" {
+		fs = append(fs, zap.String("stack", stack))
+	}
+
+	return fs
+}
+
+func (l *zapLogger) Log(entry Entry) {
+	switch entry.Level {
+	case InfoLevel:
+		l.logger.Info(entry.Message, encodeFields(entry.Fields, entry.Stack)...)
+	case ErrorLevel:
+		l.logger.Error(entry.Message, encodeFields(entry.Fields, entry.Stack)...)
 	}
 }
 
-// PrintSignal logs an os.Signal.
-func (l *Logger) PrintSignal(signal os.Signal) {
-	l.Printf(strings.ToUpper(signal.String()))
+// DefaultLogger constructs a Logger out of io.Writer.
+func DefaultLogger(ws zapcore.WriteSyncer) Logger {
+	zcore := zapcore.NewCore(
+		zapcore.NewJSONEncoder(zap.NewProductionEncoderConfig()),
+		ws,
+		zap.NewAtomicLevel(),
+	)
+	log := zap.New(zcore)
+
+	return &zapLogger{
+		logger: log,
+	}
 }
 
-// Panic logs an Fx line then panics.
-func (l *Logger) Panic(err error) {
-	l.Printer.Printf(prepend(err.Error()))
-	panic(err)
+// Info creates a logging Info entry.
+func Info(msg string, fields ...Field) Entry {
+	return Entry{
+		Level:   InfoLevel,
+		Message: msg,
+		Fields:  fields,
+	}
 }
 
-// Fatalf logs an Fx line then fatals.
-func (l *Logger) Fatalf(format string, v ...interface{}) {
-	l.Printer.Printf(prepend(format), v...)
-	_exit()
-}
-
-func prepend(str string) string {
-	return fmt.Sprintf("[Fx] %s", str)
+// Error creates a logging Error entry.
+func Error(msg string, fields ...Field) Entry {
+	return Entry{
+		Level:   ErrorLevel,
+		Message: msg,
+		Fields:  fields,
+	}
 }
