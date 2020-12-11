@@ -21,44 +21,15 @@
 package fxtest
 
 import (
-	"bytes"
 	"context"
 	"errors"
-	"fmt"
 	"testing"
 
-	"go.uber.org/fx"
-
 	"github.com/stretchr/testify/assert"
-	"go.uber.org/goleak"
+	"go.uber.org/fx"
 )
 
-type tb struct {
-	failures int
-	errors   *bytes.Buffer
-	logs     *bytes.Buffer
-}
-
-func newTB() *tb {
-	return &tb{0, &bytes.Buffer{}, &bytes.Buffer{}}
-}
-
-func (t *tb) FailNow() {
-	t.failures++
-}
-
-func (t *tb) Errorf(format string, args ...interface{}) {
-	fmt.Fprintf(t.errors, format, args...)
-	t.errors.WriteRune('\n')
-}
-
-func (t *tb) Logf(format string, args ...interface{}) {
-	fmt.Fprintf(t.logs, format, args...)
-	t.logs.WriteRune('\n')
-}
-
 func TestApp(t *testing.T) {
-
 	t.Run("Success", func(t *testing.T) {
 		spy := newTB()
 
@@ -114,81 +85,5 @@ func TestApp(t *testing.T) {
 
 		assert.Equal(t, 1, spy.failures, "Expected Stop to fail.")
 		assert.Contains(t, spy.errors.String(), "didn't stop cleanly", "Expected to write errors to TB.")
-	})
-}
-
-func TestLifecycle(t *testing.T) {
-	defer goleak.VerifyNoLeaks(t)
-
-	t.Run("Success", func(t *testing.T) {
-		spy := newTB()
-
-		n := 0
-		lc := NewLifecycle(spy)
-		lc.Append(fx.Hook{
-			OnStart: func(context.Context) error { n++; return nil },
-			OnStop:  func(context.Context) error { n++; return nil },
-		})
-		lc.RequireStart().RequireStop()
-
-		assert.Zero(t, spy.failures, "Lifecycle start/stop failed.")
-		assert.Equal(t, 2, n, "Didn't run start and stop hooks.")
-	})
-
-	t.Run("StartFailure", func(t *testing.T) {
-		spy := newTB()
-		lc := NewLifecycle(spy)
-		lc.Append(fx.Hook{OnStart: func(context.Context) error { return errors.New("fail") }})
-
-		lc.RequireStart()
-		assert.Equal(t, 1, spy.failures, "Expected lifecycle start to fail.")
-
-		lc.RequireStop()
-		assert.Equal(t, 1, spy.failures, "Expected lifecycle stop to succeed.")
-	})
-
-	t.Run("StopFailure", func(t *testing.T) {
-		spy := newTB()
-		lc := NewLifecycle(spy)
-		lc.Append(fx.Hook{OnStop: func(context.Context) error { return errors.New("fail") }})
-
-		lc.RequireStart()
-		assert.Equal(t, 0, spy.failures, "Expected lifecycle start to succeed.")
-
-		lc.RequireStop()
-		assert.Equal(t, 1, spy.failures, "Expected lifecycle stop to fail.")
-	})
-
-	t.Run("RequireLeakDetection", func(t *testing.T) {
-		spy := newTB()
-		lc := NewLifecycle(spy)
-
-		stop := make(chan struct{})
-		stopped := make(chan struct{})
-
-		onStart := func(ctx context.Context) error {
-			go func() {
-				<-stop
-				close(stopped)
-			}()
-			return ctx.Err()
-		}
-
-		onStop := func(ctx context.Context) error {
-			close(stop)
-			<-stopped
-			return ctx.Err()
-		}
-
-		lc.Append(fx.Hook{
-			OnStart: onStart,
-			OnStop:  onStop,
-		})
-
-		lc.RequireStart()
-		assert.Equal(t, 0, spy.failures, "Expected lifecycle start to succeed.")
-
-		lc.RequireStop()
-		assert.Equal(t, 0, spy.failures, "Expected lifecycle to stop.")
 	})
 }

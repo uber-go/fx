@@ -208,7 +208,9 @@ func Example() {
 
 	// Normally, we'd block here with <-app.Done(). Instead, we'll make an HTTP
 	// request to demonstrate that our server is running.
-	http.Get("http://localhost:8080/")
+	if _, err := http.Get("http://localhost:8080/"); err != nil {
+		log.Fatal(err)
+	}
 
 	stopCtx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
