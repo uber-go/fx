@@ -26,6 +26,37 @@ import (
 	"reflect"
 )
 
+// Annotation this will be passed to WithAnnotated to identify which to be injected
+type Annotation interface {
+	isAnnotation()
+}
+
+type groupAnnotation struct {
+	group string
+}
+
+func (groupAnnotation) isAnnotation() {}
+
+// GroupAnnotation use group Annotated inject
+func GroupAnnotation(group string) Annotation {
+	return groupAnnotation{
+		group: group,
+	}
+}
+
+type nameAnnotation struct {
+	name string
+}
+
+func (nameAnnotation) isAnnotation() {}
+
+// NameAnnotation use name Annotated inject
+func NameAnnotation(name string) Annotation {
+	return nameAnnotation{
+		name: name,
+	}
+}
+
 // WithAnnotated allows to inject annotated options without declare your own struct
 //
 // For example,
@@ -37,7 +68,7 @@ import (
 //   })
 //   fx.Supply(&Server{})
 //
-//   fx.Invoke(fx.WithAnnotated("ro")(func(roConn *Connection, s *Server) error {
+//   fx.Invoke(fx.WithAnnotated(fx.NameAnnotation("ro)(func(roConn *Connection, s *Server) error {
 //   })
 //
 // Is equivalent to,
@@ -56,8 +87,8 @@ import (
 //   })
 //
 // WithAnnotated takes an array of names, and returns function to be called with user function. names are in order.
-func WithAnnotated(names ...string) func(interface{}) interface{} {
-	numNames := len(names)
+func WithAnnotated(annos ...Annotation) func(interface{}) interface{} {
+	numNames := len(annos)
 	return func(f interface{}) interface{} {
 		userFunc := reflect.ValueOf(f)
 		userFuncType := userFunc.Type()
@@ -79,7 +110,15 @@ func WithAnnotated(names ...string) func(interface{}) interface{} {
 				Type: userFuncType.In(i),
 			}
 			if i < numNames { // namedArguments
-				field.Tag = reflect.StructTag(fmt.Sprintf(`name:"%s"`, names[i]))
+				tag := ""
+				switch anno := annos[i].(type) {
+				case groupAnnotation:
+					tag = fmt.Sprintf(`group:"%s"`, anno.group)
+				case nameAnnotation:
+					tag = fmt.Sprintf(`name:"%s"`, anno.name)
+				}
+
+				field.Tag = reflect.StructTag(tag)
 			}
 			digInStructFields = append(digInStructFields, field)
 		}
