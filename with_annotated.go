@@ -111,6 +111,7 @@ func WithAnnotated(annos ...Annotation) func(interface{}) interface{} {
 			}
 			if i < numNames { // namedArguments
 				tag := ""
+				annos[i].isAnnotation()
 				switch anno := annos[i].(type) {
 				case groupAnnotation:
 					tag = fmt.Sprintf(`group:"%s"`, anno.group)
