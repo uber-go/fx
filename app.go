@@ -571,7 +571,7 @@ func (app *App) Err() error {
 // By taking a dependency on the Lifecycle type, some of the user-supplied
 // functions called during initialization may have registered start and stop
 // hooks. Because initialization calls constructors serially and in dependency
-// order, hooks are naturally registered in dependency order too.
+// order, hooks are naturally registered in serial and dependency order too.
 //
 // Start executes all OnStart hooks registered with the application's
 // Lifecycle, one at a time and in order. This ensures that each constructor's
