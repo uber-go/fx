@@ -66,7 +66,7 @@ func TestWithAnnotated(t *testing.T) {
 					Target: newC,
 				},
 			),
-			fx.Invoke(fx.WithAnnotated(fx.NameAnnotation("a"), fx.GroupAnnotation("b"),fx.NameAnnotation("c"))(func(aa *a, bb []*a, cc *a) error {
+			fx.Invoke(fx.WithAnnotated(fx.NameAnnotation("a"), fx.GroupAnnotation("b"), fx.NameAnnotation("c"))(func(aa *a, bb []*a, cc *a) error {
 				inA = aa
 				inB = bb[0]
 				inC = cc
