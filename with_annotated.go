@@ -68,8 +68,9 @@ func NameAnnotation(name string) Annotation {
 //   })
 //   fx.Supply(&Server{})
 //
-//   fx.Invoke(fx.WithAnnotated(fx.NameAnnotation("ro)(func(roConn *Connection, s *Server) error {
-//   })
+//   fx.Invoke(fx.WithAnnotated(fx.NameAnnotation("ro))(func (roConn *Connection, s *Server) error {
+//     return nil
+//   }))
 //
 // Is equivalent to,
 //
