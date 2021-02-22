@@ -30,7 +30,6 @@ import (
 	"reflect"
 	"strings"
 	"sync"
-	"syscall"
 	"time"
 
 	"go.uber.org/dig"
@@ -605,7 +604,7 @@ func (app *App) Stop(ctx context.Context) error {
 // using the Shutdown functionality (see the Shutdowner documentation for details).
 func (app *App) Done() <-chan os.Signal {
 	c := make(chan os.Signal, 1)
-	signal.Notify(c, syscall.SIGINT, syscall.SIGTERM)
+	signal.Notify(c, sigINT, sigTERM)
 
 	app.donesMu.Lock()
 	app.dones = append(app.dones, c)

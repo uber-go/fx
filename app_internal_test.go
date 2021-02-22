@@ -24,7 +24,6 @@ import (
 	"fmt"
 	"os"
 	"sync"
-	"syscall"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -42,7 +41,7 @@ func TestAppRun(t *testing.T) {
 		app.run(done)
 	}()
 
-	done <- syscall.SIGINT
+	done <- sigINT
 	wg.Wait()
 }
 
