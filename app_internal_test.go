@@ -41,7 +41,7 @@ func TestAppRun(t *testing.T) {
 		app.run(done)
 	}()
 
-	done <- sigINT
+	done <- _sigINT
 	wg.Wait()
 }
 

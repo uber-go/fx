@@ -46,7 +46,7 @@ type shutdowner struct {
 // Shutdown broadcasts a signal to all of the application's Done channels
 // and begins the Stop process.
 func (s *shutdowner) Shutdown(opts ...ShutdownOption) error {
-	return s.app.broadcastSignal(sigTERM)
+	return s.app.broadcastSignal(_sigTERM)
 }
 
 func (app *App) shutdowner() Shutdowner {
