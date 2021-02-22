@@ -9,8 +9,8 @@ env:
 matrix:
   include:
   - go: stable
-  - go: oldstable
     env: LINT=1
+  - go: oldstable
 
 install:
   - make install
