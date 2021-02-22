@@ -1,4 +1,4 @@
-// Copyright (c) 2019 Uber Technologies, Inc.
+// Copyright (c) 2021 Uber Technologies, Inc.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -18,36 +18,11 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
+// +build aix darwin dragonfly freebsd linux netbsd openbsd solaris
+
 package fx
 
-import (
-	"fmt"
-	"os"
-	"sync"
-	"testing"
+import "golang.org/x/sys/unix"
 
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-)
-
-func TestAppRun(t *testing.T) {
-	app := New()
-	done := make(chan os.Signal)
-
-	var wg sync.WaitGroup
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		app.run(done)
-	}()
-
-	done <- _sigINT
-	wg.Wait()
-}
-
-// TestValidateString verifies private option. Public options are tested in app_test.go.
-func TestValidateString(t *testing.T) {
-	stringer, ok := validate(true).(fmt.Stringer)
-	require.True(t, ok, "option must implement stringer")
-	assert.Equal(t, "fx.validate(true)", stringer.String())
-}
+const _sigINT = unix.SIGINT
+const _sigTERM = unix.SIGTERM

@@ -21,7 +21,6 @@
 package fx_test
 
 import (
-	"syscall"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -41,8 +40,8 @@ func TestShutdown(t *testing.T) {
 		defer app.RequireStart().RequireStop()
 
 		assert.NoError(t, s.Shutdown(), "error in app shutdown")
-		assert.Equal(t, syscall.SIGTERM, <-done1, "done channel 1 did not receive signal")
-		assert.Equal(t, syscall.SIGTERM, <-done2, "done channel 2 did not receive signal")
+		assert.NotNil(t, <-done1, "done channel 1 did not receive signal")
+		assert.NotNil(t, <-done2, "done channel 2 did not receive signal")
 	})
 
 	t.Run("ErrorOnUnsentSignal", func(t *testing.T) {
@@ -58,6 +57,6 @@ func TestShutdown(t *testing.T) {
 
 		assert.EqualError(t, s.Shutdown(), "failed to send terminated signal to 1 out of 1 channels",
 			"unexpected error returned when shutdown is called with a blocked channel")
-		assert.Equal(t, syscall.SIGTERM, <-done, "done channel did not receive signal")
+		assert.NotNil(t, <-done, "done channel did not receive signal")
 	})
 }
