@@ -44,9 +44,10 @@ type shutdowner struct {
 }
 
 // Shutdown broadcasts a signal to all of the application's Done channels
-// and begins the Stop process. Only started fx applications can be shutdown.
+// and begins the Stop process. Applications can be shut down only after they
+// have finished starting up.
 // In practice this means Shutdowner.Shutdown should not be called from an
-// fx.Invoke, but from a fx.Lifecycle.Onstart hook.
+// fx.Invoke, but from a fx.Lifecycle.OnStart hook.
 func (s *shutdowner) Shutdown(opts ...ShutdownOption) error {
 	return s.app.broadcastSignal(_sigTERM)
 }
