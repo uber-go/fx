@@ -42,7 +42,6 @@ version of Go is supported until there are two newer major releases.
 [ci-img]: https://github.com/uber-go/fx/actions/workflows/go.yml/badge.svg
 [ci]: https://github.com/uber-go/fx/actions/workflows/go.yml
 
-
 [cov-img]: https://codecov.io/gh/uber-go/fx/branch/master/graph/badge.svg
 [cov]: https://codecov.io/gh/uber-go/fx/branch/master
 
