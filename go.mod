@@ -4,7 +4,7 @@ go 1.13
 
 require (
 	github.com/stretchr/testify v1.4.0
-	go.uber.org/dig v1.10.0
+	go.uber.org/dig v1.11.0
 	go.uber.org/goleak v0.10.0
 	go.uber.org/multierr v1.5.0
 	go.uber.org/zap v1.16.0
