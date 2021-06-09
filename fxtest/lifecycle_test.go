@@ -21,11 +21,14 @@
 package fxtest
 
 import (
+	"bytes"
 	"context"
 	"errors"
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.uber.org/fx"
 	"go.uber.org/goleak"
 )
@@ -103,5 +106,92 @@ func TestLifecycle(t *testing.T) {
 
 		lc.RequireStop()
 		assert.Equal(t, 0, spy.failures, "Expected lifecycle to stop.")
+	})
+}
+
+func TestLifecycle_OptionalT(t *testing.T) {
+	t.Run("success", func(t *testing.T) {
+		lc := NewLifecycle(nil)
+
+		var started, stopped bool
+		defer func() {
+			assert.True(t, started, "not started")
+			assert.True(t, stopped, "not stopped")
+		}()
+		lc.Append(fx.Hook{
+			OnStart: func(context.Context) error {
+				assert.False(t, started, "started twice")
+				started = true
+				return nil
+			},
+			OnStop: func(context.Context) error {
+				assert.True(t, started, "not yet started")
+				assert.False(t, stopped, "stopped twice")
+				stopped = true
+				return nil
+			},
+		})
+
+		lc.RequireStart().RequireStop()
+	})
+
+	t.Run("start error", func(t *testing.T) {
+		lc := NewLifecycle(nil)
+		lc.Append(fx.Hook{
+			OnStart: func(context.Context) error {
+				return errors.New("great sadness")
+			},
+		})
+
+		var pval interface{}
+		func() {
+			defer func() { pval = recover() }()
+			lc.RequireStart()
+		}()
+		require.NotNil(t, pval, "must panic in case of failure")
+		assert.Contains(t, fmt.Sprint(pval), "great sadness")
+	})
+}
+
+func TestPanicT(t *testing.T) {
+	t.Run("Logf", func(t *testing.T) {
+		var buff bytes.Buffer
+		pt := panicT{W: &buff}
+		pt.Logf("hello: %v", "world")
+
+		assert.Equal(t, "hello: world\n", buff.String())
+	})
+
+	t.Run("Errorf", func(t *testing.T) {
+		var buff bytes.Buffer
+		pt := panicT{W: &buff}
+		pt.Errorf("hello: %v", "world")
+
+		assert.Equal(t, "hello: world\n", buff.String())
+
+		// Functionally there's no difference between Logf and Errorf
+		// unless FailNow is called.
+		t.Run("FailNow", func(t *testing.T) {
+			var pval interface{}
+			func() {
+				defer func() { pval = recover() }()
+				pt.FailNow()
+			}()
+			assert.Equal(t, "hello: world", pval)
+		})
+	})
+
+	// FailNow without calling Errorf will use the fixed message.
+	t.Run("FailNow", func(t *testing.T) {
+		var buff bytes.Buffer
+		pt := panicT{W: &buff}
+		pt.Logf("hello: %v", "world")
+
+		var pval interface{}
+		func() {
+			defer func() { pval = recover() }()
+			pt.FailNow()
+		}()
+		assert.Equal(t, "test lifecycle failed", pval)
 	})
 }

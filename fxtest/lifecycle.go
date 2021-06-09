@@ -22,12 +22,49 @@ package fxtest
 
 import (
 	"context"
+	"fmt"
+	"io"
+	"os"
 
 	"go.uber.org/fx"
 	"go.uber.org/fx/internal/fxlog"
 	"go.uber.org/fx/internal/lifecycle"
 	"go.uber.org/fx/internal/testutil"
+	"go.uber.org/zap/zapcore"
 )
+
+// If a testing.T is unspecified, degarde to printing to stderr to provide
+// meaningful messages.
+type panicT struct {
+	W io.Writer // stream to which we'll write messages
+
+	// lastError message written to the stream with Errorf. We'll use this
+	// as the panic message if FailNow is called.
+	lastErr string
+}
+
+var _ TB = &panicT{}
+
+func (t *panicT) format(s string, args ...interface{}) string {
+	return fmt.Sprintf(s, args...)
+}
+
+func (t *panicT) Logf(s string, args ...interface{}) {
+	fmt.Fprintln(t.W, t.format(s, args...))
+}
+
+func (t *panicT) Errorf(s string, args ...interface{}) {
+	t.lastErr = t.format(s, args...)
+	fmt.Fprintln(t.W, t.lastErr)
+}
+
+func (t *panicT) FailNow() {
+	if len(t.lastErr) > 0 {
+		panic(t.lastErr)
+	}
+
+	panic("test lifecycle failed")
+}
 
 // Lifecycle is a testing spy for fx.Lifecycle. It exposes Start and Stop
 // methods (and some test-specific helpers) so that unit tests can exercise
@@ -41,9 +78,17 @@ var _ fx.Lifecycle = (*Lifecycle)(nil)
 
 // NewLifecycle creates a new test lifecycle.
 func NewLifecycle(t TB) *Lifecycle {
-	w := testutil.WriteSyncer{T: t}
+	var ws zapcore.WriteSyncer
+	if t != nil {
+		ws = testutil.WriteSyncer{T: t}
+	} else {
+		// Retain the old behavior of printing to stderr if a testing.T
+		// is not provided.
+		ws = zapcore.AddSync(os.Stderr)
+		t = &panicT{W: os.Stderr}
+	}
 	return &Lifecycle{
-		lc: lifecycle.New(fxlog.DefaultLogger(w)),
+		lc: lifecycle.New(fxlog.DefaultLogger(ws)),
 		t:  t,
 	}
 }
