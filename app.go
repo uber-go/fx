@@ -42,7 +42,7 @@ import (
 // DefaultTimeout is the default timeout for starting or stopping an
 // application. It can be configured with the StartTimeout and StopTimeout
 // options.
-const DefaultTimeout = 15 * time.Second
+const DefaultTimeout = 3 * time.Second
 
 // An Option configures an App using the functional options paradigm
 // popularized by Rob Pike. If you're unfamiliar with this style, see
@@ -563,6 +563,13 @@ func (app *App) Err() error {
 	return app.err
 }
 
+type withTimeoutParams struct {
+	Hook	string
+	Ctx	context.Context
+	F	func(context.Context, chan string, chan lifecycle.HookRecord) error
+	Log	fxlog.Logger
+}
+
 // Start kicks off all long-running goroutines, like network servers or
 // message queue consumers. It does this by interacting with the application's
 // Lifecycle.
@@ -581,7 +588,12 @@ func (app *App) Err() error {
 // Note that Start short-circuits immediately if the New constructor
 // encountered any errors in application initialization.
 func (app *App) Start(ctx context.Context) error {
-	return withTimeout(ctx, app.start)
+	return withTimeout(&withTimeoutParams{
+		Hook: "OnStart",
+		Ctx: ctx,
+		F: app.start,
+		Log: app.log,
+	})
 }
 
 // Stop gracefully stops the application. It executes any registered OnStop
@@ -592,7 +604,12 @@ func (app *App) Start(ctx context.Context) error {
 // called are executed. However, all those hooks are executed, even if some
 // fail.
 func (app *App) Stop(ctx context.Context) error {
-	return withTimeout(ctx, app.lifecycle.Stop)
+	return withTimeout(&withTimeoutParams{
+		Hook: "OnStop",
+		Ctx: ctx,
+		F: app.lifecycle.Stop,
+		Log: app.log,
+	})
 }
 
 // Done returns a channel of signals to block on after starting the
@@ -756,36 +773,60 @@ func (app *App) run(done <-chan os.Signal) {
 	}
 }
 
-func (app *App) start(ctx context.Context) error {
+func (app *App) start(ctx context.Context, callerChan chan string, recordChan chan lifecycle.HookRecord) error {
 	if app.err != nil {
 		// Some provides failed, short-circuit immediately.
 		return app.err
 	}
 
 	// Attempt to start cleanly.
-	if err := app.lifecycle.Start(ctx); err != nil {
+	if err := app.lifecycle.Start(ctx, callerChan, recordChan); err != nil {
 		// Start failed, rolling back.
 		fxlog.Info("startup failed, rolling back", fxlog.Err(err)).Write(app.log)
-		if stopErr := app.lifecycle.Stop(ctx); stopErr != nil {
+		if stopErr := app.lifecycle.Stop(ctx, callerChan, recordChan); stopErr != nil {
 			fxlog.Info("could not rollback cleanly", fxlog.Err(stopErr)).Write(app.log)
 
 			return multierr.Append(err, stopErr)
 		}
+
 		return err
 	}
-	fxlog.Info("running").Write(app.log)
 
 	return nil
 }
 
-func withTimeout(ctx context.Context, f func(context.Context) error) error {
+func withTimeout(param *withTimeoutParams) error {
 	c := make(chan error, 1)
-	go func() { c <- f(ctx) }()
+	// Channel to keep track of the currently executing hooks.
+	callerChan := make(chan string, 1)
+	// Channel to keep track of the each hook's execution time.
+	recordChan := make(chan lifecycle.HookRecord, 1)
+	ctx := param.Ctx
+	// Slice that contains each hook's execution time that gets reported if we fail at startup due to timeout.
+	hookRecords := make(lifecycle.HookRecords, 0, 5)
+	var currentHookCaller string
+	go func() { c <- param.F(param.Ctx, callerChan, recordChan) }()
 
-	select {
-	case <-ctx.Done():
-		return ctx.Err()
-	case err := <-c:
-		return err
+	for {
+		select {
+		case <-ctx.Done():
+			if ctx.Err() == context.DeadlineExceeded {
+				fxlog.Error(fmt.Sprintf("timed out while executing hooks %s", param.Hook), fxlog.Field{
+					Key:   "Caller",
+					Value: currentHookCaller,
+				}).Write(param.Log)
+				fxlog.Error("printing each hook's runtime", fxlog.Field{
+					Key:   "Log",
+					Value: hookRecords.String(),
+				}).Write(param.Log)
+			}
+			return ctx.Err()
+		case err := <-c:
+			return err
+		case caller, _ := <-callerChan:
+			currentHookCaller = caller
+		case record := <-recordChan:
+			hookRecords = append(hookRecords, record)
+		}
 	}
 }

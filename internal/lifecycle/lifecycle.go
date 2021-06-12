@@ -22,6 +22,10 @@ package lifecycle
 
 import (
 	"context"
+	"fmt"
+	"sort"
+	"strings"
+	"time"
 
 	"go.uber.org/multierr"
 
@@ -55,17 +59,31 @@ func (l *Lifecycle) Append(hook Hook) {
 	l.hooks = append(l.hooks, hook)
 }
 
+type options struct {
+	currentHookChan chan string
+	hookExecChan	chan HookRecord
+}
+
 // Start runs all OnStart hooks, returning immediately if it encounters an
 // error.
-func (l *Lifecycle) Start(ctx context.Context) error {
+func (l *Lifecycle) Start(ctx context.Context, caller chan string, recorder chan HookRecord) error {
+	defer close(caller)
+	defer close(recorder)
 	for _, hook := range l.hooks {
 		if hook.OnStart != nil {
 			fxlog.Info("starting", fxlog.Field{
 				Key:   "caller",
 				Value: hook.caller,
 			}).Write(l.logger)
+			caller <- hook.caller
+			begin := time.Now()
 			if err := hook.OnStart(ctx); err != nil {
 				return err
+			}
+			recorder <- HookRecord{
+				Runtime: time.Now().Sub(begin),
+				Caller: hook.caller,
+				Func: hook.OnStart,
 			}
 		}
 		l.numStarted++
@@ -75,7 +93,9 @@ func (l *Lifecycle) Start(ctx context.Context) error {
 
 // Stop runs any OnStop hooks whose OnStart counterpart succeeded. OnStop
 // hooks run in reverse order.
-func (l *Lifecycle) Stop(ctx context.Context) error {
+func (l *Lifecycle) Stop(ctx context.Context, c chan string, r chan HookRecord) error {
+	defer close(c)
+	defer close(r)
 	var errs []error
 	// Run backward from last successful OnStart.
 	for ; l.numStarted > 0; l.numStarted-- {
@@ -87,10 +107,36 @@ func (l *Lifecycle) Stop(ctx context.Context) error {
 			Key:   "caller",
 			Value: hook.caller,
 		}).Write(l.logger)
+		c <- hook.caller
+		begin := time.Now()
 		if err := hook.OnStop(ctx); err != nil {
 			// For best-effort cleanup, keep going after errors.
 			errs = append(errs, err)
 		}
+		r <- HookRecord{
+			Runtime: time.Now().Sub(begin),
+			Caller: hook.caller,
+			Func: hook.OnStop,
+		}
 	}
 	return multierr.Combine(errs...)
+}
+
+// TODO: Name TBD
+type HookRecord struct {
+	Runtime time.Duration // How long the hook ran
+	Caller	string	// caller that appended this hook
+	Func	func(context.Context) error // function that ran as sanitized name
+}
+
+type HookRecords []HookRecord
+
+func (r HookRecords) String() string {
+	var b strings.Builder
+	sort.Slice(r, func(i, j int) bool { return r[i].Runtime < r[j].Runtime })
+	for _, r := range r {
+		b.WriteString(fmt.Sprintf("Hook: %s took %d ms to run. (Caller: %s)\n", fxreflect.FuncName(r.Func), r.Runtime.Milliseconds(), r.Caller))
+	}
+	return b.String()
+
 }
