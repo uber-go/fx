@@ -35,6 +35,25 @@ func testLogger(t *testing.T) fxlog.Logger {
 	return fxlog.DefaultLogger(testutil.WriteSyncer{T: t})
 }
 
+func makeChan() (chan string, chan HookRecord) {
+	return make(chan string, 1), make(chan HookRecord, 1)
+}
+
+func flushChan(cc chan string, rc chan HookRecord) {
+	for {
+		select {
+		case _, ok := <-cc:
+			if !ok {
+				return
+			}
+		case _, ok := <-rc:
+			if !ok {
+				return
+			}
+		}
+	}
+}
+
 func TestLifecycleStart(t *testing.T) {
 	t.Run("ExecutesInOrder", func(t *testing.T) {
 		l := New(testLogger(t))
@@ -49,13 +68,15 @@ func TestLifecycleStart(t *testing.T) {
 		})
 		l.Append(Hook{
 			OnStart: func(context.Context) error {
-				count++
+			count++
 				assert.Equal(t, 2, count, "expected this starter to be executed second")
 				return nil
 			},
 		})
 
-		assert.NoError(t, l.Start(context.Background()))
+		cc, rc := makeChan()
+		go flushChan(cc, rc)
+		assert.NoError(t, l.Start(context.Background(), cc, rc))
 		assert.Equal(t, 2, count)
 	})
 	t.Run("ErrHaltsChainAndRollsBack", func(t *testing.T) {
@@ -97,9 +118,13 @@ func TestLifecycleStart(t *testing.T) {
 				return nil
 			},
 		})
+		cc, rc := makeChan()
+		go flushChan(cc, rc)
+		assert.Error(t, err, l.Start(context.Background(), cc, rc))
 
-		assert.Error(t, err, l.Start(context.Background()))
-		assert.NoError(t, l.Stop(context.Background()))
+		cc, rc = makeChan()
+		go flushChan(cc, rc)
+		assert.NoError(t, l.Stop(context.Background(), cc, rc))
 
 		assert.Equal(t, 2, starterCount, "expected the first and second starter to execute")
 		assert.Equal(t, 1, stopperCount, "expected the first stopper to execute since the second starter failed")
@@ -109,7 +134,9 @@ func TestLifecycleStart(t *testing.T) {
 func TestLifecycleStop(t *testing.T) {
 	t.Run("DoesNothingWithoutHooks", func(t *testing.T) {
 		l := &Lifecycle{logger: testLogger(t)}
-		assert.Nil(t, l.Stop(context.Background()), "no lifecycle hooks should have resulted in stop returning nil")
+		cc, rc := makeChan()
+		go flushChan(cc, rc)
+		assert.Nil(t, l.Stop(context.Background(), cc, rc), "no lifecycle hooks should have resulted in stop returning nil")
 	})
 
 	t.Run("DoesNothingWhenNotStarted", func(t *testing.T) {
@@ -120,8 +147,11 @@ func TestLifecycleStop(t *testing.T) {
 			},
 		}
 		l := &Lifecycle{logger: testLogger(t)}
+
+		cc, rc := makeChan()
+		go flushChan(cc, rc)
 		l.Append(hook)
-		l.Stop(context.Background())
+		l.Stop(context.Background(), cc, rc)
 	})
 
 	t.Run("ExecutesInReverseOrder", func(t *testing.T) {
@@ -142,9 +172,13 @@ func TestLifecycleStop(t *testing.T) {
 				return nil
 			},
 		})
+		cc, rc := makeChan()
+		go flushChan(cc, rc)
+		assert.NoError(t, l.Start(context.Background(), cc, rc))
 
-		assert.NoError(t, l.Start(context.Background()))
-		assert.NoError(t, l.Stop(context.Background()))
+		cc, rc = makeChan()
+		go flushChan(cc, rc)
+		assert.NoError(t, l.Stop(context.Background(), cc, rc))
 		assert.Equal(t, 0, count)
 	})
 
@@ -166,8 +200,14 @@ func TestLifecycleStop(t *testing.T) {
 			},
 		})
 
-		assert.NoError(t, l.Start(context.Background()))
-		assert.Equal(t, err, l.Stop(context.Background()))
+		cc, rc := makeChan()
+		go flushChan(cc, rc)
+
+		assert.NoError(t, l.Start(context.Background(), cc, rc))
+
+		cc, rc = makeChan()
+		go flushChan(cc, rc)
+		assert.Equal(t, err, l.Stop(context.Background(), cc, rc))
 		assert.Equal(t, 2, count)
 	})
 	t.Run("GathersAllErrs", func(t *testing.T) {
@@ -186,17 +226,26 @@ func TestLifecycleStop(t *testing.T) {
 				return err
 			},
 		})
+		cc, rc := makeChan()
+		go flushChan(cc, rc)
+		assert.NoError(t, l.Start(context.Background(), cc, rc))
 
-		assert.NoError(t, l.Start(context.Background()))
-		assert.Equal(t, multierr.Combine(err, err2), l.Stop(context.Background()))
+		cc, rc = makeChan()
+		go flushChan(cc, rc)
+		assert.Equal(t, multierr.Combine(err, err2), l.Stop(context.Background(), cc, rc))
 	})
 	t.Run("AllowEmptyHooks", func(t *testing.T) {
 		l := New(testLogger(t))
 		l.Append(Hook{})
 		l.Append(Hook{})
 
-		assert.NoError(t, l.Start(context.Background()))
-		assert.NoError(t, l.Stop(context.Background()))
+		cc, rc := makeChan()
+		go flushChan(cc, rc)
+		assert.NoError(t, l.Start(context.Background(), cc, rc))
+
+		cc, rc = makeChan()
+		go flushChan(cc, rc)
+		assert.NoError(t, l.Stop(context.Background(), cc, rc))
 	})
 
 	t.Run("DoesNothingIfStartFailed", func(t *testing.T) {
@@ -212,8 +261,12 @@ func TestLifecycleStop(t *testing.T) {
 				return nil
 			},
 		})
+		cc, rc := makeChan()
+		go flushChan(cc, rc)
+		assert.Equal(t, err, l.Start(context.Background(), cc, rc))
 
-		assert.Equal(t, err, l.Start(context.Background()))
-		l.Stop(context.Background())
+		cc, rc = makeChan()
+		go flushChan(cc, rc)
+		l.Stop(context.Background(), cc, rc)
 	})
 }

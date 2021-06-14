@@ -95,7 +95,26 @@ func NewLifecycle(t TB) *Lifecycle {
 
 // Start executes all registered OnStart hooks in order, halting at the first
 // hook that doesn't succeed.
-func (l *Lifecycle) Start(ctx context.Context) error { return l.lc.Start(ctx) }
+func (l *Lifecycle) Start(ctx context.Context) error {
+	c := make(chan error, 1)
+	callerChan := make(chan string, 1)
+	recordChan := make(chan lifecycle.HookRecord, 1)
+
+	go func() { c <- l.lc.Start(ctx, callerChan, recordChan) }()
+	for {
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case err := <-c:
+			return err
+		// Ignore caller/hookrecord channel
+		case <-callerChan:
+		case <-recordChan:
+			continue
+		}
+	}
+	return nil
+}
 
 // RequireStart calls Start with context.Background(), failing the test if an
 // error is encountered.
@@ -116,7 +135,25 @@ func (l *Lifecycle) RequireStart() *Lifecycle {
 // If any hook returns an error, execution continues for a best-effort
 // cleanup. Any errors encountered are collected into a single error and
 // returned.
-func (l *Lifecycle) Stop(ctx context.Context) error { return l.lc.Stop(ctx) }
+func (l *Lifecycle) Stop(ctx context.Context) error {
+	c := make(chan error, 1)
+	callerChan := make(chan string, 1)
+	recordChan := make(chan lifecycle.HookRecord, 1)
+
+	go func() { c <- l.lc.Stop(ctx, callerChan, recordChan) }()
+	for {
+		select {
+		case <- ctx.Done():
+			return ctx.Err()
+		case err := <-c:
+			return err
+		case <-callerChan:
+		case <-recordChan:
+			continue
+		}
+	}
+	return nil
+}
 
 // RequireStop calls Stop with context.Background(), failing the test if an error
 // is encountered.

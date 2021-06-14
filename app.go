@@ -42,7 +42,7 @@ import (
 // DefaultTimeout is the default timeout for starting or stopping an
 // application. It can be configured with the StartTimeout and StopTimeout
 // options.
-const DefaultTimeout = 3 * time.Second
+const DefaultTimeout = 15 * time.Second
 
 // An Option configures an App using the functional options paradigm
 // popularized by Rob Pike. If you're unfamiliar with this style, see
@@ -783,6 +783,8 @@ func (app *App) start(ctx context.Context, callerChan chan string, recordChan ch
 	if err := app.lifecycle.Start(ctx, callerChan, recordChan); err != nil {
 		// Start failed, rolling back.
 		fxlog.Info("startup failed, rolling back", fxlog.Err(err)).Write(app.log)
+		callerChan = make(chan string, 1)
+		recordChan = make(chan lifecycle.HookRecord, 1)
 		if stopErr := app.lifecycle.Stop(ctx, callerChan, recordChan); stopErr != nil {
 			fxlog.Info("could not rollback cleanly", fxlog.Err(stopErr)).Write(app.log)
 
@@ -791,7 +793,7 @@ func (app *App) start(ctx context.Context, callerChan chan string, recordChan ch
 
 		return err
 	}
-
+	fxlog.Info("running").Write(app.log)
 	return nil
 }
 
