@@ -130,9 +130,9 @@ type HookRecords []HookRecord
 // Used for logging startup errors.
 func (r HookRecords) String() string {
 	var b strings.Builder
-	sort.Slice(r, func(i, j int) bool { return r[i].Runtime < r[j].Runtime })
+	sort.Slice(r, func(i, j int) bool { return r[i].Runtime > r[j].Runtime })
 	for _, r := range r {
-		b.WriteString(fmt.Sprintf("Hook: %s took %d ms to run. (Caller: %s)\n", fxreflect.FuncName(r.Func), r.Runtime.Milliseconds(), r.Caller))
+		b.WriteString(fmt.Sprintf("%s took %d ms to run. (Caller: %s)\n", fxreflect.FuncName(r.Func), r.Runtime.Milliseconds(), r.Caller))
 	}
 	return b.String()
 }
