@@ -563,13 +563,6 @@ func (app *App) Err() error {
 	return app.err
 }
 
-type withTimeoutParams struct {
-	Hook string
-	Ctx  context.Context
-	F    func(context.Context, chan string, chan lifecycle.HookRecord) error
-	Log  fxlog.Logger
-}
-
 // Start kicks off all long-running goroutines, like network servers or
 // message queue consumers. It does this by interacting with the application's
 // Lifecycle.
@@ -795,6 +788,13 @@ func (app *App) start(ctx context.Context, callerChan chan string, recordChan ch
 	}
 	fxlog.Info("running").Write(app.log)
 	return nil
+}
+
+type withTimeoutParams struct {
+	Hook string
+	Ctx  context.Context
+	F    func(context.Context, chan string, chan lifecycle.HookRecord) error
+	Log  fxlog.Logger
 }
 
 func withTimeout(param *withTimeoutParams) error {

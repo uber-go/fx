@@ -562,6 +562,35 @@ func TestAppStart(t *testing.T) {
 		assert.Greater(t, hook1Idx, hook2Idx)
 	})
 
+	t.Run("CtxCancelledDuringStart", func(t *testing.T) {
+		type A struct{}
+		blocker := func(lc Lifecycle) *A {
+			lc.Append(
+				Hook{
+					OnStart: func(context.Context) error {
+						select {}
+					},
+				},
+			)
+			return &A{}
+		}
+		app := fxtest.New(
+			t,
+			Provide(blocker),
+			Invoke(func(*A) {}),
+		)
+
+		ctx, cancel := context.WithCancel(context.Background())
+		go func() {
+			time.Sleep(100 * time.Millisecond)
+			cancel()
+		}()
+		err := app.Start(ctx)
+		require.Error(t, err)
+		assert.NotContains(t, err.Error(), "context deadline exceeded")
+		assert.NotContains(t, err.Error(), "timed out while executing hook OnStart")
+	})
+
 	t.Run("StartError", func(t *testing.T) {
 		failStart := func(lc Lifecycle) struct{} {
 			lc.Append(Hook{OnStart: func(context.Context) error {
