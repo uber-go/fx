@@ -39,6 +39,7 @@ func makeChan() (chan string, chan HookRecord) {
 	return make(chan string, 1), make(chan HookRecord, 1)
 }
 
+// Flushes the channels without doing anything with the received values.
 func flushChan(cc chan string, rc chan HookRecord) {
 	for {
 		select {
@@ -68,7 +69,7 @@ func TestLifecycleStart(t *testing.T) {
 		})
 		l.Append(Hook{
 			OnStart: func(context.Context) error {
-			count++
+				count++
 				assert.Equal(t, 2, count, "expected this starter to be executed second")
 				return nil
 			},

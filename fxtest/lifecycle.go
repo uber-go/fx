@@ -109,11 +109,11 @@ func (l *Lifecycle) Start(ctx context.Context) error {
 			return err
 		// Ignore caller/hookrecord channel
 		case <-callerChan:
+			continue
 		case <-recordChan:
 			continue
 		}
 	}
-	return nil
 }
 
 // RequireStart calls Start with context.Background(), failing the test if an
@@ -143,16 +143,16 @@ func (l *Lifecycle) Stop(ctx context.Context) error {
 	go func() { c <- l.lc.Stop(ctx, callerChan, recordChan) }()
 	for {
 		select {
-		case <- ctx.Done():
+		case <-ctx.Done():
 			return ctx.Err()
 		case err := <-c:
 			return err
 		case <-callerChan:
+			continue
 		case <-recordChan:
 			continue
 		}
 	}
-	return nil
 }
 
 // RequireStop calls Stop with context.Background(), failing the test if an error

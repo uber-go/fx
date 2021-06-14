@@ -59,11 +59,6 @@ func (l *Lifecycle) Append(hook Hook) {
 	l.hooks = append(l.hooks, hook)
 }
 
-type options struct {
-	currentHookChan chan string
-	hookExecChan	chan HookRecord
-}
-
 // Start runs all OnStart hooks, returning immediately if it encounters an
 // error.
 func (l *Lifecycle) Start(ctx context.Context, caller chan string, recorder chan HookRecord) error {
@@ -82,8 +77,8 @@ func (l *Lifecycle) Start(ctx context.Context, caller chan string, recorder chan
 			}
 			recorder <- HookRecord{
 				Runtime: time.Now().Sub(begin),
-				Caller: hook.caller,
-				Func: hook.OnStart,
+				Caller:  hook.caller,
+				Func:    hook.OnStart,
 			}
 		}
 		l.numStarted++
@@ -115,22 +110,24 @@ func (l *Lifecycle) Stop(ctx context.Context, c chan string, r chan HookRecord) 
 		}
 		r <- HookRecord{
 			Runtime: time.Now().Sub(begin),
-			Caller: hook.caller,
-			Func: hook.OnStop,
+			Caller:  hook.caller,
+			Func:    hook.OnStop,
 		}
 	}
 	return multierr.Combine(errs...)
 }
 
-// TODO: Name TBD
+// HookRecord keeps track of each Hook's execution time, the caller that appended the Hook, and function that ran as the Hook.
 type HookRecord struct {
-	Runtime time.Duration // How long the hook ran
-	Caller	string	// caller that appended this hook
-	Func	func(context.Context) error // function that ran as sanitized name
+	Runtime time.Duration               // How long the hook ran
+	Caller  string                      // caller that appended this hook
+	Func    func(context.Context) error // function that ran as sanitized name
 }
 
+// HookRecords is a Stringer wrapper of HookRecord slice.
 type HookRecords []HookRecord
 
+// Used for logging startup errors.
 func (r HookRecords) String() string {
 	var b strings.Builder
 	sort.Slice(r, func(i, j int) bool { return r[i].Runtime < r[j].Runtime })

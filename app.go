@@ -564,10 +564,10 @@ func (app *App) Err() error {
 }
 
 type withTimeoutParams struct {
-	Hook	string
-	Ctx	context.Context
-	F	func(context.Context, chan string, chan lifecycle.HookRecord) error
-	Log	fxlog.Logger
+	Hook string
+	Ctx  context.Context
+	F    func(context.Context, chan string, chan lifecycle.HookRecord) error
+	Log  fxlog.Logger
 }
 
 // Start kicks off all long-running goroutines, like network servers or
@@ -590,9 +590,9 @@ type withTimeoutParams struct {
 func (app *App) Start(ctx context.Context) error {
 	return withTimeout(&withTimeoutParams{
 		Hook: "OnStart",
-		Ctx: ctx,
-		F: app.start,
-		Log: app.log,
+		Ctx:  ctx,
+		F:    app.start,
+		Log:  app.log,
 	})
 }
 
@@ -606,9 +606,9 @@ func (app *App) Start(ctx context.Context) error {
 func (app *App) Stop(ctx context.Context) error {
 	return withTimeout(&withTimeoutParams{
 		Hook: "OnStop",
-		Ctx: ctx,
-		F: app.lifecycle.Stop,
-		Log: app.log,
+		Ctx:  ctx,
+		F:    app.lifecycle.Stop,
+		Log:  app.log,
 	})
 }
 
@@ -805,7 +805,7 @@ func withTimeout(param *withTimeoutParams) error {
 	recordChan := make(chan lifecycle.HookRecord, 1)
 	ctx := param.Ctx
 	// Slice that contains each hook's execution time that gets reported if we fail at startup due to timeout.
-	hookRecords := make(lifecycle.HookRecords, 0, 5)
+	hookRecords := make(lifecycle.HookRecords, 0, 20)
 	var currentHookCaller string
 	go func() { c <- param.F(param.Ctx, callerChan, recordChan) }()
 
