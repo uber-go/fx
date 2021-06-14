@@ -813,14 +813,13 @@ func withTimeout(param *withTimeoutParams) error {
 		select {
 		case <-ctx.Done():
 			if ctx.Err() == context.DeadlineExceeded {
-				fxlog.Error(fmt.Sprintf("timed out while executing hooks %s", param.Hook), fxlog.Field{
-					Key:   "Caller",
-					Value: currentHookCaller,
-				}).Write(param.Log)
-				fxlog.Error("printing each hook's runtime", fxlog.Field{
-					Key:   "Log",
-					Value: hookRecords.String(),
-				}).Write(param.Log)
+				err := ctx.Err()
+				if len(hookRecords) > 0 {
+					err = multierr.Append(err, errors.New(fmt.Sprintf("timed out while executing hook %s (Caller: %s). Hooks successfully ran so far: %s", param.Hook, currentHookCaller, hookRecords)))
+				} else {
+					err = multierr.Append(err, errors.New(fmt.Sprintf("timed out while executing hook %s (Caller: %s).", param.Hook, currentHookCaller)))
+				}
+				return err
 			}
 			return ctx.Err()
 		case err := <-c:

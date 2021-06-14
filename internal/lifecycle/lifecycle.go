@@ -135,5 +135,4 @@ func (r HookRecords) String() string {
 		b.WriteString(fmt.Sprintf("Hook: %s took %d ms to run. (Caller: %s)\n", fxreflect.FuncName(r.Func), r.Runtime.Milliseconds(), r.Caller))
 	}
 	return b.String()
-
 }

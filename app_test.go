@@ -502,6 +502,8 @@ func TestAppStart(t *testing.T) {
 		err := app.Start(ctx)
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "context deadline exceeded")
+		assert.Contains(t, err.Error(), "timed out while executing hook OnStart")
+		assert.Contains(t, err.Error(), "Caller: go.uber.org/fx_test.TestAppStart.func1.1")
 	})
 
 	t.Run("StartError", func(t *testing.T) {
