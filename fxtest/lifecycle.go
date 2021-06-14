@@ -103,8 +103,6 @@ func (l *Lifecycle) Start(ctx context.Context) error {
 	go func() { c <- l.lc.Start(ctx, callerChan, recordChan) }()
 	for {
 		select {
-		case <-ctx.Done():
-			return ctx.Err()
 		case err := <-c:
 			return err
 		// Ignore caller/hookrecord channel
@@ -143,8 +141,6 @@ func (l *Lifecycle) Stop(ctx context.Context) error {
 	go func() { c <- l.lc.Stop(ctx, callerChan, recordChan) }()
 	for {
 		select {
-		case <-ctx.Done():
-			return ctx.Err()
 		case err := <-c:
 			return err
 		case <-callerChan:
