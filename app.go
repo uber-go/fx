@@ -815,9 +815,9 @@ func withTimeout(param *withTimeoutParams) error {
 			if ctx.Err() == context.DeadlineExceeded {
 				err := ctx.Err()
 				if len(hookRecords) > 0 {
-					err = multierr.Append(err, errors.New(fmt.Sprintf("timed out while executing hook %s (Caller: %s). Hooks successfully ran so far: %s", param.Hook, currentHookCaller, hookRecords)))
+					err = multierr.Append(err, fmt.Errorf("timed out while executing hook %s (Caller: %s). Hooks successfully ran so far: %s", param.Hook, currentHookCaller, hookRecords))
 				} else {
-					err = multierr.Append(err, errors.New(fmt.Sprintf("timed out while executing hook %s (Caller: %s).", param.Hook, currentHookCaller)))
+					err = multierr.Append(err, fmt.Errorf("timed out while executing hook %s (Caller: %s)", param.Hook, currentHookCaller))
 				}
 				return err
 			}
