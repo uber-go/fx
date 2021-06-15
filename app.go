@@ -563,6 +563,11 @@ func (app *App) Err() error {
 	return app.err
 }
 
+var (
+	onStartHook = "OnStart"
+	onStopHook  = "OnStop"
+)
+
 // Start kicks off all long-running goroutines, like network servers or
 // message queue consumers. It does this by interacting with the application's
 // Lifecycle.
@@ -582,10 +587,10 @@ func (app *App) Err() error {
 // encountered any errors in application initialization.
 func (app *App) Start(ctx context.Context) error {
 	return withTimeout(&withTimeoutParams{
-		Hook: "OnStart",
-		Ctx:  ctx,
-		F:    app.start,
-		Log:  app.log,
+		hook:     onStartHook,
+		ctx:      ctx,
+		callback: app.start,
+		log:      app.log,
 	})
 }
 
@@ -598,10 +603,10 @@ func (app *App) Start(ctx context.Context) error {
 // fail.
 func (app *App) Stop(ctx context.Context) error {
 	return withTimeout(&withTimeoutParams{
-		Hook: "OnStop",
-		Ctx:  ctx,
-		F:    app.lifecycle.Stop,
-		Log:  app.log,
+		hook:     onStopHook,
+		ctx:      ctx,
+		callback: app.lifecycle.Stop,
+		log:      app.log,
 	})
 }
 
@@ -791,10 +796,10 @@ func (app *App) start(ctx context.Context, callerChan chan string, recordChan ch
 }
 
 type withTimeoutParams struct {
-	Hook string
-	Ctx  context.Context
-	F    func(context.Context, chan string, chan lifecycle.HookRecord) error
-	Log  fxlog.Logger
+	hook     string
+	ctx      context.Context
+	callback func(context.Context, chan string, chan lifecycle.HookRecord) error
+	log      fxlog.Logger
 }
 
 func withTimeout(param *withTimeoutParams) error {
@@ -803,11 +808,12 @@ func withTimeout(param *withTimeoutParams) error {
 	callerChan := make(chan string, 1)
 	// Channel to keep track of the each hook's execution time.
 	recordChan := make(chan lifecycle.HookRecord, 1)
-	ctx := param.Ctx
-	// Slice that contains each hook's execution time that gets reported if we fail at startup due to timeout.
+	ctx := param.ctx
+	// Slice that contains each hook's execution time that gets
+	// reported if we fail at startup due to timeout.
 	hookRecords := make(lifecycle.HookRecords, 0, 20)
 	var currentHookCaller string
-	go func() { c <- param.F(param.Ctx, callerChan, recordChan) }()
+	go func() { c <- param.callback(ctx, callerChan, recordChan) }()
 
 	for {
 		select {
@@ -815,9 +821,14 @@ func withTimeout(param *withTimeoutParams) error {
 			if ctx.Err() == context.DeadlineExceeded {
 				err := ctx.Err()
 				if len(hookRecords) > 0 {
-					err = multierr.Append(err, fmt.Errorf("timed out while executing hook %s (Caller: %s). Hooks successfully ran so far: %s", param.Hook, currentHookCaller, hookRecords))
+					err = multierr.Append(err,
+						fmt.Errorf(`
+timed out while executing hook %s (Caller: %s). Hooks successfully ran so far: %s`,
+							param.hook, currentHookCaller, hookRecords))
 				} else {
-					err = multierr.Append(err, fmt.Errorf("timed out while executing hook %s (Caller: %s)", param.Hook, currentHookCaller))
+					err = multierr.Append(err,
+						fmt.Errorf(`
+timed out while executing hook %s (Caller: %s)`, param.hook, currentHookCaller))
 				}
 				return err
 			}

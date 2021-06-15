@@ -35,10 +35,6 @@ func testLogger(t *testing.T) fxlog.Logger {
 	return fxlog.DefaultLogger(testutil.WriteSyncer{T: t})
 }
 
-func makeChan() (chan string, chan HookRecord) {
-	return make(chan string, 1), make(chan HookRecord, 1)
-}
-
 // Flushes the channels without doing anything with the received values.
 func flushChan(cc chan string, rc chan HookRecord) {
 	for {
@@ -75,7 +71,7 @@ func TestLifecycleStart(t *testing.T) {
 			},
 		})
 
-		cc, rc := makeChan()
+		cc, rc := make(chan string, 1), make(chan HookRecord, 1)
 		go flushChan(cc, rc)
 		assert.NoError(t, l.Start(context.Background(), cc, rc))
 		assert.Equal(t, 2, count)
@@ -119,11 +115,11 @@ func TestLifecycleStart(t *testing.T) {
 				return nil
 			},
 		})
-		cc, rc := makeChan()
+		cc, rc := make(chan string, 1), make(chan HookRecord, 1)
 		go flushChan(cc, rc)
 		assert.Error(t, err, l.Start(context.Background(), cc, rc))
 
-		cc, rc = makeChan()
+		cc, rc = make(chan string, 1), make(chan HookRecord, 1)
 		go flushChan(cc, rc)
 		assert.NoError(t, l.Stop(context.Background(), cc, rc))
 
@@ -135,7 +131,7 @@ func TestLifecycleStart(t *testing.T) {
 func TestLifecycleStop(t *testing.T) {
 	t.Run("DoesNothingWithoutHooks", func(t *testing.T) {
 		l := &Lifecycle{logger: testLogger(t)}
-		cc, rc := makeChan()
+		cc, rc := make(chan string, 1), make(chan HookRecord, 1)
 		go flushChan(cc, rc)
 		assert.Nil(t, l.Stop(context.Background(), cc, rc), "no lifecycle hooks should have resulted in stop returning nil")
 	})
@@ -149,7 +145,7 @@ func TestLifecycleStop(t *testing.T) {
 		}
 		l := &Lifecycle{logger: testLogger(t)}
 
-		cc, rc := makeChan()
+		cc, rc := make(chan string, 1), make(chan HookRecord, 1)
 		go flushChan(cc, rc)
 		l.Append(hook)
 		l.Stop(context.Background(), cc, rc)
@@ -173,11 +169,11 @@ func TestLifecycleStop(t *testing.T) {
 				return nil
 			},
 		})
-		cc, rc := makeChan()
+		cc, rc := make(chan string, 1), make(chan HookRecord, 1)
 		go flushChan(cc, rc)
 		assert.NoError(t, l.Start(context.Background(), cc, rc))
 
-		cc, rc = makeChan()
+		cc, rc = make(chan string, 1), make(chan HookRecord, 1)
 		go flushChan(cc, rc)
 		assert.NoError(t, l.Stop(context.Background(), cc, rc))
 		assert.Equal(t, 0, count)
@@ -201,12 +197,12 @@ func TestLifecycleStop(t *testing.T) {
 			},
 		})
 
-		cc, rc := makeChan()
+		cc, rc := make(chan string, 1), make(chan HookRecord, 1)
 		go flushChan(cc, rc)
 
 		assert.NoError(t, l.Start(context.Background(), cc, rc))
 
-		cc, rc = makeChan()
+		cc, rc = make(chan string, 1), make(chan HookRecord, 1)
 		go flushChan(cc, rc)
 		assert.Equal(t, err, l.Stop(context.Background(), cc, rc))
 		assert.Equal(t, 2, count)
@@ -227,11 +223,11 @@ func TestLifecycleStop(t *testing.T) {
 				return err
 			},
 		})
-		cc, rc := makeChan()
+		cc, rc := make(chan string, 1), make(chan HookRecord, 1)
 		go flushChan(cc, rc)
 		assert.NoError(t, l.Start(context.Background(), cc, rc))
 
-		cc, rc = makeChan()
+		cc, rc = make(chan string, 1), make(chan HookRecord, 1)
 		go flushChan(cc, rc)
 		assert.Equal(t, multierr.Combine(err, err2), l.Stop(context.Background(), cc, rc))
 	})
@@ -240,11 +236,11 @@ func TestLifecycleStop(t *testing.T) {
 		l.Append(Hook{})
 		l.Append(Hook{})
 
-		cc, rc := makeChan()
+		cc, rc := make(chan string, 1), make(chan HookRecord, 1)
 		go flushChan(cc, rc)
 		assert.NoError(t, l.Start(context.Background(), cc, rc))
 
-		cc, rc = makeChan()
+		cc, rc = make(chan string, 1), make(chan HookRecord, 1)
 		go flushChan(cc, rc)
 		assert.NoError(t, l.Stop(context.Background(), cc, rc))
 	})
@@ -262,11 +258,11 @@ func TestLifecycleStop(t *testing.T) {
 				return nil
 			},
 		})
-		cc, rc := makeChan()
+		cc, rc := make(chan string, 1), make(chan HookRecord, 1)
 		go flushChan(cc, rc)
 		assert.Equal(t, err, l.Start(context.Background(), cc, rc))
 
-		cc, rc = makeChan()
+		cc, rc = make(chan string, 1), make(chan HookRecord, 1)
 		go flushChan(cc, rc)
 		l.Stop(context.Background(), cc, rc)
 	})
