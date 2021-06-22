@@ -20,66 +20,39 @@
 
 package fxlog
 
-// func TestSpy(t *testing.T) {
-// 	var s Spy
-//
-// 	t.Run("empty spy", func(t *testing.T) {
-// 		assert.Empty(t, s.Messages(), "messages must be empty")
-// 		assert.Empty(t, s.String(), "string must be empty")
-// 	})
-//
-// 	s.Log(Entry{
-// 		Message: "foo bar",
-// 	})
-// 	t.Run("unformatted message", func(t *testing.T) {
-// 		assert.Equal(t, []Entry{
-// 			{Message: "foo bar"},
-// 		}, s.Messages(), "messages must match")
-// 		assert.Equal(t, "foo bar\n", s.String(), "string must match")
-// 	})
-//
-// 	s.Log(Entry{
-// 		Message: "something went wrong",
-// 		Fields: []Field{
-// 			{
-// 				Key:   "error",
-// 				Value: "great sadness",
-// 			},
-// 		},
-// 	})
-// 	t.Run("formatted message", func(t *testing.T) {
-// 		assert.Equal(t, []Entry{
-// 			{
-// 				Message: "foo bar",
-// 			},
-// 			{
-// 				Message: "something went wrong",
-// 				Fields: []Field{
-// 					{
-// 						Key:   "error",
-// 						Value: "great sadness",
-// 					},
-// 				},
-// 			},
-// 		}, s.Messages())
-// 		assert.Equal(t, "foo bar\nsomething went wrong\terror: great sadness\n", s.String())
-// 	})
-//
-// 	s.Reset()
-// 	t.Run("reset", func(t *testing.T) {
-// 		assert.Empty(t, s.Messages(), "messages must be empty")
-// 		assert.Empty(t, s.String(), "string must be empty")
-// 	})
-//
-// 	s.Log(Entry{
-// 		Message: "baz qux",
-// 	})
-// 	t.Run("use after reset", func(t *testing.T) {
-// 		assert.Equal(t, []Entry{
-// 			{
-// 				Message: "baz qux",
-// 			},
-// 		}, s.Messages(), "messages must match")
-// 		assert.Equal(t, "baz qux\n", s.String(), "string must match")
-// 	})
-// }
+import (
+	"fmt"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+)
+
+func TestSpy(t *testing.T) {
+	var s Spy
+
+	t.Run("empty spy", func(t *testing.T) {
+		assert.Empty(t, s.Events(), "events must be empty")
+		assert.Empty(t, s.EventTypes(), "event types must be empty")
+	})
+
+	s.LogEvent(RunningEvent{})
+	t.Run("use after reset", func(t *testing.T) {
+		assert.Equal(t, "RunningEvent", s.EventTypes()[0])
+	})
+
+	s.LogEvent(ApplyOptionsError{Err: fmt.Errorf("some error")})
+	t.Run("some error", func(t *testing.T) {
+		assert.Equal(t, "ApplyOptionsError", s.EventTypes()[1])
+	})
+
+	s.Reset()
+	t.Run("reset", func(t *testing.T) {
+		assert.Empty(t, s.Events(), "events must be empty")
+		assert.Empty(t, s.EventTypes(), "event types must be empty")
+	})
+
+	s.LogEvent(RunningEvent{})
+	t.Run("use after reset", func(t *testing.T) {
+		assert.Equal(t, "RunningEvent", s.EventTypes()[0])
+	})
+}
