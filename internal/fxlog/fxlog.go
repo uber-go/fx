@@ -34,13 +34,8 @@ type Logger interface {
 	LogEvent(Event)
 }
 
-type EventLogger interface {
-	LogEvent(Event)
-}
-
-type Event interface {
-	// event()
-}
+// Event defines an event emitted by fx.
+type Event interface{}
 
 // LifecycleOnStartEvent is emitted for whenever an OnStart hook is executed
 type LifecycleOnStartEvent struct {
@@ -81,7 +76,7 @@ type InvokeFailedEvent struct {
 }
 
 // StartFailureError is emitted right before exiting after failing to start.
-type StartFailureError struct { Err error}
+type StartFailureError struct{ Err error }
 
 // StopSignalEvent is emitted whenever application receives a signal after
 // starting the application.
@@ -95,10 +90,10 @@ type StartErrorEvent struct{ Err error }
 
 // StartRollbackError is emitted whenever we fail to rollback cleanly after
 // a start error.
-type StartRollbackError struct {Err error}
+type StartRollbackError struct{ Err error }
 
 // RunningEvent is emitted whenever an application is started successfully.
-type RunningEvent struct {}
+type RunningEvent struct{}
 
 var _ Logger = (*zapLogger)(nil)
 
