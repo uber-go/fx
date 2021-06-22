@@ -21,61 +21,83 @@
 package fxlog
 
 import (
+	"strings"
+
+	"go.uber.org/fx/internal/fxreflect"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
 
-// Level is the level of logging used by Logger.
-type Level int
-
-const (
-	// InfoLevel is Info logging level used to log messages via zap.
-	InfoLevel Level = iota
-	// ErrorLevel is Info logging level used to log messages via zap.
-	ErrorLevel
-)
-
-// Entry is an entry to be later serialized into zap message and fields.
-type Entry struct {
-	Level   Level
-	Message string
-	Fields  []Field
-	Stack   string
-}
-
-// WithStack mutates an Entry to add a Stack field.
-func (e Entry) WithStack(stack string) Entry {
-	e.Stack = stack
-	return e
-}
-
-func (e Entry) Write(logger Logger) {
-	logger.Log(e)
-}
-
-// Err is a helper for error Fields.
-func Err(value error) Field {
-	return F("error", value)
-}
-
-// F is a constructor for a Field.
-func F(key string, value interface{}) Field {
-	return Field{
-		Key:   key,
-		Value: value,
-	}
-}
-
-// Field defines a field used inside an internal logging Entry.
-type Field struct {
-	Key   string
-	Value interface{}
-}
-
 // Logger defines interface used for logging.
 type Logger interface {
-	Log(entry Entry)
+	// LogEvent is called when a logging event is emitted.
+	LogEvent(Event)
 }
+
+type EventLogger interface {
+	LogEvent(Event)
+}
+
+type Event interface {
+	// event()
+}
+
+// LifecycleOnStartEvent is emitted for whenever an OnStart hook is executed
+type LifecycleOnStartEvent struct {
+	Caller string
+}
+
+// LifecycleOnStopEvent is emitted for whenever an OnStart hook is executed
+type LifecycleOnStopEvent struct {
+	Caller string
+}
+// ApplyOptionsError is emitted whenever there is an error applying options.
+type ApplyOptionsError struct {
+	Err error
+}
+
+// SupplyEvent is emitted whenever a Provide was called with a constructor provided
+// by fx.Supply.
+type SupplyEvent struct{
+	Constructor interface{}
+}
+
+// ProvideEvent is emitted whenever Provide was called and is not provided by fx.Supply.
+type ProvideEvent struct {
+	Constructor interface{}
+}
+
+// InvokeEvent is emitted whenever a function is invoked.
+type InvokeEvent struct {
+	Function interface{}
+}
+
+// InvokeFailedEvent is emitted when fx.Invoke has failed.
+type InvokeFailedEvent struct {
+	Function interface{}
+	Err error
+	Stack fxreflect.Stack
+}
+
+// StartFailureError is emitted right before exiting after failing to start.
+type StartFailureError struct { Err error}
+
+// StopSignalEvent is emitted whenever application receives a signal after
+// starting the application.
+type StopSignalEvent struct{ Signal string }
+
+// StopErrorEvent is emitted whenever we fail to stop cleanly.
+type StopErrorEvent struct{ Err error }
+
+// StartErrorEvent is emitted whenever a service fails to start.
+type StartErrorEvent struct{ Err error }
+
+// StartRollbackError is emitted whenever we fail to rollback cleanly after
+// a start error.
+type StartRollbackError struct {Err error}
+
+// RunningEvent is emitted whenever an application is started successfully.
+type RunningEvent struct {}
 
 var _ Logger = (*zapLogger)(nil)
 
@@ -83,24 +105,45 @@ type zapLogger struct {
 	logger *zap.Logger
 }
 
-func encodeFields(fields []Field, stack string) []zap.Field {
-	var fs []zap.Field
-	for _, field := range fields {
-		fs = append(fs, zap.Any(field.Key, field.Value))
-	}
-	if stack != "" {
-		fs = append(fs, zap.String("stack", stack))
-	}
-
-	return fs
-}
-
-func (l *zapLogger) Log(entry Entry) {
-	switch entry.Level {
-	case InfoLevel:
-		l.logger.Info(entry.Message, encodeFields(entry.Fields, entry.Stack)...)
-	case ErrorLevel:
-		l.logger.Error(entry.Message, encodeFields(entry.Fields, entry.Stack)...)
+func (l *zapLogger) LogEvent(event Event) {
+	switch e := event.(type) {
+	case LifecycleOnStartEvent:
+		l.logger.Info("starting", zap.String("caller", e.Caller))
+	case ApplyOptionsError:
+		l.logger.Error("error encountered while applying options", zap.Error(e.Err))
+	case SupplyEvent:
+		for _, rtype := range fxreflect.ReturnTypes(e.Constructor) {
+			l.logger.Info("supplying",
+				zap.String("constructor", fxreflect.FuncName(e.Constructor)),
+				zap.String("type", rtype),
+			)
+		}
+	case ProvideEvent:
+		for _, rtype := range fxreflect.ReturnTypes(e.Constructor) {
+			l.logger.Info("providing",
+				zap.String("constructor", fxreflect.FuncName(e.Constructor)),
+				zap.String("type", rtype),
+			)
+		}
+	case InvokeEvent:
+		l.logger.Info("invoke", zap.String("function", fxreflect.FuncName(e.Function)))
+	case InvokeFailedEvent:
+		l.logger.Error("fx.Invoke failed",
+			zap.Error(e.Err),
+			zap.String("stack", e.Stack.String()),
+			zap.String("function", fxreflect.FuncName(e.Function)))
+	case StartFailureError:
+		l.logger.Info("failed to start", zap.Error(event.(StartFailureError).Err))
+	case StopSignalEvent:
+		l.logger.Info("received signal", zap.String("signal", strings.ToUpper(e.Signal)))
+	case StopErrorEvent:
+		l.logger.Error("failed to stop cleanly", zap.Error(event.(StopErrorEvent).Err))
+	case StartRollbackError:
+		l.logger.Error("could not rollback cleanly", zap.Error(event.(StartRollbackError).Err))
+	case StartErrorEvent:
+		l.logger.Error("startup failed, rolling back", zap.Error(event.(StartErrorEvent).Err))
+	case RunningEvent:
+		l.logger.Info("running")
 	}
 }
 
@@ -115,23 +158,5 @@ func DefaultLogger(ws zapcore.WriteSyncer) Logger {
 
 	return &zapLogger{
 		logger: log,
-	}
-}
-
-// Info creates a logging Info entry.
-func Info(msg string, fields ...Field) Entry {
-	return Entry{
-		Level:   InfoLevel,
-		Message: msg,
-		Fields:  fields,
-	}
-}
-
-// Error creates a logging Error entry.
-func Error(msg string, fields ...Field) Entry {
-	return Entry{
-		Level:   ErrorLevel,
-		Message: msg,
-		Fields:  fields,
 	}
 }

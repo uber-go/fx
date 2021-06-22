@@ -34,9 +34,8 @@ import (
 	. "go.uber.org/fx"
 	"go.uber.org/fx/fxtest"
 	"go.uber.org/fx/internal/fxlog"
+	"go.uber.org/fx/internal/fxreflect"
 	"go.uber.org/multierr"
-	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
 )
 
 func NewForTest(t testing.TB, opts ...Option) *App {
@@ -67,12 +66,10 @@ func TestNewApp(t *testing.T) {
 		spy := new(fxlog.Spy)
 		app := fxtest.New(t, Provide(func() struct{} { return struct{}{} }), WithLogger(spy))
 		defer app.RequireStart().RequireStop()
-		assert.Contains(t, spy.String(), "providing")
-		assert.Contains(t, spy.Fields(), zap.Field{
-			Key:    "type",
-			Type:   zapcore.StringType,
-			String: "struct {}",
-		})
+		require.Equal(t,
+			[]string{"ProvideEvent", "ProvideEvent", "ProvideEvent", "ProvideEvent", "RunningEvent"},
+			spy.EventTypes())
+		assert.Contains(t, fxreflect.ReturnTypes(spy.Events()[0].(fxlog.ProvideEvent).Constructor), "struct {}")
 	})
 
 	t.Run("CircularGraphReturnsError", func(t *testing.T) {
@@ -428,13 +425,8 @@ func TestOptions(t *testing.T) {
 			Provide(&bytes.Buffer{}), // error, not a constructor
 			WithLogger(spy),
 		)
-		assert.Contains(t, spy.String(), "error encountered while applying options")
-		fields := spy.Fields()
-		assert.Len(t, fields, 1)
-		s := fields[0]
-		assert.Equal(t, "error", s.Key)
-		assert.Equal(t, zapcore.ErrorType, s.Type)
-		assert.Contains(t, fmt.Sprint(s.Interface), "must provide constructor function")
+		require.Equal(t, []string{"ProvideEvent", "ApplyOptionsError"}, spy.EventTypes())
+		assert.Contains(t, spy.Events()[1].(fxlog.ApplyOptionsError).Err.Error(), "must provide constructor function")
 	})
 }
 
@@ -558,14 +550,13 @@ func TestAppStart(t *testing.T) {
 		// testing.tRunner
 		//         /.../go/1.13.3/libexec/src/testing/testing.go:909
 		// Failed: can't invoke non-function {} (type struct {})
-		output := spy.String()
-		fields := spy.Fields()
-		assert.Len(t, fields, 9)
-
-		assert.Contains(t, output, "fx.Invoke failed\tfunction:")
-		assert.Contains(t, output, "go.uber.org/fx_test.TestAppStart")
-		assert.Contains(t, output, "fx/app_test.go")
-		assert.Contains(t, output, "can't invoke non-function")
+		require.Equal(t,
+			[]string{"ProvideEvent", "ProvideEvent", "ProvideEvent", "InvokeEvent", "InvokeFailedEvent"},
+			spy.EventTypes())
+		failedEvent := spy.Events()[len(spy.EventTypes())-1].(fxlog.InvokeFailedEvent)
+		assert.Contains(t, failedEvent.Err.Error(), "can't invoke non-function")
+		assert.Contains(t, failedEvent.Stack[0].Function, "go.uber.org/fx_test.TestAppStart")
+		assert.Contains(t, failedEvent.Stack[0].File, "fx/app_test.go")
 	})
 
 	t.Run("ProvidingAProvideShouldFail", func(t *testing.T) {
@@ -782,7 +773,7 @@ func TestReplaceLogger(t *testing.T) {
 	spy := new(fxlog.Spy)
 	app := fxtest.New(t, WithLogger(spy))
 	app.RequireStart().RequireStop()
-	assert.Contains(t, spy.String(), "running")
+	assert.Equal(t, []string{"ProvideEvent", "ProvideEvent", "ProvideEvent", "RunningEvent"}, spy.EventTypes())
 }
 
 func TestNopLogger(t *testing.T) {
@@ -960,8 +951,12 @@ func (l testLogger) Printf(s string, args ...interface{}) {
 	l.t.Logf(s, args...)
 }
 
-func (l testLogger) Log(entry fxlog.Entry) {
-	l.t.Logf(entry.Message)
+// func (l testLogger) Log(entry fxlog.Entry) {
+// 	l.t.Logf(entry.Message)
+// }
+
+func (l testLogger) LogEvent(event fxlog.Event) {
+	l.t.Logf("emitted event type %T", event)
 }
 
 func (l testLogger) String() string {

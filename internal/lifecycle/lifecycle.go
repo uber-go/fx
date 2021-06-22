@@ -23,10 +23,9 @@ package lifecycle
 import (
 	"context"
 
-	"go.uber.org/multierr"
-
 	"go.uber.org/fx/internal/fxlog"
 	"go.uber.org/fx/internal/fxreflect"
+	"go.uber.org/multierr"
 )
 
 // A Hook is a pair of start and stop callbacks, either of which can be nil,
@@ -60,16 +59,18 @@ func (l *Lifecycle) Append(hook Hook) {
 func (l *Lifecycle) Start(ctx context.Context) error {
 	for _, hook := range l.hooks {
 		if hook.OnStart != nil {
-			fxlog.Info("starting", fxlog.Field{
-				Key:   "caller",
-				Value: hook.caller,
-			}).Write(l.logger)
+			// fxlog.Info("starting", fxlog.Field{
+			// 	Key:   "caller",
+			// 	Value: hook.caller,
+			// }).Write(l.logger)
+			l.logger.LogEvent(fxlog.LifecycleOnStartEvent{Caller: hook.caller})
 			if err := hook.OnStart(ctx); err != nil {
 				return err
 			}
 		}
 		l.numStarted++
 	}
+
 	return nil
 }
 
@@ -83,14 +84,16 @@ func (l *Lifecycle) Stop(ctx context.Context) error {
 		if hook.OnStop == nil {
 			continue
 		}
-		fxlog.Info("stopping", fxlog.Field{
-			Key:   "caller",
-			Value: hook.caller,
-		}).Write(l.logger)
+		// fxlog.Info("stopping", fxlog.Field{
+		// 	Key:   "caller",
+		// 	Value: hook.caller,
+		// }).Write(l.logger)
+		l.logger.LogEvent(fxlog.LifecycleOnStopEvent{Caller: hook.caller})
 		if err := hook.OnStop(ctx); err != nil {
 			// For best-effort cleanup, keep going after errors.
 			errs = append(errs, err)
 		}
 	}
+
 	return multierr.Combine(errs...)
 }

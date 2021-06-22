@@ -312,7 +312,9 @@ var NopLogger = withLogger(nopLogger{})
 
 type nopLogger struct{}
 
-func (nopLogger) Log(fxlog.Entry) {}
+// func (nopLogger) Log(fxlog.Entry) {}
+
+func (nopLogger) LogEvent(fxlog.Event) {}
 
 func (nopLogger) String() string { return "NopLogger" }
 
@@ -484,10 +486,12 @@ func New(opts ...Option) *App {
 	app.provide(provide{Target: app.dotGraph, Stack: frames})
 
 	if app.err != nil {
-		fxlog.Info(
-			"error encountered while applying options",
-			fxlog.Err(app.err),
-		).Write(app.log)
+		// fxlog.Info(
+		// 	"error encountered while applying options",
+		// 	fxlog.Err(app.err),
+		// ).Write(app.log)
+		app.log.LogEvent(fxlog.ApplyOptionsError{Err: app.err})
+
 		return app
 	}
 
@@ -641,16 +645,19 @@ func (app *App) provide(p provide) {
 
 	switch {
 	case p.IsSupply:
-		for _, rtype := range fxreflect.ReturnTypes(constructor) {
-			fxlog.Info("supplying", fxlog.Field{Key: "type", Value: rtype}).Write(app.log)
-		}
+		// for _, rtype := range fxreflect.ReturnTypes(constructor) {
+		// 	fxlog.Info("supplying", fxlog.Field{Key: "type", Value: rtype}).Write(app.log)
+		// }
+		app.log.LogEvent(fxlog.SupplyEvent{Constructor: constructor})
 	default:
-		for _, rtype := range fxreflect.ReturnTypes(constructor) {
-			fxlog.Info("providing",
-				fxlog.Field{Key: "type", Value: rtype},
-				fxlog.Field{Key: "constructor", Value: fxreflect.FuncName(constructor)},
-			).Write(app.log)
-		}
+		// for _, rtype := range fxreflect.ReturnTypes(constructor) {
+		// 	fxlog.Info("providing",
+		// 		fxlog.Field{Key: "type", Value: rtype},
+		// 		fxlog.Field{Key: "constructor", Value: fxreflect.FuncName(constructor)},
+		// 	).Write(app.log)
+		//
+		// }
+		app.log.LogEvent(fxlog.ProvideEvent{Constructor: constructor})
 	}
 
 	if _, ok := constructor.(Option); ok {
@@ -710,8 +717,9 @@ func (app *App) executeInvokes() error {
 
 	for _, i := range app.invokes {
 		fn := i.Target
-		fname := fxreflect.FuncName(fn)
-		fxlog.Info("invoke", fxlog.F("function", fname)).Write(app.log)
+		// fname := fxreflect.FuncName(fn)
+		// fxlog.Info("invoke", fxlog.F("function", fname)).Write(app.log)
+		app.log.LogEvent(fxlog.InvokeEvent{Function: fn})
 
 		var err error
 		if _, ok := fn.(Option); ok {
@@ -723,11 +731,17 @@ func (app *App) executeInvokes() error {
 		}
 
 		if err != nil {
-			fxlog.Error(
-				"fx.Invoke failed",
-				fxlog.F("function", fname),
-				fxlog.Err(err),
-			).WithStack(i.Stack.String()).Write(app.log)
+			// fxlog.Error(
+			// 	"fx.Invoke failed",
+			// 	fxlog.F("function", fname),
+			// 	fxlog.Err(err),
+			// ).WithStack(i.Stack.String()).Write(app.log)
+			app.log.LogEvent(fxlog.InvokeFailedEvent{
+				Function: fn,
+				Err:      err,
+				Stack:    i.Stack,
+			})
+
 			return err
 		}
 	}
@@ -740,18 +754,21 @@ func (app *App) run(done <-chan os.Signal) {
 	defer cancel()
 
 	if err := app.Start(startCtx); err != nil {
-		fxlog.Error("failed to start", fxlog.Err(err)).Write(app.log)
+		// fxlog.Error("failed to start", fxlog.Err(err)).Write(app.log)
+		app.log.LogEvent(fxlog.StartFailureError{Err: err})
 		os.Exit(1)
 	}
 	sig := (<-done).String()
-	fxlog.Info("received signal", fxlog.F("signal", strings.ToUpper(sig))).Write(app.log)
+	// fxlog.Info("received signal", fxlog.F("signal", strings.ToUpper(sig))).Write(app.log)
+	app.log.LogEvent(fxlog.StopSignalEvent{Signal: sig})
 
 	stopCtx, cancel := context.WithTimeout(context.Background(), app.StopTimeout())
 	defer cancel()
 
 	if err := app.Stop(stopCtx); err != nil {
-		fxlog.Error("failed to stop cleanly",
-			fxlog.Err(err)).Write(app.log)
+		// fxlog.Error("failed to stop cleanly",
+		// 	fxlog.Err(err)).Write(app.log)
+		app.log.LogEvent(fxlog.StopErrorEvent{Err: err})
 		os.Exit(1)
 	}
 }
@@ -765,15 +782,17 @@ func (app *App) start(ctx context.Context) error {
 	// Attempt to start cleanly.
 	if err := app.lifecycle.Start(ctx); err != nil {
 		// Start failed, rolling back.
-		fxlog.Info("startup failed, rolling back", fxlog.Err(err)).Write(app.log)
+		// fxlog.Info("startup failed, rolling back", fxlog.Err(err)).Write(app.log)
+		app.log.LogEvent(fxlog.StartErrorEvent{Err: err})
 		if stopErr := app.lifecycle.Stop(ctx); stopErr != nil {
-			fxlog.Info("could not rollback cleanly", fxlog.Err(stopErr)).Write(app.log)
-
+			// fxlog.Info("could not rollback cleanly", fxlog.Err(stopErr)).Write(app.log)
+			app.log.LogEvent(fxlog.StartRollbackError{Err: stopErr})
 			return multierr.Append(err, stopErr)
 		}
 		return err
 	}
-	fxlog.Info("running").Write(app.log)
+	app.log.LogEvent(fxlog.RunningEvent{})
+	// fxlog.Info("running").Write(app.log)
 
 	return nil
 }
