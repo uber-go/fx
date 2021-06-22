@@ -27,7 +27,6 @@ import (
 // Spy is an Fx Printer that captures logged statements. It may be used in
 // tests of Fx logs.
 type Spy struct {
-	// entries []Entry
 	events []Event
 }
 

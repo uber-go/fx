@@ -951,10 +951,6 @@ func (l testLogger) Printf(s string, args ...interface{}) {
 	l.t.Logf(s, args...)
 }
 
-// func (l testLogger) Log(entry fxlog.Entry) {
-// 	l.t.Logf(entry.Message)
-// }
-
 func (l testLogger) LogEvent(event fxlog.Event) {
 	l.t.Logf("emitted event type %T", event)
 }
