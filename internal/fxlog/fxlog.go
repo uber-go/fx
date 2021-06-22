@@ -51,6 +51,7 @@ type LifecycleOnStartEvent struct {
 type LifecycleOnStopEvent struct {
 	Caller string
 }
+
 // ApplyOptionsError is emitted whenever there is an error applying options.
 type ApplyOptionsError struct {
 	Err error
@@ -58,7 +59,7 @@ type ApplyOptionsError struct {
 
 // SupplyEvent is emitted whenever a Provide was called with a constructor provided
 // by fx.Supply.
-type SupplyEvent struct{
+type SupplyEvent struct {
 	Constructor interface{}
 }
 
@@ -75,8 +76,8 @@ type InvokeEvent struct {
 // InvokeFailedEvent is emitted when fx.Invoke has failed.
 type InvokeFailedEvent struct {
 	Function interface{}
-	Err error
-	Stack fxreflect.Stack
+	Err      error
+	Stack    fxreflect.Stack
 }
 
 // StartFailureError is emitted right before exiting after failing to start.
@@ -109,6 +110,8 @@ func (l *zapLogger) LogEvent(event Event) {
 	switch e := event.(type) {
 	case LifecycleOnStartEvent:
 		l.logger.Info("starting", zap.String("caller", e.Caller))
+	case LifecycleOnStopEvent:
+		l.logger.Info("stopping", zap.String("caller", e.Caller))
 	case ApplyOptionsError:
 		l.logger.Error("error encountered while applying options", zap.Error(e.Err))
 	case SupplyEvent:
@@ -133,7 +136,7 @@ func (l *zapLogger) LogEvent(event Event) {
 			zap.String("stack", e.Stack.String()),
 			zap.String("function", fxreflect.FuncName(e.Function)))
 	case StartFailureError:
-		l.logger.Info("failed to start", zap.Error(event.(StartFailureError).Err))
+		l.logger.Error("failed to start", zap.Error(event.(StartFailureError).Err))
 	case StopSignalEvent:
 		l.logger.Info("received signal", zap.String("signal", strings.ToUpper(e.Signal)))
 	case StopErrorEvent:
