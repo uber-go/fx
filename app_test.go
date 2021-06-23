@@ -552,9 +552,9 @@ func TestAppStart(t *testing.T) {
 		//         /.../go/1.13.3/libexec/src/testing/testing.go:909
 		// Failed: can't invoke non-function {} (type struct {})
 		require.Equal(t,
-			[]string{"Provide", "Provide", "Provide", "Invoke", "InvokeFailed"},
+			[]string{"Provide", "Provide", "Provide", "Invoke", "InvokeError"},
 			spy.EventTypes())
-		failedEvent := spy.Events()[len(spy.EventTypes())-1].(*fxevent.InvokeFailed)
+		failedEvent := spy.Events()[len(spy.EventTypes())-1].(*fxevent.InvokeError)
 		assert.Contains(t, failedEvent.Err.Error(), "can't invoke non-function")
 		assert.Contains(t, failedEvent.Stacktrace, "go.uber.org/fx_test.TestAppStart")
 		assert.Contains(t, failedEvent.Stacktrace, "fx/app_test.go")

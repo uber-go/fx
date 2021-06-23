@@ -99,9 +99,9 @@ func TestZapLogger(t *testing.T) {
 		zapLogger.LogEvent(&Invoke{bytes.NewBuffer})
 		ts.AssertMessages("INFO\tinvoke\t{\"function\": \"bytes.NewBuffer()\"}")
 	})
-	t.Run("InvokeFailed", func(t *testing.T) {
+	t.Run("InvokeError", func(t *testing.T) {
 		defer ts.Reset()
-		zapLogger.LogEvent(&InvokeFailed{
+		zapLogger.LogEvent(&InvokeError{
 			Function: bytes.NewBuffer,
 			Err:      fmt.Errorf("some error"),
 		})

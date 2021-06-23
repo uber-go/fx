@@ -708,7 +708,7 @@ func (app *App) executeInvokes() error {
 		}
 
 		if err != nil {
-			app.log.LogEvent(&fxevent.InvokeFailed{
+			app.log.LogEvent(&fxevent.InvokeError{
 				Function:   fn,
 				Err:        err,
 				Stacktrace: i.Stack.String(),

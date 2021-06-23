@@ -34,7 +34,7 @@ func (*ApplyOptionsError) event()  {}
 func (*Supply) event()             {}
 func (*Provide) event()            {}
 func (*Invoke) event()             {}
-func (*InvokeFailed) event()       {}
+func (*InvokeError) event()        {}
 func (*StartFailureError) event()  {}
 func (*StopSignal) event()         {}
 func (*StopError) event()          {}
@@ -73,8 +73,8 @@ type Invoke struct {
 	Function interface{}
 }
 
-// InvokeFailed is emitted when fx.Invoke has failed.
-type InvokeFailed struct {
+// InvokeError is emitted when fx.Invoke has failed.
+type InvokeError struct {
 	Function   interface{}
 	Err        error
 	Stacktrace string

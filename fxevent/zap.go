@@ -58,7 +58,7 @@ func (l *ZapLogger) LogEvent(event Event) {
 		}
 	case *Invoke:
 		l.Logger.Info("invoke", zap.String("function", fxreflect.FuncName(e.Function)))
-	case *InvokeFailed:
+	case *InvokeError:
 		l.Logger.Error("fx.Invoke failed",
 			zap.Error(e.Err),
 			zap.String("stack", e.Stacktrace),
