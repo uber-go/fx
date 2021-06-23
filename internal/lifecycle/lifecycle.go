@@ -132,7 +132,9 @@ func (l *Lifecycle) Stop(ctx context.Context) error {
 func (l *Lifecycle) HookRecords() HookRecords {
 	l.mu.Lock()
 	defer l.mu.Unlock()
-	return l.records
+	r := make(HookRecords, len(l.records))
+	copy(r, l.records)
+	return r
 }
 
 // RunningHookCaller returns the name of the hook that was running when a Start/Stop
