@@ -95,9 +95,7 @@ func NewLifecycle(t TB) *Lifecycle {
 
 // Start executes all registered OnStart hooks in order, halting at the first
 // hook that doesn't succeed.
-func (l *Lifecycle) Start(ctx context.Context) error {
-	return l.lc.Start(ctx)
-}
+func (l *Lifecycle) Start(ctx context.Context) error { return l.lc.Start(ctx) }
 
 // RequireStart calls Start with context.Background(), failing the test if an
 // error is encountered.
@@ -118,9 +116,7 @@ func (l *Lifecycle) RequireStart() *Lifecycle {
 // If any hook returns an error, execution continues for a best-effort
 // cleanup. Any errors encountered are collected into a single error and
 // returned.
-func (l *Lifecycle) Stop(ctx context.Context) error {
-	return l.lc.Stop(ctx)
-}
+func (l *Lifecycle) Stop(ctx context.Context) error { return l.lc.Stop(ctx) }
 
 // RequireStop calls Stop with context.Background(), failing the test if an error
 // is encountered.
