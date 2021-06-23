@@ -40,7 +40,7 @@ func (l *ZapLogger) LogEvent(event Event) {
 		l.Logger.Info("starting", zap.String("caller", e.CallerName))
 	case *LifecycleOnStop:
 		l.Logger.Info("stopping", zap.String("caller", e.CallerName))
-	case *ApplyOptionsError:
+	case *ProvideError:
 		l.Logger.Error("error encountered while applying options", zap.Error(e.Err))
 	case *Supply:
 		for _, rtype := range fxreflect.ReturnTypes(e.Constructor) {

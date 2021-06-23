@@ -479,7 +479,7 @@ func New(opts ...Option) *App {
 	app.provide(provide{Target: app.dotGraph, Stack: frames})
 
 	if app.err != nil {
-		app.log.LogEvent(&fxevent.ApplyOptionsError{Err: app.err})
+		app.log.LogEvent(&fxevent.ProvideError{Err: app.err})
 
 		return app
 	}

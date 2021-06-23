@@ -30,7 +30,7 @@ type Event interface {
 // Passing events by type to make Event hashable in the future.
 func (*LifecycleOnStart) event()   {}
 func (*LifecycleOnStop) event()    {}
-func (*ApplyOptionsError) event()  {}
+func (*ProvideError) event()  {}
 func (*Supply) event()             {}
 func (*Provide) event()            {}
 func (*Invoke) event()             {}
@@ -52,8 +52,8 @@ type LifecycleOnStop struct {
 	CallerName string
 }
 
-// ApplyOptionsError is emitted whenever there is an error applying options.
-type ApplyOptionsError struct {
+// ProvideError is emitted whenever there is an error applying options.
+type ProvideError struct {
 	Err error
 }
 

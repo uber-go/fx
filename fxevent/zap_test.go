@@ -78,9 +78,9 @@ func TestZapLogger(t *testing.T) {
 		zapLogger.LogEvent(&LifecycleOnStop{CallerName: "bytes.NewBuffer"})
 		ts.AssertMessages("INFO\tstopping\t{\"caller\": \"bytes.NewBuffer\"}")
 	})
-	t.Run("ApplyOptionsError", func(t *testing.T) {
+	t.Run("ProvideError", func(t *testing.T) {
 		defer ts.Reset()
-		zapLogger.LogEvent(&ApplyOptionsError{Err: fmt.Errorf("some error")})
+		zapLogger.LogEvent(&ProvideError{Err: fmt.Errorf("some error")})
 		ts.AssertMessages("ERROR\terror encountered while applying options\t{\"error\": \"some error\"}")
 	})
 

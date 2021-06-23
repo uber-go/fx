@@ -426,8 +426,8 @@ func TestOptions(t *testing.T) {
 			Provide(&bytes.Buffer{}), // error, not a constructor
 			WithLogger(spy),
 		)
-		require.Equal(t, []string{"Provide", "ApplyOptionsError"}, spy.EventTypes())
-		assert.Contains(t, spy.Events()[1].(*fxevent.ApplyOptionsError).Err.Error(), "must provide constructor function")
+		require.Equal(t, []string{"Provide", "ProvideError"}, spy.EventTypes())
+		assert.Contains(t, spy.Events()[1].(*fxevent.ProvideError).Err.Error(), "must provide constructor function")
 	})
 }
 
