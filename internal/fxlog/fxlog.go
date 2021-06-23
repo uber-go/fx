@@ -21,150 +21,13 @@
 package fxlog
 
 import (
-	"os"
-	"strings"
-
-	"go.uber.org/fx/internal/fxreflect"
+	"go.uber.org/fx/fxevent"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
 
-// Logger defines interface used for logging.
-type Logger interface {
-	// LogEvent is called when a logging event is emitted.
-	LogEvent(Event)
-}
-
-// Event defines an event emitted by fx.
-type Event interface {
-	event() // Only fxlog can implement this interface.
-}
-
-// Passing events by type to make Event hashable in the future.
-func (*LifecycleOnStartEvent) event() {}
-func (*LifecycleOnStopEvent) event()  {}
-func (*ApplyOptionsError) event()     {}
-func (*SupplyEvent) event()           {}
-func (*ProvideEvent) event()          {}
-func (*InvokeEvent) event()           {}
-func (*InvokeFailedEvent) event()     {}
-func (*StartFailureError) event()     {}
-func (*StopSignalEvent) event()       {}
-func (*StopErrorEvent) event()        {}
-func (*StartErrorEvent) event()       {}
-func (*StartRollbackError) event()    {}
-func (*RunningEvent) event()          {}
-
-// LifecycleOnStartEvent is emitted for whenever an OnStart hook is executed
-type LifecycleOnStartEvent struct {
-	CallerName string
-}
-
-// LifecycleOnStopEvent is emitted for whenever an OnStart hook is executed
-type LifecycleOnStopEvent struct {
-	CallerName string
-}
-
-// ApplyOptionsError is emitted whenever there is an error applying options.
-type ApplyOptionsError struct {
-	Err error
-}
-
-// SupplyEvent is emitted whenever a Provide was called with a constructor provided
-// by fx.Supply.
-type SupplyEvent struct {
-	Constructor interface{}
-}
-
-// ProvideEvent is emitted whenever Provide was called and is not provided by fx.Supply.
-type ProvideEvent struct {
-	Constructor interface{}
-}
-
-// InvokeEvent is emitted whenever a function is invoked.
-type InvokeEvent struct {
-	Function interface{}
-}
-
-// InvokeFailedEvent is emitted when fx.Invoke has failed.
-type InvokeFailedEvent struct {
-	Function   interface{}
-	Err        error
-	Stacktrace string
-}
-
-// StartFailureError is emitted right before exiting after failing to start.
-type StartFailureError struct{ Err error }
-
-// StopSignalEvent is emitted whenever application receives a signal after
-// starting the application.
-type StopSignalEvent struct{ Signal os.Signal }
-
-// StopErrorEvent is emitted whenever we fail to stop cleanly.
-type StopErrorEvent struct{ Err error }
-
-// StartErrorEvent is emitted whenever a service fails to start.
-type StartErrorEvent struct{ Err error }
-
-// StartRollbackError is emitted whenever we fail to rollback cleanly after
-// a start error.
-type StartRollbackError struct{ Err error }
-
-// RunningEvent is emitted whenever an application is started successfully.
-type RunningEvent struct{}
-
-var _ Logger = (*zapLogger)(nil)
-
-type zapLogger struct {
-	logger *zap.Logger
-}
-
-func (l *zapLogger) LogEvent(event Event) {
-	switch e := event.(type) {
-	case *LifecycleOnStartEvent:
-		l.logger.Info("starting", zap.String("caller", e.CallerName))
-	case *LifecycleOnStopEvent:
-		l.logger.Info("stopping", zap.String("caller", e.CallerName))
-	case *ApplyOptionsError:
-		l.logger.Error("error encountered while applying options", zap.Error(e.Err))
-	case *SupplyEvent:
-		for _, rtype := range fxreflect.ReturnTypes(e.Constructor) {
-			l.logger.Info("supplying",
-				zap.String("constructor", fxreflect.FuncName(e.Constructor)),
-				zap.String("type", rtype),
-			)
-		}
-	case *ProvideEvent:
-		for _, rtype := range fxreflect.ReturnTypes(e.Constructor) {
-			l.logger.Info("providing",
-				zap.String("constructor", fxreflect.FuncName(e.Constructor)),
-				zap.String("type", rtype),
-			)
-		}
-	case *InvokeEvent:
-		l.logger.Info("invoke", zap.String("function", fxreflect.FuncName(e.Function)))
-	case *InvokeFailedEvent:
-		l.logger.Error("fx.Invoke failed",
-			zap.Error(e.Err),
-			zap.String("stack", e.Stacktrace),
-			zap.String("function", fxreflect.FuncName(e.Function)))
-	case *StartFailureError:
-		l.logger.Error("failed to start", zap.Error(e.Err))
-	case *StopSignalEvent:
-		l.logger.Info("received signal", zap.String("signal", strings.ToUpper(e.Signal.String())))
-	case *StopErrorEvent:
-		l.logger.Error("failed to stop cleanly", zap.Error(e.Err))
-	case *StartRollbackError:
-		l.logger.Error("could not rollback cleanly", zap.Error(e.Err))
-	case *StartErrorEvent:
-		l.logger.Error("startup failed, rolling back", zap.Error(e.Err))
-	case *RunningEvent:
-		l.logger.Info("running")
-	}
-}
-
 // DefaultLogger constructs a Logger out of io.Writer.
-func DefaultLogger(ws zapcore.WriteSyncer) Logger {
+func DefaultLogger(ws zapcore.WriteSyncer) fxevent.Logger {
 	zcore := zapcore.NewCore(
 		zapcore.NewJSONEncoder(zap.NewProductionEncoderConfig()),
 		ws,
@@ -172,7 +35,5 @@ func DefaultLogger(ws zapcore.WriteSyncer) Logger {
 	)
 	log := zap.New(zcore)
 
-	return &zapLogger{
-		logger: log,
-	}
+	return &fxevent.ZapLogger{Logger: log}
 }

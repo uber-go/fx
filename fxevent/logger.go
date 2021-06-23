@@ -1,4 +1,4 @@
-// Copyright (c) 2020 Uber Technologies, Inc.
+// Copyright (c) 2021 Uber Technologies, Inc.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -18,44 +18,21 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package fxlog
+package fxevent
 
-import (
-	"reflect"
-
-	"go.uber.org/fx/fxevent"
-)
-
-// Spy is an Fx event logger that captures logged statements. It may be used in
-// tests of Fx logs.
-type Spy struct {
-	events []fxevent.Event
+// Logger defines interface used for logging.
+type Logger interface {
+	// LogEvent is called when a logging event is emitted.
+	LogEvent(Event)
 }
 
-var _ fxevent.Logger = &Spy{}
+// NopLogger is an Fx event logger that ignores all messages.
+var NopLogger = nopLogger{}
 
-// LogEvent appends an Event.
-func (s *Spy) LogEvent(event fxevent.Event) {
-	s.events = append(s.events, event)
-}
+type nopLogger struct{}
 
-// Events returns all captured events.
-func (s *Spy) Events() []fxevent.Event {
-	events := make([]fxevent.Event, len(s.events))
-	copy(events, s.events)
-	return events
-}
+var _ Logger = nopLogger{}
 
-// EventTypes returns all captured event types.
-func (s *Spy) EventTypes() []string {
-	types := make([]string, len(s.events))
-	for i, e := range s.events {
-		types[i] = reflect.TypeOf(e).Elem().Name()
-	}
-	return types
-}
+func (nopLogger) LogEvent(Event) {}
 
-// Reset clears all messages from the Spy.
-func (s *Spy) Reset() {
-	s.events = s.events[:0]
-}
+func (nopLogger) String() string { return "NopLogger" }
