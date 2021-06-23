@@ -66,29 +66,6 @@ func (t *panicT) FailNow() {
 	panic("test lifecycle failed")
 }
 
-// Helper used by lifecycle.Start and lifecycle.Stop to drain out
-// caller/HookRecord channels that should be ignored
-func runWithNoopChan(
-	ctx context.Context,
-	f func(context.Context, chan string, chan lifecycle.HookRecord) error) error {
-	c := make(chan error, 1)
-	callerChan := make(chan string, 1)
-	recordChan := make(chan lifecycle.HookRecord, 1)
-
-	go func() { c <- f(ctx, callerChan, recordChan) }()
-	for {
-		select {
-		case err := <-c:
-			return err
-		// Ignore caller/hookrecord channel
-		case <-callerChan:
-			continue
-		case <-recordChan:
-			continue
-		}
-	}
-}
-
 // Lifecycle is a testing spy for fx.Lifecycle. It exposes Start and Stop
 // methods (and some test-specific helpers) so that unit tests can exercise
 // hooks.
@@ -119,7 +96,7 @@ func NewLifecycle(t TB) *Lifecycle {
 // Start executes all registered OnStart hooks in order, halting at the first
 // hook that doesn't succeed.
 func (l *Lifecycle) Start(ctx context.Context) error {
-	return runWithNoopChan(ctx, l.lc.Start)
+	return l.lc.Start(ctx)
 }
 
 // RequireStart calls Start with context.Background(), failing the test if an
@@ -142,7 +119,7 @@ func (l *Lifecycle) RequireStart() *Lifecycle {
 // cleanup. Any errors encountered are collected into a single error and
 // returned.
 func (l *Lifecycle) Stop(ctx context.Context) error {
-	return runWithNoopChan(ctx, l.lc.Stop)
+	return l.lc.Stop(ctx)
 }
 
 // RequireStop calls Stop with context.Background(), failing the test if an error

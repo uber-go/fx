@@ -50,3 +50,11 @@ func (l *lifecycleWrapper) Append(h Hook) {
 		OnStop:  h.OnStop,
 	})
 }
+
+func (l *lifecycleWrapper) hookRecords() lifecycle.HookRecords {
+	return l.HookRecords()
+}
+
+func (l *lifecycleWrapper) runningHookCaller() string {
+	return l.RunningHookCaller()
+}

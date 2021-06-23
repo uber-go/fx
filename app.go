@@ -587,10 +587,11 @@ var (
 // encountered any errors in application initialization.
 func (app *App) Start(ctx context.Context) error {
 	return withTimeout(&withTimeoutParams{
-		hook:     onStartHook,
-		ctx:      ctx,
-		callback: app.start,
-		log:      app.log,
+		hook:      onStartHook,
+		ctx:       ctx,
+		callback:  app.start,
+		lifecycle: app.lifecycle,
+		log:       app.log,
 	})
 }
 
@@ -603,10 +604,11 @@ func (app *App) Start(ctx context.Context) error {
 // fail.
 func (app *App) Stop(ctx context.Context) error {
 	return withTimeout(&withTimeoutParams{
-		hook:     onStopHook,
-		ctx:      ctx,
-		callback: app.lifecycle.Stop,
-		log:      app.log,
+		hook:      onStopHook,
+		ctx:       ctx,
+		callback:  app.lifecycle.Stop,
+		lifecycle: app.lifecycle,
+		log:       app.log,
 	})
 }
 
@@ -771,19 +773,17 @@ func (app *App) run(done <-chan os.Signal) {
 	}
 }
 
-func (app *App) start(ctx context.Context, callerChan chan string, recordChan chan lifecycle.HookRecord) error {
+func (app *App) start(ctx context.Context) error {
 	if app.err != nil {
 		// Some provides failed, short-circuit immediately.
 		return app.err
 	}
 
 	// Attempt to start cleanly.
-	if err := app.lifecycle.Start(ctx, callerChan, recordChan); err != nil {
+	if err := app.lifecycle.Start(ctx); err != nil {
 		// Start failed, rolling back.
 		fxlog.Info("startup failed, rolling back", fxlog.Err(err)).Write(app.log)
-		callerChan = make(chan string, 1)
-		recordChan = make(chan lifecycle.HookRecord, 1)
-		if stopErr := app.lifecycle.Stop(ctx, callerChan, recordChan); stopErr != nil {
+		if stopErr := app.lifecycle.Stop(ctx); stopErr != nil {
 			fxlog.Info("could not rollback cleanly", fxlog.Err(stopErr)).Write(app.log)
 
 			return multierr.Append(err, stopErr)
@@ -796,49 +796,40 @@ func (app *App) start(ctx context.Context, callerChan chan string, recordChan ch
 }
 
 type withTimeoutParams struct {
-	hook     string
-	ctx      context.Context
-	callback func(context.Context, chan string, chan lifecycle.HookRecord) error
-	log      fxlog.Logger
+	hook      string
+	ctx       context.Context
+	callback  func(context.Context) error
+	lifecycle *lifecycleWrapper
+	log       fxlog.Logger
 }
 
 func withTimeout(param *withTimeoutParams) error {
 	c := make(chan error, 1)
-	// Channel to keep track of the currently executing hooks.
-	callerChan := make(chan string, 1)
-	// Channel to keep track of the each hook's execution time.
-	recordChan := make(chan lifecycle.HookRecord, 1)
 	ctx := param.ctx
-	// Slice that contains each hook's execution time that gets
-	// reported if we fail at startup due to timeout.
-	hookRecords := make(lifecycle.HookRecords, 0, 20)
-	var currentHookCaller string
-	go func() { c <- param.callback(ctx, callerChan, recordChan) }()
+	go func() { c <- param.callback(ctx) }()
 
 	for {
 		select {
 		case <-ctx.Done():
-			if ctx.Err() == context.DeadlineExceeded {
-				err := ctx.Err()
-				if len(hookRecords) > 0 {
-					err = multierr.Append(err,
-						fmt.Errorf(`
-timed out while executing hook %s (Caller: %s). Hooks successfully ran so far: %s`,
-							param.hook, currentHookCaller, hookRecords))
-				} else {
-					err = multierr.Append(err,
-						fmt.Errorf(`
-timed out while executing hook %s (Caller: %s)`, param.hook, currentHookCaller))
-				}
+			err := ctx.Err()
+			if err != context.DeadlineExceeded {
 				return err
 			}
-			return ctx.Err()
+			// On timeout, report running hook's caller and recorded
+			// runtimes of hooks successfully run till end.
+			r := param.lifecycle.hookRecords()
+			caller := param.lifecycle.runningHookCaller()
+			if len(r) > 0 {
+				err = multierr.Append(err, fmt.Errorf(`
+timed out while executing hook %s (Caller: %s). Hooks successfully ran so far: %s`,
+					param.hook, caller, r))
+			} else {
+				err = multierr.Append(err, fmt.Errorf(`
+timed out while executing hook %s (Caller: %s)`, param.hook, caller))
+			}
+			return err
 		case err := <-c:
 			return err
-		case caller, _ := <-callerChan:
-			currentHookCaller = caller
-		case record := <-recordChan:
-			hookRecords = append(hookRecords, record)
 		}
 	}
 }

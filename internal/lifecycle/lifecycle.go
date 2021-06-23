@@ -25,6 +25,7 @@ import (
 	"fmt"
 	"sort"
 	"strings"
+	"sync"
 	"time"
 
 	"go.uber.org/multierr"
@@ -43,9 +44,12 @@ type Hook struct {
 
 // Lifecycle coordinates application lifecycle hooks.
 type Lifecycle struct {
-	logger     fxlog.Logger
-	hooks      []Hook
-	numStarted int
+	logger      fxlog.Logger
+	hooks       []Hook
+	numStarted  int
+	records     HookRecords
+	runningHook Hook
+	mu          sync.Mutex
 }
 
 // New constructs a new Lifecycle.
@@ -61,25 +65,28 @@ func (l *Lifecycle) Append(hook Hook) {
 
 // Start runs all OnStart hooks, returning immediately if it encounters an
 // error.
-func (l *Lifecycle) Start(ctx context.Context, caller chan string, recorder chan HookRecord) error {
-	defer close(caller)
-	defer close(recorder)
+func (l *Lifecycle) Start(ctx context.Context) error {
+	l.records = make(HookRecords, 0, len(l.hooks))
 	for _, hook := range l.hooks {
 		if hook.OnStart != nil {
 			fxlog.Info("starting", fxlog.Field{
 				Key:   "caller",
 				Value: hook.caller,
 			}).Write(l.logger)
-			caller <- hook.caller
+			l.mu.Lock()
+			l.runningHook = hook
+			l.mu.Unlock()
 			begin := time.Now()
 			if err := hook.OnStart(ctx); err != nil {
 				return err
 			}
-			recorder <- HookRecord{
+			l.mu.Lock()
+			l.records = append(l.records, HookRecord{
 				Runtime: time.Now().Sub(begin),
 				Caller:  hook.caller,
 				Func:    hook.OnStart,
-			}
+			})
+			l.mu.Unlock()
 		}
 		l.numStarted++
 	}
@@ -88,10 +95,9 @@ func (l *Lifecycle) Start(ctx context.Context, caller chan string, recorder chan
 
 // Stop runs any OnStop hooks whose OnStart counterpart succeeded. OnStop
 // hooks run in reverse order.
-func (l *Lifecycle) Stop(ctx context.Context, c chan string, r chan HookRecord) error {
-	defer close(c)
-	defer close(r)
+func (l *Lifecycle) Stop(ctx context.Context) error {
 	var errs []error
+	l.records = make(HookRecords, 0, l.numStarted)
 	// Run backward from last successful OnStart.
 	for ; l.numStarted > 0; l.numStarted-- {
 		hook := l.hooks[l.numStarted-1]
@@ -102,19 +108,39 @@ func (l *Lifecycle) Stop(ctx context.Context, c chan string, r chan HookRecord) 
 			Key:   "caller",
 			Value: hook.caller,
 		}).Write(l.logger)
-		c <- hook.caller
+		l.mu.Lock()
+		l.runningHook = hook
+		l.mu.Unlock()
 		begin := time.Now()
 		if err := hook.OnStop(ctx); err != nil {
 			// For best-effort cleanup, keep going after errors.
 			errs = append(errs, err)
 		}
-		r <- HookRecord{
+		l.mu.Lock()
+		l.records = append(l.records, HookRecord{
 			Runtime: time.Now().Sub(begin),
 			Caller:  hook.caller,
 			Func:    hook.OnStop,
-		}
+		})
+		l.mu.Unlock()
 	}
 	return multierr.Combine(errs...)
+}
+
+// HookRecords returns the info of hooks that successfully ran till the end,
+// including their caller and runtime. Used to report timeout errors on Start/Stop.
+func (l *Lifecycle) HookRecords() HookRecords {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	return l.records
+}
+
+// RunningHookCaller returns the name of the hook that was running when a Start/Stop
+// hook timed out.
+func (l *Lifecycle) RunningHookCaller() string {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	return l.runningHook.caller
 }
 
 // HookRecord keeps track of each Hook's execution time, the caller that appended the Hook, and function that ran as the Hook.
