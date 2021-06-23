@@ -97,6 +97,7 @@ func TestLifecycleStart(t *testing.T) {
 				return nil
 			},
 		})
+
 		assert.Error(t, err, l.Start(context.Background()))
 		assert.NoError(t, l.Stop(context.Background()))
 
@@ -141,8 +142,8 @@ func TestLifecycleStop(t *testing.T) {
 				return nil
 			},
 		})
-		assert.NoError(t, l.Start(context.Background()))
 
+		assert.NoError(t, l.Start(context.Background()))
 		assert.NoError(t, l.Stop(context.Background()))
 		assert.Equal(t, 0, count)
 	})
@@ -166,7 +167,6 @@ func TestLifecycleStop(t *testing.T) {
 		})
 
 		assert.NoError(t, l.Start(context.Background()))
-
 		assert.Equal(t, err, l.Stop(context.Background()))
 		assert.Equal(t, 2, count)
 	})
@@ -186,8 +186,8 @@ func TestLifecycleStop(t *testing.T) {
 				return err
 			},
 		})
-		assert.NoError(t, l.Start(context.Background()))
 
+		assert.NoError(t, l.Start(context.Background()))
 		assert.Equal(t, multierr.Combine(err, err2), l.Stop(context.Background()))
 	})
 	t.Run("AllowEmptyHooks", func(t *testing.T) {
@@ -196,7 +196,6 @@ func TestLifecycleStop(t *testing.T) {
 		l.Append(Hook{})
 
 		assert.NoError(t, l.Start(context.Background()))
-
 		assert.NoError(t, l.Stop(context.Background()))
 	})
 
@@ -213,8 +212,8 @@ func TestLifecycleStop(t *testing.T) {
 				return nil
 			},
 		})
-		assert.Equal(t, err, l.Start(context.Background()))
 
+		assert.Equal(t, err, l.Start(context.Background()))
 		l.Stop(context.Background())
 	})
 }
