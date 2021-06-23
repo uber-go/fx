@@ -45,11 +45,11 @@ func (s *Spy) Events() []Event {
 	return s.events
 }
 
-// EventTypes returns all capture event types.
+// EventTypes returns all captured event types.
 func (s *Spy) EventTypes() []string {
 	types := make([]string, len(s.events))
 	for i, e := range s.events {
-		types[i] = reflect.TypeOf(e).Name()
+		types[i] = reflect.TypeOf(e).Elem().Name()
 	}
 
 	return types

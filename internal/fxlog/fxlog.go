@@ -21,6 +21,7 @@
 package fxlog
 
 import (
+	"os"
 	"strings"
 
 	"go.uber.org/fx/internal/fxreflect"
@@ -35,16 +36,33 @@ type Logger interface {
 }
 
 // Event defines an event emitted by fx.
-type Event interface{}
+type Event interface {
+	event() // Only fxlog can implement this interface.
+}
+
+// Passing events by type to make Event hashable in the future.
+func (*LifecycleOnStartEvent) event() {}
+func (*LifecycleOnStopEvent) event()  {}
+func (*ApplyOptionsError) event()     {}
+func (*SupplyEvent) event()           {}
+func (*ProvideEvent) event()          {}
+func (*InvokeEvent) event()           {}
+func (*InvokeFailedEvent) event()     {}
+func (*StartFailureError) event()     {}
+func (*StopSignalEvent) event()       {}
+func (*StopErrorEvent) event()        {}
+func (*StartErrorEvent) event()       {}
+func (*StartRollbackError) event()    {}
+func (*RunningEvent) event()          {}
 
 // LifecycleOnStartEvent is emitted for whenever an OnStart hook is executed
 type LifecycleOnStartEvent struct {
-	Caller string
+	CallerName string
 }
 
 // LifecycleOnStopEvent is emitted for whenever an OnStart hook is executed
 type LifecycleOnStopEvent struct {
-	Caller string
+	CallerName string
 }
 
 // ApplyOptionsError is emitted whenever there is an error applying options.
@@ -70,9 +88,9 @@ type InvokeEvent struct {
 
 // InvokeFailedEvent is emitted when fx.Invoke has failed.
 type InvokeFailedEvent struct {
-	Function interface{}
-	Err      error
-	Stack    fxreflect.Stack
+	Function   interface{}
+	Err        error
+	Stacktrace string
 }
 
 // StartFailureError is emitted right before exiting after failing to start.
@@ -80,7 +98,7 @@ type StartFailureError struct{ Err error }
 
 // StopSignalEvent is emitted whenever application receives a signal after
 // starting the application.
-type StopSignalEvent struct{ Signal string }
+type StopSignalEvent struct{ Signal os.Signal }
 
 // StopErrorEvent is emitted whenever we fail to stop cleanly.
 type StopErrorEvent struct{ Err error }
@@ -103,44 +121,44 @@ type zapLogger struct {
 
 func (l *zapLogger) LogEvent(event Event) {
 	switch e := event.(type) {
-	case LifecycleOnStartEvent:
-		l.logger.Info("starting", zap.String("caller", e.Caller))
-	case LifecycleOnStopEvent:
-		l.logger.Info("stopping", zap.String("caller", e.Caller))
-	case ApplyOptionsError:
+	case *LifecycleOnStartEvent:
+		l.logger.Info("starting", zap.String("caller", e.CallerName))
+	case *LifecycleOnStopEvent:
+		l.logger.Info("stopping", zap.String("caller", e.CallerName))
+	case *ApplyOptionsError:
 		l.logger.Error("error encountered while applying options", zap.Error(e.Err))
-	case SupplyEvent:
+	case *SupplyEvent:
 		for _, rtype := range fxreflect.ReturnTypes(e.Constructor) {
 			l.logger.Info("supplying",
 				zap.String("constructor", fxreflect.FuncName(e.Constructor)),
 				zap.String("type", rtype),
 			)
 		}
-	case ProvideEvent:
+	case *ProvideEvent:
 		for _, rtype := range fxreflect.ReturnTypes(e.Constructor) {
 			l.logger.Info("providing",
 				zap.String("constructor", fxreflect.FuncName(e.Constructor)),
 				zap.String("type", rtype),
 			)
 		}
-	case InvokeEvent:
+	case *InvokeEvent:
 		l.logger.Info("invoke", zap.String("function", fxreflect.FuncName(e.Function)))
-	case InvokeFailedEvent:
+	case *InvokeFailedEvent:
 		l.logger.Error("fx.Invoke failed",
 			zap.Error(e.Err),
-			zap.String("stack", e.Stack.String()),
+			zap.String("stack", e.Stacktrace),
 			zap.String("function", fxreflect.FuncName(e.Function)))
-	case StartFailureError:
-		l.logger.Error("failed to start", zap.Error(event.(StartFailureError).Err))
-	case StopSignalEvent:
-		l.logger.Info("received signal", zap.String("signal", strings.ToUpper(e.Signal)))
-	case StopErrorEvent:
-		l.logger.Error("failed to stop cleanly", zap.Error(event.(StopErrorEvent).Err))
-	case StartRollbackError:
-		l.logger.Error("could not rollback cleanly", zap.Error(event.(StartRollbackError).Err))
-	case StartErrorEvent:
-		l.logger.Error("startup failed, rolling back", zap.Error(event.(StartErrorEvent).Err))
-	case RunningEvent:
+	case *StartFailureError:
+		l.logger.Error("failed to start", zap.Error(e.Err))
+	case *StopSignalEvent:
+		l.logger.Info("received signal", zap.String("signal", strings.ToUpper(e.Signal.String())))
+	case *StopErrorEvent:
+		l.logger.Error("failed to stop cleanly", zap.Error(e.Err))
+	case *StartRollbackError:
+		l.logger.Error("could not rollback cleanly", zap.Error(e.Err))
+	case *StartErrorEvent:
+		l.logger.Error("startup failed, rolling back", zap.Error(e.Err))
+	case *RunningEvent:
 		l.logger.Info("running")
 	}
 }

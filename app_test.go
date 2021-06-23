@@ -69,7 +69,7 @@ func TestNewApp(t *testing.T) {
 		require.Equal(t,
 			[]string{"ProvideEvent", "ProvideEvent", "ProvideEvent", "ProvideEvent", "RunningEvent"},
 			spy.EventTypes())
-		assert.Contains(t, fxreflect.ReturnTypes(spy.Events()[0].(fxlog.ProvideEvent).Constructor), "struct {}")
+		assert.Contains(t, fxreflect.ReturnTypes(spy.Events()[0].(*fxlog.ProvideEvent).Constructor), "struct {}")
 	})
 
 	t.Run("CircularGraphReturnsError", func(t *testing.T) {
@@ -426,7 +426,7 @@ func TestOptions(t *testing.T) {
 			WithLogger(spy),
 		)
 		require.Equal(t, []string{"ProvideEvent", "ApplyOptionsError"}, spy.EventTypes())
-		assert.Contains(t, spy.Events()[1].(fxlog.ApplyOptionsError).Err.Error(), "must provide constructor function")
+		assert.Contains(t, spy.Events()[1].(*fxlog.ApplyOptionsError).Err.Error(), "must provide constructor function")
 	})
 }
 
@@ -553,10 +553,10 @@ func TestAppStart(t *testing.T) {
 		require.Equal(t,
 			[]string{"ProvideEvent", "ProvideEvent", "ProvideEvent", "InvokeEvent", "InvokeFailedEvent"},
 			spy.EventTypes())
-		failedEvent := spy.Events()[len(spy.EventTypes())-1].(fxlog.InvokeFailedEvent)
+		failedEvent := spy.Events()[len(spy.EventTypes())-1].(*fxlog.InvokeFailedEvent)
 		assert.Contains(t, failedEvent.Err.Error(), "can't invoke non-function")
-		assert.Contains(t, failedEvent.Stack[0].Function, "go.uber.org/fx_test.TestAppStart")
-		assert.Contains(t, failedEvent.Stack[0].File, "fx/app_test.go")
+		assert.Contains(t, failedEvent.Stacktrace, "go.uber.org/fx_test.TestAppStart")
+		assert.Contains(t, failedEvent.Stacktrace, "fx/app_test.go")
 	})
 
 	t.Run("ProvidingAProvideShouldFail", func(t *testing.T) {
@@ -952,7 +952,7 @@ func (l testLogger) Printf(s string, args ...interface{}) {
 }
 
 func (l testLogger) LogEvent(event fxlog.Event) {
-	l.t.Logf("emitted event type %T", event)
+	l.t.Logf("emitted event %#v", event)
 }
 
 func (l testLogger) String() string {

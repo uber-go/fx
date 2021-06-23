@@ -35,12 +35,12 @@ func TestSpy(t *testing.T) {
 		assert.Empty(t, s.EventTypes(), "event types must be empty")
 	})
 
-	s.LogEvent(RunningEvent{})
+	s.LogEvent(&RunningEvent{})
 	t.Run("use after reset", func(t *testing.T) {
 		assert.Equal(t, "RunningEvent", s.EventTypes()[0])
 	})
 
-	s.LogEvent(ApplyOptionsError{Err: fmt.Errorf("some error")})
+	s.LogEvent(&ApplyOptionsError{Err: fmt.Errorf("some error")})
 	t.Run("some error", func(t *testing.T) {
 		assert.Equal(t, "ApplyOptionsError", s.EventTypes()[1])
 	})
@@ -51,7 +51,7 @@ func TestSpy(t *testing.T) {
 		assert.Empty(t, s.EventTypes(), "event types must be empty")
 	})
 
-	s.LogEvent(RunningEvent{})
+	s.LogEvent(&RunningEvent{})
 	t.Run("use after reset", func(t *testing.T) {
 		assert.Equal(t, "RunningEvent", s.EventTypes()[0])
 	})

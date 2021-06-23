@@ -484,7 +484,7 @@ func New(opts ...Option) *App {
 	app.provide(provide{Target: app.dotGraph, Stack: frames})
 
 	if app.err != nil {
-		app.log.LogEvent(fxlog.ApplyOptionsError{Err: app.err})
+		app.log.LogEvent(&fxlog.ApplyOptionsError{Err: app.err})
 
 		return app
 	}
@@ -639,9 +639,9 @@ func (app *App) provide(p provide) {
 
 	switch {
 	case p.IsSupply:
-		app.log.LogEvent(fxlog.SupplyEvent{Constructor: constructor})
+		app.log.LogEvent(&fxlog.SupplyEvent{Constructor: constructor})
 	default:
-		app.log.LogEvent(fxlog.ProvideEvent{Constructor: constructor})
+		app.log.LogEvent(&fxlog.ProvideEvent{Constructor: constructor})
 	}
 
 	if _, ok := constructor.(Option); ok {
@@ -701,7 +701,7 @@ func (app *App) executeInvokes() error {
 
 	for _, i := range app.invokes {
 		fn := i.Target
-		app.log.LogEvent(fxlog.InvokeEvent{Function: fn})
+		app.log.LogEvent(&fxlog.InvokeEvent{Function: fn})
 
 		var err error
 		if _, ok := fn.(Option); ok {
@@ -713,10 +713,10 @@ func (app *App) executeInvokes() error {
 		}
 
 		if err != nil {
-			app.log.LogEvent(fxlog.InvokeFailedEvent{
-				Function: fn,
-				Err:      err,
-				Stack:    i.Stack,
+			app.log.LogEvent(&fxlog.InvokeFailedEvent{
+				Function:   fn,
+				Err:        err,
+				Stacktrace: i.Stack.String(),
 			})
 
 			return err
@@ -731,17 +731,17 @@ func (app *App) run(done <-chan os.Signal) {
 	defer cancel()
 
 	if err := app.Start(startCtx); err != nil {
-		app.log.LogEvent(fxlog.StartFailureError{Err: err})
+		app.log.LogEvent(&fxlog.StartFailureError{Err: err})
 		os.Exit(1)
 	}
-	sig := (<-done).String()
-	app.log.LogEvent(fxlog.StopSignalEvent{Signal: sig})
+	sig := <-done
+	app.log.LogEvent(&fxlog.StopSignalEvent{Signal: sig})
 
 	stopCtx, cancel := context.WithTimeout(context.Background(), app.StopTimeout())
 	defer cancel()
 
 	if err := app.Stop(stopCtx); err != nil {
-		app.log.LogEvent(fxlog.StopErrorEvent{Err: err})
+		app.log.LogEvent(&fxlog.StopErrorEvent{Err: err})
 		os.Exit(1)
 	}
 }
@@ -755,15 +755,15 @@ func (app *App) start(ctx context.Context) error {
 	// Attempt to start cleanly.
 	if err := app.lifecycle.Start(ctx); err != nil {
 		// Start failed, rolling back.
-		app.log.LogEvent(fxlog.StartErrorEvent{Err: err})
+		app.log.LogEvent(&fxlog.StartErrorEvent{Err: err})
 		if stopErr := app.lifecycle.Stop(ctx); stopErr != nil {
-			app.log.LogEvent(fxlog.StartRollbackError{Err: stopErr})
+			app.log.LogEvent(&fxlog.StartRollbackError{Err: stopErr})
 
 			return multierr.Append(err, stopErr)
 		}
 		return err
 	}
-	app.log.LogEvent(fxlog.RunningEvent{})
+	app.log.LogEvent(&fxlog.RunningEvent{})
 
 	return nil
 }
