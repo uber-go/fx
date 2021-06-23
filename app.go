@@ -564,8 +564,8 @@ func (app *App) Err() error {
 }
 
 var (
-	onStartHook = "OnStart"
-	onStopHook  = "OnStop"
+	_onStartHook = "OnStart"
+	_onStopHook  = "OnStop"
 )
 
 // Start kicks off all long-running goroutines, like network servers or
@@ -587,7 +587,7 @@ var (
 // encountered any errors in application initialization.
 func (app *App) Start(ctx context.Context) error {
 	return withTimeout(&withTimeoutParams{
-		hook:      onStartHook,
+		hook:      _onStartHook,
 		ctx:       ctx,
 		callback:  app.start,
 		lifecycle: app.lifecycle,
@@ -604,7 +604,7 @@ func (app *App) Start(ctx context.Context) error {
 // fail.
 func (app *App) Stop(ctx context.Context) error {
 	return withTimeout(&withTimeoutParams{
-		hook:      onStopHook,
+		hook:      _onStopHook,
 		ctx:       ctx,
 		callback:  app.lifecycle.Stop,
 		lifecycle: app.lifecycle,
