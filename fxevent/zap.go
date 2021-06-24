@@ -34,6 +34,7 @@ type ZapLogger struct {
 
 var _ Logger = (*ZapLogger)(nil)
 
+// LogEvent logs the given event to the provided Zap logger.
 func (l *ZapLogger) LogEvent(event Event) {
 	switch e := event.(type) {
 	case *LifecycleHookStart:
