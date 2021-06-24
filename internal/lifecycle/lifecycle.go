@@ -59,7 +59,7 @@ func (l *Lifecycle) Append(hook Hook) {
 func (l *Lifecycle) Start(ctx context.Context) error {
 	for _, hook := range l.hooks {
 		if hook.OnStart != nil {
-			l.logger.LogEvent(&fxevent.LifecycleOnStart{CallerName: hook.caller})
+			l.logger.LogEvent(&fxevent.LifecycleHookStart{CallerName: hook.caller})
 			if err := hook.OnStart(ctx); err != nil {
 				return err
 			}

@@ -28,7 +28,7 @@ type Event interface {
 }
 
 // Passing events by type to make Event hashable in the future.
-func (*LifecycleOnStart) event()   {}
+func (*LifecycleHookStart) event()   {}
 func (*LifecycleOnStop) event()    {}
 func (*ProvideError) event()       {}
 func (*Supply) event()             {}
@@ -42,8 +42,8 @@ func (*Rollback) event()           {}
 func (*RollbackError) event() {}
 func (*Running) event()            {}
 
-// LifecycleOnStart is emitted for whenever an OnStart hook is executed
-type LifecycleOnStart struct {
+// LifecycleHookStart is emitted for whenever an OnStart hook is executed
+type LifecycleHookStart struct {
 	CallerName string
 }
 

@@ -36,7 +36,7 @@ var _ Logger = (*ZapLogger)(nil)
 
 func (l *ZapLogger) LogEvent(event Event) {
 	switch e := event.(type) {
-	case *LifecycleOnStart:
+	case *LifecycleHookStart:
 		l.Logger.Info("starting", zap.String("caller", e.CallerName))
 	case *LifecycleOnStop:
 		l.Logger.Info("stopping", zap.String("caller", e.CallerName))

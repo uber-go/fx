@@ -68,9 +68,9 @@ func TestZapLogger(t *testing.T) {
 	logger := zaptest.NewLogger(ts)
 	zapLogger := ZapLogger{Logger: logger}
 
-	t.Run("LifecycleOnStart", func(t *testing.T) {
+	t.Run("LifecycleHookStart", func(t *testing.T) {
 		defer ts.Reset()
-		zapLogger.LogEvent(&LifecycleOnStart{CallerName: "bytes.NewBuffer"})
+		zapLogger.LogEvent(&LifecycleHookStart{CallerName: "bytes.NewBuffer"})
 		ts.AssertMessages("INFO\tstarting\t{\"caller\": \"bytes.NewBuffer\"}")
 	})
 	t.Run("LifecycleOnStop", func(t *testing.T) {
