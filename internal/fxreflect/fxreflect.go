@@ -1,4 +1,4 @@
-// Copyright (c) 2019 Uber Technologies, Inc.
+// Copyright (c) 2019-2021 Uber Technologies, Inc.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -27,76 +27,10 @@ import (
 	"regexp"
 	"runtime"
 	"strings"
-
-	"go.uber.org/dig"
 )
 
 // Match from beginning of the line until the first `vendor/` (non-greedy)
 var vendorRe = regexp.MustCompile("^.*?/vendor/")
-
-// ReturnTypes takes a func and returns a slice of string'd types.
-func ReturnTypes(t interface{}) []string {
-	if reflect.TypeOf(t).Kind() != reflect.Func {
-		// Invalid provide, will be logged as an error.
-		return []string{}
-	}
-
-	rtypes := []string{}
-	ft := reflect.ValueOf(t).Type()
-
-	for i := 0; i < ft.NumOut(); i++ {
-		t := ft.Out(i)
-
-		traverseOuts(key{t: t}, func(s string) {
-			rtypes = append(rtypes, s)
-		})
-	}
-
-	return rtypes
-}
-
-type key struct {
-	t    reflect.Type
-	name string
-}
-
-func (k *key) String() string {
-	if k.name != "" {
-		return fmt.Sprintf("%v:%s", k.t, k.name)
-	}
-	return k.t.String()
-}
-
-func traverseOuts(k key, f func(s string)) {
-	// skip errors
-	if isErr(k.t) {
-		return
-	}
-
-	// call function on non-Out types
-	if dig.IsOut(k.t) {
-		// keep recursing down on field members in case they are ins
-		for i := 0; i < k.t.NumField(); i++ {
-			field := k.t.Field(i)
-			ft := field.Type
-
-			if field.PkgPath != "" {
-				continue // skip private fields
-			}
-
-			// keep recursing to traverse all the embedded objects
-			k := key{
-				t:    ft,
-				name: field.Tag.Get("name"),
-			}
-			traverseOuts(k, f)
-		}
-
-		return
-	}
-
-	f(k.String())
-}
 
 // sanitize makes the function name suitable for logging display. It removes
 // url-encoded elements from the `dot.git` package names and shortens the
@@ -126,11 +60,6 @@ func FuncName(fn interface{}) string {
 
 	function := runtime.FuncForPC(fnV.Pointer()).Name()
 	return fmt.Sprintf("%s()", sanitize(function))
-}
-
-func isErr(t reflect.Type) bool {
-	errInterface := reflect.TypeOf((*error)(nil)).Elem()
-	return t.Implements(errInterface)
 }
 
 // Ascend the call stack until we leave the Fx production code. This allows us
