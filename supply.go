@@ -55,34 +55,39 @@ import (
 // Supply panics if a value (or annotation target) is an untyped nil or an error.
 func Supply(values ...interface{}) Option {
 	constructors := make([]interface{}, len(values)) // one function per value
-
+	types := make([]reflect.Type, len(values))
 	for i, value := range values {
 		switch value := value.(type) {
 		case Annotated:
-			value.Target = newSupplyConstructor(value.Target)
+			var typ reflect.Type
+			value.Target, typ = newSupplyConstructor(value.Target)
 			constructors[i] = value
+			types[i] = typ
 		default:
-			constructors[i] = newSupplyConstructor(value)
+			constructors[i], types[i] = newSupplyConstructor(value)
 		}
 	}
 
 	return supplyOption{
 		Targets: constructors,
+		Types:   types,
 		Stack:   fxreflect.CallerStack(1, 0),
 	}
 }
 
 type supplyOption struct {
 	Targets []interface{}
+	Types   []reflect.Type // type of value produced by constructor[i]
 	Stack   fxreflect.Stack
 }
 
 func (o supplyOption) apply(app *App) {
-	for _, target := range o.Targets {
+	for i, target := range o.Targets {
 		app.provides = append(app.provides, provide{
-			Target:   target,
-			Stack:    o.Stack,
-			IsSupply: true,
+			Target:     target,
+			Stack:      o.Stack,
+			IsSupply:   true,
+			SupplyType: o.Types[i],
 		})
 	}
 }
@@ -102,7 +107,7 @@ func (o supplyOption) String() string {
 }
 
 // Returns a function that takes no parameters, and returns the given value.
-func newSupplyConstructor(value interface{}) interface{} {
+func newSupplyConstructor(value interface{}) (interface{}, reflect.Type) {
 	switch value.(type) {
 	case nil:
 		panic("untyped nil passed to fx.Supply")
@@ -110,7 +115,8 @@ func newSupplyConstructor(value interface{}) interface{} {
 		panic("error value passed to fx.Supply")
 	}
 
-	returnTypes := []reflect.Type{reflect.TypeOf(value)}
+	typ := reflect.TypeOf(value)
+	returnTypes := []reflect.Type{typ}
 	returnValues := []reflect.Value{reflect.ValueOf(value)}
 
 	ft := reflect.FuncOf([]reflect.Type{}, returnTypes, false)
@@ -118,5 +124,5 @@ func newSupplyConstructor(value interface{}) interface{} {
 		return returnValues
 	})
 
-	return fv.Interface()
+	return fv.Interface(), typ
 }

@@ -28,10 +28,9 @@ import (
 	"sync"
 	"time"
 
-	"go.uber.org/multierr"
-
-	"go.uber.org/fx/internal/fxlog"
+	"go.uber.org/fx/fxevent"
 	"go.uber.org/fx/internal/fxreflect"
+	"go.uber.org/multierr"
 )
 
 // A Hook is a pair of start and stop callbacks, either of which can be nil,
@@ -44,7 +43,7 @@ type Hook struct {
 
 // Lifecycle coordinates application lifecycle hooks.
 type Lifecycle struct {
-	logger      fxlog.Logger
+	logger      fxevent.Logger
 	hooks       []Hook
 	numStarted  int
 	records     HookRecords
@@ -53,7 +52,7 @@ type Lifecycle struct {
 }
 
 // New constructs a new Lifecycle.
-func New(logger fxlog.Logger) *Lifecycle {
+func New(logger fxevent.Logger) *Lifecycle {
 	return &Lifecycle{logger: logger}
 }
 
@@ -69,13 +68,12 @@ func (l *Lifecycle) Start(ctx context.Context) error {
 	l.records = make(HookRecords, 0, len(l.hooks))
 	for _, hook := range l.hooks {
 		if hook.OnStart != nil {
-			fxlog.Info("starting", fxlog.Field{
-				Key:   "caller",
-				Value: hook.caller,
-			}).Write(l.logger)
+			l.logger.LogEvent(&fxevent.LifecycleHookStart{CallerName: hook.caller})
+
 			l.mu.Lock()
 			l.runningHook = hook
 			l.mu.Unlock()
+
 			begin := time.Now()
 			if err := hook.OnStart(ctx); err != nil {
 				return err
@@ -90,6 +88,7 @@ func (l *Lifecycle) Start(ctx context.Context) error {
 		}
 		l.numStarted++
 	}
+
 	return nil
 }
 
@@ -104,13 +103,13 @@ func (l *Lifecycle) Stop(ctx context.Context) error {
 		if hook.OnStop == nil {
 			continue
 		}
-		fxlog.Info("stopping", fxlog.Field{
-			Key:   "caller",
-			Value: hook.caller,
-		}).Write(l.logger)
+
+		l.logger.LogEvent(&fxevent.LifecycleHookStop{CallerName: hook.caller})
+
 		l.mu.Lock()
 		l.runningHook = hook
 		l.mu.Unlock()
+
 		begin := time.Now()
 		if err := hook.OnStop(ctx); err != nil {
 			// For best-effort cleanup, keep going after errors.
@@ -124,6 +123,7 @@ func (l *Lifecycle) Stop(ctx context.Context) error {
 		})
 		l.mu.Unlock()
 	}
+
 	return multierr.Combine(errs...)
 }
 

@@ -26,12 +26,13 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/fx/fxevent"
 	"go.uber.org/fx/internal/fxlog"
 	"go.uber.org/fx/internal/testutil"
 	"go.uber.org/multierr"
 )
 
-func testLogger(t *testing.T) fxlog.Logger {
+func testLogger(t *testing.T) fxevent.Logger {
 	return fxlog.DefaultLogger(testutil.WriteSyncer{T: t})
 }
 

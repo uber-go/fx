@@ -21,64 +21,41 @@
 package fxlog
 
 import (
-	"fmt"
-	"strings"
+	"reflect"
 
-	"go.uber.org/zap"
+	"go.uber.org/fx/fxevent"
 )
 
-// Spy is an Fx Printer that captures logged statements. It may be used in
+// Spy is an Fx event logger that captures logged statements. It may be used in
 // tests of Fx logs.
 type Spy struct {
-	entries []Entry
+	events []fxevent.Event
 }
 
-var _ Logger = &Spy{}
+var _ fxevent.Logger = &Spy{}
 
-// Log append an Entry.
-func (s *Spy) Log(entry Entry) {
-	s.entries = append(s.entries, entry)
+// LogEvent appends an Event.
+func (s *Spy) LogEvent(event fxevent.Event) {
+	s.events = append(s.events, event)
 }
 
-// Messages returns a copy of all captured messages.
-func (s *Spy) Messages() []Entry {
-	msgs := make([]Entry, len(s.entries))
-	copy(msgs, s.entries)
-	return msgs
+// Events returns all captured events.
+func (s *Spy) Events() []fxevent.Event {
+	events := make([]fxevent.Event, len(s.events))
+	copy(events, s.events)
+	return events
 }
 
-// String returns all logged messages as a single newline-delimited string.
-func (s *Spy) String() string {
-	if len(s.entries) == 0 {
-		return ""
+// EventTypes returns all captured event types.
+func (s *Spy) EventTypes() []string {
+	types := make([]string, len(s.events))
+	for i, e := range s.events {
+		types[i] = reflect.TypeOf(e).Elem().Name()
 	}
-	var msg strings.Builder
-	for _, m := range s.entries {
-		fmt.Fprintf(&msg, m.Message)
-		for _, f := range m.Fields {
-			// extra space before f.Key to separate out message.
-			fmt.Fprintf(&msg, "\t%s: %v", f.Key, f.Value)
-		}
-		if m.Stack != "" {
-			fmt.Fprintf(&msg, "\t%q", m.Stack)
-		}
-		msg.WriteString("\n")
-	}
-
-	return msg.String()
-}
-
-// Fields returns all Fields members of entries.
-func (s *Spy) Fields() []zap.Field {
-	var fields []zap.Field
-	for _, e := range s.entries {
-		fields = append(fields, encodeFields(e.Fields, "")...)
-	}
-
-	return fields
+	return types
 }
 
 // Reset clears all messages from the Spy.
 func (s *Spy) Reset() {
-	s.entries = s.entries[:0]
+	s.events = s.events[:0]
 }
