@@ -795,28 +795,26 @@ func withTimeout(param *withTimeoutParams) error {
 	ctx := param.ctx
 	go func() { c <- param.callback(ctx) }()
 
-	for {
-		select {
-		case <-ctx.Done():
-			err := ctx.Err()
-			if err != context.DeadlineExceeded {
-				return err
-			}
-			// On timeout, report running hook's caller and recorded
-			// runtimes of hooks successfully run till end.
-			r := param.lifecycle.hookRecords()
-			caller := param.lifecycle.runningHookCaller()
-			if len(r) > 0 {
-				err = multierr.Append(err, fmt.Errorf(`
-timed out while executing hook %s (Caller: %s). Hooks successfully ran so far: %s`,
-					param.hook, caller, r))
-			} else {
-				err = multierr.Append(err, fmt.Errorf(`
-timed out while executing hook %s (Caller: %s)`, param.hook, caller))
-			}
-			return err
-		case err := <-c:
+	select {
+	case <-ctx.Done():
+		err := ctx.Err()
+		if err != context.DeadlineExceeded {
 			return err
 		}
+		// On timeout, report running hook's caller and recorded
+		// runtimes of hooks successfully run till end.
+		r := param.lifecycle.hookRecords()
+		caller := param.lifecycle.runningHookCaller()
+		if len(r) > 0 {
+			err = multierr.Append(err, fmt.Errorf(`
+timed out while executing hook %s (Caller: %s). Hooks successfully ran so far: %s`,
+				param.hook, caller, r))
+		} else {
+			err = multierr.Append(err, fmt.Errorf(`
+timed out while executing hook %s (Caller: %s)`, param.hook, caller))
+		}
+		return err
+	case err := <-c:
+		return err
 	}
 }
