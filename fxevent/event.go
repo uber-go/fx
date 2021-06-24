@@ -42,12 +42,12 @@ func (*Rollback) event()           {}
 func (*RollbackError) event()      {}
 func (*Running) event()            {}
 
-// LifecycleHookStart is emitted for whenever an OnStart hook is executed
+// LifecycleHookStart is emitted whenever an OnStart hook is executed
 type LifecycleHookStart struct {
 	CallerName string
 }
 
-// LifecycleHookStop is emitted for whenever an OnStart hook is executed
+// LifecycleHookStop is emitted whenever an OnStart hook is executed
 type LifecycleHookStop struct {
 	CallerName string
 }
