@@ -128,9 +128,9 @@ func TestZapLogger(t *testing.T) {
 		})
 		ts.AssertMessages("ERROR\tfailed to stop cleanly\t{\"error\": \"some error\"}")
 	})
-	t.Run("StartRollbackError", func(t *testing.T) {
+	t.Run("RollbackError", func(t *testing.T) {
 		defer ts.Reset()
-		zapLogger.LogEvent(&StartRollbackError{
+		zapLogger.LogEvent(&RollbackError{
 			Err: fmt.Errorf("some error"),
 		})
 		ts.AssertMessages("ERROR\tcould not rollback cleanly\t{\"error\": \"some error\"}")

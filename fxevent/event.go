@@ -39,7 +39,7 @@ func (*StartFailureError) event()  {}
 func (*StopSignal) event()         {}
 func (*StopError) event()          {}
 func (*Rollback) event()           {}
-func (*StartRollbackError) event() {}
+func (*RollbackError) event() {}
 func (*Running) event()            {}
 
 // LifecycleOnStart is emitted for whenever an OnStart hook is executed
@@ -93,9 +93,9 @@ type StopError struct{ Err error }
 // Rollback is emitted whenever a service fails to start.
 type Rollback struct{ StartErr error }
 
-// StartRollbackError is emitted whenever we fail to rollback cleanly after
+// RollbackError is emitted whenever we fail to rollback cleanly after
 // a start error.
-type StartRollbackError struct{ Err error }
+type RollbackError struct{ Err error }
 
 // Running is emitted whenever an application is started successfully.
 type Running struct{}

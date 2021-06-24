@@ -69,7 +69,7 @@ func (l *ZapLogger) LogEvent(event Event) {
 		l.Logger.Info("received signal", zap.String("signal", strings.ToUpper(e.Signal.String())))
 	case *StopError:
 		l.Logger.Error("failed to stop cleanly", zap.Error(e.Err))
-	case *StartRollbackError:
+	case *RollbackError:
 		l.Logger.Error("could not rollback cleanly", zap.Error(e.Err))
 	case *Rollback:
 		l.Logger.Error("startup failed, rolling back", zap.Error(e.StartErr))
