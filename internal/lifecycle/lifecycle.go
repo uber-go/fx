@@ -80,7 +80,7 @@ func (l *Lifecycle) Stop(ctx context.Context) error {
 		if hook.OnStop == nil {
 			continue
 		}
-		l.logger.LogEvent(&fxevent.LifecycleOnStop{CallerName: hook.caller})
+		l.logger.LogEvent(&fxevent.LifecycleHookStop{CallerName: hook.caller})
 		if err := hook.OnStop(ctx); err != nil {
 			// For best-effort cleanup, keep going after errors.
 			errs = append(errs, err)

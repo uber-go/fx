@@ -38,7 +38,7 @@ func (l *ZapLogger) LogEvent(event Event) {
 	switch e := event.(type) {
 	case *LifecycleHookStart:
 		l.Logger.Info("starting", zap.String("caller", e.CallerName))
-	case *LifecycleOnStop:
+	case *LifecycleHookStop:
 		l.Logger.Info("stopping", zap.String("caller", e.CallerName))
 	case *ProvideError:
 		l.Logger.Error("error encountered while applying options", zap.Error(e.Err))
