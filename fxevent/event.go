@@ -35,7 +35,7 @@ func (*Supply) event()             {}
 func (*Provide) event()            {}
 func (*Invoke) event()             {}
 func (*InvokeError) event()        {}
-func (*StartFailureError) event()  {}
+func (*StartError) event()  {}
 func (*StopSignal) event()         {}
 func (*StopError) event()          {}
 func (*Rollback) event()           {}
@@ -80,8 +80,8 @@ type InvokeError struct {
 	Stacktrace string
 }
 
-// StartFailureError is emitted right before exiting after failing to start.
-type StartFailureError struct{ Err error }
+// StartError is emitted right before exiting after failing to start.
+type StartError struct{ Err error }
 
 // StopSignal is emitted whenever application receives a signal after
 // starting the application.

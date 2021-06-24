@@ -107,9 +107,9 @@ func TestZapLogger(t *testing.T) {
 		})
 		ts.AssertMessages("ERROR\tfx.Invoke failed\t{\"error\": \"some error\", \"stack\": \"\", \"function\": \"bytes.NewBuffer()\"}")
 	})
-	t.Run("StartFailureError", func(t *testing.T) {
+	t.Run("StartError", func(t *testing.T) {
 		defer ts.Reset()
-		zapLogger.LogEvent(&StartFailureError{
+		zapLogger.LogEvent(&StartError{
 			Err: fmt.Errorf("some error"),
 		})
 		ts.AssertMessages("ERROR\tfailed to start\t{\"error\": \"some error\"}")

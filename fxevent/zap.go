@@ -63,7 +63,7 @@ func (l *ZapLogger) LogEvent(event Event) {
 			zap.Error(e.Err),
 			zap.String("stack", e.Stacktrace),
 			zap.String("function", fxreflect.FuncName(e.Function)))
-	case *StartFailureError:
+	case *StartError:
 		l.Logger.Error("failed to start", zap.Error(e.Err))
 	case *StopSignal:
 		l.Logger.Info("received signal", zap.String("signal", strings.ToUpper(e.Signal.String())))

@@ -53,7 +53,7 @@ func TestApp(t *testing.T) {
 		assert.Contains(t, spy.errors.String(), "New failed", "Expected to write error to TB")
 	})
 
-	t.Run("StartFailure", func(t *testing.T) {
+	t.Run("StartError", func(t *testing.T) {
 		spy := newTB()
 
 		New(
