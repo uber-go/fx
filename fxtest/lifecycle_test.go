@@ -51,7 +51,7 @@ func TestLifecycle(t *testing.T) {
 		assert.Equal(t, 2, n, "Didn't run start and stop hooks.")
 	})
 
-	t.Run("StartFailure", func(t *testing.T) {
+	t.Run("StartError", func(t *testing.T) {
 		spy := newTB()
 		lc := NewLifecycle(spy)
 		lc.Append(fx.Hook{OnStart: func(context.Context) error { return errors.New("fail") }})

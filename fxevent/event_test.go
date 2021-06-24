@@ -1,4 +1,4 @@
-// Copyright (c) 2020 Uber Technologies, Inc.
+// Copyright (c) 2021 Uber Technologies, Inc.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -18,42 +18,31 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package fxlog
+package fxevent
 
 import (
-	"fmt"
 	"testing"
-
-	"github.com/stretchr/testify/assert"
-	"go.uber.org/fx/fxevent"
 )
 
-func TestSpy(t *testing.T) {
-	var s Spy
+// TestForCoverage adds coverage for own sake.
+func TestForCoverage(t *testing.T) {
+	events := []Event{
+		&LifecycleHookStart{},
+		&LifecycleHookStop{},
+		&ProvideError{},
+		&Supply{},
+		&Provide{},
+		&Invoke{},
+		&InvokeError{},
+		&StartError{},
+		&StopSignal{},
+		&StopError{},
+		&Rollback{},
+		&RollbackError{},
+		&Running{},
+	}
 
-	t.Run("empty spy", func(t *testing.T) {
-		assert.Empty(t, s.Events(), "events must be empty")
-		assert.Empty(t, s.EventTypes(), "event types must be empty")
-	})
-
-	s.LogEvent(&fxevent.Running{})
-	t.Run("use after reset", func(t *testing.T) {
-		assert.Equal(t, "Running", s.EventTypes()[0])
-	})
-
-	s.LogEvent(&fxevent.ProvideError{Err: fmt.Errorf("some error")})
-	t.Run("some error", func(t *testing.T) {
-		assert.Equal(t, "ProvideError", s.EventTypes()[1])
-	})
-
-	s.Reset()
-	t.Run("reset", func(t *testing.T) {
-		assert.Empty(t, s.Events(), "events must be empty")
-		assert.Empty(t, s.EventTypes(), "event types must be empty")
-	})
-
-	s.LogEvent(&fxevent.Running{})
-	t.Run("use after reset", func(t *testing.T) {
-		assert.Equal(t, "Running", s.EventTypes()[0])
-	})
+	for _, e := range events {
+		e.event()
+	}
 }

@@ -1,4 +1,4 @@
-// Copyright (c) 2020 Uber Technologies, Inc.
+// Copyright (c) 2021 Uber Technologies, Inc.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -20,9 +20,9 @@
 
 package fx
 
-import "go.uber.org/fx/internal/fxlog"
+import "go.uber.org/fx/fxevent"
 
 // WithLogger exposes logger option for tests.
-func WithLogger(l fxlog.Logger) Option {
+func WithLogger(l fxevent.Logger) Option {
 	return withLogger(l)
 }

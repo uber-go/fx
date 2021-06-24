@@ -21,91 +21,13 @@
 package fxlog
 
 import (
+	"go.uber.org/fx/fxevent"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
 
-// Level is the level of logging used by Logger.
-type Level int
-
-const (
-	// InfoLevel is Info logging level used to log messages via zap.
-	InfoLevel Level = iota
-	// ErrorLevel is Info logging level used to log messages via zap.
-	ErrorLevel
-)
-
-// Entry is an entry to be later serialized into zap message and fields.
-type Entry struct {
-	Level   Level
-	Message string
-	Fields  []Field
-	Stack   string
-}
-
-// WithStack mutates an Entry to add a Stack field.
-func (e Entry) WithStack(stack string) Entry {
-	e.Stack = stack
-	return e
-}
-
-func (e Entry) Write(logger Logger) {
-	logger.Log(e)
-}
-
-// Err is a helper for error Fields.
-func Err(value error) Field {
-	return F("error", value)
-}
-
-// F is a constructor for a Field.
-func F(key string, value interface{}) Field {
-	return Field{
-		Key:   key,
-		Value: value,
-	}
-}
-
-// Field defines a field used inside an internal logging Entry.
-type Field struct {
-	Key   string
-	Value interface{}
-}
-
-// Logger defines interface used for logging.
-type Logger interface {
-	Log(entry Entry)
-}
-
-var _ Logger = (*zapLogger)(nil)
-
-type zapLogger struct {
-	logger *zap.Logger
-}
-
-func encodeFields(fields []Field, stack string) []zap.Field {
-	var fs []zap.Field
-	for _, field := range fields {
-		fs = append(fs, zap.Any(field.Key, field.Value))
-	}
-	if stack != "" {
-		fs = append(fs, zap.String("stack", stack))
-	}
-
-	return fs
-}
-
-func (l *zapLogger) Log(entry Entry) {
-	switch entry.Level {
-	case InfoLevel:
-		l.logger.Info(entry.Message, encodeFields(entry.Fields, entry.Stack)...)
-	case ErrorLevel:
-		l.logger.Error(entry.Message, encodeFields(entry.Fields, entry.Stack)...)
-	}
-}
-
 // DefaultLogger constructs a Logger out of io.Writer.
-func DefaultLogger(ws zapcore.WriteSyncer) Logger {
+func DefaultLogger(ws zapcore.WriteSyncer) fxevent.Logger {
 	zcore := zapcore.NewCore(
 		zapcore.NewJSONEncoder(zap.NewProductionEncoderConfig()),
 		ws,
@@ -113,25 +35,5 @@ func DefaultLogger(ws zapcore.WriteSyncer) Logger {
 	)
 	log := zap.New(zcore)
 
-	return &zapLogger{
-		logger: log,
-	}
-}
-
-// Info creates a logging Info entry.
-func Info(msg string, fields ...Field) Entry {
-	return Entry{
-		Level:   InfoLevel,
-		Message: msg,
-		Fields:  fields,
-	}
-}
-
-// Error creates a logging Error entry.
-func Error(msg string, fields ...Field) Entry {
-	return Entry{
-		Level:   ErrorLevel,
-		Message: msg,
-		Fields:  fields,
-	}
+	return &fxevent.ZapLogger{Logger: log}
 }

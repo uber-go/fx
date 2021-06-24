@@ -33,6 +33,7 @@ import (
 	"time"
 
 	"go.uber.org/dig"
+	"go.uber.org/fx/fxevent"
 	"go.uber.org/fx/internal/fxlog"
 	"go.uber.org/fx/internal/fxreflect"
 	"go.uber.org/fx/internal/lifecycle"
@@ -262,11 +263,11 @@ func (t stopTimeoutOption) String() string {
 
 // withLogger will stay private until we export fxlog.Logger once
 // we finalize the API.
-func withLogger(l fxlog.Logger) Option {
+func withLogger(l fxevent.Logger) Option {
 	return withLoggerOption{l}
 }
 
-type withLoggerOption struct{ l fxlog.Logger }
+type withLoggerOption struct{ l fxevent.Logger }
 
 func (l withLoggerOption) apply(app *App) {
 	app.log = l.l
@@ -280,7 +281,7 @@ func (l withLoggerOption) String() string {
 // by most loggers, including the one bundled with the standard library.
 //
 // Note, this will be deprecate with next release and you will need to implement
-// fxlog.Logger interface instead.
+// fxevent.Logger interface instead.
 type Printer interface {
 	Printf(string, ...interface{})
 }
@@ -308,13 +309,7 @@ func (l loggerOption) String() string {
 // failures difficult to debug, since no errors are printed to console.
 //
 // Note, when withLogger is public we will make the change here as well.
-var NopLogger = withLogger(nopLogger{})
-
-type nopLogger struct{}
-
-func (nopLogger) Log(fxlog.Entry) {}
-
-func (nopLogger) String() string { return "NopLogger" }
+var NopLogger = withLogger(fxevent.NopLogger)
 
 // An App is a modular application built around dependency injection. Most
 // users will only need to use the New constructor and the all-in-one Run
@@ -356,7 +351,7 @@ type App struct {
 	lifecycle    *lifecycleWrapper
 	provides     []provide
 	invokes      []invoke
-	log          fxlog.Logger
+	log          fxevent.Logger
 	startTimeout time.Duration
 	stopTimeout  time.Duration
 	errorHooks   []ErrorHandler
@@ -375,7 +370,8 @@ type provide struct {
 	Stack fxreflect.Stack
 
 	// IsSupply is true when the Target constructor was emitted by fx.Supply.
-	IsSupply bool
+	IsSupply   bool
+	SupplyType reflect.Type // set only if IsSupply
 }
 
 // invoke is a single invocation request to Fx.
@@ -484,10 +480,8 @@ func New(opts ...Option) *App {
 	app.provide(provide{Target: app.dotGraph, Stack: frames})
 
 	if app.err != nil {
-		fxlog.Info(
-			"error encountered while applying options",
-			fxlog.Err(app.err),
-		).Write(app.log)
+		app.log.LogEvent(&fxevent.ProvideError{Err: app.err})
+
 		return app
 	}
 
@@ -641,16 +635,9 @@ func (app *App) provide(p provide) {
 
 	switch {
 	case p.IsSupply:
-		for _, rtype := range fxreflect.ReturnTypes(constructor) {
-			fxlog.Info("supplying", fxlog.Field{Key: "type", Value: rtype}).Write(app.log)
-		}
+		app.log.LogEvent(&fxevent.Supply{TypeName: p.SupplyType.String()})
 	default:
-		for _, rtype := range fxreflect.ReturnTypes(constructor) {
-			fxlog.Info("providing",
-				fxlog.Field{Key: "type", Value: rtype},
-				fxlog.Field{Key: "constructor", Value: fxreflect.FuncName(constructor)},
-			).Write(app.log)
-		}
+		app.log.LogEvent(&fxevent.Provide{Constructor: constructor})
 	}
 
 	if _, ok := constructor.(Option); ok {
@@ -710,8 +697,7 @@ func (app *App) executeInvokes() error {
 
 	for _, i := range app.invokes {
 		fn := i.Target
-		fname := fxreflect.FuncName(fn)
-		fxlog.Info("invoke", fxlog.F("function", fname)).Write(app.log)
+		app.log.LogEvent(&fxevent.Invoke{Function: fn})
 
 		var err error
 		if _, ok := fn.(Option); ok {
@@ -723,11 +709,12 @@ func (app *App) executeInvokes() error {
 		}
 
 		if err != nil {
-			fxlog.Error(
-				"fx.Invoke failed",
-				fxlog.F("function", fname),
-				fxlog.Err(err),
-			).WithStack(i.Stack.String()).Write(app.log)
+			app.log.LogEvent(&fxevent.InvokeError{
+				Function:   fn,
+				Err:        err,
+				Stacktrace: i.Stack.String(),
+			})
+
 			return err
 		}
 	}
@@ -740,18 +727,17 @@ func (app *App) run(done <-chan os.Signal) {
 	defer cancel()
 
 	if err := app.Start(startCtx); err != nil {
-		fxlog.Error("failed to start", fxlog.Err(err)).Write(app.log)
+		app.log.LogEvent(&fxevent.StartError{Err: err})
 		os.Exit(1)
 	}
-	sig := (<-done).String()
-	fxlog.Info("received signal", fxlog.F("signal", strings.ToUpper(sig))).Write(app.log)
+	sig := <-done
+	app.log.LogEvent(&fxevent.StopSignal{Signal: sig})
 
 	stopCtx, cancel := context.WithTimeout(context.Background(), app.StopTimeout())
 	defer cancel()
 
 	if err := app.Stop(stopCtx); err != nil {
-		fxlog.Error("failed to stop cleanly",
-			fxlog.Err(err)).Write(app.log)
+		app.log.LogEvent(&fxevent.StopError{Err: err})
 		os.Exit(1)
 	}
 }
@@ -765,15 +751,15 @@ func (app *App) start(ctx context.Context) error {
 	// Attempt to start cleanly.
 	if err := app.lifecycle.Start(ctx); err != nil {
 		// Start failed, rolling back.
-		fxlog.Info("startup failed, rolling back", fxlog.Err(err)).Write(app.log)
+		app.log.LogEvent(&fxevent.Rollback{StartErr: err})
 		if stopErr := app.lifecycle.Stop(ctx); stopErr != nil {
-			fxlog.Info("could not rollback cleanly", fxlog.Err(stopErr)).Write(app.log)
+			app.log.LogEvent(&fxevent.RollbackError{Err: stopErr})
 
 			return multierr.Append(err, stopErr)
 		}
 		return err
 	}
-	fxlog.Info("running").Write(app.log)
+	app.log.LogEvent(&fxevent.Running{})
 
 	return nil
 }
