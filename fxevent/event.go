@@ -28,18 +28,18 @@ type Event interface {
 }
 
 // Passing events by type to make Event hashable in the future.
-func (*LifecycleHookStart) event()   {}
-func (*LifecycleHookStop) event()    {}
+func (*LifecycleHookStart) event() {}
+func (*LifecycleHookStop) event()  {}
 func (*ProvideError) event()       {}
 func (*Supply) event()             {}
 func (*Provide) event()            {}
 func (*Invoke) event()             {}
 func (*InvokeError) event()        {}
-func (*StartError) event()  {}
+func (*StartError) event()         {}
 func (*StopSignal) event()         {}
 func (*StopError) event()          {}
 func (*Rollback) event()           {}
-func (*RollbackError) event() {}
+func (*RollbackError) event()      {}
 func (*Running) event()            {}
 
 // LifecycleHookStart is emitted for whenever an OnStart hook is executed
@@ -60,7 +60,7 @@ type ProvideError struct {
 // Supply is emitted whenever a Provide was called with a constructor provided
 // by fx.Supply.
 type Supply struct {
-	Constructor interface{}
+	TypeName string
 }
 
 // Provide is emitted whenever Provide was called and is not provided by fx.Supply.

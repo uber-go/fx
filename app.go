@@ -370,7 +370,8 @@ type provide struct {
 	Stack fxreflect.Stack
 
 	// IsSupply is true when the Target constructor was emitted by fx.Supply.
-	IsSupply bool
+	IsSupply   bool
+	SupplyType reflect.Type // set only if IsSupply
 }
 
 // invoke is a single invocation request to Fx.
@@ -634,7 +635,7 @@ func (app *App) provide(p provide) {
 
 	switch {
 	case p.IsSupply:
-		app.log.LogEvent(&fxevent.Supply{Constructor: constructor})
+		app.log.LogEvent(&fxevent.Supply{TypeName: p.SupplyType.String()})
 	default:
 		app.log.LogEvent(&fxevent.Provide{Constructor: constructor})
 	}

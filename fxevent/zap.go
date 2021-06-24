@@ -43,12 +43,7 @@ func (l *ZapLogger) LogEvent(event Event) {
 	case *ProvideError:
 		l.Logger.Error("error encountered while applying options", zap.Error(e.Err))
 	case *Supply:
-		for _, rtype := range fxreflect.ReturnTypes(e.Constructor) {
-			l.Logger.Info("supplying",
-				zap.String("constructor", fxreflect.FuncName(e.Constructor)),
-				zap.String("type", rtype),
-			)
-		}
+		l.Logger.Info("supplying", zap.String("type", e.TypeName))
 	case *Provide:
 		for _, rtype := range fxreflect.ReturnTypes(e.Constructor) {
 			l.Logger.Info("providing",
