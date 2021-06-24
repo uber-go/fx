@@ -71,8 +71,8 @@ func (l *ZapLogger) LogEvent(event Event) {
 		l.Logger.Error("failed to stop cleanly", zap.Error(e.Err))
 	case *StartRollbackError:
 		l.Logger.Error("could not rollback cleanly", zap.Error(e.Err))
-	case *StartError:
-		l.Logger.Error("startup failed, rolling back", zap.Error(e.Err))
+	case *Rollback:
+		l.Logger.Error("startup failed, rolling back", zap.Error(e.StartErr))
 	case *Running:
 		l.Logger.Info("running")
 	}

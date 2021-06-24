@@ -750,7 +750,7 @@ func (app *App) start(ctx context.Context) error {
 	// Attempt to start cleanly.
 	if err := app.lifecycle.Start(ctx); err != nil {
 		// Start failed, rolling back.
-		app.log.LogEvent(&fxevent.StartError{Err: err})
+		app.log.LogEvent(&fxevent.Rollback{StartErr: err})
 		if stopErr := app.lifecycle.Stop(ctx); stopErr != nil {
 			app.log.LogEvent(&fxevent.StartRollbackError{Err: stopErr})
 

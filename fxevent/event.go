@@ -30,7 +30,7 @@ type Event interface {
 // Passing events by type to make Event hashable in the future.
 func (*LifecycleOnStart) event()   {}
 func (*LifecycleOnStop) event()    {}
-func (*ProvideError) event()  {}
+func (*ProvideError) event()       {}
 func (*Supply) event()             {}
 func (*Provide) event()            {}
 func (*Invoke) event()             {}
@@ -38,7 +38,7 @@ func (*InvokeError) event()        {}
 func (*StartFailureError) event()  {}
 func (*StopSignal) event()         {}
 func (*StopError) event()          {}
-func (*StartError) event()         {}
+func (*Rollback) event()           {}
 func (*StartRollbackError) event() {}
 func (*Running) event()            {}
 
@@ -90,8 +90,8 @@ type StopSignal struct{ Signal os.Signal }
 // StopError is emitted whenever we fail to stop cleanly.
 type StopError struct{ Err error }
 
-// StartError is emitted whenever a service fails to start.
-type StartError struct{ Err error }
+// Rollback is emitted whenever a service fails to start.
+type Rollback struct{ StartErr error }
 
 // StartRollbackError is emitted whenever we fail to rollback cleanly after
 // a start error.

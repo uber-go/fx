@@ -497,7 +497,7 @@ func TestAppStart(t *testing.T) {
 		assert.Contains(t, err.Error(), "context deadline exceeded")
 	})
 
-	t.Run("StartError", func(t *testing.T) {
+	t.Run("Rollback", func(t *testing.T) {
 		failStart := func(lc Lifecycle) struct{} {
 			lc.Append(Hook{OnStart: func(context.Context) error {
 				return errors.New("OnStart fail")
