@@ -1,4 +1,4 @@
-// Copyright (c) 2019 Uber Technologies, Inc.
+// Copyright (c) 2021 Uber Technologies, Inc.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -18,32 +18,33 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package fxtest
+package fx
 
 import (
-	"go.uber.org/fx"
 	"go.uber.org/fx/fxevent"
 )
 
-type testPrinter struct {
-	TB
+// logBuffer will buffer all messages until a logger has been
+// initialized.
+type logBuffer struct {
+	events []fxevent.Event
+	logger fxevent.Logger
 }
 
-// NewTestLogger returns an fxlog.Logger that logs to the testing TB.
-func NewTestLogger(t TB) fxevent.Logger {
-	return &testPrinter{t}
+// LogEvents buffers or logs an event.
+func (l *logBuffer) LogEvent(event fxevent.Event) {
+	if l.logger == nil {
+		l.events = append(l.events, event)
+	} else {
+		l.logger.LogEvent(event)
+	}
 }
 
-// NewTestPrinter returns a fx.Printer that logs to the testing TB.
-func NewTestPrinter(t TB) fx.Printer {
-	return &testPrinter{t}
-}
-
-func (p *testPrinter) Printf(format string, args ...interface{}) {
-	p.Logf(format, args...)
-}
-
-func (p *testPrinter) LogEvent(event fxevent.Event) {
-	// Note, we are cutting everything but the message here.
-	p.Logf("emitted event %#v", event)
+// Connect flushes out all buffered events to a logger and resets them.
+func (l *logBuffer) Connect(logger fxevent.Logger) {
+	l.logger = logger
+	for _, e := range l.events {
+		logger.LogEvent(e)
+	}
+	l.events = nil
 }

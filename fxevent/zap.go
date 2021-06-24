@@ -71,5 +71,9 @@ func (l *ZapLogger) LogEvent(event Event) {
 		l.Logger.Error("startup failed, rolling back", zap.Error(e.StartErr))
 	case *Running:
 		l.Logger.Info("running")
+	case *LoggerError:
+		l.Logger.Error("error constructing logger, did not get back fxevent.Logger from WithLogger", zap.Error(e.Err))
+	case *CustomLogger:
+		l.Logger.Info("setting custom fxevent.Logger", zap.String("function", fxreflect.FuncName(e.Function)))
 	}
 }

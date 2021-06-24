@@ -261,20 +261,22 @@ func (t stopTimeoutOption) String() string {
 	return fmt.Sprintf("fx.StopTimeout(%v)", time.Duration(t))
 }
 
-// withLogger will stay private until we export fxlog.Logger once
-// we finalize the API.
-func withLogger(l fxevent.Logger) Option {
-	return withLoggerOption{l}
+// WithLogger redirects the logging output to the instance of fx.Logger
+// provided by the constructor.
+func WithLogger(constructor interface{}) Option {
+	return withLoggerOption{logConstructor: constructor}
 }
 
-type withLoggerOption struct{ l fxevent.Logger }
+type withLoggerOption struct {
+	logConstructor interface{}
+}
 
 func (l withLoggerOption) apply(app *App) {
-	app.log = l.l
+	app.fxlogConstructor = l.logConstructor
 }
 
 func (l withLoggerOption) String() string {
-	return fmt.Sprintf("fx.withLogger(%v)", l.l)
+	return fmt.Sprintf("fx.WithLogger(%s)", fxreflect.FuncName(l.logConstructor))
 }
 
 // Printer is the interface required by Fx's logging backend. It's implemented
@@ -287,9 +289,7 @@ type Printer interface {
 }
 
 // Logger redirects the application's log output to the provided printer.
-//
-// Note, this will be deprecated with the next release and you will need to use
-// withLogger instead.
+// Deprecated: use WithLogger instead.
 func Logger(p Printer) Option {
 	return loggerOption{p}
 }
@@ -309,7 +309,7 @@ func (l loggerOption) String() string {
 // failures difficult to debug, since no errors are printed to console.
 //
 // Note, when withLogger is public we will make the change here as well.
-var NopLogger = withLogger(fxevent.NopLogger)
+var NopLogger = WithLogger(func() fxevent.Logger { return fxevent.NopLogger})
 
 // An App is a modular application built around dependency injection. Most
 // users will only need to use the New constructor and the all-in-one Run
@@ -346,17 +346,22 @@ var NopLogger = withLogger(fxevent.NopLogger)
 // execute one at a time, in reverse order, and must all complete within a
 // configurable deadline (again, 15 seconds by default).
 type App struct {
-	err          error
-	container    *dig.Container
-	lifecycle    *lifecycleWrapper
-	provides     []provide
-	invokes      []invoke
-	log          fxevent.Logger
+	err       error
+	container *dig.Container
+	lifecycle *lifecycleWrapper
+	// Constructors and its dependencies.
+	provides []provide
+	invokes  []invoke
+	// Used to setup logging within fx.
+	log              fxevent.Logger
+	fxlogConstructor interface{}
+	// Timeouts used
 	startTimeout time.Duration
 	stopTimeout  time.Duration
-	errorHooks   []ErrorHandler
-	validate     bool
-
+	// Decides how we react to errors when building the graph.
+	errorHooks []ErrorHandler
+	validate   bool
+	// Used to signal shutdowns.
 	donesMu sync.RWMutex
 	dones   []chan os.Signal
 }
@@ -445,14 +450,33 @@ func ValidateApp(opts ...Option) error {
 	return app.Err()
 }
 
+func (app *App) constructCustomLogger(connectLogger func(logger fxevent.Logger)) error {
+	if err := app.container.Provide(app.fxlogConstructor); err != nil {
+		app.err = multierr.Append(app.err,
+			fmt.Errorf("could not construct custom logger via fx.WithLogger: %w", err))
+		connectLogger(fxlog.DefaultLogger(os.Stderr))
+
+		return app.err
+	}
+	err := app.container.Invoke(
+		func(log fxevent.Logger) {
+			app.log = log
+
+			connectLogger(app.log)
+		})
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 // New creates and initializes an App, immediately executing any functions
 // registered via Invoke options. See the documentation of the App struct for
 // details on the application's initialization, startup, and shutdown logic.
 func New(opts ...Option) *App {
-	logger := fxlog.DefaultLogger(os.Stderr)
-
 	app := &App{
-		log:          logger,
 		startTimeout: DefaultTimeout,
 		stopTimeout:  DefaultTimeout,
 	}
@@ -460,16 +484,64 @@ func New(opts ...Option) *App {
 	for _, opt := range opts {
 		opt.apply(app)
 	}
-	app.lifecycle = &lifecycleWrapper{lifecycle.New(app.log)}
 
 	app.container = dig.New(
 		dig.DeferAcyclicVerification(),
 		dig.DryRun(app.validate),
 	)
+	var connectLogger func(logger fxevent.Logger)
+	if app.fxlogConstructor != nil {
+		// Since user supplied a custom logger, use a buffered logger to hold
+		// all messages until user supplied logger is instantiated. Then we flush
+		// those messages after fully constructing the custom logger.
+		var buffer logBuffer
+		app.log = &buffer
+		connectLogger = buffer.Connect // func(fxlog.Logger) error
+	} else {
+		// If user hasn't supplied a custom implementation of fxlog.Logger
+		// then use default one.
+		app.log = fxlog.DefaultLogger(os.Stderr)
+	}
 
 	for _, p := range app.provides {
 		app.provide(p)
 	}
+
+	if app.err != nil {
+		if connectLogger != nil {
+			connectLogger(fxlog.DefaultLogger(os.Stderr))
+		}
+		// else we we have initialized default logger and never used logBuffer.
+
+		return app
+	}
+
+	// If WithLogger and Printer are both provided, WithLogger takes precedence.
+	// If user supplied an fxlog constructor, we need to have dig's container
+	// initialize it and grab all of arguments from the graph and then return.
+	if app.fxlogConstructor != nil {
+		// Here we add the custom logger into the container and flush out the buffer on success.
+		err := app.constructCustomLogger(connectLogger)
+		if err != nil {
+			app.err = err
+			// Error connecting to user supplied logger, falling back to default logger. connectLogger should
+			// be non-nil since we have a check above on whether user supplied a logger. On error we connect to
+			// default logger initialized above that should be similar to else branch if a user did not supply a
+			// custom logger.
+			connectLogger(fxlog.DefaultLogger(os.Stderr))
+			app.log.LogEvent(&fxevent.LoggerError{Err: err})
+
+			return app
+		}
+		app.log.LogEvent(&fxevent.CustomLogger{Function: app.fxlogConstructor})
+	}
+	// If there was an error when constructing a logger, return with the default logger which has been flushed.
+	if app.err != nil {
+		return app
+	}
+
+	// Lifecycle is initialized after we figured out the logger situation.
+	app.lifecycle = &lifecycleWrapper{lifecycle.New(app.log)}
 
 	frames := fxreflect.CallerStack(0, 0) // include New in the stack for default Provides
 	app.provide(provide{
@@ -498,6 +570,7 @@ func New(opts ...Option) *App {
 		}
 		errorHandlerList(app.errorHooks).HandleError(err)
 	}
+
 	return app
 }
 
@@ -632,7 +705,6 @@ func (app *App) provide(p provide) {
 	}
 
 	constructor := p.Target
-
 	switch {
 	case p.IsSupply:
 		app.log.LogEvent(&fxevent.Supply{TypeName: p.SupplyType.String()})

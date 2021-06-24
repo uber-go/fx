@@ -20,9 +20,36 @@
 
 package fx
 
-import "go.uber.org/fx/fxevent"
+import (
+	"testing"
 
-// WithLogger exposes logger option for tests.
-func WithLogger(l fxevent.Logger) Option {
-	return withLogger(l)
+	"github.com/stretchr/testify/assert"
+	"go.uber.org/fx/fxevent"
+	"go.uber.org/fx/internal/fxlog"
+)
+
+func TestLogBufferConnect(t *testing.T) {
+	spy := new(fxlog.Spy)
+	event := &fxevent.Running{}
+	lb := &logBuffer{
+		events: []fxevent.Event{event},
+		logger: nil,
+	}
+
+	lb.Connect(spy)
+	assert.Equal(t, spy.Events(), []fxevent.Event{event})
+}
+
+func TestLogBufferLog(t *testing.T) {
+	spy := new(fxlog.Spy)
+	event := &fxevent.Running{}
+	lb := &logBuffer{
+		events: nil,
+		logger: nil,
+	}
+
+	lb.LogEvent(event)
+
+	lb.Connect(spy)
+	assert.Equal(t, spy.Events(), []fxevent.Event{event})
 }
