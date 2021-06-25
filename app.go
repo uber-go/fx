@@ -272,7 +272,7 @@ type withLoggerOption struct {
 }
 
 func (l withLoggerOption) apply(app *App) {
-	app.fxlogConstructor = l.logConstructor
+	app.logConstructor = l.logConstructor
 }
 
 func (l withLoggerOption) String() string {
@@ -353,8 +353,8 @@ type App struct {
 	provides []provide
 	invokes  []invoke
 	// Used to setup logging within fx.
-	log              fxevent.Logger
-	fxlogConstructor interface{}
+	log            fxevent.Logger
+	logConstructor interface{}
 	// Timeouts used
 	startTimeout time.Duration
 	stopTimeout  time.Duration
@@ -451,7 +451,7 @@ func ValidateApp(opts ...Option) error {
 }
 
 func (app *App) constructCustomLogger(connectLogger func(logger fxevent.Logger)) error {
-	if err := app.container.Provide(app.fxlogConstructor); err != nil {
+	if err := app.container.Provide(app.logConstructor); err != nil {
 		app.err = multierr.Append(app.err,
 			fmt.Errorf("could not construct custom logger via fx.WithLogger: %w", err))
 		connectLogger(fxlog.DefaultLogger(os.Stderr))
@@ -464,7 +464,6 @@ func (app *App) constructCustomLogger(connectLogger func(logger fxevent.Logger))
 
 			connectLogger(app.log)
 		})
-
 	if err != nil {
 		return err
 	}
@@ -490,7 +489,7 @@ func New(opts ...Option) *App {
 		dig.DryRun(app.validate),
 	)
 	var connectLogger func(logger fxevent.Logger)
-	if app.fxlogConstructor != nil {
+	if app.logConstructor != nil {
 		// Since user supplied a custom logger, use a buffered logger to hold
 		// all messages until user supplied logger is instantiated. Then we flush
 		// those messages after fully constructing the custom logger.
@@ -515,7 +514,7 @@ func New(opts ...Option) *App {
 	// If WithLogger and Printer are both provided, WithLogger takes precedence.
 	// If user supplied an fxlog constructor, we need to have dig's container
 	// initialize it and grab all of arguments from the graph and then return.
-	if app.fxlogConstructor != nil {
+	if app.logConstructor != nil {
 		// Here we add the custom logger into the container and flush out the buffer on success.
 		err := app.constructCustomLogger(connectLogger)
 		if err != nil {
@@ -530,7 +529,7 @@ func New(opts ...Option) *App {
 
 			return app
 		}
-		app.log.LogEvent(&fxevent.CustomLogger{Function: app.fxlogConstructor})
+		app.log.LogEvent(&fxevent.CustomLogger{Function: app.logConstructor})
 	}
 
 	// Here the error could have come from provide loop above or from initializing the custom logger.
