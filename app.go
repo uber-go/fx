@@ -806,14 +806,16 @@ func withTimeout(param *withTimeoutParams) error {
 		r := param.lifecycle.hookRecords()
 		caller := param.lifecycle.runningHookCaller()
 		if len(r) > 0 {
-			err = multierr.Append(err, fmt.Errorf(`
-timed out while executing hook %s (Caller: %s). Hooks successfully ran so far: %s`,
-				param.hook, caller, r))
-		} else {
-			err = multierr.Append(err, fmt.Errorf(`
-timed out while executing hook %s (Caller: %s)`, param.hook, caller))
+			return fmt.Errorf("%v hook added by %v failed: %w\n%+v",
+				param.hook,
+				caller,
+				err,
+				r)
 		}
-		return err
+		return fmt.Errorf("%v hook added by %v failed: %w",
+			param.hook,
+			caller,
+			err)
 	case err := <-c:
 		return err
 	}

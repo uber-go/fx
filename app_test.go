@@ -495,8 +495,7 @@ func TestAppStart(t *testing.T) {
 
 		err := app.Start(ctx)
 		require.Error(t, err)
-		assert.Contains(t, err.Error(), "context deadline exceeded")
-		assert.Contains(t, err.Error(), "timed out while executing hook OnStart (Caller: go.uber.org/fx_test.TestAppStart.func1.1)")
+		assert.Contains(t, err.Error(), "OnStart hook added by go.uber.org/fx_test.TestAppStart.func1.1 failed: context deadline exceeded")
 	})
 
 	t.Run("TimeoutWithFinishedHooks", func(t *testing.T) {
@@ -545,9 +544,11 @@ func TestAppStart(t *testing.T) {
 
 		err := app.Start(ctx)
 		require.Error(t, err)
-		assert.Contains(t, err.Error(), "context deadline exceeded")
-		assert.Contains(t, err.Error(), "timed out while executing hook OnStart (Caller: go.uber.org/fx_test.TestAppStart.func2.3).")
-		assert.Contains(t, err.Error(), "Hooks successfully ran so far:")
+		assert.Contains(t, err.Error(), "OnStart hook added by go.uber.org/fx_test.TestAppStart.func2.3 failed: context deadline exceeded")
+
+		// Check that hooks successfully run contain file/line numbers
+		assert.Contains(t, err.Error(), "app_test.go:506")
+		assert.Contains(t, err.Error(), "app_test.go:516")
 
 		// Check that hooks successfully run are reported in order of runtime.
 		hook1Idx := strings.Index(err.Error(), "go.uber.org/fx_test.TestAppStart.func2.1.1()")

@@ -23,6 +23,7 @@ package lifecycle
 import (
 	"context"
 	"fmt"
+	"io"
 	"sort"
 	"strings"
 	"sync"
@@ -38,7 +39,9 @@ import (
 type Hook struct {
 	OnStart func(context.Context) error
 	OnStop  func(context.Context) error
-	caller  string
+
+	caller      string
+	callerFrame fxreflect.Frame
 }
 
 // Lifecycle coordinates application lifecycle hooks.
@@ -59,6 +62,10 @@ func New(logger fxevent.Logger) *Lifecycle {
 // Append adds a Hook to the lifecycle.
 func (l *Lifecycle) Append(hook Hook) {
 	hook.caller = fxreflect.Caller()
+	// Save the caller's stack frame to report file/line number.
+	if f := fxreflect.CallerStack(2, 0); len(f) > 0 {
+		hook.callerFrame = f[0]
+	}
 	l.hooks = append(l.hooks, hook)
 }
 
@@ -80,9 +87,9 @@ func (l *Lifecycle) Start(ctx context.Context) error {
 			}
 			l.mu.Lock()
 			l.records = append(l.records, HookRecord{
-				Runtime: time.Now().Sub(begin),
-				Caller:  hook.caller,
-				Func:    hook.OnStart,
+				CallerFrame: hook.callerFrame,
+				Func:        hook.OnStart,
+				Runtime:     time.Now().Sub(begin),
 			})
 			l.mu.Unlock()
 		}
@@ -117,9 +124,9 @@ func (l *Lifecycle) Stop(ctx context.Context) error {
 		}
 		l.mu.Lock()
 		l.records = append(l.records, HookRecord{
-			Runtime: time.Now().Sub(begin),
-			Caller:  hook.caller,
-			Func:    hook.OnStop,
+			CallerFrame: hook.callerFrame,
+			Func:        hook.OnStop,
+			Runtime:     time.Now().Sub(begin),
 		})
 		l.mu.Unlock()
 	}
@@ -147,20 +154,41 @@ func (l *Lifecycle) RunningHookCaller() string {
 
 // HookRecord keeps track of each Hook's execution time, the caller that appended the Hook, and function that ran as the Hook.
 type HookRecord struct {
-	Runtime time.Duration               // How long the hook ran
-	Caller  string                      // caller that appended this hook
-	Func    func(context.Context) error // function that ran as sanitized name
+	CallerFrame fxreflect.Frame             // stack frame of the caller
+	Func        func(context.Context) error // function that ran as sanitized name
+	Runtime     time.Duration               // how long the hook ran
 }
 
 // HookRecords is a Stringer wrapper of HookRecord slice.
 type HookRecords []HookRecord
 
 // Used for logging startup errors.
-func (r HookRecords) String() string {
+func (rs HookRecords) String() string {
 	var b strings.Builder
-	sort.Slice(r, func(i, j int) bool { return r[i].Runtime > r[j].Runtime })
-	for _, r := range r {
-		b.WriteString(fmt.Sprintf("%s took %d ms to run. (Caller: %s)\n", fxreflect.FuncName(r.Func), r.Runtime.Milliseconds(), r.Caller))
+	sort.Slice(rs, func(i, j int) bool { return rs[i].Runtime > rs[j].Runtime })
+	for _, r := range rs {
+		b.WriteString(fmt.Sprintf("%s took %v from %s",
+			fxreflect.FuncName(r.Func),
+			r.Runtime,
+			r.CallerFrame))
 	}
 	return b.String()
+}
+
+// Format implements fmt.Formatter to handle "%+v".
+func (rs HookRecords) Format(w fmt.State, c rune) {
+	if !w.Flag('+') {
+		// Without %+v, fall back to String().
+		io.WriteString(w, rs.String())
+		return
+	}
+
+	sort.Slice(rs, func(i, j int) bool { return rs[i].Runtime > rs[j].Runtime })
+	for _, r := range rs {
+		fmt.Fprintf(w, "\n%s took %v from:\n\t%+v",
+			fxreflect.FuncName(r.Func),
+			r.Runtime,
+			r.CallerFrame)
+	}
+	fmt.Printf("\n")
 }
