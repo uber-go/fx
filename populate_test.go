@@ -40,6 +40,8 @@ func TestPopulate(t *testing.T) {
 	}
 	type t2 struct{}
 
+	_ = new(t1).buf // buf is unused
+
 	t.Run("populate nothing", func(t *testing.T) {
 		app := fxtest.New(t,
 			Provide(func() *t1 { panic("should not be called ") }),
@@ -174,7 +176,6 @@ func TestPopulate(t *testing.T) {
 		// Cannot use assert.Equal here as we want to compare pointers.
 		assert.False(t, targets.Group[0] == targets.Group[1], "group values should be different")
 	})
-
 }
 
 func TestPopulateErrors(t *testing.T) {
