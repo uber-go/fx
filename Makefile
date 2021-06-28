@@ -24,7 +24,7 @@ cover:
 	go tool cover -html=cover.out -o cover.html
 
 $(GOLINT):
-	go install golang.org/x/lint/golint
+	cd tools && go install golang.org/x/lint/golint
 
 .PHONY: lint
 lint: $(GOLINT)
