@@ -21,9 +21,9 @@
 package fxreflect
 
 import (
+	"bytes"
 	"errors"
 	"log"
-	"sync"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -41,7 +41,7 @@ func (impl) Holler() {}
 type result struct {
 	dig.Out // referencing fx introduces import cycles
 
-	mu     sync.Mutex // unexported
+	buff   *bytes.Buffer
 	Logger *log.Logger
 }
 
@@ -70,7 +70,9 @@ func TestReturnTypes(t *testing.T) {
 	})
 	t.Run("result struct", func(t *testing.T) {
 		fn := func() result {
-			return result{}
+			return result{
+				buff: bytes.NewBufferString("foo"),
+			}
 		}
 		assert.Equal(t, []string{"*log.Logger"}, ReturnTypes(fn))
 	})

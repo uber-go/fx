@@ -831,7 +831,6 @@ func TestErrorHook(t *testing.T) {
 	t.Run("GraphWithError", func(t *testing.T) {
 		type A struct{}
 		type B struct{}
-		type C struct{}
 
 		var errStr, graphStr string
 		h := errHandlerFunc(func(err error) {
