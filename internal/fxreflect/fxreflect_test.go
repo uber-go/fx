@@ -1,4 +1,4 @@
-// Copyright (c) 2019 Uber Technologies, Inc.
+// Copyright (c) 2019-2021 Uber Technologies, Inc.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -21,68 +21,10 @@
 package fxreflect
 
 import (
-	"bytes"
-	"errors"
-	"log"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.uber.org/dig"
 )
-
-type hollerer interface {
-	Holler()
-}
-
-type impl struct{}
-
-func (impl) Holler() {}
-
-type result struct {
-	dig.Out // referencing fx introduces import cycles
-
-	buff   *bytes.Buffer
-	Logger *log.Logger
-}
-
-func TestReturnTypes(t *testing.T) {
-	t.Run("non-function", func(t *testing.T) {
-		assert.Empty(t, ReturnTypes(42))
-	})
-	t.Run("primitive", func(t *testing.T) {
-		fn := func() (int, string) {
-			return 0, ""
-		}
-		assert.Equal(t, []string{"int", "string"}, ReturnTypes(fn))
-	})
-	t.Run("pointer", func(t *testing.T) {
-		type s struct{}
-		fn := func() *s {
-			return &s{}
-		}
-		assert.Equal(t, []string{"*fxreflect.s"}, ReturnTypes(fn))
-	})
-	t.Run("interface", func(t *testing.T) {
-		fn := func() hollerer {
-			return impl{}
-		}
-		assert.Equal(t, []string{"fxreflect.hollerer"}, ReturnTypes(fn))
-	})
-	t.Run("result struct", func(t *testing.T) {
-		fn := func() result {
-			return result{
-				buff: bytes.NewBufferString("foo"),
-			}
-		}
-		assert.Equal(t, []string{"*log.Logger"}, ReturnTypes(fn))
-	})
-	t.Run("skips errors", func(t *testing.T) {
-		fn := func() (string, error) {
-			return "", errors.New("err")
-		}
-		assert.Equal(t, []string{"string"}, ReturnTypes(fn))
-	})
-}
 
 func TestCaller(t *testing.T) {
 	assert.Equal(t, "go.uber.org/fx/internal/fxreflect.TestCaller", Caller())
