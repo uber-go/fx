@@ -23,11 +23,15 @@ package lifecycle
 import (
 	"context"
 	"errors"
+	"fmt"
+	"strings"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/fx/fxevent"
 	"go.uber.org/fx/internal/fxlog"
+	"go.uber.org/fx/internal/fxreflect"
 	"go.uber.org/fx/internal/testutil"
 	"go.uber.org/multierr"
 )
@@ -216,5 +220,39 @@ func TestLifecycleStop(t *testing.T) {
 
 		assert.Equal(t, err, l.Start(context.Background()))
 		l.Stop(context.Background())
+	})
+}
+
+func TestHookRecordsFormat(t *testing.T) {
+	t.Run("SortRecords", func(t *testing.T) {
+		r := make(HookRecords, 2)
+		t1, _ := time.ParseDuration("10ms")
+		t2, _ := time.ParseDuration("20ms")
+		f := fxreflect.Frame{
+			Function: "someFunc",
+			File:     "somefunc.go",
+			Line:     1,
+		}
+		r[0] = HookRecord{
+			CallerFrame: f,
+			Func: func(context.Context) error {
+				return nil
+			},
+			Runtime: t1,
+		}
+		r[1] = HookRecord{
+			CallerFrame: f,
+			Func: func(context.Context) error {
+				return nil
+			},
+			Runtime: t2,
+		}
+		for _, s := range []string{fmt.Sprintf("%v", r), fmt.Sprintf("%+v", r), fmt.Sprintf("%s", r)} {
+			hook1Idx := strings.Index(s, "TestHookRecordsFormat.func1.1()")
+			hook2Idx := strings.Index(s, "TestHookRecordsFormat.func1.2()")
+			assert.Greater(t, hook1Idx, hook2Idx, "second hook must appear first in the formatted string")
+			assert.Contains(t, s, "somefunc.go:1", "file name and line should be reported")
+
+		}
 	})
 }

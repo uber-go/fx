@@ -89,7 +89,7 @@ func (l *Lifecycle) Start(ctx context.Context) error {
 			l.records = append(l.records, HookRecord{
 				CallerFrame: hook.callerFrame,
 				Func:        hook.OnStart,
-				Runtime:     time.Now().Sub(begin),
+				Runtime:     time.Since(begin),
 			})
 			l.mu.Unlock()
 		}
@@ -126,7 +126,7 @@ func (l *Lifecycle) Stop(ctx context.Context) error {
 		l.records = append(l.records, HookRecord{
 			CallerFrame: hook.callerFrame,
 			Func:        hook.OnStop,
-			Runtime:     time.Now().Sub(begin),
+			Runtime:     time.Since(begin),
 		})
 		l.mu.Unlock()
 	}
