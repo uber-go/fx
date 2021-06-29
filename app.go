@@ -1,4 +1,4 @@
-// Copyright (c) 2020 Uber Technologies, Inc.
+// Copyright (c) 2020-2021 Uber Technologies, Inc.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -707,13 +707,6 @@ func (app *App) provide(p provide) {
 	}
 
 	constructor := p.Target
-	switch {
-	case p.IsSupply:
-		app.log.LogEvent(&fxevent.Supply{TypeName: p.SupplyType.String()})
-	default:
-		app.log.LogEvent(&fxevent.Provide{Constructor: constructor})
-	}
-
 	if _, ok := constructor.(Option); ok {
 		app.err = fmt.Errorf("fx.Option should be passed to fx.New directly, "+
 			"not to fx.Provide: fx.Provide received %v from:\n%+v",
@@ -721,8 +714,32 @@ func (app *App) provide(p provide) {
 		return
 	}
 
+	var info dig.ProvideInfo
+	opts := []dig.ProvideOption{
+		dig.FillProvideInfo(&info),
+	}
+	defer func() {
+		if app.err != nil {
+			return
+		}
+
+		switch {
+		case p.IsSupply:
+			app.log.LogEvent(&fxevent.Supply{TypeName: p.SupplyType.String()})
+		default:
+			outputNames := make([]string, len(info.Outputs))
+			for i, o := range info.Outputs {
+				outputNames[i] = o.String()
+			}
+
+			app.log.LogEvent(&fxevent.Provide{
+				Constructor:     constructor,
+				OutputTypeNames: outputNames,
+			})
+		}
+	}()
+
 	if ann, ok := constructor.(Annotated); ok {
-		var opts []dig.ProvideOption
 		switch {
 		case len(ann.Group) > 0 && len(ann.Name) > 0:
 			app.err = fmt.Errorf(
@@ -759,7 +776,7 @@ func (app *App) provide(p provide) {
 		}
 	}
 
-	if err := app.container.Provide(constructor); err != nil {
+	if err := app.container.Provide(constructor, opts...); err != nil {
 		app.err = fmt.Errorf("fx.Provide(%v) from:\n%+vFailed: %v", fxreflect.FuncName(constructor), p.Stack, err)
 	}
 }

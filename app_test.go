@@ -1,4 +1,4 @@
-// Copyright (c) 2020 Uber Technologies, Inc.
+// Copyright (c) 2020-2021 Uber Technologies, Inc.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -36,7 +36,6 @@ import (
 	"go.uber.org/fx/fxevent"
 	"go.uber.org/fx/fxtest"
 	"go.uber.org/fx/internal/fxlog"
-	"go.uber.org/fx/internal/fxreflect"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 )
@@ -74,7 +73,8 @@ func TestNewApp(t *testing.T) {
 		require.Equal(t,
 			[]string{"Provide", "CustomLogger", "Provide", "Provide", "Provide", "Running"},
 			spy.EventTypes())
-		assert.Contains(t, fxreflect.ReturnTypes(spy.Events()[0].(*fxevent.Provide).Constructor), "struct {}")
+
+		assert.Contains(t, spy.Events()[0].(*fxevent.Provide).OutputTypeNames, "struct {}")
 	})
 
 	t.Run("CircularGraphReturnsError", func(t *testing.T) {
@@ -499,8 +499,8 @@ func TestOptions(t *testing.T) {
 			Provide(&bytes.Buffer{}), // error, not a constructor
 			WithLogger(func() fxevent.Logger { return spy }),
 		)
-		require.Equal(t, []string{"Provide", "ProvideError", "CustomLogger"}, spy.EventTypes())
-		assert.Contains(t, spy.Events()[1].(*fxevent.ProvideError).Err.Error(), "must provide constructor function")
+		require.Equal(t, []string{"ProvideError", "CustomLogger"}, spy.EventTypes())
+		assert.Contains(t, spy.Events()[0].(*fxevent.ProvideError).Err.Error(), "must provide constructor function")
 	})
 }
 
