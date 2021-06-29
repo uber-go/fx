@@ -10,3 +10,5 @@ require (
 	go.uber.org/zap v1.16.0
 	golang.org/x/sys v0.0.0-20190412213103-97732733099d
 )
+
+replace go.uber.org/dig => go.uber.org/dig v1.11.1-0.20210622212612-931c2ba30782
