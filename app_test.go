@@ -45,7 +45,12 @@ import (
 )
 
 func NewForTest(tb testing.TB, opts ...Option) *App {
-	testOpts := []Option{WithLogger(func() fxevent.Logger { return fxtest.NewTestLogger(tb) })}
+	testOpts := []Option{
+		// Provide both, Logger and WithLogger so that if the test
+		// WithLogger fails, we don't pollute stderr.
+		Logger(fxtest.NewTestPrinter(tb)),
+		WithLogger(func() fxevent.Logger { return fxtest.NewTestLogger(tb) }),
+	}
 	opts = append(testOpts, opts...)
 
 	return New(opts...)

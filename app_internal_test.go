@@ -31,7 +31,7 @@ import (
 )
 
 func TestAppRun(t *testing.T) {
-	app := New()
+	app := New(NopLogger)
 	done := make(chan os.Signal)
 
 	var wg sync.WaitGroup
