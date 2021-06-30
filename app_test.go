@@ -356,7 +356,6 @@ func TestSetupLogger(t *testing.T) {
 		)
 		ts.AssertMessages(
 			"INFO\temitted event\t{\"event\": \"*fxevent.Supply\"}",
-			"INFO\temitted event\t{\"event\": \"*fxevent.Provide\"}",
 			"INFO\temitted event\t{\"event\": \"*fxevent.ProvideError\"}",
 			"INFO\temitted event\t{\"event\": \"*fxevent.CustomLogger\"}")
 	})
