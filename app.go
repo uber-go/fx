@@ -531,7 +531,7 @@ func New(opts ...Option) *App {
 		// Logger we fall back to if the custom logger fails to build.
 		// This will be a DefaultLogger that writes to stderr if the
 		// user didn't use fx.Logger, and a DefaultLogger that writes
-		// to their output stream if not.
+		// to their output stream if they did.
 		fallbackLogger fxevent.Logger
 	)
 	if app.logConstructor != nil {
@@ -539,7 +539,6 @@ func New(opts ...Option) *App {
 		// to hold all messages until user supplied logger is
 		// instantiated. Then we flush those messages after fully
 		// constructing the custom logger.
-
 		bufferLogger = new(logBuffer)
 		fallbackLogger, app.log = app.log, bufferLogger
 	}
@@ -563,32 +562,28 @@ func New(opts ...Option) *App {
 
 	if app.err != nil {
 		app.log.LogEvent(&fxevent.ProvideError{Err: app.err})
-		// Here we do not return to give custom logger a chance to initialize itself.
-		// We will flush later.
+		// Don't return yet. If a custom logger was being used,
+		// we're still buffering messages. We'll want to flush them to
+		// the logger.
 	}
 
-	// If WithLogger and Printer are both provided, WithLogger takes precedence.
-	// If user supplied an fxlog constructor, we need to have dig's container
-	// initialize it and grab all of arguments from the graph and then return.
+	// If WithLogger and Printer are both provided, WithLogger takes
+	// precedence.
 	if app.logConstructor != nil {
-		// This would flush the logger on success.
+		// If we failed to build the provided logger, flush the buffer
+		// to the fallback logger instead.
 		if err := app.constructCustomLogger(bufferLogger); err != nil {
-			app.err = err
-
+			app.err = multierr.Append(app.err, err)
 			app.log = fallbackLogger
 			bufferLogger.Connect(fallbackLogger)
-			// Error connecting to user supplied logger, falling
-			// back to default logger. bufferLogger should be
-			// non-nil since we have a check above on whether user
-			// supplied a logger.
 			app.log.LogEvent(&fxevent.CustomLoggerError{Err: err})
 			return app
 		}
 		app.log.LogEvent(&fxevent.CustomLogger{Function: app.logConstructor})
 	}
 
-	// Here the error could have come from provide loop above or from initializing the custom logger.
-	// At this point we have already flushed the buffered logger if it was initialized.
+	// This error might have come from the provide looop above. We've
+	// already flushed to the custom logger, so we can return.
 	if app.err != nil {
 		return app
 	}
