@@ -80,7 +80,7 @@ func TestNewApp(t *testing.T) {
 			WithLogger(func() fxevent.Logger { return spy }))
 		defer app.RequireStart().RequireStop()
 		require.Equal(t,
-			[]string{"Provide", "CustomLogger", "Provide", "Provide", "Provide", "Running"},
+			[]string{"Provide", "Provide", "Provide", "Provide", "CustomLogger", "Running"},
 			spy.EventTypes())
 
 		assert.Contains(t, spy.Events()[0].(*fxevent.Provide).OutputTypeNames, "struct {}")
@@ -299,10 +299,11 @@ func TestSetupLogger(t *testing.T) {
 		)
 		ts.AssertMessages(
 			"INFO\temitted event\t{\"event\": \"*fxevent.Supply\"}",
+			"INFO\temitted event\t{\"event\": \"*fxevent.Provide\"}",
+			"INFO\temitted event\t{\"event\": \"*fxevent.Provide\"}",
+			"INFO\temitted event\t{\"event\": \"*fxevent.Provide\"}",
 			"INFO\temitted event\t{\"event\": \"*fxevent.CustomLogger\"}",
-			"INFO\temitted event\t{\"event\": \"*fxevent.Provide\"}",
-			"INFO\temitted event\t{\"event\": \"*fxevent.Provide\"}",
-			"INFO\temitted event\t{\"event\": \"*fxevent.Provide\"}")
+		)
 		ts.Reset()
 		defer app.RequireStart().RequireStop()
 		require.NoError(t, app.Err())
@@ -674,7 +675,7 @@ func TestAppStart(t *testing.T) {
 		//         /.../go/1.13.3/libexec/src/testing/testing.go:909
 		// Failed: can't invoke non-function {} (type struct {})
 		require.Equal(t,
-			[]string{"CustomLogger", "Provide", "Provide", "Provide", "Invoke", "InvokeError"},
+			[]string{"Provide", "Provide", "Provide", "CustomLogger", "Invoke", "InvokeError"},
 			spy.EventTypes())
 		failedEvent := spy.Events()[len(spy.EventTypes())-1].(*fxevent.InvokeError)
 		assert.Contains(t, failedEvent.Err.Error(), "can't invoke non-function")
@@ -902,7 +903,7 @@ func TestReplaceLogger(t *testing.T) {
 	spy := new(fxlog.Spy)
 	app := fxtest.New(t, WithLogger(func() fxevent.Logger { return spy }))
 	app.RequireStart().RequireStop()
-	assert.Equal(t, []string{"CustomLogger", "Provide", "Provide", "Provide", "Running"}, spy.EventTypes())
+	assert.Equal(t, []string{"Provide", "Provide", "Provide", "CustomLogger", "Running"}, spy.EventTypes())
 }
 
 func TestNopLogger(t *testing.T) {
@@ -928,6 +929,54 @@ func TestCustomLoggerWithPrinter(t *testing.T) {
 	out := buff.String()
 	assert.Contains(t, out, "failed to build fxevent.Logger")
 	assert.Contains(t, out, "great sadness")
+}
+
+func TestCustomLoggerWithLifecycle(t *testing.T) {
+	var started, stopped bool
+	defer func() {
+		assert.True(t, started, "never started")
+		assert.True(t, stopped, "never stopped")
+	}()
+
+	var buff bytes.Buffer
+	defer func() {
+		assert.Empty(t, buff.String(), "unexpectedly wrote to the fallback logger")
+	}()
+
+	spy := fxlog.NewSpy(t)
+	app := New(
+		// We expect WithLogger to do its job. This means we shouldn't
+		// print anything to this buffer.
+		Logger(log.New(&buff, "", 0)),
+		WithLogger(func(lc Lifecycle) fxevent.Logger {
+			lc.Append(Hook{
+				OnStart: func(context.Context) error {
+					assert.False(t, started, "started twice")
+					started = true
+					return nil
+				},
+				OnStop: func(context.Context) error {
+					assert.False(t, stopped, "stopped twice")
+					stopped = true
+					return nil
+				},
+			})
+			return spy
+		}),
+	)
+
+	require.NoError(t, app.Start(context.Background()))
+	require.NoError(t, app.Stop(context.Background()))
+
+	assert.Equal(t, []string{
+		"Provide",
+		"Provide",
+		"Provide",
+		"CustomLogger",
+		"LifecycleHookStart",
+		"Running",
+		"LifecycleHookStop",
+	}, spy.EventTypes())
 }
 
 type testErrorWithGraph struct {

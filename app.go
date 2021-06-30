@@ -511,13 +511,8 @@ func New(opts ...Option) *App {
 		opt.apply(app)
 	}
 
-	app.container = dig.New(
-		dig.DeferAcyclicVerification(),
-		dig.DryRun(app.validate),
-	)
-
 	var (
-		bufferLogger *logBuffer
+		bufferLogger *logBuffer // nil if WithLogger was not used
 
 		// Logger we fall back to if the custom logger fails to build.
 		// This will be a DefaultLogger that writes to stderr if the
@@ -535,9 +530,36 @@ func New(opts ...Option) *App {
 		fallbackLogger, app.log = app.log, bufferLogger
 	}
 
+	// There are a few levels of wrapping on the lifecycle here. To quickly
+	// cover them:
+	//
+	// - lifecycleWrapper ensures that we don't unintentionally expose the
+	//   Start and Stop methods of the internal lifecycle.Lifecycle type
+	// - lifecycleWrapper also adapts the internal lifecycle.Hook type into
+	//   the public fx.Hook type.
+	// - appLogger ensures that the lifecycle always logs events to the
+	//   "current" logger associated with the fx.App.
+	app.lifecycle = &lifecycleWrapper{
+		lifecycle.New(appLogger{app}),
+	}
+
+	app.container = dig.New(
+		dig.DeferAcyclicVerification(),
+		dig.DryRun(app.validate),
+	)
+
 	for _, p := range app.provides {
 		app.provide(p)
 	}
+
+	frames := fxreflect.CallerStack(0, 0) // include New in the stack for default Provides
+	app.provide(provide{
+		Target: func() Lifecycle { return app.lifecycle },
+		Stack:  frames,
+	})
+	app.provide(provide{Target: app.shutdowner, Stack: frames})
+	app.provide(provide{Target: app.dotGraph, Stack: frames})
+
 	if app.err != nil {
 		app.log.LogEvent(&fxevent.ProvideError{Err: app.err})
 		// Here we do not return to give custom logger a chance to initialize itself.
@@ -567,22 +589,6 @@ func New(opts ...Option) *App {
 	// Here the error could have come from provide loop above or from initializing the custom logger.
 	// At this point we have already flushed the buffered logger if it was initialized.
 	if app.err != nil {
-		return app
-	}
-
-	// Lifecycle is initialized after we figured out the logger situation.
-	app.lifecycle = &lifecycleWrapper{lifecycle.New(app.log)}
-
-	frames := fxreflect.CallerStack(0, 0) // include New in the stack for default Provides
-	app.provide(provide{
-		Target: func() Lifecycle { return app.lifecycle },
-		Stack:  frames,
-	})
-	app.provide(provide{Target: app.shutdowner, Stack: frames})
-	app.provide(provide{Target: app.dotGraph, Stack: frames})
-
-	if app.err != nil {
-		app.log.LogEvent(&fxevent.ProvideError{Err: app.err})
 		return app
 	}
 
@@ -892,4 +898,14 @@ func withTimeout(ctx context.Context, f func(context.Context) error) error {
 	case err := <-c:
 		return err
 	}
+}
+
+// appLogger logs events to the given Fx app's "current" logger.
+//
+// Use this with lifecycle, for example, to ensure that events always go to the
+// correct logger.
+type appLogger struct{ app *App }
+
+func (l appLogger) LogEvent(ev fxevent.Event) {
+	l.app.log.LogEvent(ev)
 }
