@@ -12,6 +12,6 @@ do
 			(( ERROR_COUNT++ ))
 			;;
 	esac
-done < <(git ls-files "*\.go")
+done < <(git ls-files "*\.go" | grep -v /testdata/)
 
 exit $ERROR_COUNT
