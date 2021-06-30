@@ -453,14 +453,12 @@ func (app *App) constructCustomLogger(connectLogger func(logger fxevent.Logger))
 		app.err = multierr.Append(app.err,
 			fmt.Errorf("could not construct custom logger via fx.WithLogger: %w", err))
 		connectLogger(fxlog.DefaultLogger(os.Stderr))
-
 		return app.err
 	}
 
 	err := app.container.Invoke(
 		func(log fxevent.Logger) {
 			app.log = log
-
 			connectLogger(app.log)
 		})
 
