@@ -29,7 +29,6 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
-	"reflect"
 	"testing"
 	"time"
 
@@ -41,7 +40,6 @@ import (
 	"go.uber.org/fx/internal/fxlog"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
-	"go.uber.org/zap/zaptest"
 )
 
 func NewForTest(tb testing.TB, opts ...Option) *App {
@@ -271,55 +269,35 @@ func TestNewApp(t *testing.T) {
 	})
 }
 
-type eventLogger struct {
-	l *zap.Logger
-}
-
-func (l *eventLogger) LogEvent(event fxevent.Event) {
-	l.l.Info("emitted event", zap.String("event", reflect.TypeOf(event).String()))
-}
-
-func setupFxLogger(l *zap.Logger) fxevent.Logger {
-	return &eventLogger{l: l}
-}
-
-func TestSetupLogger(t *testing.T) {
-	// Note these tests can't be parallelized due to sharing of spy logger
-	// which will have a race on when appending messages to slice.
-	// ts := newTestLogSpy(t)
-	ts := fxlog.NewSpy(t)
-	defer ts.Reset()
-	logger := zaptest.NewLogger(ts)
+func TestWithLogger(t *testing.T) {
+	t.Parallel()
 
 	t.Run("initializing custom logger", func(t *testing.T) {
-		defer ts.Reset()
+		t.Parallel()
+
+		var spy fxlog.Spy
 		app := fxtest.New(t,
-			Supply(logger),
-			WithLogger(setupFxLogger),
+			Supply(&spy),
+			WithLogger(func(spy *fxlog.Spy) fxevent.Logger {
+				return spy
+			}),
 		)
-		ts.AssertMessages(
-			"INFO\temitted event\t{\"event\": \"*fxevent.Supply\"}",
-			"INFO\temitted event\t{\"event\": \"*fxevent.Provide\"}",
-			"INFO\temitted event\t{\"event\": \"*fxevent.Provide\"}",
-			"INFO\temitted event\t{\"event\": \"*fxevent.Provide\"}",
-			"INFO\temitted event\t{\"event\": \"*fxevent.CustomLogger\"}",
-		)
-		ts.Reset()
-		defer app.RequireStart().RequireStop()
+
+		assert.Equal(t, []string{
+			"Supply", "Provide", "Provide", "Provide", "CustomLogger",
+		}, spy.EventTypes())
+
+		spy.Reset()
+		app.RequireStart().RequireStop()
+
 		require.NoError(t, app.Err())
-		require.NoError(t, app.Start(context.Background()))
-		ts.AssertMessages(
-			"INFO\temitted event\t{\"event\": \"*fxevent.Running\"}",
-			"INFO\temitted event\t{\"event\": \"*fxevent.Running\"}")
+
+		assert.Equal(t, []string{"Running"}, spy.EventTypes())
 	})
-	t.Run("no custom logger", func(t *testing.T) {
-		app := fxtest.New(t)
-		defer app.RequireStart().RequireStop()
-		require.NoError(t, app.Err())
-		require.NoError(t, app.Start(context.Background()))
-	})
-	t.Run("error in WithLogger provider so intercepting default", func(t *testing.T) {
-		defer ts.Reset()
+
+	t.Run("error in WithLogger provider, use default", func(t *testing.T) {
+		// This test cannot be run in paralllel with the others because
+		// it hijacks stderr.
 
 		// Temporarily hijack stderr and restore it after this test so
 		// that we can assert its contents.
@@ -334,7 +312,7 @@ func TestSetupLogger(t *testing.T) {
 		os.Stderr = f
 
 		app := New(
-			Supply(logger),
+			Supply(zap.NewNop()),
 			WithLogger(&bytes.Buffer{}),
 		)
 		err = app.Err()
@@ -362,22 +340,25 @@ func TestSetupLogger(t *testing.T) {
 		assert.Contains(t, out, "must provide constructor function, got  (type *bytes.Buffer)\n")
 	})
 	t.Run("error in Provide shows logs", func(t *testing.T) {
-		defer ts.Reset()
+		t.Parallel()
+
+		var spy fxlog.Spy
 		app := New(
-			Supply(logger),
-			WithLogger(setupFxLogger),
+			Supply(&spy),
+			WithLogger(func(spy *fxlog.Spy) fxevent.Logger {
+				return spy
+			}),
 			Provide(&bytes.Buffer{}), // not passing in a constructor.
 		)
+
 		err := app.Err()
 		require.Error(t, err)
 		assert.Contains(t,
 			err.Error(),
 			"must provide constructor function, got  (type *bytes.Buffer)",
 		)
-		ts.AssertMessages(
-			"INFO\temitted event\t{\"event\": \"*fxevent.Supply\"}",
-			"INFO\temitted event\t{\"event\": \"*fxevent.ProvideError\"}",
-			"INFO\temitted event\t{\"event\": \"*fxevent.CustomLogger\"}")
+
+		assert.Equal(t, []string{"Supply", "ProvideError", "CustomLogger"}, spy.EventTypes())
 	})
 }
 
@@ -943,7 +924,7 @@ func TestCustomLoggerWithLifecycle(t *testing.T) {
 		assert.Empty(t, buff.String(), "unexpectedly wrote to the fallback logger")
 	}()
 
-	spy := fxlog.NewSpy(t)
+	var spy fxlog.Spy
 	app := New(
 		// We expect WithLogger to do its job. This means we shouldn't
 		// print anything to this buffer.
@@ -961,7 +942,7 @@ func TestCustomLoggerWithLifecycle(t *testing.T) {
 					return nil
 				},
 			})
-			return spy
+			return &spy
 		}),
 	)
 
