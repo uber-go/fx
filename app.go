@@ -507,6 +507,19 @@ func New(opts ...Option) *App {
 		log: fxlog.DefaultLogger(os.Stderr),
 	}
 
+	// There are a few levels of wrapping on the lifecycle here. To quickly
+	// cover them:
+	//
+	// - lifecycleWrapper ensures that we don't unintentionally expose the
+	//   Start and Stop methods of the internal lifecycle.Lifecycle type
+	// - lifecycleWrapper also adapts the internal lifecycle.Hook type into
+	//   the public fx.Hook type.
+	// - appLogger ensures that the lifecycle always logs events to the
+	//   "current" logger associated with the fx.App.
+	app.lifecycle = &lifecycleWrapper{
+		lifecycle.New(appLogger{app}),
+	}
+
 	for _, opt := range opts {
 		opt.apply(app)
 	}
@@ -528,19 +541,6 @@ func New(opts ...Option) *App {
 
 		bufferLogger = new(logBuffer)
 		fallbackLogger, app.log = app.log, bufferLogger
-	}
-
-	// There are a few levels of wrapping on the lifecycle here. To quickly
-	// cover them:
-	//
-	// - lifecycleWrapper ensures that we don't unintentionally expose the
-	//   Start and Stop methods of the internal lifecycle.Lifecycle type
-	// - lifecycleWrapper also adapts the internal lifecycle.Hook type into
-	//   the public fx.Hook type.
-	// - appLogger ensures that the lifecycle always logs events to the
-	//   "current" logger associated with the fx.App.
-	app.lifecycle = &lifecycleWrapper{
-		lifecycle.New(appLogger{app}),
 	}
 
 	app.container = dig.New(
