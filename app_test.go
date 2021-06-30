@@ -27,6 +27,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"log"
 	"os"
 	"reflect"
 	"testing"
@@ -882,6 +883,26 @@ func TestReplaceLogger(t *testing.T) {
 func TestNopLogger(t *testing.T) {
 	app := fxtest.New(t, NopLogger)
 	app.RequireStart().RequireStop()
+}
+
+func TestCustomLoggerWithPrinter(t *testing.T) {
+	// If we provide both, an fx.Logger and fx.WithLogger, and the logger
+	// fails, we should fall back to the fx.Logger.
+
+	var buff bytes.Buffer
+	app := New(
+		Logger(log.New(&buff, "", 0)),
+		WithLogger(func() (fxevent.Logger, error) {
+			return nil, errors.New("great sadness")
+		}),
+	)
+	err := app.Start(context.Background())
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "great sadness")
+
+	out := buff.String()
+	assert.Contains(t, out, "failed to build fxevent.Logger")
+	assert.Contains(t, out, "great sadness")
 }
 
 type testErrorWithGraph struct {

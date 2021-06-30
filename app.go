@@ -448,21 +448,24 @@ func ValidateApp(opts ...Option) error {
 	return app.Err()
 }
 
-func (app *App) constructCustomLogger(connectLogger func(logger fxevent.Logger)) error {
+func (app *App) constructCustomLogger(buffer *logBuffer, fallback fxevent.Logger) error {
 	if err := app.container.Provide(app.logConstructor); err != nil {
 		app.err = multierr.Append(app.err,
 			fmt.Errorf("could not construct custom logger via fx.WithLogger: %w", err))
-		connectLogger(fxlog.DefaultLogger(os.Stderr))
+		buffer.Connect(fallback)
 		return app.err
 	}
 
-	err := app.container.Invoke(
-		func(log fxevent.Logger) {
-			app.log = log
-			connectLogger(app.log)
-		})
+	err := app.container.Invoke(func(log fxevent.Logger) {
+		buffer.Connect(log)
+		app.log = log
+	})
+	if err != nil {
+		buffer.Connect(fallback)
+		return err
+	}
 
-	return err
+	return nil
 }
 
 // New creates and initializes an App, immediately executing any functions
@@ -472,6 +475,20 @@ func New(opts ...Option) *App {
 	app := &App{
 		startTimeout: DefaultTimeout,
 		stopTimeout:  DefaultTimeout,
+
+		// We start with a logger that writes to stderr. One of the
+		// following three things can change this:
+		//
+		// - fx.Logger was provided to change the output stream
+		// - fx.WithLogger was provided to change the logger
+		//   implementation
+		// - Both, fx.Logger and fx.WithLogger were provided
+		//
+		// The first two cases are straightforward: we use what the
+		// user gave us. For the last case, however, we need to fall
+		// back to what was provided to fx.Logger if fx.WithLogger
+		// fails.
+		log: fxlog.DefaultLogger(os.Stderr),
 	}
 
 	for _, opt := range opts {
@@ -482,18 +499,24 @@ func New(opts ...Option) *App {
 		dig.DeferAcyclicVerification(),
 		dig.DryRun(app.validate),
 	)
-	var connectLogger func(logger fxevent.Logger)
+
+	var (
+		bufferLogger *logBuffer
+
+		// Logger we fall back to if the custom logger fails to build.
+		// This will be a DefaultLogger that writes to stderr if the
+		// user didn't use fx.Logger, and a DefaultLogger that writes
+		// to their output stream if not.
+		fallbackLogger fxevent.Logger
+	)
 	if app.logConstructor != nil {
-		// Since user supplied a custom logger, use a buffered logger to hold
-		// all messages until user supplied logger is instantiated. Then we flush
-		// those messages after fully constructing the custom logger.
-		var buffer logBuffer
-		app.log = &buffer
-		connectLogger = buffer.Connect // func(fxevent.Logger)
-	} else {
-		// If user hasn't supplied a custom implementation of fxlog.Logger
-		// then use default one.
-		app.log = fxlog.DefaultLogger(os.Stderr)
+		// Since user supplied a custom logger, use a buffered logger
+		// to hold all messages until user supplied logger is
+		// instantiated. Then we flush those messages after fully
+		// constructing the custom logger.
+
+		bufferLogger = new(logBuffer)
+		fallbackLogger, app.log = app.log, bufferLogger
 	}
 
 	for _, p := range app.provides {
@@ -510,14 +533,13 @@ func New(opts ...Option) *App {
 	// initialize it and grab all of arguments from the graph and then return.
 	if app.logConstructor != nil {
 		// This would flush the logger on success.
-		if err := app.constructCustomLogger(connectLogger); err != nil {
+		if err := app.constructCustomLogger(bufferLogger, fallbackLogger); err != nil {
 			// Here, we could be carrying an error from provides above.
 			app.err = multierr.Append(app.err, err)
 			// Error connecting to user supplied logger, falling back to default logger. connectLogger should
 			// be non-nil since we have a check above on whether user supplied a logger. On error we connect to
 			// default logger initialized above that should be similar to else branch if a user did not supply a
 			// custom logger.
-			connectLogger(fxlog.DefaultLogger(os.Stderr))
 			app.log.LogEvent(&fxevent.CustomLoggerError{Err: err})
 			return app
 		}
