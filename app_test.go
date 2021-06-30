@@ -318,17 +318,20 @@ func TestSetupLogger(t *testing.T) {
 		require.NoError(t, app.Start(context.Background()))
 	})
 	t.Run("error in WithLogger provider so intercepting default", func(t *testing.T) {
+		defer ts.Reset()
+
+		// Temporarily hijack stderr and restore it after this test so
+		// that we can assert its contents.
 		f, err := ioutil.TempFile(t.TempDir(), "stderr")
 		if err != nil {
 			t.Fatalf("could not open a file for writing")
 		}
-		defer func() {
-			_ = f.Close()
-			_ = os.Remove(f.Name())
-		}()
-
+		defer func(oldStderr *os.File) {
+			assert.NoError(t, f.Close())
+			os.Stderr = oldStderr
+		}(os.Stderr)
 		os.Stderr = f
-		defer ts.Reset()
+
 		app := New(
 			Supply(logger),
 			WithLogger(&bytes.Buffer{}),
@@ -339,7 +342,10 @@ func TestSetupLogger(t *testing.T) {
 			err.Error(),
 			"must provide constructor function, got  (type *bytes.Buffer)",
 		)
-		d, _ := ioutil.ReadFile(f.Name())
+
+		stderr, err := ioutil.ReadFile(f.Name())
+		require.NoError(t, err)
+
 		// Example output:
 		// [Fx] SUPPLY  *zap.Logger
 		// [Fx] ERROR   Failed to construct custom logger: fx.WithLogger() from:
@@ -349,9 +355,10 @@ func TestSetupLogger(t *testing.T) {
 		//        /usr/local/Cellar/go/1.16.4/libexec/src/testing/testing.go:1193
 		// Failed: must provide constructor function, got  (type *bytes.Buffer)
 
-		assert.Contains(t, string(d), "[Fx] SUPPLY\t*zap.Logger\n")
-		assert.Contains(t, string(d), "[Fx] ERROR\t\tFailed to construct custom logger: fx.WithLogger")
-		assert.Contains(t, string(d), "must provide constructor function, got  (type *bytes.Buffer)\n")
+		out := string(stderr)
+		assert.Contains(t, out, "[Fx] SUPPLY\t*zap.Logger\n")
+		assert.Contains(t, out, "[Fx] ERROR\t\tFailed to construct custom logger: fx.WithLogger")
+		assert.Contains(t, out, "must provide constructor function, got  (type *bytes.Buffer)\n")
 	})
 	t.Run("error in Provide shows logs", func(t *testing.T) {
 		defer ts.Reset()
