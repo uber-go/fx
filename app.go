@@ -307,8 +307,6 @@ func (l loggerOption) String() string {
 
 // NopLogger disables the application's log output. Note that this makes some
 // failures difficult to debug, since no errors are printed to console.
-//
-// Note, when withLogger is public we will make the change here as well.
 var NopLogger = WithLogger(func() fxevent.Logger { return fxevent.NopLogger })
 
 // An App is a modular application built around dependency injection. Most
@@ -458,17 +456,15 @@ func (app *App) constructCustomLogger(connectLogger func(logger fxevent.Logger))
 
 		return app.err
 	}
+
 	err := app.container.Invoke(
 		func(log fxevent.Logger) {
 			app.log = log
 
 			connectLogger(app.log)
 		})
-	if err != nil {
-		return err
-	}
 
-	return nil
+	return err
 }
 
 // New creates and initializes an App, immediately executing any functions
@@ -495,7 +491,7 @@ func New(opts ...Option) *App {
 		// those messages after fully constructing the custom logger.
 		var buffer logBuffer
 		app.log = &buffer
-		connectLogger = buffer.Connect // func(fxlog.Logger) error
+		connectLogger = buffer.Connect // func(fxevent.Logger)
 	} else {
 		// If user hasn't supplied a custom implementation of fxlog.Logger
 		// then use default one.
@@ -515,9 +511,8 @@ func New(opts ...Option) *App {
 	// If user supplied an fxlog constructor, we need to have dig's container
 	// initialize it and grab all of arguments from the graph and then return.
 	if app.logConstructor != nil {
-		// Here we add the custom logger into the container and flush out the buffer on success.
-		err := app.constructCustomLogger(connectLogger)
-		if err != nil {
+		// This would flush the logger on success.
+		if err := app.constructCustomLogger(connectLogger); err != nil {
 			// Here, we could be carrying an error from provides above.
 			app.err = multierr.Append(app.err, err)
 			// Error connecting to user supplied logger, falling back to default logger. connectLogger should
@@ -525,20 +520,15 @@ func New(opts ...Option) *App {
 			// default logger initialized above that should be similar to else branch if a user did not supply a
 			// custom logger.
 			connectLogger(fxlog.DefaultLogger(os.Stderr))
-			app.log.LogEvent(&fxevent.LoggerError{Err: err})
-
+			app.log.LogEvent(&fxevent.CustomLoggerError{Err: err})
 			return app
 		}
 		app.log.LogEvent(&fxevent.CustomLogger{Function: app.logConstructor})
 	}
 
 	// Here the error could have come from provide loop above or from initializing the custom logger.
+	// At this point we have already flushed the buffered logger if it was initialized.
 	if app.err != nil {
-		if connectLogger != nil {
-			connectLogger(fxlog.DefaultLogger(os.Stderr))
-		}
-		// else we we have initialized default logger and never used logBuffer.
-
 		return app
 	}
 
@@ -555,7 +545,6 @@ func New(opts ...Option) *App {
 
 	if app.err != nil {
 		app.log.LogEvent(&fxevent.ProvideError{Err: app.err})
-
 		return app
 	}
 

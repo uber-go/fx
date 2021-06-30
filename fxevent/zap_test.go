@@ -31,6 +31,9 @@ import (
 	"go.uber.org/zap/zaptest"
 )
 
+// Note the spy is similar to one in fxlog.Spy but due to an import cycle
+// (fxevents are fields in spy and spy is used here), we have a copy here
+// without Events.
 type testLogSpy struct {
 	testing.TB
 	Messages []string
@@ -146,5 +149,15 @@ func TestZapLogger(t *testing.T) {
 		defer ts.Reset()
 		zapLogger.LogEvent(&Running{})
 		ts.AssertMessages("INFO\trunning")
+	})
+	t.Run("CustomLoggerError", func(t *testing.T) {
+		defer ts.Reset()
+		zapLogger.LogEvent(&CustomLoggerError{Err: fmt.Errorf("some error")})
+		ts.AssertMessages("ERROR\terror constructing logger\t{\"error\": \"some error\"}")
+	})
+	t.Run("Running", func(t *testing.T) {
+		defer ts.Reset()
+		zapLogger.LogEvent(&CustomLogger{bytes.NewBuffer})
+		ts.AssertMessages("INFO\tinstalling custom fxevent.Logger\t{\"function\": \"bytes.NewBuffer()\"}")
 	})
 }

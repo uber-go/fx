@@ -26,6 +26,8 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/ioutil"
+	"os"
 	"reflect"
 	"testing"
 	"time"
@@ -39,6 +41,7 @@ import (
 	"go.uber.org/fx/internal/fxreflect"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest"
 )
 
 func NewForTest(tb testing.TB, opts ...Option) *App {
@@ -275,59 +278,87 @@ func setupFxLogger(l *zap.Logger) fxevent.Logger {
 }
 
 func TestSetupLogger(t *testing.T) {
-	t.Parallel()
+	// Note these tests can't be parallelized due to sharing of spy logger
+	// which will have a race on when appending messages to slice.
+	// ts := newTestLogSpy(t)
+	ts := fxlog.NewSpy(t)
+	defer ts.Reset()
+	logger := zaptest.NewLogger(ts)
+
 	t.Run("initializing custom logger", func(t *testing.T) {
-		t.Parallel()
+		defer ts.Reset()
 		app := fxtest.New(t,
-			Provide(zap.NewExample),
+			Supply(logger),
 			WithLogger(setupFxLogger),
 		)
+		ts.AssertMessages(
+			"INFO\temitted event\t{\"event\": \"*fxevent.Supply\"}",
+			"INFO\temitted event\t{\"event\": \"*fxevent.CustomLogger\"}",
+			"INFO\temitted event\t{\"event\": \"*fxevent.Provide\"}",
+			"INFO\temitted event\t{\"event\": \"*fxevent.Provide\"}",
+			"INFO\temitted event\t{\"event\": \"*fxevent.Provide\"}")
+		ts.Reset()
 		defer app.RequireStart().RequireStop()
 		require.NoError(t, app.Err())
 		require.NoError(t, app.Start(context.Background()))
+		ts.AssertMessages(
+			"INFO\temitted event\t{\"event\": \"*fxevent.Running\"}",
+			"INFO\temitted event\t{\"event\": \"*fxevent.Running\"}")
 	})
-
-	t.Run("initializing zap production logger", func(t *testing.T) {
-		t.Parallel()
-		app := fxtest.New(t,
-			Provide(zap.NewProduction),
-			WithLogger(setupFxLogger),
-		)
-		defer app.RequireStart().RequireStop()
-		require.NoError(t, app.Err())
-		require.NoError(t, app.Start(context.Background()))
-	})
-
-	t.Run("initializing zap development logger", func(t *testing.T) {
-		t.Parallel()
-		app := fxtest.New(t,
-			Provide(zap.NewDevelopment),
-			WithLogger(setupFxLogger),
-		)
-		defer app.RequireStart().RequireStop()
-		require.NoError(t, app.Err())
-		require.NoError(t, app.Start(context.Background()))
-	})
-
 	t.Run("no custom logger", func(t *testing.T) {
-		t.Parallel()
 		app := fxtest.New(t)
 		defer app.RequireStart().RequireStop()
 		require.NoError(t, app.Err())
 		require.NoError(t, app.Start(context.Background()))
 	})
+	t.Run("error in WithLogger provider so intercepting default", func(t *testing.T) {
+		f, err := ioutil.TempFile(t.TempDir(), "stderr")
+		if err != nil {
+			t.Fatalf("could not open a file for writing")
+		}
+		defer func() {
+			_ = f.Close()
+			_ = os.Remove(f.Name())
+		}()
 
-	t.Run("error in WithLogger provider", func(t *testing.T) {
-		t.Parallel()
+		os.Stderr = f
+		defer ts.Reset()
 		app := New(
+			Supply(logger),
 			WithLogger(&bytes.Buffer{}),
+		)
+		err = app.Err()
+		require.Error(t, err)
+		assert.Contains(t,
+			err.Error(),
+			"could not construct custom logger via fx.WithLogger: must provide constructor function,"+
+				" got  (type *bytes.Buffer)",
+		)
+		d, _ := ioutil.ReadFile(f.Name())
+		assert.Equal(t,
+			"[Fx] SUPPLY\t*zap.Logger\n"+
+				"[Fx] ERROR\t\tFailed to construct custom logger: could not construct custom logger via fx.WithLogger:"+
+				" must provide constructor function, got  (type *bytes.Buffer)\n",
+			string(d))
+	})
+	t.Run("error in Provide shows logs", func(t *testing.T) {
+		defer ts.Reset()
+		app := New(
+			Supply(logger),
+			WithLogger(setupFxLogger),
+			Provide(&bytes.Buffer{}), // not passing in a constructor.
 		)
 		err := app.Err()
 		require.Error(t, err)
 		assert.Contains(t,
 			err.Error(),
-			"could not construct custom logger via fx.WithLogger: must provide constructor function, got  (type *bytes.Buffer)",
+			"must provide constructor function, got  (type *bytes.Buffer)",
 		)
+		ts.AssertMessages(
+			"INFO\temitted event\t{\"event\": \"*fxevent.Supply\"}",
+			"INFO\temitted event\t{\"event\": \"*fxevent.Provide\"}",
+			"INFO\temitted event\t{\"event\": \"*fxevent.ProvideError\"}",
+			"INFO\temitted event\t{\"event\": \"*fxevent.CustomLogger\"}")
 	})
 }
 

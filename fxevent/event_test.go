@@ -40,6 +40,8 @@ func TestForCoverage(t *testing.T) {
 		&Rollback{},
 		&RollbackError{},
 		&Running{},
+		&CustomLoggerError{},
+		&CustomLogger{},
 	}
 
 	for _, e := range events {

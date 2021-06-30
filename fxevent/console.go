@@ -74,7 +74,7 @@ func (l *ConsoleLogger) LogEvent(event Event) {
 		l.logf("ERROR\t\tStart failed, rolling back: %v", e.StartErr)
 	case *Running:
 		l.logf("RUNNING")
-	case *LoggerError:
+	case *CustomLoggerError:
 		l.logf("ERROR\t\tFailed to construct custom logger: %v", e.Err)
 	case *CustomLogger:
 		l.logf("LOGGER\tSetting up custom logger from %v", fxreflect.FuncName(e.Function))

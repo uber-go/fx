@@ -20,7 +20,9 @@
 
 package testutil
 
-import "go.uber.org/zap/zapcore"
+import (
+	"go.uber.org/zap/zapcore"
+)
 
 // TestingT is a subset of the testing.T interface.
 type TestingT interface {

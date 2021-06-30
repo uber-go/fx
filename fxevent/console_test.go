@@ -113,8 +113,8 @@ func TestConsoleLogger(t *testing.T) {
 			want: "[Fx] RUNNING\n",
 		},
 		{
-			name: "LoggerError",
-			give: &LoggerError{Err: errors.New("great sadness")},
+			name: "CustomLoggerError",
+			give: &CustomLoggerError{Err: errors.New("great sadness")},
 			want: "[Fx] ERROR		Failed to construct custom logger: great sadness\n",
 		},
 		{

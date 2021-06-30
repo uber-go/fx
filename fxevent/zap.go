@@ -42,7 +42,8 @@ func (l *ZapLogger) LogEvent(event Event) {
 	case *LifecycleHookStop:
 		l.Logger.Info("stopping", zap.String("caller", e.CallerName))
 	case *ProvideError:
-		l.Logger.Error("error encountered while applying options", zap.Error(e.Err))
+		l.Logger.Error("error encountered while applying options",
+			zap.Error(e.Err))
 	case *Supply:
 		l.Logger.Info("supplying", zap.String("type", e.TypeName))
 	case *Provide:
@@ -53,7 +54,8 @@ func (l *ZapLogger) LogEvent(event Event) {
 			)
 		}
 	case *Invoke:
-		l.Logger.Info("invoke", zap.String("function", fxreflect.FuncName(e.Function)))
+		l.Logger.Info("invoke",
+			zap.String("function", fxreflect.FuncName(e.Function)))
 	case *InvokeError:
 		l.Logger.Error("fx.Invoke failed",
 			zap.Error(e.Err),
@@ -62,7 +64,8 @@ func (l *ZapLogger) LogEvent(event Event) {
 	case *StartError:
 		l.Logger.Error("failed to start", zap.Error(e.Err))
 	case *StopSignal:
-		l.Logger.Info("received signal", zap.String("signal", strings.ToUpper(e.Signal.String())))
+		l.Logger.Info("received signal",
+			zap.String("signal", strings.ToUpper(e.Signal.String())))
 	case *StopError:
 		l.Logger.Error("failed to stop cleanly", zap.Error(e.Err))
 	case *RollbackError:
@@ -71,9 +74,10 @@ func (l *ZapLogger) LogEvent(event Event) {
 		l.Logger.Error("startup failed, rolling back", zap.Error(e.StartErr))
 	case *Running:
 		l.Logger.Info("running")
-	case *LoggerError:
-		l.Logger.Error("error constructing logger, did not get back fxevent.Logger from WithLogger", zap.Error(e.Err))
+	case *CustomLoggerError:
+		l.Logger.Error("error constructing logger", zap.Error(e.Err))
 	case *CustomLogger:
-		l.Logger.Info("setting custom fxevent.Logger", zap.String("function", fxreflect.FuncName(e.Function)))
+		l.Logger.Info("installing custom fxevent.Logger",
+			zap.String("function", fxreflect.FuncName(e.Function)))
 	}
 }
