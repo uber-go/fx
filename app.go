@@ -261,22 +261,40 @@ func (t stopTimeoutOption) String() string {
 	return fmt.Sprintf("fx.StopTimeout(%v)", time.Duration(t))
 }
 
-// WithLogger redirects the logging output to the instance of fx.Logger
-// provided by the constructor.
+// WithLogger specifies how Fx should build an fxevent.Logger to log its events
+// to. The argument must be a constructor with one of the following return
+// types.
+//
+//   fxevent.Logger
+//   (fxevent.Logger, error)
+//
+// For example,
+//
+//   WithLogger(func(logger *zap.Logger) fxevent.Logger {
+//     return &fxevent.ZapLogger{Log: logger}
+//   })
+//
 func WithLogger(constructor interface{}) Option {
-	return withLoggerOption{logConstructor: constructor}
+	return withLoggerOption{
+		constructor: constructor,
+		Stack:       fxreflect.CallerStack(1, 0),
+	}
 }
 
 type withLoggerOption struct {
-	logConstructor interface{}
+	constructor interface{}
+	Stack       fxreflect.Stack
 }
 
 func (l withLoggerOption) apply(app *App) {
-	app.logConstructor = l.logConstructor
+	app.logConstructor = &provide{
+		Target: l.constructor,
+		Stack:  l.Stack,
+	}
 }
 
 func (l withLoggerOption) String() string {
-	return fmt.Sprintf("fx.WithLogger(%s)", fxreflect.FuncName(l.logConstructor))
+	return fmt.Sprintf("fx.WithLogger(%s)", fxreflect.FuncName(l.constructor))
 }
 
 // Printer is the interface required by Fx's logging backend. It's implemented
@@ -352,7 +370,7 @@ type App struct {
 	invokes  []invoke
 	// Used to setup logging within fx.
 	log            fxevent.Logger
-	logConstructor interface{}
+	logConstructor *provide // set only if fx.WithLogger was used
 	// Timeouts used
 	startTimeout time.Duration
 	stopTimeout  time.Duration
@@ -448,24 +466,22 @@ func ValidateApp(opts ...Option) error {
 	return app.Err()
 }
 
-func (app *App) constructCustomLogger(buffer *logBuffer, fallback fxevent.Logger) error {
-	if err := app.container.Provide(app.logConstructor); err != nil {
-		app.err = multierr.Append(app.err,
-			fmt.Errorf("could not construct custom logger via fx.WithLogger: %w", err))
-		buffer.Connect(fallback)
-		return app.err
+// Builds and connects the custom logger, returning an error if it failed.
+func (app *App) constructCustomLogger(buffer *logBuffer) error {
+	p := app.logConstructor
+
+	if err := app.container.Provide(p.Target); err != nil {
+		return fmt.Errorf("fx.WithLogger(%v) from:\n%+vFailed: %v",
+			fxreflect.FuncName(p.Target), p.Stack, err)
 	}
 
-	err := app.container.Invoke(func(log fxevent.Logger) {
-		buffer.Connect(log)
+	// TODO: Use dig.FillProvideInfo to inspect the provided constructor
+	// and fail the application if its signature didn't match.
+
+	return app.container.Invoke(func(log fxevent.Logger) {
 		app.log = log
+		buffer.Connect(log)
 	})
-	if err != nil {
-		buffer.Connect(fallback)
-		return err
-	}
-
-	return nil
 }
 
 // New creates and initializes an App, immediately executing any functions
@@ -533,13 +549,15 @@ func New(opts ...Option) *App {
 	// initialize it and grab all of arguments from the graph and then return.
 	if app.logConstructor != nil {
 		// This would flush the logger on success.
-		if err := app.constructCustomLogger(bufferLogger, fallbackLogger); err != nil {
-			// Here, we could be carrying an error from provides above.
-			app.err = multierr.Append(app.err, err)
-			// Error connecting to user supplied logger, falling back to default logger. connectLogger should
-			// be non-nil since we have a check above on whether user supplied a logger. On error we connect to
-			// default logger initialized above that should be similar to else branch if a user did not supply a
-			// custom logger.
+		if err := app.constructCustomLogger(bufferLogger); err != nil {
+			app.err = err
+
+			app.log = fallbackLogger
+			bufferLogger.Connect(fallbackLogger)
+			// Error connecting to user supplied logger, falling
+			// back to default logger. bufferLogger should be
+			// non-nil since we have a check above on whether user
+			// supplied a logger.
 			app.log.LogEvent(&fxevent.CustomLoggerError{Err: err})
 			return app
 		}

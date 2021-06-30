@@ -337,15 +337,21 @@ func TestSetupLogger(t *testing.T) {
 		require.Error(t, err)
 		assert.Contains(t,
 			err.Error(),
-			"could not construct custom logger via fx.WithLogger: must provide constructor function,"+
-				" got  (type *bytes.Buffer)",
+			"must provide constructor function, got  (type *bytes.Buffer)",
 		)
 		d, _ := ioutil.ReadFile(f.Name())
-		assert.Equal(t,
-			"[Fx] SUPPLY\t*zap.Logger\n"+
-				"[Fx] ERROR\t\tFailed to construct custom logger: could not construct custom logger via fx.WithLogger:"+
-				" must provide constructor function, got  (type *bytes.Buffer)\n",
-			string(d))
+		// Example output:
+		// [Fx] SUPPLY  *zap.Logger
+		// [Fx] ERROR   Failed to construct custom logger: fx.WithLogger() from:
+		// go.uber.org/fx_test.TestSetupLogger.func3
+		//        /Users/abg/dev/fx/app_test.go:334
+		// testing.tRunner
+		//        /usr/local/Cellar/go/1.16.4/libexec/src/testing/testing.go:1193
+		// Failed: must provide constructor function, got  (type *bytes.Buffer)
+
+		assert.Contains(t, string(d), "[Fx] SUPPLY\t*zap.Logger\n")
+		assert.Contains(t, string(d), "[Fx] ERROR\t\tFailed to construct custom logger: fx.WithLogger")
+		assert.Contains(t, string(d), "must provide constructor function, got  (type *bytes.Buffer)\n")
 	})
 	t.Run("error in Provide shows logs", func(t *testing.T) {
 		defer ts.Reset()
