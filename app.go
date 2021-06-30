@@ -488,10 +488,9 @@ func (app *App) constructCustomLogger(buffer *logBuffer) error {
 // registered via Invoke options. See the documentation of the App struct for
 // details on the application's initialization, startup, and shutdown logic.
 func New(opts ...Option) *App {
-	app := &App{
-		startTimeout: DefaultTimeout,
-		stopTimeout:  DefaultTimeout,
+	logger := fxlog.DefaultLogger(os.Stderr)
 
+	app := &App{
 		// We start with a logger that writes to stderr. One of the
 		// following three things can change this:
 		//
@@ -504,7 +503,13 @@ func New(opts ...Option) *App {
 		// user gave us. For the last case, however, we need to fall
 		// back to what was provided to fx.Logger if fx.WithLogger
 		// fails.
-		log: fxlog.DefaultLogger(os.Stderr),
+		log:          logger,
+		startTimeout: DefaultTimeout,
+		stopTimeout:  DefaultTimeout,
+	}
+
+	for _, opt := range opts {
+		opt.apply(app)
 	}
 
 	// There are a few levels of wrapping on the lifecycle here. To quickly
@@ -518,10 +523,6 @@ func New(opts ...Option) *App {
 	//   "current" logger associated with the fx.App.
 	app.lifecycle = &lifecycleWrapper{
 		lifecycle.New(appLogger{app}),
-	}
-
-	for _, opt := range opts {
-		opt.apply(app)
 	}
 
 	var (
