@@ -23,15 +23,17 @@ package fxtest
 import (
 	"go.uber.org/fx"
 	"go.uber.org/fx/fxevent"
+	"go.uber.org/fx/internal/fxlog"
+	"go.uber.org/fx/internal/testutil"
 )
-
-type testPrinter struct {
-	TB
-}
 
 // NewTestLogger returns an fxlog.Logger that logs to the testing TB.
 func NewTestLogger(t TB) fxevent.Logger {
-	return &testPrinter{t}
+	return fxlog.DefaultLogger(testutil.WriteSyncer{T: t})
+}
+
+type testPrinter struct {
+	TB
 }
 
 // NewTestPrinter returns a fx.Printer that logs to the testing TB.
@@ -41,9 +43,4 @@ func NewTestPrinter(t TB) fx.Printer {
 
 func (p *testPrinter) Printf(format string, args ...interface{}) {
 	p.Logf(format, args...)
-}
-
-func (p *testPrinter) LogEvent(event fxevent.Event) {
-	// Note, we are cutting everything but the message here.
-	p.Logf("emitted event %#v", event)
 }
