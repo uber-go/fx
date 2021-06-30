@@ -339,6 +339,7 @@ func TestWithLogger(t *testing.T) {
 		assert.Contains(t, out, "[Fx] ERROR\t\tFailed to construct custom logger: fx.WithLogger")
 		assert.Contains(t, out, "must provide constructor function, got  (type *bytes.Buffer)\n")
 	})
+
 	t.Run("error in Provide shows logs", func(t *testing.T) {
 		t.Parallel()
 
@@ -359,6 +360,49 @@ func TestWithLogger(t *testing.T) {
 		)
 
 		assert.Equal(t, []string{"Supply", "ProvideError", "CustomLogger"}, spy.EventTypes())
+	})
+
+	t.Run("logger failed to build", func(t *testing.T) {
+		t.Parallel()
+
+		var buff bytes.Buffer
+		app := New(
+			Logger(log.New(&buff, "", 0)),
+			WithLogger(func() (fxevent.Logger, error) {
+				return nil, errors.New("great sadness")
+			}),
+		)
+
+		err := app.Err()
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "great sadness")
+
+		out := buff.String()
+		assert.Contains(t, out, "[Fx] ERROR\t\tFailed to construct custom logger")
+	})
+
+	t.Run("logger dependency failed to build", func(t *testing.T) {
+		t.Parallel()
+
+		var buff bytes.Buffer
+		app := New(
+			Logger(log.New(&buff, "", 0)),
+			Provide(func() (*zap.Logger, error) {
+				return nil, errors.New("great sadness")
+			}),
+			WithLogger(func(log *zap.Logger) fxevent.Logger {
+				t.Errorf("WithLogger must not be called")
+				panic("must not be called")
+			}),
+		)
+
+		err := app.Err()
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "great sadness")
+
+		out := buff.String()
+		assert.Contains(t, out, "[Fx] PROVIDE\t*zap.Logger")
+		assert.Contains(t, out, "[Fx] ERROR\t\tFailed to construct custom logger")
 	})
 }
 
