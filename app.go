@@ -297,7 +297,7 @@ func Logger(p Printer) Option {
 type loggerOption struct{ p Printer }
 
 func (l loggerOption) apply(app *App) {
-	np := writeSyncerFromPrinter(l.p)
+	np := writerFromPrinter(l.p)
 	app.log = fxlog.DefaultLogger(np) // assuming np is thread-safe.
 }
 

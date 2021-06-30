@@ -20,21 +20,17 @@
 
 package fx
 
-import "go.uber.org/zap/zapcore"
+import "io"
 
-type writeSyncer struct{ p Printer }
+type printerWriter struct{ p Printer }
 
-// writeSyncerFromPrinter returns an implementation of zapcore.WriteSyncer
-// used to support Logger option which implements Printer interface.
-func writeSyncerFromPrinter(p Printer) zapcore.WriteSyncer {
-	return &writeSyncer{p: p}
+// writerFromPrinter returns an implementation of io.Writer used to support
+// Logger option which implements Printer interface.
+func writerFromPrinter(p Printer) io.Writer {
+	return &printerWriter{p: p}
 }
 
-func (w *writeSyncer) Write(b []byte) (n int, err error) {
+func (w *printerWriter) Write(b []byte) (n int, err error) {
 	w.p.Printf(string(b))
 	return len(b), nil
-}
-
-func (w *writeSyncer) Sync() error {
-	return nil
 }
