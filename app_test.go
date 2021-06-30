@@ -811,9 +811,16 @@ func TestAppStop(t *testing.T) {
 }
 
 func TestValidateApp(t *testing.T) {
+	// helper to use the test logger
+	validateApp := func(t *testing.T, opts ...Option) error {
+		return ValidateApp(
+			append(opts, Logger(fxtest.NewTestPrinter(t)))...,
+		)
+	}
+
 	t.Run("do not run provides on graph validation", func(t *testing.T) {
 		type type1 struct{}
-		err := ValidateApp(
+		err := validateApp(t,
 			Provide(func() *type1 {
 				t.Error("provide must not be called")
 				return nil
@@ -824,7 +831,7 @@ func TestValidateApp(t *testing.T) {
 	})
 	t.Run("do not run provides nor invokes on graph validation", func(t *testing.T) {
 		type type1 struct{}
-		err := ValidateApp(
+		err := validateApp(t,
 			Provide(func() *type1 {
 				t.Error("provide must not be called")
 				return nil
@@ -837,7 +844,7 @@ func TestValidateApp(t *testing.T) {
 	})
 	t.Run("provide depends on something not available", func(t *testing.T) {
 		type type1 struct{}
-		err := ValidateApp(
+		err := validateApp(t,
 			Provide(func(type1) int { return 0 }),
 			Invoke(func(int) error { return nil }),
 		)
@@ -850,7 +857,7 @@ func TestValidateApp(t *testing.T) {
 	t.Run("provide introduces a cycle", func(t *testing.T) {
 		type A struct{}
 		type B struct{}
-		err := ValidateApp(
+		err := validateApp(t,
 			Provide(func(A) B { return B{} }),
 			Provide(func(B) A { return A{} }),
 			Invoke(func(B) {}),
@@ -861,7 +868,7 @@ func TestValidateApp(t *testing.T) {
 	})
 	t.Run("invoke a type that's not available", func(t *testing.T) {
 		type A struct{}
-		err := ValidateApp(
+		err := validateApp(t,
 			Invoke(func(A) {}),
 		)
 		require.Error(t, err, "fx.ValidateApp should return an error on missing invoke dep")
@@ -871,7 +878,7 @@ func TestValidateApp(t *testing.T) {
 	})
 	t.Run("no error", func(t *testing.T) {
 		type A struct{}
-		err := ValidateApp(
+		err := validateApp(t,
 			Provide(func() A {
 				return A{}
 			}),

@@ -44,6 +44,7 @@ func ExampleError() {
 	}
 
 	app := fx.New(
+		fx.NopLogger,
 		newHTTPServer(),
 		fx.Invoke(func(s *http.Server) error { return s.ListenAndServe() }),
 	)

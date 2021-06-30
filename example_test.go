@@ -28,6 +28,7 @@ import (
 	"time"
 
 	"go.uber.org/fx"
+	"go.uber.org/fx/fxevent"
 )
 
 // NewLogger constructs a logger. It's just a regular Go function, without any
@@ -195,6 +196,16 @@ func Example() {
 		// NewMux, we also register Lifecycle hooks to start and stop an HTTP
 		// server.
 		fx.Invoke(Register),
+
+		// This is optional. With this, you can control where Fx logs
+		// its events. In this case, we're using a NopLogger to keep
+		// our test silent. Normally, you'll want to use an
+		// fxevent.ZapLogger or an fxevent.ConsoleLogger.
+		fx.WithLogger(
+			func() fxevent.Logger {
+				return fxevent.NopLogger
+			},
+		),
 	)
 
 	// In a typical application, we could just use app.Run() here. Since we
