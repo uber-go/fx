@@ -94,7 +94,7 @@ func TestZapLogger(t *testing.T) {
 	})
 	t.Run("Provide", func(t *testing.T) {
 		defer ts.Reset()
-		zapLogger.LogEvent(&Provide{bytes.NewBuffer})
+		zapLogger.LogEvent(&Provide{bytes.NewBuffer, []string{"*bytes.Buffer"}})
 		ts.AssertMessages("INFO\tproviding\t{\"constructor\": \"bytes.NewBuffer()\", \"type\": \"*bytes.Buffer\"}")
 	})
 	t.Run("Invoke", func(t *testing.T) {

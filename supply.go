@@ -94,15 +94,9 @@ func (o supplyOption) apply(app *App) {
 
 func (o supplyOption) String() string {
 	items := make([]string, 0, len(o.Targets))
-	for _, target := range o.Targets {
-		switch target := target.(type) {
-		case Annotated:
-			items = append(items, fxreflect.ReturnTypes(target.Target)...)
-		default:
-			items = append(items, fxreflect.ReturnTypes(target)...)
-		}
+	for _, typ := range o.Types {
+		items = append(items, typ.String())
 	}
-
 	return fmt.Sprintf("fx.Supply(%s)", strings.Join(items, ", "))
 }
 

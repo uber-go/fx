@@ -20,7 +20,9 @@
 
 package fxevent
 
-import "os"
+import (
+	"os"
+)
 
 // Event defines an event emitted by fx.
 type Event interface {
@@ -65,9 +67,13 @@ type Supply struct {
 	TypeName string
 }
 
-// Provide is emitted whenever Provide was called and is not provided by fx.Supply.
+// Provide is emitted when we add a constructor to the container.
 type Provide struct {
 	Constructor interface{}
+
+	// OutputTypeNames is a list of names of types that are produced by
+	// this constructor.
+	OutputTypeNames []string
 }
 
 // Invoke is emitted whenever a function is invoked.

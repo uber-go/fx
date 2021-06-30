@@ -54,7 +54,7 @@ func (l *ConsoleLogger) LogEvent(event Event) {
 	case *Supply:
 		l.logf("SUPPLY\t%v", e.TypeName)
 	case *Provide:
-		for _, rtype := range fxreflect.ReturnTypes(e.Constructor) {
+		for _, rtype := range e.OutputTypeNames {
 			l.logf("PROVIDE\t%v <= %v", rtype, fxreflect.FuncName(e.Constructor))
 		}
 	case *Invoke:
