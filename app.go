@@ -931,13 +931,18 @@ func withTimeout(ctx context.Context, param *withTimeoutParams) error {
 func formatTimeoutError(err error, param *withTimeoutParams) error {
 	// On timeout, report running hook's caller and recorded
 	// runtimes of hooks successfully run till end.
-	r := param.lifecycle.hookRecords()
-	sort.Sort(r)
+	var r lifecycle.HookRecords
+	if param.hook == _onStartHook {
+		r = param.lifecycle.startHookRecords()
+	} else {
+		r = param.lifecycle.stopHookRecords()
+	}
 	caller := param.lifecycle.runningHookCaller()
 	// TODO: Once this is integrated into fxevent, we can
 	// leave error unchanged and send this to fxevent.Logger, whose
 	// implementation can then determine how the error is presented.
 	if len(r) > 0 {
+		sort.Sort(r)
 		return fmt.Errorf("%v hook added by %v failed: %w\n%+v",
 			param.hook,
 			caller,
