@@ -29,6 +29,7 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"strings"
 	"testing"
 	"time"
 
@@ -640,11 +641,101 @@ func TestAppStart(t *testing.T) {
 		)
 
 		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond)
+
+		err := app.Start(ctx)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "OnStart hook added by go.uber.org/fx_test.TestAppStart.func1.1 failed: context deadline exceeded")
+		cancel()
+	})
+
+	t.Run("TimeoutWithFinishedHooks", func(t *testing.T) {
+		type A struct{}
+		type B struct{ A *A }
+		type C struct{ B *B }
+		newA := func(lc Lifecycle) *A {
+			lc.Append(
+				Hook{
+					OnStart: func(context.Context) error {
+						return nil
+					},
+				},
+			)
+			return &A{}
+		}
+		newB := func(lc Lifecycle, a *A) *B {
+			lc.Append(
+				Hook{
+					OnStart: func(context.Context) error {
+						time.Sleep(10 * time.Millisecond)
+						return nil
+					},
+				},
+			)
+			return &B{a}
+		}
+		newC := func(lc Lifecycle, b *B) *C {
+			lc.Append(
+				Hook{
+					OnStart: func(ctx context.Context) error {
+						<-ctx.Done()
+						return ctx.Err()
+					},
+				},
+			)
+			return &C{b}
+		}
+		app := fxtest.New(
+			t,
+			Provide(newA, newB, newC),
+			Invoke(func(*C) {}),
+		)
+
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 		defer cancel()
 
 		err := app.Start(ctx)
 		require.Error(t, err)
-		assert.Contains(t, err.Error(), "context deadline exceeded")
+		assert.Contains(t, err.Error(), "OnStart hook added by go.uber.org/fx_test.TestAppStart.func2.3 failed: context deadline exceeded")
+
+		// Check that hooks successfully run contain file/line numbers
+		assert.Regexp(t, "app_test.go:\\d+", err.Error())
+
+		// Check that hooks successfully run are reported in order of runtime.
+		hook1Idx := strings.Index(err.Error(), "go.uber.org/fx_test.TestAppStart.func2.1.1()")
+		hook2Idx := strings.Index(err.Error(), "go.uber.org/fx_test.TestAppStart.func2.2.1()")
+		assert.Greater(t, hook1Idx, hook2Idx)
+	})
+
+	t.Run("CtxCancelledDuringStart", func(t *testing.T) {
+		type A struct{}
+		running := make(chan struct{})
+		newA := func(lc Lifecycle) *A {
+			lc.Append(
+				Hook{
+					OnStart: func(ctx context.Context) error {
+						close(running)
+						<-ctx.Done()
+						return ctx.Err()
+					},
+				},
+			)
+			return &A{}
+		}
+		app := fxtest.New(
+			t,
+			Provide(newA),
+			Invoke(func(*A) {}),
+		)
+
+		ctx, cancel := context.WithCancel(context.Background())
+		go func() {
+			<-running
+			cancel()
+		}()
+		err := app.Start(ctx)
+		require.Error(t, err)
+		assert.NotContains(t, err.Error(), "context deadline exceeded")
+		assert.NotContains(t, err.Error(), "timed out while executing hook OnStart")
 	})
 
 	t.Run("Rollback", func(t *testing.T) {
