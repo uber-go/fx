@@ -254,7 +254,6 @@ func TestHookRecordsFormat(t *testing.T) {
 			hook2Idx := strings.Index(s, "TestHookRecordsFormat.func1.2()")
 			assert.Greater(t, hook1Idx, hook2Idx, "second hook must appear first in the formatted string")
 			assert.Contains(t, s, "somefunc.go:1", "file name and line should be reported")
-
 		}
 	})
 }
