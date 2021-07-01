@@ -22,6 +22,8 @@ package fxevent
 
 import (
 	"testing"
+
+	"go.uber.org/goleak"
 )
 
 // TestForCoverage adds coverage for own sake.
@@ -47,4 +49,8 @@ func TestForCoverage(t *testing.T) {
 	for _, e := range events {
 		e.event()
 	}
+}
+
+func TestMain(m *testing.M) {
+	goleak.VerifyTestMain(m)
 }

@@ -25,10 +25,15 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/fx/internal/testutil"
+	"go.uber.org/goleak"
 )
 
 func TestNew(t *testing.T) {
 	assert.NotPanics(t, func() {
 		DefaultLogger(testutil.WriteSyncer{T: t})
 	})
+}
+
+func TestMain(m *testing.M) {
+	goleak.VerifyTestMain(m)
 }
