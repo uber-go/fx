@@ -1,4 +1,4 @@
-// Copyright (c) 2019 Uber Technologies, Inc.
+// Copyright (c) 2019-2021 Uber Technologies, Inc.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -20,7 +20,17 @@
 
 package fxtest
 
-import "go.uber.org/fx"
+import (
+	"go.uber.org/fx"
+	"go.uber.org/fx/fxevent"
+	"go.uber.org/fx/internal/fxlog"
+	"go.uber.org/fx/internal/testutil"
+)
+
+// NewTestLogger returns an fxlog.Logger that logs to the testing TB.
+func NewTestLogger(t TB) fxevent.Logger {
+	return fxlog.DefaultLogger(testutil.WriteSyncer{T: t})
+}
 
 type testPrinter struct {
 	TB

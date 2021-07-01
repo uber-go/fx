@@ -1,4 +1,4 @@
-// Copyright (c) 2020 Uber Technologies, Inc.
+// Copyright (c) 2020-2021 Uber Technologies, Inc.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -30,7 +30,6 @@ import (
 	"go.uber.org/fx/internal/fxlog"
 	"go.uber.org/fx/internal/lifecycle"
 	"go.uber.org/fx/internal/testutil"
-	"go.uber.org/zap/zapcore"
 )
 
 // If a testing.T is unspecified, degarde to printing to stderr to provide
@@ -78,17 +77,15 @@ var _ fx.Lifecycle = (*Lifecycle)(nil)
 
 // NewLifecycle creates a new test lifecycle.
 func NewLifecycle(t TB) *Lifecycle {
-	var ws zapcore.WriteSyncer
+	var w io.Writer
 	if t != nil {
-		ws = testutil.WriteSyncer{T: t}
+		w = testutil.WriteSyncer{T: t}
 	} else {
-		// Retain the old behavior of printing to stderr if a testing.T
-		// is not provided.
-		ws = zapcore.AddSync(os.Stderr)
+		w = os.Stderr
 		t = &panicT{W: os.Stderr}
 	}
 	return &Lifecycle{
-		lc: lifecycle.New(fxlog.DefaultLogger(ws)),
+		lc: lifecycle.New(fxlog.DefaultLogger(w)),
 		t:  t,
 	}
 }
