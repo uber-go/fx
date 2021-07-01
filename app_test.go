@@ -628,7 +628,7 @@ func TestAppStart(t *testing.T) {
 				Hook{
 					OnStart: func(ctx context.Context) error {
 						<-ctx.Done()
-						return nil
+						return ctx.Err()
 					},
 				},
 			)
@@ -678,7 +678,7 @@ func TestAppStart(t *testing.T) {
 				Hook{
 					OnStart: func(ctx context.Context) error {
 						<-ctx.Done()
-						return nil
+						return ctx.Err()
 					},
 				},
 			)
@@ -715,7 +715,7 @@ func TestAppStart(t *testing.T) {
 					OnStart: func(ctx context.Context) error {
 						close(running)
 						<-ctx.Done()
-						return nil
+						return ctx.Err()
 					},
 				},
 			)
@@ -899,7 +899,7 @@ func TestAppStop(t *testing.T) {
 	t.Run("Timeout", func(t *testing.T) {
 		block := func(ctx context.Context) error {
 			<-ctx.Done()
-			return nil
+			return ctx.Err()
 		}
 		app := fxtest.New(t, Invoke(func(l Lifecycle) {
 			l.Append(Hook{OnStop: block})
