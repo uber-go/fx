@@ -912,34 +912,40 @@ func withTimeout(ctx context.Context, param *withTimeoutParams) error {
 	c := make(chan error, 1)
 	go func() { c <- param.callback(ctx) }()
 
+	var err error
+
 	select {
 	case <-ctx.Done():
-		err := ctx.Err()
-		if err != context.DeadlineExceeded {
-			return err
-		}
-		// On timeout, report running hook's caller and recorded
-		// runtimes of hooks successfully run till end.
-		r := param.lifecycle.hookRecords()
-		sort.Sort(r)
-		caller := param.lifecycle.runningHookCaller()
-		// TODO: Once this is integrated into fxevent, we can
-		// leave error unchanged and send this to fxevent.Logger, whose
-		// implementation can then determine how the error is presented.
-		if len(r) > 0 {
-			return fmt.Errorf("%v hook added by %v failed: %w\n%+v",
-				param.hook,
-				caller,
-				err,
-				r)
-		}
-		return fmt.Errorf("%v hook added by %v failed: %w",
-			param.hook,
-			caller,
-			err)
-	case err := <-c:
+		err = ctx.Err()
+	case err = <-c:
+	}
+	if err != context.DeadlineExceeded {
 		return err
 	}
+	// On timeout, report running hook's caller and recorded
+	// runtimes of hooks successfully run till end.
+	var r lifecycle.HookRecords
+	if param.hook == _onStartHook {
+		r = param.lifecycle.startHookRecords()
+	} else {
+		r = param.lifecycle.stopHookRecords()
+	}
+	caller := param.lifecycle.runningHookCaller()
+	// TODO: Once this is integrated into fxevent, we can
+	// leave error unchanged and send this to fxevent.Logger, whose
+	// implementation can then determine how the error is presented.
+	if len(r) > 0 {
+		sort.Sort(r)
+		return fmt.Errorf("%v hook added by %v failed: %w\n%+v",
+			param.hook,
+			caller,
+			err,
+			r)
+	}
+	return fmt.Errorf("%v hook added by %v failed: %w",
+		param.hook,
+		caller,
+		err)
 }
 
 // appLogger logs events to the given Fx app's "current" logger.
