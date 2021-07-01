@@ -819,6 +819,9 @@ func withTimeout(ctx context.Context, param *withTimeoutParams) error {
 		r := param.lifecycle.hookRecords()
 		sort.Sort(r)
 		caller := param.lifecycle.runningHookCaller()
+		// TODO: Once this is integrated into fxevent, we can
+		// leave error unchanged and send this to fxevent.Logger, whose
+		// implementation can then determine how the error is presented.
 		if len(r) > 0 {
 			return fmt.Errorf("%v hook added by %v failed: %w\n%+v",
 				param.hook,
