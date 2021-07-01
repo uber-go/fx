@@ -40,7 +40,7 @@ func ExamplePopulate() {
 	var user Username
 	app := fx.New(
 		UserModule,
-
+		fx.NopLogger, // silence test output
 		fx.Populate(&user),
 	)
 	if err := app.Start(context.Background()); err != nil {

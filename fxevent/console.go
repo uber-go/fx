@@ -21,63 +21,62 @@
 package fxevent
 
 import (
+	"fmt"
+	"io"
 	"strings"
 
 	"go.uber.org/fx/internal/fxreflect"
-	"go.uber.org/zap"
 )
 
-// ZapLogger is an Fx event logger that logs events to Zap.
-type ZapLogger struct {
-	Logger *zap.Logger
+// ConsoleLogger is an Fx event logger that attempts to write human-readable
+// mesasges to the console.
+//
+// Use this during development.
+type ConsoleLogger struct {
+	W io.Writer
 }
 
-var _ Logger = (*ZapLogger)(nil)
+var _ Logger = (*ConsoleLogger)(nil)
+
+func (l *ConsoleLogger) logf(msg string, args ...interface{}) {
+	fmt.Fprintf(l.W, "[Fx] "+msg+"\n", args...)
+}
 
 // LogEvent logs the given event to the provided Zap logger.
-func (l *ZapLogger) LogEvent(event Event) {
+func (l *ConsoleLogger) LogEvent(event Event) {
 	switch e := event.(type) {
 	case *LifecycleHookStart:
-		l.Logger.Info("starting", zap.String("caller", e.CallerName))
+		l.logf("START\t\t%s", e.CallerName)
 	case *LifecycleHookStop:
-		l.Logger.Info("stopping", zap.String("caller", e.CallerName))
+		l.logf("STOP\t\t%s", e.CallerName)
 	case *ProvideError:
-		l.Logger.Error("error encountered while applying options",
-			zap.Error(e.Err))
+		l.logf("Error after options were applied: %v", e.Err)
 	case *Supply:
-		l.Logger.Info("supplying", zap.String("type", e.TypeName))
+		l.logf("SUPPLY\t%v", e.TypeName)
 	case *Provide:
 		for _, rtype := range e.OutputTypeNames {
-			l.Logger.Info("providing",
-				zap.String("constructor", fxreflect.FuncName(e.Constructor)),
-				zap.String("type", rtype),
-			)
+			l.logf("PROVIDE\t%v <= %v", rtype, fxreflect.FuncName(e.Constructor))
 		}
 	case *Invoke:
-		l.Logger.Info("invoke",
-			zap.String("function", fxreflect.FuncName(e.Function)))
+		l.logf("INVOKE\t\t%s", fxreflect.FuncName(e.Function))
 	case *InvokeError:
-		l.Logger.Error("fx.Invoke failed",
-			zap.Error(e.Err),
-			zap.String("stack", e.Stacktrace),
-			zap.String("function", fxreflect.FuncName(e.Function)))
+		l.logf("fx.Invoke(%v) called from:\n%+vFailed: %v",
+			fxreflect.FuncName(e.Function), e.Stacktrace, e.Err)
 	case *StartError:
-		l.Logger.Error("failed to start", zap.Error(e.Err))
+		l.logf("ERROR\t\tFailed to start: %v", e.Err)
 	case *StopSignal:
-		l.Logger.Info("received signal",
-			zap.String("signal", strings.ToUpper(e.Signal.String())))
+		l.logf("%v", strings.ToUpper(e.Signal.String()))
 	case *StopError:
-		l.Logger.Error("failed to stop cleanly", zap.Error(e.Err))
+		l.logf("ERROR\t\tFailed to stop cleanly: %v", e.Err)
 	case *RollbackError:
-		l.Logger.Error("could not rollback cleanly", zap.Error(e.Err))
+		l.logf("ERROR\t\tCouldn't roll back cleanly: %v", e.Err)
 	case *Rollback:
-		l.Logger.Error("startup failed, rolling back", zap.Error(e.StartErr))
+		l.logf("ERROR\t\tStart failed, rolling back: %v", e.StartErr)
 	case *Running:
-		l.Logger.Info("running")
+		l.logf("RUNNING")
 	case *CustomLoggerError:
-		l.Logger.Error("error constructing logger", zap.Error(e.Err))
+		l.logf("ERROR\t\tFailed to construct custom logger: %v", e.Err)
 	case *CustomLogger:
-		l.Logger.Info("installing custom fxevent.Logger",
-			zap.String("function", fxreflect.FuncName(e.Function)))
+		l.logf("LOGGER\tSetting up custom logger from %v", fxreflect.FuncName(e.Function))
 	}
 }

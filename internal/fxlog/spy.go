@@ -1,4 +1,4 @@
-// Copyright (c) 2020 Uber Technologies, Inc.
+// Copyright (c) 2020-2021 Uber Technologies, Inc.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -26,8 +26,8 @@ import (
 	"go.uber.org/fx/fxevent"
 )
 
-// Spy is an Fx event logger that captures logged statements. It may be used in
-// tests of Fx logs.
+// Spy is an Fx event logger that captures emitted events and/or logged
+// statements. It may be used in tests of Fx logs.
 type Spy struct {
 	events []fxevent.Event
 }
@@ -55,7 +55,7 @@ func (s *Spy) EventTypes() []string {
 	return types
 }
 
-// Reset clears all messages from the Spy.
+// Reset clears all messages and events from the Spy.
 func (s *Spy) Reset() {
 	s.events = s.events[:0]
 }

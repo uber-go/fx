@@ -1,4 +1,4 @@
-// Copyright (c) 2020-2021 Uber Technologies, Inc.
+// Copyright (c) 2021 Uber Technologies, Inc.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -20,17 +20,31 @@
 
 package fx
 
-import "io"
+import (
+	"go.uber.org/fx/fxevent"
+)
 
-type printerWriter struct{ p Printer }
-
-// writerFromPrinter returns an implementation of io.Writer used to support
-// Logger option which implements Printer interface.
-func writerFromPrinter(p Printer) io.Writer {
-	return &printerWriter{p: p}
+// logBuffer will buffer all messages until a logger has been
+// initialized.
+type logBuffer struct {
+	events []fxevent.Event
+	logger fxevent.Logger
 }
 
-func (w *printerWriter) Write(b []byte) (n int, err error) {
-	w.p.Printf(string(b))
-	return len(b), nil
+// LogEvents buffers or logs an event.
+func (l *logBuffer) LogEvent(event fxevent.Event) {
+	if l.logger == nil {
+		l.events = append(l.events, event)
+	} else {
+		l.logger.LogEvent(event)
+	}
+}
+
+// Connect flushes out all buffered events to a logger and resets them.
+func (l *logBuffer) Connect(logger fxevent.Logger) {
+	l.logger = logger
+	for _, e := range l.events {
+		logger.LogEvent(e)
+	}
+	l.events = nil
 }
