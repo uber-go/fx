@@ -492,11 +492,12 @@ func TestAppStart(t *testing.T) {
 			Invoke(func(*A) {}),
 		)
 
-		ctx, _ := context.WithTimeout(context.Background(), time.Millisecond)
+		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond)
 
 		err := app.Start(ctx)
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "OnStart hook added by go.uber.org/fx_test.TestAppStart.func1.1 failed: context deadline exceeded")
+		cancel()
 	})
 
 	t.Run("TimeoutWithFinishedHooks", func(t *testing.T) {
