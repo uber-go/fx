@@ -918,28 +918,36 @@ func withTimeout(ctx context.Context, param *withTimeoutParams) error {
 		if err != context.DeadlineExceeded {
 			return err
 		}
-		// On timeout, report running hook's caller and recorded
-		// runtimes of hooks successfully run till end.
-		r := param.lifecycle.hookRecords()
-		sort.Sort(r)
-		caller := param.lifecycle.runningHookCaller()
-		// TODO: Once this is integrated into fxevent, we can
-		// leave error unchanged and send this to fxevent.Logger, whose
-		// implementation can then determine how the error is presented.
-		if len(r) > 0 {
-			return fmt.Errorf("%v hook added by %v failed: %w\n%+v",
-				param.hook,
-				caller,
-				err,
-				r)
+		return formatTimeoutError(err, param)
+	case err := <-c:
+		if err != context.DeadlineExceeded {
+			return err
 		}
-		return fmt.Errorf("%v hook added by %v failed: %w",
+		return formatTimeoutError(err, param)
+	}
+}
+
+// formatTimeoutError is used by withTimeout to wrap timeout error with hook report
+func formatTimeoutError(err error, param *withTimeoutParams) error {
+	// On timeout, report running hook's caller and recorded
+	// runtimes of hooks successfully run till end.
+	r := param.lifecycle.hookRecords()
+	sort.Sort(r)
+	caller := param.lifecycle.runningHookCaller()
+	// TODO: Once this is integrated into fxevent, we can
+	// leave error unchanged and send this to fxevent.Logger, whose
+	// implementation can then determine how the error is presented.
+	if len(r) > 0 {
+		return fmt.Errorf("%v hook added by %v failed: %w\n%+v",
 			param.hook,
 			caller,
-			err)
-	case err := <-c:
-		return err
+			err,
+			r)
 	}
+	return fmt.Errorf("%v hook added by %v failed: %w",
+		param.hook,
+		caller,
+		err)
 }
 
 // appLogger logs events to the given Fx app's "current" logger.
