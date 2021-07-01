@@ -912,23 +912,16 @@ func withTimeout(ctx context.Context, param *withTimeoutParams) error {
 	c := make(chan error, 1)
 	go func() { c <- param.callback(ctx) }()
 
+	var err error
+
 	select {
 	case <-ctx.Done():
-		err := ctx.Err()
-		if err != context.DeadlineExceeded {
-			return err
-		}
-		return formatTimeoutError(err, param)
-	case err := <-c:
-		if err != context.DeadlineExceeded {
-			return err
-		}
-		return formatTimeoutError(err, param)
+		err = ctx.Err()
+	case err = <-c:
 	}
-}
-
-// formatTimeoutError is used by withTimeout to wrap timeout error with hook report
-func formatTimeoutError(err error, param *withTimeoutParams) error {
+	if err != context.DeadlineExceeded {
+		return err
+	}
 	// On timeout, report running hook's caller and recorded
 	// runtimes of hooks successfully run till end.
 	var r lifecycle.HookRecords
