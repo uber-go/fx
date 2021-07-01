@@ -28,6 +28,7 @@ import (
 	"os"
 	"os/signal"
 	"reflect"
+	"sort"
 	"strings"
 	"sync"
 	"time"
@@ -580,9 +581,8 @@ var (
 // Note that Start short-circuits immediately if the New constructor
 // encountered any errors in application initialization.
 func (app *App) Start(ctx context.Context) error {
-	return withTimeout(&withTimeoutParams{
+	return withTimeout(ctx, &withTimeoutParams{
 		hook:      _onStartHook,
-		ctx:       ctx,
 		callback:  app.start,
 		lifecycle: app.lifecycle,
 		log:       app.log,
@@ -597,9 +597,8 @@ func (app *App) Start(ctx context.Context) error {
 // called are executed. However, all those hooks are executed, even if some
 // fail.
 func (app *App) Stop(ctx context.Context) error {
-	return withTimeout(&withTimeoutParams{
+	return withTimeout(ctx, &withTimeoutParams{
 		hook:      _onStopHook,
-		ctx:       ctx,
 		callback:  app.lifecycle.Stop,
 		lifecycle: app.lifecycle,
 		log:       app.log,
@@ -801,14 +800,12 @@ func (app *App) start(ctx context.Context) error {
 type withTimeoutParams struct {
 	log       fxevent.Logger
 	hook      string
-	ctx       context.Context
 	callback  func(context.Context) error
 	lifecycle *lifecycleWrapper
 }
 
-func withTimeout(param *withTimeoutParams) error {
+func withTimeout(ctx context.Context, param *withTimeoutParams) error {
 	c := make(chan error, 1)
-	ctx := param.ctx
 	go func() { c <- param.callback(ctx) }()
 
 	select {
@@ -820,6 +817,7 @@ func withTimeout(param *withTimeoutParams) error {
 		// On timeout, report running hook's caller and recorded
 		// runtimes of hooks successfully run till end.
 		r := param.lifecycle.hookRecords()
+		sort.Sort(r)
 		caller := param.lifecycle.runningHookCaller()
 		if len(r) > 0 {
 			return fmt.Errorf("%v hook added by %v failed: %w\n%+v",

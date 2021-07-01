@@ -500,9 +500,9 @@ func TestAppStart(t *testing.T) {
 
 	t.Run("TimeoutWithFinishedHooks", func(t *testing.T) {
 		type A struct{}
-		type B struct{ A A }
-		type C struct{ B B }
-		aCtor := func(lc Lifecycle) *A {
+		type B struct{ A *A }
+		type C struct{ B *B }
+		newA := func(lc Lifecycle) *A {
 			lc.Append(
 				Hook{
 					OnStart: func(context.Context) error {
@@ -512,7 +512,7 @@ func TestAppStart(t *testing.T) {
 			)
 			return &A{}
 		}
-		bCtor := func(lc Lifecycle, a *A) *B {
+		newB := func(lc Lifecycle, a *A) *B {
 			lc.Append(
 				Hook{
 					OnStart: func(context.Context) error {
@@ -521,21 +521,22 @@ func TestAppStart(t *testing.T) {
 					},
 				},
 			)
-			return &B{*a}
+			return &B{a}
 		}
-		blocker := func(lc Lifecycle, b *B) *C {
+		newC := func(lc Lifecycle, b *B) *C {
 			lc.Append(
 				Hook{
-					OnStart: func(context.Context) error {
-						select {}
+					OnStart: func(ctx context.Context) error {
+						<-ctx.Done()
+						return ctx.Err()
 					},
 				},
 			)
-			return &C{*b}
+			return &C{b}
 		}
 		app := fxtest.New(
 			t,
-			Provide(aCtor, bCtor, blocker),
+			Provide(newA, newB, newC),
 			Invoke(func(*C) {}),
 		)
 
@@ -558,7 +559,7 @@ func TestAppStart(t *testing.T) {
 
 	t.Run("CtxCancelledDuringStart", func(t *testing.T) {
 		type A struct{}
-		blocker := func(lc Lifecycle) *A {
+		newA := func(lc Lifecycle) *A {
 			lc.Append(
 				Hook{
 					OnStart: func(context.Context) error {
@@ -570,7 +571,7 @@ func TestAppStart(t *testing.T) {
 		}
 		app := fxtest.New(
 			t,
-			Provide(blocker),
+			Provide(newA),
 			Invoke(func(*A) {}),
 		)
 

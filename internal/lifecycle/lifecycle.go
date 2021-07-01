@@ -40,7 +40,6 @@ type Hook struct {
 	OnStart func(context.Context) error
 	OnStop  func(context.Context) error
 
-	caller      string
 	callerFrame fxreflect.Frame
 }
 
@@ -61,7 +60,6 @@ func New(logger fxevent.Logger) *Lifecycle {
 
 // Append adds a Hook to the lifecycle.
 func (l *Lifecycle) Append(hook Hook) {
-	hook.caller = fxreflect.Caller()
 	// Save the caller's stack frame to report file/line number.
 	if f := fxreflect.CallerStack(2, 0); len(f) > 0 {
 		hook.callerFrame = f[0]
@@ -75,7 +73,7 @@ func (l *Lifecycle) Start(ctx context.Context) error {
 	l.records = make(HookRecords, 0, len(l.hooks))
 	for _, hook := range l.hooks {
 		if hook.OnStart != nil {
-			l.logger.LogEvent(&fxevent.LifecycleHookStart{CallerName: hook.caller})
+			l.logger.LogEvent(&fxevent.LifecycleHookStart{CallerName: hook.callerFrame.Function})
 
 			l.mu.Lock()
 			l.runningHook = hook
@@ -103,7 +101,10 @@ func (l *Lifecycle) Start(ctx context.Context) error {
 // hooks run in reverse order.
 func (l *Lifecycle) Stop(ctx context.Context) error {
 	var errs []error
+	l.mu.Lock()
 	l.records = make(HookRecords, 0, l.numStarted)
+	l.mu.Unlock()
+
 	// Run backward from last successful OnStart.
 	for ; l.numStarted > 0; l.numStarted-- {
 		hook := l.hooks[l.numStarted-1]
@@ -111,7 +112,7 @@ func (l *Lifecycle) Stop(ctx context.Context) error {
 			continue
 		}
 
-		l.logger.LogEvent(&fxevent.LifecycleHookStop{CallerName: hook.caller})
+		l.logger.LogEvent(&fxevent.LifecycleHookStop{CallerName: hook.callerFrame.Function})
 
 		l.mu.Lock()
 		l.runningHook = hook
@@ -149,7 +150,7 @@ func (l *Lifecycle) HookRecords() HookRecords {
 func (l *Lifecycle) RunningHookCaller() string {
 	l.mu.Lock()
 	defer l.mu.Unlock()
-	return l.runningHook.caller
+	return l.runningHook.callerFrame.Function
 }
 
 // HookRecord keeps track of each Hook's execution time, the caller that appended the Hook, and function that ran as the Hook.
@@ -162,15 +163,25 @@ type HookRecord struct {
 // HookRecords is a Stringer wrapper of HookRecord slice.
 type HookRecords []HookRecord
 
+func (rs HookRecords) Len() int {
+	return len(rs)
+}
+
+func (rs HookRecords) Less(i, j int) bool {
+	// Sort by runtime, greater ones at top.
+	return rs[i].Runtime > rs[j].Runtime
+}
+
+func (rs HookRecords) Swap(i, j int) {
+	rs[i], rs[j] = rs[j], rs[i]
+}
+
 // Used for logging startup errors.
 func (rs HookRecords) String() string {
 	var b strings.Builder
-	sort.Slice(rs, func(i, j int) bool { return rs[i].Runtime > rs[j].Runtime })
 	for _, r := range rs {
-		b.WriteString(fmt.Sprintf("%s took %v from %s",
-			fxreflect.FuncName(r.Func),
-			r.Runtime,
-			r.CallerFrame))
+		fmt.Fprintf(&b, "%s took %v from %s",
+			fxreflect.FuncName(r.Func), r.Runtime, r.CallerFrame)
 	}
 	return b.String()
 }

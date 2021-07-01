@@ -24,6 +24,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"sort"
 	"strings"
 	"testing"
 	"time"
@@ -247,6 +248,7 @@ func TestHookRecordsFormat(t *testing.T) {
 			},
 			Runtime: t2,
 		}
+		sort.Sort(r)
 		for _, s := range []string{fmt.Sprintf("%v", r), fmt.Sprintf("%+v", r), fmt.Sprintf("%s", r)} {
 			hook1Idx := strings.Index(s, "TestHookRecordsFormat.func1.1()")
 			hook2Idx := strings.Index(s, "TestHookRecordsFormat.func1.2()")
