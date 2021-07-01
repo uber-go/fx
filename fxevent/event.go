@@ -43,6 +43,8 @@ func (*StopError) event()          {}
 func (*Rollback) event()           {}
 func (*RollbackError) event()      {}
 func (*Running) event()            {}
+func (*CustomLoggerError) event()  {}
+func (*CustomLogger) event()       {}
 
 // LifecycleHookStart is emitted whenever an OnStart hook is executed
 type LifecycleHookStart struct {
@@ -105,3 +107,11 @@ type RollbackError struct{ Err error }
 
 // Running is emitted whenever an application is started successfully.
 type Running struct{}
+
+// CustomLoggerError is emitted whenever a custom logger fails to construct.
+type CustomLoggerError struct{ Err error }
+
+// CustomLogger is emitted whenever a custom logger is set.
+type CustomLogger struct {
+	Function interface{}
+}

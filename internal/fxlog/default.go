@@ -1,4 +1,4 @@
-// Copyright (c) 2020 Uber Technologies, Inc.
+// Copyright (c) 2021 Uber Technologies, Inc.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -21,19 +21,12 @@
 package fxlog
 
 import (
+	"io"
+
 	"go.uber.org/fx/fxevent"
-	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
 )
 
 // DefaultLogger constructs a Logger out of io.Writer.
-func DefaultLogger(ws zapcore.WriteSyncer) fxevent.Logger {
-	zcore := zapcore.NewCore(
-		zapcore.NewJSONEncoder(zap.NewProductionEncoderConfig()),
-		ws,
-		zap.NewAtomicLevel(),
-	)
-	log := zap.New(zcore)
-
-	return &fxevent.ZapLogger{Logger: log}
+func DefaultLogger(w io.Writer) fxevent.Logger {
+	return &fxevent.ConsoleLogger{W: w}
 }

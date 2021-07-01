@@ -1,4 +1,4 @@
-// Copyright (c) 2019 Uber Technologies, Inc.
+// Copyright (c) 2019-2021 Uber Technologies, Inc.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -26,6 +26,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/fx"
+	"go.uber.org/fx/fxevent"
 	"go.uber.org/fx/fxtest"
 )
 
@@ -74,6 +75,9 @@ func TestAnnotatedWrongUsage(t *testing.T) {
 	t.Run("In Constructor", func(t *testing.T) {
 		var in in
 		app := fx.New(
+			fx.WithLogger(func() fxevent.Logger {
+				return fxtest.NewTestLogger(t)
+			}),
 			fx.Provide(
 				func() fx.Annotated {
 					return fx.Annotated{
@@ -102,6 +106,9 @@ func TestAnnotatedWrongUsage(t *testing.T) {
 
 	t.Run("Result Type", func(t *testing.T) {
 		app := fx.New(
+			fx.WithLogger(func() fxevent.Logger {
+				return fxtest.NewTestLogger(t)
+			}),
 			fx.Provide(
 				fx.Annotated{
 					Name: "foo",

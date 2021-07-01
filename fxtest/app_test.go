@@ -1,4 +1,4 @@
-// Copyright (c) 2019 Uber Technologies, Inc.
+// Copyright (c) 2019-2021 Uber Technologies, Inc.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -36,7 +36,7 @@ func TestApp(t *testing.T) {
 		New(spy).RequireStart().RequireStop()
 
 		assert.Zero(t, spy.failures, "App didn't start and stop cleanly.")
-		assert.Contains(t, spy.logs.String(), "running", "Expected to write logs to TB.")
+		assert.Contains(t, spy.logs.String(), "[Fx] RUNNING", "Expected to write logs to TB.")
 	})
 
 	t.Run("NewFailure", func(t *testing.T) {

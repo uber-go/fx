@@ -22,129 +22,164 @@ package fxevent
 
 import (
 	"bytes"
-	"fmt"
+	"errors"
 	"os"
-	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.uber.org/zap/zaptest"
+	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest/observer"
 )
-
-type testLogSpy struct {
-	testing.TB
-	Messages []string
-}
-
-func newTestLogSpy(tb testing.TB) *testLogSpy {
-	return &testLogSpy{TB: tb}
-}
-
-func (t *testLogSpy) Logf(format string, args ...interface{}) {
-	// Log messages are in the format,
-	//
-	//   2017-10-27T13:03:01.000-0700	DEBUG	your message here	{data here}
-	//
-	// We strip the first part of these messages because we can't really test
-	// for the timestamp from these tests.
-	m := fmt.Sprintf(format, args...)
-	m = m[strings.IndexByte(m, '\t')+1:]
-	t.Messages = append(t.Messages, m)
-	t.TB.Log(m)
-}
-
-func (t *testLogSpy) AssertMessages(msgs ...string) {
-	assert.Equal(t.TB, msgs, t.Messages, "logged messages did not match")
-}
-
-func (t *testLogSpy) Reset() {
-	t.Messages = t.Messages[:0]
-}
 
 func TestZapLogger(t *testing.T) {
 	t.Parallel()
 
-	ts := newTestLogSpy(t)
-	logger := zaptest.NewLogger(ts)
-	zapLogger := ZapLogger{Logger: logger}
+	someError := errors.New("some error")
 
-	t.Run("LifecycleHookStart", func(t *testing.T) {
-		defer ts.Reset()
-		zapLogger.LogEvent(&LifecycleHookStart{CallerName: "bytes.NewBuffer"})
-		ts.AssertMessages("INFO\tstarting\t{\"caller\": \"bytes.NewBuffer\"}")
-	})
-	t.Run("LifecycleHookStop", func(t *testing.T) {
-		defer ts.Reset()
-		zapLogger.LogEvent(&LifecycleHookStop{CallerName: "bytes.NewBuffer"})
-		ts.AssertMessages("INFO\tstopping\t{\"caller\": \"bytes.NewBuffer\"}")
-	})
-	t.Run("ProvideError", func(t *testing.T) {
-		defer ts.Reset()
-		zapLogger.LogEvent(&ProvideError{Err: fmt.Errorf("some error")})
-		ts.AssertMessages("ERROR\terror encountered while applying options\t{\"error\": \"some error\"}")
-	})
+	tests := []struct {
+		name        string
+		give        Event
+		wantMessage string
+		wantFields  map[string]interface{}
+	}{
+		{
+			name:        "LifecycleHookStart",
+			give:        &LifecycleHookStart{CallerName: "bytes.NewBuffer"},
+			wantMessage: "starting",
+			wantFields: map[string]interface{}{
+				"caller": "bytes.NewBuffer",
+			},
+		},
+		{
+			name:        "LifecycleHookStop",
+			give:        &LifecycleHookStop{CallerName: "bytes.NewBuffer"},
+			wantMessage: "stopping",
+			wantFields: map[string]interface{}{
+				"caller": "bytes.NewBuffer",
+			},
+		},
+		{
+			name:        "ProvideError",
+			give:        &ProvideError{Err: someError},
+			wantMessage: "error encountered while applying options",
+			wantFields: map[string]interface{}{
+				"error": "some error",
+			},
+		},
+		{
+			name:        "Supply",
+			give:        &Supply{TypeName: "*bytes.Buffer"},
+			wantMessage: "supplying",
+			wantFields: map[string]interface{}{
+				"type": "*bytes.Buffer",
+			},
+		},
+		{
+			name:        "Provide",
+			give:        &Provide{bytes.NewBuffer, []string{"*bytes.Buffer"}},
+			wantMessage: "providing",
+			wantFields: map[string]interface{}{
+				"constructor": "bytes.NewBuffer()",
+				"type":        "*bytes.Buffer",
+			},
+		},
+		{
+			name:        "Invoke",
+			give:        &Invoke{bytes.NewBuffer},
+			wantMessage: "invoke",
+			wantFields: map[string]interface{}{
+				"function": "bytes.NewBuffer()",
+			},
+		},
+		{
+			name:        "InvokeError",
+			give:        &InvokeError{Function: bytes.NewBuffer, Err: someError},
+			wantMessage: "fx.Invoke failed",
+			wantFields: map[string]interface{}{
+				"error":    "some error",
+				"stack":    "",
+				"function": "bytes.NewBuffer()",
+			},
+		},
+		{
+			name:        "StartError",
+			give:        &StartError{Err: someError},
+			wantMessage: "failed to start",
+			wantFields: map[string]interface{}{
+				"error": "some error",
+			},
+		},
+		{
+			name:        "StopSignal",
+			give:        &StopSignal{Signal: os.Interrupt},
+			wantMessage: "received signal",
+			wantFields: map[string]interface{}{
+				"signal": "INTERRUPT",
+			},
+		},
+		{
+			name:        "StopError",
+			give:        &StopError{Err: someError},
+			wantMessage: "failed to stop cleanly",
+			wantFields: map[string]interface{}{
+				"error": "some error",
+			},
+		},
+		{
+			name:        "RollbackError",
+			give:        &RollbackError{Err: someError},
+			wantMessage: "could not rollback cleanly",
+			wantFields: map[string]interface{}{
+				"error": "some error",
+			},
+		},
+		{
+			name:        "Rollback",
+			give:        &Rollback{StartErr: someError},
+			wantMessage: "startup failed, rolling back",
+			wantFields: map[string]interface{}{
+				"error": "some error",
+			},
+		},
+		{
+			name:        "Running",
+			give:        &Running{},
+			wantMessage: "running",
+			wantFields:  map[string]interface{}{},
+		},
+		{
+			name:        "CustomLoggerError",
+			give:        &CustomLoggerError{Err: someError},
+			wantMessage: "error constructing logger",
+			wantFields: map[string]interface{}{
+				"error": "some error",
+			},
+		},
+		{
+			name:        "CustomLogger",
+			give:        &CustomLogger{bytes.NewBuffer},
+			wantMessage: "installing custom fxevent.Logger",
+			wantFields: map[string]interface{}{
+				"function": "bytes.NewBuffer()",
+			},
+		},
+	}
 
-	t.Run("Supply", func(t *testing.T) {
-		defer ts.Reset()
-		zapLogger.LogEvent(&Supply{TypeName: "*bytes.Buffer"})
-		ts.AssertMessages("INFO\tsupplying\t{\"type\": \"*bytes.Buffer\"}")
-	})
-	t.Run("Provide", func(t *testing.T) {
-		defer ts.Reset()
-		zapLogger.LogEvent(&Provide{bytes.NewBuffer, []string{"*bytes.Buffer"}})
-		ts.AssertMessages("INFO\tproviding\t{\"constructor\": \"bytes.NewBuffer()\", \"type\": \"*bytes.Buffer\"}")
-	})
-	t.Run("Invoke", func(t *testing.T) {
-		defer ts.Reset()
-		zapLogger.LogEvent(&Invoke{bytes.NewBuffer})
-		ts.AssertMessages("INFO\tinvoke\t{\"function\": \"bytes.NewBuffer()\"}")
-	})
-	t.Run("InvokeError", func(t *testing.T) {
-		defer ts.Reset()
-		zapLogger.LogEvent(&InvokeError{
-			Function: bytes.NewBuffer,
-			Err:      fmt.Errorf("some error"),
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			core, observedLogs := observer.New(zap.DebugLevel)
+			(&ZapLogger{Logger: zap.New(core)}).LogEvent(tt.give)
+
+			logs := observedLogs.TakeAll()
+			require.Len(t, logs, 1)
+			got := logs[0]
+
+			assert.Equal(t, tt.wantMessage, got.Message)
+			assert.Equal(t, tt.wantFields, got.ContextMap())
 		})
-		ts.AssertMessages("ERROR\tfx.Invoke failed\t{\"error\": \"some error\", \"stack\": \"\", \"function\": \"bytes.NewBuffer()\"}")
-	})
-	t.Run("StartError", func(t *testing.T) {
-		defer ts.Reset()
-		zapLogger.LogEvent(&StartError{
-			Err: fmt.Errorf("some error"),
-		})
-		ts.AssertMessages("ERROR\tfailed to start\t{\"error\": \"some error\"}")
-	})
-	t.Run("StopSignal", func(t *testing.T) {
-		defer ts.Reset()
-		zapLogger.LogEvent(&StopSignal{
-			Signal: os.Interrupt,
-		})
-		ts.AssertMessages("INFO\treceived signal\t{\"signal\": \"INTERRUPT\"}")
-	})
-	t.Run("StopError", func(t *testing.T) {
-		defer ts.Reset()
-		zapLogger.LogEvent(&StopError{
-			Err: fmt.Errorf("some error"),
-		})
-		ts.AssertMessages("ERROR\tfailed to stop cleanly\t{\"error\": \"some error\"}")
-	})
-	t.Run("RollbackError", func(t *testing.T) {
-		defer ts.Reset()
-		zapLogger.LogEvent(&RollbackError{
-			Err: fmt.Errorf("some error"),
-		})
-		ts.AssertMessages("ERROR\tcould not rollback cleanly\t{\"error\": \"some error\"}")
-	})
-	t.Run("Rollback", func(t *testing.T) {
-		defer ts.Reset()
-		zapLogger.LogEvent(&Rollback{
-			StartErr: fmt.Errorf("some error"),
-		})
-		ts.AssertMessages("ERROR\tstartup failed, rolling back\t{\"error\": \"some error\"}")
-	})
-	t.Run("Running", func(t *testing.T) {
-		defer ts.Reset()
-		zapLogger.LogEvent(&Running{})
-		ts.AssertMessages("INFO\trunning")
-	})
+	}
 }
