@@ -44,12 +44,13 @@ type Hook struct {
 
 // Lifecycle coordinates application lifecycle hooks.
 type Lifecycle struct {
-	logger      fxevent.Logger
-	hooks       []Hook
-	numStarted  int
-	records     HookRecords
-	runningHook Hook
-	mu          sync.Mutex
+	logger       fxevent.Logger
+	hooks        []Hook
+	numStarted   int
+	startRecords HookRecords
+	stopRecords  HookRecords
+	runningHook  Hook
+	mu           sync.Mutex
 }
 
 // New constructs a new Lifecycle.
@@ -69,7 +70,7 @@ func (l *Lifecycle) Append(hook Hook) {
 // Start runs all OnStart hooks, returning immediately if it encounters an
 // error.
 func (l *Lifecycle) Start(ctx context.Context) error {
-	l.records = make(HookRecords, 0, len(l.hooks))
+	l.startRecords = make(HookRecords, 0, len(l.hooks))
 	for _, hook := range l.hooks {
 		if hook.OnStart != nil {
 			l.logger.LogEvent(&fxevent.LifecycleHookStart{CallerName: hook.callerFrame.Function})
@@ -83,7 +84,7 @@ func (l *Lifecycle) Start(ctx context.Context) error {
 				return err
 			}
 			l.mu.Lock()
-			l.records = append(l.records, HookRecord{
+			l.startRecords = append(l.startRecords, HookRecord{
 				CallerFrame: hook.callerFrame,
 				Func:        hook.OnStart,
 				Runtime:     time.Since(begin),
@@ -101,7 +102,7 @@ func (l *Lifecycle) Start(ctx context.Context) error {
 func (l *Lifecycle) Stop(ctx context.Context) error {
 	var errs []error
 	l.mu.Lock()
-	l.records = make(HookRecords, 0, l.numStarted)
+	l.stopRecords = make(HookRecords, 0, l.numStarted)
 	l.mu.Unlock()
 
 	// Run backward from last successful OnStart.
@@ -123,7 +124,7 @@ func (l *Lifecycle) Stop(ctx context.Context) error {
 			errs = append(errs, err)
 		}
 		l.mu.Lock()
-		l.records = append(l.records, HookRecord{
+		l.stopRecords = append(l.stopRecords, HookRecord{
 			CallerFrame: hook.callerFrame,
 			Func:        hook.OnStop,
 			Runtime:     time.Since(begin),
@@ -134,13 +135,23 @@ func (l *Lifecycle) Stop(ctx context.Context) error {
 	return multierr.Combine(errs...)
 }
 
-// HookRecords returns the info of hooks that successfully ran till the end,
-// including their caller and runtime. Used to report timeout errors on Start/Stop.
-func (l *Lifecycle) HookRecords() HookRecords {
+// StartHookRecords returns the info of OnStart hooks that successfully ran till the end,
+// including their caller and runtime. Used to report timeout errors on Start.
+func (l *Lifecycle) StartHookRecords() HookRecords {
 	l.mu.Lock()
 	defer l.mu.Unlock()
-	r := make(HookRecords, len(l.records))
-	copy(r, l.records)
+	r := make(HookRecords, len(l.startRecords))
+	copy(r, l.startRecords)
+	return r
+}
+
+// StopHookRecords returns the info of OnStop hooks that successfully ran till the end,
+// including their caller and runtime. Used to report timeout errors on Stop.
+func (l *Lifecycle) StopHookRecords() HookRecords {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	r := make(HookRecords, len(l.stopRecords))
+	copy(r, l.stopRecords)
 	return r
 }
 
