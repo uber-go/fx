@@ -28,6 +28,7 @@ import (
 	"os"
 	"os/signal"
 	"reflect"
+	"sort"
 	"strings"
 	"sync"
 	"time"
@@ -661,6 +662,11 @@ func (app *App) Err() error {
 	return app.err
 }
 
+var (
+	_onStartHook = "OnStart"
+	_onStopHook  = "OnStop"
+)
+
 // Start kicks off all long-running goroutines, like network servers or
 // message queue consumers. It does this by interacting with the application's
 // Lifecycle.
@@ -679,7 +685,12 @@ func (app *App) Err() error {
 // Note that Start short-circuits immediately if the New constructor
 // encountered any errors in application initialization.
 func (app *App) Start(ctx context.Context) error {
-	return withTimeout(ctx, app.start)
+	return withTimeout(ctx, &withTimeoutParams{
+		hook:      _onStartHook,
+		callback:  app.start,
+		lifecycle: app.lifecycle,
+		log:       app.log,
+	})
 }
 
 // Stop gracefully stops the application. It executes any registered OnStop
@@ -690,7 +701,12 @@ func (app *App) Start(ctx context.Context) error {
 // called are executed. However, all those hooks are executed, even if some
 // fail.
 func (app *App) Stop(ctx context.Context) error {
-	return withTimeout(ctx, app.lifecycle.Stop)
+	return withTimeout(ctx, &withTimeoutParams{
+		hook:      _onStopHook,
+		callback:  app.lifecycle.Stop,
+		lifecycle: app.lifecycle,
+		log:       app.log,
+	})
 }
 
 // Done returns a channel of signals to block on after starting the
@@ -877,6 +893,7 @@ func (app *App) start(ctx context.Context) error {
 
 			return multierr.Append(err, stopErr)
 		}
+
 		return err
 	}
 	app.log.LogEvent(&fxevent.Running{})
@@ -884,13 +901,42 @@ func (app *App) start(ctx context.Context) error {
 	return nil
 }
 
-func withTimeout(ctx context.Context, f func(context.Context) error) error {
+type withTimeoutParams struct {
+	log       fxevent.Logger
+	hook      string
+	callback  func(context.Context) error
+	lifecycle *lifecycleWrapper
+}
+
+func withTimeout(ctx context.Context, param *withTimeoutParams) error {
 	c := make(chan error, 1)
-	go func() { c <- f(ctx) }()
+	go func() { c <- param.callback(ctx) }()
 
 	select {
 	case <-ctx.Done():
-		return ctx.Err()
+		err := ctx.Err()
+		if err != context.DeadlineExceeded {
+			return err
+		}
+		// On timeout, report running hook's caller and recorded
+		// runtimes of hooks successfully run till end.
+		r := param.lifecycle.hookRecords()
+		sort.Sort(r)
+		caller := param.lifecycle.runningHookCaller()
+		// TODO: Once this is integrated into fxevent, we can
+		// leave error unchanged and send this to fxevent.Logger, whose
+		// implementation can then determine how the error is presented.
+		if len(r) > 0 {
+			return fmt.Errorf("%v hook added by %v failed: %w\n%+v",
+				param.hook,
+				caller,
+				err,
+				r)
+		}
+		return fmt.Errorf("%v hook added by %v failed: %w",
+			param.hook,
+			caller,
+			err)
 	case err := <-c:
 		return err
 	}
