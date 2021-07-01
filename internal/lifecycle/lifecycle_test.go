@@ -29,6 +29,7 @@ import (
 	"go.uber.org/fx/fxevent"
 	"go.uber.org/fx/internal/fxlog"
 	"go.uber.org/fx/internal/testutil"
+	"go.uber.org/goleak"
 	"go.uber.org/multierr"
 )
 
@@ -217,4 +218,8 @@ func TestLifecycleStop(t *testing.T) {
 		assert.Equal(t, err, l.Start(context.Background()))
 		l.Stop(context.Background())
 	})
+}
+
+func TestMain(m *testing.M) {
+	goleak.VerifyTestMain(m)
 }

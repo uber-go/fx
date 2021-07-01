@@ -34,8 +34,6 @@ import (
 )
 
 func TestLifecycle(t *testing.T) {
-	defer goleak.VerifyNoLeaks(t)
-
 	t.Run("Success", func(t *testing.T) {
 		spy := newTB()
 
@@ -194,4 +192,8 @@ func TestPanicT(t *testing.T) {
 		}()
 		assert.Equal(t, "test lifecycle failed", pval)
 	})
+}
+
+func TestMain(m *testing.M) {
+	goleak.VerifyTestMain(m)
 }
