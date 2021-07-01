@@ -36,6 +36,7 @@ import (
 	"go.uber.org/fx/fxevent"
 	"go.uber.org/fx/fxtest"
 	"go.uber.org/fx/internal/fxlog"
+	"go.uber.org/goleak"
 	"go.uber.org/multierr"
 )
 
@@ -477,8 +478,9 @@ func TestAppStart(t *testing.T) {
 		blocker := func(lc Lifecycle) *A {
 			lc.Append(
 				Hook{
-					OnStart: func(context.Context) error {
-						select {}
+					OnStart: func(ctx context.Context) error {
+						<-ctx.Done()
+						return ctx.Err()
 					},
 				},
 			)
@@ -745,7 +747,10 @@ func TestAppStart(t *testing.T) {
 
 func TestAppStop(t *testing.T) {
 	t.Run("Timeout", func(t *testing.T) {
-		block := func(context.Context) error { select {} }
+		block := func(ctx context.Context) error {
+			<-ctx.Done()
+			return ctx.Err()
+		}
 		app := fxtest.New(t, Invoke(func(l Lifecycle) {
 			l.Append(Hook{OnStop: block})
 		}))
@@ -1031,6 +1036,10 @@ func TestOptionString(t *testing.T) {
 			assert.Equal(t, tt.want, stringer.String())
 		})
 	}
+}
+
+func TestMain(m *testing.M) {
+	goleak.VerifyTestMain(m)
 }
 
 type testLogger struct{ t *testing.T }

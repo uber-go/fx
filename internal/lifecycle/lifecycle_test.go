@@ -34,6 +34,7 @@ import (
 	"go.uber.org/fx/internal/fxlog"
 	"go.uber.org/fx/internal/fxreflect"
 	"go.uber.org/fx/internal/testutil"
+	"go.uber.org/goleak"
 	"go.uber.org/multierr"
 )
 
@@ -256,4 +257,8 @@ func TestHookRecordsFormat(t *testing.T) {
 			assert.Contains(t, s, "somefunc.go:1", "file name and line should be reported")
 		}
 	})
+}
+
+func TestMain(m *testing.M) {
+	goleak.VerifyTestMain(m)
 }

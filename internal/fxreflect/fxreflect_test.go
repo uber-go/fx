@@ -24,6 +24,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/goleak"
 )
 
 func TestCaller(t *testing.T) {
@@ -84,4 +85,8 @@ func TestSanitizeFuncNames(t *testing.T) {
 			assert.Equal(t, c.expected, sanitize(c.input))
 		})
 	}
+}
+
+func TestMain(m *testing.M) {
+	goleak.VerifyTestMain(m)
 }
