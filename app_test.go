@@ -492,8 +492,7 @@ func TestAppStart(t *testing.T) {
 			Invoke(func(*A) {}),
 		)
 
-		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond)
-		defer cancel()
+		ctx, _ := context.WithTimeout(context.Background(), time.Millisecond)
 
 		err := app.Start(ctx)
 		require.Error(t, err)
