@@ -550,8 +550,7 @@ func TestAppStart(t *testing.T) {
 		assert.Contains(t, err.Error(), "OnStart hook added by go.uber.org/fx_test.TestAppStart.func2.3 failed: context deadline exceeded")
 
 		// Check that hooks successfully run contain file/line numbers
-		assert.Contains(t, err.Error(), "app_test.go:506")
-		assert.Contains(t, err.Error(), "app_test.go:516")
+		assert.Regexp(t, "app_test.go:\\d+", err.Error())
 
 		// Check that hooks successfully run are reported in order of runtime.
 		hook1Idx := strings.Index(err.Error(), "go.uber.org/fx_test.TestAppStart.func2.1.1()")
@@ -561,11 +560,14 @@ func TestAppStart(t *testing.T) {
 
 	t.Run("CtxCancelledDuringStart", func(t *testing.T) {
 		type A struct{}
+		running := make(chan struct{})
 		newA := func(lc Lifecycle) *A {
 			lc.Append(
 				Hook{
-					OnStart: func(context.Context) error {
-						select {}
+					OnStart: func(ctx context.Context) error {
+						close(running)
+						<-ctx.Done()
+						return ctx.Err()
 					},
 				},
 			)
@@ -579,7 +581,7 @@ func TestAppStart(t *testing.T) {
 
 		ctx, cancel := context.WithCancel(context.Background())
 		go func() {
-			time.Sleep(100 * time.Millisecond)
+			<-running
 			cancel()
 		}()
 		err := app.Start(ctx)

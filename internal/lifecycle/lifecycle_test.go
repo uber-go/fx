@@ -30,6 +30,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.uber.org/fx/fxevent"
 	"go.uber.org/fx/internal/fxlog"
 	"go.uber.org/fx/internal/fxreflect"
@@ -227,30 +228,37 @@ func TestLifecycleStop(t *testing.T) {
 
 func TestHookRecordsFormat(t *testing.T) {
 	t.Run("SortRecords", func(t *testing.T) {
-		r := make(HookRecords, 2)
-		t1, _ := time.ParseDuration("10ms")
-		t2, _ := time.ParseDuration("20ms")
+		t1, err := time.ParseDuration("10ms")
+		require.NoError(t, err)
+		t2, err := time.ParseDuration("20ms")
+		require.NoError(t, err)
+
 		f := fxreflect.Frame{
 			Function: "someFunc",
 			File:     "somefunc.go",
 			Line:     1,
 		}
-		r[0] = HookRecord{
-			CallerFrame: f,
-			Func: func(context.Context) error {
-				return nil
+
+		r := HookRecords{
+			HookRecord{
+				CallerFrame: f,
+				Func: func(context.Context) error {
+					return nil
+				},
+				Runtime: t1,
 			},
-			Runtime: t1,
-		}
-		r[1] = HookRecord{
-			CallerFrame: f,
-			Func: func(context.Context) error {
-				return nil
+			HookRecord{
+				CallerFrame: f,
+				Func: func(context.Context) error {
+					return nil
+				},
+				Runtime: t2,
 			},
-			Runtime: t2,
 		}
+
 		sort.Sort(r)
-		for _, s := range []string{fmt.Sprintf("%v", r), fmt.Sprintf("%+v", r), fmt.Sprintf("%s", r)} {
+		for _, format := range []string{"%v", "%+v", "%s"} {
+			s := fmt.Sprintf(format, r)
 			hook1Idx := strings.Index(s, "TestHookRecordsFormat.func1.1()")
 			hook2Idx := strings.Index(s, "TestHookRecordsFormat.func1.2()")
 			assert.Greater(t, hook1Idx, hook2Idx, "second hook must appear first in the formatted string")

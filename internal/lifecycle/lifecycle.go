@@ -24,7 +24,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"sort"
 	"strings"
 	"sync"
 	"time"
@@ -194,12 +193,11 @@ func (rs HookRecords) Format(w fmt.State, c rune) {
 		return
 	}
 
-	sort.Slice(rs, func(i, j int) bool { return rs[i].Runtime > rs[j].Runtime })
 	for _, r := range rs {
 		fmt.Fprintf(w, "\n%s took %v from:\n\t%+v",
 			fxreflect.FuncName(r.Func),
 			r.Runtime,
 			r.CallerFrame)
 	}
-	fmt.Printf("\n")
+	fmt.Fprintf(w, "\n")
 }
