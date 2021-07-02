@@ -150,17 +150,18 @@ func (v *visitor) funcDeclEnter(n *ast.FuncDecl) bool {
 }
 
 func (v *visitor) funcDeclExit(n *ast.FuncDecl) bool {
-	if v.funcEvents.Len() == 0 {
+	nEvents := v.funcEvents.Len()
+	if nEvents == 0 {
 		return false
 	}
 
 	// If the logger doesn't handle *any* event type, it's probably a fake,
 	// or a no-op implementation. Don't bother with it.
-	if v.funcEvents.Len() == v.Fxevent.Events.Len() {
+	if nEvents == v.Fxevent.Events.Len() {
 		return false
 	}
 
-	missing := make([]string, 0, v.funcEvents.Len())
+	missing := make([]string, 0, nEvents)
 	v.funcEvents.Iterate(func(t types.Type) {
 		// Use a fxevent qualifier so that event names don't include
 		// the full import path of the fxevent package.
