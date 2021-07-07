@@ -49,13 +49,14 @@ func (l *ConsoleLogger) LogEvent(event Event) {
 		l.logf("START\t\t%s", e.CallerName)
 	case *LifecycleHookStop:
 		l.logf("STOP\t\t%s", e.CallerName)
-	case *ProvideError:
-		l.logf("Error after options were applied: %v", e.Err)
 	case *Supply:
 		l.logf("SUPPLY\t%v", e.TypeName)
 	case *Provide:
 		for _, rtype := range e.OutputTypeNames {
 			l.logf("PROVIDE\t%v <= %v", rtype, fxreflect.FuncName(e.Constructor))
+		}
+		if e.Err != nil {
+			l.logf("Error after options were applied: %v", e.Err)
 		}
 	case *Invoke:
 		l.logf("INVOKE\t\t%s", fxreflect.FuncName(e.Function))

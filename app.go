@@ -562,7 +562,7 @@ func New(opts ...Option) *App {
 	app.provide(provide{Target: app.dotGraph, Stack: frames})
 
 	if app.err != nil {
-		app.log.LogEvent(&fxevent.ProvideError{Err: app.err})
+		app.log.LogEvent(&fxevent.Provide{Err: app.err})
 		// Don't return yet. If a custom logger was being used,
 		// we're still buffering messages. We'll want to flush them to
 		// the logger.

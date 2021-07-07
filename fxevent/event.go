@@ -32,7 +32,6 @@ type Event interface {
 // Passing events by type to make Event hashable in the future.
 func (*LifecycleHookStart) event() {}
 func (*LifecycleHookStop) event()  {}
-func (*ProvideError) event()       {}
 func (*Supply) event()             {}
 func (*Provide) event()            {}
 func (*Invoke) event()             {}
@@ -56,11 +55,6 @@ type LifecycleHookStop struct {
 	CallerName string
 }
 
-// ProvideError is emitted whenever there is an error applying options.
-type ProvideError struct {
-	Err error
-}
-
 // Supply is emitted whenever a Provide was called with a constructor provided
 // by fx.Supply.
 type Supply struct {
@@ -74,6 +68,9 @@ type Provide struct {
 	// OutputTypeNames is a list of names of types that are produced by
 	// this constructor.
 	OutputTypeNames []string
+
+	// Err is emitted if there was an error applying options.
+	Err error
 }
 
 // Invoke is emitted whenever a function is invoked.

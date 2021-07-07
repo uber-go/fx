@@ -41,9 +41,6 @@ func (l *ZapLogger) LogEvent(event Event) {
 		l.Logger.Info("starting", zap.String("caller", e.CallerName))
 	case *LifecycleHookStop:
 		l.Logger.Info("stopping", zap.String("caller", e.CallerName))
-	case *ProvideError:
-		l.Logger.Error("error encountered while applying options",
-			zap.Error(e.Err))
 	case *Supply:
 		l.Logger.Info("supplying", zap.String("type", e.TypeName))
 	case *Provide:
@@ -52,6 +49,10 @@ func (l *ZapLogger) LogEvent(event Event) {
 				zap.String("constructor", fxreflect.FuncName(e.Constructor)),
 				zap.String("type", rtype),
 			)
+		}
+		if e.Err != nil {
+			l.Logger.Error("error encountered while applying options",
+				zap.Error(e.Err))
 		}
 	case *Invoke:
 		l.Logger.Info("invoke",

@@ -31,7 +31,6 @@ func TestForCoverage(t *testing.T) {
 	events := []Event{
 		&LifecycleHookStart{},
 		&LifecycleHookStop{},
-		&ProvideError{},
 		&Supply{},
 		&Provide{},
 		&Invoke{},

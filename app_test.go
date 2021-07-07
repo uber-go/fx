@@ -361,7 +361,7 @@ func TestWithLogger(t *testing.T) {
 			"must provide constructor function, got  (type *bytes.Buffer)",
 		)
 
-		assert.Equal(t, []string{"Supply", "ProvideError", "CustomLogger"}, spy.EventTypes())
+		assert.Equal(t, []string{"Supply", "Provide", "CustomLogger"}, spy.EventTypes())
 	})
 
 	t.Run("logger failed to build", func(t *testing.T) {
@@ -576,8 +576,8 @@ func TestOptions(t *testing.T) {
 			Provide(&bytes.Buffer{}), // error, not a constructor
 			WithLogger(func() fxevent.Logger { return spy }),
 		)
-		require.Equal(t, []string{"ProvideError", "CustomLogger"}, spy.EventTypes())
-		assert.Contains(t, spy.Events()[0].(*fxevent.ProvideError).Err.Error(), "must provide constructor function")
+		require.Equal(t, []string{"Provide", "CustomLogger"}, spy.EventTypes())
+		assert.Contains(t, spy.Events()[0].(*fxevent.Provide).Err.Error(), "must provide constructor function")
 	})
 }
 
