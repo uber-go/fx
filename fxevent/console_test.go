@@ -65,12 +65,12 @@ func TestConsoleLogger(t *testing.T) {
 		},
 		{
 			name: "Invoke",
-			give: &Invoke{bytes.NewBuffer},
+			give: &Invoke{Function: bytes.NewBuffer, Err: nil},
 			want: "[Fx] INVOKE		bytes.NewBuffer()\n",
 		},
 		{
 			name: "InvokeError",
-			give: &InvokeError{
+			give: &Invoke{
 				Function:   bytes.NewBuffer,
 				Err:        errors.New("some error"),
 				Stacktrace: "foo()\n\tbar/baz.go:42\n",
@@ -114,7 +114,7 @@ func TestConsoleLogger(t *testing.T) {
 		},
 		{
 			name: "CustomLoggerError",
-			give: &CustomLoggerError{Err: errors.New("great sadness")},
+			give: &CustomLogger{Err: errors.New("great sadness")},
 			want: "[Fx] ERROR		Failed to construct custom logger: great sadness\n",
 		},
 		{

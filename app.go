@@ -577,7 +577,7 @@ func New(opts ...Option) *App {
 			app.err = multierr.Append(app.err, err)
 			app.log = fallbackLogger
 			bufferLogger.Connect(fallbackLogger)
-			app.log.LogEvent(&fxevent.CustomLoggerError{Err: err})
+			app.log.LogEvent(&fxevent.CustomLogger{Err: err})
 			return app
 		}
 		app.log.LogEvent(&fxevent.CustomLogger{Function: app.logConstructor})
@@ -845,7 +845,7 @@ func (app *App) executeInvokes() error {
 		}
 
 		if err != nil {
-			app.log.LogEvent(&fxevent.InvokeError{
+			app.log.LogEvent(&fxevent.Invoke{
 				Function:   fn,
 				Err:        err,
 				Stacktrace: fmt.Sprintf("%+v", i.Stack), // format stack trace as multi-line

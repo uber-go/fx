@@ -94,16 +94,16 @@ func TestZapLogger(t *testing.T) {
 		},
 		{
 			name:        "Invoke",
-			give:        &Invoke{bytes.NewBuffer},
-			wantMessage: "invoke",
+			give:        &Invoke{Function: bytes.NewBuffer, Err: nil},
+			wantMessage: "invoked",
 			wantFields: map[string]interface{}{
 				"function": "bytes.NewBuffer()",
 			},
 		},
 		{
 			name:        "InvokeError",
-			give:        &InvokeError{Function: bytes.NewBuffer, Err: someError},
-			wantMessage: "fx.Invoke failed",
+			give:        &Invoke{Function: bytes.NewBuffer, Err: someError},
+			wantMessage: "invoke failed",
 			wantFields: map[string]interface{}{
 				"error":    "some error",
 				"stack":    "",
@@ -157,8 +157,8 @@ func TestZapLogger(t *testing.T) {
 			wantFields:  map[string]interface{}{},
 		},
 		{
-			name:        "CustomLoggerError",
-			give:        &CustomLoggerError{Err: someError},
+			name:        "CustomLogger Error",
+			give:        &CustomLogger{Err: someError},
 			wantMessage: "error constructing logger",
 			wantFields: map[string]interface{}{
 				"error": "some error",
@@ -166,7 +166,7 @@ func TestZapLogger(t *testing.T) {
 		},
 		{
 			name:        "CustomLogger",
-			give:        &CustomLogger{bytes.NewBuffer},
+			give:        &CustomLogger{Function: bytes.NewBuffer, Err: nil},
 			wantMessage: "installing custom fxevent.Logger",
 			wantFields: map[string]interface{}{
 				"function": "bytes.NewBuffer()",

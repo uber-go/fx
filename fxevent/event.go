@@ -35,14 +35,12 @@ func (*LifecycleHookStop) event()  {}
 func (*Supply) event()             {}
 func (*Provide) event()            {}
 func (*Invoke) event()             {}
-func (*InvokeError) event()        {}
 func (*StartError) event()         {}
 func (*StopSignal) event()         {}
 func (*StopError) event()          {}
 func (*Rollback) event()           {}
 func (*RollbackError) event()      {}
 func (*Running) event()            {}
-func (*CustomLoggerError) event()  {}
 func (*CustomLogger) event()       {}
 
 // LifecycleHookStart is emitted whenever an OnStart hook is executed
@@ -73,17 +71,19 @@ type Provide struct {
 	Err error
 }
 
-// Invoke is emitted whenever a function is invoked.
+// Invoke is emitted whenever a function is invoked and whether it errored.
 type Invoke struct {
 	Function interface{}
-}
-
-// InvokeError is emitted when fx.Invoke has failed.
-type InvokeError struct {
-	Function   interface{}
 	Err        error
 	Stacktrace string
 }
+
+// InvokeError is emitted when fx.Invoke has failed.
+// type InvokeError struct {
+// 	Function   interface{}
+// 	Err        error
+// 	Stacktrace string
+// }
 
 // StartError is emitted right before exiting after failing to start.
 type StartError struct{ Err error }
@@ -106,9 +106,10 @@ type RollbackError struct{ Err error }
 type Running struct{}
 
 // CustomLoggerError is emitted whenever a custom logger fails to construct.
-type CustomLoggerError struct{ Err error }
+// type CustomLoggerError struct{ Err error }
 
-// CustomLogger is emitted whenever a custom logger is set.
+// CustomLogger is emitted whenever a custom logger is set or produces an error.
 type CustomLogger struct {
 	Function interface{}
+	Err error
 }
