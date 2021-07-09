@@ -99,7 +99,7 @@ func NewHandler(logger *log.Logger) (http.Handler, error) {
 //     log.Fatalf("failed to construct server: %v", err)
 //   }
 //   // Construct other objects as necessary.
-//   go srv.Started()
+//   go srv.Start()
 //   defer srv.Stop()
 //
 // In this example, the programmer explicitly constructs a bunch of objects,
@@ -180,7 +180,7 @@ func Register(mux *http.ServeMux, h http.Handler) {
 
 func Example() {
 	app := fx.New(
-		// Provided all the constructors we need, which teaches Fx how we'd like to
+		// Provide all the constructors we need, which teaches Fx how we'd like to
 		// construct the *log.Logger, http.Handler, and *http.ServeMux types.
 		// Remember that constructors are called lazily, so this block doesn't do
 		// much on its own.
@@ -209,7 +209,7 @@ func Example() {
 	)
 
 	// In a typical application, we could just use app.Run() here. Since we
-	// don't want this example to run forever, we'll use the more-explicit Started
+	// don't want this example to run forever, we'll use the more-explicit Start
 	// and Stop.
 	startCtx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()

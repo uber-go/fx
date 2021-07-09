@@ -46,7 +46,7 @@ import (
 
 func NewForTest(tb testing.TB, opts ...Option) *App {
 	testOpts := []Option{
-		// Provided both, Logger and WithLogger so that if the test
+		// Provide both: Logger and WithLogger so that if the test
 		// WithLogger fails, we don't pollute stderr.
 		Logger(fxtest.NewTestPrinter(tb)),
 		WithLogger(func() fxevent.Logger { return fxtest.NewTestLogger(tb) }),
@@ -241,13 +241,13 @@ func TestNewApp(t *testing.T) {
 		require.Error(t, err)
 
 		// Example:
-		// fx.Provided(fx.Annotated{...}) from:
+		// fx.Provide(fx.Annotated{...}) from:
 		//     go.uber.org/fx_test.TestNewApp.func8
 		//         /.../fx/app_test.go:206
 		//     testing.tRunner
 		//         /.../go/1.13.3/libexec/src/testing/testing.go:909
 		//     Failed: must provide constructor function, got 42 (type int)
-		assert.Contains(t, err.Error(), `fx.Provided(fx.Annotated{Name: "foo", Target: 42}) from:`)
+		assert.Contains(t, err.Error(), `fx.Provide(fx.Annotated{Name: "foo", Target: 42}) from:`)
 		assert.Contains(t, err.Error(), "go.uber.org/fx_test.TestNewApp")
 		assert.Contains(t, err.Error(), "fx/app_test.go")
 		assert.Contains(t, err.Error(), "Failed: must provide constructor function")
@@ -258,13 +258,13 @@ func TestNewApp(t *testing.T) {
 		require.Error(t, err)
 
 		// Example:
-		// fx.Provided(..) from:
+		// fx.Provide(..) from:
 		//     go.uber.org/fx_test.TestNewApp.func8
 		//         /.../fx/app_test.go:206
 		//     testing.tRunner
 		//         /.../go/1.13.3/libexec/src/testing/testing.go:909
 		//     Failed: must provide constructor function, got 42 (type int)
-		assert.Contains(t, err.Error(), "fx.Provided(42) from:")
+		assert.Contains(t, err.Error(), "fx.Provide(42) from:")
 		assert.Contains(t, err.Error(), "go.uber.org/fx_test.TestNewApp")
 		assert.Contains(t, err.Error(), "fx/app_test.go")
 		assert.Contains(t, err.Error(), "Failed: must provide constructor function")
@@ -342,7 +342,7 @@ func TestWithLogger(t *testing.T) {
 		assert.Contains(t, out, "must provide constructor function, got  (type *bytes.Buffer)\n")
 	})
 
-	t.Run("error in Provided shows logs", func(t *testing.T) {
+	t.Run("error in Provide shows logs", func(t *testing.T) {
 		t.Parallel()
 
 		var spy fxlog.Spy
@@ -492,12 +492,12 @@ func TestError(t *testing.T) {
 
 		app := NewForTest(t,
 			Provide(func(b B) A {
-				t.Errorf("B is missing from the container; Provided should not be called")
+				t.Errorf("B is missing from the container; Provide should not be called")
 				return A{}
 			},
 			),
 			Error(errors.New("module failure")),
-			Invoke(func(A) { t.Errorf("A was not provided; Invoked should not be called") }),
+			Invoke(func(A) { t.Errorf("A was not provided; Invoke should not be called") }),
 		)
 		err := app.Err()
 		assert.EqualError(t, err, "module failure")
@@ -786,7 +786,7 @@ func TestAppStart(t *testing.T) {
 		assert.Contains(t, err.Error(), "can't invoke non-function")
 
 		// Example
-		// fx.Invoked({}) called from:
+		// fx.Invoke({}) called from:
 		// go.uber.org/fx_test.TestAppStart.func4
 		//         /.../fx/app_test.go:525
 		// testing.tRunner
@@ -820,13 +820,13 @@ func TestAppStart(t *testing.T) {
 		require.Error(t, err, "expected start failure")
 
 		// Example:
-		// fx.Option should be passed to fx.New directly, not to fx.Provided: fx.Provided received fx.Provided(go.uber.org/fx_test.TestAppStart.func5.2(), go.uber.org/fx_test.TestAppStart.func5.3()) from:
+		// fx.Option should be passed to fx.New directly, not to fx.Provide: fx.Provide received fx.Provide(go.uber.org/fx_test.TestAppStart.func5.2(), go.uber.org/fx_test.TestAppStart.func5.3()) from:
 		// go.uber.org/fx_test.TestAppStart.func5
 		//         /.../fx/app_test.go:550
 		// testing.tRunner
 		//         /.../go/1.13.3/libexec/src/testing/testing.go:909
-		assert.Contains(t, err.Error(), "fx.Option should be passed to fx.New directly, not to fx.Provided")
-		assert.Contains(t, err.Error(), "fx.Provided received fx.Provided(go.uber.org/fx_test.TestAppStart")
+		assert.Contains(t, err.Error(), "fx.Option should be passed to fx.New directly, not to fx.Provide")
+		assert.Contains(t, err.Error(), "fx.Provide received fx.Provide(go.uber.org/fx_test.TestAppStart")
 		assert.Contains(t, err.Error(), "go.uber.org/fx_test.TestAppStart")
 		assert.Contains(t, err.Error(), "fx/app_test.go")
 	})
@@ -847,13 +847,13 @@ func TestAppStart(t *testing.T) {
 		assert.Equal(t, err, newErr, "start should return the same error fx.New encountered")
 
 		// Example
-		// fx.Option should be passed to fx.New directly, not to fx.Invoked: fx.Invoked received fx.Invoked(go.uber.org/fx_test.TestAppStart.func6.2()) from:
+		// fx.Option should be passed to fx.New directly, not to fx.Invoke: fx.Invoke received fx.Invoke(go.uber.org/fx_test.TestAppStart.func6.2()) from:
 		// go.uber.org/fx_test.TestAppStart.func6
 		//         /.../fx/app_test.go:579
 		// testing.tRunner
 		//         /.../go/1.13.3/libexec/src/testing/testing.go:909
-		assert.Contains(t, err.Error(), "fx.Option should be passed to fx.New directly, not to fx.Invoked")
-		assert.Contains(t, err.Error(), "fx.Invoked received fx.Invoked(go.uber.org/fx_test.TestAppStart")
+		assert.Contains(t, err.Error(), "fx.Option should be passed to fx.New directly, not to fx.Invoke")
+		assert.Contains(t, err.Error(), "fx.Invoke received fx.Invoke(go.uber.org/fx_test.TestAppStart")
 		assert.Contains(t, err.Error(), "go.uber.org/fx_test.TestAppStart")
 		assert.Contains(t, err.Error(), "/fx/app_test.go")
 	})
@@ -883,13 +883,13 @@ func TestAppStart(t *testing.T) {
 		require.Error(t, err, "expected start failure")
 
 		// Example:
-		// fx.Annotated should be passed to fx.Provided directly, it should not be returned by the constructor: fx.Provided received go.uber.org/fx_test.TestAnnotatedWrongUsage.func2.1() from:
+		// fx.Annotated should be passed to fx.Provide directly, it should not be returned by the constructor: fx.Provide received go.uber.org/fx_test.TestAnnotatedWrongUsage.func2.1() from:
 		// go.uber.org/fx_test.TestAnnotatedWrongUsage.func2
 		//         /.../fx/annotated_test.go:76
 		// testing.tRunner
 		//         /.../go/1.13.3/libexec/src/testing/testing.go:909
-		assert.Contains(t, err.Error(), "fx.Option should be passed to fx.New directly, not to fx.Provided")
-		assert.Contains(t, err.Error(), "fx.Provided received fx.Options(fx.Provided(go.uber.org/fx_test.TestAppStart")
+		assert.Contains(t, err.Error(), "fx.Option should be passed to fx.New directly, not to fx.Provide")
+		assert.Contains(t, err.Error(), "fx.Provide received fx.Options(fx.Provide(go.uber.org/fx_test.TestAppStart")
 		assert.Contains(t, err.Error(), "go.uber.org/fx_test.TestAppStart")
 		assert.Contains(t, err.Error(), "fx/app_test.go")
 	})
@@ -1177,14 +1177,14 @@ func TestOptionString(t *testing.T) {
 		{
 			desc: "Provided",
 			give: Provide(bytes.NewReader),
-			want: "fx.Provided(bytes.NewReader())",
+			want: "fx.Provide(bytes.NewReader())",
 		},
 		{
 			desc: "Invoked",
 			give: Invoke(func(c io.Closer) error {
 				return c.Close()
 			}),
-			want: "fx.Invoked(go.uber.org/fx_test.TestOptionString.func1())",
+			want: "fx.Invoke(go.uber.org/fx_test.TestOptionString.func1())",
 		},
 		{
 			desc: "Error/single",
@@ -1202,7 +1202,7 @@ func TestOptionString(t *testing.T) {
 			// NOTE: We don't prune away fx.Options for the empty
 			// case because we want to attach additional
 			// information to the fx.Options object in the future.
-			want: "fx.Options(fx.Provided(bytes.NewBuffer()))",
+			want: "fx.Options(fx.Provide(bytes.NewBuffer()))",
 		},
 		{
 			desc: "Options/multiple",
@@ -1213,8 +1213,8 @@ func TestOptionString(t *testing.T) {
 				}),
 			),
 			want: "fx.Options(" +
-				"fx.Provided(bytes.NewBufferString()), " +
-				"fx.Invoked(go.uber.org/fx_test.TestOptionString.func2())" +
+				"fx.Provide(bytes.NewBufferString()), " +
+				"fx.Invoke(go.uber.org/fx_test.TestOptionString.func2())" +
 				")",
 		},
 		{

@@ -111,7 +111,7 @@ func (o provideOption) String() string {
 	for i, c := range o.Targets {
 		items[i] = fxreflect.FuncName(c)
 	}
-	return fmt.Sprintf("fx.Provided(%s)", strings.Join(items, ", "))
+	return fmt.Sprintf("fx.Provide(%s)", strings.Join(items, ", "))
 }
 
 // Invoke registers functions that are executed eagerly on application start.
@@ -158,7 +158,7 @@ func (o invokeOption) String() string {
 	for i, f := range o.Targets {
 		items[i] = fxreflect.FuncName(f)
 	}
-	return fmt.Sprintf("fx.Invoked(%s)", strings.Join(items, ", "))
+	return fmt.Sprintf("fx.Invoke(%s)", strings.Join(items, ", "))
 }
 
 // Error registers any number of errors with the application to short-circuit
@@ -517,7 +517,7 @@ func New(opts ...Option) *App {
 	// cover them:
 	//
 	// - lifecycleWrapper ensures that we don't unintentionally expose the
-	//   Started and Stop methods of the internal lifecycle.Lifecycle type
+	//   Start and Stop methods of the internal lifecycle.Lifecycle type
 	// - lifecycleWrapper also adapts the internal lifecycle.Hook type into
 	//   the public fx.Hook type.
 	// - appLogger ensures that the lifecycle always logs events to the
@@ -754,7 +754,7 @@ func (app *App) provide(p provide) {
 	constructor := p.Target
 	if _, ok := constructor.(Option); ok {
 		app.err = fmt.Errorf("fx.Option should be passed to fx.New directly, "+
-			"not to fx.Provided: fx.Provided received %v from:\n%+v",
+			"not to fx.Provide: fx.Provide received %v from:\n%+v",
 			constructor, p.Stack)
 		return
 	}
@@ -798,7 +798,7 @@ func (app *App) provide(p provide) {
 		}
 
 		if err := app.container.Provide(ann.Target, opts...); err != nil {
-			app.err = fmt.Errorf("fx.Provided(%v) from:\n%+vFailed: %v", ann, p.Stack, err)
+			app.err = fmt.Errorf("fx.Provide(%v) from:\n%+vFailed: %v", ann, p.Stack, err)
 		}
 		return
 	}
@@ -811,9 +811,9 @@ func (app *App) provide(p provide) {
 
 			if t == reflect.TypeOf(Annotated{}) {
 				app.err = fmt.Errorf(
-					"fx.Annotated should be passed to fx.Provided directly, "+
+					"fx.Annotated should be passed to fx.Provide directly, "+
 						"it should not be returned by the constructor: "+
-						"fx.Provided received %v from:\n%+v",
+						"fx.Provide received %v from:\n%+v",
 					fxreflect.FuncName(constructor), p.Stack)
 				return
 			}
@@ -821,7 +821,7 @@ func (app *App) provide(p provide) {
 	}
 
 	if err := app.container.Provide(constructor, opts...); err != nil {
-		app.err = fmt.Errorf("fx.Provided(%v) from:\n%+vFailed: %v", fxreflect.FuncName(constructor), p.Stack, err)
+		app.err = fmt.Errorf("fx.Provide(%v) from:\n%+vFailed: %v", fxreflect.FuncName(constructor), p.Stack, err)
 	}
 }
 
@@ -837,7 +837,7 @@ func (app *App) executeInvokes() error {
 		var err error
 		if _, ok := fn.(Option); ok {
 			err = fmt.Errorf("fx.Option should be passed to fx.New directly, "+
-				"not to fx.Invoked: fx.Invoked received %v from:\n%+v",
+				"not to fx.Invoke: fx.Invoke received %v from:\n%+v",
 				fn, i.Stack)
 		} else {
 			err = app.container.Invoke(fn)
@@ -885,7 +885,7 @@ func (app *App) start(ctx context.Context) error {
 
 	// Attempt to start cleanly.
 	if err := app.lifecycle.Start(ctx); err != nil {
-		// Started failed, rolling back.
+		// Start failed, rolling back.
 		app.log.LogEvent(&fxevent.RollingBack{StartErr: err})
 		if stopErr := app.lifecycle.Stop(ctx); stopErr != nil {
 			app.log.LogEvent(&fxevent.RollbackError{Err: stopErr})

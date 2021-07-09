@@ -93,13 +93,13 @@ func TestAnnotatedWrongUsage(t *testing.T) {
 		require.Error(t, err)
 
 		// Example:
-		// fx.Annotated should be passed to fx.Provided directly, it should not be returned by the constructor: fx.Provided received go.uber.org/fx_test.TestAnnotatedWrongUsage.func2.1() from:
+		// fx.Annotated should be passed to fx.Provide directly, it should not be returned by the constructor: fx.Provide received go.uber.org/fx_test.TestAnnotatedWrongUsage.func2.1() from:
 		// go.uber.org/fx_test.TestAnnotatedWrongUsage.func2
 		//         /.../fx/annotated_test.go:76
 		// testing.tRunner
 		//         /.../go/1.13.3/libexec/src/testing/testing.go:909
-		assert.Contains(t, err.Error(), "fx.Annotated should be passed to fx.Provided directly, it should not be returned by the constructor")
-		assert.Contains(t, err.Error(), "fx.Provided received go.uber.org/fx_test.TestAnnotatedWrongUsage")
+		assert.Contains(t, err.Error(), "fx.Annotated should be passed to fx.Provide directly, it should not be returned by the constructor")
+		assert.Contains(t, err.Error(), "fx.Provide received go.uber.org/fx_test.TestAnnotatedWrongUsage")
 		assert.Contains(t, err.Error(), "go.uber.org/fx_test.TestAnnotatedWrongUsage")
 		assert.Contains(t, err.Error(), "/fx/annotated_test.go")
 	})
