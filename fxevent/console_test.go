@@ -84,7 +84,7 @@ func TestConsoleLogger(t *testing.T) {
 		},
 		{
 			name: "StartError",
-			give: &StartError{Err: errors.New("some error")},
+			give: &Start{Err: errors.New("some error")},
 			want: "[Fx] ERROR		Failed to start: some error\n",
 		},
 		{
@@ -108,8 +108,8 @@ func TestConsoleLogger(t *testing.T) {
 			want: "[Fx] ERROR		Start failed, rolling back: some error\n",
 		},
 		{
-			name: "Running",
-			give: &Running{},
+			name: "Start",
+			give: &Start{},
 			want: "[Fx] RUNNING\n",
 		},
 		{

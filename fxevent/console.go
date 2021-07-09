@@ -65,8 +65,6 @@ func (l *ConsoleLogger) LogEvent(event Event) {
 		} else {
 			l.logf("INVOKE\t\t%s", fxreflect.FuncName(e.Function))
 		}
-	case *StartError:
-		l.logf("ERROR\t\tFailed to start: %v", e.Err)
 	case *StopSignal:
 		l.logf("%v", strings.ToUpper(e.Signal.String()))
 	case *StopError:
@@ -75,8 +73,12 @@ func (l *ConsoleLogger) LogEvent(event Event) {
 		l.logf("ERROR\t\tCouldn't roll back cleanly: %v", e.Err)
 	case *Rollback:
 		l.logf("ERROR\t\tStart failed, rolling back: %v", e.StartErr)
-	case *Running:
-		l.logf("RUNNING")
+	case *Start:
+		if e.Err != nil {
+			l.logf("ERROR\t\tFailed to start: %v", e.Err)
+		} else {
+			l.logf("RUNNING")
+		}
 	case *CustomLogger:
 		if e.Err != nil {
 			l.logf("ERROR\t\tFailed to construct custom logger: %v", e.Err)

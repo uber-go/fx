@@ -30,7 +30,7 @@ import (
 
 func TestLogBufferConnect(t *testing.T) {
 	spy := new(fxlog.Spy)
-	event := &fxevent.Running{}
+	event := &fxevent.Start{}
 	lb := &logBuffer{
 		events: []fxevent.Event{event},
 		logger: nil,
@@ -42,7 +42,7 @@ func TestLogBufferConnect(t *testing.T) {
 
 func TestLogBufferLog(t *testing.T) {
 	spy := new(fxlog.Spy)
-	event := &fxevent.Running{}
+	event := &fxevent.Start{}
 	lb := &logBuffer{
 		events: nil,
 		logger: nil,

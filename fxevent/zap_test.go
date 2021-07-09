@@ -104,7 +104,7 @@ func TestZapLogger(t *testing.T) {
 		},
 		{
 			name:        "StartError",
-			give:        &StartError{Err: someError},
+			give:        &Start{Err: someError},
 			wantMessage: "start failed",
 			wantFields: map[string]interface{}{
 				"error": "some error",
@@ -143,9 +143,9 @@ func TestZapLogger(t *testing.T) {
 			},
 		},
 		{
-			name:        "Running",
-			give:        &Running{},
-			wantMessage: "running",
+			name:        "Start",
+			give:        &Start{},
+			wantMessage: "started",
 			wantFields:  map[string]interface{}{},
 		},
 		{

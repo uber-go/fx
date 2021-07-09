@@ -34,12 +34,11 @@ func TestForCoverage(t *testing.T) {
 		&Supply{},
 		&Provide{},
 		&Invoke{},
-		&StartError{},
 		&StopSignal{},
 		&StopError{},
 		&Rollback{},
 		&RollbackError{},
-		&Running{},
+		&Start{},
 		&CustomLogger{},
 	}
 

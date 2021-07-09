@@ -80,7 +80,7 @@ func TestNewApp(t *testing.T) {
 			WithLogger(func() fxevent.Logger { return spy }))
 		defer app.RequireStart().RequireStop()
 		require.Equal(t,
-			[]string{"Provide", "Provide", "Provide", "Provide", "CustomLogger", "Running"},
+			[]string{"Provide", "Provide", "Provide", "Provide", "CustomLogger", "Start"},
 			spy.EventTypes())
 
 		assert.Contains(t, spy.Events()[0].(*fxevent.Provide).OutputTypeNames, "struct {}")
@@ -294,7 +294,7 @@ func TestWithLogger(t *testing.T) {
 
 		require.NoError(t, app.Err())
 
-		assert.Equal(t, []string{"Running"}, spy.EventTypes())
+		assert.Equal(t, []string{"Start"}, spy.EventTypes())
 	})
 
 	t.Run("error in WithLogger provider, use default", func(t *testing.T) {
@@ -1024,7 +1024,7 @@ func TestReplaceLogger(t *testing.T) {
 	spy := new(fxlog.Spy)
 	app := fxtest.New(t, WithLogger(func() fxevent.Logger { return spy }))
 	app.RequireStart().RequireStop()
-	assert.Equal(t, []string{"Provide", "Provide", "Provide", "CustomLogger", "Running"}, spy.EventTypes())
+	assert.Equal(t, []string{"Provide", "Provide", "Provide", "CustomLogger", "Start"}, spy.EventTypes())
 }
 
 func TestNopLogger(t *testing.T) {
@@ -1095,7 +1095,7 @@ func TestCustomLoggerWithLifecycle(t *testing.T) {
 		"Provide",
 		"CustomLogger",
 		"LifecycleHookStart",
-		"Running",
+		"Start",
 		"LifecycleHookStop",
 	}, spy.EventTypes())
 }

@@ -863,7 +863,7 @@ func (app *App) run(done <-chan os.Signal) {
 	defer cancel()
 
 	if err := app.Start(startCtx); err != nil {
-		app.log.LogEvent(&fxevent.StartError{Err: err})
+		app.log.LogEvent(&fxevent.Start{Err: err})
 		os.Exit(1)
 	}
 	sig := <-done
@@ -896,7 +896,7 @@ func (app *App) start(ctx context.Context) error {
 
 		return err
 	}
-	app.log.LogEvent(&fxevent.Running{})
+	app.log.LogEvent(&fxevent.Start{})
 
 	return nil
 }

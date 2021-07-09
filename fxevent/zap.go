@@ -64,8 +64,6 @@ func (l *ZapLogger) LogEvent(event Event) {
 			l.Logger.Info("invoked",
 				zap.String("function", fxreflect.FuncName(e.Function)))
 		}
-	case *StartError:
-		l.Logger.Error("start failed", zap.Error(e.Err))
 	case *StopSignal:
 		l.Logger.Info("received signal",
 			zap.String("signal", strings.ToUpper(e.Signal.String())))
@@ -75,8 +73,12 @@ func (l *ZapLogger) LogEvent(event Event) {
 		l.Logger.Error("rollback failed", zap.Error(e.Err))
 	case *Rollback:
 		l.Logger.Error("start failed, rolling back", zap.Error(e.StartErr))
-	case *Running:
-		l.Logger.Info("running")
+	case *Start:
+		if e.Err != nil {
+			l.Logger.Error("start failed", zap.Error(e.Err))
+		} else {
+			l.Logger.Info("started")
+		}
 	case *CustomLogger:
 		if e.Err != nil {
 			l.Logger.Error("custom logger installation failed", zap.Error(e.Err))

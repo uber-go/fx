@@ -35,12 +35,11 @@ func (*LifecycleHookStop) event()  {}
 func (*Supply) event()             {}
 func (*Provide) event()            {}
 func (*Invoke) event()             {}
-func (*StartError) event()         {}
 func (*StopSignal) event()         {}
 func (*StopError) event()          {}
 func (*Rollback) event()           {}
 func (*RollbackError) event()      {}
-func (*Running) event()            {}
+func (*Start) event()              {}
 func (*CustomLogger) event()       {}
 
 // LifecycleHookStart is emitted whenever an OnStart hook is executed
@@ -78,8 +77,10 @@ type Invoke struct {
 	Stacktrace string
 }
 
-// StartError is emitted right before exiting after failing to start.
-type StartError struct{ Err error }
+
+// Start is emitted whenever an application is started successfully or
+// it errors.
+type Start struct{ Err error}
 
 // StopSignal is emitted whenever application receives a signal after
 // starting the application.
@@ -94,12 +95,6 @@ type Rollback struct{ StartErr error }
 // RollbackError is emitted whenever we fail to rollback cleanly after
 // a start error.
 type RollbackError struct{ Err error }
-
-// Running is emitted whenever an application is started successfully.
-type Running struct{}
-
-// CustomLoggerError is emitted whenever a custom logger fails to construct.
-// type CustomLoggerError struct{ Err error }
 
 // CustomLogger is emitted whenever a custom logger is set or produces an error.
 type CustomLogger struct {

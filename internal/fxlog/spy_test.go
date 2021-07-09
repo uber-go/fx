@@ -36,9 +36,9 @@ func TestSpy(t *testing.T) {
 		assert.Empty(t, s.EventTypes(), "event types must be empty")
 	})
 
-	s.LogEvent(&fxevent.Running{})
+	s.LogEvent(&fxevent.Start{})
 	t.Run("use after reset", func(t *testing.T) {
-		assert.Equal(t, "Running", s.EventTypes()[0])
+		assert.Equal(t, "Start", s.EventTypes()[0])
 	})
 
 	s.LogEvent(&fxevent.Provide{Err: fmt.Errorf("some error")})
@@ -52,8 +52,8 @@ func TestSpy(t *testing.T) {
 		assert.Empty(t, s.EventTypes(), "event types must be empty")
 	})
 
-	s.LogEvent(&fxevent.Running{})
+	s.LogEvent(&fxevent.Start{})
 	t.Run("use after reset", func(t *testing.T) {
-		assert.Equal(t, "Running", s.EventTypes()[0])
+		assert.Equal(t, "Start", s.EventTypes()[0])
 	})
 }
