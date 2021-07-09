@@ -49,16 +49,16 @@ func (l *ConsoleLogger) LogEvent(event Event) {
 		l.logf("START\t\t%s", e.CallerName)
 	case *LifecycleHookStop:
 		l.logf("STOP\t\t%s", e.CallerName)
-	case *Supply:
+	case *Supplied:
 		l.logf("SUPPLY\t%v", e.TypeName)
-	case *Provide:
+	case *Provided:
 		for _, rtype := range e.OutputTypeNames {
 			l.logf("PROVIDE\t%v <= %v", rtype, fxreflect.FuncName(e.Constructor))
 		}
 		if e.Err != nil {
 			l.logf("Error after options were applied: %v", e.Err)
 		}
-	case *Invoke:
+	case *Invoked:
 		if e.Err != nil {
 			l.logf("fx.Invoke(%v) called from:\n%+vFailed: %v",
 				fxreflect.FuncName(e.Function), e.Stacktrace, e.Err)
@@ -71,9 +71,9 @@ func (l *ConsoleLogger) LogEvent(event Event) {
 		l.logf("ERROR\t\tFailed to stop cleanly: %v", e.Err)
 	case *RollbackError:
 		l.logf("ERROR\t\tCouldn't roll back cleanly: %v", e.Err)
-	case *Rollback:
+	case *RollingBack:
 		l.logf("ERROR\t\tStart failed, rolling back: %v", e.StartErr)
-	case *Start:
+	case *Started:
 		if e.Err != nil {
 			l.logf("ERROR\t\tFailed to start: %v", e.Err)
 		} else {

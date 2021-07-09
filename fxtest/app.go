@@ -53,7 +53,7 @@ func New(tb TB, opts ...fx.Option) *App {
 	}
 }
 
-// RequireStart calls Start, failing the test if an error is encountered.
+// RequireStart calls Started, failing the test if an error is encountered.
 func (app *App) RequireStart() *App {
 	startCtx, cancel := context.WithTimeout(context.Background(), app.StartTimeout())
 	defer cancel()

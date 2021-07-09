@@ -50,27 +50,27 @@ func TestConsoleLogger(t *testing.T) {
 		},
 		{
 			name: "ProvideError",
-			give: &Provide{Err: errors.New("some error")},
+			give: &Provided{Err: errors.New("some error")},
 			want: "[Fx] Error after options were applied: some error\n",
 		},
 		{
-			name: "Supply",
-			give: &Supply{TypeName: "*bytes.Buffer"},
+			name: "Supplied",
+			give: &Supplied{TypeName: "*bytes.Buffer"},
 			want: "[Fx] SUPPLY	*bytes.Buffer\n",
 		},
 		{
-			name: "Provide",
-			give: &Provide{bytes.NewBuffer, []string{"*bytes.Buffer"}, nil},
+			name: "Provided",
+			give: &Provided{bytes.NewBuffer, []string{"*bytes.Buffer"}, nil},
 			want: "[Fx] PROVIDE	*bytes.Buffer <= bytes.NewBuffer()\n",
 		},
 		{
-			name: "Invoke",
-			give: &Invoke{Function: bytes.NewBuffer, Err: nil},
+			name: "Invoked",
+			give: &Invoked{Function: bytes.NewBuffer, Err: nil},
 			want: "[Fx] INVOKE		bytes.NewBuffer()\n",
 		},
 		{
 			name: "InvokeError",
-			give: &Invoke{
+			give: &Invoked{
 				Function:   bytes.NewBuffer,
 				Err:        errors.New("some error"),
 				Stacktrace: "foo()\n\tbar/baz.go:42\n",
@@ -84,7 +84,7 @@ func TestConsoleLogger(t *testing.T) {
 		},
 		{
 			name: "StartError",
-			give: &Start{Err: errors.New("some error")},
+			give: &Started{Err: errors.New("some error")},
 			want: "[Fx] ERROR		Failed to start: some error\n",
 		},
 		{
@@ -103,13 +103,13 @@ func TestConsoleLogger(t *testing.T) {
 			want: "[Fx] ERROR		Couldn't roll back cleanly: some error\n",
 		},
 		{
-			name: "Rollback",
-			give: &Rollback{StartErr: errors.New("some error")},
+			name: "RollingBack",
+			give: &RollingBack{StartErr: errors.New("some error")},
 			want: "[Fx] ERROR		Start failed, rolling back: some error\n",
 		},
 		{
-			name: "Start",
-			give: &Start{},
+			name: "Started",
+			give: &Started{},
 			want: "[Fx] RUNNING\n",
 		},
 		{

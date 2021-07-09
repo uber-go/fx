@@ -60,16 +60,16 @@ func TestZapLogger(t *testing.T) {
 			},
 		},
 		{
-			name:        "Supply",
-			give:        &Supply{TypeName: "*bytes.Buffer"},
+			name:        "Supplied",
+			give:        &Supplied{TypeName: "*bytes.Buffer"},
 			wantMessage: "supplied",
 			wantFields: map[string]interface{}{
 				"type": "*bytes.Buffer",
 			},
 		},
 		{
-			name:        "Provide",
-			give:        &Provide{bytes.NewBuffer, []string{"*bytes.Buffer"}, nil},
+			name:        "Provided",
+			give:        &Provided{bytes.NewBuffer, []string{"*bytes.Buffer"}, nil},
 			wantMessage: "provided",
 			wantFields: map[string]interface{}{
 				"constructor": "bytes.NewBuffer()",
@@ -77,16 +77,16 @@ func TestZapLogger(t *testing.T) {
 			},
 		},
 		{
-			name:        "Provide with Error",
-			give:        &Provide{Err: someError},
+			name:        "Provided with Error",
+			give:        &Provided{Err: someError},
 			wantMessage: "error encountered while applying options",
 			wantFields: map[string]interface{}{
 				"error": "some error",
 			},
 		},
 		{
-			name:        "Invoke",
-			give:        &Invoke{Function: bytes.NewBuffer, Err: nil},
+			name:        "Invoked",
+			give:        &Invoked{Function: bytes.NewBuffer, Err: nil},
 			wantMessage: "invoked",
 			wantFields: map[string]interface{}{
 				"function": "bytes.NewBuffer()",
@@ -94,7 +94,7 @@ func TestZapLogger(t *testing.T) {
 		},
 		{
 			name:        "InvokeError",
-			give:        &Invoke{Function: bytes.NewBuffer, Err: someError},
+			give:        &Invoked{Function: bytes.NewBuffer, Err: someError},
 			wantMessage: "invoke failed",
 			wantFields: map[string]interface{}{
 				"error":    "some error",
@@ -104,7 +104,7 @@ func TestZapLogger(t *testing.T) {
 		},
 		{
 			name:        "StartError",
-			give:        &Start{Err: someError},
+			give:        &Started{Err: someError},
 			wantMessage: "start failed",
 			wantFields: map[string]interface{}{
 				"error": "some error",
@@ -135,16 +135,16 @@ func TestZapLogger(t *testing.T) {
 			},
 		},
 		{
-			name:        "Rollback",
-			give:        &Rollback{StartErr: someError},
+			name:        "RollingBack",
+			give:        &RollingBack{StartErr: someError},
 			wantMessage: "start failed, rolling back",
 			wantFields: map[string]interface{}{
 				"error": "some error",
 			},
 		},
 		{
-			name:        "Start",
-			give:        &Start{},
+			name:        "Started",
+			give:        &Started{},
 			wantMessage: "started",
 			wantFields:  map[string]interface{}{},
 		},

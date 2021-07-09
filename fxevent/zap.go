@@ -41,9 +41,9 @@ func (l *ZapLogger) LogEvent(event Event) {
 		l.Logger.Info("started", zap.String("caller", e.CallerName))
 	case *LifecycleHookStop:
 		l.Logger.Info("stopped", zap.String("caller", e.CallerName))
-	case *Supply:
+	case *Supplied:
 		l.Logger.Info("supplied", zap.String("type", e.TypeName))
-	case *Provide:
+	case *Provided:
 		for _, rtype := range e.OutputTypeNames {
 			l.Logger.Info("provided",
 				zap.String("constructor", fxreflect.FuncName(e.Constructor)),
@@ -54,7 +54,7 @@ func (l *ZapLogger) LogEvent(event Event) {
 			l.Logger.Error("error encountered while applying options",
 				zap.Error(e.Err))
 		}
-	case *Invoke:
+	case *Invoked:
 		if e.Err != nil {
 			l.Logger.Error("invoke failed",
 				zap.Error(e.Err),
@@ -71,9 +71,9 @@ func (l *ZapLogger) LogEvent(event Event) {
 		l.Logger.Error("stop failed", zap.Error(e.Err))
 	case *RollbackError:
 		l.Logger.Error("rollback failed", zap.Error(e.Err))
-	case *Rollback:
+	case *RollingBack:
 		l.Logger.Error("start failed, rolling back", zap.Error(e.StartErr))
-	case *Start:
+	case *Started:
 		if e.Err != nil {
 			l.Logger.Error("start failed", zap.Error(e.Err))
 		} else {
