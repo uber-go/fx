@@ -100,7 +100,7 @@ type paramTags struct {
 	tags []string
 }
 
-func (p paramTags) getAnnotatedType(fType reflect.Type) []reflect.Type{
+func (p paramTags) getAnnotatedType(fType reflect.Type) []reflect.Type {
 	annotatedParams := []reflect.StructField{{
 		Name:      "In",
 		Type:      reflect.TypeOf(In{}),
@@ -123,7 +123,7 @@ func (p paramTags) getAnnotatedType(fType reflect.Type) []reflect.Type{
 	return paramTypes
 }
 
-func ParamTags(tags... string) Annotation {
+func ParamTags(tags ...string) Annotation {
 	p := paramTags{tags}
 	return p
 }
@@ -134,8 +134,8 @@ type resultTags struct {
 
 func (resultTags) getAnnotatedType(fType reflect.Type) []reflect.Type {
 	annotatedResult := []reflect.StructField{{
-		Name:	   "Out",
-		Type:	   reflect.TypeOf(Out{}),
+		Name:      "Out",
+		Type:      reflect.TypeOf(Out{}),
 		Anonymous: true,
 	}}
 
@@ -152,11 +152,10 @@ func (resultTags) getAnnotatedType(fType reflect.Type) []reflect.Type {
 	return resultTypes
 }
 
-func ResultTags(tags... string) Annotation {
+func ResultTags(tags ...string) Annotation {
 	r := resultTags{tags}
 	return r
 }
-
 
 // Annotate allows to inject annotated options without declare your own struct
 //
@@ -189,7 +188,7 @@ func ResultTags(tags... string) Annotation {
 //   })
 //
 // Annotate takes an array of names, and returns function to be called with user function. names are in order.
-func Annotate(f interface{}, anns... Annotation) interface{} {
+func Annotate(f interface{}, anns ...Annotation) interface{} {
 	fVal := reflect.ValueOf(f)
 	fType := fVal.Type()
 	numIn := fType.NumIn()
@@ -241,7 +240,7 @@ func Annotate(f interface{}, anns... Annotation) interface{} {
 	return annotatedFunc.Interface()
 }
 
-func verifyAnnotation(numIn int, numOut int, anns... Annotation) bool {
+func verifyAnnotation(numIn int, numOut int, anns ...Annotation) bool {
 	sawParamAnn := false
 	sawResultAnn := false
 

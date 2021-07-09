@@ -178,9 +178,9 @@ func TestAnnotatedString(t *testing.T) {
 }
 
 func TestAnnotateParamTags(t *testing.T) {
-	type a struct {}
-	type b struct { a *a }
-	type c struct { b *b }
+	type a struct{}
+	type b struct{ a *a }
+	type c struct{ b *b }
 	newB := func(a *a) *b {
 		return &b{a}
 	}
@@ -235,4 +235,3 @@ func TestAnnotateParamTags(t *testing.T) {
 		assert.Contains(t, err.Error(), `missing type: *fx_test.a[name="a"]`)
 	})
 }
-
