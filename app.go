@@ -795,7 +795,6 @@ func (app *App) provide(p provide) {
 			opts = append(opts, dig.Name(ann.Name))
 		case len(ann.Group) > 0:
 			opts = append(opts, dig.Group(ann.Group))
-
 		}
 
 		if err := app.container.Provide(ann.Target, opts...); err != nil {
