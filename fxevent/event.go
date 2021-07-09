@@ -68,15 +68,15 @@ type Provide struct {
 	Err error
 }
 
-// Invoke is emitted whenever a function is invoked and whether it errored.
+// Invoke is emitted whenever a function is being invoked and/or it errored.
 type Invoke struct {
 	Function   interface{}
 	Err        error
 	Stacktrace string
 }
 
-// Started is emitted whenever an application is started successfully or
-// it errors.
+// Started is emitted whenever an application is started successfully and/or
+// it errored.
 type Started struct{ Err error }
 
 // Stop is emitted whenever application receives a signal after
