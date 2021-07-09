@@ -46,7 +46,7 @@ func TestZapLogger(t *testing.T) {
 		{
 			name:        "LifecycleHookStart",
 			give:        &LifecycleHookStart{CallerName: "bytes.NewBuffer"},
-			wantMessage: "starting",
+			wantMessage: "started",
 			wantFields: map[string]interface{}{
 				"caller": "bytes.NewBuffer",
 			},
@@ -54,23 +54,15 @@ func TestZapLogger(t *testing.T) {
 		{
 			name:        "LifecycleHookStop",
 			give:        &LifecycleHookStop{CallerName: "bytes.NewBuffer"},
-			wantMessage: "stopping",
+			wantMessage: "stopped",
 			wantFields: map[string]interface{}{
 				"caller": "bytes.NewBuffer",
 			},
 		},
-		// {
-		// 	name:        "ProvideError",
-		// 	give:        &ProvideError{Err: someError},
-		// 	wantMessage: "error encountered while applying options",
-		// 	wantFields: map[string]interface{}{
-		// 		"error": "some error",
-		// 	},
-		// },
 		{
 			name:        "Supply",
 			give:        &Supply{TypeName: "*bytes.Buffer"},
-			wantMessage: "supplying",
+			wantMessage: "supplied",
 			wantFields: map[string]interface{}{
 				"type": "*bytes.Buffer",
 			},
@@ -78,7 +70,7 @@ func TestZapLogger(t *testing.T) {
 		{
 			name:        "Provide",
 			give:        &Provide{bytes.NewBuffer, []string{"*bytes.Buffer"}, nil},
-			wantMessage: "providing",
+			wantMessage: "provided",
 			wantFields: map[string]interface{}{
 				"constructor": "bytes.NewBuffer()",
 				"type":        "*bytes.Buffer",
@@ -113,7 +105,7 @@ func TestZapLogger(t *testing.T) {
 		{
 			name:        "StartError",
 			give:        &StartError{Err: someError},
-			wantMessage: "failed to start",
+			wantMessage: "start failed",
 			wantFields: map[string]interface{}{
 				"error": "some error",
 			},
@@ -129,7 +121,7 @@ func TestZapLogger(t *testing.T) {
 		{
 			name:        "StopError",
 			give:        &StopError{Err: someError},
-			wantMessage: "failed to stop cleanly",
+			wantMessage: "stop failed",
 			wantFields: map[string]interface{}{
 				"error": "some error",
 			},
@@ -137,7 +129,7 @@ func TestZapLogger(t *testing.T) {
 		{
 			name:        "RollbackError",
 			give:        &RollbackError{Err: someError},
-			wantMessage: "could not rollback cleanly",
+			wantMessage: "rollback failed",
 			wantFields: map[string]interface{}{
 				"error": "some error",
 			},
@@ -145,7 +137,7 @@ func TestZapLogger(t *testing.T) {
 		{
 			name:        "Rollback",
 			give:        &Rollback{StartErr: someError},
-			wantMessage: "startup failed, rolling back",
+			wantMessage: "start failed, rolling back",
 			wantFields: map[string]interface{}{
 				"error": "some error",
 			},
@@ -159,7 +151,7 @@ func TestZapLogger(t *testing.T) {
 		{
 			name:        "CustomLogger Error",
 			give:        &CustomLogger{Err: someError},
-			wantMessage: "error constructing logger",
+			wantMessage: "custom logger installation failed",
 			wantFields: map[string]interface{}{
 				"error": "some error",
 			},
@@ -167,7 +159,7 @@ func TestZapLogger(t *testing.T) {
 		{
 			name:        "CustomLogger",
 			give:        &CustomLogger{Function: bytes.NewBuffer, Err: nil},
-			wantMessage: "installing custom fxevent.Logger",
+			wantMessage: "installed custom fxevent.Logger",
 			wantFields: map[string]interface{}{
 				"function": "bytes.NewBuffer()",
 			},

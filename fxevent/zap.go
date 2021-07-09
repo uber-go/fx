@@ -38,14 +38,14 @@ var _ Logger = (*ZapLogger)(nil)
 func (l *ZapLogger) LogEvent(event Event) {
 	switch e := event.(type) {
 	case *LifecycleHookStart:
-		l.Logger.Info("starting", zap.String("caller", e.CallerName))
+		l.Logger.Info("started", zap.String("caller", e.CallerName))
 	case *LifecycleHookStop:
-		l.Logger.Info("stopping", zap.String("caller", e.CallerName))
+		l.Logger.Info("stopped", zap.String("caller", e.CallerName))
 	case *Supply:
-		l.Logger.Info("supplying", zap.String("type", e.TypeName))
+		l.Logger.Info("supplied", zap.String("type", e.TypeName))
 	case *Provide:
 		for _, rtype := range e.OutputTypeNames {
-			l.Logger.Info("providing",
+			l.Logger.Info("provided",
 				zap.String("constructor", fxreflect.FuncName(e.Constructor)),
 				zap.String("type", rtype),
 			)
@@ -65,23 +65,23 @@ func (l *ZapLogger) LogEvent(event Event) {
 				zap.String("function", fxreflect.FuncName(e.Function)))
 		}
 	case *StartError:
-		l.Logger.Error("failed to start", zap.Error(e.Err))
+		l.Logger.Error("start failed", zap.Error(e.Err))
 	case *StopSignal:
 		l.Logger.Info("received signal",
 			zap.String("signal", strings.ToUpper(e.Signal.String())))
 	case *StopError:
-		l.Logger.Error("failed to stop cleanly", zap.Error(e.Err))
+		l.Logger.Error("stop failed", zap.Error(e.Err))
 	case *RollbackError:
-		l.Logger.Error("could not rollback cleanly", zap.Error(e.Err))
+		l.Logger.Error("rollback failed", zap.Error(e.Err))
 	case *Rollback:
-		l.Logger.Error("startup failed, rolling back", zap.Error(e.StartErr))
+		l.Logger.Error("start failed, rolling back", zap.Error(e.StartErr))
 	case *Running:
 		l.Logger.Info("running")
 	case *CustomLogger:
 		if e.Err != nil {
-			l.Logger.Error("error constructing logger", zap.Error(e.Err))
+			l.Logger.Error("custom logger installation failed", zap.Error(e.Err))
 		} else {
-			l.Logger.Info("installing custom fxevent.Logger",
+			l.Logger.Info("installed custom fxevent.Logger",
 				zap.String("function", fxreflect.FuncName(e.Function)))
 		}
 	}

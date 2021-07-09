@@ -73,17 +73,10 @@ type Provide struct {
 
 // Invoke is emitted whenever a function is invoked and whether it errored.
 type Invoke struct {
-	Function interface{}
+	Function   interface{}
 	Err        error
 	Stacktrace string
 }
-
-// InvokeError is emitted when fx.Invoke has failed.
-// type InvokeError struct {
-// 	Function   interface{}
-// 	Err        error
-// 	Stacktrace string
-// }
 
 // StartError is emitted right before exiting after failing to start.
 type StartError struct{ Err error }
@@ -111,5 +104,5 @@ type Running struct{}
 // CustomLogger is emitted whenever a custom logger is set or produces an error.
 type CustomLogger struct {
 	Function interface{}
-	Err error
+	Err      error
 }
