@@ -22,6 +22,7 @@ package fx
 
 import (
 	"fmt"
+	"reflect"
 	"strings"
 
 	"go.uber.org/fx/internal/fxreflect"
@@ -88,4 +89,175 @@ func (a Annotated) String() string {
 		fields = append(fields, fmt.Sprintf("Target: %v", fxreflect.FuncName(a.Target)))
 	}
 	return fmt.Sprintf("fx.Annotated{%v}", strings.Join(fields, ", "))
+}
+
+// Annotation this will be passed to Annotate to identify which to be injected
+type Annotation interface {
+	getAnnotatedType(reflect.Type) []reflect.Type
+}
+
+type paramTags struct {
+	tags []string
+}
+
+func (p paramTags) getAnnotatedType(fType reflect.Type) []reflect.Type{
+	annotatedParams := []reflect.StructField{{
+		Name:      "In",
+		Type:      reflect.TypeOf(In{}),
+		Anonymous: true,
+	}}
+
+	for i := 0; i < fType.NumIn(); i++ {
+		name := fmt.Sprintf("Field%d", i)
+		structField := reflect.StructField{
+			Name: name,
+			Type: fType.In(i),
+		}
+		if i < len(p.tags) {
+			structField.Tag = reflect.StructTag(p.tags[i])
+		}
+		annotatedParams = append(annotatedParams, structField)
+	}
+
+	paramTypes := []reflect.Type{reflect.StructOf(annotatedParams)}
+	return paramTypes
+}
+
+func ParamTags(tags... string) Annotation {
+	p := paramTags{tags}
+	return p
+}
+
+type resultTags struct {
+	tags []string
+}
+
+func (resultTags) getAnnotatedType(fType reflect.Type) []reflect.Type {
+	annotatedResult := []reflect.StructField{{
+		Name:	   "Out",
+		Type:	   reflect.TypeOf(Out{}),
+		Anonymous: true,
+	}}
+
+	for i := 0; i < fType.NumOut(); i++ {
+		name := fmt.Sprintf("Field%d", i)
+		structField := reflect.StructField{
+			Name: name,
+			Type: fType.Out(i),
+		}
+		annotatedResult = append(annotatedResult, structField)
+	}
+
+	resultTypes := []reflect.Type{reflect.StructOf(annotatedResult)}
+	return resultTypes
+}
+
+func ResultTags(tags... string) Annotation {
+	r := resultTags{tags}
+	return r
+}
+
+
+// Annotate allows to inject annotated options without declare your own struct
+//
+// For example,
+//
+//   func NewReadOnlyConnection(...) (*Connection, error)
+//   fx.Provide(fx.Annotated{
+//     Name: "ro",
+//     Target: NewReadOnlyConnection,
+//   })
+//   fx.Supply(&Server{})
+//
+//   fx.Invoke(fx.Annotate(fx.NameAnnotation("ro))(func (roConn *Connection, s *Server) error {
+//     return nil
+//   }))
+//
+// Is equivalent to,
+//
+//   type Params struct {
+//     fx.In
+//
+//     Connection *Connection `name:"ro"`
+//     Server *Server
+//   }
+//
+//   fx.Invoke(func(params Params) error {
+//      roConn := params.Connection
+//      s := params.Server
+//      return nil
+//   })
+//
+// Annotate takes an array of names, and returns function to be called with user function. names are in order.
+func Annotate(f interface{}, anns... Annotation) interface{} {
+	fVal := reflect.ValueOf(f)
+	fType := fVal.Type()
+	numIn := fType.NumIn()
+	numOut := fType.NumOut()
+
+	if !verifyAnnotation(numIn, numOut, anns...) {
+		return f
+	}
+
+	var ins []reflect.Type
+	var outs []reflect.Type
+
+	annotatedIn := false
+	annotatedOut := false
+
+	for _, ann := range anns {
+		if pTags, ok := ann.(paramTags); ok {
+			ins = pTags.getAnnotatedType(fType)
+			annotatedIn = true
+		}
+		if rTags, ok := ann.(resultTags); ok {
+			outs = rTags.getAnnotatedType(fType)
+			annotatedOut = true
+		}
+	}
+
+	if !annotatedIn {
+		ins = make([]reflect.Type, numIn)
+		for i := 0; i < fType.NumIn(); i++ {
+			ins[i] = fType.In(i)
+		}
+	}
+	if !annotatedOut {
+		outs = make([]reflect.Type, numOut)
+		for i := 0; i < fType.NumOut(); i++ {
+			outs[i] = fType.Out(i)
+		}
+	}
+
+	annotatedFuncType := reflect.FuncOf(ins, outs, false)
+	annotatedFunc := reflect.MakeFunc(annotatedFuncType, func(args []reflect.Value) []reflect.Value {
+		fParams := make([]reflect.Value, numIn)
+		params := args[0]
+		for i := 0; i < numIn; i++ {
+			fParams[i] = params.Field(i + 1)
+		}
+		return fVal.Call(fParams)
+	})
+	return annotatedFunc.Interface()
+}
+
+func verifyAnnotation(numIn int, numOut int, anns... Annotation) bool {
+	sawParamAnn := false
+	sawResultAnn := false
+
+	for _, ann := range anns {
+		if _, ok := ann.(paramTags); ok {
+			if sawParamAnn {
+				return false
+			}
+			sawParamAnn = true
+		}
+		if _, ok := ann.(resultTags); ok {
+			if sawResultAnn {
+				return false
+			}
+			sawResultAnn = true
+		}
+	}
+	return true
 }

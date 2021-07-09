@@ -176,3 +176,63 @@ func TestAnnotatedString(t *testing.T) {
 		})
 	}
 }
+
+func TestAnnotateParamTags(t *testing.T) {
+	type a struct {}
+	type b struct { a *a }
+	type c struct { b *b }
+	newB := func(a *a) *b {
+		return &b{a}
+	}
+	newC := func(b *b) *c {
+		return &c{b}
+	}
+
+	t.Run("Provide with optional", func(t *testing.T) {
+		app := fxtest.New(t,
+			fx.Provide(
+				fx.Annotate(newB, fx.ParamTags(`name:"a" optional:"true"`)),
+			),
+			fx.Invoke(newC),
+		)
+		defer app.RequireStart().RequireStop()
+		require.NoError(t, app.Err())
+	})
+
+	t.Run("Provide with many annotated params", func(t *testing.T) {
+		app := fxtest.New(t,
+			fx.Provide(
+				fx.Annotate(newB, fx.ParamTags(`optional:"true"`)),
+				fx.Annotate(func(a *a, b *b) interface{} { return nil },
+					fx.ParamTags(`name:"a" optional:"true"`, `name:"b"`),
+				),
+			),
+			fx.Invoke(newC),
+		)
+		defer app.RequireStart().RequireStop()
+		require.NoError(t, app.Err())
+	})
+
+	t.Run("Invoke with optional", func(t *testing.T) {
+		app := fx.New(
+			fx.Invoke(
+				fx.Annotate(newB, fx.ParamTags(`optional:"true"`)),
+			),
+		)
+		err := app.Err()
+		require.NoError(t, err)
+	})
+
+	t.Run("Invoke with a missing dependency", func(t *testing.T) {
+		app := fx.New(
+			fx.Invoke(
+				fx.Annotate(newB, fx.ParamTags(`name:"a"`)),
+			),
+		)
+		err := app.Err()
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), `missing dependencies`)
+		assert.Contains(t, err.Error(), `missing type: *fx_test.a[name="a"]`)
+	})
+}
+
