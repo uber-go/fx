@@ -33,12 +33,10 @@ type Event interface {
 func (*LifecycleHookStart) event() {}
 func (*LifecycleHookStop) event()  {}
 func (*Supplied) event()           {}
-func (*Provided) event()           {}
-func (*Invoked) event()            {}
-func (*StopSignal) event()         {}
-func (*StopError) event()          {}
-func (*RollingBack) event()        {}
-func (*RollbackError) event()      {}
+func (*Provide) event()            {}
+func (*Invoke) event()             {}
+func (*Stop) event()               {}
+func (*Rollback) event()           {}
 func (*Started) event()            {}
 func (*CustomLogger) event()       {}
 
@@ -52,14 +50,14 @@ type LifecycleHookStop struct {
 	CallerName string
 }
 
-// Supplied is emitted whenever a Provided was called with a constructor provided
+// Supplied is emitted whenever a Provide was called with a constructor provided
 // by fx.Supply.
 type Supplied struct {
 	TypeName string
 }
 
-// Provided is emitted when we add a constructor to the container.
-type Provided struct {
+// Provide is emitted when we add a constructor to the container.
+type Provide struct {
 	Constructor interface{}
 
 	// OutputTypeNames is a list of names of types that are produced by
@@ -70,8 +68,8 @@ type Provided struct {
 	Err error
 }
 
-// Invoked is emitted whenever a function is invoked and whether it errored.
-type Invoked struct {
+// Invoke is emitted whenever a function is invoked and whether it errored.
+type Invoke struct {
 	Function   interface{}
 	Err        error
 	Stacktrace string
@@ -81,19 +79,19 @@ type Invoked struct {
 // it errors.
 type Started struct{ Err error }
 
-// StopSignal is emitted whenever application receives a signal after
-// starting the application.
-type StopSignal struct{ Signal os.Signal }
+// Stop is emitted whenever application receives a signal after
+// starting the application with an optional error.
+type Stop struct {
+	Signal os.Signal
+	Err    error
+}
 
-// StopError is emitted whenever we fail to stop cleanly.
-type StopError struct{ Err error }
-
-// RollingBack is emitted whenever a service fails to start.
-type RollingBack struct{ StartErr error }
-
-// RollbackError is emitted whenever we fail to rollback cleanly after
-// a start error.
-type RollbackError struct{ Err error }
+// Rollback is emitted whenever a service fails to start with initial startup
+// error and then optional error if rollback itself fails.
+type Rollback struct {
+	StartErr error
+	Err      error
+}
 
 // CustomLogger is emitted whenever a custom logger is set or produces an error.
 type CustomLogger struct {

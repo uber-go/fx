@@ -562,7 +562,7 @@ func New(opts ...Option) *App {
 	app.provide(provide{Target: app.dotGraph, Stack: frames})
 
 	if app.err != nil {
-		app.log.LogEvent(&fxevent.Provided{Err: app.err})
+		app.log.LogEvent(&fxevent.Provide{Err: app.err})
 		// Don't return yet. If a custom logger was being used,
 		// we're still buffering messages. We'll want to flush them to
 		// the logger.
@@ -777,7 +777,7 @@ func (app *App) provide(p provide) {
 				outputNames[i] = o.String()
 			}
 
-			app.log.LogEvent(&fxevent.Provided{
+			app.log.LogEvent(&fxevent.Provide{
 				Constructor:     constructor,
 				OutputTypeNames: outputNames,
 			})
@@ -832,7 +832,7 @@ func (app *App) executeInvokes() error {
 
 	for _, i := range app.invokes {
 		fn := i.Target
-		app.log.LogEvent(&fxevent.Invoked{Function: fn})
+		app.log.LogEvent(&fxevent.Invoke{Function: fn})
 
 		var err error
 		if _, ok := fn.(Option); ok {
@@ -844,7 +844,7 @@ func (app *App) executeInvokes() error {
 		}
 
 		if err != nil {
-			app.log.LogEvent(&fxevent.Invoked{
+			app.log.LogEvent(&fxevent.Invoke{
 				Function:   fn,
 				Err:        err,
 				Stacktrace: fmt.Sprintf("%+v", i.Stack), // format stack trace as multi-line
@@ -866,13 +866,13 @@ func (app *App) run(done <-chan os.Signal) {
 		os.Exit(1)
 	}
 	sig := <-done
-	app.log.LogEvent(&fxevent.StopSignal{Signal: sig})
+	app.log.LogEvent(&fxevent.Stop{Signal: sig})
 
 	stopCtx, cancel := context.WithTimeout(context.Background(), app.StopTimeout())
 	defer cancel()
 
 	if err := app.Stop(stopCtx); err != nil {
-		app.log.LogEvent(&fxevent.StopError{Err: err})
+		app.log.LogEvent(&fxevent.Stop{Err: err})
 		os.Exit(1)
 	}
 }
@@ -886,9 +886,9 @@ func (app *App) start(ctx context.Context) error {
 	// Attempt to start cleanly.
 	if err := app.lifecycle.Start(ctx); err != nil {
 		// Start failed, rolling back.
-		app.log.LogEvent(&fxevent.RollingBack{StartErr: err})
+		app.log.LogEvent(&fxevent.Rollback{StartErr: err})
 		if stopErr := app.lifecycle.Stop(ctx); stopErr != nil {
-			app.log.LogEvent(&fxevent.RollbackError{Err: stopErr})
+			app.log.LogEvent(&fxevent.Rollback{Err: stopErr})
 
 			return multierr.Append(err, stopErr)
 		}

@@ -51,28 +51,32 @@ func (l *ConsoleLogger) LogEvent(event Event) {
 		l.logf("STOP\t\t%s", e.CallerName)
 	case *Supplied:
 		l.logf("SUPPLY\t%v", e.TypeName)
-	case *Provided:
+	case *Provide:
 		for _, rtype := range e.OutputTypeNames {
 			l.logf("PROVIDE\t%v <= %v", rtype, fxreflect.FuncName(e.Constructor))
 		}
 		if e.Err != nil {
 			l.logf("Error after options were applied: %v", e.Err)
 		}
-	case *Invoked:
+	case *Invoke:
 		if e.Err != nil {
 			l.logf("fx.Invoke(%v) called from:\n%+vFailed: %v",
 				fxreflect.FuncName(e.Function), e.Stacktrace, e.Err)
 		} else {
 			l.logf("INVOKE\t\t%s", fxreflect.FuncName(e.Function))
 		}
-	case *StopSignal:
-		l.logf("%v", strings.ToUpper(e.Signal.String()))
-	case *StopError:
-		l.logf("ERROR\t\tFailed to stop cleanly: %v", e.Err)
-	case *RollbackError:
-		l.logf("ERROR\t\tCouldn't roll back cleanly: %v", e.Err)
-	case *RollingBack:
-		l.logf("ERROR\t\tStart failed, rolling back: %v", e.StartErr)
+	case *Stop:
+		if e.Err != nil {
+			l.logf("ERROR\t\tFailed to stop cleanly: %v", e.Err)
+		} else {
+			l.logf("%v", strings.ToUpper(e.Signal.String()))
+		}
+	case *Rollback:
+		if e.Err != nil {
+			l.logf("ERROR\t\tCouldn't roll back cleanly: %v", e.Err)
+		} else {
+			l.logf("ERROR\t\tStart failed, rolling back: %v", e.StartErr)
+		}
 	case *Started:
 		if e.Err != nil {
 			l.logf("ERROR\t\tFailed to start: %v", e.Err)

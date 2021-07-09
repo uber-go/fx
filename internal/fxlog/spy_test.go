@@ -41,9 +41,9 @@ func TestSpy(t *testing.T) {
 		assert.Equal(t, "Started", s.EventTypes()[0])
 	})
 
-	s.LogEvent(&fxevent.Provided{Err: fmt.Errorf("some error")})
+	s.LogEvent(&fxevent.Provide{Err: fmt.Errorf("some error")})
 	t.Run("some error", func(t *testing.T) {
-		assert.Equal(t, "Provided", s.EventTypes()[1])
+		assert.Equal(t, "Provide", s.EventTypes()[1])
 	})
 
 	s.Reset()

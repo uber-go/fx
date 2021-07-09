@@ -68,8 +68,8 @@ func TestZapLogger(t *testing.T) {
 			},
 		},
 		{
-			name:        "Provided",
-			give:        &Provided{bytes.NewBuffer, []string{"*bytes.Buffer"}, nil},
+			name:        "Provide",
+			give:        &Provide{bytes.NewBuffer, []string{"*bytes.Buffer"}, nil},
 			wantMessage: "provided",
 			wantFields: map[string]interface{}{
 				"constructor": "bytes.NewBuffer()",
@@ -77,16 +77,16 @@ func TestZapLogger(t *testing.T) {
 			},
 		},
 		{
-			name:        "Provided with Error",
-			give:        &Provided{Err: someError},
+			name:        "Provide with Error",
+			give:        &Provide{Err: someError},
 			wantMessage: "error encountered while applying options",
 			wantFields: map[string]interface{}{
 				"error": "some error",
 			},
 		},
 		{
-			name:        "Invoked",
-			give:        &Invoked{Function: bytes.NewBuffer, Err: nil},
+			name:        "Invoke",
+			give:        &Invoke{Function: bytes.NewBuffer, Err: nil},
 			wantMessage: "invoked",
 			wantFields: map[string]interface{}{
 				"function": "bytes.NewBuffer()",
@@ -94,7 +94,7 @@ func TestZapLogger(t *testing.T) {
 		},
 		{
 			name:        "InvokeError",
-			give:        &Invoked{Function: bytes.NewBuffer, Err: someError},
+			give:        &Invoke{Function: bytes.NewBuffer, Err: someError},
 			wantMessage: "invoke failed",
 			wantFields: map[string]interface{}{
 				"error":    "some error",
@@ -111,8 +111,8 @@ func TestZapLogger(t *testing.T) {
 			},
 		},
 		{
-			name:        "StopSignal",
-			give:        &StopSignal{Signal: os.Interrupt},
+			name:        "Stop",
+			give:        &Stop{Signal: os.Interrupt},
 			wantMessage: "received signal",
 			wantFields: map[string]interface{}{
 				"signal": "INTERRUPT",
@@ -120,7 +120,7 @@ func TestZapLogger(t *testing.T) {
 		},
 		{
 			name:        "StopError",
-			give:        &StopError{Err: someError},
+			give:        &Stop{Err: someError},
 			wantMessage: "stop failed",
 			wantFields: map[string]interface{}{
 				"error": "some error",
@@ -128,15 +128,15 @@ func TestZapLogger(t *testing.T) {
 		},
 		{
 			name:        "RollbackError",
-			give:        &RollbackError{Err: someError},
+			give:        &Rollback{Err: someError},
 			wantMessage: "rollback failed",
 			wantFields: map[string]interface{}{
 				"error": "some error",
 			},
 		},
 		{
-			name:        "RollingBack",
-			give:        &RollingBack{StartErr: someError},
+			name:        "Rollback",
+			give:        &Rollback{StartErr: someError},
 			wantMessage: "start failed, rolling back",
 			wantFields: map[string]interface{}{
 				"error": "some error",
