@@ -242,7 +242,7 @@ func Annotate(f interface{}, anns ...Annotation) interface{} {
 			fParams := make([]reflect.Value, numIn)
 			params := args[0]
 			for i := 0; i < numIn; i++ {
-				fParams[i] = params.Field(i+1)
+				fParams[i] = params.Field(i + 1)
 			}
 			fResults := fVal.Call(fParams)
 			results := reflect.New(outs[0]).Elem()
@@ -256,7 +256,7 @@ func Annotate(f interface{}, anns ...Annotation) interface{} {
 			fParams := make([]reflect.Value, numIn)
 			params := args[0]
 			for i := 0; i < numIn; i++ {
-				fParams[i] = params.Field(i+1)
+				fParams[i] = params.Field(i + 1)
 			}
 			return fVal.Call(fParams)
 		}

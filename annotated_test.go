@@ -177,10 +177,11 @@ func TestAnnotatedString(t *testing.T) {
 	}
 }
 
-func TestAnnotateParamTags(t *testing.T) {
+func TestAnnotate(t *testing.T) {
 	type a struct{}
 	type b struct{ a *a }
 	type c struct{ b *b }
+	newA := func() *a { return &a{} }
 	newB := func(a *a) *b {
 		return &b{a}
 	}
@@ -205,6 +206,7 @@ func TestAnnotateParamTags(t *testing.T) {
 				fx.Annotate(newB, fx.ParamTags(`optional:"true"`)),
 				fx.Annotate(func(a *a, b *b) interface{} { return nil },
 					fx.ParamTags(`name:"a" optional:"true"`, `name:"b"`),
+					fx.ResultTags(`name:"nil"`),
 				),
 			),
 			fx.Invoke(newC),
@@ -234,36 +236,18 @@ func TestAnnotateParamTags(t *testing.T) {
 		assert.Contains(t, err.Error(), `missing dependencies`)
 		assert.Contains(t, err.Error(), `missing type: *fx_test.a[name="a"]`)
 	})
-}
 
-func TestAnnotateResultTags(t *testing.T) {
-	type a struct{}
-	type b struct{ a *a }
-
-	newB := func(aa *a) *b {
-		return &b{aa}
-	}
-
-	t.Run("invoke with annotated result", func(t *testing.T) {
+	t.Run("provide with annotated result", func(t *testing.T) {
 		app := fxtest.New(t,
 			fx.Provide(
+				newA,
 				fx.Annotate(newB, fx.ResultTags(`name:"B"`)),
 			),
+			fx.Invoke(newC),
 		)
 
 		err := app.Err()
 		require.NoError(t, err)
 		defer app.RequireStart().RequireStop()
-	})
-
-	t.Run("cannot annotate with name and group", func(t *testing.T) {
-		newA := func() *a { return &a{} }
-		app := fxtest.New(t,
-			fx.Provide(
-				newA,
-			),
-		)
-		err := app.Err()
-		require.NoError(t, err)
 	})
 }
