@@ -91,7 +91,8 @@ func (a Annotated) String() string {
 	return fmt.Sprintf("fx.Annotated{%v}", strings.Join(fields, ", "))
 }
 
-// Annotation this will be passed to Annotate to identify which to be injected
+// Annotation can be passed to Annotate(f interface{}, anns ...Annotation)
+// for annotating the parameter and result types of a function.
 type Annotation interface {
 	getAnnotatedType(reflect.Type) []reflect.Type
 }
@@ -108,9 +109,8 @@ func (p paramTags) getAnnotatedType(fType reflect.Type) []reflect.Type {
 	}}
 
 	for i := 0; i < fType.NumIn(); i++ {
-		name := fmt.Sprintf("Field%d", i)
 		structField := reflect.StructField{
-			Name: name,
+			Name: fmt.Sprintf("Field%d", i),
 			Type: fType.In(i),
 		}
 		if i < len(p.tags) {
@@ -123,6 +123,9 @@ func (p paramTags) getAnnotatedType(fType reflect.Type) []reflect.Type {
 	return paramTypes
 }
 
+// ParamTags is an Annotation that annotates the parameter(s) of a function.
+// When multiple tags are specified, each tag is mapped to the corresponding
+// positional parameter.
 func ParamTags(tags ...string) Annotation {
 	p := paramTags{tags}
 	return p
@@ -140,9 +143,8 @@ func (resultTags) getAnnotatedType(fType reflect.Type) []reflect.Type {
 	}}
 
 	for i := 0; i < fType.NumOut(); i++ {
-		name := fmt.Sprintf("Field%d", i)
 		structField := reflect.StructField{
-			Name: name,
+			Name: fmt.Sprintf("Field%d", i),
 			Type: fType.Out(i),
 		}
 		annotatedResult = append(annotatedResult, structField)
@@ -152,41 +154,46 @@ func (resultTags) getAnnotatedType(fType reflect.Type) []reflect.Type {
 	return resultTypes
 }
 
+// ResultTags is an Annotation that annotates the result(s) of a function.
+// When multiple tags are specified, each tag is mapped to the corresponding
+// positional result.
 func ResultTags(tags ...string) Annotation {
 	r := resultTags{tags}
 	return r
 }
 
-// Annotate allows to inject annotated options without declare your own struct
+// Annotate lets you annotate a function's paramter and returns with tags
+// without you having to declare separate struct definitions for them.
 //
 // For example,
-//
-//   func NewReadOnlyConnection(...) (*Connection, error)
-//   fx.Provide(fx.Annotated{
-//     Name: "ro",
-//     Target: NewReadOnlyConnection,
-//   })
-//   fx.Supply(&Server{})
-//
-//   fx.Invoke(fx.Annotate(fx.NameAnnotation("ro))(func (roConn *Connection, s *Server) error {
-//     return nil
-//   }))
+//   func NewGateway(ro, rw *db.Conn) *Gateway { ... }
+//   fx.Provide(
+//     fx.Annotate(
+//       NewGateway,
+//       fx.ParamTags(`name:"ro" optional:"true"`, `name:"rw"`),
+//       fx.ResultTags(`name:"foo"`),
+//     ),
+//   )
 //
 // Is equivalent to,
 //
-//   type Params struct {
-//     fx.In
+//  type params struct {
+//    fx.In
 //
-//     Connection *Connection `name:"ro"`
-//     Server *Server
+//    RO *db.Conn `name:"ro" optional:"true"`
+//    RW *db.Conn `name:"rw"`
+//  }
+//
+//  type result struct {
+//    fx.Out
+
+//    GW *Gateway `name:"foo"`
 //   }
 //
-//   fx.Invoke(func(params Params) error {
-//      roConn := params.Connection
-//      s := params.Server
-//      return nil
+//   fx.Provide(func(p params) result {
+//     return result{GW: NewGateway(p.RO, p.RW)}
 //   })
-//
+
 // Annotate takes an array of names, and returns function to be called with user function. names are in order.
 func Annotate(f interface{}, anns ...Annotation) interface{} {
 	fVal := reflect.ValueOf(f)
@@ -228,15 +235,45 @@ func Annotate(f interface{}, anns ...Annotation) interface{} {
 		}
 	}
 
-	annotatedFuncType := reflect.FuncOf(ins, outs, false)
-	annotatedFunc := reflect.MakeFunc(annotatedFuncType, func(args []reflect.Value) []reflect.Value {
-		fParams := make([]reflect.Value, numIn)
-		params := args[0]
-		for i := 0; i < numIn; i++ {
-			fParams[i] = params.Field(i + 1)
+	var newF func([]reflect.Value) []reflect.Value
+
+	if annotatedIn && annotatedOut {
+		newF = func(args []reflect.Value) []reflect.Value {
+			fParams := make([]reflect.Value, numIn)
+			params := args[0]
+			for i := 0; i < numIn; i++ {
+				fParams[i] = params.Field(i+1)
+			}
+			fResults := fVal.Call(fParams)
+			results := reflect.New(outs[0]).Elem()
+			for i := 0; i < numOut; i++ {
+				results.FieldByName(fmt.Sprintf("Field%d", i)).Set(fResults[i])
+			}
+			return []reflect.Value{results}
 		}
-		return fVal.Call(fParams)
-	})
+	} else if annotatedIn {
+		newF = func(args []reflect.Value) []reflect.Value {
+			fParams := make([]reflect.Value, numIn)
+			params := args[0]
+			for i := 0; i < numIn; i++ {
+				fParams[i] = params.Field(i+1)
+			}
+			return fVal.Call(fParams)
+		}
+	} else { // annotatedOut
+		newF = func(args []reflect.Value) []reflect.Value {
+			fResults := fVal.Call(args)
+			// wrap the result in annotated struct
+			results := reflect.New(outs[0]).Elem()
+			for i := 0; i < numOut; i++ {
+				results.FieldByName(fmt.Sprintf("Field%d", i)).Set(fResults[i])
+			}
+			return []reflect.Value{results}
+		}
+	}
+
+	annotatedFuncType := reflect.FuncOf(ins, outs, false)
+	annotatedFunc := reflect.MakeFunc(annotatedFuncType, newF)
 	return annotatedFunc.Interface()
 }
 

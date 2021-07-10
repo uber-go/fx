@@ -235,3 +235,35 @@ func TestAnnotateParamTags(t *testing.T) {
 		assert.Contains(t, err.Error(), `missing type: *fx_test.a[name="a"]`)
 	})
 }
+
+func TestAnnotateResultTags(t *testing.T) {
+	type a struct{}
+	type b struct{ a *a }
+
+	newB := func(aa *a) *b {
+		return &b{aa}
+	}
+
+	t.Run("invoke with annotated result", func(t *testing.T) {
+		app := fxtest.New(t,
+			fx.Provide(
+				fx.Annotate(newB, fx.ResultTags(`name:"B"`)),
+			),
+		)
+
+		err := app.Err()
+		require.NoError(t, err)
+		defer app.RequireStart().RequireStop()
+	})
+
+	t.Run("cannot annotate with name and group", func(t *testing.T) {
+		newA := func() *a { return &a{} }
+		app := fxtest.New(t,
+			fx.Provide(
+				newA,
+			),
+		)
+		err := app.Err()
+		require.NoError(t, err)
+	})
+}
