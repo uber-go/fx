@@ -1,4 +1,4 @@
-// Copyright (c) 2020 Uber Technologies, Inc.
+// Copyright (c) 2020-2021 Uber Technologies, Inc.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -186,15 +186,33 @@ func ResultTags(tags ...string) Annotation {
 //
 //  type result struct {
 //    fx.Out
-
+//
 //    GW *Gateway `name:"foo"`
 //   }
 //
 //   fx.Provide(func(p params) result {
 //     return result{GW: NewGateway(p.RO, p.RW)}
 //   })
-
-// Annotate takes an array of names, and returns function to be called with user function. names are in order.
+//
+// If there are more Annotations are specified than than one per
+// Annotation type, none of the Annotations will be applied.
+//
+// For example,
+//
+// fx.Provide(
+//   fx.Annotate(
+//     NewGateWay,
+//     fx.ParamTags(`name:"ro" optional:"true"`),
+//     fx.ParamTags(`name:"rw"),
+//     fx.ResultTags(`name:"foo"`)
+//   )
+// )
+//
+// is considered an invalid usage and will not apply any of the
+// Annotations to NewGateway.
+//
+// If more tags are given than the number of parameters/results, only
+// the ones up to the number of parameters/results will be applied.
 func Annotate(f interface{}, anns ...Annotation) interface{} {
 	fVal := reflect.ValueOf(f)
 	fType := fVal.Type()
