@@ -250,4 +250,18 @@ func TestAnnotate(t *testing.T) {
 		require.NoError(t, err)
 		defer app.RequireStart().RequireStop()
 	})
+
+	t.Run("specify more ParamTags than Params", func(t *testing.T) {
+		app := fxtest.New(t,
+			fx.Provide(
+				// This should just leave newA as it is.
+				fx.Annotate(newA, fx.ParamTags(`name:"something"`)),
+			),
+			fx.Invoke(newB),
+		)
+
+		err := app.Err()
+		require.NoError(t, err)
+		defer app.RequireStart().RequireStop()
+	})
 }
