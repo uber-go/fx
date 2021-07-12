@@ -80,8 +80,8 @@ func (l *Lifecycle) Start(ctx context.Context) error {
 		if hook.OnStart != nil {
 			funcName := fxreflect.FuncName(hook.OnStart)
 			l.logger.LogEvent(&fxevent.LifecycleHookExecuting{
-				FunctionName: funcName,
 				CallerName:   hook.callerFrame.Function,
+				FunctionName: funcName,
 				Method:       _hookStart,
 			})
 
@@ -92,8 +92,8 @@ func (l *Lifecycle) Start(ctx context.Context) error {
 			begin := time.Now()
 			if err := hook.OnStart(ctx); err != nil {
 				l.logger.LogEvent(&fxevent.LifecycleHookExecuted{
-					FunctionName: funcName,
 					CallerName:   hook.callerFrame.Function,
+					FunctionName: funcName,
 					Method:       _hookStart,
 					Err:          err,
 				})
@@ -109,9 +109,9 @@ func (l *Lifecycle) Start(ctx context.Context) error {
 			l.mu.Unlock()
 			l.logger.LogEvent(&fxevent.LifecycleHookExecuted{
 				CallerName:   hook.callerFrame.Function,
+				FunctionName: funcName,
 				Method:       _hookStart,
 				Runtime:      runtime,
-				FunctionName: funcName,
 			})
 		}
 		l.numStarted++
@@ -137,8 +137,8 @@ func (l *Lifecycle) Stop(ctx context.Context) error {
 		funcName := fxreflect.FuncName(hook.OnStop)
 
 		l.logger.LogEvent(&fxevent.LifecycleHookExecuting{
-			FunctionName: funcName,
 			CallerName:   hook.callerFrame.Function,
+			FunctionName: funcName,
 			Method:       _hookStop,
 		})
 
@@ -147,11 +147,12 @@ func (l *Lifecycle) Stop(ctx context.Context) error {
 		l.mu.Unlock()
 
 		begin := time.Now()
-		if err := hook.OnStop(ctx); err != nil {
+		var err error
+		if err = hook.OnStop(ctx); err != nil {
 			// For best-effort cleanup, keep going after errors.
 			l.logger.LogEvent(&fxevent.LifecycleHookExecuted{
-				FunctionName: funcName,
 				CallerName:   hook.callerFrame.Function,
+				FunctionName: funcName,
 				Method:       _hookStop,
 				Err:          err,
 			})
@@ -162,15 +163,17 @@ func (l *Lifecycle) Stop(ctx context.Context) error {
 		l.stopRecords = append(l.stopRecords, HookRecord{
 			CallerFrame: hook.callerFrame,
 			Func:        hook.OnStop,
-			Runtime:     time.Since(begin),
+			Runtime:     runtime,
 		})
 
-		l.logger.LogEvent(&fxevent.LifecycleHookExecuted{
-			FunctionName: funcName,
-			CallerName:   hook.callerFrame.Function,
-			Method:       _hookStop,
-			Runtime:      runtime,
-		})
+		if err == nil {
+			l.logger.LogEvent(&fxevent.LifecycleHookExecuted{
+				CallerName:   hook.callerFrame.Function,
+				FunctionName: funcName,
+				Method:       _hookStop,
+				Runtime:      runtime,
+			})
+		}
 
 		l.mu.Unlock()
 	}
