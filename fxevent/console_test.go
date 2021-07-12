@@ -23,9 +23,11 @@ package fxevent
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"os"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -39,14 +41,33 @@ func TestConsoleLogger(t *testing.T) {
 		want string
 	}{
 		{
-			name: "LifecycleHookStart",
-			give: &LifecycleHookStart{CallerName: "bytes.NewBuffer"},
-			want: "[Fx] START		bytes.NewBuffer\n",
+			name: "LifecycleHookExecuting",
+			give: &LifecycleHookExecuting{
+				Method:       "OnStop",
+				FunctionName: "hook.onStop1",
+				CallerName:   "bytes.NewBuffer",
+			},
+			want: "[Fx] HOOK OnStop		hook.onStop1 executing (caller: bytes.NewBuffer)\n",
 		},
 		{
-			name: "LifecycleHookStop",
-			give: &LifecycleHookStop{CallerName: "bytes.NewBuffer"},
-			want: "[Fx] STOP		bytes.NewBuffer\n",
+			name: "LifecycleHookExecutedError",
+			give: &LifecycleHookExecuted{
+				Method:       "OnStart",
+				FunctionName: "hook.onStart1",
+				CallerName:   "bytes.NewBuffer",
+				Err:          fmt.Errorf("some error"),
+			},
+			want: "[Fx] HOOK OnStart		hook.onStart1 called by bytes.NewBuffer failed: some error\n",
+		},
+		{
+			name: "LifecycleHookExecuted",
+			give: &LifecycleHookExecuted{
+				Method:       "OnStart",
+				FunctionName: "hook.onStart1",
+				CallerName:   "bytes.NewBuffer",
+				Runtime:      time.Millisecond * 3,
+			},
+			want: "[Fx] HOOK OnStart		hook.onStart1 called by bytes.NewBuffer ran successfully. Runtime: 3ms\n",
 		},
 		{
 			name: "ProvideError",
