@@ -910,7 +910,11 @@ type withTimeoutParams struct {
 
 func withTimeout(ctx context.Context, param *withTimeoutParams) error {
 	c := make(chan error, 1)
-	go func() { c <- param.callback(ctx) }()
+	done := make(chan struct{}, 1)
+	go func() {
+		c <- param.callback(ctx)
+		close(done)
+	}()
 
 	var err error
 
@@ -920,6 +924,8 @@ func withTimeout(ctx context.Context, param *withTimeoutParams) error {
 	case err = <-c:
 	}
 	if err != context.DeadlineExceeded {
+		// Wait for lifecycle goroutine to exit before returning.
+		<-done
 		return err
 	}
 	// On timeout, report running hook's caller and recorded
@@ -931,6 +937,7 @@ func withTimeout(ctx context.Context, param *withTimeoutParams) error {
 		r = param.lifecycle.stopHookRecords()
 	}
 	caller := param.lifecycle.runningHookCaller()
+	<-done
 	// TODO: Once this is integrated into fxevent, we can
 	// leave error unchanged and send this to fxevent.Logger, whose
 	// implementation can then determine how the error is presented.
