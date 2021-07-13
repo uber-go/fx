@@ -913,8 +913,8 @@ func withTimeout(ctx context.Context, param *withTimeoutParams) error {
 	var wg sync.WaitGroup
 	defer wg.Wait()
 
+	wg.Add(1)
 	go func() {
-		wg.Add(1)
 		c <- param.callback(ctx)
 		wg.Done()
 	}()
