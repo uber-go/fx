@@ -911,6 +911,7 @@ type withTimeoutParams struct {
 func withTimeout(ctx context.Context, param *withTimeoutParams) error {
 	c := make(chan error, 1)
 	var wg sync.WaitGroup
+	// Wait for lifecycle goroutine to exit before returning.
 	defer wg.Wait()
 
 	wg.Add(1)
@@ -927,7 +928,6 @@ func withTimeout(ctx context.Context, param *withTimeoutParams) error {
 	case err = <-c:
 	}
 	if err != context.DeadlineExceeded {
-		// Wait for lifecycle goroutine to exit before returning.
 		return err
 	}
 	// On timeout, report running hook's caller and recorded
