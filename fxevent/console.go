@@ -49,9 +49,9 @@ func (l *ConsoleLogger) LogEvent(event Event) {
 		l.logf("HOOK %s\t\t%s executing (caller: %s)", e.Method, e.FunctionName, e.CallerName)
 	case *LifecycleHookExecuted:
 		if e.Err != nil {
-			l.logf("HOOK %s\t\t%s called by %s failed: %v", e.Method, e.FunctionName, e.CallerName, e.Err)
+			l.logf("HOOK %s\t\t%s called by %s failed in %s: %v", e.Method, e.FunctionName, e.CallerName, e.Runtime, e.Err)
 		} else {
-			l.logf("HOOK %s\t\t%s called by %s ran successfully. Runtime: %s", e.Method, e.FunctionName, e.CallerName, e.Runtime)
+			l.logf("HOOK %s\t\t%s called by %s ran successfully in %s", e.Method, e.FunctionName, e.CallerName, e.Runtime)
 		}
 	case *ProvideError:
 		l.logf("Error after options were applied: %v", e.Err)

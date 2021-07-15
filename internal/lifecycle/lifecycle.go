@@ -95,6 +95,7 @@ func (l *Lifecycle) Start(ctx context.Context) error {
 					CallerName:   hook.callerFrame.Function,
 					FunctionName: funcName,
 					Method:       _hookStart,
+					Runtime:      time.Since(begin),
 					Err:          err,
 				})
 				return err

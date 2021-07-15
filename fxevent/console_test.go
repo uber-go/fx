@@ -57,7 +57,7 @@ func TestConsoleLogger(t *testing.T) {
 				CallerName:   "bytes.NewBuffer",
 				Err:          fmt.Errorf("some error"),
 			},
-			want: "[Fx] HOOK OnStart		hook.onStart1 called by bytes.NewBuffer failed: some error\n",
+			want: "[Fx] HOOK OnStart		hook.onStart1 called by bytes.NewBuffer failed in 0s: some error\n",
 		},
 		{
 			name: "LifecycleHookExecuted",
@@ -67,7 +67,7 @@ func TestConsoleLogger(t *testing.T) {
 				CallerName:   "bytes.NewBuffer",
 				Runtime:      time.Millisecond * 3,
 			},
-			want: "[Fx] HOOK OnStart		hook.onStart1 called by bytes.NewBuffer ran successfully. Runtime: 3ms\n",
+			want: "[Fx] HOOK OnStart		hook.onStart1 called by bytes.NewBuffer ran successfully in 3ms\n",
 		},
 		{
 			name: "ProvideError",
