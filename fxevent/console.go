@@ -45,10 +45,14 @@ func (l *ConsoleLogger) logf(msg string, args ...interface{}) {
 // LogEvent logs the given event to the provided Zap logger.
 func (l *ConsoleLogger) LogEvent(event Event) {
 	switch e := event.(type) {
-	case *LifecycleHookStart:
-		l.logf("START\t\t%s", e.CallerName)
-	case *LifecycleHookStop:
-		l.logf("STOP\t\t%s", e.CallerName)
+	case *LifecycleHookExecuting:
+		l.logf("HOOK %s\t\t%s executing (caller: %s)", e.Method, e.FunctionName, e.CallerName)
+	case *LifecycleHookExecuted:
+		if e.Err != nil {
+			l.logf("HOOK %s\t\t%s called by %s failed in %s: %v", e.Method, e.FunctionName, e.CallerName, e.Runtime, e.Err)
+		} else {
+			l.logf("HOOK %s\t\t%s called by %s ran successfully in %s", e.Method, e.FunctionName, e.CallerName, e.Runtime)
+		}
 	case *ProvideError:
 		l.logf("Error after options were applied: %v", e.Err)
 	case *Supply:

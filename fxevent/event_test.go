@@ -29,8 +29,8 @@ import (
 // TestForCoverage adds coverage for own sake.
 func TestForCoverage(t *testing.T) {
 	events := []Event{
-		&LifecycleHookStart{},
-		&LifecycleHookStop{},
+		&LifecycleHookExecuting{},
+		&LifecycleHookExecuted{},
 		&ProvideError{},
 		&Supply{},
 		&Provide{},
