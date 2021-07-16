@@ -37,10 +37,28 @@ var _ Logger = (*ZapLogger)(nil)
 // LogEvent logs the given event to the provided Zap logger.
 func (l *ZapLogger) LogEvent(event Event) {
 	switch e := event.(type) {
-	case *LifecycleHookStart:
-		l.Logger.Info("started", zap.String("caller", e.CallerName))
-	case *LifecycleHookStop:
-		l.Logger.Info("stopped", zap.String("caller", e.CallerName))
+	case *LifecycleHookExecuting:
+		l.Logger.Info("hook executing",
+			zap.String("method", e.Method),
+			zap.String("callee", e.FunctionName),
+			zap.String("caller", e.CallerName),
+		)
+	case *LifecycleHookExecuted:
+		if e.Err != nil {
+			l.Logger.Info("hook execute failed",
+				zap.String("method", e.Method),
+				zap.String("callee", e.FunctionName),
+				zap.String("caller", e.CallerName),
+				zap.Error(e.Err),
+			)
+		} else {
+			l.Logger.Info("hook executed",
+				zap.String("method", e.Method),
+				zap.String("callee", e.FunctionName),
+				zap.String("caller", e.CallerName),
+				zap.String("runtime", e.Runtime.String()),
+			)
+		}
 	case *Supplied:
 		l.Logger.Info("supplied", zap.String("type", e.TypeName))
 	case *Provide:

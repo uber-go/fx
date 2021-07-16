@@ -23,8 +23,10 @@ package fxevent
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -44,19 +46,50 @@ func TestZapLogger(t *testing.T) {
 		wantFields  map[string]interface{}
 	}{
 		{
-			name:        "LifecycleHookStart",
-			give:        &LifecycleHookStart{CallerName: "bytes.NewBuffer"},
-			wantMessage: "started",
+			name: "LifecycleHookExecuting",
+			give: &LifecycleHookExecuting{
+				Method:       "OnStop",
+				FunctionName: "hook.onStop1",
+				CallerName:   "bytes.NewBuffer",
+			},
+			wantMessage: "hook executing",
 			wantFields: map[string]interface{}{
 				"caller": "bytes.NewBuffer",
+				"callee": "hook.onStop1",
+				"method": "OnStop",
 			},
 		},
 		{
-			name:        "LifecycleHookStop",
-			give:        &LifecycleHookStop{CallerName: "bytes.NewBuffer"},
-			wantMessage: "stopped",
+
+			name: "LifecycleHookExecutedError",
+			give: &LifecycleHookExecuted{
+				Method:       "OnStart",
+				FunctionName: "hook.onStart1",
+				CallerName:   "bytes.NewBuffer",
+				Err:          fmt.Errorf("some error"),
+			},
+			wantMessage: "hook execute failed",
 			wantFields: map[string]interface{}{
 				"caller": "bytes.NewBuffer",
+				"callee": "hook.onStart1",
+				"method": "OnStart",
+				"error":  "some error",
+			},
+		},
+		{
+			name: "LifecycleHookExecuted",
+			give: &LifecycleHookExecuted{
+				Method:       "OnStart",
+				FunctionName: "hook.onStart1",
+				CallerName:   "bytes.NewBuffer",
+				Runtime:      time.Millisecond * 3,
+			},
+			wantMessage: "hook executed",
+			wantFields: map[string]interface{}{
+				"caller":  "bytes.NewBuffer",
+				"callee":  "hook.onStart1",
+				"method":  "OnStart",
+				"runtime": "3ms",
 			},
 		},
 		{
