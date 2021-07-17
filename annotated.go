@@ -101,6 +101,17 @@ type paramTags struct {
 	tags []string
 }
 
+// Given func(T1, T2, T3, ..., TN), this generates a type roughly
+// equivalent to,
+//
+//   struct {
+//     fx.In
+//
+//     Field1 T1 `$tags[0]`
+//     Field2 T2 `$tags[1]`
+//     ...
+//     FieldN TN `$tags[N-1]`
+//   }
 func (p paramTags) getAnnotatedType(fType reflect.Type) []reflect.Type {
 	annotatedParams := []reflect.StructField{{
 		Name:      "In",
@@ -135,6 +146,17 @@ type resultTags struct {
 	tags []string
 }
 
+// Given func(T1, T2, T3, ..., TN), this generates a type roughly
+// equivalent to,
+//
+//   struct {
+//     fx.Out
+//
+//     Field1 T1 `$tags[0]`
+//     Field2 T2 `$tags[1]`
+//     ...
+//     FieldN TN `$tags[N-1]`
+//   }
 func (resultTags) getAnnotatedType(fType reflect.Type) []reflect.Type {
 	annotatedResult := []reflect.StructField{{
 		Name:      "Out",
@@ -199,14 +221,14 @@ func ResultTags(tags ...string) Annotation {
 //
 // For example,
 //
-// fx.Provide(
-//   fx.Annotate(
-//     NewGateWay,
-//     fx.ParamTags(`name:"ro" optional:"true"`),
-//     fx.ParamTags(`name:"rw"),
-//     fx.ResultTags(`name:"foo"`)
-//   )
-// )
+//  fx.Provide(
+//    fx.Annotate(
+//      NewGateWay,
+//      fx.ParamTags(`name:"ro" optional:"true"`),
+//      fx.ParamTags(`name:"rw"),
+//      fx.ResultTags(`name:"foo"`)
+//    )
+//  )
 //
 // is considered an invalid usage and will not apply any of the
 // Annotations to NewGateway.
