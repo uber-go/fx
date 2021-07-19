@@ -1094,9 +1094,11 @@ func TestCustomLoggerWithLifecycle(t *testing.T) {
 		"Provide",
 		"Provide",
 		"CustomLogger",
-		"LifecycleHookStart",
+		"LifecycleHookExecuting",
+		"LifecycleHookExecuted",
 		"Running",
-		"LifecycleHookStop",
+		"LifecycleHookExecuting",
+		"LifecycleHookExecuted",
 	}, spy.EventTypes())
 }
 
