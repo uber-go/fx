@@ -910,15 +910,7 @@ type withTimeoutParams struct {
 
 func withTimeout(ctx context.Context, param *withTimeoutParams) error {
 	c := make(chan error, 1)
-	var wg sync.WaitGroup
-	// Wait for lifecycle goroutine to exit before returning.
-	defer wg.Wait()
-
-	wg.Add(1)
-	go func() {
-		c <- param.callback(ctx)
-		wg.Done()
-	}()
+	go func() { c <- param.callback(ctx) }()
 
 	var err error
 
