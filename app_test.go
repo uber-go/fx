@@ -635,7 +635,7 @@ func TestAppStart(t *testing.T) {
 			return &A{}
 		}
 		// NOTE: for tests that gets cancelled/times out during lifecycle methods, it's possible
-		// for them to run into race with fxevent logs getting written to testing.T with the 
+		// for them to run into race with fxevent logs getting written to testing.T with the
 		// remainder of the tests. As a workaround, we provide fxlog.Spy to prevent the lifecycle
 		// goroutine from writing to testing.T.
 		spy := new(fxlog.Spy)
@@ -691,7 +691,7 @@ func TestAppStart(t *testing.T) {
 		}
 
 		// NOTE: for tests that gets cancelled/times out during lifecycle methods, it's possible
-		// for them to run into race with fxevent logs getting written to testing.T with the 
+		// for them to run into race with fxevent logs getting written to testing.T with the
 		// remainder of the tests. As a workaround, we provide fxlog.Spy to prevent the lifecycle
 		// goroutine from writing to testing.T.
 		spy := new(fxlog.Spy)
@@ -734,7 +734,7 @@ func TestAppStart(t *testing.T) {
 		}
 
 		// NOTE: for tests that gets cancelled/times out during lifecycle methods, it's possible
-		// for them to run into race with fxevent logs getting written to testing.T with the 
+		// for them to run into race with fxevent logs getting written to testing.T with the
 		// remainder of the tests. As a workaround, we provide fxlog.Spy to prevent the lifecycle
 		// goroutine from writing to testing.T.
 		spy := new(fxlog.Spy)
@@ -919,7 +919,7 @@ func TestAppStop(t *testing.T) {
 			return ctx.Err()
 		}
 		// NOTE: for tests that gets cancelled/times out during lifecycle methods, it's possible
-		// for them to run into race with fxevent logs getting written to testing.T with the 
+		// for them to run into race with fxevent logs getting written to testing.T with the
 		// remainder of the tests. As a workaround, we provide fxlog.Spy to prevent the lifecycle
 		// goroutine from writing to testing.T.
 		spy := new(fxlog.Spy)
