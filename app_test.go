@@ -634,8 +634,13 @@ func TestAppStart(t *testing.T) {
 			)
 			return &A{}
 		}
-		app := fxtest.New(
-			t,
+		// NOTE: for tests that gets cancelled/times out during lifecycle methods, it's possible
+		// for them to run into race with fxevent logs getting written to testing.T with the
+		// remainder of the tests. As a workaround, we provide fxlog.Spy to prevent the lifecycle
+		// goroutine from writing to testing.T.
+		spy := new(fxlog.Spy)
+		app := New(
+			WithLogger(func() fxevent.Logger { return spy }),
 			Provide(blocker),
 			Invoke(func(*A) {}),
 		)
@@ -684,8 +689,14 @@ func TestAppStart(t *testing.T) {
 			)
 			return &C{b}
 		}
-		app := fxtest.New(
-			t,
+
+		// NOTE: for tests that gets cancelled/times out during lifecycle methods, it's possible
+		// for them to run into race with fxevent logs getting written to testing.T with the
+		// remainder of the tests. As a workaround, we provide fxlog.Spy to prevent the lifecycle
+		// goroutine from writing to testing.T.
+		spy := new(fxlog.Spy)
+		app := New(
+			WithLogger(func() fxevent.Logger { return spy }),
 			Provide(newA, newB, newC),
 			Invoke(func(*C) {}),
 		)
@@ -721,8 +732,14 @@ func TestAppStart(t *testing.T) {
 			)
 			return &A{}
 		}
-		app := fxtest.New(
-			t,
+
+		// NOTE: for tests that gets cancelled/times out during lifecycle methods, it's possible
+		// for them to run into race with fxevent logs getting written to testing.T with the
+		// remainder of the tests. As a workaround, we provide fxlog.Spy to prevent the lifecycle
+		// goroutine from writing to testing.T.
+		spy := new(fxlog.Spy)
+		app := New(
+			WithLogger(func() fxevent.Logger { return spy }),
 			Provide(newA),
 			Invoke(func(*A) {}),
 		)
@@ -901,15 +918,22 @@ func TestAppStop(t *testing.T) {
 			<-ctx.Done()
 			return ctx.Err()
 		}
-		app := fxtest.New(t, Invoke(func(l Lifecycle) {
-			l.Append(Hook{OnStop: block})
-		}))
-		app.RequireStart()
+		// NOTE: for tests that gets cancelled/times out during lifecycle methods, it's possible
+		// for them to run into race with fxevent logs getting written to testing.T with the
+		// remainder of the tests. As a workaround, we provide fxlog.Spy to prevent the lifecycle
+		// goroutine from writing to testing.T.
+		spy := new(fxlog.Spy)
+		app := New(Invoke(func(l Lifecycle) { l.Append(Hook{OnStop: block}) }),
+			WithLogger(func() fxevent.Logger { return spy }),
+		)
+
+		err := app.Start(context.Background())
+		require.Nil(t, err)
 
 		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond)
 		defer cancel()
 
-		err := app.Stop(ctx)
+		err = app.Stop(ctx)
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "context deadline exceeded")
 	})
