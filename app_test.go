@@ -46,7 +46,7 @@ import (
 
 func NewForTest(tb testing.TB, opts ...Option) *App {
 	testOpts := []Option{
-		// Provide both, Logger and WithLogger so that if the test
+		// Provide both: Logger and WithLogger so that if the test
 		// WithLogger fails, we don't pollute stderr.
 		Logger(fxtest.NewTestPrinter(tb)),
 		WithLogger(func() fxevent.Logger { return fxtest.NewTestLogger(tb) }),
@@ -80,7 +80,7 @@ func TestNewApp(t *testing.T) {
 			WithLogger(func() fxevent.Logger { return spy }))
 		defer app.RequireStart().RequireStop()
 		require.Equal(t,
-			[]string{"Provide", "Provide", "Provide", "Provide", "CustomLogger", "Running"},
+			[]string{"Provide", "Provide", "Provide", "Provide", "CustomLogger", "Started"},
 			spy.EventTypes())
 
 		assert.Contains(t, spy.Events()[0].(*fxevent.Provide).OutputTypeNames, "struct {}")
@@ -286,7 +286,7 @@ func TestWithLogger(t *testing.T) {
 		)
 
 		assert.Equal(t, []string{
-			"Supply", "Provide", "Provide", "Provide", "CustomLogger",
+			"Supplied", "Provide", "Provide", "Provide", "CustomLogger",
 		}, spy.EventTypes())
 
 		spy.Reset()
@@ -294,7 +294,7 @@ func TestWithLogger(t *testing.T) {
 
 		require.NoError(t, app.Err())
 
-		assert.Equal(t, []string{"Running"}, spy.EventTypes())
+		assert.Equal(t, []string{"Started"}, spy.EventTypes())
 	})
 
 	t.Run("error in WithLogger provider, use default", func(t *testing.T) {
@@ -361,7 +361,7 @@ func TestWithLogger(t *testing.T) {
 			"must provide constructor function, got  (type *bytes.Buffer)",
 		)
 
-		assert.Equal(t, []string{"Supply", "ProvideError", "CustomLogger"}, spy.EventTypes())
+		assert.Equal(t, []string{"Supplied", "Provide", "CustomLogger"}, spy.EventTypes())
 	})
 
 	t.Run("logger failed to build", func(t *testing.T) {
@@ -576,8 +576,8 @@ func TestOptions(t *testing.T) {
 			Provide(&bytes.Buffer{}), // error, not a constructor
 			WithLogger(func() fxevent.Logger { return spy }),
 		)
-		require.Equal(t, []string{"ProvideError", "CustomLogger"}, spy.EventTypes())
-		assert.Contains(t, spy.Events()[0].(*fxevent.ProvideError).Err.Error(), "must provide constructor function")
+		require.Equal(t, []string{"Provide", "CustomLogger"}, spy.EventTypes())
+		assert.Contains(t, spy.Events()[0].(*fxevent.Provide).Err.Error(), "must provide constructor function")
 	})
 }
 
@@ -634,8 +634,13 @@ func TestAppStart(t *testing.T) {
 			)
 			return &A{}
 		}
-		app := fxtest.New(
-			t,
+		// NOTE: for tests that gets cancelled/times out during lifecycle methods, it's possible
+		// for them to run into race with fxevent logs getting written to testing.T with the
+		// remainder of the tests. As a workaround, we provide fxlog.Spy to prevent the lifecycle
+		// goroutine from writing to testing.T.
+		spy := new(fxlog.Spy)
+		app := New(
+			WithLogger(func() fxevent.Logger { return spy }),
 			Provide(blocker),
 			Invoke(func(*A) {}),
 		)
@@ -684,8 +689,14 @@ func TestAppStart(t *testing.T) {
 			)
 			return &C{b}
 		}
-		app := fxtest.New(
-			t,
+
+		// NOTE: for tests that gets cancelled/times out during lifecycle methods, it's possible
+		// for them to run into race with fxevent logs getting written to testing.T with the
+		// remainder of the tests. As a workaround, we provide fxlog.Spy to prevent the lifecycle
+		// goroutine from writing to testing.T.
+		spy := new(fxlog.Spy)
+		app := New(
+			WithLogger(func() fxevent.Logger { return spy }),
 			Provide(newA, newB, newC),
 			Invoke(func(*C) {}),
 		)
@@ -721,8 +732,14 @@ func TestAppStart(t *testing.T) {
 			)
 			return &A{}
 		}
-		app := fxtest.New(
-			t,
+
+		// NOTE: for tests that gets cancelled/times out during lifecycle methods, it's possible
+		// for them to run into race with fxevent logs getting written to testing.T with the
+		// remainder of the tests. As a workaround, we provide fxlog.Spy to prevent the lifecycle
+		// goroutine from writing to testing.T.
+		spy := new(fxlog.Spy)
+		app := New(
+			WithLogger(func() fxevent.Logger { return spy }),
 			Provide(newA),
 			Invoke(func(*A) {}),
 		)
@@ -793,9 +810,9 @@ func TestAppStart(t *testing.T) {
 		//         /.../go/1.13.3/libexec/src/testing/testing.go:909
 		// Failed: can't invoke non-function {} (type struct {})
 		require.Equal(t,
-			[]string{"Provide", "Provide", "Provide", "CustomLogger", "Invoke", "InvokeError"},
+			[]string{"Provide", "Provide", "Provide", "CustomLogger", "Invoke", "Invoke"},
 			spy.EventTypes())
-		failedEvent := spy.Events()[len(spy.EventTypes())-1].(*fxevent.InvokeError)
+		failedEvent := spy.Events()[len(spy.EventTypes())-1].(*fxevent.Invoke)
 		assert.Contains(t, failedEvent.Err.Error(), "can't invoke non-function")
 		assert.Contains(t, failedEvent.Stacktrace, "go.uber.org/fx_test.TestAppStart")
 		assert.Contains(t, failedEvent.Stacktrace, "fx/app_test.go")
@@ -901,15 +918,22 @@ func TestAppStop(t *testing.T) {
 			<-ctx.Done()
 			return ctx.Err()
 		}
-		app := fxtest.New(t, Invoke(func(l Lifecycle) {
-			l.Append(Hook{OnStop: block})
-		}))
-		app.RequireStart()
+		// NOTE: for tests that gets cancelled/times out during lifecycle methods, it's possible
+		// for them to run into race with fxevent logs getting written to testing.T with the
+		// remainder of the tests. As a workaround, we provide fxlog.Spy to prevent the lifecycle
+		// goroutine from writing to testing.T.
+		spy := new(fxlog.Spy)
+		app := New(Invoke(func(l Lifecycle) { l.Append(Hook{OnStop: block}) }),
+			WithLogger(func() fxevent.Logger { return spy }),
+		)
+
+		err := app.Start(context.Background())
+		require.Nil(t, err)
 
 		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond)
 		defer cancel()
 
-		err := app.Stop(ctx)
+		err = app.Stop(ctx)
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "context deadline exceeded")
 	})
@@ -1024,7 +1048,7 @@ func TestReplaceLogger(t *testing.T) {
 	spy := new(fxlog.Spy)
 	app := fxtest.New(t, WithLogger(func() fxevent.Logger { return spy }))
 	app.RequireStart().RequireStop()
-	assert.Equal(t, []string{"Provide", "Provide", "Provide", "CustomLogger", "Running"}, spy.EventTypes())
+	assert.Equal(t, []string{"Provide", "Provide", "Provide", "CustomLogger", "Started"}, spy.EventTypes())
 }
 
 func TestNopLogger(t *testing.T) {
@@ -1096,7 +1120,7 @@ func TestCustomLoggerWithLifecycle(t *testing.T) {
 		"CustomLogger",
 		"LifecycleHookExecuting",
 		"LifecycleHookExecuted",
-		"Running",
+		"Started",
 		"LifecycleHookExecuting",
 		"LifecycleHookExecuted",
 	}, spy.EventTypes())
@@ -1245,12 +1269,12 @@ func TestOptionString(t *testing.T) {
 			want: "fx.ErrorHook(TestOptionString)",
 		},
 		{
-			desc: "Supply/simple",
+			desc: "Supplied/simple",
 			give: Supply(bytes.NewReader(nil), bytes.NewBuffer(nil)),
 			want: "fx.Supply(*bytes.Reader, *bytes.Buffer)",
 		},
 		{
-			desc: "Supply/Annotated",
+			desc: "Supplied/Annotated",
 			give: Supply(Annotated{Target: bytes.NewReader(nil)}),
 			want: "fx.Supply(*bytes.Reader)",
 		},
