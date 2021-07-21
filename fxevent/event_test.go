@@ -33,11 +33,12 @@ func TestForCoverage(t *testing.T) {
 		&LifecycleHookExecuted{},
 		&Supplied{},
 		&Provide{},
-		&Invoke{},
+		&Invoking{},
+		&Invoked{},
 		&Stop{},
 		&Rollback{},
 		&Started{},
-		&CustomLogger{},
+		&LoggerInitialized{},
 	}
 
 	for _, e := range events {
