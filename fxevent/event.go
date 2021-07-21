@@ -84,7 +84,7 @@ type Invoking struct {
 	Function interface{}
 }
 
-// Invoked is emitted whenever a function errored.
+// Invoked is emitted whenever a function being invoked errored.
 type Invoked struct {
 	Function   interface{}
 	Err        error

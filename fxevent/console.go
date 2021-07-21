@@ -89,7 +89,7 @@ func (l *ConsoleLogger) LogEvent(event Event) {
 		if e.Err != nil {
 			l.logf("ERROR\t\tFailed to initialize custom logger: %v", e.Err)
 		} else {
-			l.logf("LOGGER\tInitializing custom logger from %v", fxreflect.FuncName(e.Constructor))
+			l.logf("LOGGER\tInitialized custom logger from %v", fxreflect.FuncName(e.Constructor))
 		}
 	}
 }
