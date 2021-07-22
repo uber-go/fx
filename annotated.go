@@ -275,41 +275,28 @@ func Annotate(f interface{}, anns ...Annotation) interface{} {
 		}
 	}
 
-	var newF func([]reflect.Value) []reflect.Value
-
-	if annotatedIn && annotatedOut {
-		newF = func(args []reflect.Value) []reflect.Value {
-			fParams := make([]reflect.Value, numIn)
+	newF := func(args []reflect.Value) []reflect.Value {
+		var fParams []reflect.Value
+		var fResults []reflect.Value
+		if annotatedIn {
+			fParams = make([]reflect.Value, numIn)
 			params := args[0]
 			for i := 0; i < numIn; i++ {
 				fParams[i] = params.Field(i + 1)
 			}
-			fResults := fVal.Call(fParams)
+		} else {
+			fParams = args
+		}
+		fResults = fVal.Call(fParams)
+		if annotatedOut {
+			// wrap the result in an annotated struct
 			results := reflect.New(outs[0]).Elem()
 			for i := 0; i < numOut; i++ {
 				results.FieldByName(fmt.Sprintf("Field%d", i)).Set(fResults[i])
 			}
 			return []reflect.Value{results}
 		}
-	} else if annotatedIn {
-		newF = func(args []reflect.Value) []reflect.Value {
-			fParams := make([]reflect.Value, numIn)
-			params := args[0]
-			for i := 0; i < numIn; i++ {
-				fParams[i] = params.Field(i + 1)
-			}
-			return fVal.Call(fParams)
-		}
-	} else { // annotatedOut
-		newF = func(args []reflect.Value) []reflect.Value {
-			fResults := fVal.Call(args)
-			// wrap the result in annotated struct
-			results := reflect.New(outs[0]).Elem()
-			for i := 0; i < numOut; i++ {
-				results.FieldByName(fmt.Sprintf("Field%d", i)).Set(fResults[i])
-			}
-			return []reflect.Value{results}
-		}
+		return fResults
 	}
 
 	annotatedFuncType := reflect.FuncOf(ins, outs, false)
