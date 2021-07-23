@@ -157,18 +157,29 @@ type resultTags struct {
 //     ...
 //     FieldN TN `$tags[N-1]`
 //   }
-func (resultTags) getAnnotatedType(fType reflect.Type) []reflect.Type {
+func (r resultTags) getAnnotatedType(fType reflect.Type) []reflect.Type {
 	annotatedResult := []reflect.StructField{{
 		Name:      "Out",
 		Type:      reflect.TypeOf(Out{}),
 		Anonymous: true,
 	}}
 
+	errInterface := reflect.TypeOf((*error)(nil)).Elem()
+	numAnnotated := 0
+
 	for i := 0; i < fType.NumOut(); i++ {
+		// guard against error results
+		if fType.Out(i).Implements(errInterface) {
+			continue
+		}
 		structField := reflect.StructField{
-			Name: fmt.Sprintf("Field%d", i),
+			Name: fmt.Sprintf("Field%d", numAnnotated),
 			Type: fType.Out(i),
 		}
+		if numAnnotated < len(r.tags) {
+			structField.Tag = reflect.StructTag(r.tags[numAnnotated])
+		}
+		numAnnotated += 1
 		annotatedResult = append(annotatedResult, structField)
 	}
 
@@ -290,9 +301,16 @@ func Annotate(f interface{}, anns ...Annotation) interface{} {
 		fResults = fVal.Call(fParams)
 		if annotatedOut {
 			// wrap the result in an annotated struct
+			errInterface := reflect.TypeOf((*error)(nil)).Elem()
+			numAnnotated := 0
 			results := reflect.New(outs[0]).Elem()
 			for i := 0; i < numOut; i++ {
-				results.FieldByName(fmt.Sprintf("Field%d", i)).Set(fResults[i])
+				if fResults[i].Type().Implements(errInterface) {
+					continue
+				}
+				results.FieldByName(fmt.Sprintf("Field%d",
+					numAnnotated)).Set(fResults[numAnnotated])
+				numAnnotated += 1
 			}
 			return []reflect.Value{results}
 		}
