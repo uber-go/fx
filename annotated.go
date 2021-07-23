@@ -91,14 +91,28 @@ func (a Annotated) String() string {
 	return fmt.Sprintf("fx.Annotated{%v}", strings.Join(fields, ", "))
 }
 
+type annotations struct {
+	ParamTags []string
+	ResultTags []string
+}
+
 // Annotation can be passed to Annotate(f interface{}, anns ...Annotation)
 // for annotating the parameter and result types of a function.
 type Annotation interface {
+	apply(*annotations) error
 	getAnnotatedType(reflect.Type) []reflect.Type
 }
 
 type paramTags struct {
 	tags []string
+}
+
+func (pt paramTags) apply(ann *annotations) error {
+	if len(ann.ParamTags) > 0 {
+		return fmt.Errorf("Cannot apply more than one line of ParamTags")
+	}
+	ann.ParamTags = pt.tags
+	return nil
 }
 
 // Given func(T1, T2, T3, ..., TN), this generates a type roughly
@@ -144,6 +158,14 @@ func ParamTags(tags ...string) Annotation {
 
 type resultTags struct {
 	tags []string
+}
+
+func (rt resultTags) apply(ann *annotations) error {
+	if len(ann.ResultTags) > 0 {
+		return fmt.Errorf("cannot apply more than one line of ResultTags")
+	}
+	ann.ResultTags = rt.tags
+	return nil
 }
 
 // Given func(T1, T2, T3, ..., TN), this generates a type roughly
@@ -227,8 +249,8 @@ func ResultTags(tags ...string) Annotation {
 //     return result{GW: NewGateway(p.RO, p.RW)}
 //   })
 //
-// If there are more Annotations are specified than than one per
-// Annotation type, none of the Annotations will be applied.
+// If a single annotation appears multiple times, all annotations
+// will be ignored.
 //
 // For example,
 //
@@ -252,8 +274,11 @@ func Annotate(f interface{}, anns ...Annotation) interface{} {
 	numIn := fType.NumIn()
 	numOut := fType.NumOut()
 
-	if !verifyAnnotation(numIn, numOut, anns...) {
-		return f
+	var annotations annotations
+	for _, ann := range anns {
+		if err := ann.apply(&annotations); err != nil {
+			return f
+		}
 	}
 
 	var ins []reflect.Type
