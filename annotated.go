@@ -346,24 +346,3 @@ func Annotate(f interface{}, anns ...Annotation) interface{} {
 	annotatedFunc := reflect.MakeFunc(annotatedFuncType, newF)
 	return annotatedFunc.Interface()
 }
-
-func verifyAnnotation(numIn int, numOut int, anns ...Annotation) bool {
-	sawParamAnn := false
-	sawResultAnn := false
-
-	for _, ann := range anns {
-		if _, ok := ann.(paramTags); ok {
-			if sawParamAnn {
-				return false
-			}
-			sawParamAnn = true
-		}
-		if _, ok := ann.(resultTags); ok {
-			if sawResultAnn {
-				return false
-			}
-			sawResultAnn = true
-		}
-	}
-	return true
-}
