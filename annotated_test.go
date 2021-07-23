@@ -260,8 +260,25 @@ func TestAnnotate(t *testing.T) {
 			fx.Invoke(newC),
 		)
 
-		err := app.Err()
-		require.NoError(t, err)
+		require.NoError(t, app.Err())
+		defer app.RequireStart().RequireStop()
+	})
+
+	t.Run("provide with annotated results with error", func(t *testing.T) {
+		app := fxtest.New(t,
+			fx.Provide(
+				fx.Annotate(func() (*a, error) {
+					return &a{}, nil
+				}, fx.ResultTags(`name:"firstA"`)),
+				fx.Annotate(func() (*a, error) {
+					return &a{}, nil
+				}, fx.ResultTags(`name:"secondA"`)),
+			),
+			fx.Invoke(fx.Annotate(func(a1 *a, a2 *a) *b {
+				return &b{a2}
+			}, fx.ParamTags(`name:"firstA"`, `name:"secondA"`))))
+
+		require.NoError(t, app.Err())
 		defer app.RequireStart().RequireStop()
 	})
 
