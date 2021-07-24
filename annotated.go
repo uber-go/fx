@@ -103,6 +103,14 @@ type Annotation interface {
 	getAnnotatedType(reflect.Type) []reflect.Type
 }
 
+type annotationError struct {
+	err error
+}
+
+func (e *annotationError) Error() string {
+	return e.Error()
+}
+
 type paramTags struct {
 	tags []string
 }
@@ -126,7 +134,7 @@ func (pt paramTags) apply(ann *annotations) error {
 //     ...
 //     FieldN TN `$tags[N-1]`
 //   }
-func (p paramTags) getAnnotatedType(fType reflect.Type) []reflect.Type {
+func (pt paramTags) getAnnotatedType(fType reflect.Type) []reflect.Type {
 	annotatedParams := []reflect.StructField{{
 		Name:      "In",
 		Type:      reflect.TypeOf(In{}),
@@ -138,8 +146,8 @@ func (p paramTags) getAnnotatedType(fType reflect.Type) []reflect.Type {
 			Name: fmt.Sprintf("Field%d", i),
 			Type: fType.In(i),
 		}
-		if i < len(p.tags) {
-			structField.Tag = reflect.StructTag(p.tags[i])
+		if i < len(pt.tags) {
+			structField.Tag = reflect.StructTag(pt.tags[i])
 		}
 		annotatedParams = append(annotatedParams, structField)
 	}
@@ -179,7 +187,7 @@ func (rt resultTags) apply(ann *annotations) error {
 //     ...
 //     FieldN TN `$tags[N-1]`
 //   }
-func (r resultTags) getAnnotatedType(fType reflect.Type) []reflect.Type {
+func (rt resultTags) getAnnotatedType(fType reflect.Type) []reflect.Type {
 	annotatedResult := []reflect.StructField{{
 		Name:      "Out",
 		Type:      reflect.TypeOf(Out{}),
@@ -198,8 +206,8 @@ func (r resultTags) getAnnotatedType(fType reflect.Type) []reflect.Type {
 			Name: fmt.Sprintf("Field%d", numAnnotated),
 			Type: fType.Out(i),
 		}
-		if numAnnotated < len(r.tags) {
-			structField.Tag = reflect.StructTag(r.tags[numAnnotated])
+		if numAnnotated < len(rt.tags) {
+			structField.Tag = reflect.StructTag(rt.tags[numAnnotated])
 		}
 		numAnnotated += 1
 		annotatedResult = append(annotatedResult, structField)
@@ -275,12 +283,6 @@ func Annotate(f interface{}, anns ...Annotation) interface{} {
 	numOut := fType.NumOut()
 
 	var annotations annotations
-	for _, ann := range anns {
-		if err := ann.apply(&annotations); err != nil {
-			return f
-		}
-	}
-
 	var ins []reflect.Type
 	var outs []reflect.Type
 
@@ -288,6 +290,9 @@ func Annotate(f interface{}, anns ...Annotation) interface{} {
 	annotatedOut := false
 
 	for _, ann := range anns {
+		if err := ann.apply(&annotations); err != nil {
+			return f
+		}
 		if pTags, ok := ann.(paramTags); ok {
 			ins = pTags.getAnnotatedType(fType)
 			annotatedIn = true
