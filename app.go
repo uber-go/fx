@@ -784,6 +784,12 @@ func (app *App) provide(p provide) {
 		}
 	}()
 
+	if annError, ok := constructor.(annotationError); ok {
+		app.err = fmt.Errorf("encountered error while applying annotation using fx.Annotate to %s: %+v",
+			fxreflect.FuncName(annError.target), annError.err)
+		return
+	}
+
 	if ann, ok := constructor.(Annotated); ok {
 		switch {
 		case len(ann.Group) > 0 && len(ann.Name) > 0:

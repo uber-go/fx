@@ -92,7 +92,7 @@ func (a Annotated) String() string {
 }
 
 type annotations struct {
-	ParamTags []string
+	ParamTags  []string
 	ResultTags []string
 }
 
@@ -104,11 +104,12 @@ type Annotation interface {
 }
 
 type annotationError struct {
-	err error
+	target interface{}
+	err    error
 }
 
 func (e *annotationError) Error() string {
-	return e.Error()
+	return e.err.Error()
 }
 
 type paramTags struct {
@@ -117,7 +118,7 @@ type paramTags struct {
 
 func (pt paramTags) apply(ann *annotations) error {
 	if len(ann.ParamTags) > 0 {
-		return fmt.Errorf("Cannot apply more than one line of ParamTags")
+		return fmt.Errorf("cannot apply more than one line of ParamTags")
 	}
 	ann.ParamTags = pt.tags
 	return nil
@@ -209,7 +210,7 @@ func (rt resultTags) getAnnotatedType(fType reflect.Type) []reflect.Type {
 		if numAnnotated < len(rt.tags) {
 			structField.Tag = reflect.StructTag(rt.tags[numAnnotated])
 		}
-		numAnnotated += 1
+		numAnnotated++
 		annotatedResult = append(annotatedResult, structField)
 	}
 
@@ -290,8 +291,11 @@ func Annotate(f interface{}, anns ...Annotation) interface{} {
 	annotatedOut := false
 
 	for _, ann := range anns {
-		if err := ann.apply(&annotations); err != nil {
-			return f
+		if e := ann.apply(&annotations); e != nil {
+			return annotationError{
+				target: f,
+				err:    e,
+			}
 		}
 		if pTags, ok := ann.(paramTags); ok {
 			ins = pTags.getAnnotatedType(fType)
@@ -340,7 +344,7 @@ func Annotate(f interface{}, anns ...Annotation) interface{} {
 				}
 				results.FieldByName(fmt.Sprintf("Field%d",
 					numAnnotated)).Set(fResults[numAnnotated])
-				numAnnotated += 1
+				numAnnotated++
 			}
 			return []reflect.Value{results}
 		}

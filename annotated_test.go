@@ -295,8 +295,9 @@ func TestAnnotate(t *testing.T) {
 		require.NoError(t, err)
 		defer app.RequireStart().RequireStop()
 	})
+
 	t.Run("specify two ParamTags", func(t *testing.T) {
-		app := fxtest.New(t,
+		app := fx.New(
 			fx.Provide(
 				// This should just leave newA as it is.
 				fx.Annotate(
@@ -307,13 +308,13 @@ func TestAnnotate(t *testing.T) {
 			),
 			fx.Invoke(newB),
 		)
-
 		err := app.Err()
-		require.NoError(t, err)
-		defer app.RequireStart().RequireStop()
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "encountered error while applying annotation using fx.Annotate to go.uber.org/fx_test.TestAnnotate.func1(): cannot apply more than one line of ParamTags")
 	})
+
 	t.Run("specify two ResultTags", func(t *testing.T) {
-		app := fxtest.New(t,
+		app := fx.New(
 			fx.Provide(
 				// This should just leave newA as it is.
 				fx.Annotate(
@@ -326,7 +327,7 @@ func TestAnnotate(t *testing.T) {
 		)
 
 		err := app.Err()
-		require.NoError(t, err)
-		defer app.RequireStart().RequireStop()
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "encountered error while applying annotation using fx.Annotate to go.uber.org/fx_test.TestAnnotate.func1(): cannot apply more than one line of ResultTags")
 	})
 }
