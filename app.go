@@ -574,7 +574,10 @@ func New(opts ...Option) *App {
 			app.err = multierr.Append(app.err, err)
 			app.log = fallbackLogger
 			bufferLogger.Connect(fallbackLogger)
-			app.log.LogEvent(&fxevent.LoggerInitialized{Err: err})
+			app.log.LogEvent(&fxevent.LoggerInitialized{
+				Err:         err,
+				Constructor: app.logConstructor,
+			})
 			return app
 		}
 		app.log.LogEvent(&fxevent.LoggerInitialized{Constructor: app.logConstructor})
