@@ -561,12 +561,9 @@ func New(opts ...Option) *App {
 	app.provide(provide{Target: app.shutdowner, Stack: frames})
 	app.provide(provide{Target: app.dotGraph, Stack: frames})
 
-	if app.err != nil {
-		app.log.LogEvent(&fxevent.Provide{Err: app.err})
-		// Don't return yet. If a custom logger was being used,
-		// we're still buffering messages. We'll want to flush them to
-		// the logger.
-	}
+	// If you are thinking about returning here after provides: do not (just yet)!
+	// If a custom logger was being used, we're still buffering messages.
+	// We'll want to flush them to the logger.
 
 	// If WithLogger and Printer are both provided, WithLogger takes
 	// precedence.
@@ -577,13 +574,16 @@ func New(opts ...Option) *App {
 			app.err = multierr.Append(app.err, err)
 			app.log = fallbackLogger
 			bufferLogger.Connect(fallbackLogger)
-			app.log.LogEvent(&fxevent.CustomLogger{Err: err})
+			app.log.LogEvent(&fxevent.LoggerInitialized{
+				Err:         err,
+				Constructor: app.logConstructor,
+			})
 			return app
 		}
-		app.log.LogEvent(&fxevent.CustomLogger{Function: app.logConstructor})
+		app.log.LogEvent(&fxevent.LoggerInitialized{Constructor: app.logConstructor})
 	}
 
-	// This error might have come from the provide looop above. We've
+	// This error might have come from the provide loop above. We've
 	// already flushed to the custom logger, so we can return.
 	if app.err != nil {
 		return app
@@ -765,6 +765,10 @@ func (app *App) provide(p provide) {
 	}
 	defer func() {
 		if app.err != nil {
+			app.log.LogEvent(&fxevent.Provide{
+				Err:         app.err,
+				Constructor: constructor,
+			})
 			return
 		}
 
@@ -832,7 +836,7 @@ func (app *App) executeInvokes() error {
 
 	for _, i := range app.invokes {
 		fn := i.Target
-		app.log.LogEvent(&fxevent.Invoke{Function: fn})
+		app.log.LogEvent(&fxevent.Invoking{Function: fn})
 
 		var err error
 		if _, ok := fn.(Option); ok {
@@ -844,7 +848,7 @@ func (app *App) executeInvokes() error {
 		}
 
 		if err != nil {
-			app.log.LogEvent(&fxevent.Invoke{
+			app.log.LogEvent(&fxevent.Invoked{
 				Function:   fn,
 				Err:        err,
 				Stacktrace: fmt.Sprintf("%+v", i.Stack), // format stack trace as multi-line
