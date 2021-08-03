@@ -57,13 +57,25 @@ type LifecycleHookExecuting struct {
 	Method string
 }
 
-// LifecycleHookExecuted is emitted after an OnStart hook has been executed.
+// LifecycleHookExecuted is emitted after an OnStart or OnStop hook has been
+// executed.
 type LifecycleHookExecuted struct {
+	// FunctionName is the name of the function that was executed.
 	FunctionName string
-	CallerName   string
-	Method       string
-	Runtime      time.Duration
-	Err          error
+
+	// CallerName is the name of the function that scheduled the hook for
+	// execution.
+	CallerName string
+
+	// Method specifies the kind of the hook. This is one of "OnStart" and
+	// "OnStop".
+	Method string
+
+	// Runtime specifies how long it took to run this hook.
+	Runtime time.Duration
+
+	// Err is non-nil if the hook failed to execute.
+	Err error
 }
 
 // Supplied is emitted whenever a Provide was called with a constructor provided

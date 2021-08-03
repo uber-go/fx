@@ -75,45 +75,28 @@ const (
 // Start runs all OnStart hooks, returning immediately if it encounters an
 // error.
 func (l *Lifecycle) Start(ctx context.Context) error {
+	l.mu.Lock()
 	l.startRecords = make(HookRecords, 0, len(l.hooks))
+	l.mu.Unlock()
+
 	for _, hook := range l.hooks {
 		if hook.OnStart != nil {
-			funcName := fxreflect.FuncName(hook.OnStart)
-			l.logger.LogEvent(&fxevent.LifecycleHookExecuting{
-				CallerName:   hook.callerFrame.Function,
-				FunctionName: funcName,
-				Method:       _hookStart,
-			})
-
 			l.mu.Lock()
 			l.runningHook = hook
 			l.mu.Unlock()
 
-			begin := time.Now()
-			if err := hook.OnStart(ctx); err != nil {
-				l.logger.LogEvent(&fxevent.LifecycleHookExecuted{
-					CallerName:   hook.callerFrame.Function,
-					FunctionName: funcName,
-					Method:       _hookStart,
-					Runtime:      time.Since(begin),
-					Err:          err,
-				})
+			runtime, err := l.runStartHook(ctx, hook)
+			if err != nil {
 				return err
 			}
+
 			l.mu.Lock()
-			runtime := time.Since(begin)
 			l.startRecords = append(l.startRecords, HookRecord{
 				CallerFrame: hook.callerFrame,
 				Func:        hook.OnStart,
 				Runtime:     runtime,
 			})
 			l.mu.Unlock()
-			l.logger.LogEvent(&fxevent.LifecycleHookExecuted{
-				CallerName:   hook.callerFrame.Function,
-				FunctionName: funcName,
-				Method:       _hookStart,
-				Runtime:      runtime,
-			})
 		}
 		l.numStarted++
 	}
@@ -121,65 +104,86 @@ func (l *Lifecycle) Start(ctx context.Context) error {
 	return nil
 }
 
+func (l *Lifecycle) runStartHook(ctx context.Context, hook Hook) (runtime time.Duration, err error) {
+	funcName := fxreflect.FuncName(hook.OnStart)
+	l.logger.LogEvent(&fxevent.LifecycleHookExecuting{
+		CallerName:   hook.callerFrame.Function,
+		FunctionName: funcName,
+		Method:       _hookStart,
+	})
+	defer func() {
+		l.logger.LogEvent(&fxevent.LifecycleHookExecuted{
+			CallerName:   hook.callerFrame.Function,
+			FunctionName: funcName,
+			Method:       _hookStart,
+			Runtime:      runtime,
+			Err:          err,
+		})
+	}()
+
+	begin := time.Now()
+	err = hook.OnStart(ctx)
+	return time.Since(begin), err
+}
+
 // Stop runs any OnStop hooks whose OnStart counterpart succeeded. OnStop
 // hooks run in reverse order.
 func (l *Lifecycle) Stop(ctx context.Context) error {
-	var errs []error
 	l.mu.Lock()
 	l.stopRecords = make(HookRecords, 0, l.numStarted)
 	l.mu.Unlock()
 
 	// Run backward from last successful OnStart.
+	var errs []error
 	for ; l.numStarted > 0; l.numStarted-- {
 		hook := l.hooks[l.numStarted-1]
 		if hook.OnStop == nil {
 			continue
 		}
-		funcName := fxreflect.FuncName(hook.OnStop)
-
-		l.logger.LogEvent(&fxevent.LifecycleHookExecuting{
-			CallerName:   hook.callerFrame.Function,
-			FunctionName: funcName,
-			Method:       _hookStop,
-		})
 
 		l.mu.Lock()
 		l.runningHook = hook
 		l.mu.Unlock()
 
-		begin := time.Now()
-		var err error
-		if err = hook.OnStop(ctx); err != nil {
+		runtime, err := l.runStopHook(ctx, hook)
+		if err != nil {
 			// For best-effort cleanup, keep going after errors.
-			l.logger.LogEvent(&fxevent.LifecycleHookExecuted{
-				CallerName:   hook.callerFrame.Function,
-				FunctionName: funcName,
-				Method:       _hookStop,
-				Err:          err,
-			})
 			errs = append(errs, err)
 		}
+
 		l.mu.Lock()
-		runtime := time.Since(begin)
 		l.stopRecords = append(l.stopRecords, HookRecord{
 			CallerFrame: hook.callerFrame,
 			Func:        hook.OnStop,
 			Runtime:     runtime,
 		})
-
-		if err == nil {
-			l.logger.LogEvent(&fxevent.LifecycleHookExecuted{
-				CallerName:   hook.callerFrame.Function,
-				FunctionName: funcName,
-				Method:       _hookStop,
-				Runtime:      runtime,
-			})
-		}
-
 		l.mu.Unlock()
 	}
 
 	return multierr.Combine(errs...)
+}
+
+func (l *Lifecycle) runStopHook(ctx context.Context, hook Hook) (runtime time.Duration, err error) {
+	funcName := fxreflect.FuncName(hook.OnStop)
+
+	l.logger.LogEvent(&fxevent.LifecycleHookExecuting{
+		CallerName:   hook.callerFrame.Function,
+		FunctionName: funcName,
+		Method:       _hookStop,
+	})
+	defer func() {
+		l.logger.LogEvent(&fxevent.LifecycleHookExecuted{
+			CallerName:   hook.callerFrame.Function,
+			FunctionName: funcName,
+			Method:       _hookStop,
+			Runtime:      runtime,
+			Err:          err,
+		})
+	}()
+
+	begin := time.Now()
+	err = hook.OnStop(ctx)
+	return time.Since(begin), err
 }
 
 // StartHookRecords returns the info of OnStart hooks that successfully ran till the end,
