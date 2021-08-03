@@ -78,9 +78,9 @@ type LifecycleHookExecuted struct {
 	Err error
 }
 
-// Supplied is emitted whenever a Provide was called with a constructor provided
-// by fx.Supply.
+// Supplied is emitted after a value is added with fx.Supply.
 type Supplied struct {
+	// Name of the type of value that was added.
 	TypeName string
 }
 
