@@ -82,6 +82,9 @@ type LifecycleHookExecuted struct {
 type Supplied struct {
 	// Name of the type of value that was added.
 	TypeName string
+
+	// Err is non-nil if we failed to supply the value.
+	Err error
 }
 
 // Provided is emitted when a constructor is provided to Fx.

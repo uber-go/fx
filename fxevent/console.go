@@ -54,7 +54,11 @@ func (l *ConsoleLogger) LogEvent(event Event) {
 			l.logf("HOOK %s\t\t%s called by %s ran successfully in %s", e.Method, e.FunctionName, e.CallerName, e.Runtime)
 		}
 	case *Supplied:
-		l.logf("SUPPLY\t%v", e.TypeName)
+		if e.Err != nil {
+			l.logf("ERROR\tFailed to supply %v: %v", e.TypeName, e.Err)
+		} else {
+			l.logf("SUPPLY\t%v", e.TypeName)
+		}
 	case *Provided:
 		for _, rtype := range e.OutputTypeNames {
 			l.logf("PROVIDE\t%v <= %v", rtype, fxreflect.FuncName(e.Constructor))

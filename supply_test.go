@@ -24,10 +24,13 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"go.uber.org/fx"
+	"go.uber.org/fx/fxevent"
 	"go.uber.org/fx/fxtest"
+	"go.uber.org/fx/internal/fxlog"
 )
 
 func TestSupply(t *testing.T) {
@@ -100,5 +103,28 @@ func TestSupply(t *testing.T) {
 			func() { fx.Supply(A{}, errors.New("fail")) },
 			"an error value should panic",
 		)
+	})
+
+	t.Run("SupplyCollision", func(t *testing.T) {
+		type foo struct{}
+
+		var spy fxlog.Spy
+		app := fx.New(
+			fx.WithLogger(func() fxevent.Logger { return &spy }),
+			fx.Supply(&foo{}, &foo{}),
+		)
+
+		require.Error(t, app.Err())
+		assert.Contains(t, app.Err().Error(), "already provided")
+
+		var supplies []*fxevent.Supplied
+		for _, ev := range spy.Events() {
+			if ev, ok := ev.(*fxevent.Supplied); ok {
+				supplies = append(supplies, ev)
+			}
+		}
+		require.Len(t, supplies, 2)
+		require.NoError(t, supplies[0].Err)
+		require.Error(t, supplies[1].Err)
 	})
 }

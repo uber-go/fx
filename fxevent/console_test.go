@@ -80,6 +80,11 @@ func TestConsoleLogger(t *testing.T) {
 			want: "[Fx] SUPPLY	*bytes.Buffer\n",
 		},
 		{
+			name: "SuppliedError",
+			give: &Supplied{TypeName: "*bytes.Buffer", Err: errors.New("great sadness")},
+			want: "[Fx] ERROR	Failed to supply *bytes.Buffer: great sadness\n",
+		},
+		{
 			name: "Provided",
 			give: &Provided{bytes.NewBuffer, []string{"*bytes.Buffer"}, nil},
 			want: "[Fx] PROVIDE	*bytes.Buffer <= bytes.NewBuffer()\n",

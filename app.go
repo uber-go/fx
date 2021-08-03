@@ -764,21 +764,29 @@ func (app *App) provide(p provide) {
 		dig.FillProvideInfo(&info),
 	}
 	defer func() {
+		var ev fxevent.Event
+
 		switch {
 		case p.IsSupply:
-			app.log.LogEvent(&fxevent.Supplied{TypeName: p.SupplyType.String()})
+			ev = &fxevent.Supplied{
+				TypeName: p.SupplyType.String(),
+				Err:      app.err,
+			}
+
 		default:
 			outputNames := make([]string, len(info.Outputs))
 			for i, o := range info.Outputs {
 				outputNames[i] = o.String()
 			}
 
-			app.log.LogEvent(&fxevent.Provided{
+			ev = &fxevent.Provided{
 				Constructor:     constructor,
 				OutputTypeNames: outputNames,
 				Err:             app.err,
-			})
+			}
 		}
+
+		app.log.LogEvent(ev)
 	}()
 
 	if ann, ok := constructor.(Annotated); ok {
