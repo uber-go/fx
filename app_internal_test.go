@@ -28,10 +28,15 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/fx/fxevent"
+	"go.uber.org/fx/internal/fxlog"
 )
 
 func TestAppRun(t *testing.T) {
-	app := New(NopLogger)
+	spy := new(fxlog.Spy)
+	app := New(
+		WithLogger(func() fxevent.Logger { return spy }),
+	)
 	done := make(chan os.Signal)
 
 	var wg sync.WaitGroup
@@ -43,6 +48,16 @@ func TestAppRun(t *testing.T) {
 
 	done <- _sigINT
 	wg.Wait()
+
+	assert.Equal(t, []string{
+		"Provided",
+		"Provided",
+		"Provided",
+		"LoggerInitialized",
+		"Started",
+		"Stopping",
+		"Stopped",
+	}, spy.EventTypes())
 }
 
 // TestValidateString verifies private option. Public options are tested in app_test.go.

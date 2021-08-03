@@ -648,7 +648,12 @@ func VisualizeError(err error) (string, error) {
 // Start, Done, and Stop methods. Applications with more specialized needs
 // can use those methods directly instead of relying on Run.
 func (app *App) Run() {
-	app.run(app.Done())
+	// Historically, we do not os.Exit(0) even though most applications
+	// cede control to Fx with they call app.Run. To avoid a breaking
+	// change, never os.Exit for success.
+	if code := app.run(app.Done()); code != 0 {
+		os.Exit(code)
+	}
 }
 
 // Err returns any error encountered during New's initialization. See the
@@ -866,12 +871,12 @@ func (app *App) executeInvoke(i invoke) (err error) {
 	return app.container.Invoke(fn)
 }
 
-func (app *App) run(done <-chan os.Signal) {
+func (app *App) run(done <-chan os.Signal) (exitCode int) {
 	startCtx, cancel := context.WithTimeout(context.Background(), app.StartTimeout())
 	defer cancel()
 
 	if err := app.Start(startCtx); err != nil {
-		os.Exit(1)
+		return 1
 	}
 	sig := <-done
 	app.log.LogEvent(&fxevent.Stopping{Signal: sig})
@@ -879,10 +884,13 @@ func (app *App) run(done <-chan os.Signal) {
 	stopCtx, cancel := context.WithTimeout(context.Background(), app.StopTimeout())
 	defer cancel()
 
-	if err := app.Stop(stopCtx); err != nil {
-		app.log.LogEvent(&fxevent.Stopped{Err: err})
-		os.Exit(1)
+	err := app.Stop(stopCtx)
+	app.log.LogEvent(&fxevent.Stopped{Err: err})
+
+	if err != nil {
+		return 1
 	}
+	return 0
 }
 
 func (app *App) start(ctx context.Context) (err error) {
