@@ -72,11 +72,11 @@ func (l *ConsoleLogger) LogEvent(event Event) {
 		if e.Err != nil {
 			l.logf("fx.Invoke(%v) called from:\n%+vFailed: %v", e.FunctionName, e.Trace, e.Err)
 		}
-	case *Stop:
+	case *Stopping:
+		l.logf("%v", strings.ToUpper(e.Signal.String()))
+	case *Stopped:
 		if e.Err != nil {
 			l.logf("ERROR\t\tFailed to stop cleanly: %v", e.Err)
-		} else {
-			l.logf("%v", strings.ToUpper(e.Signal.String()))
 		}
 	case *Rollback:
 		if e.Err != nil {

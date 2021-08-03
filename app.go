@@ -874,13 +874,13 @@ func (app *App) run(done <-chan os.Signal) {
 		os.Exit(1)
 	}
 	sig := <-done
-	app.log.LogEvent(&fxevent.Stop{Signal: sig})
+	app.log.LogEvent(&fxevent.Stopping{Signal: sig})
 
 	stopCtx, cancel := context.WithTimeout(context.Background(), app.StopTimeout())
 	defer cancel()
 
 	if err := app.Stop(stopCtx); err != nil {
-		app.log.LogEvent(&fxevent.Stop{Err: err})
+		app.log.LogEvent(&fxevent.Stopped{Err: err})
 		os.Exit(1)
 	}
 }

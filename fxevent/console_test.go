@@ -124,13 +124,13 @@ func TestConsoleLogger(t *testing.T) {
 			want: "[Fx] ERROR		Failed to start: some error\n",
 		},
 		{
-			name: "Stop",
-			give: &Stop{Signal: os.Interrupt},
+			name: "Stopping",
+			give: &Stopping{Signal: os.Interrupt},
 			want: "[Fx] INTERRUPT\n",
 		},
 		{
-			name: "StopError",
-			give: &Stop{Err: errors.New("some error")},
+			name: "Stopped",
+			give: &Stopped{Err: errors.New("some error")},
 			want: "[Fx] ERROR		Failed to stop cleanly: some error\n",
 		},
 		{

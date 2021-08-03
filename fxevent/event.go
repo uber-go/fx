@@ -37,7 +37,8 @@ func (*Supplied) event()               {}
 func (*Provided) event()               {}
 func (*Invoking) event()               {}
 func (*Invoked) event()                {}
-func (*Stop) event()                   {}
+func (*Stopping) event()               {}
+func (*Stopped) event()                {}
 func (*Rollback) event()               {}
 func (*Started) event()                {}
 func (*LoggerInitialized) event()      {}
@@ -128,11 +129,19 @@ type Started struct {
 	Err error
 }
 
-// Stop is emitted whenever application receives a signal after
-// starting the application with an optional error.
-type Stop struct {
+// Stopping is emitted when the application receives a signal to shut down
+// after starting. This may happen with fx.Shutdowner or by sending a signal to
+// the application on the command line.
+type Stopping struct {
+	// Signal is the signal that caused this shutdown.
 	Signal os.Signal
-	Err    error
+}
+
+// Stopped is emitted when the application has finished shutting down, whether
+// successfully or not.
+type Stopped struct {
+	// Err is non-nil if errors were encountered during shutdown.
+	Err error
 }
 
 // Rollback is emitted whenever a service fails to start with initial startup

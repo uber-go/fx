@@ -157,16 +157,16 @@ func TestZapLogger(t *testing.T) {
 			},
 		},
 		{
-			name:        "Stop",
-			give:        &Stop{Signal: os.Interrupt},
+			name:        "Stopping",
+			give:        &Stopping{Signal: os.Interrupt},
 			wantMessage: "received signal",
 			wantFields: map[string]interface{}{
 				"signal": "INTERRUPT",
 			},
 		},
 		{
-			name:        "StopError",
-			give:        &Stop{Err: someError},
+			name:        "Stopped",
+			give:        &Stopped{Err: someError},
 			wantMessage: "stop failed",
 			wantFields: map[string]interface{}{
 				"error": "some error",

@@ -84,12 +84,12 @@ func (l *ZapLogger) LogEvent(event Event) {
 			zap.Error(e.Err),
 			zap.String("stack", e.Trace),
 			zap.String("function", e.FunctionName))
-	case *Stop:
+	case *Stopping:
+		l.Logger.Info("received signal",
+			zap.String("signal", strings.ToUpper(e.Signal.String())))
+	case *Stopped:
 		if e.Err != nil {
 			l.Logger.Error("stop failed", zap.Error(e.Err))
-		} else {
-			l.Logger.Info("received signal",
-				zap.String("signal", strings.ToUpper(e.Signal.String())))
 		}
 	case *Rollback:
 		if e.Err != nil {
