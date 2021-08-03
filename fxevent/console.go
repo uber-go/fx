@@ -69,8 +69,7 @@ func (l *ConsoleLogger) LogEvent(event Event) {
 	case *Invoking:
 		l.logf("INVOKE\t\t%s", e.FunctionName)
 	case *Invoked:
-		l.logf("fx.Invoke(%v) called from:\n%+vFailed: %v",
-			fxreflect.FuncName(e.Function), e.Stacktrace, e.Err)
+		l.logf("fx.Invoke(%v) called from:\n%+vFailed: %v", e.FunctionName, e.Stacktrace, e.Err)
 	case *Stop:
 		if e.Err != nil {
 			l.logf("ERROR\t\tFailed to stop cleanly: %v", e.Err)

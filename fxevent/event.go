@@ -107,10 +107,17 @@ type Invoking struct {
 	FunctionName string
 }
 
-// Invoked is emitted whenever a function being invoked errored.
+// Invoked is emitted after we invoke a function specified with fx.Invoke,
+// whether it succeded or failed.
 type Invoked struct {
-	Function   interface{}
-	Err        error
+	// Functionname is the name of the function that was invoked.
+	FunctionName string
+
+	// Err is non-nil if the function failed to execute.
+	Err error
+
+	// Stacktrace records information about where the fx.Invoke call was
+	// made.
 	Stacktrace string
 }
 

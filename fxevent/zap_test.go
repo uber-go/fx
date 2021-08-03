@@ -139,7 +139,7 @@ func TestZapLogger(t *testing.T) {
 		},
 		{
 			name:        "InvokeError",
-			give:        &Invoked{Function: bytes.NewBuffer, Err: someError},
+			give:        &Invoked{FunctionName: "bytes.NewBuffer()", Err: someError},
 			wantMessage: "invoke failed",
 			wantFields: map[string]interface{}{
 				"error":    "some error",

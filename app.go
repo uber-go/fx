@@ -837,7 +837,8 @@ func (app *App) executeInvokes() error {
 
 	for _, i := range app.invokes {
 		fn := i.Target
-		app.log.LogEvent(&fxevent.Invoking{FunctionName: fxreflect.FuncName(fn)})
+		fnName := fxreflect.FuncName(fn)
+		app.log.LogEvent(&fxevent.Invoking{FunctionName: fnName})
 
 		var err error
 		if _, ok := fn.(Option); ok {
@@ -850,9 +851,9 @@ func (app *App) executeInvokes() error {
 
 		if err != nil {
 			app.log.LogEvent(&fxevent.Invoked{
-				Function:   fn,
-				Err:        err,
-				Stacktrace: fmt.Sprintf("%+v", i.Stack), // format stack trace as multi-line
+				FunctionName: fnName,
+				Err:          err,
+				Stacktrace:   fmt.Sprintf("%+v", i.Stack), // format stack trace as multi-line
 			})
 
 			return err

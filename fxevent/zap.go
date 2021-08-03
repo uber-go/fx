@@ -78,7 +78,7 @@ func (l *ZapLogger) LogEvent(event Event) {
 		l.Logger.Error("invoke failed",
 			zap.Error(e.Err),
 			zap.String("stack", e.Stacktrace),
-			zap.String("function", fxreflect.FuncName(e.Function)))
+			zap.String("function", e.FunctionName))
 	case *Stop:
 		if e.Err != nil {
 			l.Logger.Error("stop failed", zap.Error(e.Err))
