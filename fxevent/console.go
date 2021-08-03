@@ -67,7 +67,7 @@ func (l *ConsoleLogger) LogEvent(event Event) {
 			l.logf("Error after options were applied: %v", e.Err)
 		}
 	case *Invoking:
-		l.logf("INVOKE\t\t%s", fxreflect.FuncName(e.Function))
+		l.logf("INVOKE\t\t%s", e.FunctionName)
 	case *Invoked:
 		l.logf("fx.Invoke(%v) called from:\n%+vFailed: %v",
 			fxreflect.FuncName(e.Function), e.Stacktrace, e.Err)

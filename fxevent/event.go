@@ -101,9 +101,10 @@ type Provided struct {
 	Err error
 }
 
-// Invoking is emitted whenever a function is being invoked.
+// Invoking is emitted before we invoke a function specified with fx.Invoke.
 type Invoking struct {
-	Function interface{}
+	// FunctionName is the name of the function that will be invoked.
+	FunctionName string
 }
 
 // Invoked is emitted whenever a function being invoked errored.

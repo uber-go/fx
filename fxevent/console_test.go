@@ -94,7 +94,7 @@ func TestConsoleLogger(t *testing.T) {
 		},
 		{
 			name: "Invoked",
-			give: &Invoking{Function: bytes.NewBuffer},
+			give: &Invoking{FunctionName: "bytes.NewBuffer()"},
 			want: "[Fx] INVOKE		bytes.NewBuffer()\n",
 		},
 		{

@@ -837,7 +837,7 @@ func (app *App) executeInvokes() error {
 
 	for _, i := range app.invokes {
 		fn := i.Target
-		app.log.LogEvent(&fxevent.Invoking{Function: fn})
+		app.log.LogEvent(&fxevent.Invoking{FunctionName: fxreflect.FuncName(fn)})
 
 		var err error
 		if _, ok := fn.(Option); ok {
