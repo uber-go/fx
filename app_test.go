@@ -56,6 +56,14 @@ func NewForTest(tb testing.TB, opts ...Option) *App {
 	return New(opts...)
 }
 
+func NewSpied(opts ...Option) (*App, *fxlog.Spy) {
+	spy := new(fxlog.Spy)
+	opts = append([]Option{
+		WithLogger(func() fxevent.Logger { return spy }),
+	}, opts...)
+	return New(opts...), spy
+}
+
 func TestNewApp(t *testing.T) {
 	t.Run("ProvidesLifecycleAndShutdowner", func(t *testing.T) {
 		var (
@@ -413,6 +421,30 @@ type errHandlerFunc func(error)
 func (f errHandlerFunc) HandleError(err error) { f(err) }
 
 func TestInvokes(t *testing.T) {
+	t.Run("Success event", func(t *testing.T) {
+		app, spy := NewSpied(
+			Invoke(func() {}),
+		)
+		require.NoError(t, app.Err())
+
+		invoked := spy.Events().SelectByTypeName("Invoked")
+		require.Len(t, invoked, 1)
+		assert.NoError(t, invoked[0].(*fxevent.Invoked).Err)
+	})
+
+	t.Run("Failure event", func(t *testing.T) {
+		app, spy := NewSpied(
+			Invoke(func() error {
+				return errors.New("great sadness")
+			}),
+		)
+		require.Error(t, app.Err())
+
+		invoked := spy.Events().SelectByTypeName("Invoked")
+		require.Len(t, invoked, 1)
+		assert.Error(t, invoked[0].(*fxevent.Invoked).Err)
+	})
+
 	t.Run("ErrorsAreNotOverriden", func(t *testing.T) {
 		type A struct{}
 		type B struct{}

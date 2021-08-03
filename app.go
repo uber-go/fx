@@ -836,31 +836,34 @@ func (app *App) executeInvokes() error {
 	// TODO: consider taking a context to limit the time spent running invocations.
 
 	for _, i := range app.invokes {
-		fn := i.Target
-		fnName := fxreflect.FuncName(fn)
-		app.log.LogEvent(&fxevent.Invoking{FunctionName: fnName})
-
-		var err error
-		if _, ok := fn.(Option); ok {
-			err = fmt.Errorf("fx.Option should be passed to fx.New directly, "+
-				"not to fx.Invoke: fx.Invoke received %v from:\n%+v",
-				fn, i.Stack)
-		} else {
-			err = app.container.Invoke(fn)
-		}
-
-		if err != nil {
-			app.log.LogEvent(&fxevent.Invoked{
-				FunctionName: fnName,
-				Err:          err,
-				Trace:        fmt.Sprintf("%+v", i.Stack), // format stack trace as multi-line
-			})
-
+		if err := app.executeInvoke(i); err != nil {
 			return err
 		}
 	}
 
 	return nil
+}
+
+func (app *App) executeInvoke(i invoke) (err error) {
+	fn := i.Target
+	fnName := fxreflect.FuncName(fn)
+
+	app.log.LogEvent(&fxevent.Invoking{FunctionName: fnName})
+	defer func() {
+		app.log.LogEvent(&fxevent.Invoked{
+			FunctionName: fnName,
+			Err:          err,
+			Trace:        fmt.Sprintf("%+v", i.Stack), // format stack trace as multi-line
+		})
+	}()
+
+	if _, ok := fn.(Option); ok {
+		return fmt.Errorf("fx.Option should be passed to fx.New directly, "+
+			"not to fx.Invoke: fx.Invoke received %v from:\n%+v",
+			fn, i.Stack)
+	}
+
+	return app.container.Invoke(fn)
 }
 
 func (app *App) run(done <-chan os.Signal) {

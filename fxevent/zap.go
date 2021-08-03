@@ -73,9 +73,14 @@ func (l *ZapLogger) LogEvent(event Event) {
 				zap.Error(e.Err))
 		}
 	case *Invoking:
-		l.Logger.Info("invoked", zap.String("function", e.FunctionName))
+		// Do nothing. Will log on Invoked.
+
 	case *Invoked:
-		l.Logger.Error("invoke failed",
+		msg := "invoked"
+		if e.Err != nil {
+			msg = "invoke failed"
+		}
+		l.Logger.Error(msg,
 			zap.Error(e.Err),
 			zap.String("stack", e.Trace),
 			zap.String("function", e.FunctionName))

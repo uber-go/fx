@@ -93,12 +93,19 @@ func TestConsoleLogger(t *testing.T) {
 			want: "[Fx] PROVIDE	*bytes.Buffer <= bytes.NewBuffer()\n",
 		},
 		{
-			name: "Invoked",
+			name: "Invoking",
 			give: &Invoking{FunctionName: "bytes.NewBuffer()"},
 			want: "[Fx] INVOKE		bytes.NewBuffer()\n",
 		},
 		{
-			name: "InvokeError",
+			name: "Invoked/Success",
+			give: &Invoked{
+				FunctionName: "bytes.NewBuffer()",
+				Trace:        "foo()\n\tbar/baz.go:42\n",
+			},
+		},
+		{
+			name: "Invoked/Error",
 			give: &Invoked{
 				FunctionName: "bytes.NewBuffer()",
 				Err:          errors.New("some error"),
