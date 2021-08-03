@@ -42,13 +42,18 @@ func (*Rollback) event()               {}
 func (*Started) event()                {}
 func (*LoggerInitialized) event()      {}
 
-// LifecycleHookExecuting is emitted before an OnStart hook is about to be executed.
+// LifecycleHookExecuting is emitted before an OnStart or OnStop hook is
+// executed.
 type LifecycleHookExecuting struct {
-	// FunctionName is the name of the hook being executed.
+	// FunctionName is the name of the function that will be executed.
 	FunctionName string
-	// CallerName is the name of the caller that appended the hook.
+
+	// CallerName is the name of the function that scheduled the hook for
+	// execution.
 	CallerName string
-	// Method is the lifecycle hook method getting called.
+
+	// Method specifies the kind of hook we're executing. This is one of
+	// "OnStart" and "OnStop".
 	Method string
 }
 
