@@ -814,8 +814,8 @@ func TestAppStart(t *testing.T) {
 			spy.EventTypes())
 		failedEvent := spy.Events()[len(spy.EventTypes())-1].(*fxevent.Invoked)
 		assert.Contains(t, failedEvent.Err.Error(), "can't invoke non-function")
-		assert.Contains(t, failedEvent.Stacktrace, "go.uber.org/fx_test.TestAppStart")
-		assert.Contains(t, failedEvent.Stacktrace, "fx/app_test.go")
+		assert.Contains(t, failedEvent.Trace, "go.uber.org/fx_test.TestAppStart")
+		assert.Contains(t, failedEvent.Trace, "fx/app_test.go")
 	})
 
 	t.Run("ProvidingAProvideShouldFail", func(t *testing.T) {

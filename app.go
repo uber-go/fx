@@ -853,7 +853,7 @@ func (app *App) executeInvokes() error {
 			app.log.LogEvent(&fxevent.Invoked{
 				FunctionName: fnName,
 				Err:          err,
-				Stacktrace:   fmt.Sprintf("%+v", i.Stack), // format stack trace as multi-line
+				Trace:        fmt.Sprintf("%+v", i.Stack), // format stack trace as multi-line
 			})
 
 			return err

@@ -102,7 +102,7 @@ func TestConsoleLogger(t *testing.T) {
 			give: &Invoked{
 				FunctionName: "bytes.NewBuffer()",
 				Err:          errors.New("some error"),
-				Stacktrace:   "foo()\n\tbar/baz.go:42\n",
+				Trace:        "foo()\n\tbar/baz.go:42\n",
 			},
 			want: joinLines(
 				"[Fx] fx.Invoke(bytes.NewBuffer()) called from:",

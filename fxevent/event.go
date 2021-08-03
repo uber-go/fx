@@ -116,9 +116,9 @@ type Invoked struct {
 	// Err is non-nil if the function failed to execute.
 	Err error
 
-	// Stacktrace records information about where the fx.Invoke call was
-	// made.
-	Stacktrace string
+	// Trace records information about where the fx.Invoke call was made.
+	// Note that this is NOT a stack trace of the error itself.
+	Trace string
 }
 
 // Started is emitted whenever an application is started successfully and/or
