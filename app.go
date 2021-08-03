@@ -468,12 +468,19 @@ func ValidateApp(opts ...Option) error {
 }
 
 // Builds and connects the custom logger, returning an error if it failed.
-func (app *App) constructCustomLogger(buffer *logBuffer) error {
+func (app *App) constructCustomLogger(buffer *logBuffer) (err error) {
 	p := app.logConstructor
+	fname := fxreflect.FuncName(p.Target)
+	defer func() {
+		app.log.LogEvent(&fxevent.LoggerInitialized{
+			Err:             err,
+			ConstructorName: fname,
+		})
+	}()
 
 	if err := app.container.Provide(p.Target); err != nil {
 		return fmt.Errorf("fx.WithLogger(%v) from:\n%+vFailed: %v",
-			fxreflect.FuncName(p.Target), p.Stack, err)
+			fname, p.Stack, err)
 	}
 
 	// TODO: Use dig.FillProvideInfo to inspect the provided constructor
@@ -574,13 +581,8 @@ func New(opts ...Option) *App {
 			app.err = multierr.Append(app.err, err)
 			app.log = fallbackLogger
 			bufferLogger.Connect(fallbackLogger)
-			app.log.LogEvent(&fxevent.LoggerInitialized{
-				Err:         err,
-				Constructor: app.logConstructor,
-			})
 			return app
 		}
-		app.log.LogEvent(&fxevent.LoggerInitialized{Constructor: app.logConstructor})
 	}
 
 	// This error might have come from the provide loop above. We've
@@ -648,7 +650,12 @@ func VisualizeError(err error) (string, error) {
 // Start, Done, and Stop methods. Applications with more specialized needs
 // can use those methods directly instead of relying on Run.
 func (app *App) Run() {
-	app.run(app.Done())
+	// Historically, we do not os.Exit(0) even though most applications
+	// cede control to Fx with they call app.Run. To avoid a breaking
+	// change, never os.Exit for success.
+	if code := app.run(app.Done()); code != 0 {
+		os.Exit(code)
+	}
 }
 
 // Err returns any error encountered during New's initialization. See the
@@ -764,28 +771,29 @@ func (app *App) provide(p provide) {
 		dig.FillProvideInfo(&info),
 	}
 	defer func() {
-		if app.err != nil {
-			app.log.LogEvent(&fxevent.Provide{
-				Err:         app.err,
-				Constructor: constructor,
-			})
-			return
-		}
+		var ev fxevent.Event
 
 		switch {
 		case p.IsSupply:
-			app.log.LogEvent(&fxevent.Supplied{TypeName: p.SupplyType.String()})
+			ev = &fxevent.Supplied{
+				TypeName: p.SupplyType.String(),
+				Err:      app.err,
+			}
+
 		default:
 			outputNames := make([]string, len(info.Outputs))
 			for i, o := range info.Outputs {
 				outputNames[i] = o.String()
 			}
 
-			app.log.LogEvent(&fxevent.Provide{
-				Constructor:     constructor,
+			ev = &fxevent.Provided{
+				ConstructorName: fxreflect.FuncName(constructor),
 				OutputTypeNames: outputNames,
-			})
+				Err:             app.err,
+			}
 		}
+
+		app.log.LogEvent(ev)
 	}()
 
 	if ann, ok := constructor.(Annotated); ok {
@@ -835,25 +843,7 @@ func (app *App) executeInvokes() error {
 	// TODO: consider taking a context to limit the time spent running invocations.
 
 	for _, i := range app.invokes {
-		fn := i.Target
-		app.log.LogEvent(&fxevent.Invoking{Function: fn})
-
-		var err error
-		if _, ok := fn.(Option); ok {
-			err = fmt.Errorf("fx.Option should be passed to fx.New directly, "+
-				"not to fx.Invoke: fx.Invoke received %v from:\n%+v",
-				fn, i.Stack)
-		} else {
-			err = app.container.Invoke(fn)
-		}
-
-		if err != nil {
-			app.log.LogEvent(&fxevent.Invoked{
-				Function:   fn,
-				Err:        err,
-				Stacktrace: fmt.Sprintf("%+v", i.Stack), // format stack trace as multi-line
-			})
-
+		if err := app.executeInvoke(i); err != nil {
 			return err
 		}
 	}
@@ -861,27 +851,55 @@ func (app *App) executeInvokes() error {
 	return nil
 }
 
-func (app *App) run(done <-chan os.Signal) {
+func (app *App) executeInvoke(i invoke) (err error) {
+	fn := i.Target
+	fnName := fxreflect.FuncName(fn)
+
+	app.log.LogEvent(&fxevent.Invoking{FunctionName: fnName})
+	defer func() {
+		app.log.LogEvent(&fxevent.Invoked{
+			FunctionName: fnName,
+			Err:          err,
+			Trace:        fmt.Sprintf("%+v", i.Stack), // format stack trace as multi-line
+		})
+	}()
+
+	if _, ok := fn.(Option); ok {
+		return fmt.Errorf("fx.Option should be passed to fx.New directly, "+
+			"not to fx.Invoke: fx.Invoke received %v from:\n%+v",
+			fn, i.Stack)
+	}
+
+	return app.container.Invoke(fn)
+}
+
+func (app *App) run(done <-chan os.Signal) (exitCode int) {
 	startCtx, cancel := context.WithTimeout(context.Background(), app.StartTimeout())
 	defer cancel()
 
 	if err := app.Start(startCtx); err != nil {
-		app.log.LogEvent(&fxevent.Started{Err: err})
-		os.Exit(1)
+		return 1
 	}
 	sig := <-done
-	app.log.LogEvent(&fxevent.Stop{Signal: sig})
+	app.log.LogEvent(&fxevent.Stopping{Signal: sig})
 
 	stopCtx, cancel := context.WithTimeout(context.Background(), app.StopTimeout())
 	defer cancel()
 
-	if err := app.Stop(stopCtx); err != nil {
-		app.log.LogEvent(&fxevent.Stop{Err: err})
-		os.Exit(1)
+	err := app.Stop(stopCtx)
+	app.log.LogEvent(&fxevent.Stopped{Err: err})
+
+	if err != nil {
+		return 1
 	}
+	return 0
 }
 
-func (app *App) start(ctx context.Context) error {
+func (app *App) start(ctx context.Context) (err error) {
+	defer func() {
+		app.log.LogEvent(&fxevent.Started{Err: err})
+	}()
+
 	if app.err != nil {
 		// Some provides failed, short-circuit immediately.
 		return app.err
@@ -890,16 +908,17 @@ func (app *App) start(ctx context.Context) error {
 	// Attempt to start cleanly.
 	if err := app.lifecycle.Start(ctx); err != nil {
 		// Start failed, rolling back.
-		app.log.LogEvent(&fxevent.Rollback{StartErr: err})
-		if stopErr := app.lifecycle.Stop(ctx); stopErr != nil {
-			app.log.LogEvent(&fxevent.Rollback{Err: stopErr})
+		app.log.LogEvent(&fxevent.RollingBack{StartErr: err})
 
+		stopErr := app.lifecycle.Stop(ctx)
+		app.log.LogEvent(&fxevent.RolledBack{Err: stopErr})
+
+		if stopErr != nil {
 			return multierr.Append(err, stopErr)
 		}
 
 		return err
 	}
-	app.log.LogEvent(&fxevent.Started{})
 
 	return nil
 }

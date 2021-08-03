@@ -41,18 +41,42 @@ func TestConsoleLogger(t *testing.T) {
 		want string
 	}{
 		{
-			name: "LifecycleHookExecuting",
-			give: &LifecycleHookExecuting{
-				Method:       "OnStop",
+			name: "OnStart executing",
+			give: &OnStartExecuting{
+				FunctionName: "hook.onStart",
+				CallerName:   "bytes.NewBuffer",
+			},
+			want: "[Fx] HOOK OnStart		hook.onStart executing (caller: bytes.NewBuffer)\n",
+		},
+		{
+			name: "OnStopExecuting",
+			give: &OnStopExecuting{
 				FunctionName: "hook.onStop1",
 				CallerName:   "bytes.NewBuffer",
 			},
 			want: "[Fx] HOOK OnStop		hook.onStop1 executing (caller: bytes.NewBuffer)\n",
 		},
 		{
-			name: "LifecycleHookExecutedError",
-			give: &LifecycleHookExecuted{
-				Method:       "OnStart",
+			name: "OnStopExecutedError",
+			give: &OnStopExecuted{
+				FunctionName: "hook.onStart1",
+				CallerName:   "bytes.NewBuffer",
+				Err:          fmt.Errorf("some error"),
+			},
+			want: "[Fx] HOOK OnStop		hook.onStart1 called by bytes.NewBuffer failed in 0s: some error\n",
+		},
+		{
+			name: "OnStopExecuted",
+			give: &OnStopExecuted{
+				FunctionName: "hook.onStart1",
+				CallerName:   "bytes.NewBuffer",
+				Runtime:      time.Millisecond * 3,
+			},
+			want: "[Fx] HOOK OnStop		hook.onStart1 called by bytes.NewBuffer ran successfully in 3ms\n",
+		},
+		{
+			name: "OnStartExecutedError",
+			give: &OnStartExecuted{
 				FunctionName: "hook.onStart1",
 				CallerName:   "bytes.NewBuffer",
 				Err:          fmt.Errorf("some error"),
@@ -60,9 +84,8 @@ func TestConsoleLogger(t *testing.T) {
 			want: "[Fx] HOOK OnStart		hook.onStart1 called by bytes.NewBuffer failed in 0s: some error\n",
 		},
 		{
-			name: "LifecycleHookExecuted",
-			give: &LifecycleHookExecuted{
-				Method:       "OnStart",
+			name: "OnStartExecuted",
+			give: &OnStartExecuted{
 				FunctionName: "hook.onStart1",
 				CallerName:   "bytes.NewBuffer",
 				Runtime:      time.Millisecond * 3,
@@ -71,7 +94,7 @@ func TestConsoleLogger(t *testing.T) {
 		},
 		{
 			name: "ProvideError",
-			give: &Provide{Err: errors.New("some error")},
+			give: &Provided{Err: errors.New("some error")},
 			want: "[Fx] Error after options were applied: some error\n",
 		},
 		{
@@ -80,21 +103,36 @@ func TestConsoleLogger(t *testing.T) {
 			want: "[Fx] SUPPLY	*bytes.Buffer\n",
 		},
 		{
-			name: "Provide",
-			give: &Provide{bytes.NewBuffer, []string{"*bytes.Buffer"}, nil},
+			name: "SuppliedError",
+			give: &Supplied{TypeName: "*bytes.Buffer", Err: errors.New("great sadness")},
+			want: "[Fx] ERROR	Failed to supply *bytes.Buffer: great sadness\n",
+		},
+		{
+			name: "Provided",
+			give: &Provided{
+				ConstructorName: "bytes.NewBuffer()",
+				OutputTypeNames: []string{"*bytes.Buffer"},
+			},
 			want: "[Fx] PROVIDE	*bytes.Buffer <= bytes.NewBuffer()\n",
 		},
 		{
-			name: "Invoked",
-			give: &Invoking{Function: bytes.NewBuffer},
+			name: "Invoking",
+			give: &Invoking{FunctionName: "bytes.NewBuffer()"},
 			want: "[Fx] INVOKE		bytes.NewBuffer()\n",
 		},
 		{
-			name: "InvokeError",
+			name: "Invoked/Success",
 			give: &Invoked{
-				Function:   bytes.NewBuffer,
-				Err:        errors.New("some error"),
-				Stacktrace: "foo()\n\tbar/baz.go:42\n",
+				FunctionName: "bytes.NewBuffer()",
+				Trace:        "foo()\n\tbar/baz.go:42\n",
+			},
+		},
+		{
+			name: "Invoked/Error",
+			give: &Invoked{
+				FunctionName: "bytes.NewBuffer()",
+				Err:          errors.New("some error"),
+				Trace:        "foo()\n\tbar/baz.go:42\n",
 			},
 			want: joinLines(
 				"[Fx] fx.Invoke(bytes.NewBuffer()) called from:",
@@ -109,24 +147,24 @@ func TestConsoleLogger(t *testing.T) {
 			want: "[Fx] ERROR		Failed to start: some error\n",
 		},
 		{
-			name: "Stop",
-			give: &Stop{Signal: os.Interrupt},
+			name: "Stopping",
+			give: &Stopping{Signal: os.Interrupt},
 			want: "[Fx] INTERRUPT\n",
 		},
 		{
-			name: "StopError",
-			give: &Stop{Err: errors.New("some error")},
+			name: "Stopped",
+			give: &Stopped{Err: errors.New("some error")},
 			want: "[Fx] ERROR		Failed to stop cleanly: some error\n",
 		},
 		{
-			name: "RollbackError",
-			give: &Rollback{Err: errors.New("some error")},
-			want: "[Fx] ERROR		Couldn't roll back cleanly: some error\n",
+			name: "RollingBack",
+			give: &RollingBack{StartErr: errors.New("some error")},
+			want: "[Fx] ERROR		Start failed, rolling back: some error\n",
 		},
 		{
-			name: "Rollback",
-			give: &Rollback{StartErr: errors.New("some error")},
-			want: "[Fx] ERROR		Start failed, rolling back: some error\n",
+			name: "RolledBack",
+			give: &RolledBack{Err: errors.New("some error")},
+			want: "[Fx] ERROR		Couldn't roll back cleanly: some error\n",
 		},
 		{
 			name: "Started",
@@ -140,9 +178,7 @@ func TestConsoleLogger(t *testing.T) {
 		},
 		{
 			name: "LoggerInitialized",
-			give: &LoggerInitialized{
-				Constructor: func() Logger { panic("should not run") },
-			},
+			give: &LoggerInitialized{ConstructorName: "go.uber.org/fx/fxevent.TestConsoleLogger.func1()"},
 			want: "[Fx] LOGGER	Initialized custom logger from go.uber.org/fx/fxevent.TestConsoleLogger.func1()\n",
 		},
 	}

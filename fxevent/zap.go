@@ -23,7 +23,6 @@ package fxevent
 import (
 	"strings"
 
-	"go.uber.org/fx/internal/fxreflect"
 	"go.uber.org/zap"
 )
 
@@ -37,34 +36,50 @@ var _ Logger = (*ZapLogger)(nil)
 // LogEvent logs the given event to the provided Zap logger.
 func (l *ZapLogger) LogEvent(event Event) {
 	switch e := event.(type) {
-	case *LifecycleHookExecuting:
-		l.Logger.Info("hook executing",
-			zap.String("method", e.Method),
+	case *OnStartExecuting:
+		l.Logger.Info("OnStart hook executing",
 			zap.String("callee", e.FunctionName),
 			zap.String("caller", e.CallerName),
 		)
-	case *LifecycleHookExecuted:
+	case *OnStartExecuted:
 		if e.Err != nil {
-			l.Logger.Info("hook execute failed",
-				zap.String("method", e.Method),
+			l.Logger.Info("OnStart hook failed",
 				zap.String("callee", e.FunctionName),
 				zap.String("caller", e.CallerName),
 				zap.Error(e.Err),
 			)
 		} else {
-			l.Logger.Info("hook executed",
-				zap.String("method", e.Method),
+			l.Logger.Info("OnStart hook executed",
+				zap.String("callee", e.FunctionName),
+				zap.String("caller", e.CallerName),
+				zap.String("runtime", e.Runtime.String()),
+			)
+		}
+	case *OnStopExecuting:
+		l.Logger.Info("OnStop hook executing",
+			zap.String("callee", e.FunctionName),
+			zap.String("caller", e.CallerName),
+		)
+	case *OnStopExecuted:
+		if e.Err != nil {
+			l.Logger.Info("OnStop hook failed",
+				zap.String("callee", e.FunctionName),
+				zap.String("caller", e.CallerName),
+				zap.Error(e.Err),
+			)
+		} else {
+			l.Logger.Info("OnStop hook executed",
 				zap.String("callee", e.FunctionName),
 				zap.String("caller", e.CallerName),
 				zap.String("runtime", e.Runtime.String()),
 			)
 		}
 	case *Supplied:
-		l.Logger.Info("supplied", zap.String("type", e.TypeName))
-	case *Provide:
+		l.Logger.Info("supplied", zap.String("type", e.TypeName), zap.Error(e.Err))
+	case *Provided:
 		for _, rtype := range e.OutputTypeNames {
 			l.Logger.Info("provided",
-				zap.String("constructor", fxreflect.FuncName(e.Constructor)),
+				zap.String("constructor", e.ConstructorName),
 				zap.String("type", rtype),
 			)
 		}
@@ -73,25 +88,29 @@ func (l *ZapLogger) LogEvent(event Event) {
 				zap.Error(e.Err))
 		}
 	case *Invoking:
-		l.Logger.Info("invoked",
-			zap.String("function", fxreflect.FuncName(e.Function)))
+		// Do nothing. Will log on Invoked.
+
 	case *Invoked:
-		l.Logger.Error("invoke failed",
+		msg := "invoked"
+		if e.Err != nil {
+			msg = "invoke failed"
+		}
+		l.Logger.Error(msg,
 			zap.Error(e.Err),
-			zap.String("stack", e.Stacktrace),
-			zap.String("function", fxreflect.FuncName(e.Function)))
-	case *Stop:
+			zap.String("stack", e.Trace),
+			zap.String("function", e.FunctionName))
+	case *Stopping:
+		l.Logger.Info("received signal",
+			zap.String("signal", strings.ToUpper(e.Signal.String())))
+	case *Stopped:
 		if e.Err != nil {
 			l.Logger.Error("stop failed", zap.Error(e.Err))
-		} else {
-			l.Logger.Info("received signal",
-				zap.String("signal", strings.ToUpper(e.Signal.String())))
 		}
-	case *Rollback:
+	case *RollingBack:
+		l.Logger.Error("start failed, rolling back", zap.Error(e.StartErr))
+	case *RolledBack:
 		if e.Err != nil {
 			l.Logger.Error("rollback failed", zap.Error(e.Err))
-		} else {
-			l.Logger.Error("start failed, rolling back", zap.Error(e.StartErr))
 		}
 	case *Started:
 		if e.Err != nil {
@@ -103,8 +122,7 @@ func (l *ZapLogger) LogEvent(event Event) {
 		if e.Err != nil {
 			l.Logger.Error("custom logger initialization failed", zap.Error(e.Err))
 		} else {
-			l.Logger.Info("initialized custom fxevent.Logger",
-				zap.String("function", fxreflect.FuncName(e.Constructor)))
+			l.Logger.Info("initialized custom fxevent.Logger", zap.String("function", e.ConstructorName))
 		}
 	}
 }

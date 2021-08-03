@@ -24,8 +24,6 @@ import (
 	"fmt"
 	"io"
 	"strings"
-
-	"go.uber.org/fx/internal/fxreflect"
 )
 
 // ConsoleLogger is an Fx event logger that attempts to write human-readable
@@ -45,39 +43,52 @@ func (l *ConsoleLogger) logf(msg string, args ...interface{}) {
 // LogEvent logs the given event to the provided Zap logger.
 func (l *ConsoleLogger) LogEvent(event Event) {
 	switch e := event.(type) {
-	case *LifecycleHookExecuting:
-		l.logf("HOOK %s\t\t%s executing (caller: %s)", e.Method, e.FunctionName, e.CallerName)
-	case *LifecycleHookExecuted:
+	case *OnStartExecuting:
+		l.logf("HOOK OnStart\t\t%s executing (caller: %s)", e.FunctionName, e.CallerName)
+	case *OnStartExecuted:
 		if e.Err != nil {
-			l.logf("HOOK %s\t\t%s called by %s failed in %s: %v", e.Method, e.FunctionName, e.CallerName, e.Runtime, e.Err)
+			l.logf("HOOK OnStart\t\t%s called by %s failed in %s: %v", e.FunctionName, e.CallerName, e.Runtime, e.Err)
 		} else {
-			l.logf("HOOK %s\t\t%s called by %s ran successfully in %s", e.Method, e.FunctionName, e.CallerName, e.Runtime)
+			l.logf("HOOK OnStart\t\t%s called by %s ran successfully in %s", e.FunctionName, e.CallerName, e.Runtime)
+		}
+	case *OnStopExecuting:
+		l.logf("HOOK OnStop\t\t%s executing (caller: %s)", e.FunctionName, e.CallerName)
+	case *OnStopExecuted:
+		if e.Err != nil {
+			l.logf("HOOK OnStop\t\t%s called by %s failed in %s: %v", e.FunctionName, e.CallerName, e.Runtime, e.Err)
+		} else {
+			l.logf("HOOK OnStop\t\t%s called by %s ran successfully in %s", e.FunctionName, e.CallerName, e.Runtime)
 		}
 	case *Supplied:
-		l.logf("SUPPLY\t%v", e.TypeName)
-	case *Provide:
+		if e.Err != nil {
+			l.logf("ERROR\tFailed to supply %v: %v", e.TypeName, e.Err)
+		} else {
+			l.logf("SUPPLY\t%v", e.TypeName)
+		}
+	case *Provided:
 		for _, rtype := range e.OutputTypeNames {
-			l.logf("PROVIDE\t%v <= %v", rtype, fxreflect.FuncName(e.Constructor))
+			l.logf("PROVIDE\t%v <= %v", rtype, e.ConstructorName)
 		}
 		if e.Err != nil {
 			l.logf("Error after options were applied: %v", e.Err)
 		}
 	case *Invoking:
-		l.logf("INVOKE\t\t%s", fxreflect.FuncName(e.Function))
+		l.logf("INVOKE\t\t%s", e.FunctionName)
 	case *Invoked:
-		l.logf("fx.Invoke(%v) called from:\n%+vFailed: %v",
-			fxreflect.FuncName(e.Function), e.Stacktrace, e.Err)
-	case *Stop:
+		if e.Err != nil {
+			l.logf("fx.Invoke(%v) called from:\n%+vFailed: %v", e.FunctionName, e.Trace, e.Err)
+		}
+	case *Stopping:
+		l.logf("%v", strings.ToUpper(e.Signal.String()))
+	case *Stopped:
 		if e.Err != nil {
 			l.logf("ERROR\t\tFailed to stop cleanly: %v", e.Err)
-		} else {
-			l.logf("%v", strings.ToUpper(e.Signal.String()))
 		}
-	case *Rollback:
+	case *RollingBack:
+		l.logf("ERROR\t\tStart failed, rolling back: %v", e.StartErr)
+	case *RolledBack:
 		if e.Err != nil {
 			l.logf("ERROR\t\tCouldn't roll back cleanly: %v", e.Err)
-		} else {
-			l.logf("ERROR\t\tStart failed, rolling back: %v", e.StartErr)
 		}
 	case *Started:
 		if e.Err != nil {
@@ -87,9 +98,9 @@ func (l *ConsoleLogger) LogEvent(event Event) {
 		}
 	case *LoggerInitialized:
 		if e.Err != nil {
-			l.logf("ERROR\t\tFailed to initialize custom logger: %v", e.Err)
+			l.logf("ERROR\t\tFailed to initialize custom logger: %+v", e.Err)
 		} else {
-			l.logf("LOGGER\tInitialized custom logger from %v", fxreflect.FuncName(e.Constructor))
+			l.logf("LOGGER\tInitialized custom logger from %v", e.ConstructorName)
 		}
 	}
 }
