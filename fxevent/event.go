@@ -121,9 +121,12 @@ type Invoked struct {
 	Trace string
 }
 
-// Started is emitted whenever an application is started successfully and/or
-// it errored.
-type Started struct{ Err error }
+// Started is emitted when an application is started successfully and/or it
+// errored.
+type Started struct {
+	// Err is non-nil if the application failed to start successfully.
+	Err error
+}
 
 // Stop is emitted whenever application receives a signal after
 // starting the application with an optional error.
