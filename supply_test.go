@@ -117,14 +117,9 @@ func TestSupply(t *testing.T) {
 		require.Error(t, app.Err())
 		assert.Contains(t, app.Err().Error(), "already provided")
 
-		var supplies []*fxevent.Supplied
-		for _, ev := range spy.Events() {
-			if ev, ok := ev.(*fxevent.Supplied); ok {
-				supplies = append(supplies, ev)
-			}
-		}
-		require.Len(t, supplies, 2)
-		require.NoError(t, supplies[0].Err)
-		require.Error(t, supplies[1].Err)
+		supplied := spy.Events().SelectByTypeName("Supplied")
+		require.Len(t, supplied, 2)
+		require.NoError(t, supplied[0].(*fxevent.Supplied).Err)
+		require.Error(t, supplied[1].(*fxevent.Supplied).Err)
 	})
 }

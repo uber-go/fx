@@ -37,7 +37,7 @@ func TestLogBufferConnect(t *testing.T) {
 	}
 
 	lb.Connect(spy)
-	assert.Equal(t, spy.Events(), []fxevent.Event{event})
+	assert.Equal(t, fxlog.Events{event}, spy.Events())
 }
 
 func TestLogBufferLog(t *testing.T) {
@@ -51,5 +51,5 @@ func TestLogBufferLog(t *testing.T) {
 	lb.LogEvent(event)
 
 	lb.Connect(spy)
-	assert.Equal(t, spy.Events(), []fxevent.Event{event})
+	assert.Equal(t, fxlog.Events{event}, spy.Events())
 }
