@@ -61,7 +61,7 @@ func (l *ConsoleLogger) LogEvent(event Event) {
 		}
 	case *Provided:
 		for _, rtype := range e.OutputTypeNames {
-			l.logf("PROVIDE\t%v <= %v", rtype, fxreflect.FuncName(e.Constructor))
+			l.logf("PROVIDE\t%v <= %v", rtype, e.ConstructorName)
 		}
 		if e.Err != nil {
 			l.logf("Error after options were applied: %v", e.Err)

@@ -89,9 +89,9 @@ type Supplied struct {
 
 // Provided is emitted when a constructor is provided to Fx.
 type Provided struct {
-	// Constructor is a reference to the constructor that was provided to
+	// ConstructorName is the name of the constructor that was provided to
 	// Fx.
-	Constructor interface{}
+	ConstructorName string
 
 	// OutputTypeNames is a list of names of types that are produced by
 	// this constructor.

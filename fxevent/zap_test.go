@@ -110,8 +110,11 @@ func TestZapLogger(t *testing.T) {
 			},
 		},
 		{
-			name:        "Provide",
-			give:        &Provided{bytes.NewBuffer, []string{"*bytes.Buffer"}, nil},
+			name: "Provide",
+			give: &Provided{
+				ConstructorName: "bytes.NewBuffer()",
+				OutputTypeNames: []string{"*bytes.Buffer"},
+			},
 			wantMessage: "provided",
 			wantFields: map[string]interface{}{
 				"constructor": "bytes.NewBuffer()",

@@ -780,7 +780,7 @@ func (app *App) provide(p provide) {
 			}
 
 			ev = &fxevent.Provided{
-				Constructor:     constructor,
+				ConstructorName: fxreflect.FuncName(constructor),
 				OutputTypeNames: outputNames,
 				Err:             app.err,
 			}

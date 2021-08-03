@@ -86,7 +86,10 @@ func TestConsoleLogger(t *testing.T) {
 		},
 		{
 			name: "Provided",
-			give: &Provided{bytes.NewBuffer, []string{"*bytes.Buffer"}, nil},
+			give: &Provided{
+				ConstructorName: "bytes.NewBuffer()",
+				OutputTypeNames: []string{"*bytes.Buffer"},
+			},
 			want: "[Fx] PROVIDE	*bytes.Buffer <= bytes.NewBuffer()\n",
 		},
 		{
