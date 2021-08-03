@@ -34,7 +34,7 @@ type Event interface {
 func (*LifecycleHookExecuting) event() {}
 func (*LifecycleHookExecuted) event()  {}
 func (*Supplied) event()               {}
-func (*Provide) event()                {}
+func (*Provided) event()               {}
 func (*Invoking) event()               {}
 func (*Invoked) event()                {}
 func (*Stop) event()                   {}
@@ -84,15 +84,17 @@ type Supplied struct {
 	TypeName string
 }
 
-// Provide is emitted when we add a constructor to the container.
-type Provide struct {
+// Provided is emitted when a constructor is provided to Fx.
+type Provided struct {
+	// Constructor is a reference to the constructor that was provided to
+	// Fx.
 	Constructor interface{}
 
 	// OutputTypeNames is a list of names of types that are produced by
 	// this constructor.
 	OutputTypeNames []string
 
-	// Err is emitted if there was an error applying options.
+	// Err is non-nil if we failed to provide this constructor.
 	Err error
 }
 

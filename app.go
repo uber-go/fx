@@ -764,14 +764,6 @@ func (app *App) provide(p provide) {
 		dig.FillProvideInfo(&info),
 	}
 	defer func() {
-		if app.err != nil {
-			app.log.LogEvent(&fxevent.Provide{
-				Err:         app.err,
-				Constructor: constructor,
-			})
-			return
-		}
-
 		switch {
 		case p.IsSupply:
 			app.log.LogEvent(&fxevent.Supplied{TypeName: p.SupplyType.String()})
@@ -781,9 +773,10 @@ func (app *App) provide(p provide) {
 				outputNames[i] = o.String()
 			}
 
-			app.log.LogEvent(&fxevent.Provide{
+			app.log.LogEvent(&fxevent.Provided{
 				Constructor:     constructor,
 				OutputTypeNames: outputNames,
+				Err:             app.err,
 			})
 		}
 	}()

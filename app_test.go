@@ -80,10 +80,10 @@ func TestNewApp(t *testing.T) {
 			WithLogger(func() fxevent.Logger { return spy }))
 		defer app.RequireStart().RequireStop()
 		require.Equal(t,
-			[]string{"Provide", "Provide", "Provide", "Provide", "LoggerInitialized", "Started"},
+			[]string{"Provided", "Provided", "Provided", "Provided", "LoggerInitialized", "Started"},
 			spy.EventTypes())
 
-		assert.Contains(t, spy.Events()[0].(*fxevent.Provide).OutputTypeNames, "struct {}")
+		assert.Contains(t, spy.Events()[0].(*fxevent.Provided).OutputTypeNames, "struct {}")
 	})
 
 	t.Run("CircularGraphReturnsError", func(t *testing.T) {
@@ -286,7 +286,7 @@ func TestWithLogger(t *testing.T) {
 		)
 
 		assert.Equal(t, []string{
-			"Supplied", "Provide", "Provide", "Provide", "LoggerInitialized",
+			"Supplied", "Provided", "Provided", "Provided", "LoggerInitialized",
 		}, spy.EventTypes())
 
 		spy.Reset()
@@ -361,7 +361,7 @@ func TestWithLogger(t *testing.T) {
 			"must provide constructor function, got  (type *bytes.Buffer)",
 		)
 
-		assert.Equal(t, []string{"Supplied", "Provide", "LoggerInitialized"}, spy.EventTypes())
+		assert.Equal(t, []string{"Supplied", "Provided", "LoggerInitialized"}, spy.EventTypes())
 	})
 
 	t.Run("logger failed to build", func(t *testing.T) {
@@ -576,8 +576,8 @@ func TestOptions(t *testing.T) {
 			Provide(&bytes.Buffer{}), // error, not a constructor
 			WithLogger(func() fxevent.Logger { return spy }),
 		)
-		require.Equal(t, []string{"Provide", "LoggerInitialized"}, spy.EventTypes())
-		assert.Contains(t, spy.Events()[0].(*fxevent.Provide).Err.Error(), "must provide constructor function")
+		require.Equal(t, []string{"Provided", "LoggerInitialized"}, spy.EventTypes())
+		assert.Contains(t, spy.Events()[0].(*fxevent.Provided).Err.Error(), "must provide constructor function")
 	})
 }
 
@@ -810,7 +810,7 @@ func TestAppStart(t *testing.T) {
 		//         /.../go/1.13.3/libexec/src/testing/testing.go:909
 		// Failed: can't invoke non-function {} (type struct {})
 		require.Equal(t,
-			[]string{"Provide", "Provide", "Provide", "LoggerInitialized", "Invoking", "Invoked"},
+			[]string{"Provided", "Provided", "Provided", "LoggerInitialized", "Invoking", "Invoked"},
 			spy.EventTypes())
 		failedEvent := spy.Events()[len(spy.EventTypes())-1].(*fxevent.Invoked)
 		assert.Contains(t, failedEvent.Err.Error(), "can't invoke non-function")
@@ -1048,7 +1048,7 @@ func TestReplaceLogger(t *testing.T) {
 	spy := new(fxlog.Spy)
 	app := fxtest.New(t, WithLogger(func() fxevent.Logger { return spy }))
 	app.RequireStart().RequireStop()
-	assert.Equal(t, []string{"Provide", "Provide", "Provide", "LoggerInitialized", "Started"}, spy.EventTypes())
+	assert.Equal(t, []string{"Provided", "Provided", "Provided", "LoggerInitialized", "Started"}, spy.EventTypes())
 }
 
 func TestNopLogger(t *testing.T) {
@@ -1114,9 +1114,9 @@ func TestCustomLoggerWithLifecycle(t *testing.T) {
 	require.NoError(t, app.Stop(context.Background()))
 
 	assert.Equal(t, []string{
-		"Provide",
-		"Provide",
-		"Provide",
+		"Provided",
+		"Provided",
+		"Provided",
 		"LoggerInitialized",
 		"LifecycleHookExecuting",
 		"LifecycleHookExecuted",

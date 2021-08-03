@@ -32,7 +32,7 @@ func TestForCoverage(t *testing.T) {
 		&LifecycleHookExecuting{},
 		&LifecycleHookExecuted{},
 		&Supplied{},
-		&Provide{},
+		&Provided{},
 		&Invoking{},
 		&Invoked{},
 		&Stop{},

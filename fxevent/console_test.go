@@ -71,7 +71,7 @@ func TestConsoleLogger(t *testing.T) {
 		},
 		{
 			name: "ProvideError",
-			give: &Provide{Err: errors.New("some error")},
+			give: &Provided{Err: errors.New("some error")},
 			want: "[Fx] Error after options were applied: some error\n",
 		},
 		{
@@ -80,8 +80,8 @@ func TestConsoleLogger(t *testing.T) {
 			want: "[Fx] SUPPLY	*bytes.Buffer\n",
 		},
 		{
-			name: "Provide",
-			give: &Provide{bytes.NewBuffer, []string{"*bytes.Buffer"}, nil},
+			name: "Provided",
+			give: &Provided{bytes.NewBuffer, []string{"*bytes.Buffer"}, nil},
 			want: "[Fx] PROVIDE	*bytes.Buffer <= bytes.NewBuffer()\n",
 		},
 		{

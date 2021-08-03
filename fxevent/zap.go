@@ -61,7 +61,7 @@ func (l *ZapLogger) LogEvent(event Event) {
 		}
 	case *Supplied:
 		l.Logger.Info("supplied", zap.String("type", e.TypeName))
-	case *Provide:
+	case *Provided:
 		for _, rtype := range e.OutputTypeNames {
 			l.Logger.Info("provided",
 				zap.String("constructor", fxreflect.FuncName(e.Constructor)),

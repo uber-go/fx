@@ -102,7 +102,7 @@ func TestZapLogger(t *testing.T) {
 		},
 		{
 			name:        "Provide",
-			give:        &Provide{bytes.NewBuffer, []string{"*bytes.Buffer"}, nil},
+			give:        &Provided{bytes.NewBuffer, []string{"*bytes.Buffer"}, nil},
 			wantMessage: "provided",
 			wantFields: map[string]interface{}{
 				"constructor": "bytes.NewBuffer()",
@@ -111,7 +111,7 @@ func TestZapLogger(t *testing.T) {
 		},
 		{
 			name:        "Provide with Error",
-			give:        &Provide{Err: someError},
+			give:        &Provided{Err: someError},
 			wantMessage: "error encountered while applying options",
 			wantFields: map[string]interface{}{
 				"error": "some error",
