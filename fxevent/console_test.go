@@ -134,14 +134,14 @@ func TestConsoleLogger(t *testing.T) {
 			want: "[Fx] ERROR		Failed to stop cleanly: some error\n",
 		},
 		{
-			name: "RollbackError",
-			give: &Rollback{Err: errors.New("some error")},
-			want: "[Fx] ERROR		Couldn't roll back cleanly: some error\n",
+			name: "RollingBack",
+			give: &RollingBack{StartErr: errors.New("some error")},
+			want: "[Fx] ERROR		Start failed, rolling back: some error\n",
 		},
 		{
-			name: "Rollback",
-			give: &Rollback{StartErr: errors.New("some error")},
-			want: "[Fx] ERROR		Start failed, rolling back: some error\n",
+			name: "RolledBack",
+			give: &RolledBack{Err: errors.New("some error")},
+			want: "[Fx] ERROR		Couldn't roll back cleanly: some error\n",
 		},
 		{
 			name: "Started",

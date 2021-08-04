@@ -91,11 +91,11 @@ func (l *ZapLogger) LogEvent(event Event) {
 		if e.Err != nil {
 			l.Logger.Error("stop failed", zap.Error(e.Err))
 		}
-	case *Rollback:
+	case *RollingBack:
+		l.Logger.Error("start failed, rolling back", zap.Error(e.StartErr))
+	case *RolledBack:
 		if e.Err != nil {
 			l.Logger.Error("rollback failed", zap.Error(e.Err))
-		} else {
-			l.Logger.Error("start failed, rolling back", zap.Error(e.StartErr))
 		}
 	case *Started:
 		if e.Err != nil {

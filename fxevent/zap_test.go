@@ -173,17 +173,17 @@ func TestZapLogger(t *testing.T) {
 			},
 		},
 		{
-			name:        "RollbackError",
-			give:        &Rollback{Err: someError},
-			wantMessage: "rollback failed",
+			name:        "RollingBack",
+			give:        &RollingBack{StartErr: someError},
+			wantMessage: "start failed, rolling back",
 			wantFields: map[string]interface{}{
 				"error": "some error",
 			},
 		},
 		{
-			name:        "Rollback",
-			give:        &Rollback{StartErr: someError},
-			wantMessage: "start failed, rolling back",
+			name:        "RolledBackError",
+			give:        &RolledBack{Err: someError},
+			wantMessage: "rollback failed",
 			wantFields: map[string]interface{}{
 				"error": "some error",
 			},

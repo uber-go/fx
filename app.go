@@ -906,10 +906,12 @@ func (app *App) start(ctx context.Context) (err error) {
 	// Attempt to start cleanly.
 	if err := app.lifecycle.Start(ctx); err != nil {
 		// Start failed, rolling back.
-		app.log.LogEvent(&fxevent.Rollback{StartErr: err})
-		if stopErr := app.lifecycle.Stop(ctx); stopErr != nil {
-			app.log.LogEvent(&fxevent.Rollback{Err: stopErr})
+		app.log.LogEvent(&fxevent.RollingBack{StartErr: err})
 
+		stopErr := app.lifecycle.Stop(ctx)
+		app.log.LogEvent(&fxevent.RolledBack{Err: stopErr})
+
+		if stopErr != nil {
 			return multierr.Append(err, stopErr)
 		}
 

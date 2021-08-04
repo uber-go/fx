@@ -37,7 +37,8 @@ func TestForCoverage(t *testing.T) {
 		&Invoked{},
 		&Stopping{},
 		&Stopped{},
-		&Rollback{},
+		&RollingBack{},
+		&RolledBack{},
 		&Started{},
 		&LoggerInitialized{},
 	}

@@ -78,11 +78,11 @@ func (l *ConsoleLogger) LogEvent(event Event) {
 		if e.Err != nil {
 			l.logf("ERROR\t\tFailed to stop cleanly: %v", e.Err)
 		}
-	case *Rollback:
+	case *RollingBack:
+		l.logf("ERROR\t\tStart failed, rolling back: %v", e.StartErr)
+	case *RolledBack:
 		if e.Err != nil {
 			l.logf("ERROR\t\tCouldn't roll back cleanly: %v", e.Err)
-		} else {
-			l.logf("ERROR\t\tStart failed, rolling back: %v", e.StartErr)
 		}
 	case *Started:
 		if e.Err != nil {

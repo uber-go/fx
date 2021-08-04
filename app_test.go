@@ -794,13 +794,24 @@ func TestAppStart(t *testing.T) {
 			}})
 			return struct{}{}
 		}
-		app := fxtest.New(t,
+		app, spy := NewSpied(
 			Provide(failStart),
 			Invoke(func(struct{}) {}),
 		)
 		err := app.Start(context.Background())
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "OnStart fail")
+
+		assert.Equal(t, []string{
+			"Provided", "Provided", "Provided", "Provided",
+			"LoggerInitialized",
+			"Invoking",
+			"Invoked",
+			"LifecycleHookExecuting", "LifecycleHookExecuted",
+			"RollingBack",
+			"RolledBack",
+			"Started",
+		}, spy.EventTypes())
 	})
 
 	t.Run("StartAndStopErrors", func(t *testing.T) {
@@ -817,13 +828,26 @@ func TestAppStart(t *testing.T) {
 			})
 			return struct{}{}
 		}
-		app := NewForTest(t,
+		app, spy := NewSpied(
 			Provide(fail),
 			Invoke(func(struct{}) {}),
 		)
 		err := app.Start(context.Background())
 		require.Error(t, err)
 		assert.Equal(t, []error{errStart2, errStop1}, multierr.Errors(err))
+
+		assert.Equal(t, []string{
+			"Provided", "Provided", "Provided", "Provided",
+			"LoggerInitialized",
+			"Invoking",
+			"Invoked",
+			"LifecycleHookExecuting", "LifecycleHookExecuted",
+			"LifecycleHookExecuting", "LifecycleHookExecuted",
+			"RollingBack",
+			"LifecycleHookExecuting", "LifecycleHookExecuted",
+			"RolledBack",
+			"Started",
+		}, spy.EventTypes())
 	})
 
 	t.Run("InvokeNonFunction", func(t *testing.T) {

@@ -39,7 +39,8 @@ func (*Invoking) event()               {}
 func (*Invoked) event()                {}
 func (*Stopping) event()               {}
 func (*Stopped) event()                {}
-func (*Rollback) event()               {}
+func (*RollingBack) event()            {}
+func (*RolledBack) event()             {}
 func (*Started) event()                {}
 func (*LoggerInitialized) event()      {}
 
@@ -144,11 +145,18 @@ type Stopped struct {
 	Err error
 }
 
-// Rollback is emitted whenever a service fails to start with initial startup
-// error and then optional error if rollback itself fails.
-type Rollback struct {
+// RollingBack is emitted when the application failed to start up due to an
+// error, and is being rolled back.
+type RollingBack struct {
+	// StartErr is the error that caused this rollback.
 	StartErr error
-	Err      error
+}
+
+// RolledBack is emitted after a service has been rolled back, whether it
+// succeded or not.
+type RolledBack struct {
+	// Err is non-nil if the rollback failed.
+	Err error
 }
 
 // LoggerInitialized is emitted whenever a custom logger is set or produces an error.
