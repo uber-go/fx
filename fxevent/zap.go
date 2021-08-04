@@ -36,23 +36,39 @@ var _ Logger = (*ZapLogger)(nil)
 // LogEvent logs the given event to the provided Zap logger.
 func (l *ZapLogger) LogEvent(event Event) {
 	switch e := event.(type) {
-	case *LifecycleHookExecuting:
-		l.Logger.Info("hook executing",
-			zap.String("method", e.Method),
+	case *OnStartExecuting:
+		l.Logger.Info("OnStart hook executing",
 			zap.String("callee", e.FunctionName),
 			zap.String("caller", e.CallerName),
 		)
-	case *LifecycleHookExecuted:
+	case *OnStartExecuted:
 		if e.Err != nil {
-			l.Logger.Info("hook execute failed",
-				zap.String("method", e.Method),
+			l.Logger.Info("OnStart hook failed",
 				zap.String("callee", e.FunctionName),
 				zap.String("caller", e.CallerName),
 				zap.Error(e.Err),
 			)
 		} else {
-			l.Logger.Info("hook executed",
-				zap.String("method", e.Method),
+			l.Logger.Info("OnStart hook executed",
+				zap.String("callee", e.FunctionName),
+				zap.String("caller", e.CallerName),
+				zap.String("runtime", e.Runtime.String()),
+			)
+		}
+	case *OnStopExecuting:
+		l.Logger.Info("OnStop hook executing",
+			zap.String("callee", e.FunctionName),
+			zap.String("caller", e.CallerName),
+		)
+	case *OnStopExecuted:
+		if e.Err != nil {
+			l.Logger.Info("OnStop hook failed",
+				zap.String("callee", e.FunctionName),
+				zap.String("caller", e.CallerName),
+				zap.Error(e.Err),
+			)
+		} else {
+			l.Logger.Info("OnStop hook executed",
 				zap.String("callee", e.FunctionName),
 				zap.String("caller", e.CallerName),
 				zap.String("runtime", e.Runtime.String()),

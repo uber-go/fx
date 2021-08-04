@@ -807,7 +807,7 @@ func TestAppStart(t *testing.T) {
 			"LoggerInitialized",
 			"Invoking",
 			"Invoked",
-			"LifecycleHookExecuting", "LifecycleHookExecuted",
+			"OnStartExecuting", "OnStartExecuted",
 			"RollingBack",
 			"RolledBack",
 			"Started",
@@ -841,10 +841,10 @@ func TestAppStart(t *testing.T) {
 			"LoggerInitialized",
 			"Invoking",
 			"Invoked",
-			"LifecycleHookExecuting", "LifecycleHookExecuted",
-			"LifecycleHookExecuting", "LifecycleHookExecuted",
+			"OnStartExecuting", "OnStartExecuted",
+			"OnStartExecuting", "OnStartExecuted",
 			"RollingBack",
-			"LifecycleHookExecuting", "LifecycleHookExecuted",
+			"OnStopExecuting", "OnStopExecuted",
 			"RolledBack",
 			"Started",
 		}, spy.EventTypes())
@@ -1174,11 +1174,9 @@ func TestCustomLoggerWithLifecycle(t *testing.T) {
 		"Provided",
 		"Provided",
 		"LoggerInitialized",
-		"LifecycleHookExecuting",
-		"LifecycleHookExecuted",
+		"OnStartExecuting", "OnStartExecuted",
 		"Started",
-		"LifecycleHookExecuting",
-		"LifecycleHookExecuted",
+		"OnStopExecuting", "OnStopExecuted",
 	}, spy.EventTypes())
 }
 

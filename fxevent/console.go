@@ -43,13 +43,21 @@ func (l *ConsoleLogger) logf(msg string, args ...interface{}) {
 // LogEvent logs the given event to the provided Zap logger.
 func (l *ConsoleLogger) LogEvent(event Event) {
 	switch e := event.(type) {
-	case *LifecycleHookExecuting:
-		l.logf("HOOK %s\t\t%s executing (caller: %s)", e.Method, e.FunctionName, e.CallerName)
-	case *LifecycleHookExecuted:
+	case *OnStartExecuting:
+		l.logf("HOOK OnStart\t\t%s executing (caller: %s)", e.FunctionName, e.CallerName)
+	case *OnStartExecuted:
 		if e.Err != nil {
-			l.logf("HOOK %s\t\t%s called by %s failed in %s: %v", e.Method, e.FunctionName, e.CallerName, e.Runtime, e.Err)
+			l.logf("HOOK OnStart\t\t%s called by %s failed in %s: %v", e.FunctionName, e.CallerName, e.Runtime, e.Err)
 		} else {
-			l.logf("HOOK %s\t\t%s called by %s ran successfully in %s", e.Method, e.FunctionName, e.CallerName, e.Runtime)
+			l.logf("HOOK OnStart\t\t%s called by %s ran successfully in %s", e.FunctionName, e.CallerName, e.Runtime)
+		}
+	case *OnStopExecuting:
+		l.logf("HOOK OnStop\t\t%s executing (caller: %s)", e.FunctionName, e.CallerName)
+	case *OnStopExecuted:
+		if e.Err != nil {
+			l.logf("HOOK OnStop\t\t%s called by %s failed in %s: %v", e.FunctionName, e.CallerName, e.Runtime, e.Err)
+		} else {
+			l.logf("HOOK OnStop\t\t%s called by %s ran successfully in %s", e.FunctionName, e.CallerName, e.Runtime)
 		}
 	case *Supplied:
 		if e.Err != nil {

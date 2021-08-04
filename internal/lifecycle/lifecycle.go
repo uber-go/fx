@@ -67,11 +67,6 @@ func (l *Lifecycle) Append(hook Hook) {
 	l.hooks = append(l.hooks, hook)
 }
 
-const (
-	_hookStart = "OnStart"
-	_hookStop  = "OnStop"
-)
-
 // Start runs all OnStart hooks, returning immediately if it encounters an
 // error.
 func (l *Lifecycle) Start(ctx context.Context) error {
@@ -106,16 +101,14 @@ func (l *Lifecycle) Start(ctx context.Context) error {
 
 func (l *Lifecycle) runStartHook(ctx context.Context, hook Hook) (runtime time.Duration, err error) {
 	funcName := fxreflect.FuncName(hook.OnStart)
-	l.logger.LogEvent(&fxevent.LifecycleHookExecuting{
+	l.logger.LogEvent(&fxevent.OnStartExecuting{
 		CallerName:   hook.callerFrame.Function,
 		FunctionName: funcName,
-		Method:       _hookStart,
 	})
 	defer func() {
-		l.logger.LogEvent(&fxevent.LifecycleHookExecuted{
+		l.logger.LogEvent(&fxevent.OnStartExecuted{
 			CallerName:   hook.callerFrame.Function,
 			FunctionName: funcName,
-			Method:       _hookStart,
 			Runtime:      runtime,
 			Err:          err,
 		})
@@ -166,16 +159,14 @@ func (l *Lifecycle) Stop(ctx context.Context) error {
 func (l *Lifecycle) runStopHook(ctx context.Context, hook Hook) (runtime time.Duration, err error) {
 	funcName := fxreflect.FuncName(hook.OnStop)
 
-	l.logger.LogEvent(&fxevent.LifecycleHookExecuting{
+	l.logger.LogEvent(&fxevent.OnStopExecuting{
 		CallerName:   hook.callerFrame.Function,
 		FunctionName: funcName,
-		Method:       _hookStop,
 	})
 	defer func() {
-		l.logger.LogEvent(&fxevent.LifecycleHookExecuted{
+		l.logger.LogEvent(&fxevent.OnStopExecuted{
 			CallerName:   hook.callerFrame.Function,
 			FunctionName: funcName,
-			Method:       _hookStop,
 			Runtime:      runtime,
 			Err:          err,
 		})

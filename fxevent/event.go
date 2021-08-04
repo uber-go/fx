@@ -31,37 +31,33 @@ type Event interface {
 }
 
 // Passing events by type to make Event hashable in the future.
-func (*LifecycleHookExecuting) event() {}
-func (*LifecycleHookExecuted) event()  {}
-func (*Supplied) event()               {}
-func (*Provided) event()               {}
-func (*Invoking) event()               {}
-func (*Invoked) event()                {}
-func (*Stopping) event()               {}
-func (*Stopped) event()                {}
-func (*RollingBack) event()            {}
-func (*RolledBack) event()             {}
-func (*Started) event()                {}
-func (*LoggerInitialized) event()      {}
+func (*OnStartExecuting) event()  {}
+func (*OnStartExecuted) event()   {}
+func (*OnStopExecuting) event()   {}
+func (*OnStopExecuted) event()    {}
+func (*Supplied) event()          {}
+func (*Provided) event()          {}
+func (*Invoking) event()          {}
+func (*Invoked) event()           {}
+func (*Stopping) event()          {}
+func (*Stopped) event()           {}
+func (*RollingBack) event()       {}
+func (*RolledBack) event()        {}
+func (*Started) event()           {}
+func (*LoggerInitialized) event() {}
 
-// LifecycleHookExecuting is emitted before an OnStart or OnStop hook is
-// executed.
-type LifecycleHookExecuting struct {
+// OnStartExecuting is emitted before an OnStart hook is exeucted.
+type OnStartExecuting struct {
 	// FunctionName is the name of the function that will be executed.
 	FunctionName string
 
 	// CallerName is the name of the function that scheduled the hook for
 	// execution.
 	CallerName string
-
-	// Method specifies the kind of hook we're executing. This is one of
-	// "OnStart" and "OnStop".
-	Method string
 }
 
-// LifecycleHookExecuted is emitted after an OnStart or OnStop hook has been
-// executed.
-type LifecycleHookExecuted struct {
+// OnStartExecuted is emitted after an OnStart hook has been executed.
+type OnStartExecuted struct {
 	// FunctionName is the name of the function that was executed.
 	FunctionName string
 
@@ -72,6 +68,32 @@ type LifecycleHookExecuted struct {
 	// Method specifies the kind of the hook. This is one of "OnStart" and
 	// "OnStop".
 	Method string
+
+	// Runtime specifies how long it took to run this hook.
+	Runtime time.Duration
+
+	// Err is non-nil if the hook failed to execute.
+	Err error
+}
+
+// OnStopExecuting is emitted before an OnStop hook is exeucted.
+type OnStopExecuting struct {
+	// FunctionName is the name of the function that will be executed.
+	FunctionName string
+
+	// CallerName is the name of the function that scheduled the hook for
+	// execution.
+	CallerName string
+}
+
+// OnStopExecuted is emitted after an OnStop hook has been executed.
+type OnStopExecuted struct {
+	// FunctionName is the name of the function that was executed.
+	FunctionName string
+
+	// CallerName is the name of the function that scheduled the hook for
+	// execution.
+	CallerName string
 
 	// Runtime specifies how long it took to run this hook.
 	Runtime time.Duration

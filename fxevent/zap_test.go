@@ -45,49 +45,84 @@ func TestZapLogger(t *testing.T) {
 		wantFields  map[string]interface{}
 	}{
 		{
-			name: "LifecycleHookExecuting",
-			give: &LifecycleHookExecuting{
-				Method:       "OnStop",
+			name: "OnStartExecuting",
+			give: &OnStartExecuting{
+				FunctionName: "hook.onStart",
+				CallerName:   "bytes.NewBuffer",
+			},
+			wantMessage: "OnStart hook executing",
+			wantFields: map[string]interface{}{
+				"caller": "bytes.NewBuffer",
+				"callee": "hook.onStart",
+			},
+		},
+		{
+			name: "OnStopExecuting",
+			give: &OnStopExecuting{
 				FunctionName: "hook.onStop1",
 				CallerName:   "bytes.NewBuffer",
 			},
-			wantMessage: "hook executing",
+			wantMessage: "OnStop hook executing",
 			wantFields: map[string]interface{}{
 				"caller": "bytes.NewBuffer",
 				"callee": "hook.onStop1",
-				"method": "OnStop",
 			},
 		},
 		{
 
-			name: "LifecycleHookExecutedError",
-			give: &LifecycleHookExecuted{
-				Method:       "OnStart",
+			name: "OnStopExecutedError",
+			give: &OnStopExecuted{
 				FunctionName: "hook.onStart1",
 				CallerName:   "bytes.NewBuffer",
 				Err:          fmt.Errorf("some error"),
 			},
-			wantMessage: "hook execute failed",
+			wantMessage: "OnStop hook failed",
 			wantFields: map[string]interface{}{
 				"caller": "bytes.NewBuffer",
 				"callee": "hook.onStart1",
-				"method": "OnStart",
 				"error":  "some error",
 			},
 		},
 		{
-			name: "LifecycleHookExecuted",
-			give: &LifecycleHookExecuted{
-				Method:       "OnStart",
+			name: "OnStopExecuted",
+			give: &OnStopExecuted{
 				FunctionName: "hook.onStart1",
 				CallerName:   "bytes.NewBuffer",
 				Runtime:      time.Millisecond * 3,
 			},
-			wantMessage: "hook executed",
+			wantMessage: "OnStop hook executed",
 			wantFields: map[string]interface{}{
 				"caller":  "bytes.NewBuffer",
 				"callee":  "hook.onStart1",
-				"method":  "OnStart",
+				"runtime": "3ms",
+			},
+		},
+		{
+
+			name: "OnStartExecutedError",
+			give: &OnStartExecuted{
+				FunctionName: "hook.onStart1",
+				CallerName:   "bytes.NewBuffer",
+				Err:          fmt.Errorf("some error"),
+			},
+			wantMessage: "OnStart hook failed",
+			wantFields: map[string]interface{}{
+				"caller": "bytes.NewBuffer",
+				"callee": "hook.onStart1",
+				"error":  "some error",
+			},
+		},
+		{
+			name: "OnStartExecuted",
+			give: &OnStartExecuted{
+				FunctionName: "hook.onStart1",
+				CallerName:   "bytes.NewBuffer",
+				Runtime:      time.Millisecond * 3,
+			},
+			wantMessage: "OnStart hook executed",
+			wantFields: map[string]interface{}{
+				"caller":  "bytes.NewBuffer",
+				"callee":  "hook.onStart1",
 				"runtime": "3ms",
 			},
 		},
