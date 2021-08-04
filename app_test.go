@@ -1182,6 +1182,25 @@ func TestCustomLoggerWithLifecycle(t *testing.T) {
 	}, spy.EventTypes())
 }
 
+func TestCustomLoggerFailure(t *testing.T) {
+	var buff bytes.Buffer
+	app := New(
+		// We expect WithLogger to fail, so this buffer should be
+		// contain information about the failure.
+		Logger(log.New(&buff, "", 0)),
+		WithLogger(func() (fxevent.Logger, error) {
+			return nil, errors.New("great sadness")
+		}),
+	)
+	require.Error(t, app.Err())
+
+	out := buff.String()
+	assert.Contains(t, out, "Failed to initialize custom logger")
+	assert.Contains(t, out, "failed to build fxevent.Logger")
+	assert.Contains(t, out, "received non-nil error from function")
+	assert.Contains(t, out, "great sadness")
+}
+
 type testErrorWithGraph struct {
 	graph string
 }

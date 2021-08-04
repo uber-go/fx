@@ -468,12 +468,19 @@ func ValidateApp(opts ...Option) error {
 }
 
 // Builds and connects the custom logger, returning an error if it failed.
-func (app *App) constructCustomLogger(buffer *logBuffer) error {
+func (app *App) constructCustomLogger(buffer *logBuffer) (err error) {
 	p := app.logConstructor
+	fname := fxreflect.FuncName(p.Target)
+	defer func() {
+		app.log.LogEvent(&fxevent.LoggerInitialized{
+			Err:             err,
+			ConstructorName: fname,
+		})
+	}()
 
 	if err := app.container.Provide(p.Target); err != nil {
 		return fmt.Errorf("fx.WithLogger(%v) from:\n%+vFailed: %v",
-			fxreflect.FuncName(p.Target), p.Stack, err)
+			fname, p.Stack, err)
 	}
 
 	// TODO: Use dig.FillProvideInfo to inspect the provided constructor
@@ -574,13 +581,8 @@ func New(opts ...Option) *App {
 			app.err = multierr.Append(app.err, err)
 			app.log = fallbackLogger
 			bufferLogger.Connect(fallbackLogger)
-			app.log.LogEvent(&fxevent.LoggerInitialized{
-				Err:         err,
-				Constructor: app.logConstructor,
-			})
 			return app
 		}
-		app.log.LogEvent(&fxevent.LoggerInitialized{Constructor: app.logConstructor})
 	}
 
 	// This error might have come from the provide loop above. We've

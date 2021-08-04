@@ -23,7 +23,6 @@ package fxevent
 import (
 	"strings"
 
-	"go.uber.org/fx/internal/fxreflect"
 	"go.uber.org/zap"
 )
 
@@ -107,8 +106,7 @@ func (l *ZapLogger) LogEvent(event Event) {
 		if e.Err != nil {
 			l.Logger.Error("custom logger initialization failed", zap.Error(e.Err))
 		} else {
-			l.Logger.Info("initialized custom fxevent.Logger",
-				zap.String("function", fxreflect.FuncName(e.Constructor)))
+			l.Logger.Info("initialized custom fxevent.Logger", zap.String("function", e.ConstructorName))
 		}
 	}
 }

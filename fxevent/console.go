@@ -24,8 +24,6 @@ import (
 	"fmt"
 	"io"
 	"strings"
-
-	"go.uber.org/fx/internal/fxreflect"
 )
 
 // ConsoleLogger is an Fx event logger that attempts to write human-readable
@@ -92,9 +90,9 @@ func (l *ConsoleLogger) LogEvent(event Event) {
 		}
 	case *LoggerInitialized:
 		if e.Err != nil {
-			l.logf("ERROR\t\tFailed to initialize custom logger: %v", e.Err)
+			l.logf("ERROR\t\tFailed to initialize custom logger: %+v", e.Err)
 		} else {
-			l.logf("LOGGER\tInitialized custom logger from %v", fxreflect.FuncName(e.Constructor))
+			l.logf("LOGGER\tInitialized custom logger from %v", e.ConstructorName)
 		}
 	}
 }

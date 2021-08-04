@@ -21,7 +21,6 @@
 package fxevent
 
 import (
-	"bytes"
 	"errors"
 	"fmt"
 	"os"
@@ -204,7 +203,7 @@ func TestZapLogger(t *testing.T) {
 		},
 		{
 			name:        "LoggerInitialized",
-			give:        &LoggerInitialized{Constructor: bytes.NewBuffer, Err: nil},
+			give:        &LoggerInitialized{ConstructorName: "bytes.NewBuffer()"},
 			wantMessage: "initialized custom fxevent.Logger",
 			wantFields: map[string]interface{}{
 				"function": "bytes.NewBuffer()",

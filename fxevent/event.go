@@ -159,8 +159,13 @@ type RolledBack struct {
 	Err error
 }
 
-// LoggerInitialized is emitted whenever a custom logger is set or produces an error.
+// LoggerInitialized is emitted when a logger supplied with fx.WithLogger is
+// instantiated, or if it fails to instantiate.
 type LoggerInitialized struct {
-	Constructor interface{}
-	Err         error
+	// ConstructorName is the name of the constructor that builds this
+	// logger.
+	ConstructorName string
+
+	// Err is non-nil if the logger failed to build.
+	Err error
 }

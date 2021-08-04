@@ -155,9 +155,7 @@ func TestConsoleLogger(t *testing.T) {
 		},
 		{
 			name: "LoggerInitialized",
-			give: &LoggerInitialized{
-				Constructor: func() Logger { panic("should not run") },
-			},
+			give: &LoggerInitialized{ConstructorName: "go.uber.org/fx/fxevent.TestConsoleLogger.func1()"},
 			want: "[Fx] LOGGER	Initialized custom logger from go.uber.org/fx/fxevent.TestConsoleLogger.func1()\n",
 		},
 	}
