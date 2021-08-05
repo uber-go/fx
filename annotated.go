@@ -94,15 +94,21 @@ func (a Annotated) String() string {
 type annotations struct {
 	ParamTags  []string
 	ResultTags []string
+
+	Ins  []reflect.Type
+	Outs []reflect.Type
 }
 
 // Annotation can be passed to Annotate(f interface{}, anns ...Annotation)
 // for annotating the parameter and result types of a function.
 type Annotation interface {
 	apply(*annotations) error
-	getAnnotatedType(reflect.Type) []reflect.Type
 }
 
+// annotationError is a wrapper for an error that was encountered while
+// applying annotation to a function. It contains the specific error
+// that it encountered as well as the target interface that was attempted
+// to be annotated.
 type annotationError struct {
 	target interface{}
 	err    error
@@ -112,11 +118,13 @@ func (e *annotationError) Error() string {
 	return e.err.Error()
 }
 
-type paramTags struct {
+type paramTagsAnnotation struct {
 	tags []string
 }
 
-func (pt paramTags) apply(ann *annotations) error {
+var _ paramTagsAnnotation = paramTagsAnnotation{}
+
+func (pt paramTagsAnnotation) apply(ann *annotations) error {
 	if len(ann.ParamTags) > 0 {
 		return fmt.Errorf("cannot apply more than one line of ParamTags")
 	}
@@ -135,7 +143,7 @@ func (pt paramTags) apply(ann *annotations) error {
 //     ...
 //     FieldN TN `$tags[N-1]`
 //   }
-func (pt paramTags) getAnnotatedType(fType reflect.Type) []reflect.Type {
+func (pt paramTagsAnnotation) getAnnotatedType(fType reflect.Type) []reflect.Type {
 	annotatedParams := []reflect.StructField{{
 		Name:      "In",
 		Type:      reflect.TypeOf(In{}),
@@ -153,29 +161,31 @@ func (pt paramTags) getAnnotatedType(fType reflect.Type) []reflect.Type {
 		annotatedParams = append(annotatedParams, structField)
 	}
 
-	paramTypes := []reflect.Type{reflect.StructOf(annotatedParams)}
-	return paramTypes
+	return []reflect.Type{reflect.StructOf(annotatedParams)}
 }
 
 // ParamTags is an Annotation that annotates the parameter(s) of a function.
 // When multiple tags are specified, each tag is mapped to the corresponding
 // positional parameter.
 func ParamTags(tags ...string) Annotation {
-	p := paramTags{tags}
-	return p
+	return paramTagsAnnotation{tags}
 }
 
-type resultTags struct {
+type resultTagsAnnotation struct {
 	tags []string
 }
 
-func (rt resultTags) apply(ann *annotations) error {
+var _ resultTagsAnnotation = resultTagsAnnotation{}
+
+func (rt resultTagsAnnotation) apply(ann *annotations) error {
 	if len(ann.ResultTags) > 0 {
 		return fmt.Errorf("cannot apply more than one line of ResultTags")
 	}
 	ann.ResultTags = rt.tags
 	return nil
 }
+
+var _typeOfError reflect.Type = reflect.TypeOf((*error)(nil)).Elem()
 
 // Given func(T1, T2, T3, ..., TN), this generates a type roughly
 // equivalent to,
@@ -188,19 +198,18 @@ func (rt resultTags) apply(ann *annotations) error {
 //     ...
 //     FieldN TN `$tags[N-1]`
 //   }
-func (rt resultTags) getAnnotatedType(fType reflect.Type) []reflect.Type {
+func (rt resultTagsAnnotation) getAnnotatedType(fType reflect.Type) []reflect.Type {
 	annotatedResult := []reflect.StructField{{
 		Name:      "Out",
 		Type:      reflect.TypeOf(Out{}),
 		Anonymous: true,
 	}}
 
-	errInterface := reflect.TypeOf((*error)(nil)).Elem()
-	numAnnotated := 0
+	var numAnnotated int
 
 	for i := 0; i < fType.NumOut(); i++ {
 		// guard against error results
-		if fType.Out(i).Implements(errInterface) {
+		if fType.Out(i) == _typeOfError {
 			continue
 		}
 		structField := reflect.StructField{
@@ -214,16 +223,14 @@ func (rt resultTags) getAnnotatedType(fType reflect.Type) []reflect.Type {
 		annotatedResult = append(annotatedResult, structField)
 	}
 
-	resultTypes := []reflect.Type{reflect.StructOf(annotatedResult)}
-	return resultTypes
+	return []reflect.Type{reflect.StructOf(annotatedResult)}
 }
 
 // ResultTags is an Annotation that annotates the result(s) of a function.
 // When multiple tags are specified, each tag is mapped to the corresponding
 // positional result.
 func ResultTags(tags ...string) Annotation {
-	r := resultTags{tags}
-	return r
+	return resultTagsAnnotation{tags}
 }
 
 // Annotate lets you annotate a function's paramter and returns with tags
@@ -283,12 +290,10 @@ func Annotate(f interface{}, anns ...Annotation) interface{} {
 	numIn := fType.NumIn()
 	numOut := fType.NumOut()
 
-	var annotations annotations
-	var ins []reflect.Type
-	var outs []reflect.Type
-
-	annotatedIn := false
-	annotatedOut := false
+	var (
+		annotations               annotations
+		annotatedIn, annotatedOut bool
+	)
 
 	for _, ann := range anns {
 		if e := ann.apply(&annotations); e != nil {
@@ -297,11 +302,25 @@ func Annotate(f interface{}, anns ...Annotation) interface{} {
 				err:    e,
 			}
 		}
-		if pTags, ok := ann.(paramTags); ok {
+		switch ann := ann.(type) {
+		case paramTagsAnnotation:
+			ins = ann.getAnnotatedType(fType)
+			annotatedIn = true
+		case resultTagsAnnotation:
+			outs = ann.getAnnotatedType(fType)
+			annotatedOut = true
+		default:
+			panic(fmt.Sprintf(
+				"It looks like you have found a bug in dig. "+
+					"Please file an issue at https://github.com/uber-go/fx/issues/new "+
+					"and provide the following message: "+
+					"received unknown annotation type %T", ann))
+		}
+		if pTags, ok := ann.(paramTagsAnnotation); ok {
 			ins = pTags.getAnnotatedType(fType)
 			annotatedIn = true
 		}
-		if rTags, ok := ann.(resultTags); ok {
+		if rTags, ok := ann.(resultTagsAnnotation); ok {
 			outs = rTags.getAnnotatedType(fType)
 			annotatedOut = true
 		}
@@ -321,8 +340,7 @@ func Annotate(f interface{}, anns ...Annotation) interface{} {
 	}
 
 	newF := func(args []reflect.Value) []reflect.Value {
-		var fParams []reflect.Value
-		var fResults []reflect.Value
+		var fParams, fResults []reflect.Value
 		if annotatedIn {
 			fParams = make([]reflect.Value, numIn)
 			params := args[0]
@@ -335,11 +353,10 @@ func Annotate(f interface{}, anns ...Annotation) interface{} {
 		fResults = fVal.Call(fParams)
 		if annotatedOut {
 			// wrap the result in an annotated struct
-			errInterface := reflect.TypeOf((*error)(nil)).Elem()
-			numAnnotated := 0
+			var numAnnotated int
 			results := reflect.New(outs[0]).Elem()
 			for i := 0; i < numOut; i++ {
-				if fResults[i].Type().Implements(errInterface) {
+				if fResults[i].Type() == _typeOfError {
 					continue
 				}
 				results.FieldByName(fmt.Sprintf("Field%d",
