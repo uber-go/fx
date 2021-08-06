@@ -265,9 +265,9 @@ func TestAnnotate(t *testing.T) {
 	})
 
 	t.Run("provide with annotated results with error", func(t *testing.T) {
-		//lint:ignore ST1008 we want to check cases when user annotates a function that doesn't return an error as the last argument.
 		app := fxtest.New(t,
 			fx.Provide(
+				//lint:ignore ST1008 we want to test error in the middle.
 				fx.Annotate(func() (*a, error, *a) {
 					return &a{}, nil, &a{}
 				}, fx.ResultTags(`name:"firstA"`, ``, `name:"secondA"`)),
