@@ -91,12 +91,35 @@ func (a Annotated) String() string {
 	return fmt.Sprintf("fx.Annotated{%v}", strings.Join(fields, ", "))
 }
 
+// annotations is used for building out the info needed to generate struct
+// with tags using reflection.
 type annotations struct {
-	ParamTags  []string
-	ResultTags []string
+	fType reflect.Type
 
 	Ins  []reflect.Type
 	Outs []reflect.Type
+
+	annotatedIn  bool
+	annotatedOut bool
+}
+
+func newAnnotations(fType reflect.Type) annotations {
+	numIn := fType.NumIn()
+	numOut := fType.NumOut()
+	ins := make([]reflect.Type, numIn)
+	outs := make([]reflect.Type, numOut)
+
+	for i := 0; i < numIn; i++ {
+		ins[i] = fType.In(i)
+	}
+	for i := 0; i < numOut; i++ {
+		outs[i] = fType.Out(i)
+	}
+	return annotations{
+		fType: fType,
+		Ins:   ins,
+		Outs:  outs,
+	}
 }
 
 // Annotation can be passed to Annotate(f interface{}, anns ...Annotation)
@@ -104,6 +127,8 @@ type annotations struct {
 type Annotation interface {
 	apply(*annotations) error
 }
+
+var _typeOfError reflect.Type = reflect.TypeOf((*error)(nil)).Elem()
 
 // annotationError is a wrapper for an error that was encountered while
 // applying annotation to a function. It contains the specific error
@@ -124,14 +149,6 @@ type paramTagsAnnotation struct {
 
 var _ paramTagsAnnotation = paramTagsAnnotation{}
 
-func (pt paramTagsAnnotation) apply(ann *annotations) error {
-	if len(ann.ParamTags) > 0 {
-		return fmt.Errorf("cannot apply more than one line of ParamTags")
-	}
-	ann.ParamTags = pt.tags
-	return nil
-}
-
 // Given func(T1, T2, T3, ..., TN), this generates a type roughly
 // equivalent to,
 //
@@ -143,13 +160,18 @@ func (pt paramTagsAnnotation) apply(ann *annotations) error {
 //     ...
 //     FieldN TN `$tags[N-1]`
 //   }
-func (pt paramTagsAnnotation) getAnnotatedType(fType reflect.Type) []reflect.Type {
+func (pt paramTagsAnnotation) apply(ann *annotations) error {
+	if ann.annotatedIn {
+		return fmt.Errorf("cannot apply more than one line of ParamTags")
+	}
+	ann.annotatedIn = true
+	fType := ann.fType
+
 	annotatedParams := []reflect.StructField{{
 		Name:      "In",
 		Type:      reflect.TypeOf(In{}),
 		Anonymous: true,
 	}}
-
 	for i := 0; i < fType.NumIn(); i++ {
 		structField := reflect.StructField{
 			Name: fmt.Sprintf("Field%d", i),
@@ -161,7 +183,8 @@ func (pt paramTagsAnnotation) getAnnotatedType(fType reflect.Type) []reflect.Typ
 		annotatedParams = append(annotatedParams, structField)
 	}
 
-	return []reflect.Type{reflect.StructOf(annotatedParams)}
+	ann.Ins = []reflect.Type{reflect.StructOf(annotatedParams)}
+	return nil
 }
 
 // ParamTags is an Annotation that annotates the parameter(s) of a function.
@@ -177,16 +200,6 @@ type resultTagsAnnotation struct {
 
 var _ resultTagsAnnotation = resultTagsAnnotation{}
 
-func (rt resultTagsAnnotation) apply(ann *annotations) error {
-	if len(ann.ResultTags) > 0 {
-		return fmt.Errorf("cannot apply more than one line of ResultTags")
-	}
-	ann.ResultTags = rt.tags
-	return nil
-}
-
-var _typeOfError reflect.Type = reflect.TypeOf((*error)(nil)).Elem()
-
 // Given func(T1, T2, T3, ..., TN), this generates a type roughly
 // equivalent to,
 //
@@ -198,7 +211,13 @@ var _typeOfError reflect.Type = reflect.TypeOf((*error)(nil)).Elem()
 //     ...
 //     FieldN TN `$tags[N-1]`
 //   }
-func (rt resultTagsAnnotation) getAnnotatedType(fType reflect.Type) []reflect.Type {
+func (rt resultTagsAnnotation) apply(ann *annotations) error {
+	if ann.annotatedOut {
+		return fmt.Errorf("cannot apply more than one line of ResultTags")
+	}
+	ann.annotatedOut = true
+	fType := ann.fType
+
 	annotatedResult := []reflect.StructField{{
 		Name:      "Out",
 		Type:      reflect.TypeOf(Out{}),
@@ -223,7 +242,8 @@ func (rt resultTagsAnnotation) getAnnotatedType(fType reflect.Type) []reflect.Ty
 		annotatedResult = append(annotatedResult, structField)
 	}
 
-	return []reflect.Type{reflect.StructOf(annotatedResult)}
+	ann.Outs = []reflect.Type{reflect.StructOf(annotatedResult)}
+	return nil
 }
 
 // ResultTags is an Annotation that annotates the result(s) of a function.
@@ -289,11 +309,7 @@ func Annotate(f interface{}, anns ...Annotation) interface{} {
 	fType := fVal.Type()
 	numIn := fType.NumIn()
 	numOut := fType.NumOut()
-
-	var (
-		annotations               annotations
-		annotatedIn, annotatedOut bool
-	)
+	annotations := newAnnotations(fType)
 
 	for _, ann := range anns {
 		if e := ann.apply(&annotations); e != nil {
@@ -302,46 +318,13 @@ func Annotate(f interface{}, anns ...Annotation) interface{} {
 				err:    e,
 			}
 		}
-		switch ann := ann.(type) {
-		case paramTagsAnnotation:
-			ins = ann.getAnnotatedType(fType)
-			annotatedIn = true
-		case resultTagsAnnotation:
-			outs = ann.getAnnotatedType(fType)
-			annotatedOut = true
-		default:
-			panic(fmt.Sprintf(
-				"It looks like you have found a bug in dig. "+
-					"Please file an issue at https://github.com/uber-go/fx/issues/new "+
-					"and provide the following message: "+
-					"received unknown annotation type %T", ann))
-		}
-		if pTags, ok := ann.(paramTagsAnnotation); ok {
-			ins = pTags.getAnnotatedType(fType)
-			annotatedIn = true
-		}
-		if rTags, ok := ann.(resultTagsAnnotation); ok {
-			outs = rTags.getAnnotatedType(fType)
-			annotatedOut = true
-		}
 	}
 
-	if !annotatedIn {
-		ins = make([]reflect.Type, numIn)
-		for i := 0; i < fType.NumIn(); i++ {
-			ins[i] = fType.In(i)
-		}
-	}
-	if !annotatedOut {
-		outs = make([]reflect.Type, numOut)
-		for i := 0; i < fType.NumOut(); i++ {
-			outs[i] = fType.Out(i)
-		}
-	}
-
+	ins := annotations.Ins
+	outs := annotations.Outs
 	newF := func(args []reflect.Value) []reflect.Value {
 		var fParams, fResults []reflect.Value
-		if annotatedIn {
+		if annotations.annotatedIn {
 			fParams = make([]reflect.Value, numIn)
 			params := args[0]
 			for i := 0; i < numIn; i++ {
@@ -351,7 +334,7 @@ func Annotate(f interface{}, anns ...Annotation) interface{} {
 			fParams = args
 		}
 		fResults = fVal.Call(fParams)
-		if annotatedOut {
+		if annotations.annotatedOut {
 			// wrap the result in an annotated struct
 			var numAnnotated int
 			results := reflect.New(outs[0]).Elem()
