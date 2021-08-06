@@ -333,15 +333,13 @@ func Annotate(f interface{}, anns ...Annotation) interface{} {
 		fResults = fVal.Call(fParams)
 		if annotations.annotatedOut {
 			// wrap the result in an annotated struct
-			var numAnnotated int
 			results := reflect.New(outs[0]).Elem()
 			for i := 0; i < numOut; i++ {
 				if fResults[i].Type() == _typeOfError {
 					continue
 				}
 				results.FieldByName(fmt.Sprintf("Field%d",
-					numAnnotated)).Set(fResults[numAnnotated])
-				numAnnotated++
+					i)).Set(fResults[i])
 			}
 			return []reflect.Value{results}
 		}

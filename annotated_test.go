@@ -265,18 +265,19 @@ func TestAnnotate(t *testing.T) {
 	})
 
 	t.Run("provide with annotated results with error", func(t *testing.T) {
+		//lint:ignore ST1008 we want to check cases when user annotates a function that doesn't return an error as the last argument.
 		app := fxtest.New(t,
 			fx.Provide(
 				fx.Annotate(func() (*a, error, *a) {
 					return &a{}, nil, &a{}
-				}, fx.ResultTags(`name:"firstA"`)),
+				}, fx.ResultTags(`name:"firstA"`, ``, `name:"secondA"`)),
 				fx.Annotate(func() (*a, error) {
 					return &a{}, nil
-				}, fx.ResultTags(`name:"secondA"`)),
+				}, fx.ResultTags(`name:"thirdA"`)),
 			),
-			fx.Invoke(fx.Annotate(func(a1 *a, a2 *a) *b {
+			fx.Invoke(fx.Annotate(func(a1 *a, a2 *a, a3 *a) *b {
 				return &b{a2}
-			}, fx.ParamTags(`name:"firstA"`, `name:"secondA"`))))
+			}, fx.ParamTags(`name:"firstA"`, `name:"secondA"`, `name:"thirdA"`))))
 
 		require.NoError(t, app.Err())
 		defer app.RequireStart().RequireStop()
