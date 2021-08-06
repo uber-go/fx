@@ -224,21 +224,18 @@ func (rt resultTagsAnnotation) apply(ann *annotations) error {
 		Anonymous: true,
 	}}
 
-	var numAnnotated int
-
 	for i := 0; i < fType.NumOut(); i++ {
 		// guard against error results
 		if fType.Out(i) == _typeOfError {
 			continue
 		}
 		structField := reflect.StructField{
-			Name: fmt.Sprintf("Field%d", numAnnotated),
+			Name: fmt.Sprintf("Field%d", i),
 			Type: fType.Out(i),
 		}
-		if numAnnotated < len(rt.tags) {
-			structField.Tag = reflect.StructTag(rt.tags[numAnnotated])
+		if i < len(rt.tags) {
+			structField.Tag = reflect.StructTag(rt.tags[i])
 		}
-		numAnnotated++
 		annotatedResult = append(annotatedResult, structField)
 	}
 

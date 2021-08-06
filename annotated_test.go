@@ -267,8 +267,8 @@ func TestAnnotate(t *testing.T) {
 	t.Run("provide with annotated results with error", func(t *testing.T) {
 		app := fxtest.New(t,
 			fx.Provide(
-				fx.Annotate(func() (*a, error) {
-					return &a{}, nil
+				fx.Annotate(func() (*a, error, *a) {
+					return &a{}, nil, &a{}
 				}, fx.ResultTags(`name:"firstA"`)),
 				fx.Annotate(func() (*a, error) {
 					return &a{}, nil
