@@ -72,16 +72,14 @@ func (l *ZapLogger) LogEvent(event Event) {
 			l.Logger.Error("error encountered while applying options",
 				zap.Error(e.Err))
 		}
-	case *Invoke:
-		if e.Err != nil {
-			l.Logger.Error("invoke failed",
-				zap.Error(e.Err),
-				zap.String("stack", e.Stacktrace),
-				zap.String("function", fxreflect.FuncName(e.Function)))
-		} else {
-			l.Logger.Info("invoked",
-				zap.String("function", fxreflect.FuncName(e.Function)))
-		}
+	case *Invoking:
+		l.Logger.Info("invoked",
+			zap.String("function", fxreflect.FuncName(e.Function)))
+	case *Invoked:
+		l.Logger.Error("invoke failed",
+			zap.Error(e.Err),
+			zap.String("stack", e.Stacktrace),
+			zap.String("function", fxreflect.FuncName(e.Function)))
 	case *Stop:
 		if e.Err != nil {
 			l.Logger.Error("stop failed", zap.Error(e.Err))
@@ -101,12 +99,12 @@ func (l *ZapLogger) LogEvent(event Event) {
 		} else {
 			l.Logger.Info("started")
 		}
-	case *CustomLogger:
+	case *LoggerInitialized:
 		if e.Err != nil {
-			l.Logger.Error("custom logger installation failed", zap.Error(e.Err))
+			l.Logger.Error("custom logger initialization failed", zap.Error(e.Err))
 		} else {
-			l.Logger.Info("installed custom fxevent.Logger",
-				zap.String("function", fxreflect.FuncName(e.Function)))
+			l.Logger.Info("initialized custom fxevent.Logger",
+				zap.String("function", fxreflect.FuncName(e.Constructor)))
 		}
 	}
 }

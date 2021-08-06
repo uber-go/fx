@@ -62,13 +62,11 @@ func (l *ConsoleLogger) LogEvent(event Event) {
 		if e.Err != nil {
 			l.logf("Error after options were applied: %v", e.Err)
 		}
-	case *Invoke:
-		if e.Err != nil {
-			l.logf("fx.Invoke(%v) called from:\n%+vFailed: %v",
-				fxreflect.FuncName(e.Function), e.Stacktrace, e.Err)
-		} else {
-			l.logf("INVOKE\t\t%s", fxreflect.FuncName(e.Function))
-		}
+	case *Invoking:
+		l.logf("INVOKE\t\t%s", fxreflect.FuncName(e.Function))
+	case *Invoked:
+		l.logf("fx.Invoke(%v) called from:\n%+vFailed: %v",
+			fxreflect.FuncName(e.Function), e.Stacktrace, e.Err)
 	case *Stop:
 		if e.Err != nil {
 			l.logf("ERROR\t\tFailed to stop cleanly: %v", e.Err)
@@ -87,11 +85,11 @@ func (l *ConsoleLogger) LogEvent(event Event) {
 		} else {
 			l.logf("RUNNING")
 		}
-	case *CustomLogger:
+	case *LoggerInitialized:
 		if e.Err != nil {
-			l.logf("ERROR\t\tFailed to construct custom logger: %v", e.Err)
+			l.logf("ERROR\t\tFailed to initialize custom logger: %v", e.Err)
 		} else {
-			l.logf("LOGGER\tSetting up custom logger from %v", fxreflect.FuncName(e.Function))
+			l.logf("LOGGER\tInitialized custom logger from %v", fxreflect.FuncName(e.Constructor))
 		}
 	}
 }

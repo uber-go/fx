@@ -85,13 +85,13 @@ func TestConsoleLogger(t *testing.T) {
 			want: "[Fx] PROVIDE	*bytes.Buffer <= bytes.NewBuffer()\n",
 		},
 		{
-			name: "Invoke",
-			give: &Invoke{Function: bytes.NewBuffer, Err: nil},
+			name: "Invoked",
+			give: &Invoking{Function: bytes.NewBuffer},
 			want: "[Fx] INVOKE		bytes.NewBuffer()\n",
 		},
 		{
 			name: "InvokeError",
-			give: &Invoke{
+			give: &Invoked{
 				Function:   bytes.NewBuffer,
 				Err:        errors.New("some error"),
 				Stacktrace: "foo()\n\tbar/baz.go:42\n",
@@ -135,15 +135,15 @@ func TestConsoleLogger(t *testing.T) {
 		},
 		{
 			name: "CustomLoggerError",
-			give: &CustomLogger{Err: errors.New("great sadness")},
-			want: "[Fx] ERROR		Failed to construct custom logger: great sadness\n",
+			give: &LoggerInitialized{Err: errors.New("great sadness")},
+			want: "[Fx] ERROR		Failed to initialize custom logger: great sadness\n",
 		},
 		{
-			name: "CustomLogger",
-			give: &CustomLogger{
-				Function: func() Logger { panic("should not run") },
+			name: "LoggerInitialized",
+			give: &LoggerInitialized{
+				Constructor: func() Logger { panic("should not run") },
 			},
-			want: "[Fx] LOGGER	Setting up custom logger from go.uber.org/fx/fxevent.TestConsoleLogger.func1()\n",
+			want: "[Fx] LOGGER	Initialized custom logger from go.uber.org/fx/fxevent.TestConsoleLogger.func1()\n",
 		},
 	}
 
