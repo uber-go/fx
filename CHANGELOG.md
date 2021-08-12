@@ -8,8 +8,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Added
 - Introduce the new `fx.WithLogger` option. Provide a constructor for
   `fxevent.Logger` objects with it to customize how Fx logs events.
-- New `fxevent` package that exposes events from Fx in a structured way to
-  write custom logger implementations.
+- Add new `fxevent` package that exposes events from Fx in a structured way.
+  Use this to write custom logger implementations for use with the
+  `fx.WithLogger` option.
 
 ### Changed
 - Fx now emits structured JSON logs by default. These may be parsed and
