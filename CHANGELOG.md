@@ -4,11 +4,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
-## Unreleased
+## [1.14.0] - 2021-08-12
+### Added
+- Introduce the new `fx.WithLogger` option. Provide a constructor for
+  `fxevent.Logger` objects with it to customize how Fx logs events.
+- Add new `fxevent` package that exposes events from Fx in a structured way.
+  Use this to write custom logger implementations for use with the
+  `fx.WithLogger` option.
+- Expose and log additional information when lifecycle hooks time out.
+
 ### Changed
-- Fx now emits structured, JSON logs. These may be parsed and processed by
-  log ingestion systems.
+- Fx now emits structured JSON logs by default. These may be parsed and
+  processed by log ingestion systems.
 - `fxtest.Lifecycle` now logs to the provided `testing.TB` instead of stderr.
+- `fx.In` and `fx.Out` are now type aliases instead of structs.
 
 ## [1.13.1] - 2020-08-19
 ### Fixed
@@ -214,7 +223,7 @@ promising API compatibility between beta releases and the final 1.0.0 release.
 In fact, we expect our beta user feedback to require some changes to the way
 things work. Once we reach 1.0, we will provider proper version compatibility.
 
-[Unreleased]: https://github.com/uber-go/fx/compare/v1.13.1...HEAD
+[1.14.0]: https://github.com/uber-go/fx/compare/v1.13.1...v1.14.0
 [1.13.1]: https://github.com/uber-go/fx/compare/v1.13.0...v1.13.1
 [1.13.1]: https://github.com/uber-go/fx/compare/v1.13.0...v1.13.1
 [1.13.0]: https://github.com/uber-go/fx/compare/v1.12.0...v1.13.0
