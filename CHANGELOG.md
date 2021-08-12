@@ -6,21 +6,16 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [1.14.0] - 2021-08-12
 ### Added
-- Introducing `fx.WithLogger` option that accepts a constructor that returns an 
-  `fxevent.Logger`. This option will override internal logger that will be used
-  to log internal events.
-- Exposing `fxevent` logging interface to implement if using `WithLogger` option
-  when supplying custom logger.
+- Introduce the new `fx.WithLogger` option. Provide a constructor for
+  `fxevent.Logger` objects with it to customize how Fx logs events.
+- New `fxevent` package that exposes events from Fx in a structured way to
+  write custom logger implementations.
 
 ### Changed
-- Fx now emits structured, JSON logs by default. These may be parsed and processed by
-  log ingestion systems.
+- Fx now emits structured JSON logs by default. These may be parsed and
+  processed by log ingestion systems.
 - `fxtest.Lifecycle` now logs to the provided `testing.TB` instead of stderr.
 - `fx.In` and `fx.Out` are now type aliases instead of structs.
-- Standardizing event message tenses and adding new ones: Stopped, Invoking, etc.
-
-### Fixed
-- Fixing a race condition in a unit test. 
 
 ## [1.13.1] - 2020-08-19
 ### Fixed
