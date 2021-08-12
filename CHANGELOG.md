@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   to log internal events.
 - Exposing `fxevent` logging interface to implement if using `WithLogger` option
   when supplying custom logger.
+- Expose and log additional information when hook fail with a timeout. 
 
 ### Changed
 - Fx now emits structured, JSON logs by default. These may be parsed and processed by
