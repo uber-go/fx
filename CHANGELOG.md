@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
-## Unreleased
+## [1.14.2] - 2021-08-16
 ### Changed
 -  For `fxevent` console implementation: no longer log non-error case for `fxevent.Invoke`
    event, while for zap implementation, start logging `fx.Invoking` case without stack.
@@ -233,6 +233,8 @@ promising API compatibility between beta releases and the final 1.0.0 release.
 In fact, we expect our beta user feedback to require some changes to the way
 things work. Once we reach 1.0, we will provider proper version compatibility.
 
+[1.14.2]: https://github.com/uber-go/fx/compare/v1.14.1...v1.14.2
+[1.14.1]: https://github.com/uber-go/fx/compare/v1.14.0...v1.14.1
 [1.14.0]: https://github.com/uber-go/fx/compare/v1.13.1...v1.14.0
 [1.13.1]: https://github.com/uber-go/fx/compare/v1.13.0...v1.13.1
 [1.13.1]: https://github.com/uber-go/fx/compare/v1.13.0...v1.13.1
