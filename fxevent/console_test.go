@@ -126,6 +126,11 @@ func TestConsoleLogger(t *testing.T) {
 				FunctionName: "bytes.NewBuffer()",
 				Trace:        "foo()\n\tbar/baz.go:42\n",
 			},
+			want: joinLines(
+				"[Fx] fx.Invoke(bytes.NewBuffer()) called from:",
+				"foo()",
+				"	bar/baz.go:42\n",
+			),
 		},
 		{
 			name: "Invoked/Error",
@@ -135,7 +140,7 @@ func TestConsoleLogger(t *testing.T) {
 				Trace:        "foo()\n\tbar/baz.go:42\n",
 			},
 			want: joinLines(
-				"[Fx] fx.Invoke(bytes.NewBuffer()) called from:",
+				"[Fx] ERROR		fx.Invoke(bytes.NewBuffer()) called from:",
 				"foo()",
 				"	bar/baz.go:42",
 				"Failed: some error",
