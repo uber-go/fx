@@ -5,7 +5,9 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
--  No changes yet.
+### Changed
+-  For `fxevent` console implementation: no longer log non-error case for `fxevent.Invoke`
+   event, while for zap implementation, start logging `fx.Invoking` case without stack.
 
 ## [1.14.1] - 2021-08-16
 ### Changed
