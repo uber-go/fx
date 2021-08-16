@@ -89,7 +89,7 @@ func (l *ZapLogger) LogEvent(event Event) {
 		}
 	case *Invoking:
 		// Do not log stack as it will make logs hard to read.
-		l.Logger.Info("invoked",
+		l.Logger.Info("invoking",
 			zap.String("function", e.FunctionName))
 	case *Invoked:
 		if e.Err != nil {
