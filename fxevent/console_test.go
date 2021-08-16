@@ -121,18 +121,6 @@ func TestConsoleLogger(t *testing.T) {
 			want: "[Fx] INVOKE		bytes.NewBuffer()\n",
 		},
 		{
-			name: "Invoked/Success",
-			give: &Invoked{
-				FunctionName: "bytes.NewBuffer()",
-				Trace:        "foo()\n\tbar/baz.go:42\n",
-			},
-			want: joinLines(
-				"[Fx] fx.Invoke(bytes.NewBuffer()) called from:",
-				"foo()",
-				"	bar/baz.go:42\n",
-			),
-		},
-		{
 			name: "Invoked/Error",
 			give: &Invoked{
 				FunctionName: "bytes.NewBuffer()",

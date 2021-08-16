@@ -77,8 +77,6 @@ func (l *ConsoleLogger) LogEvent(event Event) {
 	case *Invoked:
 		if e.Err != nil {
 			l.logf("ERROR\t\tfx.Invoke(%v) called from:\n%+vFailed: %v", e.FunctionName, e.Trace, e.Err)
-		} else {
-			l.logf("fx.Invoke(%v) called from:\n%v", e.FunctionName, e.Trace)
 		}
 	case *Stopping:
 		l.logf("%v", strings.ToUpper(e.Signal.String()))
