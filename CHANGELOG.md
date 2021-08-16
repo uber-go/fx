@@ -5,12 +5,18 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ## [1.14.1] - 2021-08-16
--  No changes yet.
-
-## [1.14.0] - 2021-08-12
 ### Changed
 - `fxevent.Invoked` was being logged at `Error` level even upon successful `Invoke`.
    This was changed to log at `Info` level when `Invoke` succeeded.
+
+## [1.14.0] - 2021-08-12
+### Added
+- Introduce the new `fx.WithLogger` option. Provide a constructor for
+  `fxevent.Logger` objects with it to customize how Fx logs events.
+- Add new `fxevent` package that exposes events from Fx in a structured way.
+  Use this to write custom logger implementations for use with the
+  `fx.WithLogger` option.
+- Expose and log additional information when lifecycle hooks time out.
 
 ### Changed
 - Fx now emits structured JSON logs by default. These may be parsed and
