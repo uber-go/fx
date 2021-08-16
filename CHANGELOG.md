@@ -9,10 +9,14 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 -  For `fxevent` console implementation: no longer log non-error case for `fxevent.Invoke`
    event, while for zap implementation, start logging `fx.Invoking` case without stack.
 
+[1.14.2]: https://github.com/uber-go/fx/compare/v1.14.1...v1.14.2
+
 ## [1.14.1] - 2021-08-16
 ### Changed
 - `fxevent.Invoked` was being logged at `Error` level even upon successful `Invoke`.
    This was changed to log at `Info` level when `Invoke` succeeded.
+
+[1.14.1]: https://github.com/uber-go/fx/compare/v1.14.0...v1.14.1
 
 ## [1.14.0] - 2021-08-12
 ### Added
@@ -29,15 +33,21 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - `fxtest.Lifecycle` now logs to the provided `testing.TB` instead of stderr.
 - `fx.In` and `fx.Out` are now type aliases instead of structs.
 
+[1.14.0]: https://github.com/uber-go/fx/compare/v1.13.1...v1.14.0
+
 ## [1.13.1] - 2020-08-19
 ### Fixed
 - Fix minimum version constraint for dig. `fx.ValidateGraph` requires at least
   dig 1.10.
 
+[1.13.1]: https://github.com/uber-go/fx/compare/v1.13.0...v1.13.1
+
 ## [1.13.0] - 2020-06-16
 ### Added
 - Added `fx.ValidateGraph` which allows graph cycle validation and dependency correctness
  without running anything. This is useful if `fx.Invoke` has side effects, does I/O, etc.
+
+[1.13.0]: https://github.com/uber-go/fx/compare/v1.12.0...v1.13.0
 
 ## [1.12.0] - 2020-04-09
 ### Added
@@ -47,11 +57,15 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Changed
 - Drop library dependency on development tools.
 
+[1.12.0]: https://github.com/uber-go/fx/compare/v1.11.0...v1.12.0
+
 ## [1.11.0] - 2020-04-01
 ### Added
 - Value groups can use the `flatten` option to indicate values in a slice should
   be provided individually rather than providing the slice itself. See package
   documentation for details.
+
+[1.11.0]: https://github.com/uber-go/fx/compare/v1.10.0...1.11.0
 
 ## [1.10.0] - 2019-11-20
 ### Added
@@ -62,6 +76,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Changed
 - Migrated to Go modules.
 
+[1.10.0]: https://github.com/uber-go/fx/compare/v1.9.0...v1.10.0
+
 ## [1.9.0] - 2019-01-22
 ### Added
 - Add the ability to shutdown Fx applications from inside the container. See
@@ -69,9 +85,13 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Add `fx.Annotated` to allow users to provide named values without creating a
   new constructor.
 
+[1.9.0]: https://github.com/uber-go/fx/compare/v1.8.0...v1.9.0
+
 ## [1.8.0] - 2018-11-06
 ### Added
 - Provide DOT graph of dependencies in the container.
+
+[1.8.0]: https://github.com/uber-go/fx/compare/v1.7.1...v1.8.0
 
 ## [1.7.1] - 2018-09-26
 ### Fixed
@@ -82,15 +102,21 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   startup time should improve proportional to the size of the dependency graph.
 - Fix a goroutine leak in `fxtest.Lifecycle`.
 
+[1.7.1]: https://github.com/uber-go/fx/compare/v1.7.0...v1.7.1
+
 ## [1.7.0] - 2018-08-16
 ### Added
 - Add `fx.ErrorHook` option to allow users to provide `ErrorHandler`s on invoke
   failures.
 - `VisualizeError` returns the visualization wrapped in the error if available.
 
+[1.7.0]: https://github.com/uber-go/fx/compare/v1.6.0...v1.7.0
+
 ## [1.6.0] - 2018-06-12
 ### Added
 - Add `fx.Error` option to short-circuit application startup.
+
+[1.6.0]: https://github.com/uber-go/fx/compare/v1.5.0...v1.6.0
 
 ## [1.5.0] - 2018-04-11
 ### Added
@@ -101,10 +127,14 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Fixed
 - Make `fxtest` respect the application's start and stop timeouts.
 
+[1.5.0]: https://github.com/uber-go/fx/compare/v1.4.0...v1.5.0
+
 ## [1.4.0] - 2017-12-07
 ### Added
 - Add `fx.Populate` to populate variables with values from the dependency
   injection container without requiring intermediate structs.
+
+[1.4.0]: https://github.com/uber-go/fx/compare/v1.3.0...v1.4.0
 
 ## [1.3.0] - 2017-11-28
 ### Changed
@@ -114,13 +144,20 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Fix bug which caused the OnStop for a lifecycle hook to be called even if it
   failed to start.
 
+[1.3.0]: https://github.com/uber-go/fx/compare/v1.2.0...v1.3.0
+
 ## [1.2.0] - 2017-09-06
 ### Added
 - Add `fx.NopLogger` which disables the Fx application's log output.
 
+[1.2.0]: https://github.com/uber-go/fx/compare/v1.1.0...v1.2.0
+
 ## [1.1.0] - 2017-08-22
+
 ### Changed
 - Improve readability of start up logging.
+
+[1.1.0]: https://github.com/uber-go/fx/compare/v1.0.0...v1.1.0
 
 ## [1.0.0] - 2017-07-31
 First stable release: no breaking changes will be made in the 1.x series.
@@ -134,6 +171,8 @@ First stable release: no breaking changes will be made in the 1.x series.
 
 ### Removed
 - **[Breaking]** Remove `fx.Timeout` and `fx.DefaultTimeout`.
+
+[1.0.0]: https://github.com/uber-go/fx/compare/v1.0.0-rc2...v1.0.0
 
 ## [1.0.0-rc2] - 2017-07-21
 
@@ -150,6 +189,8 @@ First stable release: no breaking changes will be made in the 1.x series.
 - Add `fxtest.App`, which redirects log output to the user's `testing.TB` and
   provides some lifecycle helpers.
 
+[1.0.0-rc2]: https://github.com/uber-go/fx/compare/v1.0.0-rc1...v1.0.0-rc2
+
 ## [1.0.0-rc1] - 2017-06-20
 
 - **[Breaking]** Providing types into `fx.App` and invoking functions are now
@@ -157,6 +198,8 @@ First stable release: no breaking changes will be made in the 1.x series.
   interactions with modules and collections of modules identical.
 - **[Breaking]** `TestLifecycle` is now in a separate `fxtest` subpackage.
 - Add `fx.Inject()` to pull values from the container into a struct.
+
+[1.0.0-rc1]: https://github.com/uber-go/fx/compare/v1.0.0-beta4...v1.0.0-rc1
 
 ## [1.0.0-beta4] - 2017-06-12
 
@@ -174,6 +217,8 @@ First stable release: no breaking changes will be made in the 1.x series.
 - `service.Host` interface which composed a number of primitives together
   (configuration, metrics, tracing) has been deprecated in favor of
   `fx.App`.
+
+[1.0.0-beta4]: https://github.com/uber-go/fx/compare/v1.0.0-beta3...v1.0.0-beta4
 
 ## [1.0.0-beta3] - 2017-03-28
 
@@ -200,6 +245,8 @@ First stable release: no breaking changes will be made in the 1.x series.
 - **[Breaking]** Pass a tracer the `uhttp/uhttpclient` constructor explicitly, instead
   of using a global tracer. This will allow to use http client in parallel tests.
 
+[1.0.0-beta3]: https://github.com/uber-go/fx/compare/v1.0.0-beta2...v1.0.0-beta3
+
 ## [1.0.0-beta2] - 2017-03-09
 
 - **[Breaking]** Remove `ulog.Logger` interface and expose `*zap.Logger` directly.
@@ -225,6 +272,8 @@ First stable release: no breaking changes will be made in the 1.x series.
 - DIG constructors now support returning a tuple with the second argument being
   an error.
 
+[1.0.0-beta2]: https://github.com/uber-go/fx/compare/v1.0.0-beta1...v1.0.0-beta2
+
 ## 1.0.0-beta1 - 2017-02-20
 
 This is the first beta release of the framework, where we invite users to start
@@ -233,28 +282,3 @@ promising API compatibility between beta releases and the final 1.0.0 release.
 In fact, we expect our beta user feedback to require some changes to the way
 things work. Once we reach 1.0, we will provider proper version compatibility.
 
-[1.14.2]: https://github.com/uber-go/fx/compare/v1.14.1...v1.14.2
-[1.14.1]: https://github.com/uber-go/fx/compare/v1.14.0...v1.14.1
-[1.14.0]: https://github.com/uber-go/fx/compare/v1.13.1...v1.14.0
-[1.13.1]: https://github.com/uber-go/fx/compare/v1.13.0...v1.13.1
-[1.13.1]: https://github.com/uber-go/fx/compare/v1.13.0...v1.13.1
-[1.13.0]: https://github.com/uber-go/fx/compare/v1.12.0...v1.13.0
-[1.12.0]: https://github.com/uber-go/fx/compare/v1.11.0...v1.12.0
-[1.11.0]: https://github.com/uber-go/fx/compare/v1.10.0...1.11.0
-[1.10.0]: https://github.com/uber-go/fx/compare/v1.9.0...v1.10.0
-[1.9.0]: https://github.com/uber-go/fx/compare/v1.8.0...v1.9.0
-[1.8.0]: https://github.com/uber-go/fx/compare/v1.7.1...v1.8.0
-[1.7.1]: https://github.com/uber-go/fx/compare/v1.7.0...v1.7.1
-[1.7.0]: https://github.com/uber-go/fx/compare/v1.6.0...v1.7.0
-[1.6.0]: https://github.com/uber-go/fx/compare/v1.5.0...v1.6.0
-[1.5.0]: https://github.com/uber-go/fx/compare/v1.4.0...v1.5.0
-[1.4.0]: https://github.com/uber-go/fx/compare/v1.3.0...v1.4.0
-[1.3.0]: https://github.com/uber-go/fx/compare/v1.2.0...v1.3.0
-[1.2.0]: https://github.com/uber-go/fx/compare/v1.1.0...v1.2.0
-[1.1.0]: https://github.com/uber-go/fx/compare/v1.0.0...v1.1.0
-[1.0.0]: https://github.com/uber-go/fx/compare/v1.0.0-rc2...v1.0.0
-[1.0.0-rc2]: https://github.com/uber-go/fx/compare/v1.0.0-rc1...v1.0.0-rc2
-[1.0.0-rc1]: https://github.com/uber-go/fx/compare/v1.0.0-beta4...v1.0.0-rc1
-[1.0.0-beta4]: https://github.com/uber-go/fx/compare/v1.0.0-beta3...v1.0.0-beta4
-[1.0.0-beta3]: https://github.com/uber-go/fx/compare/v1.0.0-beta2...v1.0.0-beta3
-[1.0.0-beta2]: https://github.com/uber-go/fx/compare/v1.0.0-beta1...v1.0.0-beta2
