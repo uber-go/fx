@@ -226,11 +226,10 @@ func (rt resultTagsAnnotation) apply(ann *annotations) error {
 		Anonymous: true,
 	}}
 
-	hasError := false
+	returnsError := false
 	for i := 0; i < fType.NumOut(); i++ {
-		// guard against error results
 		if fType.Out(i) == _typeOfError {
-			hasError = true
+			returnsError = true
 			continue
 		}
 		structField := reflect.StructField{
@@ -242,7 +241,7 @@ func (rt resultTagsAnnotation) apply(ann *annotations) error {
 		}
 		annotatedResult = append(annotatedResult, structField)
 	}
-	if hasError {
+	if returnsError {
 		ann.Outs = []reflect.Type{
 			reflect.StructOf(annotatedResult),
 			_typeOfError,
@@ -358,12 +357,10 @@ func Annotate(f interface{}, anns ...Annotation) interface{} {
 			for i := 0; i < numOut; i++ {
 				if fResults[i].Type() == _typeOfError {
 					var errResult error
-					if fResults[i].IsNil() {
-						continue
-					} else {
+					if !fResults[i].IsNil() {
 						errResult = fResults[i].Interface().(error)
+						errResults = multierr.Append(errResults, errResult)
 					}
-					errResults = multierr.Append(errResults, errResult)
 					continue
 				}
 				results.FieldByName(fmt.Sprintf("Field%d",
@@ -374,6 +371,7 @@ func Annotate(f interface{}, anns ...Annotation) interface{} {
 					errValue = reflect.ValueOf(errResults).Elem()
 					return []reflect.Value{results, errValue}
 				} else {
+					// error is nil. Return nil error Value.
 					return []reflect.Value{results, _nilError}
 				}
 			}

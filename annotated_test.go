@@ -277,13 +277,13 @@ func TestAnnotate(t *testing.T) {
 					return &a{}
 				}, fx.ResultTags(`name:"fourthA"`)),
 			),
-			fx.Invoke(fx.Annotate(func(a1 *a, a2 *a, a3 *a) *b {
+			fx.Invoke(
+				fx.Annotate(func(a1 *a, a2 *a, a3 *a) *b {
 					return &b{a1}
 				}, fx.ParamTags(
 					`name:"firstA"`,
 					`name:"secondA"`,
-					`name:"thirdA"`,
-				)),
+					`name:"thirdA"`)),
 			),
 		)
 		err := app.Err()
