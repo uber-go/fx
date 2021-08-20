@@ -26,6 +26,7 @@ import (
 	"strings"
 
 	"go.uber.org/fx/internal/fxreflect"
+	"go.uber.org/multierr"
 )
 
 // Annotated annotates a constructor provided to Fx with additional options.
@@ -129,6 +130,7 @@ type Annotation interface {
 }
 
 var _typeOfError reflect.Type = reflect.TypeOf((*error)(nil)).Elem()
+var _nilError = reflect.Zero(_typeOfError)
 
 // annotationError is a wrapper for an error that was encountered while
 // applying annotation to a function. It contains the specific error
@@ -224,9 +226,11 @@ func (rt resultTagsAnnotation) apply(ann *annotations) error {
 		Anonymous: true,
 	}}
 
+	hasError := false
 	for i := 0; i < fType.NumOut(); i++ {
 		// guard against error results
 		if fType.Out(i) == _typeOfError {
+			hasError = true
 			continue
 		}
 		structField := reflect.StructField{
@@ -238,8 +242,14 @@ func (rt resultTagsAnnotation) apply(ann *annotations) error {
 		}
 		annotatedResult = append(annotatedResult, structField)
 	}
-
-	ann.Outs = []reflect.Type{reflect.StructOf(annotatedResult)}
+	if hasError {
+		ann.Outs = []reflect.Type{
+			reflect.StructOf(annotatedResult),
+			_typeOfError,
+		}
+	} else {
+		ann.Outs = []reflect.Type{reflect.StructOf(annotatedResult)}
+	}
 	return nil
 }
 
@@ -319,6 +329,7 @@ func Annotate(f interface{}, anns ...Annotation) interface{} {
 
 	ins := annotations.Ins
 	outs := annotations.Outs
+
 	newF := func(args []reflect.Value) []reflect.Value {
 		var fParams, fResults []reflect.Value
 		if annotations.annotatedIn {
@@ -332,14 +343,39 @@ func Annotate(f interface{}, anns ...Annotation) interface{} {
 		}
 		fResults = fVal.Call(fParams)
 		if annotations.annotatedOut {
+			var errValue reflect.Value
+			returnsError := len(outs) > 1
+
 			// wrap the result in an annotated struct
 			results := reflect.New(outs[0]).Elem()
+			// aggregate the errors from invoked function
+			// into one error.
+			if returnsError {
+				errValue = reflect.New(outs[1]).Elem()
+			}
+
+			var errResults error
 			for i := 0; i < numOut; i++ {
 				if fResults[i].Type() == _typeOfError {
+					var errResult error
+					if fResults[i].IsNil() {
+						continue
+					} else {
+						errResult = fResults[i].Interface().(error)
+					}
+					errResults = multierr.Append(errResults, errResult)
 					continue
 				}
 				results.FieldByName(fmt.Sprintf("Field%d",
 					i)).Set(fResults[i])
+			}
+			if returnsError {
+				if errResults != nil {
+					errValue = reflect.ValueOf(errResults).Elem()
+					return []reflect.Value{results, errValue}
+				} else {
+					return []reflect.Value{results, _nilError}
+				}
 			}
 			return []reflect.Value{results}
 		}

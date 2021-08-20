@@ -264,6 +264,33 @@ func TestAnnotate(t *testing.T) {
 		defer app.RequireStart().RequireStop()
 	})
 
+	t.Run("provide with missing annotated results", func(t *testing.T) {
+		app := fx.New(
+			fx.Provide(
+				fx.Annotate(func() *a {
+					return &a{}
+				}, fx.ResultTags(`name:"firstA"`)),
+				fx.Annotate(func() *a {
+					return &a{}
+				}, fx.ResultTags(`name:"secondA"`)),
+				fx.Annotate(func() *a {
+					return &a{}
+				}, fx.ResultTags(`name:"fourthA"`)),
+			),
+			fx.Invoke(fx.Annotate(func(a1 *a, a2 *a, a3 *a) *b {
+					return &b{a1}
+				}, fx.ParamTags(
+					`name:"firstA"`,
+					`name:"secondA"`,
+					`name:"thirdA"`,
+				)),
+			),
+		)
+		err := app.Err()
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), `missing type: *fx_test.a[name="thirdA"]`)
+	})
+
 	t.Run("provide with annotated results with error", func(t *testing.T) {
 		app := fxtest.New(t,
 			fx.Provide(
