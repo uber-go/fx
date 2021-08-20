@@ -21,7 +21,6 @@
 package fxevent
 
 import (
-	"bytes"
 	"errors"
 	"fmt"
 	"os"
@@ -46,49 +45,84 @@ func TestZapLogger(t *testing.T) {
 		wantFields  map[string]interface{}
 	}{
 		{
-			name: "LifecycleHookExecuting",
-			give: &LifecycleHookExecuting{
-				Method:       "OnStop",
+			name: "OnStartExecuting",
+			give: &OnStartExecuting{
+				FunctionName: "hook.onStart",
+				CallerName:   "bytes.NewBuffer",
+			},
+			wantMessage: "OnStart hook executing",
+			wantFields: map[string]interface{}{
+				"caller": "bytes.NewBuffer",
+				"callee": "hook.onStart",
+			},
+		},
+		{
+			name: "OnStopExecuting",
+			give: &OnStopExecuting{
 				FunctionName: "hook.onStop1",
 				CallerName:   "bytes.NewBuffer",
 			},
-			wantMessage: "hook executing",
+			wantMessage: "OnStop hook executing",
 			wantFields: map[string]interface{}{
 				"caller": "bytes.NewBuffer",
 				"callee": "hook.onStop1",
-				"method": "OnStop",
 			},
 		},
 		{
 
-			name: "LifecycleHookExecutedError",
-			give: &LifecycleHookExecuted{
-				Method:       "OnStart",
+			name: "OnStopExecutedError",
+			give: &OnStopExecuted{
 				FunctionName: "hook.onStart1",
 				CallerName:   "bytes.NewBuffer",
 				Err:          fmt.Errorf("some error"),
 			},
-			wantMessage: "hook execute failed",
+			wantMessage: "OnStop hook failed",
 			wantFields: map[string]interface{}{
 				"caller": "bytes.NewBuffer",
 				"callee": "hook.onStart1",
-				"method": "OnStart",
 				"error":  "some error",
 			},
 		},
 		{
-			name: "LifecycleHookExecuted",
-			give: &LifecycleHookExecuted{
-				Method:       "OnStart",
+			name: "OnStopExecuted",
+			give: &OnStopExecuted{
 				FunctionName: "hook.onStart1",
 				CallerName:   "bytes.NewBuffer",
 				Runtime:      time.Millisecond * 3,
 			},
-			wantMessage: "hook executed",
+			wantMessage: "OnStop hook executed",
 			wantFields: map[string]interface{}{
 				"caller":  "bytes.NewBuffer",
 				"callee":  "hook.onStart1",
-				"method":  "OnStart",
+				"runtime": "3ms",
+			},
+		},
+		{
+
+			name: "OnStartExecutedError",
+			give: &OnStartExecuted{
+				FunctionName: "hook.onStart1",
+				CallerName:   "bytes.NewBuffer",
+				Err:          fmt.Errorf("some error"),
+			},
+			wantMessage: "OnStart hook failed",
+			wantFields: map[string]interface{}{
+				"caller": "bytes.NewBuffer",
+				"callee": "hook.onStart1",
+				"error":  "some error",
+			},
+		},
+		{
+			name: "OnStartExecuted",
+			give: &OnStartExecuted{
+				FunctionName: "hook.onStart1",
+				CallerName:   "bytes.NewBuffer",
+				Runtime:      time.Millisecond * 3,
+			},
+			wantMessage: "OnStart hook executed",
+			wantFields: map[string]interface{}{
+				"caller":  "bytes.NewBuffer",
+				"callee":  "hook.onStart1",
 				"runtime": "3ms",
 			},
 		},
@@ -101,8 +135,20 @@ func TestZapLogger(t *testing.T) {
 			},
 		},
 		{
-			name:        "Provide",
-			give:        &Provide{bytes.NewBuffer, []string{"*bytes.Buffer"}, nil},
+			name:        "SuppliedError",
+			give:        &Supplied{TypeName: "*bytes.Buffer", Err: someError},
+			wantMessage: "supplied",
+			wantFields: map[string]interface{}{
+				"type":  "*bytes.Buffer",
+				"error": "some error",
+			},
+		},
+		{
+			name: "Provide",
+			give: &Provided{
+				ConstructorName: "bytes.NewBuffer()",
+				OutputTypeNames: []string{"*bytes.Buffer"},
+			},
 			wantMessage: "provided",
 			wantFields: map[string]interface{}{
 				"constructor": "bytes.NewBuffer()",
@@ -111,23 +157,23 @@ func TestZapLogger(t *testing.T) {
 		},
 		{
 			name:        "Provide with Error",
-			give:        &Provide{Err: someError},
+			give:        &Provided{Err: someError},
 			wantMessage: "error encountered while applying options",
 			wantFields: map[string]interface{}{
 				"error": "some error",
 			},
 		},
 		{
-			name:        "Invoking",
-			give:        &Invoking{Function: bytes.NewBuffer},
-			wantMessage: "invoked",
+			name:        "Invoking/Success",
+			give:        &Invoking{FunctionName: "bytes.NewBuffer()"},
+			wantMessage: "invoking",
 			wantFields: map[string]interface{}{
 				"function": "bytes.NewBuffer()",
 			},
 		},
 		{
-			name:        "InvokeError",
-			give:        &Invoked{Function: bytes.NewBuffer, Err: someError},
+			name:        "Invoked/Error",
+			give:        &Invoked{FunctionName: "bytes.NewBuffer()", Err: someError},
 			wantMessage: "invoke failed",
 			wantFields: map[string]interface{}{
 				"error":    "some error",
@@ -144,33 +190,33 @@ func TestZapLogger(t *testing.T) {
 			},
 		},
 		{
-			name:        "Stop",
-			give:        &Stop{Signal: os.Interrupt},
+			name:        "Stopping",
+			give:        &Stopping{Signal: os.Interrupt},
 			wantMessage: "received signal",
 			wantFields: map[string]interface{}{
 				"signal": "INTERRUPT",
 			},
 		},
 		{
-			name:        "StopError",
-			give:        &Stop{Err: someError},
+			name:        "Stopped",
+			give:        &Stopped{Err: someError},
 			wantMessage: "stop failed",
 			wantFields: map[string]interface{}{
 				"error": "some error",
 			},
 		},
 		{
-			name:        "RollbackError",
-			give:        &Rollback{Err: someError},
-			wantMessage: "rollback failed",
+			name:        "RollingBack",
+			give:        &RollingBack{StartErr: someError},
+			wantMessage: "start failed, rolling back",
 			wantFields: map[string]interface{}{
 				"error": "some error",
 			},
 		},
 		{
-			name:        "Rollback",
-			give:        &Rollback{StartErr: someError},
-			wantMessage: "start failed, rolling back",
+			name:        "RolledBackError",
+			give:        &RolledBack{Err: someError},
+			wantMessage: "rollback failed",
 			wantFields: map[string]interface{}{
 				"error": "some error",
 			},
@@ -191,7 +237,7 @@ func TestZapLogger(t *testing.T) {
 		},
 		{
 			name:        "LoggerInitialized",
-			give:        &LoggerInitialized{Constructor: bytes.NewBuffer, Err: nil},
+			give:        &LoggerInitialized{ConstructorName: "bytes.NewBuffer()"},
 			wantMessage: "initialized custom fxevent.Logger",
 			wantFields: map[string]interface{}{
 				"function": "bytes.NewBuffer()",

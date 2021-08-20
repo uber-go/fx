@@ -33,6 +33,7 @@ func TestSpy(t *testing.T) {
 
 	t.Run("empty spy", func(t *testing.T) {
 		assert.Empty(t, s.Events(), "events must be empty")
+		assert.Zero(t, s.Events().Len(), "events length must be zero")
 		assert.Empty(t, s.EventTypes(), "event types must be empty")
 	})
 
@@ -41,9 +42,10 @@ func TestSpy(t *testing.T) {
 		assert.Equal(t, "Started", s.EventTypes()[0])
 	})
 
-	s.LogEvent(&fxevent.Provide{Err: fmt.Errorf("some error")})
+	s.LogEvent(&fxevent.Provided{Err: fmt.Errorf("some error")})
 	t.Run("some error", func(t *testing.T) {
-		assert.Equal(t, "Provide", s.EventTypes()[1])
+		assert.Equal(t, 1, s.Events().SelectByTypeName("Provided").Len())
+		assert.Equal(t, "Provided", s.EventTypes()[1])
 	})
 
 	s.Reset()
