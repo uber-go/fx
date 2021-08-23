@@ -21,6 +21,7 @@
 package fx
 
 import (
+	"errors"
 	"fmt"
 	"reflect"
 	"strings"
@@ -129,8 +130,10 @@ type Annotation interface {
 	apply(*annotations) error
 }
 
-var _typeOfError reflect.Type = reflect.TypeOf((*error)(nil)).Elem()
-var _nilError = reflect.Zero(_typeOfError)
+var (
+	_typeOfError reflect.Type = reflect.TypeOf((*error)(nil)).Elem()
+	_nilError                 = reflect.Zero(_typeOfError)
+)
 
 // annotationError is a wrapper for an error that was encountered while
 // applying annotation to a function. It contains the specific error
@@ -162,9 +165,13 @@ var _ paramTagsAnnotation = paramTagsAnnotation{}
 //     ...
 //     FieldN TN `$tags[N-1]`
 //   }
+//
+// If there has already been a ParamTag that was applied, this
+// will return an error.
+
 func (pt paramTagsAnnotation) apply(ann *annotations) error {
 	if ann.annotatedIn {
-		return fmt.Errorf("cannot apply more than one line of ParamTags")
+		return errors.New("cannot apply more than one line of ParamTags")
 	}
 	ann.annotatedIn = true
 	fType := ann.fType
@@ -213,9 +220,12 @@ var _ resultTagsAnnotation = resultTagsAnnotation{}
 //     ...
 //     FieldN TN `$tags[N-1]`
 //   }
+//
+// If there has already been a ResultTag that was applied, this
+// will return an error.
 func (rt resultTagsAnnotation) apply(ann *annotations) error {
 	if ann.annotatedOut {
-		return fmt.Errorf("cannot apply more than one line of ResultTags")
+		return errors.New("cannot apply more than one line of ResultTags")
 	}
 	ann.annotatedOut = true
 	fType := ann.fType
@@ -241,13 +251,9 @@ func (rt resultTagsAnnotation) apply(ann *annotations) error {
 		}
 		annotatedResult = append(annotatedResult, structField)
 	}
+	ann.Outs = []reflect.Type{reflect.StructOf(annotatedResult)}
 	if returnsError {
-		ann.Outs = []reflect.Type{
-			reflect.StructOf(annotatedResult),
-			_typeOfError,
-		}
-	} else {
-		ann.Outs = []reflect.Type{reflect.StructOf(annotatedResult)}
+		ann.Outs = append(ann.Outs, _typeOfError)
 	}
 	return nil
 }
@@ -291,16 +297,14 @@ func ResultTags(tags ...string) Annotation {
 //     return result{GW: NewGateway(p.RO, p.RW)}
 //   })
 //
-// If a single annotation appears multiple times, all annotations
-// will be ignored.
-//
-// For example,
+// Using the same annotation multiple times is invalid.
+// For example, the following will fail with an error:
 //
 //  fx.Provide(
 //    fx.Annotate(
 //      NewGateWay,
 //      fx.ParamTags(`name:"ro" optional:"true"`),
-//      fx.ParamTags(`name:"rw"),
+//      fx.ParamTags(`name:"rw"), // ERROR: ParamTags was already used above
 //      fx.ResultTags(`name:"foo"`)
 //    )
 //  )
@@ -340,44 +344,46 @@ func Annotate(f interface{}, anns ...Annotation) interface{} {
 		} else {
 			fParams = args
 		}
+
+		// Call the wrapped function.
 		fResults = fVal.Call(fParams)
-		if annotations.annotatedOut {
-			var errValue reflect.Value
-			returnsError := len(outs) > 1
 
-			// wrap the result in an annotated struct
-			results := reflect.New(outs[0]).Elem()
-			// aggregate the errors from invoked function
-			// into one error.
-			if returnsError {
-				errValue = reflect.New(outs[1]).Elem()
-			}
-
-			var errResults error
-			for i := 0; i < numOut; i++ {
-				if fResults[i].Type() == _typeOfError {
-					var errResult error
-					if !fResults[i].IsNil() {
-						errResult = fResults[i].Interface().(error)
-						errResults = multierr.Append(errResults, errResult)
-					}
-					continue
-				}
-				results.FieldByName(fmt.Sprintf("Field%d",
-					i)).Set(fResults[i])
-			}
-			if returnsError {
-				if errResults != nil {
-					errValue = reflect.ValueOf(errResults).Elem()
-					return []reflect.Value{results, errValue}
-				} else {
-					// error is nil. Return nil error Value.
-					return []reflect.Value{results, _nilError}
-				}
-			}
-			return []reflect.Value{results}
+		if !annotations.annotatedOut {
+			return fResults
 		}
-		return fResults
+
+		var errValue reflect.Value
+		returnsError := len(outs) > 1
+
+		// wrap the result in an annotated struct
+		results := reflect.New(outs[0]).Elem()
+
+		// aggregate the errors from the annotated function
+		// into one error.
+		if returnsError {
+			errValue = reflect.New(outs[1]).Elem()
+		}
+
+		var errResults error
+		for i := 0; i < numOut; i++ {
+			if fResults[i].Type() == _typeOfError {
+				if err, _ := fResults[i].Interface().(error); err != nil {
+					errResults = multierr.Append(errResults, err)
+				}
+				continue
+			}
+			results.FieldByName(fmt.Sprintf("Field%d",
+				i)).Set(fResults[i])
+		}
+		if returnsError {
+			if errResults != nil {
+				errValue = reflect.ValueOf(errResults).Elem()
+				return []reflect.Value{results, errValue}
+			}
+			// error is nil. Return nil error Value.
+			return []reflect.Value{results, _nilError}
+		}
+		return []reflect.Value{results}
 	}
 
 	annotatedFuncType := reflect.FuncOf(ins, outs, false)
