@@ -1,4 +1,4 @@
-// Copyright (c) 2020 Uber Technologies, Inc.
+// Copyright (c) 2020-2021 Uber Technologies, Inc.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -21,10 +21,13 @@
 package fx
 
 import (
+	"errors"
 	"fmt"
+	"reflect"
 	"strings"
 
 	"go.uber.org/fx/internal/fxreflect"
+	"go.uber.org/multierr"
 )
 
 // Annotated annotates a constructor provided to Fx with additional options.
@@ -88,4 +91,302 @@ func (a Annotated) String() string {
 		fields = append(fields, fmt.Sprintf("Target: %v", fxreflect.FuncName(a.Target)))
 	}
 	return fmt.Sprintf("fx.Annotated{%v}", strings.Join(fields, ", "))
+}
+
+// annotations is used for building out the info needed to generate struct
+// with tags using reflection.
+type annotations struct {
+	fType reflect.Type
+
+	Ins  []reflect.Type
+	Outs []reflect.Type
+
+	annotatedIn  bool
+	annotatedOut bool
+}
+
+func newAnnotations(fType reflect.Type) annotations {
+	numIn := fType.NumIn()
+	numOut := fType.NumOut()
+	ins := make([]reflect.Type, numIn)
+	outs := make([]reflect.Type, numOut)
+
+	for i := 0; i < numIn; i++ {
+		ins[i] = fType.In(i)
+	}
+	for i := 0; i < numOut; i++ {
+		outs[i] = fType.Out(i)
+	}
+	return annotations{
+		fType: fType,
+		Ins:   ins,
+		Outs:  outs,
+	}
+}
+
+// Annotation can be passed to Annotate(f interface{}, anns ...Annotation)
+// for annotating the parameter and result types of a function.
+type Annotation interface {
+	apply(*annotations) error
+}
+
+var (
+	_typeOfError reflect.Type = reflect.TypeOf((*error)(nil)).Elem()
+	_nilError                 = reflect.Zero(_typeOfError)
+)
+
+// annotationError is a wrapper for an error that was encountered while
+// applying annotation to a function. It contains the specific error
+// that it encountered as well as the target interface that was attempted
+// to be annotated.
+type annotationError struct {
+	target interface{}
+	err    error
+}
+
+func (e *annotationError) Error() string {
+	return e.err.Error()
+}
+
+type paramTagsAnnotation struct {
+	tags []string
+}
+
+var _ paramTagsAnnotation = paramTagsAnnotation{}
+
+// Given func(T1, T2, T3, ..., TN), this generates a type roughly
+// equivalent to,
+//
+//   struct {
+//     fx.In
+//
+//     Field1 T1 `$tags[0]`
+//     Field2 T2 `$tags[1]`
+//     ...
+//     FieldN TN `$tags[N-1]`
+//   }
+//
+// If there has already been a ParamTag that was applied, this
+// will return an error.
+
+func (pt paramTagsAnnotation) apply(ann *annotations) error {
+	if ann.annotatedIn {
+		return errors.New("cannot apply more than one line of ParamTags")
+	}
+	ann.annotatedIn = true
+	fType := ann.fType
+
+	annotatedParams := []reflect.StructField{{
+		Name:      "In",
+		Type:      reflect.TypeOf(In{}),
+		Anonymous: true,
+	}}
+	for i := 0; i < fType.NumIn(); i++ {
+		structField := reflect.StructField{
+			Name: fmt.Sprintf("Field%d", i),
+			Type: fType.In(i),
+		}
+		if i < len(pt.tags) {
+			structField.Tag = reflect.StructTag(pt.tags[i])
+		}
+		annotatedParams = append(annotatedParams, structField)
+	}
+
+	ann.Ins = []reflect.Type{reflect.StructOf(annotatedParams)}
+	return nil
+}
+
+// ParamTags is an Annotation that annotates the parameter(s) of a function.
+// When multiple tags are specified, each tag is mapped to the corresponding
+// positional parameter.
+func ParamTags(tags ...string) Annotation {
+	return paramTagsAnnotation{tags}
+}
+
+type resultTagsAnnotation struct {
+	tags []string
+}
+
+var _ resultTagsAnnotation = resultTagsAnnotation{}
+
+// Given func(T1, T2, T3, ..., TN), this generates a type roughly
+// equivalent to,
+//
+//   struct {
+//     fx.Out
+//
+//     Field1 T1 `$tags[0]`
+//     Field2 T2 `$tags[1]`
+//     ...
+//     FieldN TN `$tags[N-1]`
+//   }
+//
+// If there has already been a ResultTag that was applied, this
+// will return an error.
+func (rt resultTagsAnnotation) apply(ann *annotations) error {
+	if ann.annotatedOut {
+		return errors.New("cannot apply more than one line of ResultTags")
+	}
+	ann.annotatedOut = true
+	fType := ann.fType
+
+	annotatedResult := []reflect.StructField{{
+		Name:      "Out",
+		Type:      reflect.TypeOf(Out{}),
+		Anonymous: true,
+	}}
+
+	returnsError := false
+	for i := 0; i < fType.NumOut(); i++ {
+		if fType.Out(i) == _typeOfError {
+			returnsError = true
+			continue
+		}
+		structField := reflect.StructField{
+			Name: fmt.Sprintf("Field%d", i),
+			Type: fType.Out(i),
+		}
+		if i < len(rt.tags) {
+			structField.Tag = reflect.StructTag(rt.tags[i])
+		}
+		annotatedResult = append(annotatedResult, structField)
+	}
+	ann.Outs = []reflect.Type{reflect.StructOf(annotatedResult)}
+	if returnsError {
+		ann.Outs = append(ann.Outs, _typeOfError)
+	}
+	return nil
+}
+
+// ResultTags is an Annotation that annotates the result(s) of a function.
+// When multiple tags are specified, each tag is mapped to the corresponding
+// positional result.
+func ResultTags(tags ...string) Annotation {
+	return resultTagsAnnotation{tags}
+}
+
+// Annotate lets you annotate a function's paramter and returns with tags
+// without you having to declare separate struct definitions for them.
+//
+// For example,
+//   func NewGateway(ro, rw *db.Conn) *Gateway { ... }
+//   fx.Provide(
+//     fx.Annotate(
+//       NewGateway,
+//       fx.ParamTags(`name:"ro" optional:"true"`, `name:"rw"`),
+//       fx.ResultTags(`name:"foo"`),
+//     ),
+//   )
+//
+// Is equivalent to,
+//
+//  type params struct {
+//    fx.In
+//
+//    RO *db.Conn `name:"ro" optional:"true"`
+//    RW *db.Conn `name:"rw"`
+//  }
+//
+//  type result struct {
+//    fx.Out
+//
+//    GW *Gateway `name:"foo"`
+//   }
+//
+//   fx.Provide(func(p params) result {
+//     return result{GW: NewGateway(p.RO, p.RW)}
+//   })
+//
+// Using the same annotation multiple times is invalid.
+// For example, the following will fail with an error:
+//
+//  fx.Provide(
+//    fx.Annotate(
+//      NewGateWay,
+//      fx.ParamTags(`name:"ro" optional:"true"`),
+//      fx.ParamTags(`name:"rw"), // ERROR: ParamTags was already used above
+//      fx.ResultTags(`name:"foo"`)
+//    )
+//  )
+//
+// is considered an invalid usage and will not apply any of the
+// Annotations to NewGateway.
+//
+// If more tags are given than the number of parameters/results, only
+// the ones up to the number of parameters/results will be applied.
+func Annotate(f interface{}, anns ...Annotation) interface{} {
+	fVal := reflect.ValueOf(f)
+	fType := fVal.Type()
+	numIn := fType.NumIn()
+	numOut := fType.NumOut()
+	annotations := newAnnotations(fType)
+
+	for _, ann := range anns {
+		if e := ann.apply(&annotations); e != nil {
+			return annotationError{
+				target: f,
+				err:    e,
+			}
+		}
+	}
+
+	ins := annotations.Ins
+	outs := annotations.Outs
+
+	newF := func(args []reflect.Value) []reflect.Value {
+		var fParams, fResults []reflect.Value
+		if annotations.annotatedIn {
+			fParams = make([]reflect.Value, numIn)
+			params := args[0]
+			for i := 0; i < numIn; i++ {
+				fParams[i] = params.Field(i + 1)
+			}
+		} else {
+			fParams = args
+		}
+
+		// Call the wrapped function.
+		fResults = fVal.Call(fParams)
+
+		if !annotations.annotatedOut {
+			return fResults
+		}
+
+		var errValue reflect.Value
+		returnsError := len(outs) > 1
+
+		// wrap the result in an annotated struct
+		results := reflect.New(outs[0]).Elem()
+
+		// aggregate the errors from the annotated function
+		// into one error.
+		if returnsError {
+			errValue = reflect.New(outs[1]).Elem()
+		}
+
+		var errResults error
+		for i := 0; i < numOut; i++ {
+			if fResults[i].Type() == _typeOfError {
+				if err, _ := fResults[i].Interface().(error); err != nil {
+					errResults = multierr.Append(errResults, err)
+				}
+				continue
+			}
+			results.FieldByName(fmt.Sprintf("Field%d",
+				i)).Set(fResults[i])
+		}
+		if returnsError {
+			if errResults != nil {
+				errValue = reflect.ValueOf(errResults).Elem()
+				return []reflect.Value{results, errValue}
+			}
+			// error is nil. Return nil error Value.
+			return []reflect.Value{results, _nilError}
+		}
+		return []reflect.Value{results}
+	}
+
+	annotatedFuncType := reflect.FuncOf(ins, outs, false)
+	annotatedFunc := reflect.MakeFunc(annotatedFuncType, newF)
+	return annotatedFunc.Interface()
 }
