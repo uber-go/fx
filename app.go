@@ -272,7 +272,7 @@ func (t stopTimeoutOption) String() string {
 // For example,
 //
 //   WithLogger(func(logger *zap.Logger) fxevent.Logger {
-//     return &fxevent.ZapLogger{Log: logger}
+//     return &fxevent.ZapLogger{Logger: logger}
 //   })
 //
 func WithLogger(constructor interface{}) Option {
