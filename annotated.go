@@ -103,6 +103,8 @@ type annotations struct {
 
 	annotatedIn  bool
 	annotatedOut bool
+
+	resultOffsets []int // resultOffsets[N] gives the field offset of Nth result.
 }
 
 func newAnnotations(fType reflect.Type) annotations {
@@ -237,6 +239,7 @@ func (rt resultTagsAnnotation) apply(ann *annotations) error {
 	}}
 
 	returnsError := false
+	offsets := make([]int, fType.NumOut())
 	for i := 0; i < fType.NumOut(); i++ {
 		if fType.Out(i) == _typeOfError {
 			returnsError = true
@@ -249,9 +252,11 @@ func (rt resultTagsAnnotation) apply(ann *annotations) error {
 		if i < len(rt.tags) {
 			structField.Tag = reflect.StructTag(rt.tags[i])
 		}
+		offsets[i] = len(annotatedResult)
 		annotatedResult = append(annotatedResult, structField)
 	}
 	ann.Outs = []reflect.Type{reflect.StructOf(annotatedResult)}
+	ann.resultOffsets = offsets
 	if returnsError {
 		ann.Outs = append(ann.Outs, _typeOfError)
 	}
@@ -332,6 +337,7 @@ func Annotate(f interface{}, anns ...Annotation) interface{} {
 
 	ins := annotations.Ins
 	outs := annotations.Outs
+	resultOffsets := annotations.resultOffsets
 
 	newF := func(args []reflect.Value) []reflect.Value {
 		var fParams, fResults []reflect.Value
@@ -372,8 +378,7 @@ func Annotate(f interface{}, anns ...Annotation) interface{} {
 				}
 				continue
 			}
-			results.FieldByName(fmt.Sprintf("Field%d",
-				i)).Set(fResults[i])
+			results.Field(resultOffsets[i]).Set(fResults[i])
 		}
 		if returnsError {
 			if errResults != nil {
