@@ -101,7 +101,7 @@ func TestAnnotatedWrongUsage(t *testing.T) {
 		assert.Contains(t, err.Error(), "fx.Annotated should be passed to fx.Provide directly, it should not be returned by the constructor")
 		assert.Contains(t, err.Error(), "fx.Provide received go.uber.org/fx_test.TestAnnotatedWrongUsage")
 		assert.Contains(t, err.Error(), "go.uber.org/fx_test.TestAnnotatedWrongUsage")
-		assert.Contains(t, err.Error(), "/fx/annotated_test.go")
+		assert.Contains(t, err.Error(), "/annotated_test.go")
 	})
 
 	t.Run("Result Type", func(t *testing.T) {

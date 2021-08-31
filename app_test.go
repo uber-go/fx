@@ -35,6 +35,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
 	. "go.uber.org/fx"
 	"go.uber.org/fx/fxevent"
 	"go.uber.org/fx/fxtest"
@@ -236,7 +237,7 @@ func TestNewApp(t *testing.T) {
 		assert.Contains(t, err.Error(), "fx.Annotated may specify only one of Name or Group:")
 		assert.Contains(t, err.Error(), `received fx.Annotated{Name: "foo", Group: "bar", Target: go.uber.org/fx_test.TestNewApp`)
 		assert.Contains(t, err.Error(), "go.uber.org/fx_test.TestNewApp")
-		assert.Contains(t, err.Error(), "fx/app_test.go")
+		assert.Contains(t, err.Error(), "/app_test.go")
 	})
 
 	t.Run("ErrorProvidingAnnotated", func(t *testing.T) {
@@ -257,7 +258,7 @@ func TestNewApp(t *testing.T) {
 		//     Failed: must provide constructor function, got 42 (type int)
 		assert.Contains(t, err.Error(), `fx.Provide(fx.Annotated{Name: "foo", Target: 42}) from:`)
 		assert.Contains(t, err.Error(), "go.uber.org/fx_test.TestNewApp")
-		assert.Contains(t, err.Error(), "fx/app_test.go")
+		assert.Contains(t, err.Error(), "/app_test.go")
 		assert.Contains(t, err.Error(), "Failed: must provide constructor function")
 	})
 
@@ -274,7 +275,7 @@ func TestNewApp(t *testing.T) {
 		//     Failed: must provide constructor function, got 42 (type int)
 		assert.Contains(t, err.Error(), "fx.Provide(42) from:")
 		assert.Contains(t, err.Error(), "go.uber.org/fx_test.TestNewApp")
-		assert.Contains(t, err.Error(), "fx/app_test.go")
+		assert.Contains(t, err.Error(), "/app_test.go")
 		assert.Contains(t, err.Error(), "Failed: must provide constructor function")
 	})
 }
@@ -871,7 +872,7 @@ func TestAppStart(t *testing.T) {
 		failedEvent := spy.Events()[len(spy.EventTypes())-1].(*fxevent.Invoked)
 		assert.Contains(t, failedEvent.Err.Error(), "can't invoke non-function")
 		assert.Contains(t, failedEvent.Trace, "go.uber.org/fx_test.TestAppStart")
-		assert.Contains(t, failedEvent.Trace, "fx/app_test.go")
+		assert.Contains(t, failedEvent.Trace, "/app_test.go")
 	})
 
 	t.Run("ProvidingAProvideShouldFail", func(t *testing.T) {
@@ -901,7 +902,7 @@ func TestAppStart(t *testing.T) {
 		assert.Contains(t, err.Error(), "fx.Option should be passed to fx.New directly, not to fx.Provide")
 		assert.Contains(t, err.Error(), "fx.Provide received fx.Provide(go.uber.org/fx_test.TestAppStart")
 		assert.Contains(t, err.Error(), "go.uber.org/fx_test.TestAppStart")
-		assert.Contains(t, err.Error(), "fx/app_test.go")
+		assert.Contains(t, err.Error(), "/app_test.go")
 	})
 
 	t.Run("InvokingAnInvokeShouldFail", func(t *testing.T) {
@@ -928,7 +929,7 @@ func TestAppStart(t *testing.T) {
 		assert.Contains(t, err.Error(), "fx.Option should be passed to fx.New directly, not to fx.Invoke")
 		assert.Contains(t, err.Error(), "fx.Invoke received fx.Invoke(go.uber.org/fx_test.TestAppStart")
 		assert.Contains(t, err.Error(), "go.uber.org/fx_test.TestAppStart")
-		assert.Contains(t, err.Error(), "/fx/app_test.go")
+		assert.Contains(t, err.Error(), "/app_test.go")
 	})
 
 	t.Run("ProvidingOptionsShouldFail", func(t *testing.T) {
@@ -964,7 +965,7 @@ func TestAppStart(t *testing.T) {
 		assert.Contains(t, err.Error(), "fx.Option should be passed to fx.New directly, not to fx.Provide")
 		assert.Contains(t, err.Error(), "fx.Provide received fx.Options(fx.Provide(go.uber.org/fx_test.TestAppStart")
 		assert.Contains(t, err.Error(), "go.uber.org/fx_test.TestAppStart")
-		assert.Contains(t, err.Error(), "fx/app_test.go")
+		assert.Contains(t, err.Error(), "/app_test.go")
 	})
 }
 
