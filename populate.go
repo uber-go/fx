@@ -38,11 +38,11 @@ func Populate(targets ...interface{}) Option {
 	targetTypes := make([]reflect.Type, len(targets))
 	for i, t := range targets {
 		if t == nil {
-			return invokeErr(fmt.Errorf("failed to Populate: target %v is nil", i+1))
+			return Error(fmt.Errorf("failed to Populate: target %v is nil", i+1))
 		}
 		rt := reflect.TypeOf(t)
 		if rt.Kind() != reflect.Ptr {
-			return invokeErr(fmt.Errorf("failed to Populate: target %v is not a pointer type, got %T", i+1, t))
+			return Error(fmt.Errorf("failed to Populate: target %v is not a pointer type, got %T", i+1, t))
 		}
 
 		targetTypes[i] = reflect.TypeOf(t).Elem()
@@ -64,10 +64,4 @@ func Populate(targets ...interface{}) Option {
 		return nil
 	})
 	return Invoke(fn.Interface())
-}
-
-func invokeErr(err error) Option {
-	return Invoke(func() error {
-		return err
-	})
 }

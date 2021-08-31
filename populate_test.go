@@ -28,6 +28,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
 	. "go.uber.org/fx"
 	"go.uber.org/fx/fxtest"
 )
@@ -242,5 +243,76 @@ func TestPopulateErrors(t *testing.T) {
 		)
 		require.Error(t, app.Err())
 		assert.Contains(t, app.Err().Error(), tt.wantErr)
+	}
+}
+
+func TestPopulateValidateApp(t *testing.T) {
+	type t1 struct{}
+	type container struct {
+		In
+
+		T1 t1
+	}
+	type containerNoIn struct {
+		T1 t1
+	}
+	fn := func() {}
+	var v *t1
+
+	tests := []struct {
+		msg     string
+		opt     Option
+		wantErr string
+	}{
+		{
+			msg:     "inline value",
+			opt:     Populate(t1{}),
+			wantErr: "not a pointer",
+		},
+		{
+			msg:     "container value",
+			opt:     Populate(container{}),
+			wantErr: "not a pointer",
+		},
+		{
+			msg:     "container pointer without fx.In",
+			opt:     Populate(&containerNoIn{}),
+			wantErr: "missing type: fx_test.containerNoIn",
+		},
+		{
+			msg:     "function",
+			opt:     Populate(fn),
+			wantErr: "not a pointer",
+		},
+		{
+			msg:     "function pointer",
+			opt:     Populate(&fn),
+			wantErr: "missing type: func()",
+		},
+		{
+			msg:     "invalid last argument",
+			opt:     Populate(&v, t1{}),
+			wantErr: "target 2 is not a pointer type",
+		},
+		{
+			msg:     "nil argument",
+			opt:     Populate(&v, nil, &v),
+			wantErr: "target 2 is nil",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.msg, func(t *testing.T) {
+			testOpts := []Option{
+				NopLogger,
+				Provide(func() *t1 { return &t1{} }),
+
+				tt.opt,
+			}
+
+			err := NewValidateAppErr(t, testOpts...)
+			require.Error(t, err)
+			assert.Contains(t, err.Error(), tt.wantErr)
+		})
 	}
 }
