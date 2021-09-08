@@ -59,6 +59,27 @@ func TestExtract(t *testing.T) {
 		}
 	})
 
+	t.Run("ValidateApp", func(t *testing.T) {
+		tests := []interface{}{
+			3,
+			func() {},
+			struct{}{},
+			struct{ Foo *bytes.Buffer }{},
+		}
+
+		for _, tt := range tests {
+			t.Run(fmt.Sprintf("%T", tt), func(t *testing.T) {
+				err := validateTestApp(t,
+					Provide(func() *bytes.Buffer { return &bytes.Buffer{} }),
+					Extract(&tt),
+				)
+
+				require.Error(t, err)
+				assert.Contains(t, err.Error(), "Extract expected a pointer to a struct")
+			})
+		}
+	})
+
 	t.Run("Empty", func(t *testing.T) {
 		new1 := func() *type1 { panic("new1 must not be called") }
 		new2 := func() *type2 { panic("new2 must not be called") }
