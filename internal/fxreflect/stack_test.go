@@ -29,12 +29,16 @@ import (
 )
 
 func TestStack(t *testing.T) {
+	t.Parallel()
+
 	// NOTE:
 	// We don't assert the length of the stack because we cannot make
 	// guarantees about how many frames the test runner is allowed to
 	// introduce.
 
 	t.Run("default", func(t *testing.T) {
+		t.Parallel()
+
 		frames := CallerStack(0, 0)
 		require.NotEmpty(t, frames)
 		f := frames[0]
@@ -44,6 +48,8 @@ func TestStack(t *testing.T) {
 	})
 
 	t.Run("default/deeper", func(t *testing.T) {
+		t.Parallel()
+
 		// Introduce a few frames.
 		frames := func() []Frame {
 			return func() []Frame {
@@ -61,6 +67,8 @@ func TestStack(t *testing.T) {
 	})
 
 	t.Run("skip", func(t *testing.T) {
+		t.Parallel()
+
 		// Introduce a few frames and skip 2.
 		frames := func() []Frame {
 			return func() []Frame {
@@ -77,6 +85,8 @@ func TestStack(t *testing.T) {
 }
 
 func TestStackCallerName(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		desc string
 		give Stack
@@ -148,13 +158,18 @@ func TestStackCallerName(t *testing.T) {
 	}
 
 	for _, tt := range tests {
+		tt := tt
 		t.Run(tt.desc, func(t *testing.T) {
+			t.Parallel()
+
 			assert.Equal(t, tt.want, tt.give.CallerName())
 		})
 	}
 }
 
 func TestFrameString(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		desc string
 		give Frame
@@ -198,13 +213,18 @@ func TestFrameString(t *testing.T) {
 	}
 
 	for _, tt := range tests {
+		tt := tt
 		t.Run(tt.desc, func(t *testing.T) {
+			t.Parallel()
+
 			assert.Equal(t, tt.want, tt.give.String())
 		})
 	}
 }
 
 func TestStackFormat(t *testing.T) {
+	t.Parallel()
+
 	stack := Stack{
 		{
 			Function: "path/to/module.SomeFunction()",
@@ -219,6 +239,8 @@ func TestStackFormat(t *testing.T) {
 	}
 
 	t.Run("single line", func(t *testing.T) {
+		t.Parallel()
+
 		assert.Equal(t,
 			"path/to/module.SomeFunction() (path/to/file.go:42); "+
 				"path/to/another/module.AnotherFunction() (path/to/another/file.go:12)",
@@ -226,6 +248,8 @@ func TestStackFormat(t *testing.T) {
 	})
 
 	t.Run("multi line", func(t *testing.T) {
+		t.Parallel()
+
 		assert.Equal(t, `path/to/module.SomeFunction()
 	path/to/file.go:42
 path/to/another/module.AnotherFunction()

@@ -29,7 +29,11 @@ import (
 )
 
 func TestShutdown(t *testing.T) {
+	t.Parallel()
+
 	t.Run("BroadcastsToMultipleChannels", func(t *testing.T) {
+		t.Parallel()
+
 		var s fx.Shutdowner
 		app := fxtest.New(
 			t,
@@ -45,6 +49,8 @@ func TestShutdown(t *testing.T) {
 	})
 
 	t.Run("ErrorOnUnsentSignal", func(t *testing.T) {
+		t.Parallel()
+
 		var s fx.Shutdowner
 		app := fxtest.New(
 			t,

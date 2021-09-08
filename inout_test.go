@@ -30,6 +30,8 @@ import (
 )
 
 func TestIn(t *testing.T) {
+	t.Parallel()
+
 	type in struct {
 		fx.In
 	}
@@ -37,6 +39,8 @@ func TestIn(t *testing.T) {
 }
 
 func TestOut(t *testing.T) {
+	t.Parallel()
+
 	type out struct {
 		fx.Out
 	}
@@ -44,6 +48,8 @@ func TestOut(t *testing.T) {
 }
 
 func TestOptionalTypes(t *testing.T) {
+	t.Parallel()
+
 	type foo struct{}
 	newFoo := func() *foo { return &foo{} }
 
@@ -58,6 +64,8 @@ func TestOptionalTypes(t *testing.T) {
 	}
 
 	t.Run("NotProvided", func(t *testing.T) {
+		t.Parallel()
+
 		ran := false
 		app := fxtest.New(t, fx.Provide(newFoo), fx.Invoke(func(in in) {
 			assert.NotNil(t, in.Foo, "foo was not optional and provided, expected not nil")
@@ -69,6 +77,8 @@ func TestOptionalTypes(t *testing.T) {
 	})
 
 	t.Run("Provided", func(t *testing.T) {
+		t.Parallel()
+
 		ran := false
 		app := fxtest.New(t, fx.Provide(newFoo, newBar), fx.Invoke(func(in in) {
 			assert.NotNil(t, in.Foo, "foo was not optional and provided, expected not nil")
@@ -81,6 +91,8 @@ func TestOptionalTypes(t *testing.T) {
 }
 
 func TestNamedTypes(t *testing.T) {
+	t.Parallel()
+
 	type a struct {
 		name string
 	}
@@ -131,6 +143,8 @@ func TestNamedTypes(t *testing.T) {
 }
 
 func TestIgnoreUnexported(t *testing.T) {
+	t.Parallel()
+
 	type A struct{ ID int }
 	type B struct{ ID int }
 

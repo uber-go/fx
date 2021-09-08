@@ -29,6 +29,8 @@ import (
 )
 
 func TestLogBufferConnect(t *testing.T) {
+	t.Parallel()
+
 	spy := new(fxlog.Spy)
 	event := &fxevent.Started{}
 	lb := &logBuffer{
@@ -41,6 +43,8 @@ func TestLogBufferConnect(t *testing.T) {
 }
 
 func TestLogBufferLog(t *testing.T) {
+	t.Parallel()
+
 	spy := new(fxlog.Spy)
 	event := &fxevent.Started{}
 	lb := &logBuffer{

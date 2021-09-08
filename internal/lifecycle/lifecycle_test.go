@@ -44,7 +44,11 @@ func testLogger(t *testing.T) fxevent.Logger {
 }
 
 func TestLifecycleStart(t *testing.T) {
+	t.Parallel()
+
 	t.Run("ExecutesInOrder", func(t *testing.T) {
+		t.Parallel()
+
 		l := New(testLogger(t))
 		count := 0
 
@@ -67,6 +71,8 @@ func TestLifecycleStart(t *testing.T) {
 		assert.Equal(t, 2, count)
 	})
 	t.Run("ErrHaltsChainAndRollsBack", func(t *testing.T) {
+		t.Parallel()
+
 		l := New(testLogger(t))
 		err := errors.New("a starter error")
 		starterCount := 0
@@ -115,12 +121,18 @@ func TestLifecycleStart(t *testing.T) {
 }
 
 func TestLifecycleStop(t *testing.T) {
+	t.Parallel()
+
 	t.Run("DoesNothingWithoutHooks", func(t *testing.T) {
+		t.Parallel()
+
 		l := &Lifecycle{logger: testLogger(t)}
 		assert.Nil(t, l.Stop(context.Background()), "no lifecycle hooks should have resulted in stop returning nil")
 	})
 
 	t.Run("DoesNothingWhenNotStarted", func(t *testing.T) {
+		t.Parallel()
+
 		hook := Hook{
 			OnStop: func(context.Context) error {
 				assert.Fail(t, "OnStop should not be called if lifecycle was never started")
@@ -133,6 +145,8 @@ func TestLifecycleStop(t *testing.T) {
 	})
 
 	t.Run("ExecutesInReverseOrder", func(t *testing.T) {
+		t.Parallel()
+
 		l := &Lifecycle{logger: testLogger(t)}
 		count := 2
 
@@ -157,6 +171,8 @@ func TestLifecycleStop(t *testing.T) {
 	})
 
 	t.Run("ErrDoesntHaltChain", func(t *testing.T) {
+		t.Parallel()
+
 		l := New(testLogger(t))
 		count := 0
 
@@ -179,6 +195,8 @@ func TestLifecycleStop(t *testing.T) {
 		assert.Equal(t, 2, count)
 	})
 	t.Run("GathersAllErrs", func(t *testing.T) {
+		t.Parallel()
+
 		l := New(testLogger(t))
 
 		err := errors.New("some stop error")
@@ -199,6 +217,8 @@ func TestLifecycleStop(t *testing.T) {
 		assert.Equal(t, multierr.Combine(err, err2), l.Stop(context.Background()))
 	})
 	t.Run("AllowEmptyHooks", func(t *testing.T) {
+		t.Parallel()
+
 		l := New(testLogger(t))
 		l.Append(Hook{})
 		l.Append(Hook{})
@@ -208,6 +228,8 @@ func TestLifecycleStop(t *testing.T) {
 	})
 
 	t.Run("DoesNothingIfStartFailed", func(t *testing.T) {
+		t.Parallel()
+
 		l := New(testLogger(t))
 		err := errors.New("some start error")
 
@@ -227,7 +249,11 @@ func TestLifecycleStop(t *testing.T) {
 }
 
 func TestHookRecordsFormat(t *testing.T) {
+	t.Parallel()
+
 	t.Run("SortRecords", func(t *testing.T) {
+		t.Parallel()
+
 		t1, err := time.ParseDuration("10ms")
 		require.NoError(t, err)
 		t2, err := time.ParseDuration("20ms")

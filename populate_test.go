@@ -34,6 +34,8 @@ import (
 )
 
 func TestPopulate(t *testing.T) {
+	t.Parallel()
+
 	// We make sure t1 has a size so when we compare pointers, 2 different
 	// objects are not equal.
 	type t1 struct {
@@ -44,6 +46,8 @@ func TestPopulate(t *testing.T) {
 	_ = new(t1).buf // buf is unused
 
 	t.Run("populate nothing", func(t *testing.T) {
+		t.Parallel()
+
 		app := fxtest.New(t,
 			Provide(func() *t1 { panic("should not be called ") }),
 			Populate(),
@@ -52,6 +56,8 @@ func TestPopulate(t *testing.T) {
 	})
 
 	t.Run("populate single", func(t *testing.T) {
+		t.Parallel()
+
 		var v1 *t1
 		app := fxtest.New(t,
 			Provide(func() *t1 { return &t1{} }),
@@ -62,6 +68,8 @@ func TestPopulate(t *testing.T) {
 	})
 
 	t.Run("populate interface", func(t *testing.T) {
+		t.Parallel()
+
 		var reader io.Reader
 		app := fxtest.New(t,
 			Provide(func() io.Reader { return strings.NewReader("hello world") }),
@@ -75,6 +83,8 @@ func TestPopulate(t *testing.T) {
 	})
 
 	t.Run("populate multiple inline values", func(t *testing.T) {
+		t.Parallel()
+
 		var (
 			v1 *t1
 			v2 *t2
@@ -93,6 +103,8 @@ func TestPopulate(t *testing.T) {
 	})
 
 	t.Run("populate fx.In struct", func(t *testing.T) {
+		t.Parallel()
+
 		targets := struct {
 			In
 
@@ -113,6 +125,8 @@ func TestPopulate(t *testing.T) {
 	})
 
 	t.Run("populate named field", func(t *testing.T) {
+		t.Parallel()
+
 		type result struct {
 			Out
 
@@ -146,6 +160,8 @@ func TestPopulate(t *testing.T) {
 	})
 
 	t.Run("populate group", func(t *testing.T) {
+		t.Parallel()
+
 		type result struct {
 			Out
 
@@ -180,6 +196,8 @@ func TestPopulate(t *testing.T) {
 }
 
 func TestPopulateErrors(t *testing.T) {
+	t.Parallel()
+
 	type t1 struct{}
 	type container struct {
 		In
@@ -247,6 +265,8 @@ func TestPopulateErrors(t *testing.T) {
 }
 
 func TestPopulateValidateApp(t *testing.T) {
+	t.Parallel()
+
 	type t1 struct{}
 	type container struct {
 		In
@@ -302,7 +322,10 @@ func TestPopulateValidateApp(t *testing.T) {
 	}
 
 	for _, tt := range tests {
+		tt := tt
 		t.Run(tt.msg, func(t *testing.T) {
+			t.Parallel()
+
 			testOpts := []Option{
 				NopLogger,
 				Provide(func() *t1 { return &t1{} }),

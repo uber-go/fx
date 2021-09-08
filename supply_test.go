@@ -34,15 +34,21 @@ import (
 )
 
 func TestSupply(t *testing.T) {
+	t.Parallel()
+
 	type A struct{}
 	type B struct{}
 
 	t.Run("NothingIsSupplied", func(t *testing.T) {
+		t.Parallel()
+
 		app := fxtest.New(t, fx.Supply())
 		defer app.RequireStart().RequireStop()
 	})
 
 	t.Run("SomethingIsSupplied", func(t *testing.T) {
+		t.Parallel()
+
 		aIn, bIn := &A{}, &B{}
 		var aOut *A
 		var bOut *B
@@ -59,6 +65,8 @@ func TestSupply(t *testing.T) {
 	})
 
 	t.Run("AnnotateIsSupplied", func(t *testing.T) {
+		t.Parallel()
+
 		firstIn, secondIn, thirdIn := &A{}, &A{}, &B{}
 		var out struct {
 			fx.In
@@ -84,6 +92,8 @@ func TestSupply(t *testing.T) {
 	})
 
 	t.Run("InvalidArgumentIsSupplied", func(t *testing.T) {
+		t.Parallel()
+
 		require.PanicsWithValuef(
 			t,
 			"untyped nil passed to fx.Supply",
@@ -106,6 +116,8 @@ func TestSupply(t *testing.T) {
 	})
 
 	t.Run("SupplyCollision", func(t *testing.T) {
+		t.Parallel()
+
 		type foo struct{}
 
 		var spy fxlog.Spy
