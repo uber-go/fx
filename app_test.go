@@ -314,6 +314,51 @@ func TestNewApp(t *testing.T) {
 	})
 }
 
+func TestWithLoggerErrorUseDefault(t *testing.T) {
+	// This test cannot be run in paralllel with the others because
+	// it hijacks stderr.
+
+	// Temporarily hijack stderr and restore it after this test so
+	// that we can assert its contents.
+	f, err := ioutil.TempFile(t.TempDir(), "stderr")
+	if err != nil {
+		t.Fatalf("could not open a file for writing")
+	}
+	defer func(oldStderr *os.File) {
+		assert.NoError(t, f.Close())
+		os.Stderr = oldStderr
+	}(os.Stderr)
+	os.Stderr = f
+
+	app := New(
+		Supply(zap.NewNop()),
+		WithLogger(&bytes.Buffer{}),
+	)
+	err = app.Err()
+	require.Error(t, err)
+	assert.Contains(t,
+		err.Error(),
+		"must provide constructor function, got  (type *bytes.Buffer)",
+	)
+
+	stderr, err := ioutil.ReadFile(f.Name())
+	require.NoError(t, err)
+
+	// Example output:
+	// [Fx] SUPPLY  *zap.Logger
+	// [Fx] ERROR   Failed to initialize custom logger: fx.WithLogger() from:
+	// go.uber.org/fx_test.TestSetupLogger.func3
+	//        /Users/abg/dev/fx/app_test.go:334
+	// testing.tRunner
+	//        /usr/local/Cellar/go/1.16.4/libexec/src/testing/testing.go:1193
+	// Failed: must provide constructor function, got  (type *bytes.Buffer)
+
+	out := string(stderr)
+	assert.Contains(t, out, "[Fx] SUPPLY\t*zap.Logger\n")
+	assert.Contains(t, out, "[Fx] ERROR\t\tFailed to initialize custom logger: fx.WithLogger")
+	assert.Contains(t, out, "must provide constructor function, got  (type *bytes.Buffer)\n")
+}
+
 func TestWithLogger(t *testing.T) {
 	t.Parallel()
 
@@ -338,53 +383,6 @@ func TestWithLogger(t *testing.T) {
 		require.NoError(t, app.Err())
 
 		assert.Equal(t, []string{"Started"}, spy.EventTypes())
-	})
-
-	t.Run("error in WithLogger provider, use default", func(t *testing.T) {
-		t.Parallel()
-
-		// This test cannot be run in paralllel with the others because
-		// it hijacks stderr.
-
-		// Temporarily hijack stderr and restore it after this test so
-		// that we can assert its contents.
-		f, err := ioutil.TempFile(t.TempDir(), "stderr")
-		if err != nil {
-			t.Fatalf("could not open a file for writing")
-		}
-		defer func(oldStderr *os.File) {
-			assert.NoError(t, f.Close())
-			os.Stderr = oldStderr
-		}(os.Stderr)
-		os.Stderr = f
-
-		app := New(
-			Supply(zap.NewNop()),
-			WithLogger(&bytes.Buffer{}),
-		)
-		err = app.Err()
-		require.Error(t, err)
-		assert.Contains(t,
-			err.Error(),
-			"must provide constructor function, got  (type *bytes.Buffer)",
-		)
-
-		stderr, err := ioutil.ReadFile(f.Name())
-		require.NoError(t, err)
-
-		// Example output:
-		// [Fx] SUPPLY  *zap.Logger
-		// [Fx] ERROR   Failed to initialize custom logger: fx.WithLogger() from:
-		// go.uber.org/fx_test.TestSetupLogger.func3
-		//        /Users/abg/dev/fx/app_test.go:334
-		// testing.tRunner
-		//        /usr/local/Cellar/go/1.16.4/libexec/src/testing/testing.go:1193
-		// Failed: must provide constructor function, got  (type *bytes.Buffer)
-
-		out := string(stderr)
-		assert.Contains(t, out, "[Fx] SUPPLY\t*zap.Logger\n")
-		assert.Contains(t, out, "[Fx] ERROR\t\tFailed to initialize custom logger: fx.WithLogger")
-		assert.Contains(t, out, "must provide constructor function, got  (type *bytes.Buffer)\n")
 	})
 
 	t.Run("error in Provide shows logs", func(t *testing.T) {
