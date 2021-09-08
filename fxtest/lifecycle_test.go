@@ -34,7 +34,11 @@ import (
 )
 
 func TestLifecycle(t *testing.T) {
+	t.Parallel()
+
 	t.Run("Success", func(t *testing.T) {
+		t.Parallel()
+
 		spy := newTB()
 
 		n := 0
@@ -50,6 +54,8 @@ func TestLifecycle(t *testing.T) {
 	})
 
 	t.Run("StartError", func(t *testing.T) {
+		t.Parallel()
+
 		spy := newTB()
 		lc := NewLifecycle(spy)
 		lc.Append(fx.Hook{OnStart: func(context.Context) error { return errors.New("fail") }})
@@ -62,6 +68,8 @@ func TestLifecycle(t *testing.T) {
 	})
 
 	t.Run("StopFailure", func(t *testing.T) {
+		t.Parallel()
+
 		spy := newTB()
 		lc := NewLifecycle(spy)
 		lc.Append(fx.Hook{OnStop: func(context.Context) error { return errors.New("fail") }})
@@ -74,6 +82,8 @@ func TestLifecycle(t *testing.T) {
 	})
 
 	t.Run("RequireLeakDetection", func(t *testing.T) {
+		t.Parallel()
+
 		spy := newTB()
 		lc := NewLifecycle(spy)
 
@@ -108,7 +118,11 @@ func TestLifecycle(t *testing.T) {
 }
 
 func TestLifecycle_OptionalT(t *testing.T) {
+	t.Parallel()
+
 	t.Run("success", func(t *testing.T) {
+		t.Parallel()
+
 		lc := NewLifecycle(nil)
 
 		var started, stopped bool
@@ -134,6 +148,8 @@ func TestLifecycle_OptionalT(t *testing.T) {
 	})
 
 	t.Run("start error", func(t *testing.T) {
+		t.Parallel()
+
 		lc := NewLifecycle(nil)
 		lc.Append(fx.Hook{
 			OnStart: func(context.Context) error {
@@ -152,7 +168,11 @@ func TestLifecycle_OptionalT(t *testing.T) {
 }
 
 func TestPanicT(t *testing.T) {
+	t.Parallel()
+
 	t.Run("Logf", func(t *testing.T) {
+		t.Parallel()
+
 		var buff bytes.Buffer
 		pt := panicT{W: &buff}
 		pt.Logf("hello: %v", "world")
@@ -161,6 +181,8 @@ func TestPanicT(t *testing.T) {
 	})
 
 	t.Run("Errorf", func(t *testing.T) {
+		t.Parallel()
+
 		var buff bytes.Buffer
 		pt := panicT{W: &buff}
 		pt.Errorf("hello: %v", "world")
@@ -170,6 +192,8 @@ func TestPanicT(t *testing.T) {
 		// Functionally there's no difference between Logf and Errorf
 		// unless FailNow is called.
 		t.Run("FailNow", func(t *testing.T) {
+			t.Parallel()
+
 			var pval interface{}
 			func() {
 				defer func() { pval = recover() }()
@@ -181,6 +205,8 @@ func TestPanicT(t *testing.T) {
 
 	// FailNow without calling Errorf will use the fixed message.
 	t.Run("FailNow", func(t *testing.T) {
+		t.Parallel()
+
 		var buff bytes.Buffer
 		pt := panicT{W: &buff}
 		pt.Logf("hello: %v", "world")

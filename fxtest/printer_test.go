@@ -27,6 +27,8 @@ import (
 )
 
 func TestNewTestPrinter(t *testing.T) {
+	t.Parallel()
+
 	spy := newTB()
 	p := NewTestPrinter(spy)
 	p.Printf("static")

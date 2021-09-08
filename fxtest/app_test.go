@@ -30,7 +30,11 @@ import (
 )
 
 func TestApp(t *testing.T) {
+	t.Parallel()
+
 	t.Run("Success", func(t *testing.T) {
+		t.Parallel()
+
 		spy := newTB()
 
 		New(spy).RequireStart().RequireStop()
@@ -40,6 +44,8 @@ func TestApp(t *testing.T) {
 	})
 
 	t.Run("NewFailure", func(t *testing.T) {
+		t.Parallel()
+
 		spy := newTB()
 
 		New(
@@ -54,6 +60,8 @@ func TestApp(t *testing.T) {
 	})
 
 	t.Run("StartError", func(t *testing.T) {
+		t.Parallel()
+
 		spy := newTB()
 
 		New(
@@ -71,6 +79,8 @@ func TestApp(t *testing.T) {
 	})
 
 	t.Run("StopFailure", func(t *testing.T) {
+		t.Parallel()
+
 		spy := newTB()
 
 		construct := func(lc fx.Lifecycle) struct{} {

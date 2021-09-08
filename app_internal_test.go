@@ -33,6 +33,8 @@ import (
 )
 
 func TestAppRun(t *testing.T) {
+	t.Parallel()
+
 	spy := new(fxlog.Spy)
 	app := New(
 		WithLogger(func() fxevent.Logger { return spy }),
@@ -62,6 +64,8 @@ func TestAppRun(t *testing.T) {
 
 // TestValidateString verifies private option. Public options are tested in app_test.go.
 func TestValidateString(t *testing.T) {
+	t.Parallel()
+
 	stringer, ok := validate(true).(fmt.Stringer)
 	require.True(t, ok, "option must implement stringer")
 	assert.Equal(t, "fx.validate(true)", stringer.String())
