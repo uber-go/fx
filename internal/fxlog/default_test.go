@@ -29,6 +29,8 @@ import (
 )
 
 func TestNew(t *testing.T) {
+	t.Parallel()
+
 	assert.NotPanics(t, func() {
 		DefaultLogger(testutil.WriteSyncer{T: t})
 	})

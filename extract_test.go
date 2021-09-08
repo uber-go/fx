@@ -34,11 +34,15 @@ import (
 )
 
 func TestExtract(t *testing.T) {
+	t.Parallel()
+
 	type type1 struct{}
 	type type2 struct{}
 	type type3 struct{}
 
 	t.Run("Failures", func(t *testing.T) {
+		t.Parallel()
+
 		tests := []interface{}{
 			3,
 			func() {},
@@ -47,7 +51,10 @@ func TestExtract(t *testing.T) {
 		}
 
 		for _, tt := range tests {
+			tt := tt
 			t.Run(fmt.Sprintf("%T", tt), func(t *testing.T) {
+				t.Parallel()
+
 				app := NewForTest(t,
 					Provide(func() *bytes.Buffer { return &bytes.Buffer{} }),
 					Extract(&tt),
@@ -59,7 +66,35 @@ func TestExtract(t *testing.T) {
 		}
 	})
 
+	t.Run("ValidateApp", func(t *testing.T) {
+		t.Parallel()
+
+		tests := []interface{}{
+			3,
+			func() {},
+			struct{}{},
+			struct{ Foo *bytes.Buffer }{},
+		}
+
+		for _, tt := range tests {
+			tt := tt
+			t.Run(fmt.Sprintf("%T", tt), func(t *testing.T) {
+				t.Parallel()
+
+				err := validateTestApp(t,
+					Provide(func() *bytes.Buffer { return &bytes.Buffer{} }),
+					Extract(&tt),
+				)
+
+				require.Error(t, err)
+				assert.Contains(t, err.Error(), "Extract expected a pointer to a struct")
+			})
+		}
+	})
+
 	t.Run("Empty", func(t *testing.T) {
+		t.Parallel()
+
 		new1 := func() *type1 { panic("new1 must not be called") }
 		new2 := func() *type2 { panic("new2 must not be called") }
 
@@ -72,6 +107,8 @@ func TestExtract(t *testing.T) {
 	})
 
 	t.Run("StructIsExtracted", func(t *testing.T) {
+		t.Parallel()
+
 		var gave1 *type1
 		new1 := func() *type1 {
 			gave1 = &type1{}
@@ -102,6 +139,8 @@ func TestExtract(t *testing.T) {
 	})
 
 	t.Run("EmbeddedExportedField", func(t *testing.T) {
+		t.Parallel()
+
 		type T1 struct{}
 
 		var gave1 *T1
@@ -123,6 +162,8 @@ func TestExtract(t *testing.T) {
 	})
 
 	t.Run("EmbeddedUnexportedField", func(t *testing.T) {
+		t.Parallel()
+
 		new1 := func() *type1 { return &type1{} }
 		var out struct{ *type1 }
 
@@ -134,6 +175,8 @@ func TestExtract(t *testing.T) {
 	})
 
 	t.Run("EmbeddedUnexportedFieldValue", func(t *testing.T) {
+		t.Parallel()
+
 		type type4 struct{ foo string }
 		new4 := func() type4 { return type4{"foo"} }
 		var out struct{ type4 }
@@ -146,6 +189,8 @@ func TestExtract(t *testing.T) {
 	})
 
 	t.Run("DuplicateFields", func(t *testing.T) {
+		t.Parallel()
+
 		var gave *type1
 		new1 := func() *type1 {
 			require.Nil(t, gave, "gave must be nil")
@@ -171,6 +216,8 @@ func TestExtract(t *testing.T) {
 	})
 
 	t.Run("SkipsUnexported", func(t *testing.T) {
+		t.Parallel()
+
 		var gave1 *type1
 		new1 := func() *type1 {
 			gave1 = &type1{}
@@ -205,6 +252,8 @@ func TestExtract(t *testing.T) {
 	})
 
 	t.Run("DoesNotZeroUnexported", func(t *testing.T) {
+		t.Parallel()
+
 		var gave1 *type1
 		new1 := func() *type1 {
 			gave1 = &type1{}
@@ -233,12 +282,16 @@ func TestExtract(t *testing.T) {
 	})
 
 	t.Run("TopLevelDigIn", func(t *testing.T) {
+		t.Parallel()
+
 		var out struct{ dig.In }
 		app := fxtest.New(t, Extract(&out))
 		defer app.RequireStart().RequireStop()
 	})
 
 	t.Run("TopLevelFxIn", func(t *testing.T) {
+		t.Parallel()
+
 		new1 := func() *type1 { panic("new1 must not be called") }
 		new2 := func() *type2 { panic("new2 must not be called") }
 
@@ -252,6 +305,8 @@ func TestExtract(t *testing.T) {
 	})
 
 	t.Run("NestedFxIn", func(t *testing.T) {
+		t.Parallel()
+
 		var gave1 *type1
 		new1 := func() *type1 {
 			gave1 = &type1{}
@@ -279,6 +334,8 @@ func TestExtract(t *testing.T) {
 	})
 
 	t.Run("FurtherNestedFxIn", func(t *testing.T) {
+		t.Parallel()
+
 		var out struct {
 			In
 
@@ -298,6 +355,8 @@ func TestExtract(t *testing.T) {
 	})
 
 	t.Run("FieldsCanBeOptional", func(t *testing.T) {
+		t.Parallel()
+
 		var gave1 *type1
 		new1 := func() *type1 {
 			gave1 = &type1{}

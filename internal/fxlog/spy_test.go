@@ -29,6 +29,8 @@ import (
 )
 
 func TestSpy(t *testing.T) {
+	t.Parallel()
+
 	var s Spy
 
 	t.Run("empty spy", func(t *testing.T) {

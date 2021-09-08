@@ -28,11 +28,14 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
 	. "go.uber.org/fx"
 	"go.uber.org/fx/fxtest"
 )
 
 func TestPopulate(t *testing.T) {
+	t.Parallel()
+
 	// We make sure t1 has a size so when we compare pointers, 2 different
 	// objects are not equal.
 	type t1 struct {
@@ -43,6 +46,8 @@ func TestPopulate(t *testing.T) {
 	_ = new(t1).buf // buf is unused
 
 	t.Run("populate nothing", func(t *testing.T) {
+		t.Parallel()
+
 		app := fxtest.New(t,
 			Provide(func() *t1 { panic("should not be called ") }),
 			Populate(),
@@ -51,6 +56,8 @@ func TestPopulate(t *testing.T) {
 	})
 
 	t.Run("populate single", func(t *testing.T) {
+		t.Parallel()
+
 		var v1 *t1
 		app := fxtest.New(t,
 			Provide(func() *t1 { return &t1{} }),
@@ -61,6 +68,8 @@ func TestPopulate(t *testing.T) {
 	})
 
 	t.Run("populate interface", func(t *testing.T) {
+		t.Parallel()
+
 		var reader io.Reader
 		app := fxtest.New(t,
 			Provide(func() io.Reader { return strings.NewReader("hello world") }),
@@ -74,6 +83,8 @@ func TestPopulate(t *testing.T) {
 	})
 
 	t.Run("populate multiple inline values", func(t *testing.T) {
+		t.Parallel()
+
 		var (
 			v1 *t1
 			v2 *t2
@@ -92,6 +103,8 @@ func TestPopulate(t *testing.T) {
 	})
 
 	t.Run("populate fx.In struct", func(t *testing.T) {
+		t.Parallel()
+
 		targets := struct {
 			In
 
@@ -112,6 +125,8 @@ func TestPopulate(t *testing.T) {
 	})
 
 	t.Run("populate named field", func(t *testing.T) {
+		t.Parallel()
+
 		type result struct {
 			Out
 
@@ -145,6 +160,8 @@ func TestPopulate(t *testing.T) {
 	})
 
 	t.Run("populate group", func(t *testing.T) {
+		t.Parallel()
+
 		type result struct {
 			Out
 
@@ -179,6 +196,8 @@ func TestPopulate(t *testing.T) {
 }
 
 func TestPopulateErrors(t *testing.T) {
+	t.Parallel()
+
 	type t1 struct{}
 	type container struct {
 		In
@@ -242,5 +261,80 @@ func TestPopulateErrors(t *testing.T) {
 		)
 		require.Error(t, app.Err())
 		assert.Contains(t, app.Err().Error(), tt.wantErr)
+	}
+}
+
+func TestPopulateValidateApp(t *testing.T) {
+	t.Parallel()
+
+	type t1 struct{}
+	type container struct {
+		In
+
+		T1 t1
+	}
+	type containerNoIn struct {
+		T1 t1
+	}
+	fn := func() {}
+	var v *t1
+
+	tests := []struct {
+		msg     string
+		opts    []interface{}
+		wantErr string
+	}{
+		{
+			msg:     "inline value",
+			opts:    []interface{}{t1{}},
+			wantErr: "not a pointer",
+		},
+		{
+			msg:     "container value",
+			opts:    []interface{}{container{}},
+			wantErr: "not a pointer",
+		},
+		{
+			msg:     "container pointer without fx.In",
+			opts:    []interface{}{&containerNoIn{}},
+			wantErr: "missing type: fx_test.containerNoIn",
+		},
+		{
+			msg:     "function",
+			opts:    []interface{}{fn},
+			wantErr: "not a pointer",
+		},
+		{
+			msg:     "function pointer",
+			opts:    []interface{}{&fn},
+			wantErr: "missing type: func()",
+		},
+		{
+			msg:     "invalid last argument",
+			opts:    []interface{}{&v, t1{}},
+			wantErr: "target 2 is not a pointer type",
+		},
+		{
+			msg:     "nil argument",
+			opts:    []interface{}{&v, nil, &v},
+			wantErr: "target 2 is nil",
+		},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.msg, func(t *testing.T) {
+			t.Parallel()
+
+			testOpts := []Option{
+				NopLogger,
+				Provide(func() *t1 { return &t1{} }),
+				Populate(tt.opts...),
+			}
+
+			err := validateTestApp(t, testOpts...)
+			require.Error(t, err)
+			assert.Contains(t, err.Error(), tt.wantErr)
+		})
 	}
 }

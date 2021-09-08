@@ -35,6 +35,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
 	. "go.uber.org/fx"
 	"go.uber.org/fx/fxevent"
 	"go.uber.org/fx/fxtest"
@@ -64,8 +65,24 @@ func NewSpied(opts ...Option) (*App, *fxlog.Spy) {
 	return New(opts...), spy
 }
 
+func validateTestApp(tb testing.TB, opts ...Option) error {
+	testOpts := []Option{
+		// Provide both: Logger and WithLogger so that if the test
+		// WithLogger fails, we don't pollute stderr.
+		Logger(fxtest.NewTestPrinter(tb)),
+		WithLogger(func() fxevent.Logger { return fxtest.NewTestLogger(tb) }),
+	}
+	opts = append(testOpts, opts...)
+
+	return ValidateApp(opts...)
+}
+
 func TestNewApp(t *testing.T) {
+	t.Parallel()
+
 	t.Run("ProvidesLifecycleAndShutdowner", func(t *testing.T) {
+		t.Parallel()
+
 		var (
 			l Lifecycle
 			s Shutdowner
@@ -79,6 +96,8 @@ func TestNewApp(t *testing.T) {
 	})
 
 	t.Run("OptionsHappensBeforeProvides", func(t *testing.T) {
+		t.Parallel()
+
 		// Should be grouping all provides and pushing them into the container
 		// after applying other options. This prevents the app configuration
 		// (e.g., logging) from changing halfway through our provides.
@@ -95,6 +114,8 @@ func TestNewApp(t *testing.T) {
 	})
 
 	t.Run("CircularGraphReturnsError", func(t *testing.T) {
+		t.Parallel()
+
 		type A struct{}
 		type B struct{}
 		app := NewForTest(t,
@@ -112,6 +133,8 @@ func TestNewApp(t *testing.T) {
 	})
 
 	t.Run("ProvidesDotGraph", func(t *testing.T) {
+		t.Parallel()
+
 		type A struct{}
 		type B struct{}
 		type C struct{}
@@ -128,6 +151,8 @@ func TestNewApp(t *testing.T) {
 	})
 
 	t.Run("ProvidesWithAnnotate", func(t *testing.T) {
+		t.Parallel()
+
 		type A struct{}
 
 		type B struct {
@@ -167,6 +192,8 @@ func TestNewApp(t *testing.T) {
 	})
 
 	t.Run("ProvidesWithAnnotateFlattened", func(t *testing.T) {
+		t.Parallel()
+
 		app := fxtest.New(t,
 			Provide(Annotated{
 				Target: func() []int { return []int{1} },
@@ -187,6 +214,8 @@ func TestNewApp(t *testing.T) {
 	})
 
 	t.Run("ProvidesWithEmptyAnnotate", func(t *testing.T) {
+		t.Parallel()
+
 		type A struct{}
 
 		type B struct {
@@ -213,6 +242,8 @@ func TestNewApp(t *testing.T) {
 	})
 
 	t.Run("CannotNameAndGroup", func(t *testing.T) {
+		t.Parallel()
+
 		type A struct{}
 
 		app := NewForTest(t,
@@ -236,10 +267,12 @@ func TestNewApp(t *testing.T) {
 		assert.Contains(t, err.Error(), "fx.Annotated may specify only one of Name or Group:")
 		assert.Contains(t, err.Error(), `received fx.Annotated{Name: "foo", Group: "bar", Target: go.uber.org/fx_test.TestNewApp`)
 		assert.Contains(t, err.Error(), "go.uber.org/fx_test.TestNewApp")
-		assert.Contains(t, err.Error(), "fx/app_test.go")
+		assert.Contains(t, err.Error(), "/app_test.go")
 	})
 
 	t.Run("ErrorProvidingAnnotated", func(t *testing.T) {
+		t.Parallel()
+
 		app := NewForTest(t, Provide(Annotated{
 			Target: 42, // not a constructor
 			Name:   "foo",
@@ -257,11 +290,13 @@ func TestNewApp(t *testing.T) {
 		//     Failed: must provide constructor function, got 42 (type int)
 		assert.Contains(t, err.Error(), `fx.Provide(fx.Annotated{Name: "foo", Target: 42}) from:`)
 		assert.Contains(t, err.Error(), "go.uber.org/fx_test.TestNewApp")
-		assert.Contains(t, err.Error(), "fx/app_test.go")
+		assert.Contains(t, err.Error(), "/app_test.go")
 		assert.Contains(t, err.Error(), "Failed: must provide constructor function")
 	})
 
 	t.Run("ErrorProviding", func(t *testing.T) {
+		t.Parallel()
+
 		err := NewForTest(t, Provide(42)).Err()
 		require.Error(t, err)
 
@@ -274,9 +309,54 @@ func TestNewApp(t *testing.T) {
 		//     Failed: must provide constructor function, got 42 (type int)
 		assert.Contains(t, err.Error(), "fx.Provide(42) from:")
 		assert.Contains(t, err.Error(), "go.uber.org/fx_test.TestNewApp")
-		assert.Contains(t, err.Error(), "fx/app_test.go")
+		assert.Contains(t, err.Error(), "/app_test.go")
 		assert.Contains(t, err.Error(), "Failed: must provide constructor function")
 	})
+}
+
+func TestWithLoggerErrorUseDefault(t *testing.T) {
+	// This test cannot be run in paralllel with the others because
+	// it hijacks stderr.
+
+	// Temporarily hijack stderr and restore it after this test so
+	// that we can assert its contents.
+	f, err := ioutil.TempFile(t.TempDir(), "stderr")
+	if err != nil {
+		t.Fatalf("could not open a file for writing")
+	}
+	defer func(oldStderr *os.File) {
+		assert.NoError(t, f.Close())
+		os.Stderr = oldStderr
+	}(os.Stderr)
+	os.Stderr = f
+
+	app := New(
+		Supply(zap.NewNop()),
+		WithLogger(&bytes.Buffer{}),
+	)
+	err = app.Err()
+	require.Error(t, err)
+	assert.Contains(t,
+		err.Error(),
+		"must provide constructor function, got  (type *bytes.Buffer)",
+	)
+
+	stderr, err := ioutil.ReadFile(f.Name())
+	require.NoError(t, err)
+
+	// Example output:
+	// [Fx] SUPPLY  *zap.Logger
+	// [Fx] ERROR   Failed to initialize custom logger: fx.WithLogger() from:
+	// go.uber.org/fx_test.TestSetupLogger.func3
+	//        /Users/abg/dev/fx/app_test.go:334
+	// testing.tRunner
+	//        /usr/local/Cellar/go/1.16.4/libexec/src/testing/testing.go:1193
+	// Failed: must provide constructor function, got  (type *bytes.Buffer)
+
+	out := string(stderr)
+	assert.Contains(t, out, "[Fx] SUPPLY\t*zap.Logger\n")
+	assert.Contains(t, out, "[Fx] ERROR\t\tFailed to initialize custom logger: fx.WithLogger")
+	assert.Contains(t, out, "must provide constructor function, got  (type *bytes.Buffer)\n")
 }
 
 func TestWithLogger(t *testing.T) {
@@ -303,51 +383,6 @@ func TestWithLogger(t *testing.T) {
 		require.NoError(t, app.Err())
 
 		assert.Equal(t, []string{"Started"}, spy.EventTypes())
-	})
-
-	t.Run("error in WithLogger provider, use default", func(t *testing.T) {
-		// This test cannot be run in paralllel with the others because
-		// it hijacks stderr.
-
-		// Temporarily hijack stderr and restore it after this test so
-		// that we can assert its contents.
-		f, err := ioutil.TempFile(t.TempDir(), "stderr")
-		if err != nil {
-			t.Fatalf("could not open a file for writing")
-		}
-		defer func(oldStderr *os.File) {
-			assert.NoError(t, f.Close())
-			os.Stderr = oldStderr
-		}(os.Stderr)
-		os.Stderr = f
-
-		app := New(
-			Supply(zap.NewNop()),
-			WithLogger(&bytes.Buffer{}),
-		)
-		err = app.Err()
-		require.Error(t, err)
-		assert.Contains(t,
-			err.Error(),
-			"must provide constructor function, got  (type *bytes.Buffer)",
-		)
-
-		stderr, err := ioutil.ReadFile(f.Name())
-		require.NoError(t, err)
-
-		// Example output:
-		// [Fx] SUPPLY  *zap.Logger
-		// [Fx] ERROR   Failed to initialize custom logger: fx.WithLogger() from:
-		// go.uber.org/fx_test.TestSetupLogger.func3
-		//        /Users/abg/dev/fx/app_test.go:334
-		// testing.tRunner
-		//        /usr/local/Cellar/go/1.16.4/libexec/src/testing/testing.go:1193
-		// Failed: must provide constructor function, got  (type *bytes.Buffer)
-
-		out := string(stderr)
-		assert.Contains(t, out, "[Fx] SUPPLY\t*zap.Logger\n")
-		assert.Contains(t, out, "[Fx] ERROR\t\tFailed to initialize custom logger: fx.WithLogger")
-		assert.Contains(t, out, "must provide constructor function, got  (type *bytes.Buffer)\n")
 	})
 
 	t.Run("error in Provide shows logs", func(t *testing.T) {
@@ -421,7 +456,11 @@ type errHandlerFunc func(error)
 func (f errHandlerFunc) HandleError(err error) { f(err) }
 
 func TestInvokes(t *testing.T) {
+	t.Parallel()
+
 	t.Run("Success event", func(t *testing.T) {
+		t.Parallel()
+
 		app, spy := NewSpied(
 			Invoke(func() {}),
 		)
@@ -433,6 +472,8 @@ func TestInvokes(t *testing.T) {
 	})
 
 	t.Run("Failure event", func(t *testing.T) {
+		t.Parallel()
+
 		app, spy := NewSpied(
 			Invoke(func() error {
 				return errors.New("great sadness")
@@ -446,6 +487,8 @@ func TestInvokes(t *testing.T) {
 	})
 
 	t.Run("ErrorsAreNotOverriden", func(t *testing.T) {
+		t.Parallel()
+
 		type A struct{}
 		type B struct{}
 
@@ -460,6 +503,8 @@ func TestInvokes(t *testing.T) {
 	})
 
 	t.Run("ErrorHooksAreCalled", func(t *testing.T) {
+		t.Parallel()
+
 		type A struct{}
 
 		count := 0
@@ -475,7 +520,11 @@ func TestInvokes(t *testing.T) {
 }
 
 func TestError(t *testing.T) {
+	t.Parallel()
+
 	t.Run("NilErrorOption", func(t *testing.T) {
+		t.Parallel()
+
 		var invoked bool
 
 		app := NewForTest(t,
@@ -488,6 +537,8 @@ func TestError(t *testing.T) {
 	})
 
 	t.Run("SingleErrorOption", func(t *testing.T) {
+		t.Parallel()
+
 		app := NewForTest(t,
 			Error(errors.New("module failure")),
 			Invoke(func() { t.Errorf("Invoke should not be called") }),
@@ -497,6 +548,8 @@ func TestError(t *testing.T) {
 	})
 
 	t.Run("MultipleErrorOption", func(t *testing.T) {
+		t.Parallel()
+
 		type A struct{}
 
 		app := NewForTest(t,
@@ -519,6 +572,8 @@ func TestError(t *testing.T) {
 	})
 
 	t.Run("ProvideAndInvokeErrorsAreIgnored", func(t *testing.T) {
+		t.Parallel()
+
 		type A struct{}
 		type B struct{}
 
@@ -537,7 +592,11 @@ func TestError(t *testing.T) {
 }
 
 func TestOptions(t *testing.T) {
+	t.Parallel()
+
 	t.Run("OptionsComposition", func(t *testing.T) {
+		t.Parallel()
+
 		var n int
 		construct := func() struct{} {
 			n++
@@ -552,6 +611,8 @@ func TestOptions(t *testing.T) {
 	})
 
 	t.Run("ProvidesCalledInGraphOrder", func(t *testing.T) {
+		t.Parallel()
+
 		type type1 struct{}
 		type type2 struct{}
 		type type3 struct{}
@@ -585,6 +646,8 @@ func TestOptions(t *testing.T) {
 	})
 
 	t.Run("ProvidesCalledLazily", func(t *testing.T) {
+		t.Parallel()
+
 		count := 0
 		newBuffer := func() *bytes.Buffer {
 			t.Error("this module should not init: no provided type relies on it")
@@ -603,6 +666,8 @@ func TestOptions(t *testing.T) {
 	})
 
 	t.Run("Error", func(t *testing.T) {
+		t.Parallel()
+
 		spy := new(fxlog.Spy)
 		New(
 			Provide(&bytes.Buffer{}), // error, not a constructor
@@ -614,6 +679,8 @@ func TestOptions(t *testing.T) {
 }
 
 func TestTimeoutOptions(t *testing.T) {
+	t.Parallel()
+
 	const timeout = time.Minute
 	// Further assertions can't succeed unless the test timeout is greater than the default.
 	require.True(t, timeout > DefaultTimeout, "test assertions require timeout greater than default")
@@ -653,7 +720,11 @@ func TestTimeoutOptions(t *testing.T) {
 }
 
 func TestAppStart(t *testing.T) {
+	t.Parallel()
+
 	t.Run("Timeout", func(t *testing.T) {
+		t.Parallel()
+
 		type A struct{}
 		blocker := func(lc Lifecycle) *A {
 			lc.Append(
@@ -686,6 +757,8 @@ func TestAppStart(t *testing.T) {
 	})
 
 	t.Run("TimeoutWithFinishedHooks", func(t *testing.T) {
+		t.Parallel()
+
 		type A struct{}
 		type B struct{ A *A }
 		type C struct{ B *B }
@@ -750,6 +823,8 @@ func TestAppStart(t *testing.T) {
 	})
 
 	t.Run("CtxCancelledDuringStart", func(t *testing.T) {
+		t.Parallel()
+
 		type A struct{}
 		running := make(chan struct{})
 		newA := func(lc Lifecycle) *A {
@@ -788,6 +863,8 @@ func TestAppStart(t *testing.T) {
 	})
 
 	t.Run("Rollback", func(t *testing.T) {
+		t.Parallel()
+
 		failStart := func(lc Lifecycle) struct{} {
 			lc.Append(Hook{OnStart: func(context.Context) error {
 				return errors.New("OnStart fail")
@@ -815,6 +892,8 @@ func TestAppStart(t *testing.T) {
 	})
 
 	t.Run("StartAndStopErrors", func(t *testing.T) {
+		t.Parallel()
+
 		errStop1 := errors.New("OnStop fail 1")
 		errStart2 := errors.New("OnStart fail 2")
 		fail := func(lc Lifecycle) struct{} {
@@ -851,6 +930,8 @@ func TestAppStart(t *testing.T) {
 	})
 
 	t.Run("InvokeNonFunction", func(t *testing.T) {
+		t.Parallel()
+
 		spy := new(fxlog.Spy)
 
 		app := New(WithLogger(func() fxevent.Logger { return spy }), Invoke(struct{}{}))
@@ -871,10 +952,12 @@ func TestAppStart(t *testing.T) {
 		failedEvent := spy.Events()[len(spy.EventTypes())-1].(*fxevent.Invoked)
 		assert.Contains(t, failedEvent.Err.Error(), "can't invoke non-function")
 		assert.Contains(t, failedEvent.Trace, "go.uber.org/fx_test.TestAppStart")
-		assert.Contains(t, failedEvent.Trace, "fx/app_test.go")
+		assert.Contains(t, failedEvent.Trace, "/app_test.go")
 	})
 
 	t.Run("ProvidingAProvideShouldFail", func(t *testing.T) {
+		t.Parallel()
+
 		type type1 struct{}
 		type type2 struct{}
 		type type3 struct{}
@@ -901,10 +984,12 @@ func TestAppStart(t *testing.T) {
 		assert.Contains(t, err.Error(), "fx.Option should be passed to fx.New directly, not to fx.Provide")
 		assert.Contains(t, err.Error(), "fx.Provide received fx.Provide(go.uber.org/fx_test.TestAppStart")
 		assert.Contains(t, err.Error(), "go.uber.org/fx_test.TestAppStart")
-		assert.Contains(t, err.Error(), "fx/app_test.go")
+		assert.Contains(t, err.Error(), "/app_test.go")
 	})
 
 	t.Run("InvokingAnInvokeShouldFail", func(t *testing.T) {
+		t.Parallel()
+
 		type type1 struct{}
 
 		app := NewForTest(t,
@@ -928,10 +1013,12 @@ func TestAppStart(t *testing.T) {
 		assert.Contains(t, err.Error(), "fx.Option should be passed to fx.New directly, not to fx.Invoke")
 		assert.Contains(t, err.Error(), "fx.Invoke received fx.Invoke(go.uber.org/fx_test.TestAppStart")
 		assert.Contains(t, err.Error(), "go.uber.org/fx_test.TestAppStart")
-		assert.Contains(t, err.Error(), "/fx/app_test.go")
+		assert.Contains(t, err.Error(), "/app_test.go")
 	})
 
 	t.Run("ProvidingOptionsShouldFail", func(t *testing.T) {
+		t.Parallel()
+
 		type type1 struct{}
 		type type2 struct{}
 		type type3 struct{}
@@ -964,12 +1051,16 @@ func TestAppStart(t *testing.T) {
 		assert.Contains(t, err.Error(), "fx.Option should be passed to fx.New directly, not to fx.Provide")
 		assert.Contains(t, err.Error(), "fx.Provide received fx.Options(fx.Provide(go.uber.org/fx_test.TestAppStart")
 		assert.Contains(t, err.Error(), "go.uber.org/fx_test.TestAppStart")
-		assert.Contains(t, err.Error(), "fx/app_test.go")
+		assert.Contains(t, err.Error(), "/app_test.go")
 	})
 }
 
 func TestAppStop(t *testing.T) {
+	t.Parallel()
+
 	t.Run("Timeout", func(t *testing.T) {
+		t.Parallel()
+
 		block := func(ctx context.Context) error {
 			<-ctx.Done()
 			return ctx.Err()
@@ -995,6 +1086,8 @@ func TestAppStop(t *testing.T) {
 	})
 
 	t.Run("StopError", func(t *testing.T) {
+		t.Parallel()
+
 		failStop := func(lc Lifecycle) struct{} {
 			lc.Append(Hook{OnStop: func(context.Context) error {
 				return errors.New("OnStop fail")
@@ -1013,6 +1106,8 @@ func TestAppStop(t *testing.T) {
 }
 
 func TestValidateApp(t *testing.T) {
+	t.Parallel()
+
 	// helper to use the test logger
 	validateApp := func(t *testing.T, opts ...Option) error {
 		return ValidateApp(
@@ -1021,6 +1116,8 @@ func TestValidateApp(t *testing.T) {
 	}
 
 	t.Run("do not run provides on graph validation", func(t *testing.T) {
+		t.Parallel()
+
 		type type1 struct{}
 		err := validateApp(t,
 			Provide(func() *type1 {
@@ -1032,6 +1129,8 @@ func TestValidateApp(t *testing.T) {
 		require.NoError(t, err)
 	})
 	t.Run("do not run provides nor invokes on graph validation", func(t *testing.T) {
+		t.Parallel()
+
 		type type1 struct{}
 		err := validateApp(t,
 			Provide(func() *type1 {
@@ -1045,6 +1144,8 @@ func TestValidateApp(t *testing.T) {
 		require.NoError(t, err)
 	})
 	t.Run("provide depends on something not available", func(t *testing.T) {
+		t.Parallel()
+
 		type type1 struct{}
 		err := validateApp(t,
 			Provide(func(type1) int { return 0 }),
@@ -1057,6 +1158,8 @@ func TestValidateApp(t *testing.T) {
 		assert.Contains(t, errMsg, "missing type: fx_test.type1")
 	})
 	t.Run("provide introduces a cycle", func(t *testing.T) {
+		t.Parallel()
+
 		type A struct{}
 		type B struct{}
 		err := validateApp(t,
@@ -1069,6 +1172,8 @@ func TestValidateApp(t *testing.T) {
 		assert.Contains(t, errMsg, "cycle detected in dependency graph")
 	})
 	t.Run("invoke a type that's not available", func(t *testing.T) {
+		t.Parallel()
+
 		type A struct{}
 		err := validateApp(t,
 			Invoke(func(A) {}),
@@ -1079,6 +1184,8 @@ func TestValidateApp(t *testing.T) {
 		assert.Contains(t, errMsg, "missing type: fx_test.A")
 	})
 	t.Run("no error", func(t *testing.T) {
+		t.Parallel()
+
 		type A struct{}
 		err := validateApp(t,
 			Provide(func() A {
@@ -1091,6 +1198,8 @@ func TestValidateApp(t *testing.T) {
 }
 
 func TestDone(t *testing.T) {
+	t.Parallel()
+
 	done := fxtest.New(t).Done()
 	require.NotNil(t, done, "Got a nil channel.")
 	select {
@@ -1101,6 +1210,8 @@ func TestDone(t *testing.T) {
 }
 
 func TestReplaceLogger(t *testing.T) {
+	t.Parallel()
+
 	spy := new(fxlog.Spy)
 	app := fxtest.New(t, WithLogger(func() fxevent.Logger { return spy }))
 	app.RequireStart().RequireStop()
@@ -1108,11 +1219,15 @@ func TestReplaceLogger(t *testing.T) {
 }
 
 func TestNopLogger(t *testing.T) {
+	t.Parallel()
+
 	app := fxtest.New(t, NopLogger)
 	app.RequireStart().RequireStop()
 }
 
 func TestCustomLoggerWithPrinter(t *testing.T) {
+	t.Parallel()
+
 	// If we provide both, an fx.Logger and fx.WithLogger, and the logger
 	// fails, we should fall back to the fx.Logger.
 
@@ -1133,6 +1248,8 @@ func TestCustomLoggerWithPrinter(t *testing.T) {
 }
 
 func TestCustomLoggerWithLifecycle(t *testing.T) {
+	t.Parallel()
+
 	var started, stopped bool
 	defer func() {
 		assert.True(t, started, "never started")
@@ -1181,6 +1298,8 @@ func TestCustomLoggerWithLifecycle(t *testing.T) {
 }
 
 func TestCustomLoggerFailure(t *testing.T) {
+	t.Parallel()
+
 	var buff bytes.Buffer
 	app := New(
 		// We expect WithLogger to fail, so this buffer should be
@@ -1212,18 +1331,26 @@ func (we testErrorWithGraph) Error() string {
 }
 
 func TestVisualizeError(t *testing.T) {
+	t.Parallel()
+
 	t.Run("NotWrappedError", func(t *testing.T) {
+		t.Parallel()
+
 		_, err := VisualizeError(errors.New("great sadness"))
 		require.Error(t, err)
 	})
 
 	t.Run("WrappedErrorWithEmptyGraph", func(t *testing.T) {
+		t.Parallel()
+
 		graph, err := VisualizeError(testErrorWithGraph{graph: ""})
 		assert.Empty(t, graph)
 		require.Error(t, err)
 	})
 
 	t.Run("WrappedError", func(t *testing.T) {
+		t.Parallel()
+
 		graph, err := VisualizeError(testErrorWithGraph{graph: "graph"})
 		assert.Equal(t, "graph", graph)
 		require.NoError(t, err)
@@ -1231,7 +1358,11 @@ func TestVisualizeError(t *testing.T) {
 }
 
 func TestErrorHook(t *testing.T) {
+	t.Parallel()
+
 	t.Run("UnvisualizableError", func(t *testing.T) {
+		t.Parallel()
+
 		type A struct{}
 
 		var graphErr error
@@ -1247,6 +1378,8 @@ func TestErrorHook(t *testing.T) {
 	})
 
 	t.Run("GraphWithError", func(t *testing.T) {
+		t.Parallel()
+
 		type A struct{}
 		type B struct{}
 
@@ -1268,6 +1401,8 @@ func TestErrorHook(t *testing.T) {
 }
 
 func TestOptionString(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		desc string
 		give Option
@@ -1354,7 +1489,10 @@ func TestOptionString(t *testing.T) {
 	}
 
 	for _, tt := range tests {
+		tt := tt
 		t.Run(tt.desc, func(t *testing.T) {
+			t.Parallel()
+
 			stringer, ok := tt.give.(fmt.Stringer)
 			require.True(t, ok, "option must implement stringer")
 			assert.Equal(t, tt.want, stringer.String())

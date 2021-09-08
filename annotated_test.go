@@ -31,6 +31,8 @@ import (
 )
 
 func TestAnnotated(t *testing.T) {
+	t.Parallel()
+
 	type a struct {
 		name string
 	}
@@ -43,6 +45,8 @@ func TestAnnotated(t *testing.T) {
 		return &a{name: "foo"}
 	}
 	t.Run("Provide", func(t *testing.T) {
+		t.Parallel()
+
 		var in in
 		app := fxtest.New(t,
 			fx.Provide(
@@ -60,6 +64,8 @@ func TestAnnotated(t *testing.T) {
 }
 
 func TestAnnotatedWrongUsage(t *testing.T) {
+	t.Parallel()
+
 	type a struct {
 		name string
 	}
@@ -73,6 +79,8 @@ func TestAnnotatedWrongUsage(t *testing.T) {
 	}
 
 	t.Run("In Constructor", func(t *testing.T) {
+		t.Parallel()
+
 		var in in
 		app := fx.New(
 			fx.WithLogger(func() fxevent.Logger {
@@ -101,10 +109,12 @@ func TestAnnotatedWrongUsage(t *testing.T) {
 		assert.Contains(t, err.Error(), "fx.Annotated should be passed to fx.Provide directly, it should not be returned by the constructor")
 		assert.Contains(t, err.Error(), "fx.Provide received go.uber.org/fx_test.TestAnnotatedWrongUsage")
 		assert.Contains(t, err.Error(), "go.uber.org/fx_test.TestAnnotatedWrongUsage")
-		assert.Contains(t, err.Error(), "/fx/annotated_test.go")
+		assert.Contains(t, err.Error(), "/annotated_test.go")
 	})
 
 	t.Run("Result Type", func(t *testing.T) {
+		t.Parallel()
+
 		app := fx.New(
 			fx.WithLogger(func() fxevent.Logger {
 				return fxtest.NewTestLogger(t)
@@ -123,6 +133,8 @@ func TestAnnotatedWrongUsage(t *testing.T) {
 }
 
 func TestAnnotatedString(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		desc string
 		give fx.Annotated
@@ -171,13 +183,18 @@ func TestAnnotatedString(t *testing.T) {
 	}
 
 	for _, tt := range tests {
+		tt := tt
 		t.Run(tt.desc, func(t *testing.T) {
+			t.Parallel()
+
 			assert.Equal(t, tt.want, tt.give.String())
 		})
 	}
 }
 
 func TestAnnotate(t *testing.T) {
+	t.Parallel()
+
 	type a struct{}
 	type b struct{ a *a }
 	type c struct{ b *b }
@@ -190,6 +207,8 @@ func TestAnnotate(t *testing.T) {
 	}
 
 	t.Run("Provide with optional", func(t *testing.T) {
+		t.Parallel()
+
 		app := fxtest.New(t,
 			fx.Provide(
 				fx.Annotate(newB, fx.ParamTags(`name:"a" optional:"true"`)),
@@ -201,6 +220,8 @@ func TestAnnotate(t *testing.T) {
 	})
 
 	t.Run("Provide with many annotated params", func(t *testing.T) {
+		t.Parallel()
+
 		app := fxtest.New(t,
 			fx.Provide(
 				fx.Annotate(newB, fx.ParamTags(`optional:"true"`)),
@@ -216,6 +237,8 @@ func TestAnnotate(t *testing.T) {
 	})
 
 	t.Run("Invoke with optional", func(t *testing.T) {
+		t.Parallel()
+
 		app := fx.New(
 			fx.Invoke(
 				fx.Annotate(newB, fx.ParamTags(`optional:"true"`)),
@@ -226,6 +249,8 @@ func TestAnnotate(t *testing.T) {
 	})
 
 	t.Run("Invoke with a missing dependency", func(t *testing.T) {
+		t.Parallel()
+
 		app := fx.New(
 			fx.Invoke(
 				fx.Annotate(newB, fx.ParamTags(`name:"a"`)),
@@ -238,6 +263,8 @@ func TestAnnotate(t *testing.T) {
 	})
 
 	t.Run("provide with annotated results", func(t *testing.T) {
+		t.Parallel()
+
 		app := fxtest.New(t,
 			fx.Provide(
 				fx.Annotate(func() *a {
@@ -265,6 +292,8 @@ func TestAnnotate(t *testing.T) {
 	})
 
 	t.Run("provide with missing annotated results", func(t *testing.T) {
+		t.Parallel()
+
 		app := fx.New(
 			fx.Provide(
 				fx.Annotate(func() *a {
@@ -292,6 +321,8 @@ func TestAnnotate(t *testing.T) {
 	})
 
 	t.Run("provide with annotated results with error", func(t *testing.T) {
+		t.Parallel()
+
 		app := fxtest.New(t,
 			fx.Provide(
 				//lint:ignore ST1008 we want to test error in the middle.
@@ -311,6 +342,8 @@ func TestAnnotate(t *testing.T) {
 	})
 
 	t.Run("specify more ParamTags than Params", func(t *testing.T) {
+		t.Parallel()
+
 		app := fxtest.New(t,
 			fx.Provide(
 				// This should just leave newA as it is.
@@ -325,6 +358,8 @@ func TestAnnotate(t *testing.T) {
 	})
 
 	t.Run("specify two ParamTags", func(t *testing.T) {
+		t.Parallel()
+
 		app := fx.New(
 			fx.Provide(
 				// This should just leave newA as it is.
@@ -342,6 +377,8 @@ func TestAnnotate(t *testing.T) {
 	})
 
 	t.Run("specify two ResultTags", func(t *testing.T) {
+		t.Parallel()
+
 		app := fx.New(
 			fx.Provide(
 				// This should just leave newA as it is.

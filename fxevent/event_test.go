@@ -28,6 +28,8 @@ import (
 
 // TestForCoverage adds coverage for own sake.
 func TestForCoverage(t *testing.T) {
+	t.Parallel()
+
 	events := []Event{
 		&OnStartExecuting{},
 		&OnStartExecuted{},
