@@ -261,42 +261,42 @@ func TestPopulateValidateApp(t *testing.T) {
 
 	tests := []struct {
 		msg     string
-		opt     Option
+		opts    []interface{}
 		wantErr string
 	}{
 		{
 			msg:     "inline value",
-			opt:     Populate(t1{}),
+			opts:    []interface{}{t1{}},
 			wantErr: "not a pointer",
 		},
 		{
 			msg:     "container value",
-			opt:     Populate(container{}),
+			opts:    []interface{}{container{}},
 			wantErr: "not a pointer",
 		},
 		{
 			msg:     "container pointer without fx.In",
-			opt:     Populate(&containerNoIn{}),
+			opts:    []interface{}{&containerNoIn{}},
 			wantErr: "missing type: fx_test.containerNoIn",
 		},
 		{
 			msg:     "function",
-			opt:     Populate(fn),
+			opts:    []interface{}{fn},
 			wantErr: "not a pointer",
 		},
 		{
 			msg:     "function pointer",
-			opt:     Populate(&fn),
+			opts:    []interface{}{&fn},
 			wantErr: "missing type: func()",
 		},
 		{
 			msg:     "invalid last argument",
-			opt:     Populate(&v, t1{}),
+			opts:    []interface{}{&v, t1{}},
 			wantErr: "target 2 is not a pointer type",
 		},
 		{
 			msg:     "nil argument",
-			opt:     Populate(&v, nil, &v),
+			opts:    []interface{}{&v, nil, &v},
 			wantErr: "target 2 is nil",
 		},
 	}
@@ -306,11 +306,10 @@ func TestPopulateValidateApp(t *testing.T) {
 			testOpts := []Option{
 				NopLogger,
 				Provide(func() *t1 { return &t1{} }),
-
-				tt.opt,
+				Populate(tt.opts...),
 			}
 
-			err := NewValidateAppErr(t, testOpts...)
+			err := validateTestApp(t, testOpts...)
 			require.Error(t, err)
 			assert.Contains(t, err.Error(), tt.wantErr)
 		})
