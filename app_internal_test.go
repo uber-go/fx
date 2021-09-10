@@ -30,6 +30,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/fx/fxevent"
 	"go.uber.org/fx/internal/fxlog"
+	"go.uber.org/fx/internal/fxreflect"
 )
 
 func TestAppRun(t *testing.T) {
@@ -69,4 +70,20 @@ func TestValidateString(t *testing.T) {
 	stringer, ok := validate(true).(fmt.Stringer)
 	require.True(t, ok, "option must implement stringer")
 	assert.Equal(t, "fx.validate(true)", stringer.String())
+}
+
+// WithExit is an internal option available only to tests defined in this
+// package. It changes how os.Exit behaves for the application.
+func WithExit(f func(int)) Option {
+	return withExitOption(f)
+}
+
+type withExitOption func(int)
+
+func (o withExitOption) String() string {
+	return fmt.Sprintf("WithExit(%v)", fxreflect.FuncName(o))
+}
+
+func (o withExitOption) apply(app *App) {
+	app.osExit = o
 }

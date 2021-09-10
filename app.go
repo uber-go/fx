@@ -381,6 +381,8 @@ type App struct {
 	// Used to signal shutdowns.
 	donesMu sync.RWMutex
 	dones   []chan os.Signal
+
+	osExit func(code int) // os.Exit override; used for testing only
 }
 
 // provide is a single constructor provided to Fx.
@@ -640,6 +642,15 @@ func VisualizeError(err error) (string, error) {
 	return "", errors.New("unable to visualize error")
 }
 
+// Exits the application with the given exit code.
+func (app *App) exit(code int) {
+	osExit := os.Exit
+	if app.osExit != nil {
+		osExit = app.osExit
+	}
+	osExit(code)
+}
+
 // Run starts the application, blocks on the signals channel, and then
 // gracefully shuts the application down. It uses DefaultTimeout to set a
 // deadline for application startup and shutdown, unless the user has
@@ -654,7 +665,7 @@ func (app *App) Run() {
 	// cede control to Fx with they call app.Run. To avoid a breaking
 	// change, never os.Exit for success.
 	if code := app.run(app.Done()); code != 0 {
-		os.Exit(code)
+		app.exit(code)
 	}
 }
 
