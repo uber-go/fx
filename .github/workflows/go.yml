@@ -10,12 +10,14 @@ on:
 jobs:
 
   build:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
     strategy:
       matrix:
+        os: ["ubuntu-latest", "windows-latest"]
         go: ["1.15.x", "1.16.x", "1.17.x"]
         include:
         - go: 1.17.x
+          os: "ubuntu-latest"
           latest: true
 
     steps:
