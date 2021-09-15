@@ -957,6 +957,12 @@ func withTimeout(ctx context.Context, param *withTimeoutParams) error {
 	case <-ctx.Done():
 		err = ctx.Err()
 	case err = <-c:
+		// If the context finished at the same time as the callback
+		// prefer the context error.
+		// This eliminates non-determinism in select-case selection.
+		if ctx.Err() != nil {
+			err = ctx.Err()
+		}
 	}
 	if err != context.DeadlineExceeded {
 		return err
