@@ -383,7 +383,7 @@ func TestWithLogger(t *testing.T) {
 
 		require.NoError(t, app.Err())
 
-		assert.Equal(t, []string{"Started"}, spy.EventTypes())
+		assert.Equal(t, []string{"Started", "Stopped"}, spy.EventTypes())
 	})
 
 	t.Run("error in Provide shows logs", func(t *testing.T) {
@@ -738,14 +738,24 @@ func TestAppRunTimeout(t *testing.T) {
 	tests := []struct {
 		desc        string
 		start, stop func(context.Context) error
+
+		// Type of the fxevent we want.
+		// Does not reflect the exact value.
+		wantEventType fxevent.Event
 	}{
 		{
 			// Timeout starting an application.
 			desc:          "OnStart timeout",
 			start:         blockForever,
+			wantEventType: &fxevent.Started{},
 		},
-		// TODO: timeout during stop
 		// TODO: timeout during rollback
+		{
+			// Timeout during a stop.
+			desc:          "OnStop timeout",
+			stop:          blockForever,
+			wantEventType: &fxevent.Stopped{},
+		},
 	}
 
 	for _, tt := range tests {
@@ -766,31 +776,50 @@ func TestAppRunTimeout(t *testing.T) {
 					"os.Exit must be called")
 			}()
 
+			// If the OnStart hook for this is invoked,
+			// it means that the Start did not fail.
+			// In that case, shut down immediately
+			// rather than block forever.
+			shutdown := func(sd Shutdowner, lc Lifecycle) {
+				lc.Append(Hook{
+					OnStart: func(context.Context) error {
+						return sd.Shutdown()
+					},
+				})
+			}
+
 			app, spy := NewSpied(
+				StartTimeout(time.Millisecond),
+				StopTimeout(time.Millisecond),
+				WithExit(exit),
 				Invoke(func(lc Lifecycle) {
 					lc.Append(Hook{
 						OnStart: tt.start,
 						OnStop:  tt.stop,
 					})
 				}),
-				StartTimeout(time.Millisecond),
-				WithExit(exit),
+				Invoke(shutdown),
 			)
 
 			app.Run()
 			assert.NotZero(t, exitCode,
 				"exit code mismatch")
 
-			t.Logf("%q", spy.EventTypes())
-			events := spy.Events().SelectByTypeName("Started")
-			require.Len(t, events, 1, "expected a Started event")
-			started := events[0].(*fxevent.Started)
-			assert.Error(t, started.Err, "should fail to start")
-			assert.ErrorIs(t, started.Err, context.DeadlineExceeded,
+			eventType := reflect.TypeOf(tt.wantEventType).Elem().Name()
+			matchingEvents := spy.Events().SelectByTypeName(eventType)
+			require.Len(t, matchingEvents, 1,
+				"expected a %q event", eventType)
+
+			event := matchingEvents[0]
+			errv := reflect.ValueOf(event).Elem().FieldByName("Err")
+			require.True(t, errv.IsValid(),
+				"event %q does not have an Err attribute", eventType)
+
+			err, _ := errv.Interface().(error)
+			assert.ErrorIs(t, err, context.DeadlineExceeded,
 				"should fail because of a timeout")
 		})
 	}
-
 }
 
 func TestAppStart(t *testing.T) {
@@ -1289,7 +1318,14 @@ func TestReplaceLogger(t *testing.T) {
 	spy := new(fxlog.Spy)
 	app := fxtest.New(t, WithLogger(func() fxevent.Logger { return spy }))
 	app.RequireStart().RequireStop()
-	assert.Equal(t, []string{"Provided", "Provided", "Provided", "LoggerInitialized", "Started"}, spy.EventTypes())
+	assert.Equal(t, []string{
+		"Provided",
+		"Provided",
+		"Provided",
+		"LoggerInitialized",
+		"Started",
+		"Stopped",
+	}, spy.EventTypes())
 }
 
 func TestNopLogger(t *testing.T) {
@@ -1368,6 +1404,7 @@ func TestCustomLoggerWithLifecycle(t *testing.T) {
 		"OnStartExecuting", "OnStartExecuted",
 		"Started",
 		"OnStopExecuting", "OnStopExecuted",
+		"Stopped",
 	}, spy.EventTypes())
 }
 

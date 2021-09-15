@@ -676,18 +676,17 @@ func (app *App) run(done <-chan os.Signal) (exitCode int) {
 	if err := app.Start(startCtx); err != nil {
 		return 1
 	}
+
 	sig := <-done
 	app.log.LogEvent(&fxevent.Stopping{Signal: sig})
 
 	stopCtx, cancel := context.WithTimeout(context.Background(), app.StopTimeout())
 	defer cancel()
 
-	err := app.Stop(stopCtx)
-	app.log.LogEvent(&fxevent.Stopped{Err: err})
-
-	if err != nil {
+	if err := app.Stop(stopCtx); err != nil {
 		return 1
 	}
+
 	return 0
 }
 
@@ -766,7 +765,11 @@ func (app *App) start(ctx context.Context) error {
 // If the application didn't start cleanly, only hooks whose OnStart phase was
 // called are executed. However, all those hooks are executed, even if some
 // fail.
-func (app *App) Stop(ctx context.Context) error {
+func (app *App) Stop(ctx context.Context) (err error) {
+	defer func() {
+		app.log.LogEvent(&fxevent.Stopped{Err: err})
+	}()
+
 	return withTimeout(ctx, &withTimeoutParams{
 		hook:      _onStopHook,
 		callback:  app.lifecycle.Stop,
