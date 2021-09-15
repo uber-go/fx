@@ -724,16 +724,7 @@ var (
 //
 // Note that Start short-circuits immediately if the New constructor
 // encountered any errors in application initialization.
-func (app *App) Start(ctx context.Context) error {
-	return withTimeout(ctx, &withTimeoutParams{
-		hook:      _onStartHook,
-		callback:  app.start,
-		lifecycle: app.lifecycle,
-		log:       app.log,
-	})
-}
-
-func (app *App) start(ctx context.Context) (err error) {
+func (app *App) Start(ctx context.Context) (err error) {
 	defer func() {
 		app.log.LogEvent(&fxevent.Started{Err: err})
 	}()
@@ -743,7 +734,15 @@ func (app *App) start(ctx context.Context) (err error) {
 		return app.err
 	}
 
-	// Attempt to start cleanly.
+	return withTimeout(ctx, &withTimeoutParams{
+		hook:      _onStartHook,
+		callback:  app.start,
+		lifecycle: app.lifecycle,
+		log:       app.log,
+	})
+}
+
+func (app *App) start(ctx context.Context) error {
 	if err := app.lifecycle.Start(ctx); err != nil {
 		// Start failed, rolling back.
 		app.log.LogEvent(&fxevent.RollingBack{StartErr: err})
@@ -757,7 +756,6 @@ func (app *App) start(ctx context.Context) (err error) {
 
 		return err
 	}
-
 	return nil
 }
 
