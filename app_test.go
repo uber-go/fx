@@ -29,6 +29,7 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"reflect"
 	"strings"
 	"testing"
 	"time"
@@ -717,6 +718,79 @@ func TestTimeoutOptions(t *testing.T) {
 	app.RequireStart().RequireStop()
 	assert.True(t, started, "app wasn't started")
 	assert.True(t, stopped, "app wasn't stopped")
+}
+
+func TestAppRunTimeout(t *testing.T) {
+	t.Parallel()
+
+	// This context is only valid as long as this test is running.
+	// It lets us have goroutines that block forever
+	// (as far as the test is concerned) without leaking them.
+	testCtx, cancel := context.WithCancel(context.Background())
+	t.Cleanup(cancel)
+
+	// Blocks forever--or at least until this test finishes running.
+	blockForever := func(context.Context) error {
+		<-testCtx.Done()
+		return errors.New("user should not see this")
+	}
+
+	tests := []struct {
+		desc        string
+		start, stop func(context.Context) error
+	}{
+		{
+			// Timeout starting an application.
+			desc:          "OnStart timeout",
+			start:         blockForever,
+		},
+		// TODO: timeout during stop
+		// TODO: timeout during rollback
+	}
+
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.desc, func(t *testing.T) {
+			t.Parallel()
+
+			var (
+				exitCode int
+				exited   bool
+			)
+			exit := func(code int) {
+				exited = true
+				exitCode = code
+			}
+			defer func() {
+				assert.True(t, exited,
+					"os.Exit must be called")
+			}()
+
+			app, spy := NewSpied(
+				Invoke(func(lc Lifecycle) {
+					lc.Append(Hook{
+						OnStart: tt.start,
+						OnStop:  tt.stop,
+					})
+				}),
+				StartTimeout(time.Millisecond),
+				WithExit(exit),
+			)
+
+			app.Run()
+			assert.NotZero(t, exitCode,
+				"exit code mismatch")
+
+			t.Logf("%q", spy.EventTypes())
+			events := spy.Events().SelectByTypeName("Started")
+			require.Len(t, events, 1, "expected a Started event")
+			started := events[0].(*fxevent.Started)
+			assert.Error(t, started.Err, "should fail to start")
+			assert.ErrorIs(t, started.Err, context.DeadlineExceeded,
+				"should fail because of a timeout")
+		})
+	}
+
 }
 
 func TestAppStart(t *testing.T) {
