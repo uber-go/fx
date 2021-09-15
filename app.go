@@ -658,6 +658,28 @@ func (app *App) Run() {
 	}
 }
 
+func (app *App) run(done <-chan os.Signal) (exitCode int) {
+	startCtx, cancel := context.WithTimeout(context.Background(), app.StartTimeout())
+	defer cancel()
+
+	if err := app.Start(startCtx); err != nil {
+		return 1
+	}
+	sig := <-done
+	app.log.LogEvent(&fxevent.Stopping{Signal: sig})
+
+	stopCtx, cancel := context.WithTimeout(context.Background(), app.StopTimeout())
+	defer cancel()
+
+	err := app.Stop(stopCtx)
+	app.log.LogEvent(&fxevent.Stopped{Err: err})
+
+	if err != nil {
+		return 1
+	}
+	return 0
+}
+
 // Err returns any error encountered during New's initialization. See the
 // documentation of the New method for details, but typical errors include
 // missing constructors, circular dependencies, constructor errors, and
@@ -698,6 +720,34 @@ func (app *App) Start(ctx context.Context) error {
 		lifecycle: app.lifecycle,
 		log:       app.log,
 	})
+}
+
+func (app *App) start(ctx context.Context) (err error) {
+	defer func() {
+		app.log.LogEvent(&fxevent.Started{Err: err})
+	}()
+
+	if app.err != nil {
+		// Some provides failed, short-circuit immediately.
+		return app.err
+	}
+
+	// Attempt to start cleanly.
+	if err := app.lifecycle.Start(ctx); err != nil {
+		// Start failed, rolling back.
+		app.log.LogEvent(&fxevent.RollingBack{StartErr: err})
+
+		stopErr := app.lifecycle.Stop(ctx)
+		app.log.LogEvent(&fxevent.RolledBack{Err: stopErr})
+
+		if stopErr != nil {
+			return multierr.Append(err, stopErr)
+		}
+
+		return err
+	}
+
+	return nil
 }
 
 // Stop gracefully stops the application. It executes any registered OnStop
@@ -877,56 +927,6 @@ func (app *App) executeInvoke(i invoke) (err error) {
 	}
 
 	return app.container.Invoke(fn)
-}
-
-func (app *App) run(done <-chan os.Signal) (exitCode int) {
-	startCtx, cancel := context.WithTimeout(context.Background(), app.StartTimeout())
-	defer cancel()
-
-	if err := app.Start(startCtx); err != nil {
-		return 1
-	}
-	sig := <-done
-	app.log.LogEvent(&fxevent.Stopping{Signal: sig})
-
-	stopCtx, cancel := context.WithTimeout(context.Background(), app.StopTimeout())
-	defer cancel()
-
-	err := app.Stop(stopCtx)
-	app.log.LogEvent(&fxevent.Stopped{Err: err})
-
-	if err != nil {
-		return 1
-	}
-	return 0
-}
-
-func (app *App) start(ctx context.Context) (err error) {
-	defer func() {
-		app.log.LogEvent(&fxevent.Started{Err: err})
-	}()
-
-	if app.err != nil {
-		// Some provides failed, short-circuit immediately.
-		return app.err
-	}
-
-	// Attempt to start cleanly.
-	if err := app.lifecycle.Start(ctx); err != nil {
-		// Start failed, rolling back.
-		app.log.LogEvent(&fxevent.RollingBack{StartErr: err})
-
-		stopErr := app.lifecycle.Stop(ctx)
-		app.log.LogEvent(&fxevent.RolledBack{Err: stopErr})
-
-		if stopErr != nil {
-			return multierr.Append(err, stopErr)
-		}
-
-		return err
-	}
-
-	return nil
 }
 
 type withTimeoutParams struct {
