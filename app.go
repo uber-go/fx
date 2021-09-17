@@ -676,18 +676,17 @@ func (app *App) run(done <-chan os.Signal) (exitCode int) {
 	if err := app.Start(startCtx); err != nil {
 		return 1
 	}
+
 	sig := <-done
 	app.log.LogEvent(&fxevent.Stopping{Signal: sig})
 
 	stopCtx, cancel := context.WithTimeout(context.Background(), app.StopTimeout())
 	defer cancel()
 
-	err := app.Stop(stopCtx)
-	app.log.LogEvent(&fxevent.Stopped{Err: err})
-
-	if err != nil {
+	if err := app.Stop(stopCtx); err != nil {
 		return 1
 	}
+
 	return 0
 }
 
@@ -724,16 +723,7 @@ var (
 //
 // Note that Start short-circuits immediately if the New constructor
 // encountered any errors in application initialization.
-func (app *App) Start(ctx context.Context) error {
-	return withTimeout(ctx, &withTimeoutParams{
-		hook:      _onStartHook,
-		callback:  app.start,
-		lifecycle: app.lifecycle,
-		log:       app.log,
-	})
-}
-
-func (app *App) start(ctx context.Context) (err error) {
+func (app *App) Start(ctx context.Context) (err error) {
 	defer func() {
 		app.log.LogEvent(&fxevent.Started{Err: err})
 	}()
@@ -743,7 +733,15 @@ func (app *App) start(ctx context.Context) (err error) {
 		return app.err
 	}
 
-	// Attempt to start cleanly.
+	return withTimeout(ctx, &withTimeoutParams{
+		hook:      _onStartHook,
+		callback:  app.start,
+		lifecycle: app.lifecycle,
+		log:       app.log,
+	})
+}
+
+func (app *App) start(ctx context.Context) error {
 	if err := app.lifecycle.Start(ctx); err != nil {
 		// Start failed, rolling back.
 		app.log.LogEvent(&fxevent.RollingBack{StartErr: err})
@@ -757,7 +755,6 @@ func (app *App) start(ctx context.Context) (err error) {
 
 		return err
 	}
-
 	return nil
 }
 
@@ -768,7 +765,11 @@ func (app *App) start(ctx context.Context) (err error) {
 // If the application didn't start cleanly, only hooks whose OnStart phase was
 // called are executed. However, all those hooks are executed, even if some
 // fail.
-func (app *App) Stop(ctx context.Context) error {
+func (app *App) Stop(ctx context.Context) (err error) {
+	defer func() {
+		app.log.LogEvent(&fxevent.Stopped{Err: err})
+	}()
+
 	return withTimeout(ctx, &withTimeoutParams{
 		hook:      _onStopHook,
 		callback:  app.lifecycle.Stop,
@@ -957,6 +958,12 @@ func withTimeout(ctx context.Context, param *withTimeoutParams) error {
 	case <-ctx.Done():
 		err = ctx.Err()
 	case err = <-c:
+		// If the context finished at the same time as the callback
+		// prefer the context error.
+		// This eliminates non-determinism in select-case selection.
+		if ctx.Err() != nil {
+			err = ctx.Err()
+		}
 	}
 	if err != context.DeadlineExceeded {
 		return err
