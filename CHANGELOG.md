@@ -5,7 +5,10 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
--  No changes yet.
+### Fixed
+- Fix `fxevent.Stopped` not being logged when `App.Stop` is called.
+- Fix `fxevent.Started` or `fxevent.Stopped` not being logged when start or
+  stop times out.
 
 ## [1.14.2] - 2021-08-16
 ### Changed

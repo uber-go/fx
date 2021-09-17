@@ -22,6 +22,7 @@ package fxlog
 
 import (
 	"reflect"
+	"sync"
 
 	"go.uber.org/fx/fxevent"
 )
@@ -47,6 +48,7 @@ func (es Events) SelectByTypeName(name string) Events {
 // Spy is an Fx event logger that captures emitted events and/or logged
 // statements. It may be used in tests of Fx logs.
 type Spy struct {
+	mu     sync.RWMutex
 	events Events
 }
 
@@ -54,11 +56,16 @@ var _ fxevent.Logger = &Spy{}
 
 // LogEvent appends an Event.
 func (s *Spy) LogEvent(event fxevent.Event) {
+	s.mu.Lock()
 	s.events = append(s.events, event)
+	s.mu.Unlock()
 }
 
 // Events returns all captured events.
 func (s *Spy) Events() Events {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
 	events := make(Events, len(s.events))
 	copy(events, s.events)
 	return events
@@ -66,6 +73,9 @@ func (s *Spy) Events() Events {
 
 // EventTypes returns all captured event types.
 func (s *Spy) EventTypes() []string {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
 	types := make([]string, len(s.events))
 	for i, e := range s.events {
 		types[i] = reflect.TypeOf(e).Elem().Name()
@@ -75,5 +85,7 @@ func (s *Spy) EventTypes() []string {
 
 // Reset clears all messages and events from the Spy.
 func (s *Spy) Reset() {
+	s.mu.Lock()
 	s.events = s.events[:0]
+	s.mu.Unlock()
 }

@@ -381,6 +381,8 @@ type App struct {
 	// Used to signal shutdowns.
 	donesMu sync.RWMutex
 	dones   []chan os.Signal
+
+	osExit func(code int) // os.Exit override; used for testing only
 }
 
 // provide is a single constructor provided to Fx.
@@ -640,6 +642,15 @@ func VisualizeError(err error) (string, error) {
 	return "", errors.New("unable to visualize error")
 }
 
+// Exits the application with the given exit code.
+func (app *App) exit(code int) {
+	osExit := os.Exit
+	if app.osExit != nil {
+		osExit = app.osExit
+	}
+	osExit(code)
+}
+
 // Run starts the application, blocks on the signals channel, and then
 // gracefully shuts the application down. It uses DefaultTimeout to set a
 // deadline for application startup and shutdown, unless the user has
@@ -654,8 +665,29 @@ func (app *App) Run() {
 	// cede control to Fx with they call app.Run. To avoid a breaking
 	// change, never os.Exit for success.
 	if code := app.run(app.Done()); code != 0 {
-		os.Exit(code)
+		app.exit(code)
 	}
+}
+
+func (app *App) run(done <-chan os.Signal) (exitCode int) {
+	startCtx, cancel := context.WithTimeout(context.Background(), app.StartTimeout())
+	defer cancel()
+
+	if err := app.Start(startCtx); err != nil {
+		return 1
+	}
+
+	sig := <-done
+	app.log.LogEvent(&fxevent.Stopping{Signal: sig})
+
+	stopCtx, cancel := context.WithTimeout(context.Background(), app.StopTimeout())
+	defer cancel()
+
+	if err := app.Stop(stopCtx); err != nil {
+		return 1
+	}
+
+	return 0
 }
 
 // Err returns any error encountered during New's initialization. See the
@@ -691,13 +723,39 @@ var (
 //
 // Note that Start short-circuits immediately if the New constructor
 // encountered any errors in application initialization.
-func (app *App) Start(ctx context.Context) error {
+func (app *App) Start(ctx context.Context) (err error) {
+	defer func() {
+		app.log.LogEvent(&fxevent.Started{Err: err})
+	}()
+
+	if app.err != nil {
+		// Some provides failed, short-circuit immediately.
+		return app.err
+	}
+
 	return withTimeout(ctx, &withTimeoutParams{
 		hook:      _onStartHook,
 		callback:  app.start,
 		lifecycle: app.lifecycle,
 		log:       app.log,
 	})
+}
+
+func (app *App) start(ctx context.Context) error {
+	if err := app.lifecycle.Start(ctx); err != nil {
+		// Start failed, rolling back.
+		app.log.LogEvent(&fxevent.RollingBack{StartErr: err})
+
+		stopErr := app.lifecycle.Stop(ctx)
+		app.log.LogEvent(&fxevent.RolledBack{Err: stopErr})
+
+		if stopErr != nil {
+			return multierr.Append(err, stopErr)
+		}
+
+		return err
+	}
+	return nil
 }
 
 // Stop gracefully stops the application. It executes any registered OnStop
@@ -707,7 +765,11 @@ func (app *App) Start(ctx context.Context) error {
 // If the application didn't start cleanly, only hooks whose OnStart phase was
 // called are executed. However, all those hooks are executed, even if some
 // fail.
-func (app *App) Stop(ctx context.Context) error {
+func (app *App) Stop(ctx context.Context) (err error) {
+	defer func() {
+		app.log.LogEvent(&fxevent.Stopped{Err: err})
+	}()
+
 	return withTimeout(ctx, &withTimeoutParams{
 		hook:      _onStopHook,
 		callback:  app.lifecycle.Stop,
@@ -879,56 +941,6 @@ func (app *App) executeInvoke(i invoke) (err error) {
 	return app.container.Invoke(fn)
 }
 
-func (app *App) run(done <-chan os.Signal) (exitCode int) {
-	startCtx, cancel := context.WithTimeout(context.Background(), app.StartTimeout())
-	defer cancel()
-
-	if err := app.Start(startCtx); err != nil {
-		return 1
-	}
-	sig := <-done
-	app.log.LogEvent(&fxevent.Stopping{Signal: sig})
-
-	stopCtx, cancel := context.WithTimeout(context.Background(), app.StopTimeout())
-	defer cancel()
-
-	err := app.Stop(stopCtx)
-	app.log.LogEvent(&fxevent.Stopped{Err: err})
-
-	if err != nil {
-		return 1
-	}
-	return 0
-}
-
-func (app *App) start(ctx context.Context) (err error) {
-	defer func() {
-		app.log.LogEvent(&fxevent.Started{Err: err})
-	}()
-
-	if app.err != nil {
-		// Some provides failed, short-circuit immediately.
-		return app.err
-	}
-
-	// Attempt to start cleanly.
-	if err := app.lifecycle.Start(ctx); err != nil {
-		// Start failed, rolling back.
-		app.log.LogEvent(&fxevent.RollingBack{StartErr: err})
-
-		stopErr := app.lifecycle.Stop(ctx)
-		app.log.LogEvent(&fxevent.RolledBack{Err: stopErr})
-
-		if stopErr != nil {
-			return multierr.Append(err, stopErr)
-		}
-
-		return err
-	}
-
-	return nil
-}
-
 type withTimeoutParams struct {
 	log       fxevent.Logger
 	hook      string
@@ -946,6 +958,12 @@ func withTimeout(ctx context.Context, param *withTimeoutParams) error {
 	case <-ctx.Done():
 		err = ctx.Err()
 	case err = <-c:
+		// If the context finished at the same time as the callback
+		// prefer the context error.
+		// This eliminates non-determinism in select-case selection.
+		if ctx.Err() != nil {
+			err = ctx.Err()
+		}
 	}
 	if err != context.DeadlineExceeded {
 		return err

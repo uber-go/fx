@@ -29,6 +29,7 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"reflect"
 	"strings"
 	"testing"
 	"time"
@@ -382,7 +383,7 @@ func TestWithLogger(t *testing.T) {
 
 		require.NoError(t, app.Err())
 
-		assert.Equal(t, []string{"Started"}, spy.EventTypes())
+		assert.Equal(t, []string{"Started", "Stopped"}, spy.EventTypes())
 	})
 
 	t.Run("error in Provide shows logs", func(t *testing.T) {
@@ -717,6 +718,126 @@ func TestTimeoutOptions(t *testing.T) {
 	app.RequireStart().RequireStop()
 	assert.True(t, started, "app wasn't started")
 	assert.True(t, stopped, "app wasn't stopped")
+}
+
+func TestAppRunTimeout(t *testing.T) {
+	t.Parallel()
+
+	// This context is only valid as long as this test is running.
+	// It lets us have goroutines that block forever
+	// (as far as the test is concerned) without leaking them.
+	testCtx, cancel := context.WithCancel(context.Background())
+	t.Cleanup(cancel)
+
+	// Fails with an error immediately.
+	failure := func(context.Context) error {
+		return errors.New("great sadness")
+	}
+
+	// Blocks forever--or at least until this test finishes running.
+	blockForever := func(context.Context) error {
+		<-testCtx.Done()
+		return errors.New("user should not see this")
+	}
+
+	tests := []struct {
+		desc  string
+		hooks []Hook
+
+		// Type of the fxevent we want.
+		// Does not reflect the exact value.
+		wantEventType fxevent.Event
+	}{
+		{
+			// Timeout starting an application.
+			desc: "OnStart timeout",
+			hooks: []Hook{
+				{OnStart: blockForever},
+			},
+			wantEventType: &fxevent.Started{},
+		},
+		{
+			// Timeout during a rollback because start failed.
+			desc: "rollback timeout",
+			hooks: []Hook{
+				// The hooks are separate because
+				// OnStop will not be run if that hook failed.
+				{OnStop: blockForever},
+				{OnStart: failure},
+			},
+			wantEventType: &fxevent.Started{},
+		},
+		{
+			// Timeout during a stop.
+			desc: "OnStop timeout",
+			hooks: []Hook{
+				{OnStop: blockForever},
+			},
+			wantEventType: &fxevent.Stopped{},
+		},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.desc, func(t *testing.T) {
+			t.Parallel()
+
+			var (
+				exitCode int
+				exited   bool
+			)
+			exit := func(code int) {
+				exited = true
+				exitCode = code
+			}
+			defer func() {
+				assert.True(t, exited,
+					"os.Exit must be called")
+			}()
+
+			// If the OnStart hook for this is invoked,
+			// it means that the Start did not fail.
+			// In that case, shut down immediately
+			// rather than block forever.
+			shutdown := func(sd Shutdowner, lc Lifecycle) {
+				lc.Append(Hook{
+					OnStart: func(context.Context) error {
+						return sd.Shutdown()
+					},
+				})
+			}
+
+			app, spy := NewSpied(
+				StartTimeout(time.Millisecond),
+				StopTimeout(time.Millisecond),
+				WithExit(exit),
+				Invoke(func(lc Lifecycle) {
+					for _, h := range tt.hooks {
+						lc.Append(h)
+					}
+				}),
+				Invoke(shutdown),
+			)
+
+			app.Run()
+			assert.NotZero(t, exitCode,
+				"exit code mismatch")
+
+			eventType := reflect.TypeOf(tt.wantEventType).Elem().Name()
+			matchingEvents := spy.Events().SelectByTypeName(eventType)
+			require.Len(t, matchingEvents, 1,
+				"expected a %q event", eventType)
+
+			event := matchingEvents[0]
+			errv := reflect.ValueOf(event).Elem().FieldByName("Err")
+			require.True(t, errv.IsValid(),
+				"event %q does not have an Err attribute", eventType)
+
+			err, _ := errv.Interface().(error)
+			assert.ErrorIs(t, err, context.DeadlineExceeded,
+				"should fail because of a timeout")
+		})
+	}
 }
 
 func TestAppStart(t *testing.T) {
@@ -1215,7 +1336,14 @@ func TestReplaceLogger(t *testing.T) {
 	spy := new(fxlog.Spy)
 	app := fxtest.New(t, WithLogger(func() fxevent.Logger { return spy }))
 	app.RequireStart().RequireStop()
-	assert.Equal(t, []string{"Provided", "Provided", "Provided", "LoggerInitialized", "Started"}, spy.EventTypes())
+	assert.Equal(t, []string{
+		"Provided",
+		"Provided",
+		"Provided",
+		"LoggerInitialized",
+		"Started",
+		"Stopped",
+	}, spy.EventTypes())
 }
 
 func TestNopLogger(t *testing.T) {
@@ -1294,6 +1422,7 @@ func TestCustomLoggerWithLifecycle(t *testing.T) {
 		"OnStartExecuting", "OnStartExecuted",
 		"Started",
 		"OnStopExecuting", "OnStopExecuted",
+		"Stopped",
 	}, spy.EventTypes())
 }
 
