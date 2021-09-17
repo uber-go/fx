@@ -270,7 +270,7 @@ func ResultTags(tags ...string) Annotation {
 	return resultTagsAnnotation{tags}
 }
 
-// Annotate lets you annotate a function's paramter and returns with tags
+// Annotate lets you annotate a function's parameters and returns with tags
 // without you having to declare separate struct definitions for them.
 //
 // For example,
