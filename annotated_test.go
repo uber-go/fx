@@ -82,7 +82,7 @@ func TestAnnotatedWrongUsage(t *testing.T) {
 		t.Parallel()
 
 		var in in
-		app := fx.New(
+		app := NewForTest(t,
 			fx.WithLogger(func() fxevent.Logger {
 				return fxtest.NewTestLogger(t)
 			}),
@@ -115,7 +115,7 @@ func TestAnnotatedWrongUsage(t *testing.T) {
 	t.Run("Result Type", func(t *testing.T) {
 		t.Parallel()
 
-		app := fx.New(
+		app := NewForTest(t,
 			fx.WithLogger(func() fxevent.Logger {
 				return fxtest.NewTestLogger(t)
 			}),
@@ -239,7 +239,7 @@ func TestAnnotate(t *testing.T) {
 	t.Run("Invoke with optional", func(t *testing.T) {
 		t.Parallel()
 
-		app := fx.New(
+		app := NewForTest(t,
 			fx.Invoke(
 				fx.Annotate(newB, fx.ParamTags(`optional:"true"`)),
 			),
@@ -251,7 +251,7 @@ func TestAnnotate(t *testing.T) {
 	t.Run("Invoke with a missing dependency", func(t *testing.T) {
 		t.Parallel()
 
-		app := fx.New(
+		app := NewForTest(t,
 			fx.Invoke(
 				fx.Annotate(newB, fx.ParamTags(`name:"a"`)),
 			),
@@ -294,7 +294,7 @@ func TestAnnotate(t *testing.T) {
 	t.Run("provide with missing annotated results", func(t *testing.T) {
 		t.Parallel()
 
-		app := fx.New(
+		app := NewForTest(t,
 			fx.Provide(
 				fx.Annotate(func() *a {
 					return &a{}
@@ -360,7 +360,7 @@ func TestAnnotate(t *testing.T) {
 	t.Run("specify two ParamTags", func(t *testing.T) {
 		t.Parallel()
 
-		app := fx.New(
+		app := NewForTest(t,
 			fx.Provide(
 				// This should just leave newA as it is.
 				fx.Annotate(
@@ -379,7 +379,7 @@ func TestAnnotate(t *testing.T) {
 	t.Run("specify two ResultTags", func(t *testing.T) {
 		t.Parallel()
 
-		app := fx.New(
+		app := NewForTest(t,
 			fx.Provide(
 				// This should just leave newA as it is.
 				fx.Annotate(
