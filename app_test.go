@@ -729,6 +729,11 @@ func TestAppRunTimeout(t *testing.T) {
 	testCtx, cancel := context.WithCancel(context.Background())
 	t.Cleanup(cancel)
 
+	// Fails with an error immediately.
+	failure := func(context.Context) error {
+		return errors.New("great sadness")
+	}
+
 	// Blocks forever--or at least until this test finishes running.
 	blockForever := func(context.Context) error {
 		<-testCtx.Done()
@@ -736,8 +741,8 @@ func TestAppRunTimeout(t *testing.T) {
 	}
 
 	tests := []struct {
-		desc        string
-		start, stop func(context.Context) error
+		desc  string
+		hooks []Hook
 
 		// Type of the fxevent we want.
 		// Does not reflect the exact value.
@@ -745,15 +750,29 @@ func TestAppRunTimeout(t *testing.T) {
 	}{
 		{
 			// Timeout starting an application.
-			desc:          "OnStart timeout",
-			start:         blockForever,
+			desc: "OnStart timeout",
+			hooks: []Hook{
+				{OnStart: blockForever},
+			},
 			wantEventType: &fxevent.Started{},
 		},
-		// TODO: timeout during rollback
+		{
+			// Timeout during a rollback because start failed.
+			desc: "rollback timeout",
+			hooks: []Hook{
+				// The hooks are separate because
+				// OnStop will not be run if that hook failed.
+				{OnStop: blockForever},
+				{OnStart: failure},
+			},
+			wantEventType: &fxevent.Started{},
+		},
 		{
 			// Timeout during a stop.
-			desc:          "OnStop timeout",
-			stop:          blockForever,
+			desc: "OnStop timeout",
+			hooks: []Hook{
+				{OnStop: blockForever},
+			},
 			wantEventType: &fxevent.Stopped{},
 		},
 	}
@@ -793,10 +812,9 @@ func TestAppRunTimeout(t *testing.T) {
 				StopTimeout(time.Millisecond),
 				WithExit(exit),
 				Invoke(func(lc Lifecycle) {
-					lc.Append(Hook{
-						OnStart: tt.start,
-						OnStop:  tt.stop,
-					})
+					for _, h := range tt.hooks {
+						lc.Append(h)
+					}
 				}),
 				Invoke(shutdown),
 			)
