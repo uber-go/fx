@@ -98,6 +98,9 @@ func (a Annotated) String() string {
 type annotations struct {
 	fType reflect.Type
 
+	asTargets []interface{}
+	asTypes   []reflect.Type
+
 	Ins  []reflect.Type
 	Outs []reflect.Type
 
@@ -270,6 +273,41 @@ func ResultTags(tags ...string) Annotation {
 	return resultTagsAnnotation{tags}
 }
 
+type asAnnotation struct {
+	targets []interface{}
+}
+
+var _ asAnnotation = asAnnotation{}
+
+func As(interfaces ...interface{}) Annotation {
+	return asAnnotation{interfaces}
+}
+
+func (at asAnnotation) apply(ann *annotations) error {
+	// Check if the annotations are of same interface.
+	res := true
+	ann.asTargets = at.targets
+	var asTypes []reflect.Type
+	for _, as := range ann.asTargets {
+		asType := reflect.TypeOf(as).Elem()
+
+		// Check for special case:
+		// fx.Annotate(func() io.Reader, fx.As(new(io.Reader)))
+		if asType == ann.fType {
+			continue
+		}
+
+		if !ann.fType.Implements(asType) {
+			return fmt.Errorf("invalid fx.As: %v does not implement %v",
+				ann.fType,
+				asType)
+		}
+		asTypes = append(asTypes, asType)
+	}
+	ann.asTypes = asTypes
+	return nil
+}
+
 // Annotate lets you annotate a function's parameters and returns with tags
 // without you having to declare separate struct definitions for them.
 //
@@ -338,6 +376,7 @@ func Annotate(f interface{}, anns ...Annotation) interface{} {
 	ins := annotations.Ins
 	outs := annotations.Outs
 	resultOffsets := annotations.resultOffsets
+	asTargets := annotations.asTargets
 
 	newF := func(args []reflect.Value) []reflect.Value {
 		var fParams, fResults []reflect.Value
