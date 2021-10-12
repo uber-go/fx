@@ -218,7 +218,6 @@ func TestAnnotatedAs(t *testing.T) {
 		)
 		require.NoError(t, app.Err())
 	})
-
 }
 
 func TestAnnotatedWrongUsage(t *testing.T) {

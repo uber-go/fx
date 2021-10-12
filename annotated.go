@@ -481,7 +481,6 @@ func Annotate(f interface{}, anns ...Annotation) interface{} {
 			}
 			results.Field(resultOffsets[i]).Set(fResults[i])
 		}
-		//TODO: converge with block above?
 		if annotations.returnsError {
 			if errResults != nil {
 				errValue = reflect.ValueOf(errResults).Elem()
