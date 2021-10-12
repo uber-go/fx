@@ -96,14 +96,11 @@ func (a Annotated) String() string {
 // annotations is used for building out the info needed to generate struct
 // with tags using reflection.
 type annotations struct {
-	fType reflect.Type
-
+	fType     reflect.Type
 	asTargets []interface{}
 
 	Ins  []reflect.Type
 	Outs []reflect.Type
-
-	outTags []string
 
 	annotatedIn  bool
 	annotatedOut bool
@@ -111,6 +108,7 @@ type annotations struct {
 
 	returnsError  bool
 	resultOffsets []int // resultOffsets[N] gives the field offset of Nth result.
+	outTags       []string
 }
 
 func newAnnotations(fType reflect.Type) annotations {
