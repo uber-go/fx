@@ -183,8 +183,8 @@ func TestAnnotatedAs(t *testing.T) {
 				fx.Annotate(func() *asStringer {
 					return &asStringer{name: "stringer"}
 				},
-					fx.As(new(fmt.Stringer)),
-					fx.ResultTags(`name:"goodStringer"`)),
+					fx.ResultTags(`name:"goodStringer"`),
+					fx.As(new(fmt.Stringer))),
 			),
 			fx.Invoke(func(i in) {
 				assert.Equal(t, "stringer", i.S.String())

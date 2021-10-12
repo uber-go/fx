@@ -335,11 +335,11 @@ func (at asAnnotation) apply(ann *annotations) error {
 			Name: fmt.Sprintf("OutField%d", i),
 			Type: asType,
 		}
-		outIdx := len(asOutputs)
 		if i < len(ann.outTags) {
 			outStructField.Tag = reflect.StructTag(ann.outTags[i])
 		}
 		asInputs = append(asInputs, inStructField)
+		outIdx := len(asOutputs)
 		offsets[i] = outIdx
 		asOutputs = append(asOutputs, outStructField)
 	}
