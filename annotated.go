@@ -293,37 +293,6 @@ func (rt resultTagsAnnotation) apply(ann *annotations) error {
 	}
 	ann.annotatedOut = true
 	ann.outTags = rt.tags
-	/*
-		fType := ann.fType
-
-		annotatedResult := []reflect.StructField{{
-			Name:      "Out",
-			Type:      reflect.TypeOf(Out{}),
-			Anonymous: true,
-		}}
-
-		offsets := make([]int, fType.NumOut())
-		for i := 0; i < fType.NumOut(); i++ {
-			if fType.Out(i) == _typeOfError {
-				ann.returnsError = true
-				continue
-			}
-			structField := reflect.StructField{
-				Name: fmt.Sprintf("Field%d", i),
-				Type: fType.Out(i),
-			}
-			if i < len(rt.tags) {
-				structField.Tag = reflect.StructTag(rt.tags[i])
-			}
-			offsets[i] = len(annotatedResult)
-			annotatedResult = append(annotatedResult, structField)
-		}
-		ann.Outs = []reflect.Type{reflect.StructOf(annotatedResult)}
-		ann.resultOffsets = offsets
-		if ann.returnsError {
-			ann.Outs = append(ann.Outs, _typeOfError)
-		}
-	*/
 	return nil
 }
 
@@ -349,63 +318,7 @@ func (at asAnnotation) apply(ann *annotations) error {
 		return errors.New("cannot apply more than one line of As")
 	}
 	ann.annotatedAs = true
-	// Check if the annotations are of same interface.
 	ann.asTargets = at.targets
-
-	/*
-		fType := ann.fType
-
-		// Generate stub function for mapping in/out types.
-		asInputs := []reflect.StructField{{
-			Name:      "AsIn",
-			Type:      reflect.TypeOf(In{}),
-			Anonymous: true,
-		}}
-
-		asOutputs := []reflect.StructField{{
-			Name:      "AsOut",
-			Type:      reflect.TypeOf(Out{}),
-			Anonymous: true,
-		}}
-
-		numOut := fType.NumOut()
-		offsets := make([]int, numOut)
-		for i := 0; i < numOut; i++ {
-			asType := reflect.TypeOf(ann.asTargets[i]).Elem()
-
-			if fType.Out(i) == _typeOfError {
-				ann.returnsError = true
-				continue
-			}
-
-			if !fType.Out(i).Implements(asType) {
-				return fmt.Errorf("invalid fx.As: %v does not implement %v",
-					ann.fType,
-					asType)
-			}
-			inStructField := reflect.StructField{
-				Name: fmt.Sprintf("InField%d", i),
-				Type: fType.Out(i),
-			}
-			outStructField := reflect.StructField{
-				Name: fmt.Sprintf("OutField%d", i),
-				Type: asType,
-			}
-			if i < len(ann.outTags) {
-				outStructField.Tag = reflect.StructTag(ann.outTags[i])
-			}
-			asInputs = append(asInputs, inStructField)
-			outIdx := len(asOutputs)
-			offsets[i] = outIdx
-			asOutputs = append(asOutputs, outStructField)
-		}
-		ann.asIns = []reflect.Type{reflect.StructOf(asInputs)}
-		ann.asOuts = []reflect.Type{reflect.StructOf(asOutputs)}
-		ann.resultOffsets = offsets
-		if ann.returnsError {
-			ann.asOuts = append(ann.asOuts, _typeOfError)
-		}
-	*/
 	return nil
 }
 
