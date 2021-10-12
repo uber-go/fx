@@ -135,6 +135,58 @@ func newAnnotations(fType reflect.Type) annotations {
 	}
 }
 
+// This generates the annotated Out struct when function is annotated
+// with fx.As and/or fx.ResultTags options.
+func (ann *annotations) genAnnotatedOutStruct() error {
+	if !ann.annotatedOut && !ann.annotatedAs {
+		return nil
+	}
+
+	fType := ann.fType
+	offsets := make([]int, fType.NumOut())
+	annotatedResult := []reflect.StructField{{
+		Name:      "Out",
+		Type:      reflect.TypeOf(Out{}),
+		Anonymous: true,
+	}}
+	for i := 0; i < fType.NumOut(); i++ {
+		if fType.Out(i) == _typeOfError {
+			ann.returnsError = true
+			continue
+		}
+
+		var structField reflect.StructField
+		if ann.annotatedAs {
+			asType := reflect.TypeOf(ann.asTargets[i]).Elem()
+			if !fType.Out(i).Implements(asType) {
+				return fmt.Errorf("invalid fx.As: %v does not implement %v",
+					ann.fType,
+					asType)
+			}
+			structField = reflect.StructField{
+				Name: fmt.Sprintf("Field%d", i),
+				Type: asType,
+			}
+		} else {
+			structField = reflect.StructField{
+				Name: fmt.Sprintf("Field%d", i),
+				Type: fType.Out(i),
+			}
+		}
+		if i < len(ann.outTags) {
+			structField.Tag = reflect.StructTag(ann.outTags[i])
+		}
+		offsets[i] = len(annotatedResult)
+		annotatedResult = append(annotatedResult, structField)
+	}
+	ann.Outs = []reflect.Type{reflect.StructOf(annotatedResult)}
+	ann.resultOffsets = offsets
+	if ann.returnsError {
+		ann.Outs = append(ann.Outs, _typeOfError)
+	}
+	return nil
+}
+
 // Annotation can be passed to Annotate(f interface{}, anns ...Annotation)
 // for annotating the parameter and result types of a function.
 type Annotation interface {
@@ -241,35 +293,37 @@ func (rt resultTagsAnnotation) apply(ann *annotations) error {
 	}
 	ann.annotatedOut = true
 	ann.outTags = rt.tags
-	fType := ann.fType
+	/*
+		fType := ann.fType
 
-	annotatedResult := []reflect.StructField{{
-		Name:      "Out",
-		Type:      reflect.TypeOf(Out{}),
-		Anonymous: true,
-	}}
+		annotatedResult := []reflect.StructField{{
+			Name:      "Out",
+			Type:      reflect.TypeOf(Out{}),
+			Anonymous: true,
+		}}
 
-	offsets := make([]int, fType.NumOut())
-	for i := 0; i < fType.NumOut(); i++ {
-		if fType.Out(i) == _typeOfError {
-			ann.returnsError = true
-			continue
+		offsets := make([]int, fType.NumOut())
+		for i := 0; i < fType.NumOut(); i++ {
+			if fType.Out(i) == _typeOfError {
+				ann.returnsError = true
+				continue
+			}
+			structField := reflect.StructField{
+				Name: fmt.Sprintf("Field%d", i),
+				Type: fType.Out(i),
+			}
+			if i < len(rt.tags) {
+				structField.Tag = reflect.StructTag(rt.tags[i])
+			}
+			offsets[i] = len(annotatedResult)
+			annotatedResult = append(annotatedResult, structField)
 		}
-		structField := reflect.StructField{
-			Name: fmt.Sprintf("Field%d", i),
-			Type: fType.Out(i),
+		ann.Outs = []reflect.Type{reflect.StructOf(annotatedResult)}
+		ann.resultOffsets = offsets
+		if ann.returnsError {
+			ann.Outs = append(ann.Outs, _typeOfError)
 		}
-		if i < len(rt.tags) {
-			structField.Tag = reflect.StructTag(rt.tags[i])
-		}
-		offsets[i] = len(annotatedResult)
-		annotatedResult = append(annotatedResult, structField)
-	}
-	ann.Outs = []reflect.Type{reflect.StructOf(annotatedResult)}
-	ann.resultOffsets = offsets
-	if ann.returnsError {
-		ann.Outs = append(ann.Outs, _typeOfError)
-	}
+	*/
 	return nil
 }
 
@@ -297,58 +351,61 @@ func (at asAnnotation) apply(ann *annotations) error {
 	ann.annotatedAs = true
 	// Check if the annotations are of same interface.
 	ann.asTargets = at.targets
-	fType := ann.fType
 
-	// Generate stub function for mapping in/out types.
-	asInputs := []reflect.StructField{{
-		Name:      "AsIn",
-		Type:      reflect.TypeOf(In{}),
-		Anonymous: true,
-	}}
+	/*
+		fType := ann.fType
 
-	asOutputs := []reflect.StructField{{
-		Name:      "AsOut",
-		Type:      reflect.TypeOf(Out{}),
-		Anonymous: true,
-	}}
+		// Generate stub function for mapping in/out types.
+		asInputs := []reflect.StructField{{
+			Name:      "AsIn",
+			Type:      reflect.TypeOf(In{}),
+			Anonymous: true,
+		}}
 
-	numOut := fType.NumOut()
-	offsets := make([]int, numOut)
-	for i := 0; i < numOut; i++ {
-		asType := reflect.TypeOf(ann.asTargets[i]).Elem()
+		asOutputs := []reflect.StructField{{
+			Name:      "AsOut",
+			Type:      reflect.TypeOf(Out{}),
+			Anonymous: true,
+		}}
 
-		if fType.Out(i) == _typeOfError {
-			ann.returnsError = true
-			continue
-		}
+		numOut := fType.NumOut()
+		offsets := make([]int, numOut)
+		for i := 0; i < numOut; i++ {
+			asType := reflect.TypeOf(ann.asTargets[i]).Elem()
 
-		if !fType.Out(i).Implements(asType) {
-			return fmt.Errorf("invalid fx.As: %v does not implement %v",
-				ann.fType,
-				asType)
+			if fType.Out(i) == _typeOfError {
+				ann.returnsError = true
+				continue
+			}
+
+			if !fType.Out(i).Implements(asType) {
+				return fmt.Errorf("invalid fx.As: %v does not implement %v",
+					ann.fType,
+					asType)
+			}
+			inStructField := reflect.StructField{
+				Name: fmt.Sprintf("InField%d", i),
+				Type: fType.Out(i),
+			}
+			outStructField := reflect.StructField{
+				Name: fmt.Sprintf("OutField%d", i),
+				Type: asType,
+			}
+			if i < len(ann.outTags) {
+				outStructField.Tag = reflect.StructTag(ann.outTags[i])
+			}
+			asInputs = append(asInputs, inStructField)
+			outIdx := len(asOutputs)
+			offsets[i] = outIdx
+			asOutputs = append(asOutputs, outStructField)
 		}
-		inStructField := reflect.StructField{
-			Name: fmt.Sprintf("InField%d", i),
-			Type: fType.Out(i),
+		ann.asIns = []reflect.Type{reflect.StructOf(asInputs)}
+		ann.asOuts = []reflect.Type{reflect.StructOf(asOutputs)}
+		ann.resultOffsets = offsets
+		if ann.returnsError {
+			ann.asOuts = append(ann.asOuts, _typeOfError)
 		}
-		outStructField := reflect.StructField{
-			Name: fmt.Sprintf("OutField%d", i),
-			Type: asType,
-		}
-		if i < len(ann.outTags) {
-			outStructField.Tag = reflect.StructTag(ann.outTags[i])
-		}
-		asInputs = append(asInputs, inStructField)
-		outIdx := len(asOutputs)
-		offsets[i] = outIdx
-		asOutputs = append(asOutputs, outStructField)
-	}
-	ann.asIns = []reflect.Type{reflect.StructOf(asInputs)}
-	ann.asOuts = []reflect.Type{reflect.StructOf(asOutputs)}
-	ann.resultOffsets = offsets
-	if ann.returnsError {
-		ann.asOuts = append(ann.asOuts, _typeOfError)
-	}
+	*/
 	return nil
 }
 
@@ -417,14 +474,16 @@ func Annotate(f interface{}, anns ...Annotation) interface{} {
 		}
 	}
 
+	if e := annotations.genAnnotatedOutStruct(); e != nil {
+		return annotationError{
+			target: f,
+			err:    e,
+		}
+	}
+
 	ins := annotations.Ins
 	outs := annotations.Outs
 	resultOffsets := annotations.resultOffsets
-
-	// if we want to annotate types with fx.As, change the output type to AsOut
-	if annotations.annotatedAs {
-		outs = annotations.asOuts
-	}
 
 	newF := func(args []reflect.Value) []reflect.Value {
 		var fParams, fResults []reflect.Value

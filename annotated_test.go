@@ -192,6 +192,33 @@ func TestAnnotatedAs(t *testing.T) {
 		)
 		require.NoError(t, app.Err())
 	})
+	t.Run("As with result annotation, in different order", func(t *testing.T) {
+		t.Parallel()
+		type in struct {
+			fx.In
+
+			S fmt.Stringer `name:"goodStringer"`
+		}
+		app := NewForTest(t,
+			fx.WithLogger(func() fxevent.Logger {
+				return fxtest.NewTestLogger(t)
+			}),
+			fx.Provide(
+				// same as the test above, except now we annotate
+				// it in a different order.
+				fx.Annotate(func() *asStringer {
+					return &asStringer{name: "stringer"}
+				},
+					fx.As(new(fmt.Stringer)),
+					fx.ResultTags(`name:"goodStringer"`)),
+			),
+			fx.Invoke(func(i in) {
+				assert.Equal(t, "stringer", i.S.String())
+			}),
+		)
+		require.NoError(t, app.Err())
+	})
+
 }
 
 func TestAnnotatedWrongUsage(t *testing.T) {
