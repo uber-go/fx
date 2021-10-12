@@ -471,10 +471,6 @@ func Annotate(f interface{}, anns ...Annotation) interface{} {
 
 		// aggregate the errors from the annotated function
 		// into one error.
-		if annotations.returnsError {
-			errValue = reflect.New(outs[1]).Elem()
-		}
-
 		var errResults error
 		for i := 0; i < numOut; i++ {
 			if fResults[i].Type() == _typeOfError {
