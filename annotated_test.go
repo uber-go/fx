@@ -128,6 +128,70 @@ func TestAnnotatedAs(t *testing.T) {
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "does not implement")
 	})
+
+	t.Run("don't provide original type when using As", func(t *testing.T) {
+		t.Parallel()
+		app := NewForTest(t,
+			fx.WithLogger(func() fxevent.Logger {
+				return fxtest.NewTestLogger(t)
+			}),
+			fx.Provide(fx.Annotate(func() *asStringer {
+				return &asStringer{name: "stringer"}
+			}, fx.As(new(fmt.Stringer)))),
+			fx.Invoke(func(as *asStringer) {
+				fmt.Println(as.String())
+			}),
+		)
+		err := app.Err()
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "missing type: *fx_test.asStringer")
+	})
+
+	t.Run("As with param annotation", func(t *testing.T) {
+		t.Parallel()
+		app := NewForTest(t,
+			fx.WithLogger(func() fxevent.Logger {
+				return fxtest.NewTestLogger(t)
+			}),
+			fx.Provide(fx.Annotate(func(n string) *asStringer {
+				return &asStringer{name: n}
+			},
+				fx.As(new(fmt.Stringer)),
+				fx.ParamTags(`name:"n"`),
+			)),
+			fx.Invoke(func(a fmt.Stringer) {
+				fmt.Println(a)
+			}),
+		)
+		err := app.Err()
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), `missing type: string[name="n"]`)
+	})
+
+	t.Run("As with result annotation", func(t *testing.T) {
+		t.Parallel()
+		type in struct {
+			fx.In
+
+			S fmt.Stringer `group:goodStringers`
+		}
+		app := NewForTest(t,
+			fx.WithLogger(func() fxevent.Logger {
+				return fxtest.NewTestLogger(t)
+			}),
+			fx.Provide(
+				fx.Annotate(func() *asStringer {
+					return &asStringer{name: "stringer"}
+				},
+					fx.As(new(fmt.Stringer)),
+					fx.ResultTags(`group:"goodStringers"`)),
+			),
+			fx.Invoke(func(i in) {
+				assert.Equal(t, "stringer", i.S.String())
+			}),
+		)
+		require.NoError(t, app.Err())
+	})
 }
 
 func TestAnnotatedWrongUsage(t *testing.T) {
