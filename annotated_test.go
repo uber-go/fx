@@ -21,6 +21,9 @@
 package fx_test
 
 import (
+	"bytes"
+	"fmt"
+	"io"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -60,6 +63,70 @@ func TestAnnotated(t *testing.T) {
 		defer app.RequireStart().RequireStop()
 		assert.NotNil(t, in.A, "expected in.A to be injected")
 		assert.Equal(t, "foo", in.A.name, "expected to get a type 'a' of name 'foo'")
+	})
+}
+
+type asStringer struct {
+	name string
+}
+
+func (as *asStringer) String() string {
+	return as.name
+}
+
+func TestAnnotatedAs(t *testing.T) {
+	t.Parallel()
+
+	t.Run("provide a good stringer", func(t *testing.T) {
+		t.Parallel()
+		newAsStringer := func() *asStringer {
+			return &asStringer{
+				name: "a good stringer",
+			}
+		}
+		app := NewForTest(t,
+			fx.WithLogger(func() fxevent.Logger {
+				return fxtest.NewTestLogger(t)
+			}),
+			fx.Provide(fx.Annotate(newAsStringer, fx.As(new(fmt.Stringer)))),
+			fx.Invoke(func(s fmt.Stringer) {
+				s.String()
+			}),
+		)
+		require.NoError(t, app.Err())
+	})
+
+	t.Run("provide with multiple types As", func(t *testing.T) {
+		t.Parallel()
+		app := NewForTest(t,
+			fx.WithLogger(func() fxevent.Logger {
+				return fxtest.NewTestLogger(t)
+			}),
+			fx.Provide(fx.Annotate(func() (*asStringer, *bytes.Buffer) {
+				buf := make([]byte, 1)
+				b := bytes.NewBuffer(buf)
+				return &asStringer{name: "stringer"}, b
+			}, fx.As(new(fmt.Stringer), new(io.Writer)))),
+			fx.Invoke(func(s fmt.Stringer, w io.Writer) {
+				w.Write([]byte(s.String()))
+			}),
+		)
+		require.NoError(t, app.Err())
+	})
+
+	t.Run("provide when an illegal type As", func(t *testing.T) {
+		t.Parallel()
+		app := NewForTest(t,
+			fx.WithLogger(func() fxevent.Logger {
+				return fxtest.NewTestLogger(t)
+			}),
+			fx.Provide(fx.Annotate(func() *asStringer {
+				return &asStringer{name: "stringer"}
+			}, fx.As(new(io.Writer)))),
+		)
+		err := app.Err()
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "does not implement")
 	})
 }
 

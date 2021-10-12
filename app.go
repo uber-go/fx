@@ -883,10 +883,6 @@ func (app *App) provide(p provide) {
 		return
 	}
 
-	if ann, ok := constructor.(AnnotatedAs); ok {
-
-	}
-
 	if reflect.TypeOf(constructor).Kind() == reflect.Func {
 		ft := reflect.ValueOf(constructor).Type()
 

@@ -99,14 +99,18 @@ type annotations struct {
 	fType reflect.Type
 
 	asTargets []interface{}
-	asTypes   []reflect.Type
+
+	asIns  []reflect.Type
+	asOuts []reflect.Type
 
 	Ins  []reflect.Type
 	Outs []reflect.Type
 
 	annotatedIn  bool
 	annotatedOut bool
+	annotatedAs  bool
 
+	returnsError  bool
 	resultOffsets []int // resultOffsets[N] gives the field offset of Nth result.
 }
 
@@ -241,11 +245,10 @@ func (rt resultTagsAnnotation) apply(ann *annotations) error {
 		Anonymous: true,
 	}}
 
-	returnsError := false
 	offsets := make([]int, fType.NumOut())
 	for i := 0; i < fType.NumOut(); i++ {
 		if fType.Out(i) == _typeOfError {
-			returnsError = true
+			ann.returnsError = true
 			continue
 		}
 		structField := reflect.StructField{
@@ -260,7 +263,7 @@ func (rt resultTagsAnnotation) apply(ann *annotations) error {
 	}
 	ann.Outs = []reflect.Type{reflect.StructOf(annotatedResult)}
 	ann.resultOffsets = offsets
-	if returnsError {
+	if ann.returnsError {
 		ann.Outs = append(ann.Outs, _typeOfError)
 	}
 	return nil
@@ -284,27 +287,60 @@ func As(interfaces ...interface{}) Annotation {
 }
 
 func (at asAnnotation) apply(ann *annotations) error {
+	if ann.annotatedAs {
+		return errors.New("cannot apply more than one line of As")
+	}
+	ann.annotatedAs = true
 	// Check if the annotations are of same interface.
-	res := true
 	ann.asTargets = at.targets
-	var asTypes []reflect.Type
-	for _, as := range ann.asTargets {
-		asType := reflect.TypeOf(as).Elem()
+	fType := ann.fType
 
-		// Check for special case:
-		// fx.Annotate(func() io.Reader, fx.As(new(io.Reader)))
-		if asType == ann.fType {
+	// Generate stub function for mapping in/out types.
+	asInputs := []reflect.StructField{{
+		Name:      "AsIn",
+		Type:      reflect.TypeOf(In{}),
+		Anonymous: true,
+	}}
+
+	asOutputs := []reflect.StructField{{
+		Name:      "AsOut",
+		Type:      reflect.TypeOf(Out{}),
+		Anonymous: true,
+	}}
+
+	numOut := fType.NumOut()
+	offsets := make([]int, numOut)
+	for i := 0; i < numOut; i++ {
+		asType := reflect.TypeOf(ann.asTargets[i]).Elem()
+
+		if fType.Out(i) == _typeOfError {
+			ann.returnsError = true
 			continue
 		}
 
-		if !ann.fType.Implements(asType) {
+		if !fType.Out(i).Implements(asType) {
 			return fmt.Errorf("invalid fx.As: %v does not implement %v",
 				ann.fType,
 				asType)
 		}
-		asTypes = append(asTypes, asType)
+		inStructField := reflect.StructField{
+			Name: fmt.Sprintf("InField%d", i),
+			Type: fType.Out(i),
+		}
+		outStructField := reflect.StructField{
+			Name: fmt.Sprintf("OutField%d", i),
+			Type: asType,
+		}
+		asInputs = append(asInputs, inStructField)
+		offsets[i] = len(asOutputs)
+		asOutputs = append(asOutputs, outStructField)
 	}
-	ann.asTypes = asTypes
+	ann.asIns = []reflect.Type{reflect.StructOf(asInputs)}
+	ann.asOuts = []reflect.Type{reflect.StructOf(asOutputs)}
+	ann.resultOffsets = offsets
+	if ann.returnsError {
+		ann.asOuts = append(ann.asOuts, _typeOfError)
+	}
 	return nil
 }
 
@@ -376,7 +412,11 @@ func Annotate(f interface{}, anns ...Annotation) interface{} {
 	ins := annotations.Ins
 	outs := annotations.Outs
 	resultOffsets := annotations.resultOffsets
-	asTargets := annotations.asTargets
+
+	// if we want to annotate types with fx.As, change the output type to AsOut
+	if annotations.annotatedAs {
+		outs = annotations.asOuts
+	}
 
 	newF := func(args []reflect.Value) []reflect.Value {
 		var fParams, fResults []reflect.Value
@@ -393,19 +433,18 @@ func Annotate(f interface{}, anns ...Annotation) interface{} {
 		// Call the wrapped function.
 		fResults = fVal.Call(fParams)
 
-		if !annotations.annotatedOut {
+		if !annotations.annotatedOut && !annotations.annotatedAs {
 			return fResults
 		}
 
 		var errValue reflect.Value
-		returnsError := len(outs) > 1
 
 		// wrap the result in an annotated struct
 		results := reflect.New(outs[0]).Elem()
 
 		// aggregate the errors from the annotated function
 		// into one error.
-		if returnsError {
+		if annotations.returnsError {
 			errValue = reflect.New(outs[1]).Elem()
 		}
 
@@ -419,7 +458,8 @@ func Annotate(f interface{}, anns ...Annotation) interface{} {
 			}
 			results.Field(resultOffsets[i]).Set(fResults[i])
 		}
-		if returnsError {
+		//TODO: converge with block above?
+		if annotations.returnsError {
 			if errResults != nil {
 				errValue = reflect.ValueOf(errResults).Elem()
 				return []reflect.Value{results, errValue}
