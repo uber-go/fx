@@ -99,12 +99,14 @@ type annotations struct {
 	fType reflect.Type
 
 	asTargets []interface{}
-
-	asIns  []reflect.Type
-	asOuts []reflect.Type
+	asIns     []reflect.Type
+	asOuts    []reflect.Type
 
 	Ins  []reflect.Type
 	Outs []reflect.Type
+
+	outTags []string
+	inTags  []string
 
 	annotatedIn  bool
 	annotatedOut bool
@@ -183,6 +185,7 @@ func (pt paramTagsAnnotation) apply(ann *annotations) error {
 		return errors.New("cannot apply more than one line of ParamTags")
 	}
 	ann.annotatedIn = true
+	ann.inTags = pt.tags
 	fType := ann.fType
 
 	annotatedParams := []reflect.StructField{{
@@ -237,6 +240,7 @@ func (rt resultTagsAnnotation) apply(ann *annotations) error {
 		return errors.New("cannot apply more than one line of ResultTags")
 	}
 	ann.annotatedOut = true
+	ann.outTags = rt.tags
 	fType := ann.fType
 
 	annotatedResult := []reflect.StructField{{
@@ -331,8 +335,12 @@ func (at asAnnotation) apply(ann *annotations) error {
 			Name: fmt.Sprintf("OutField%d", i),
 			Type: asType,
 		}
+		outIdx := len(asOutputs)
+		if i < len(ann.outTags) {
+			outStructField.Tag = reflect.StructTag(ann.outTags[i])
+		}
 		asInputs = append(asInputs, inStructField)
-		offsets[i] = len(asOutputs)
+		offsets[i] = outIdx
 		asOutputs = append(asOutputs, outStructField)
 	}
 	ann.asIns = []reflect.Type{reflect.StructOf(asInputs)}

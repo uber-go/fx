@@ -90,7 +90,7 @@ func TestAnnotatedAs(t *testing.T) {
 			}),
 			fx.Provide(fx.Annotate(newAsStringer, fx.As(new(fmt.Stringer)))),
 			fx.Invoke(func(s fmt.Stringer) {
-				s.String()
+				assert.Equal(t, s.String(), "a good stringer")
 			}),
 		)
 		require.NoError(t, app.Err())
@@ -173,7 +173,7 @@ func TestAnnotatedAs(t *testing.T) {
 		type in struct {
 			fx.In
 
-			S fmt.Stringer `group:goodStringers`
+			S fmt.Stringer `name:"goodStringer"`
 		}
 		app := NewForTest(t,
 			fx.WithLogger(func() fxevent.Logger {
@@ -184,7 +184,7 @@ func TestAnnotatedAs(t *testing.T) {
 					return &asStringer{name: "stringer"}
 				},
 					fx.As(new(fmt.Stringer)),
-					fx.ResultTags(`group:"goodStringers"`)),
+					fx.ResultTags(`name:"goodStringer"`)),
 			),
 			fx.Invoke(func(i in) {
 				assert.Equal(t, "stringer", i.S.String())
