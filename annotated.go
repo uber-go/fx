@@ -309,6 +309,57 @@ type asAnnotation struct {
 
 var _ asAnnotation = asAnnotation{}
 
+// As is an Annotation that annotates the result(s) of a function to be
+// provided as another interface.
+//
+// For example,
+//   fx.Provide(
+//     fx.Annotate(bytes.NewBuffer(...), fx.As(io.Writer))
+//   )
+//
+// specifies that the return type of bytes.NewBuffer (bytes.Buffer) should be
+// provided as io.Writer type.
+//
+// In other words, the code above is equivalent to:
+//
+//  type result struct {
+//    fx.Out
+//
+//    w io.Writer
+//  }
+//  fx.Provide(func() result {
+//    return result{w: bytes.NewBuffer()}
+//  })
+//
+// Note that the bytes.Buffer type is provided as an io.Writer type, so this
+// constructor does NOT provide both bytes.Buffer and io.Writer type; it just
+// provides io.Writer type.
+//
+// When multiple values are returned by the annotated function, each type
+// gets mapped to corresponding positional result of the annotated function.
+//
+// For example,
+//  func a() (bytes.Buffer, bytes.Buffer) {
+//    ...
+//  }
+//  fx.Provide(
+//    fx.Annotate(a, fx.As(io.Writer, io.Reader))
+//  )
+//
+// Is equivalent to,
+//
+//  type result struct {
+//    fx.Out
+//
+//    r io.Reader
+//    w io.Writer
+//  }
+//
+//  fx.Provide(func() result {
+//    w, r := a()
+//    return result{r: r, w: w}
+//  }
+//
 func As(interfaces ...interface{}) Annotation {
 	return asAnnotation{interfaces}
 }
@@ -322,7 +373,7 @@ func (at asAnnotation) apply(ann *annotations) error {
 	return nil
 }
 
-// Annotate lets you annotate a function's parameters and returns with tags
+// Annotate lets you annotate a function's parameters and returns
 // without you having to declare separate struct definitions for them.
 //
 // For example,
