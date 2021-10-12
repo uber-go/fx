@@ -129,6 +129,21 @@ func TestAnnotatedAs(t *testing.T) {
 		assert.Contains(t, err.Error(), "does not implement")
 	})
 
+	t.Run("provide two lines of As", func(t *testing.T) {
+		t.Parallel()
+		app := NewForTest(t,
+			fx.WithLogger(func() fxevent.Logger {
+				return fxtest.NewTestLogger(t)
+			}),
+			fx.Provide(fx.Annotate(func() *asStringer {
+				return &asStringer{name: "stringer"}
+			}, fx.As(new(io.Writer)), fx.As(new(io.Reader)))),
+		)
+		err := app.Err()
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "cannot apply more than one line of As")
+	})
+
 	t.Run("don't provide original type when using As", func(t *testing.T) {
 		t.Parallel()
 		app := NewForTest(t,
@@ -193,6 +208,8 @@ func TestAnnotatedAs(t *testing.T) {
 		require.NoError(t, app.Err())
 	})
 	t.Run("As with result annotation, in different order", func(t *testing.T) {
+		// same as the test above, except now we annotate
+		// it in a different order.
 		t.Parallel()
 		type in struct {
 			fx.In
@@ -204,8 +221,6 @@ func TestAnnotatedAs(t *testing.T) {
 				return fxtest.NewTestLogger(t)
 			}),
 			fx.Provide(
-				// same as the test above, except now we annotate
-				// it in a different order.
 				fx.Annotate(func() *asStringer {
 					return &asStringer{name: "stringer"}
 				},
