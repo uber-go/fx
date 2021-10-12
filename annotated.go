@@ -99,14 +99,11 @@ type annotations struct {
 	fType reflect.Type
 
 	asTargets []interface{}
-	asIns     []reflect.Type
-	asOuts    []reflect.Type
 
 	Ins  []reflect.Type
 	Outs []reflect.Type
 
 	outTags []string
-	inTags  []string
 
 	annotatedIn  bool
 	annotatedOut bool
@@ -237,7 +234,6 @@ func (pt paramTagsAnnotation) apply(ann *annotations) error {
 		return errors.New("cannot apply more than one line of ParamTags")
 	}
 	ann.annotatedIn = true
-	ann.inTags = pt.tags
 	fType := ann.fType
 
 	annotatedParams := []reflect.StructField{{
