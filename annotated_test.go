@@ -414,5 +414,30 @@ func TestAnnotate(t *testing.T) {
 		)
 		err := app.Err()
 		require.Error(t, err)
+		assert.Contains(t, err.Error(), "some error")
+	})
+
+	t.Run("annotate with a non-nil error", func(t *testing.T) {
+		t.Parallel()
+
+		app := NewForTest(t,
+			fx.Provide(
+				fx.Annotate(func() (*bytes.Buffer, error) {
+					buf := make([]byte, 1)
+					return bytes.NewBuffer(buf), errors.New("some error")
+				}, fx.ResultTags(`name:"buf1"`)),
+				fx.Annotate(func() (*bytes.Buffer, error) {
+					buf := make([]byte, 1)
+					return bytes.NewBuffer(buf), nil
+				}, fx.ResultTags(`name:"buf2"`))),
+			fx.Invoke(
+				fx.Annotate(func(b1 *bytes.Buffer, b2 *bytes.Buffer) {
+					b1.Write([]byte{1})
+					b2.Write([]byte{1})
+				}, fx.ParamTags(`name:"buf1"`, `name:"buf2"`))),
+		)
+		err := app.Err()
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "some error")
 	})
 }
