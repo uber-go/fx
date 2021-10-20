@@ -487,7 +487,7 @@ func Annotate(f interface{}, anns ...Annotation) interface{} {
 		}
 		if annotations.returnsError {
 			if errResults != nil {
-				errValue = reflect.ValueOf(errResults).Elem()
+				errValue = reflect.ValueOf(errResults)
 				return []reflect.Value{results, errValue}
 			}
 			// error is nil. Return nil error Value.
