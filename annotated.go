@@ -96,19 +96,19 @@ func (a Annotated) String() string {
 // annotations is used for building out the info needed to generate struct
 // with tags using reflection.
 type annotations struct {
-	fType     reflect.Type
-	asTargets []interface{}
+	fType     reflect.Type  // type of the function being annotated
+	asTargets []interface{} // list of interfaces the results of target function needs to be annotated as.
+	outTags   []string      // struct tags for the output, if any.
 
-	Ins  []reflect.Type
-	Outs []reflect.Type
+	Ins  []reflect.Type // types of the annotated function's inputs, if any.
+	Outs []reflect.Type // types of the annotated function's outputs, if any.
 
-	annotatedIn  bool
-	annotatedOut bool
-	annotatedAs  bool
+	annotatedIn  bool // whether the function's input is being annotated
+	annotatedOut bool // whether the function's output is being annotated
+	annotatedAs  bool // whether the function's output is being annotated as new types
 
-	returnsError  bool
+	returnsError  bool  // whether the function returns an error
 	resultOffsets []int // resultOffsets[N] gives the field offset of Nth result.
-	outTags       []string
 }
 
 func newAnnotations(fType reflect.Type) annotations {
@@ -130,27 +130,28 @@ func newAnnotations(fType reflect.Type) annotations {
 	}
 }
 
+// field used for embedding fx.Out type in generated struct.
+var _outAnnotationField = reflect.StructField{
+	Name:      "Out",
+	Type:      reflect.TypeOf(Out{}),
+	Anonymous: true,
+}
+
 // This generates the annotated Out struct when function is annotated
 // with fx.As and/or fx.ResultTags options.
 func (ann *annotations) genAnnotatedOutStruct() error {
 	if !ann.annotatedOut && !ann.annotatedAs {
 		return nil
 	}
-
 	fType := ann.fType
 	offsets := make([]int, fType.NumOut())
-	annotatedResult := []reflect.StructField{{
-		Name:      "Out",
-		Type:      reflect.TypeOf(Out{}),
-		Anonymous: true,
-	}}
+	annotatedResult := []reflect.StructField{_outAnnotationField}
 	for i := 0; i < fType.NumOut(); i++ {
 		if fType.Out(i) == _typeOfError {
 			ann.returnsError = true
 			continue
 		}
-
-		var structField reflect.StructField
+		var structFieldType reflect.Type
 		if ann.annotatedAs {
 			asType := reflect.TypeOf(ann.asTargets[i]).Elem()
 			if !fType.Out(i).Implements(asType) {
@@ -158,16 +159,11 @@ func (ann *annotations) genAnnotatedOutStruct() error {
 					ann.fType,
 					asType)
 			}
-			structField = reflect.StructField{
-				Name: fmt.Sprintf("Field%d", i),
-				Type: asType,
-			}
+			structFieldType = asType
 		} else {
-			structField = reflect.StructField{
-				Name: fmt.Sprintf("Field%d", i),
-				Type: fType.Out(i),
-			}
+			structFieldType = fType.Out(i)
 		}
+		structField := genAnnotatedOutStructField(i, structFieldType)
 		if i < len(ann.outTags) {
 			structField.Tag = reflect.StructTag(ann.outTags[i])
 		}
@@ -180,6 +176,14 @@ func (ann *annotations) genAnnotatedOutStruct() error {
 		ann.Outs = append(ann.Outs, _typeOfError)
 	}
 	return nil
+}
+
+// helper for generating a field in fx.Out struct
+func genAnnotatedOutStructField(i int, t reflect.Type) reflect.StructField {
+	return reflect.StructField{
+		Name: fmt.Sprintf("Field%d", i),
+		Type: t,
+	}
 }
 
 // Annotation can be passed to Annotate(f interface{}, anns ...Annotation)
@@ -303,16 +307,15 @@ type asAnnotation struct {
 
 var _ asAnnotation = asAnnotation{}
 
-// As is an Annotation that annotates the result(s) of a function to be
-// provided as another interface.
+// As is an Annotation that annotates the result of a function (i.e. a
+// constructor) to be provided as another interface.
 //
-// For example,
+// For example, the following code specifies that the return type of
+// bytes.NewBuffer (bytes.Buffer) should be provided as io.Writer type:
+//
 //   fx.Provide(
 //     fx.Annotate(bytes.NewBuffer(...), fx.As(io.Writer))
 //   )
-//
-// specifies that the return type of bytes.NewBuffer (bytes.Buffer) should be
-// provided as io.Writer type.
 //
 // In other words, the code above is equivalent to:
 //
@@ -458,6 +461,9 @@ func Annotate(f interface{}, anns ...Annotation) interface{} {
 		// Call the wrapped function.
 		fResults = fVal.Call(fParams)
 
+		// If the function's output wasn't annotated and we don't need
+		// to provide it as another type, there's no need to generate
+		// an fx.Out embedded struct so we return early.
 		if !annotations.annotatedOut && !annotations.annotatedAs {
 			return fResults
 		}
