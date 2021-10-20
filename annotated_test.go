@@ -417,7 +417,7 @@ func TestAnnotate(t *testing.T) {
 		assert.Contains(t, err.Error(), "some error")
 	})
 
-	t.Run("annotate with a non-nil error", func(t *testing.T) {
+	t.Run("annotate with a non-nil error and nil error", func(t *testing.T) {
 		t.Parallel()
 
 		app := NewForTest(t,
