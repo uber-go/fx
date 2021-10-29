@@ -151,17 +151,9 @@ func (ann *annotations) genAnnotatedOutStruct() error {
 			ann.returnsError = true
 			continue
 		}
-		var structFieldType reflect.Type
-		if ann.annotatedAs {
-			asType := reflect.TypeOf(ann.asTargets[i]).Elem()
-			if !fType.Out(i).Implements(asType) {
-				return fmt.Errorf("invalid fx.As: %v does not implement %v",
-					ann.fType,
-					asType)
-			}
-			structFieldType = asType
-		} else {
-			structFieldType = fType.Out(i)
+		structFieldType, err := ann.structFieldType(i)
+		if err != nil {
+			return err
 		}
 		structField := genAnnotatedOutStructField(i, structFieldType)
 		if i < len(ann.outTags) {
@@ -178,7 +170,19 @@ func (ann *annotations) genAnnotatedOutStruct() error {
 	return nil
 }
 
-// helper for generating a field in fx.Out struct
+// helper for getting type of a fx.Out struct field
+func (ann *annotations) structFieldType(i int) (reflect.Type, error) {
+	if ann.annotatedAs {
+		asType := reflect.TypeOf(ann.asTargets[i]).Elem()
+		if !ann.fType.Out(i).Implements(asType) {
+			return nil, fmt.Errorf("invalid fx.As: %v does not implement %v", ann.fType, asType)
+		}
+		return asType, nil
+	}
+	return ann.fType.Out(i), nil
+}
+
+// helper for generating an fx.Out struct field
 func genAnnotatedOutStructField(i int, t reflect.Type) reflect.StructField {
 	return reflect.StructField{
 		Name: fmt.Sprintf("Field%d", i),
