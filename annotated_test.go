@@ -82,6 +82,9 @@ func TestAnnotatedAs(t *testing.T) {
 
 		S fmt.Stringer `name:"goodStringer"`
 	}
+	type myStringer interface {
+		String() string
+	}
 
 	newAsStringer := func() *asStringer {
 		return &asStringer{
@@ -157,6 +160,17 @@ func TestAnnotatedAs(t *testing.T) {
 				assert.Equal(t, "stringer", s.String())
 				_, err := w.Write([]byte{1})
 				require.NoError(t, err)
+			},
+		},
+		{
+			desc: "provide the same provider as multiple types",
+			provide: fx.Provide(
+				fx.Annotate(newAsStringer, fx.As(new(fmt.Stringer))),
+				fx.Annotate(newAsStringer, fx.As(new(myStringer))),
+			),
+			invoke: func(s fmt.Stringer, ms myStringer) {
+				assert.Equal(t, "a good stringer", s.String())
+				assert.Equal(t, "a good stringer", ms.String())
 			},
 		},
 	}
