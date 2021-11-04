@@ -23,6 +23,8 @@ package fx_test
 import (
 	"bytes"
 	"errors"
+	"fmt"
+	"io"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -63,6 +65,217 @@ func TestAnnotated(t *testing.T) {
 		assert.NotNil(t, in.A, "expected in.A to be injected")
 		assert.Equal(t, "foo", in.A.name, "expected to get a type 'a' of name 'foo'")
 	})
+}
+
+type asStringer struct {
+	name string
+}
+
+func (as *asStringer) String() string {
+	return as.name
+}
+
+type anotherStringer struct {
+	name string
+}
+
+func (a anotherStringer) String() string {
+	return a.name
+}
+
+func TestAnnotatedAs(t *testing.T) {
+	t.Parallel()
+	type in struct {
+		fx.In
+
+		S fmt.Stringer `name:"goodStringer"`
+	}
+	type myStringer interface {
+		String() string
+	}
+
+	newAsStringer := func() *asStringer {
+		return &asStringer{
+			name: "a good stringer",
+		}
+	}
+
+	tests := []struct {
+		desc    string
+		provide fx.Option
+		invoke  interface{}
+	}{
+		{
+			desc: "provide a good stringer",
+			provide: fx.Provide(
+				fx.Annotate(newAsStringer, fx.As(new(fmt.Stringer))),
+			),
+			invoke: func(s fmt.Stringer) {
+				assert.Equal(t, s.String(), "a good stringer")
+			},
+		},
+		{
+			desc: "value type implementing interface",
+			provide: fx.Provide(
+				fx.Annotate(func() anotherStringer {
+					return anotherStringer{
+						"another stringer",
+					}
+				}, fx.As(new(fmt.Stringer))),
+			),
+			invoke: func(s fmt.Stringer) {
+				assert.Equal(t, s.String(), "another stringer")
+			},
+		},
+		{
+			desc: "provide with multiple types As",
+			provide: fx.Provide(fx.Annotate(func() (*asStringer, *bytes.Buffer) {
+				buf := make([]byte, 1)
+				b := bytes.NewBuffer(buf)
+				return &asStringer{name: "stringer"}, b
+			}, fx.As(new(fmt.Stringer), new(io.Writer)))),
+			invoke: func(s fmt.Stringer, w io.Writer) {
+				w.Write([]byte(s.String()))
+			},
+		},
+		{
+			desc: "provide as with result annotation",
+			provide: fx.Provide(
+				fx.Annotate(func() *asStringer {
+					return &asStringer{name: "stringer"}
+				},
+					fx.ResultTags(`name:"goodStringer"`),
+					fx.As(new(fmt.Stringer))),
+			),
+			invoke: func(i in) {
+				assert.Equal(t, "stringer", i.S.String())
+			},
+		},
+		{
+			// same as the test above, except now we annotate
+			// it in a different order.
+			desc: "provide as with result annotation, in different order",
+			provide: fx.Provide(
+				fx.Annotate(func() *asStringer {
+					return &asStringer{name: "stringer"}
+				},
+					fx.As(new(fmt.Stringer)),
+					fx.ResultTags(`name:"goodStringer"`)),
+			),
+			invoke: func(i in) {
+				assert.Equal(t, "stringer", i.S.String())
+			},
+		},
+		{
+			desc: "provide multiple constructors annotated As",
+			provide: fx.Provide(
+				fx.Annotate(func() *asStringer {
+					return &asStringer{name: "stringer"}
+				}, fx.As(new(fmt.Stringer))),
+				fx.Annotate(func() *bytes.Buffer {
+					buf := make([]byte, 1)
+					return bytes.NewBuffer(buf)
+				}, fx.As(new(io.Writer))),
+			),
+			invoke: func(s fmt.Stringer, w io.Writer) {
+				assert.Equal(t, "stringer", s.String())
+				_, err := w.Write([]byte{1})
+				require.NoError(t, err)
+			},
+		},
+		{
+			desc: "provide the same provider as multiple types",
+			provide: fx.Provide(
+				fx.Annotate(newAsStringer, fx.As(new(fmt.Stringer))),
+				fx.Annotate(newAsStringer, fx.As(new(myStringer))),
+			),
+			invoke: func(s fmt.Stringer, ms myStringer) {
+				assert.Equal(t, "a good stringer", s.String())
+				assert.Equal(t, "a good stringer", ms.String())
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.desc, func(t *testing.T) {
+			t.Parallel()
+
+			app := NewForTest(t,
+				fx.WithLogger(func() fxevent.Logger {
+					return fxtest.NewTestLogger(t)
+				}),
+				tt.provide,
+				fx.Invoke(tt.invoke),
+			)
+			require.NoError(t, app.Err())
+		})
+	}
+}
+
+func TestAnnotatedAsFailures(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		desc          string
+		provide       fx.Option
+		invoke        interface{}
+		errorContains string
+	}{
+		{
+			desc: "provide when an illegal type As",
+			provide: fx.Provide(fx.Annotate(func() *asStringer {
+				return &asStringer{name: "stringer"}
+			}, fx.As(new(io.Writer)))),
+			invoke:        func() {},
+			errorContains: "does not implement",
+		},
+		{
+			desc: "provide two lines of As",
+			provide: fx.Provide(fx.Annotate(func() *asStringer {
+				return &asStringer{name: "stringer"}
+			}, fx.As(new(io.Writer)), fx.As(new(io.Reader)))),
+			invoke:        func() {},
+			errorContains: "cannot apply more than one line of As",
+		},
+		{
+			desc: "don't provide original type using As",
+			provide: fx.Provide(fx.Annotate(func() *asStringer {
+				return &asStringer{name: "stringer"}
+			}, fx.As(new(fmt.Stringer)))),
+			invoke: func(as *asStringer) {
+				fmt.Println(as.String())
+			},
+			errorContains: "missing type: *fx_test.asStringer",
+		},
+		{
+			desc: "fail to provide with name annotation",
+			provide: fx.Provide(fx.Annotate(func(n string) *asStringer {
+				return &asStringer{name: n}
+			}, fx.As(new(fmt.Stringer)), fx.ParamTags(`name:"n"`))),
+			invoke: func(a fmt.Stringer) {
+				fmt.Println(a)
+			},
+			errorContains: `missing type: string[name="n"]`,
+		},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.desc, func(t *testing.T) {
+			t.Parallel()
+			app := NewForTest(t,
+				fx.WithLogger(func() fxevent.Logger {
+					return fxtest.NewTestLogger(t)
+				}),
+				tt.provide,
+				fx.Invoke(tt.invoke),
+			)
+			err := app.Err()
+			require.Error(t, err)
+			assert.Contains(t, err.Error(), tt.errorContains)
+		})
+	}
 }
 
 func TestAnnotatedWrongUsage(t *testing.T) {
