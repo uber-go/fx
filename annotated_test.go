@@ -194,6 +194,15 @@ func TestAnnotatedAs(t *testing.T) {
 				assert.Equal(t, "a good stringer", ms.String())
 			},
 		},
+		{
+			desc: "annotate fx.Supply",
+			provide: fx.Supply(
+				fx.Annotate(&asStringer{"foo"}, fx.As(new(fmt.Stringer))),
+			),
+			invoke: func(s fmt.Stringer) {
+				assert.Equal(t, "foo", s.String())
+			},
+		},
 	}
 
 	for _, tt := range tests {
