@@ -144,6 +144,8 @@ func (ann *annotations) genAnnotatedOutStruct() error {
 		return nil
 	}
 	fType := ann.fType
+	// offsets[i] is the index of this field in annotatedResult.
+	// This will always be >0 when valid.
 	offsets := make([]int, fType.NumOut())
 	annotatedResult := []reflect.StructField{_outAnnotationField}
 	for i := 0; i < fType.NumOut(); i++ {
@@ -323,13 +325,9 @@ var _ asAnnotation = asAnnotation{}
 //
 // In other words, the code above is equivalent to:
 //
-//  type result struct {
-//    fx.Out
-//
-//    w io.Writer
-//  }
-//  fx.Provide(func() result {
-//    return result{w: bytes.NewBuffer()}
+//  fx.Provide(func() io.Writer {
+//    return bytes.NewBuffer()
+//    // provides io.Writer instead of *bytes.Buffer
 //  })
 //
 // Note that the bytes.Buffer type is provided as an io.Writer type, so this
@@ -349,16 +347,9 @@ var _ asAnnotation = asAnnotation{}
 //
 // Is equivalent to,
 //
-//  type result struct {
-//    fx.Out
-//
-//    r io.Reader
-//    w io.Writer
-//  }
-//
-//  fx.Provide(func() result {
+//  fx.Provide(func() (io.Writer, io.Reader) {
 //    w, r := a()
-//    return result{r: r, w: w}
+//    return w, r
 //  }
 //
 func As(interfaces ...interface{}) Annotation {
@@ -439,10 +430,10 @@ func Annotate(f interface{}, anns ...Annotation) interface{} {
 		}
 	}
 
-	if e := annotations.genAnnotatedOutStruct(); e != nil {
+	if err := annotations.genAnnotatedOutStruct(); err != nil {
 		return annotationError{
 			target: f,
-			err:    e,
+			err:    err,
 		}
 	}
 
