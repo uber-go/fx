@@ -216,6 +216,10 @@ func TestAnnotatedAs(t *testing.T) {
 func TestAnnotatedAsFailures(t *testing.T) {
 	t.Parallel()
 
+	newAsStringer := func() *asStringer {
+		return &asStringer{name: "stringer"}
+	}
+
 	tests := []struct {
 		desc          string
 		provide       fx.Option
@@ -223,26 +227,20 @@ func TestAnnotatedAsFailures(t *testing.T) {
 		errorContains string
 	}{
 		{
-			desc: "provide when an illegal type As",
-			provide: fx.Provide(fx.Annotate(func() *asStringer {
-				return &asStringer{name: "stringer"}
-			}, fx.As(new(io.Writer)))),
+			desc:          "provide when an illegal type As",
+			provide:       fx.Provide(fx.Annotate(newAsStringer, fx.As(new(io.Writer)))),
 			invoke:        func() {},
 			errorContains: "does not implement",
 		},
 		{
-			desc: "provide two lines of As",
-			provide: fx.Provide(fx.Annotate(func() *asStringer {
-				return &asStringer{name: "stringer"}
-			}, fx.As(new(io.Writer)), fx.As(new(io.Reader)))),
+			desc:          "provide two lines of As",
+			provide:       fx.Provide(fx.Annotate(newAsStringer, fx.As(new(io.Writer)), fx.As(new(io.Reader)))),
 			invoke:        func() {},
 			errorContains: "cannot apply more than one line of As",
 		},
 		{
-			desc: "don't provide original type using As",
-			provide: fx.Provide(fx.Annotate(func() *asStringer {
-				return &asStringer{name: "stringer"}
-			}, fx.As(new(fmt.Stringer)))),
+			desc:    "don't provide original type using As",
+			provide: fx.Provide(fx.Annotate(newAsStringer, fx.As(new(fmt.Stringer)))),
 			invoke: func(as *asStringer) {
 				fmt.Println(as.String())
 			},
@@ -257,6 +255,16 @@ func TestAnnotatedAsFailures(t *testing.T) {
 				fmt.Println(a)
 			},
 			errorContains: `missing type: string[name="n"]`,
+		},
+		{
+			desc: "non-pointer argument to As",
+			provide: fx.Provide(
+				fx.Annotate(
+					newAsStringer,
+					fx.As("foo"),
+				),
+			),
+			errorContains: "argument must be a pointer to an interface: got string",
 		},
 	}
 
