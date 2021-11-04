@@ -295,6 +295,35 @@ func TestNewApp(t *testing.T) {
 		assert.Contains(t, err.Error(), "Failed: must provide constructor function")
 	})
 
+	t.Run("ErrorProvidingAnnotate", func(t *testing.T) {
+		t.Parallel()
+
+		type t1 struct{}
+		newT1 := func() t1 { return t1{} }
+
+		// Provide twice.
+		app := NewForTest(t, Provide(
+			Annotate(newT1, ResultTags(`name:"foo"`)),
+			Annotate(newT1, ResultTags(`name:"foo"`)),
+		))
+
+		err := app.Err()
+		require.Error(t, err)
+
+		// Example:
+		// fx.Provide(fx.Annotate(go.uber.org/fx_test.TestNewApp.func10.1(), fx.ResultTags(["name:\"foo\""])) from:
+		//     go.uber.org/fx_test.TestNewApp.func10
+		//         /.../fx/app_test.go:305
+		//     testing.tRunner
+		//         /.../src/testing/testing.go:1259
+		//     Failed: cannot provide function "reflect".makeFuncStub (/.../reflect/asm_amd64.s:30):
+		//     cannot provide fx_test.t1[name="foo"] from [0].Field0:
+		//     already provided by "reflect".makeFuncStub (/.../reflect/asm_amd64.s:30)
+		assert.Contains(t, err.Error(), `fx.Provide(fx.Annotate(`)
+		assert.Contains(t, err.Error(), `fx.ResultTags(["name:\"foo\""])`)
+		assert.Contains(t, err.Error(), "already provided")
+	})
+
 	t.Run("ErrorProviding", func(t *testing.T) {
 		t.Parallel()
 
