@@ -858,13 +858,27 @@ func (app *App) provide(p provide) {
 		app.log.LogEvent(ev)
 	}()
 
-	if annError, ok := constructor.(annotationError); ok {
-		app.err = fmt.Errorf("encountered error while applying annotation using fx.Annotate to %s: %+v",
-			fxreflect.FuncName(annError.target), annError.err)
+	switch constructor := constructor.(type) {
+	case annotationError:
+		// fx.Annotate failed. Turn it into an Fx error.
+		app.err = fmt.Errorf(
+			"encountered error while applying annotation using fx.Annotate to %s: %+v",
+			fxreflect.FuncName(constructor.target), constructor.err)
 		return
-	}
 
-	if ann, ok := constructor.(Annotated); ok {
+	case annotated:
+		c, err := constructor.Build()
+		if err != nil {
+			app.err = err
+			return
+		}
+
+		if err := app.container.Provide(c, opts...); err != nil {
+			app.err = fmt.Errorf("fx.Provide(%v) from:\n%+vFailed: %v", constructor, p.Stack, err)
+		}
+
+	case Annotated:
+		ann := constructor
 		switch {
 		case len(ann.Group) > 0 && len(ann.Name) > 0:
 			app.err = fmt.Errorf(
@@ -880,29 +894,30 @@ func (app *App) provide(p provide) {
 		if err := app.container.Provide(ann.Target, opts...); err != nil {
 			app.err = fmt.Errorf("fx.Provide(%v) from:\n%+vFailed: %v", ann, p.Stack, err)
 		}
-		return
-	}
 
-	if reflect.TypeOf(constructor).Kind() == reflect.Func {
-		ft := reflect.ValueOf(constructor).Type()
+	default:
+		if reflect.TypeOf(constructor).Kind() == reflect.Func {
+			ft := reflect.ValueOf(constructor).Type()
 
-		for i := 0; i < ft.NumOut(); i++ {
-			t := ft.Out(i)
+			for i := 0; i < ft.NumOut(); i++ {
+				t := ft.Out(i)
 
-			if t == reflect.TypeOf(Annotated{}) {
-				app.err = fmt.Errorf(
-					"fx.Annotated should be passed to fx.Provide directly, "+
-						"it should not be returned by the constructor: "+
-						"fx.Provide received %v from:\n%+v",
-					fxreflect.FuncName(constructor), p.Stack)
-				return
+				if t == reflect.TypeOf(Annotated{}) {
+					app.err = fmt.Errorf(
+						"fx.Annotated should be passed to fx.Provide directly, "+
+							"it should not be returned by the constructor: "+
+							"fx.Provide received %v from:\n%+v",
+						fxreflect.FuncName(constructor), p.Stack)
+					return
+				}
 			}
+		}
+
+		if err := app.container.Provide(constructor, opts...); err != nil {
+			app.err = fmt.Errorf("fx.Provide(%v) from:\n%+vFailed: %v", fxreflect.FuncName(constructor), p.Stack, err)
 		}
 	}
 
-	if err := app.container.Provide(constructor, opts...); err != nil {
-		app.err = fmt.Errorf("fx.Provide(%v) from:\n%+vFailed: %v", fxreflect.FuncName(constructor), p.Stack, err)
-	}
 }
 
 // Execute invokes in order supplied to New, returning the first error
@@ -932,13 +947,22 @@ func (app *App) executeInvoke(i invoke) (err error) {
 		})
 	}()
 
-	if _, ok := fn.(Option); ok {
+	switch fn := fn.(type) {
+	case Option:
 		return fmt.Errorf("fx.Option should be passed to fx.New directly, "+
 			"not to fx.Invoke: fx.Invoke received %v from:\n%+v",
 			fn, i.Stack)
-	}
 
-	return app.container.Invoke(fn)
+	case annotated:
+		c, err := fn.Build()
+		if err != nil {
+			return err
+		}
+
+		return app.container.Invoke(c)
+	default:
+		return app.container.Invoke(fn)
+	}
 }
 
 type withTimeoutParams struct {
