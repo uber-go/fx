@@ -96,9 +96,9 @@ func (a Annotated) String() string {
 // annotations is used for building out the info needed to generate struct
 // with tags using reflection.
 type annotations struct {
-	fType     reflect.Type  // type of the function being annotated
-	asTargets []interface{} // list of interfaces the results of target function needs to be annotated as.
-	outTags   []string      // struct tags for the output, if any.
+	fType     reflect.Type   // type of the function being annotated
+	asTargets []reflect.Type // list of interfaces the results of target function needs to be annotated as.
+	outTags   []string       // struct tags for the output, if any.
 
 	Ins  []reflect.Type // types of the annotated function's inputs, if any.
 	Outs []reflect.Type // types of the annotated function's outputs, if any.
@@ -157,7 +157,10 @@ func (ann *annotations) genAnnotatedOutStruct() error {
 		if err != nil {
 			return err
 		}
-		structField := genAnnotatedOutStructField(i, structFieldType)
+		structField := reflect.StructField{
+			Name: fmt.Sprintf("Field%d", i),
+			Type: structFieldType,
+		}
 		if i < len(ann.outTags) {
 			structField.Tag = reflect.StructTag(ann.outTags[i])
 		}
@@ -174,22 +177,14 @@ func (ann *annotations) genAnnotatedOutStruct() error {
 
 // helper for getting type of a fx.Out struct field
 func (ann *annotations) structFieldType(i int) (reflect.Type, error) {
-	if ann.annotatedAs {
-		asType := reflect.TypeOf(ann.asTargets[i]).Elem()
-		if !ann.fType.Out(i).Implements(asType) {
-			return nil, fmt.Errorf("invalid fx.As: %v does not implement %v", ann.fType, asType)
-		}
-		return asType, nil
+	if !ann.annotatedAs {
+		return ann.fType.Out(i), nil
 	}
-	return ann.fType.Out(i), nil
-}
-
-// helper for generating an fx.Out struct field
-func genAnnotatedOutStructField(i int, t reflect.Type) reflect.StructField {
-	return reflect.StructField{
-		Name: fmt.Sprintf("Field%d", i),
-		Type: t,
+	asType := ann.asTargets[i]
+	if !ann.fType.Out(i).Implements(asType) {
+		return nil, fmt.Errorf("invalid fx.As: %v does not implement %v", ann.fType, asType)
 	}
+	return asType, nil
 }
 
 // Annotation can be passed to Annotate(f interface{}, anns ...Annotation)
@@ -361,7 +356,10 @@ func (at asAnnotation) apply(ann *annotations) error {
 		return errors.New("cannot apply more than one line of As")
 	}
 	ann.annotatedAs = true
-	ann.asTargets = at.targets
+	ann.asTargets = make([]reflect.Type, len(at.targets))
+	for i, target := range at.targets {
+		ann.asTargets[i] = reflect.TypeOf(target).Elem()
+	}
 	return nil
 }
 

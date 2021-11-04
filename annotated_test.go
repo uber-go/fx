@@ -75,6 +75,14 @@ func (as *asStringer) String() string {
 	return as.name
 }
 
+type anotherStringer struct {
+	name string
+}
+
+func (a anotherStringer) String() string {
+	return a.name
+}
+
 func TestAnnotatedAs(t *testing.T) {
 	t.Parallel()
 	type in struct {
@@ -104,6 +112,19 @@ func TestAnnotatedAs(t *testing.T) {
 			),
 			invoke: func(s fmt.Stringer) {
 				assert.Equal(t, s.String(), "a good stringer")
+			},
+		},
+		{
+			desc: "value type implementing interface",
+			provide: fx.Provide(
+				fx.Annotate(func() anotherStringer {
+					return anotherStringer{
+						"another stringer",
+					}
+				}, fx.As(new(fmt.Stringer))),
+			),
+			invoke: func(s fmt.Stringer) {
+				assert.Equal(t, s.String(), "another stringer")
 			},
 		},
 		{
