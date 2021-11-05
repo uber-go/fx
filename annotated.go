@@ -329,7 +329,6 @@ func (ann *annotated) parameters() (
 	}
 
 	// Turn parameters into an fx.In struct.
-
 	inFields := []reflect.StructField{
 		{
 			Name:      "In",
