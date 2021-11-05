@@ -869,7 +869,7 @@ func (app *App) provide(p provide) {
 	case annotated:
 		c, err := constructor.Build()
 		if err != nil {
-			app.err = err
+			app.err = fmt.Errorf("fx.Provide(%v) from:\n%+vFailed: %v", constructor, p.Stack, err)
 			return
 		}
 

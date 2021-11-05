@@ -27,7 +27,6 @@ import (
 	"strings"
 
 	"go.uber.org/fx/internal/fxreflect"
-	"go.uber.org/multierr"
 )
 
 // Annotated annotates a constructor provided to Fx with additional options.
@@ -288,6 +287,10 @@ func (ann annotated) String() string {
 // Build builds and returns a constructor based on fx.In/fx.Out params and
 // results wrapping the original constructor passed to fx.Annotate.
 func (ann *annotated) Build() (interface{}, error) {
+	if reflect.TypeOf(ann.Target).Kind() != reflect.Func {
+		return nil, fmt.Errorf("must provide constructor function, got %v (%T)", ann.Target, ann.Target)
+	}
+
 	paramTypes, remapParams := ann.parameters()
 	resultTypes, remapResults, err := ann.results()
 	if err != nil {
@@ -399,8 +402,15 @@ func (ann *annotated) results() (
 	var hasError bool
 	for i, t := range types {
 		if t == _typeOfError {
-			// TODO: validation:
-			// Only the last result can be an error.
+			// Guarantee that:
+			// - only the last result is an error
+			// - there is at most one error result
+			if i != len(types)-1 {
+				return nil, nil, fmt.Errorf(
+					"only the last result can be an error: "+
+						"%v (%v) returns error as result %d",
+					fxreflect.FuncName(ann.Target), ft, i)
+			}
 			hasError = true
 			continue
 		}
@@ -411,8 +421,6 @@ func (ann *annotated) results() (
 		}
 
 		if i < len(ann.As) {
-			// TODO:
-			// This validation should be done in As.apply.
 			if !t.Implements(ann.As[i]) {
 				return nil, nil, fmt.Errorf("invalid fx.As: %v does not implement %v", t, ann.As[i])
 			}
@@ -435,11 +443,15 @@ func (ann *annotated) results() (
 
 	return types, func(results []reflect.Value) []reflect.Value {
 		out := reflect.New(outType).Elem()
+
 		var outErr error
 		for i, r := range results {
-			if r.Type() == _typeOfError {
+			if i == len(results)-1 && hasError {
+				// If hasError and this is the last item,
+				// we are guaranteed that this is an error
+				// object.
 				if err, _ := r.Interface().(error); err != nil {
-					outErr = multierr.Append(outErr, err)
+					outErr = err
 				}
 				continue
 			}

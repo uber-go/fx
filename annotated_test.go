@@ -552,15 +552,34 @@ func TestAnnotate(t *testing.T) {
 		assert.Contains(t, err.Error(), `missing type: *fx_test.a[name="thirdA"]`)
 	})
 
-	t.Run("provide with annotated results with error", func(t *testing.T) {
+	t.Run("error in the middle of a function", func(t *testing.T) {
 		t.Parallel()
 
-		app := fxtest.New(t,
+		app := NewForTest(t,
 			fx.Provide(
 				//lint:ignore ST1008 we want to test error in the middle.
 				fx.Annotate(func() (*a, error, *a) {
 					return &a{}, nil, &a{}
 				}, fx.ResultTags(`name:"firstA"`, ``, `name:"secondA"`)),
+			),
+			fx.Invoke(
+				fx.Annotate(func(*a) {}, fx.ParamTags(`name:"firstA"`)),
+			),
+		)
+		err := app.Err()
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "only the last result can be an error")
+		assert.Contains(t, err.Error(), "returns error as result 1")
+	})
+
+	t.Run("provide with annotated results with error", func(t *testing.T) {
+		t.Parallel()
+
+		app := fxtest.New(t,
+			fx.Provide(
+				fx.Annotate(func() (*a, *a, error) {
+					return &a{}, &a{}, nil
+				}, fx.ResultTags(`name:"firstA"`, `name:"secondA"`)),
 				fx.Annotate(func() (*a, error) {
 					return &a{}, nil
 				}, fx.ResultTags(`name:"thirdA"`)),
@@ -669,5 +688,28 @@ func TestAnnotate(t *testing.T) {
 		err := app.Err()
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "some error")
+	})
+
+	t.Run("provide annotated non-function", func(t *testing.T) {
+		t.Parallel()
+
+		app := NewForTest(t,
+			fx.Provide(
+				fx.Annotate(42, fx.ResultTags(`name:"buf"`)),
+			),
+		)
+		err := app.Err()
+		require.Error(t, err)
+
+		// Exmaple:
+		// fx.Provide(fx.Annotate(42, fx.ResultTags(["name:\"buf\""])) from:
+		// go.uber.org/fx_test.TestAnnotate.func17
+		//     /Users/abg/dev/fx/annotated_test.go:697
+		// testing.tRunner
+		//     /usr/local/Cellar/go/1.17.2/libexec/src/testing/testing.go:1259
+		// Failed: must provide constructor function, got 42 (int)
+
+		assert.Contains(t, err.Error(), "fx.Provide(fx.Annotate(42")
+		assert.Contains(t, err.Error(), "must provide constructor function, got 42 (int)")
 	})
 }
