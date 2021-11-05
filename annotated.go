@@ -307,7 +307,7 @@ func (ann *annotated) Build() (interface{}, error) {
 }
 
 // parameters returns the type for the parameters of the annotated function,
-// and a function that maps the arguments of the annotated function,
+// and a function that maps the arguments of the annotated function
 // back to the arguments of the target function.
 func (ann *annotated) parameters() (
 	types []reflect.Type,
