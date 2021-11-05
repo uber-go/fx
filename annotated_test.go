@@ -712,4 +712,17 @@ func TestAnnotate(t *testing.T) {
 		assert.Contains(t, err.Error(), "fx.Provide(fx.Annotate(42")
 		assert.Contains(t, err.Error(), "must provide constructor function, got 42 (int)")
 	})
+
+	t.Run("invoke annotated non-function", func(t *testing.T) {
+		t.Parallel()
+
+		app := NewForTest(t,
+			fx.Invoke(
+				fx.Annotate(42, fx.ParamTags(`name:"buf"`)),
+			),
+		)
+		err := app.Err()
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "must provide constructor function, got 42 (int)")
+	})
 }
