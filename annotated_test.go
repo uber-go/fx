@@ -194,6 +194,15 @@ func TestAnnotatedAs(t *testing.T) {
 				assert.Equal(t, "a good stringer", ms.String())
 			},
 		},
+		{
+			desc: "annotate fx.Supply",
+			provide: fx.Supply(
+				fx.Annotate(&asStringer{"foo"}, fx.As(new(fmt.Stringer))),
+			),
+			invoke: func(s fmt.Stringer) {
+				assert.Equal(t, "foo", s.String())
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -216,6 +225,10 @@ func TestAnnotatedAs(t *testing.T) {
 func TestAnnotatedAsFailures(t *testing.T) {
 	t.Parallel()
 
+	newAsStringer := func() *asStringer {
+		return &asStringer{name: "stringer"}
+	}
+
 	tests := []struct {
 		desc          string
 		provide       fx.Option
@@ -223,26 +236,20 @@ func TestAnnotatedAsFailures(t *testing.T) {
 		errorContains string
 	}{
 		{
-			desc: "provide when an illegal type As",
-			provide: fx.Provide(fx.Annotate(func() *asStringer {
-				return &asStringer{name: "stringer"}
-			}, fx.As(new(io.Writer)))),
+			desc:          "provide when an illegal type As",
+			provide:       fx.Provide(fx.Annotate(newAsStringer, fx.As(new(io.Writer)))),
 			invoke:        func() {},
 			errorContains: "does not implement",
 		},
 		{
-			desc: "provide two lines of As",
-			provide: fx.Provide(fx.Annotate(func() *asStringer {
-				return &asStringer{name: "stringer"}
-			}, fx.As(new(io.Writer)), fx.As(new(io.Reader)))),
+			desc:          "provide two lines of As",
+			provide:       fx.Provide(fx.Annotate(newAsStringer, fx.As(new(io.Writer)), fx.As(new(io.Reader)))),
 			invoke:        func() {},
 			errorContains: "cannot apply more than one line of As",
 		},
 		{
-			desc: "don't provide original type using As",
-			provide: fx.Provide(fx.Annotate(func() *asStringer {
-				return &asStringer{name: "stringer"}
-			}, fx.As(new(fmt.Stringer)))),
+			desc:    "don't provide original type using As",
+			provide: fx.Provide(fx.Annotate(newAsStringer, fx.As(new(fmt.Stringer)))),
 			invoke: func(as *asStringer) {
 				fmt.Println(as.String())
 			},
@@ -257,6 +264,16 @@ func TestAnnotatedAsFailures(t *testing.T) {
 				fmt.Println(a)
 			},
 			errorContains: `missing type: string[name="n"]`,
+		},
+		{
+			desc: "non-pointer argument to As",
+			provide: fx.Provide(
+				fx.Annotate(
+					newAsStringer,
+					fx.As("foo"),
+				),
+			),
+			errorContains: "argument must be a pointer to an interface: got string",
 		},
 	}
 
@@ -535,15 +552,34 @@ func TestAnnotate(t *testing.T) {
 		assert.Contains(t, err.Error(), `missing type: *fx_test.a[name="thirdA"]`)
 	})
 
-	t.Run("provide with annotated results with error", func(t *testing.T) {
+	t.Run("error in the middle of a function", func(t *testing.T) {
 		t.Parallel()
 
-		app := fxtest.New(t,
+		app := NewForTest(t,
 			fx.Provide(
 				//lint:ignore ST1008 we want to test error in the middle.
 				fx.Annotate(func() (*a, error, *a) {
 					return &a{}, nil, &a{}
 				}, fx.ResultTags(`name:"firstA"`, ``, `name:"secondA"`)),
+			),
+			fx.Invoke(
+				fx.Annotate(func(*a) {}, fx.ParamTags(`name:"firstA"`)),
+			),
+		)
+		err := app.Err()
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "only the last result can be an error")
+		assert.Contains(t, err.Error(), "returns error as result 1")
+	})
+
+	t.Run("provide with annotated results with error", func(t *testing.T) {
+		t.Parallel()
+
+		app := fxtest.New(t,
+			fx.Provide(
+				fx.Annotate(func() (*a, *a, error) {
+					return &a{}, &a{}, nil
+				}, fx.ResultTags(`name:"firstA"`, `name:"secondA"`)),
 				fx.Annotate(func() (*a, error) {
 					return &a{}, nil
 				}, fx.ResultTags(`name:"thirdA"`)),
@@ -652,5 +688,41 @@ func TestAnnotate(t *testing.T) {
 		err := app.Err()
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "some error")
+	})
+
+	t.Run("provide annotated non-function", func(t *testing.T) {
+		t.Parallel()
+
+		app := NewForTest(t,
+			fx.Provide(
+				fx.Annotate(42, fx.ResultTags(`name:"buf"`)),
+			),
+		)
+		err := app.Err()
+		require.Error(t, err)
+
+		// Exmaple:
+		// fx.Provide(fx.Annotate(42, fx.ResultTags(["name:\"buf\""])) from:
+		// go.uber.org/fx_test.TestAnnotate.func17
+		//     /Users/abg/dev/fx/annotated_test.go:697
+		// testing.tRunner
+		//     /usr/local/Cellar/go/1.17.2/libexec/src/testing/testing.go:1259
+		// Failed: must provide constructor function, got 42 (int)
+
+		assert.Contains(t, err.Error(), "fx.Provide(fx.Annotate(42")
+		assert.Contains(t, err.Error(), "must provide constructor function, got 42 (int)")
+	})
+
+	t.Run("invoke annotated non-function", func(t *testing.T) {
+		t.Parallel()
+
+		app := NewForTest(t,
+			fx.Invoke(
+				fx.Annotate(42, fx.ParamTags(`name:"buf"`)),
+			),
+		)
+		err := app.Err()
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "must provide constructor function, got 42 (int)")
 	})
 }
