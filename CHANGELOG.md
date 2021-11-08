@@ -4,11 +4,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
-## Unreleased
+## [1.15.0] - 2021-11-08
+### Added
+- Add `fx.Annotate` to allow users to provide parameter and result tags easily without
+  having to create `fx.In` or `fx.Out` structs.
+- Add `fx.As` that allows users to annotate a constructor to provide its result type(s) as
+  interface(s) that they implement instead of the types themselves.
+
 ### Fixed
 - Fix `fxevent.Stopped` not being logged when `App.Stop` is called.
 - Fix `fxevent.Started` or `fxevent.Stopped` not being logged when start or
   stop times out.
+
+[1.15.0]: https://github.com/uber-go/fx/compare/v1.14.2...v1.15.0
 
 ## [1.14.2] - 2021-08-16
 ### Changed
