@@ -21,9 +21,11 @@
 package fx_test
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.uber.org/fx"
 	"go.uber.org/fx/fxtest"
 )
@@ -64,5 +66,22 @@ func TestShutdown(t *testing.T) {
 		assert.EqualError(t, s.Shutdown(), "failed to send terminated signal to 1 out of 1 channels",
 			"unexpected error returned when shutdown is called with a blocked channel")
 		assert.NotNil(t, <-done, "done channel did not receive signal")
+	})
+
+	t.Run("shutdown app before calling Done()", func(t *testing.T) {
+		t.Parallel()
+
+		var s fx.Shutdowner
+		app := fxtest.New(
+			t,
+			fx.Populate(&s),
+		)
+
+		require.NoError(t, app.Start(context.Background()), "error starting app")
+		assert.NoError(t, s.Shutdown(), "error in app shutdown")
+		done1, done2 := app.Done(), app.Done()
+		defer app.Stop(context.Background())
+		assert.NotNil(t, <-done1, "done channel 1 did not receive signal")
+		assert.NotNil(t, <-done2, "done channel 2 did not receive signal")
 	})
 }

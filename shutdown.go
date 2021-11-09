@@ -60,6 +60,9 @@ func (app *App) broadcastSignal(signal os.Signal) error {
 	app.donesMu.RLock()
 	defer app.donesMu.RUnlock()
 
+	// Record a shutdown signal
+	app.shutdownSig = signal
+
 	var unsent int
 	for _, done := range app.dones {
 		select {
