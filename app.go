@@ -379,8 +379,8 @@ type App struct {
 	errorHooks []ErrorHandler
 	validate   bool
 	// Used to signal shutdowns.
-	donesMu sync.RWMutex
-	dones   []chan os.Signal
+	donesMu     sync.Mutex
+	dones       []chan os.Signal
 	shutdownSig os.Signal
 
 	osExit func(code int) // os.Exit override; used for testing only
@@ -792,13 +792,12 @@ func (app *App) Done() <-chan os.Signal {
 	// If shutdown signal has been received already
 	// send it else wait for user to send a termination
 	// signal.
+	app.donesMu.Lock()
 	if app.shutdownSig != nil {
 		c <- app.shutdownSig
 	} else {
 		signal.Notify(c, _sigINT, _sigTERM)
 	}
-
-	app.donesMu.Lock()
 	app.dones = append(app.dones, c)
 	app.donesMu.Unlock()
 	return c

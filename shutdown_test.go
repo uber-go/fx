@@ -83,6 +83,8 @@ func TestShutdown(t *testing.T) {
 		assert.NoError(t, s.Shutdown(), "error in app shutdown")
 		done1, done2 := app.Done(), app.Done()
 		defer app.Stop(context.Background())
+		// Receiving on done1 and done2 will deadlock in the event that app.Done()
+		// doesn't work as expected.
 		assert.NotNil(t, <-done1, "done channel 1 did not receive signal")
 		assert.NotNil(t, <-done2, "done channel 2 did not receive signal")
 	})

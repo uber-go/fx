@@ -57,8 +57,8 @@ func (app *App) shutdowner() Shutdowner {
 }
 
 func (app *App) broadcastSignal(signal os.Signal) error {
-	app.donesMu.RLock()
-	defer app.donesMu.RUnlock()
+	app.donesMu.Lock()
+	defer app.donesMu.Unlock()
 
 	// Record a shutdown signal
 	app.shutdownSig = signal
