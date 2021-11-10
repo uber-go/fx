@@ -88,40 +88,42 @@ func TestShutdown(t *testing.T) {
 		assert.NotNil(t, <-done1, "done channel 1 did not receive signal")
 		assert.NotNil(t, <-done2, "done channel 2 did not receive signal")
 	})
+}
 
-	t.Run("test data race: shutdown app before calling Done()", func(t *testing.T) {
-		t.Parallel()
+func TestDataRace(t *testing.T) {
+	t.Parallel()
 
-		var s fx.Shutdowner
-		app := fxtest.New(
-			t,
-			fx.Populate(&s),
-		)
-		require.NoError(t, app.Start(context.Background()), "error starting app")
+	var s fx.Shutdowner
+	app := fxtest.New(
+		t,
+		fx.Populate(&s),
+	)
+	require.NoError(t, app.Start(context.Background()), "error starting app")
 
-		const N = 50
-		ready := make(chan struct{})
-		var wg sync.WaitGroup // tracks and waits for all goroutines
+	const N = 50
+	ready := make(chan struct{}) // used to orchestrate goroutines for Done() and ShutdownOption()
+	var wg sync.WaitGroup // tracks and waits for all goroutines
 
-		// call app.Done()
-		wg.Add(N)
-		for i := 0; i < N; i++ {
-			i := i
-			go func() {
-				defer wg.Done()
-				done := app.Done()
-				assert.NotNil(t, <-done, fmt.Sprintf("done channel %v did not receive signal", i))
-			}()
-		}
-
-		// call Shutdown()
-		wg.Add(1)
+	// call app.Done()
+	wg.Add(N)
+	for i := 0; i < N; i++ {
+		i := i
 		go func() {
 			defer wg.Done()
-			s.Shutdown()
+			<-ready
+			done := app.Done()
+			assert.NotNil(t, <-done, fmt.Sprintf("done channel %v did not receive signal", i))
 		}()
+	}
 
-		close(ready)
-		wg.Wait()
-	})
+	// call Shutdown()
+	wg.Add(1)
+	go func() {
+		<-ready
+		defer wg.Done()
+		s.Shutdown()
+	}()
+
+	close(ready)
+	wg.Wait()
 }
