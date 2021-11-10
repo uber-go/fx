@@ -34,7 +34,7 @@ type Shutdowner interface {
 }
 
 // ShutdownOption provides a way to configure properties of the shutdown
-// process. Currently, no options have been implemented.
+// process.
 type ShutdownOption interface {
 	apply(*shutdowner)
 }
