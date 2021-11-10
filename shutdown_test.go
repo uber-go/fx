@@ -87,6 +87,37 @@ func TestShutdown(t *testing.T) {
 		assert.NotNil(t, <-done1, "done channel 1 did not receive signal")
 		assert.NotNil(t, <-done2, "done channel 2 did not receive signal")
 	})
+
+	t.Run("shutdown app with non-zero, user-specified exit code with app.Run()", func(t *testing.T) {
+		t.Parallel()
+
+		var (
+			exited   bool
+			exitCode int
+		)
+		exit := func(code int) {
+			exited = true
+			exitCode = code
+		}
+
+		var s fx.Shutdowner
+		expectedExitCode := 2
+		shutdown := func(s fx.Shutdowner) error {
+			return s.Shutdown(fx.WithExitCode(expectedExitCode))
+		}
+
+		app := fxtest.New(
+			t,
+			fx.Populate(&s),
+			fx.WithExit(exit),
+			fx.Invoke(shutdown),
+		)
+
+		app.Run()
+
+		assert.Equal(t, expectedExitCode, exitCode)
+		assert.True(t, exited)
+	})
 }
 
 func TestDataRace(t *testing.T) {
