@@ -121,7 +121,7 @@ func TestDataRace(t *testing.T) {
 	go func() {
 		<-ready
 		defer wg.Done()
-		s.Shutdown()
+		assert.NoError(t, s.Shutdown(), "error in app shutdown")
 	}()
 
 	close(ready)
