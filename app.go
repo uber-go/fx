@@ -379,7 +379,7 @@ type App struct {
 	errorHooks []ErrorHandler
 	validate   bool
 	// Used to signal shutdowns.
-	donesMu     sync.Mutex
+	donesMu     sync.Mutex  // guards dones and shutdownSig
 	dones       []chan os.Signal
 	shutdownSig os.Signal
 
@@ -798,8 +798,8 @@ func (app *App) Done() <-chan os.Signal {
 		c <- app.shutdownSig
 		return c
 	}
-	signal.Notify(c, _sigINT, _sigTERM)
 
+	signal.Notify(c, _sigINT, _sigTERM)
 	app.dones = append(app.dones, c)
 	return c
 }
