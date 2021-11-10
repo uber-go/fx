@@ -379,7 +379,7 @@ type App struct {
 	errorHooks []ErrorHandler
 	validate   bool
 	// Used to signal shutdowns.
-	donesMu     sync.Mutex  // guards dones and shutdownSig
+	donesMu     sync.Mutex // guards dones and shutdownSig
 	dones       []chan os.Signal
 	shutdownSig os.Signal
 
