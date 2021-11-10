@@ -22,7 +22,6 @@ package fx_test
 
 import (
 	"context"
-	"fmt"
 	"sync"
 	"testing"
 
@@ -112,7 +111,7 @@ func TestDataRace(t *testing.T) {
 			defer wg.Done()
 			<-ready
 			done := app.Done()
-			assert.NotNil(t, <-done, fmt.Sprintf("done channel %v did not receive signal", i))
+			assert.NotNil(t, <-done, "done channel %v did not receive signal", i)
 		}()
 	}
 
