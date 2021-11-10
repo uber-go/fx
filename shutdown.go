@@ -60,7 +60,6 @@ func (app *App) broadcastSignal(signal os.Signal) error {
 	app.donesMu.Lock()
 	defer app.donesMu.Unlock()
 
-	// Record a shutdown signal
 	app.shutdownSig = signal
 
 	var unsent int
