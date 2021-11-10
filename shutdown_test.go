@@ -103,7 +103,8 @@ func TestDataRace(t *testing.T) {
 	ready := make(chan struct{}) // used to orchestrate goroutines for Done() and ShutdownOption()
 	var wg sync.WaitGroup        // tracks and waits for all goroutines
 
-	// call app.Done()
+	// Spawn N goroutines, each of which call app.Done() and assert
+	// the signal received.
 	wg.Add(N)
 	for i := 0; i < N; i++ {
 		i := i
