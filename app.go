@@ -382,6 +382,7 @@ type App struct {
 	donesMu     sync.Mutex // guards dones and shutdownSig
 	dones       []chan os.Signal
 	shutdownSig os.Signal
+	exitCode    int
 
 	osExit func(code int) // os.Exit override; used for testing only
 }

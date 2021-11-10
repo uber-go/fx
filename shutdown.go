@@ -39,6 +39,18 @@ type ShutdownOption interface {
 	apply(*shutdowner)
 }
 
+type exitCodeOption int
+
+func (e exitCodeOption) apply(s *shutdowner) {
+	s.app.exitCode = int(e)
+}
+
+// WithExitCode allows the user to configure the exitCode upon application
+// shutdown.
+func WithExitCode(exitCode int) ShutdownOption {
+	return exitCodeOption(exitCode)
+}
+
 type shutdowner struct {
 	app *App
 }
@@ -49,6 +61,10 @@ type shutdowner struct {
 // In practice this means Shutdowner.Shutdown should not be called from an
 // fx.Invoke, but from a fx.Lifecycle.OnStart hook.
 func (s *shutdowner) Shutdown(opts ...ShutdownOption) error {
+	// Apply the options to shutdowner
+	for _, opt := range opts {
+		opt.apply(s)
+	}
 	return s.app.broadcastSignal(_sigTERM)
 }
 
