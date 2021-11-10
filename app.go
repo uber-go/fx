@@ -789,17 +789,18 @@ func (app *App) Stop(ctx context.Context) (err error) {
 func (app *App) Done() <-chan os.Signal {
 	c := make(chan os.Signal, 1)
 
-	// If shutdown signal has been received already
-	// send it else wait for user to send a termination
-	// signal.
 	app.donesMu.Lock()
+	defer app.donesMu.Unlock()
+	// If shutdown signal has been received already
+	// send it and return. If not, wait for user to send a termination
+	// signal.
 	if app.shutdownSig != nil {
 		c <- app.shutdownSig
-	} else {
-		signal.Notify(c, _sigINT, _sigTERM)
+		return c
 	}
+	signal.Notify(c, _sigINT, _sigTERM)
+
 	app.dones = append(app.dones, c)
-	app.donesMu.Unlock()
 	return c
 }
 
