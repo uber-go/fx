@@ -45,6 +45,10 @@ func (e exitCodeOption) apply(s *shutdowner) {
 	s.app.exitCode = int(e)
 }
 
+func (e exitCodeOption) String() string {
+	return fmt.Sprintf("s.Shutdown(%v)", int(e))
+}
+
 // WithExitCode allows the user to configure the exitCode upon application
 // shutdown.
 func WithExitCode(exitCode int) ShutdownOption {
