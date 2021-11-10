@@ -666,7 +666,11 @@ func (app *App) Run() {
 	// Historically, we do not os.Exit(0) even though most applications
 	// cede control to Fx with they call app.Run. To avoid a breaking
 	// change, never os.Exit for success.
-	if code := app.run(app.Done()); code != 0 {
+	code := app.run(app.Done())
+	if app.exitCode != 0 {
+		code = app.exitCode
+	}
+	if code != 0 {
 		app.exit(code)
 	}
 }
