@@ -118,6 +118,28 @@ func TestShutdown(t *testing.T) {
 		assert.Equal(t, expectedExitCode, exitCode)
 		assert.True(t, exited)
 	})
+
+	t.Run("shutdown app with non-zero, user-specified exit code without app.Run()", func(t *testing.T) {
+		t.Parallel()
+
+		var s fx.Shutdowner
+		expectedExitCode := 2
+		app := fxtest.New(
+			t,
+			fx.Populate(&s),
+		)
+
+		require.NoError(t, app.Start(context.Background()), "error starting app")
+		assert.NoError(t, s.Shutdown(fx.WithExitCode(expectedExitCode)), "error in app shutdown")
+		done1, done2 := app.DoneWithCode(), app.DoneWithCode()
+		done := app.Done()
+		defer app.Stop(context.Background())
+		result1, result2 := <-done1, <-done2
+
+		assert.NotNil(t, <-done, "done channel did not receive signal")
+		assert.Equal(t, expectedExitCode, result1.ExitCode, "mismatched exit code")
+		assert.Equal(t, expectedExitCode, result2.ExitCode, "mismatched exit code")
+	})
 }
 
 func TestDataRace(t *testing.T) {
