@@ -809,6 +809,25 @@ func (app *App) Done() <-chan os.Signal {
 	return c
 }
 
+// Shutdown captures a signal and exit code.
+type Shutdown struct {
+	Signal   os.Signal
+	ExitCode int
+}
+
+// DoneWithCode returns a channel of the Shutdown struct to block on after starting
+// the application. This behaves exactly as Done() does with the addition of
+// capturing an application exit code, if one exists.
+func (app *App) DoneWithCode() <-chan Shutdown {
+	c := make(chan Shutdown, 1)
+	// farm out a goroutine to wait for
+	// app.Done() channel to be populated
+	go func() {
+		c <- Shutdown{Signal: <-app.Done(), ExitCode: app.exitCode}
+	}()
+	return c
+}
+
 // StartTimeout returns the configured startup timeout. Apps default to using
 // DefaultTimeout, but users can configure this behavior using the
 // StartTimeout option.
