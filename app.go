@@ -817,7 +817,7 @@ type Shutdown struct {
 
 // DoneWithCode returns a channel of the Shutdown struct to block on after starting
 // the application. This behaves exactly as Done() does with the addition of
-// capturing an application exit code, if one exists.
+// capturing the application's exit code, if one is set.
 func (app *App) DoneWithCode() <-chan Shutdown {
 	c := make(chan Shutdown, 1)
 	// farm out a goroutine to wait for
