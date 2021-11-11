@@ -666,11 +666,7 @@ func (app *App) Run() {
 	// Historically, we do not os.Exit(0) even though most applications
 	// cede control to Fx with they call app.Run. To avoid a breaking
 	// change, never os.Exit for success.
-	code := app.run(app.Done())
-	if app.exitCode != 0 {
-		code = app.exitCode
-	}
-	if code != 0 {
+	if code := app.run(app.Done()); code != 0 {
 		app.exit(code)
 	}
 }
@@ -679,8 +675,13 @@ func (app *App) run(done <-chan os.Signal) (exitCode int) {
 	startCtx, cancel := context.WithTimeout(context.Background(), app.StartTimeout())
 	defer cancel()
 
+	exitCode = 1
+	if app.exitCode != 0 {
+		exitCode = app.exitCode
+	}
+
 	if err := app.Start(startCtx); err != nil {
-		return 1
+		return exitCode
 	}
 
 	sig := <-done
@@ -690,10 +691,10 @@ func (app *App) run(done <-chan os.Signal) (exitCode int) {
 	defer cancel()
 
 	if err := app.Stop(stopCtx); err != nil {
-		return 1
+		return exitCode
 	}
 
-	return 0
+	return app.exitCode
 }
 
 // Err returns any error encountered during New's initialization. See the
