@@ -287,7 +287,8 @@ func (ann annotated) String() string {
 // Build builds and returns a constructor based on fx.In/fx.Out params and
 // results wrapping the original constructor passed to fx.Annotate.
 func (ann *annotated) Build() (interface{}, error) {
-	if reflect.TypeOf(ann.Target).Kind() != reflect.Func {
+	ft := reflect.TypeOf(ann.Target)
+	if ft.Kind() != reflect.Func {
 		return nil, fmt.Errorf("must provide constructor function, got %v (%T)", ann.Target, ann.Target)
 	}
 
@@ -301,7 +302,12 @@ func (ann *annotated) Build() (interface{}, error) {
 	origFn := reflect.ValueOf(ann.Target)
 	newFn := reflect.MakeFunc(newFnType, func(args []reflect.Value) []reflect.Value {
 		args = remapParams(args)
-		results := origFn.Call(args)
+		var results []reflect.Value
+		if ft.IsVariadic() {
+			results = origFn.CallSlice(args)
+		} else {
+			results = origFn.Call(args)
+		}
 		results = remapResults(results)
 		return results
 	})
