@@ -430,12 +430,16 @@ func TestAnnotate(t *testing.T) {
 	type a struct{}
 	type b struct{ a *a }
 	type c struct{ b *b }
+	type sliceA struct{ sa []*a }
 	newA := func() *a { return &a{} }
 	newB := func(a *a) *b {
 		return &b{a}
 	}
 	newC := func(b *b) *c {
 		return &c{b}
+	}
+	newSliceA := func(sa ...*a) *sliceA {
+		return &sliceA{sa}
 	}
 
 	t.Run("Provide with optional", func(t *testing.T) {
@@ -492,6 +496,22 @@ func TestAnnotate(t *testing.T) {
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), `missing dependencies`)
 		assert.Contains(t, err.Error(), `missing type: *fx_test.a[name="a"]`)
+	})
+
+	t.Run("Invoke with variadic function and without optional tag", func(t *testing.T) {
+		t.Parallel()
+
+		app := fxtest.New(t,
+			fx.Provide(
+				fx.Annotated{Group: "as", Target: newA},
+				fx.Annotated{Group: "as", Target: newA},
+			),
+			fx.Invoke(fx.Annotate(newSliceA,
+				fx.ParamTags(`group:"as"`),
+			)),
+		)
+		defer app.RequireStart().RequireStop()
+		require.NoError(t, app.Err())
 	})
 
 	t.Run("provide with annotated results", func(t *testing.T) {
