@@ -753,26 +753,29 @@ func TestTimeoutOptions(t *testing.T) {
 func TestAppRunTimeout(t *testing.T) {
 	t.Parallel()
 
-	// This context is only valid as long as this test is running.
-	// It lets us have goroutines that block forever
-	// (as far as the test is concerned) without leaking them.
-	testCtx, cancel := context.WithCancel(context.Background())
-	t.Cleanup(cancel)
-
 	// Fails with an error immediately.
 	failure := func(context.Context) error {
 		return errors.New("great sadness")
 	}
 
-	// Blocks forever--or at least until this test finishes running.
-	blockForever := func(context.Context) error {
-		<-testCtx.Done()
-		return errors.New("user should not see this")
+	// Builds a hook that takes much longer than the application timeout.
+	takeVeryLong := func(clock *clock.Mock) func(ctx context.Context) error {
+		return func(ctx context.Context) error {
+			// We'll exceed the start and stop timeouts,
+			// and then some.
+			for i := 0; i < 3; i++ {
+				clock.Add(time.Second)
+			}
+
+			return errors.New("user should not see this")
+		}
 	}
 
 	tests := []struct {
-		desc  string
-		hooks []Hook
+		desc string
+
+		// buildHook builds and returns the hooks for this test case.
+		buildHooks func(*clock.Mock) []Hook
 
 		// Type of the fxevent we want.
 		// Does not reflect the exact value.
@@ -781,27 +784,33 @@ func TestAppRunTimeout(t *testing.T) {
 		{
 			// Timeout starting an application.
 			desc: "OnStart timeout",
-			hooks: []Hook{
-				{OnStart: blockForever},
+			buildHooks: func(clock *clock.Mock) []Hook {
+				return []Hook{
+					{OnStart: takeVeryLong(clock)},
+				}
 			},
 			wantEventType: &fxevent.Started{},
 		},
 		{
 			// Timeout during a rollback because start failed.
 			desc: "rollback timeout",
-			hooks: []Hook{
-				// The hooks are separate because
-				// OnStop will not be run if that hook failed.
-				{OnStop: blockForever},
-				{OnStart: failure},
+			buildHooks: func(clock *clock.Mock) []Hook {
+				return []Hook{
+					// The hooks are separate because
+					// OnStop will not be run if that hook failed.
+					{OnStop: takeVeryLong(clock)},
+					{OnStart: failure},
+				}
 			},
 			wantEventType: &fxevent.Started{},
 		},
 		{
 			// Timeout during a stop.
 			desc: "OnStop timeout",
-			hooks: []Hook{
-				{OnStop: blockForever},
+			buildHooks: func(clock *clock.Mock) []Hook {
+				return []Hook{
+					{OnStop: takeVeryLong(clock)},
+				}
 			},
 			wantEventType: &fxevent.Stopped{},
 		},
@@ -811,6 +820,8 @@ func TestAppRunTimeout(t *testing.T) {
 		tt := tt
 		t.Run(tt.desc, func(t *testing.T) {
 			t.Parallel()
+
+			mockClock := clock.NewMock()
 
 			var (
 				exitCode int
@@ -838,11 +849,13 @@ func TestAppRunTimeout(t *testing.T) {
 			}
 
 			app, spy := NewSpied(
-				StartTimeout(time.Millisecond),
-				StopTimeout(time.Millisecond),
+				StartTimeout(time.Second),
+				StopTimeout(time.Second),
 				WithExit(exit),
+				WithClock(mockClock),
 				Invoke(func(lc Lifecycle) {
-					for _, h := range tt.hooks {
+					hooks := tt.buildHooks(mockClock)
+					for _, h := range hooks {
 						lc.Append(h)
 					}
 				}),
