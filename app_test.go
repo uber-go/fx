@@ -34,6 +34,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/benbjohnson/clock"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -875,12 +876,14 @@ func TestAppStart(t *testing.T) {
 	t.Run("Timeout", func(t *testing.T) {
 		t.Parallel()
 
+		mockClock := clock.NewMock()
+
 		type A struct{}
 		blocker := func(lc Lifecycle) *A {
 			lc.Append(
 				Hook{
 					OnStart: func(ctx context.Context) error {
-						<-ctx.Done()
+						mockClock.Add(5 * time.Second)
 						return ctx.Err()
 					},
 				},
@@ -894,11 +897,12 @@ func TestAppStart(t *testing.T) {
 		spy := new(fxlog.Spy)
 		app := New(
 			WithLogger(func() fxevent.Logger { return spy }),
+			WithClock(mockClock),
 			Provide(blocker),
 			Invoke(func(*A) {}),
 		)
 
-		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond)
+		ctx, cancel := mockClock.WithTimeout(context.Background(), time.Second)
 
 		err := app.Start(ctx)
 		require.Error(t, err)
@@ -909,6 +913,8 @@ func TestAppStart(t *testing.T) {
 	t.Run("TimeoutWithFinishedHooks", func(t *testing.T) {
 		t.Parallel()
 
+		mockClock := clock.NewMock()
+
 		type A struct{}
 		type B struct{ A *A }
 		type C struct{ B *B }
@@ -916,6 +922,7 @@ func TestAppStart(t *testing.T) {
 			lc.Append(
 				Hook{
 					OnStart: func(context.Context) error {
+						mockClock.Add(100 * time.Millisecond)
 						return nil
 					},
 				},
@@ -926,7 +933,7 @@ func TestAppStart(t *testing.T) {
 			lc.Append(
 				Hook{
 					OnStart: func(context.Context) error {
-						time.Sleep(10 * time.Millisecond)
+						mockClock.Add(300 * time.Millisecond)
 						return nil
 					},
 				},
@@ -937,7 +944,7 @@ func TestAppStart(t *testing.T) {
 			lc.Append(
 				Hook{
 					OnStart: func(ctx context.Context) error {
-						<-ctx.Done()
+						mockClock.Add(5 * time.Second)
 						return ctx.Err()
 					},
 				},
@@ -952,11 +959,12 @@ func TestAppStart(t *testing.T) {
 		spy := new(fxlog.Spy)
 		app := New(
 			WithLogger(func() fxevent.Logger { return spy }),
+			WithClock(mockClock),
 			Provide(newA, newB, newC),
 			Invoke(func(*C) {}),
 		)
 
-		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+		ctx, cancel := mockClock.WithTimeout(context.Background(), time.Second)
 		defer cancel()
 
 		err := app.Start(ctx)
@@ -1211,8 +1219,10 @@ func TestAppStop(t *testing.T) {
 	t.Run("Timeout", func(t *testing.T) {
 		t.Parallel()
 
+		mockClock := clock.NewMock()
+
 		block := func(ctx context.Context) error {
-			<-ctx.Done()
+			mockClock.Add(5 * time.Second)
 			return ctx.Err()
 		}
 		// NOTE: for tests that gets cancelled/times out during lifecycle methods, it's possible
@@ -1222,12 +1232,13 @@ func TestAppStop(t *testing.T) {
 		spy := new(fxlog.Spy)
 		app := New(Invoke(func(l Lifecycle) { l.Append(Hook{OnStop: block}) }),
 			WithLogger(func() fxevent.Logger { return spy }),
+			WithClock(mockClock),
 		)
 
 		err := app.Start(context.Background())
 		require.Nil(t, err)
 
-		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond)
+		ctx, cancel := mockClock.WithTimeout(context.Background(), time.Second)
 		defer cancel()
 
 		err = app.Stop(ctx)
