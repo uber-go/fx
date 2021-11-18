@@ -32,6 +32,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/fx/fxevent"
+	"go.uber.org/fx/internal/fxclock"
 	"go.uber.org/fx/internal/fxlog"
 	"go.uber.org/fx/internal/fxreflect"
 	"go.uber.org/fx/internal/testutil"
@@ -49,7 +50,7 @@ func TestLifecycleStart(t *testing.T) {
 	t.Run("ExecutesInOrder", func(t *testing.T) {
 		t.Parallel()
 
-		l := New(testLogger(t))
+		l := New(testLogger(t), fxclock.System)
 		count := 0
 
 		l.Append(Hook{
@@ -73,7 +74,7 @@ func TestLifecycleStart(t *testing.T) {
 	t.Run("ErrHaltsChainAndRollsBack", func(t *testing.T) {
 		t.Parallel()
 
-		l := New(testLogger(t))
+		l := New(testLogger(t), fxclock.System)
 		err := errors.New("a starter error")
 		starterCount := 0
 		stopperCount := 0
@@ -126,7 +127,7 @@ func TestLifecycleStop(t *testing.T) {
 	t.Run("DoesNothingWithoutHooks", func(t *testing.T) {
 		t.Parallel()
 
-		l := &Lifecycle{logger: testLogger(t)}
+		l := New(testLogger(t), fxclock.System)
 		assert.Nil(t, l.Stop(context.Background()), "no lifecycle hooks should have resulted in stop returning nil")
 	})
 
@@ -139,7 +140,7 @@ func TestLifecycleStop(t *testing.T) {
 				return nil
 			},
 		}
-		l := &Lifecycle{logger: testLogger(t)}
+		l := New(testLogger(t), fxclock.System)
 		l.Append(hook)
 		l.Stop(context.Background())
 	})
@@ -147,7 +148,7 @@ func TestLifecycleStop(t *testing.T) {
 	t.Run("ExecutesInReverseOrder", func(t *testing.T) {
 		t.Parallel()
 
-		l := &Lifecycle{logger: testLogger(t)}
+		l := New(testLogger(t), fxclock.System)
 		count := 2
 
 		l.Append(Hook{
@@ -173,7 +174,7 @@ func TestLifecycleStop(t *testing.T) {
 	t.Run("ErrDoesntHaltChain", func(t *testing.T) {
 		t.Parallel()
 
-		l := New(testLogger(t))
+		l := New(testLogger(t), fxclock.System)
 		count := 0
 
 		l.Append(Hook{
@@ -197,7 +198,7 @@ func TestLifecycleStop(t *testing.T) {
 	t.Run("GathersAllErrs", func(t *testing.T) {
 		t.Parallel()
 
-		l := New(testLogger(t))
+		l := New(testLogger(t), fxclock.System)
 
 		err := errors.New("some stop error")
 		err2 := errors.New("some other stop error")
@@ -219,7 +220,7 @@ func TestLifecycleStop(t *testing.T) {
 	t.Run("AllowEmptyHooks", func(t *testing.T) {
 		t.Parallel()
 
-		l := New(testLogger(t))
+		l := New(testLogger(t), fxclock.System)
 		l.Append(Hook{})
 		l.Append(Hook{})
 
@@ -230,7 +231,7 @@ func TestLifecycleStop(t *testing.T) {
 	t.Run("DoesNothingIfStartFailed", func(t *testing.T) {
 		t.Parallel()
 
-		l := New(testLogger(t))
+		l := New(testLogger(t), fxclock.System)
 		err := errors.New("some start error")
 
 		l.Append(Hook{

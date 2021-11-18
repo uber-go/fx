@@ -29,6 +29,7 @@ import (
 	"time"
 
 	"go.uber.org/fx/fxevent"
+	"go.uber.org/fx/internal/fxclock"
 	"go.uber.org/fx/internal/fxreflect"
 	"go.uber.org/multierr"
 )
@@ -44,6 +45,7 @@ type Hook struct {
 
 // Lifecycle coordinates application lifecycle hooks.
 type Lifecycle struct {
+	clock        fxclock.Clock
 	logger       fxevent.Logger
 	hooks        []Hook
 	numStarted   int
@@ -54,8 +56,8 @@ type Lifecycle struct {
 }
 
 // New constructs a new Lifecycle.
-func New(logger fxevent.Logger) *Lifecycle {
-	return &Lifecycle{logger: logger}
+func New(logger fxevent.Logger, clock fxclock.Clock) *Lifecycle {
+	return &Lifecycle{logger: logger, clock: clock}
 }
 
 // Append adds a Hook to the lifecycle.
@@ -114,9 +116,9 @@ func (l *Lifecycle) runStartHook(ctx context.Context, hook Hook) (runtime time.D
 		})
 	}()
 
-	begin := time.Now()
+	begin := l.clock.Now()
 	err = hook.OnStart(ctx)
-	return time.Since(begin), err
+	return l.clock.Since(begin), err
 }
 
 // Stop runs any OnStop hooks whose OnStart counterpart succeeded. OnStop
@@ -172,9 +174,9 @@ func (l *Lifecycle) runStopHook(ctx context.Context, hook Hook) (runtime time.Du
 		})
 	}()
 
-	begin := time.Now()
+	begin := l.clock.Now()
 	err = hook.OnStop(ctx)
-	return time.Since(begin), err
+	return l.clock.Since(begin), err
 }
 
 // StartHookRecords returns the info of OnStart hooks that successfully ran till the end,
