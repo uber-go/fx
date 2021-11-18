@@ -787,7 +787,7 @@ func (app *App) Stop(ctx context.Context) (err error) {
 // using the Shutdown functionality (see the Shutdowner documentation for details).
 func (app *App) Done() <-chan os.Signal {
 	c := make(chan os.Signal, 1)
-	signal.Notify(c, _sigINT, _sigTERM)
+	signal.Notify(c, os.Interrupt, _sigINT, _sigTERM)
 
 	app.donesMu.Lock()
 	app.dones = append(app.dones, c)
