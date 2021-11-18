@@ -379,8 +379,9 @@ type App struct {
 	errorHooks []ErrorHandler
 	validate   bool
 	// Used to signal shutdowns.
-	donesMu sync.RWMutex
-	dones   []chan os.Signal
+	donesMu     sync.Mutex // guards dones and shutdownSig
+	dones       []chan os.Signal
+	shutdownSig os.Signal
 
 	osExit func(code int) // os.Exit override; used for testing only
 }
@@ -787,11 +788,19 @@ func (app *App) Stop(ctx context.Context) (err error) {
 // using the Shutdown functionality (see the Shutdowner documentation for details).
 func (app *App) Done() <-chan os.Signal {
 	c := make(chan os.Signal, 1)
-	signal.Notify(c, os.Interrupt, _sigINT, _sigTERM)
 
 	app.donesMu.Lock()
+	defer app.donesMu.Unlock()
+	// If shutdown signal has been received already
+	// send it and return. If not, wait for user to send a termination
+	// signal.
+	if app.shutdownSig != nil {
+		c <- app.shutdownSig
+		return c
+	}
+
+	signal.Notify(c, os.Interrupt, _sigINT, _sigTERM)
 	app.dones = append(app.dones, c)
-	app.donesMu.Unlock()
 	return c
 }
 

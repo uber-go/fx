@@ -57,8 +57,10 @@ func (app *App) shutdowner() Shutdowner {
 }
 
 func (app *App) broadcastSignal(signal os.Signal) error {
-	app.donesMu.RLock()
-	defer app.donesMu.RUnlock()
+	app.donesMu.Lock()
+	defer app.donesMu.Unlock()
+
+	app.shutdownSig = signal
 
 	var unsent int
 	for _, done := range app.dones {

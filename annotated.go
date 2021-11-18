@@ -207,7 +207,7 @@ var _ asAnnotation = asAnnotation{}
 // bytes.NewBuffer (bytes.Buffer) should be provided as io.Writer type:
 //
 //   fx.Provide(
-//     fx.Annotate(bytes.NewBuffer(...), fx.As(io.Writer))
+//     fx.Annotate(bytes.NewBuffer(...), fx.As(new(io.Writer)))
 //   )
 //
 // In other words, the code above is equivalent to:
@@ -229,7 +229,7 @@ var _ asAnnotation = asAnnotation{}
 //    ...
 //  }
 //  fx.Provide(
-//    fx.Annotate(a, fx.As(io.Writer, io.Reader))
+//    fx.Annotate(a, fx.As(new(io.Writer), new(io.Reader)))
 //  )
 //
 // Is equivalent to,

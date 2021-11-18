@@ -21,9 +21,12 @@
 package fx_test
 
 import (
+	"context"
+	"sync"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.uber.org/fx"
 	"go.uber.org/fx/fxtest"
 )
@@ -65,4 +68,62 @@ func TestShutdown(t *testing.T) {
 			"unexpected error returned when shutdown is called with a blocked channel")
 		assert.NotNil(t, <-done, "done channel did not receive signal")
 	})
+
+	t.Run("shutdown app before calling Done()", func(t *testing.T) {
+		t.Parallel()
+
+		var s fx.Shutdowner
+		app := fxtest.New(
+			t,
+			fx.Populate(&s),
+		)
+
+		require.NoError(t, app.Start(context.Background()), "error starting app")
+		assert.NoError(t, s.Shutdown(), "error in app shutdown")
+		done1, done2 := app.Done(), app.Done()
+		defer app.Stop(context.Background())
+		// Receiving on done1 and done2 will deadlock in the event that app.Done()
+		// doesn't work as expected.
+		assert.NotNil(t, <-done1, "done channel 1 did not receive signal")
+		assert.NotNil(t, <-done2, "done channel 2 did not receive signal")
+	})
+}
+
+func TestDataRace(t *testing.T) {
+	t.Parallel()
+
+	var s fx.Shutdowner
+	app := fxtest.New(
+		t,
+		fx.Populate(&s),
+	)
+	require.NoError(t, app.Start(context.Background()), "error starting app")
+
+	const N = 50
+	ready := make(chan struct{}) // used to orchestrate goroutines for Done() and ShutdownOption()
+	var wg sync.WaitGroup        // tracks and waits for all goroutines
+
+	// Spawn N goroutines, each of which call app.Done() and assert
+	// the signal received.
+	wg.Add(N)
+	for i := 0; i < N; i++ {
+		i := i
+		go func() {
+			defer wg.Done()
+			<-ready
+			done := app.Done()
+			assert.NotNil(t, <-done, "done channel %v did not receive signal", i)
+		}()
+	}
+
+	// call Shutdown()
+	wg.Add(1)
+	go func() {
+		<-ready
+		defer wg.Done()
+		assert.NoError(t, s.Shutdown(), "error in app shutdown")
+	}()
+
+	close(ready)
+	wg.Wait()
 }
