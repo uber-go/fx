@@ -29,6 +29,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/fx/fxevent"
+	"go.uber.org/fx/internal/fxclock"
 	"go.uber.org/fx/internal/fxlog"
 	"go.uber.org/fx/internal/fxreflect"
 )
@@ -86,4 +87,21 @@ func (o withExitOption) String() string {
 
 func (o withExitOption) apply(app *App) {
 	app.osExit = o
+}
+
+// WithClock specifies how Fx accesses time operations.
+//
+// This is an internal option available only to tests defined in this package.
+func WithClock(clock fxclock.Clock) Option {
+	return withClockOption{clock}
+}
+
+type withClockOption struct{ clock fxclock.Clock }
+
+func (o withClockOption) apply(app *App) {
+	app.clock = o.clock
+}
+
+func (o withClockOption) String() string {
+	return fmt.Sprintf("WithClock(%v)", o.clock)
 }

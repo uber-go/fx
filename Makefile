@@ -4,7 +4,7 @@ GOLINT = $(GOBIN)/golint
 STATICCHECK = $(GOBIN)/staticcheck
 FXLINT = $(GOBIN)/fxlint
 
-GO_FILES := $(shell \
+GO_FILES = $(shell \
 	find . '(' -path '*/.*' -o -path './vendor' -o -path '*/testdata/*' ')' -prune \
 	-o -name '*.go' -print | cut -b3-)
 
@@ -33,7 +33,7 @@ $(GOLINT): tools/go.mod
 $(STATICCHECK): tools/go.mod
 	cd tools && go install honnef.co/go/tools/cmd/staticcheck
 
-$(FXLINT): $(shell find tools -name '*.go')
+$(FXLINT): tools/cmd/fxlint/main.go
 	cd tools && go install go.uber.org/fx/tools/cmd/fxlint
 
 .PHONY: lint

@@ -27,6 +27,7 @@ import (
 	"os"
 
 	"go.uber.org/fx"
+	"go.uber.org/fx/internal/fxclock"
 	"go.uber.org/fx/internal/fxlog"
 	"go.uber.org/fx/internal/lifecycle"
 	"go.uber.org/fx/internal/testutil"
@@ -85,7 +86,7 @@ func NewLifecycle(t TB) *Lifecycle {
 		t = &panicT{W: os.Stderr}
 	}
 	return &Lifecycle{
-		lc: lifecycle.New(fxlog.DefaultLogger(w)),
+		lc: lifecycle.New(fxlog.DefaultLogger(w), fxclock.System),
 		t:  t,
 	}
 }
