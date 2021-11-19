@@ -528,6 +528,42 @@ func (ann *annotated) results() (
 //
 // If more tags are given than the number of parameters/results, only
 // the ones up to the number of parameters/results will be applied.
+//
+// Variadic functions
+//
+// If the provided function is variadic, Annotate treats its parameter as a
+// slice. For example,
+//
+//  fx.Annotate(func(w io.Writer, rs ...io.Reader) {
+//    // ...
+//  }, ...)
+//
+// Is equivalent to,
+//
+//  fx.Annotate(func(w io.Writer, rs []io.Reader) {
+//    // ...
+//  }, ...)
+//
+// You can use variadic parameters with Fx's value groups.
+// For example,
+//
+//  fx.Annotate(func(mux *http.ServeMux, handlers ...http.Handler) {
+//    // ...
+//  }, fx.ParamTags(``, `group:"server"`))
+//
+// If we provide the above to the application,
+// any constructor in the Fx application can feed it HTTP handlers
+// by using fx.Annotate, fx.Annotated, or fx.Out.
+//
+//  fx.Annotate(
+//    func(..) http.Handler { ... },
+//    fx.ResultTags(`group:"server"`),
+//  )
+//
+//  fx.Annotated{
+//    Target: func(..) http.Handler { ... },
+//    Group:  "server",
+//  }
 func Annotate(t interface{}, anns ...Annotation) interface{} {
 	result := annotated{Target: t}
 	for _, ann := range anns {
