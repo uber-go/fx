@@ -498,18 +498,42 @@ func TestAnnotate(t *testing.T) {
 		assert.Contains(t, err.Error(), `missing type: *fx_test.a[name="a"]`)
 	})
 
-	t.Run("Invoke with variadic function and without optional tag", func(t *testing.T) {
+	t.Run("Provide with variadic function", func(t *testing.T) {
 		t.Parallel()
 
+		var got *sliceA
 		app := fxtest.New(t,
 			fx.Provide(
 				fx.Annotated{Group: "as", Target: newA},
 				fx.Annotated{Group: "as", Target: newA},
+				fx.Annotate(newSliceA,
+					fx.ParamTags(`group:"as"`),
+				),
 			),
-			fx.Invoke(fx.Annotate(newSliceA,
-				fx.ParamTags(`group:"as"`),
-			)),
+			fx.Populate(&got),
 		)
+		defer app.RequireStart().RequireStop()
+		require.NoError(t, app.Err())
+
+		assert.Len(t, got.sa, 2)
+	})
+
+	t.Run("Invoke with variadic function", func(t *testing.T) {
+		t.Parallel()
+
+		type T1 struct{ s string }
+
+		app := fxtest.New(t,
+			fx.Supply(
+				fx.Annotate(T1{"foo"}, fx.ResultTags(`group:"t"`)),
+				fx.Annotate(T1{"bar"}, fx.ResultTags(`group:"t"`)),
+				fx.Annotate(T1{"baz"}, fx.ResultTags(`group:"t"`)),
+			),
+			fx.Invoke(fx.Annotate(func(got []T1) {
+				assert.ElementsMatch(t, []T1{{"foo"}, {"bar"}, {"baz"}}, got)
+			}, fx.ParamTags(`group:"t"`))),
+		)
+
 		defer app.RequireStart().RequireStop()
 		require.NoError(t, app.Err())
 	})
