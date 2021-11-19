@@ -552,7 +552,7 @@ func (ann *annotated) results() (
 //  }, fx.ParamTags(``, `group:"server"`))
 //
 // If we provide the above to the application,
-// any constructor in the Fx application can feed it HTTP handlers
+// any constructor in the Fx application can inject its HTTP handlers
 // by using fx.Annotate, fx.Annotated, or fx.Out.
 //
 //  fx.Annotate(
