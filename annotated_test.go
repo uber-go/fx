@@ -529,7 +529,7 @@ func TestAnnotate(t *testing.T) {
 				fx.Annotate(T1{"bar"}, fx.ResultTags(`group:"t"`)),
 				fx.Annotate(T1{"baz"}, fx.ResultTags(`group:"t"`)),
 			),
-			fx.Invoke(fx.Annotate(func(got []T1) {
+			fx.Invoke(fx.Annotate(func(got ...T1) {
 				assert.ElementsMatch(t, []T1{{"foo"}, {"bar"}, {"baz"}}, got)
 			}, fx.ParamTags(`group:"t"`))),
 		)
