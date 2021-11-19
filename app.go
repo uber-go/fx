@@ -35,6 +35,7 @@ import (
 
 	"go.uber.org/dig"
 	"go.uber.org/fx/fxevent"
+	"go.uber.org/fx/internal/fxclock"
 	"go.uber.org/fx/internal/fxlog"
 	"go.uber.org/fx/internal/fxreflect"
 	"go.uber.org/fx/internal/lifecycle"
@@ -364,6 +365,7 @@ var NopLogger = WithLogger(func() fxevent.Logger { return fxevent.NopLogger })
 // configurable deadline (again, 15 seconds by default).
 type App struct {
 	err       error
+	clock     fxclock.Clock
 	container *dig.Container
 	lifecycle *lifecycleWrapper
 	// Constructors and its dependencies.
@@ -515,6 +517,7 @@ func New(opts ...Option) *App {
 		// back to what was provided to fx.Logger if fx.WithLogger
 		// fails.
 		log:          logger,
+		clock:        fxclock.System,
 		startTimeout: DefaultTimeout,
 		stopTimeout:  DefaultTimeout,
 	}
@@ -533,7 +536,7 @@ func New(opts ...Option) *App {
 	// - appLogger ensures that the lifecycle always logs events to the
 	//   "current" logger associated with the fx.App.
 	app.lifecycle = &lifecycleWrapper{
-		lifecycle.New(appLogger{app}),
+		lifecycle.New(appLogger{app}, app.clock),
 	}
 
 	var (
@@ -671,7 +674,7 @@ func (app *App) Run() {
 }
 
 func (app *App) run(done <-chan os.Signal) (exitCode int) {
-	startCtx, cancel := context.WithTimeout(context.Background(), app.StartTimeout())
+	startCtx, cancel := app.clock.WithTimeout(context.Background(), app.StartTimeout())
 	defer cancel()
 
 	if err := app.Start(startCtx); err != nil {
@@ -681,7 +684,7 @@ func (app *App) run(done <-chan os.Signal) (exitCode int) {
 	sig := <-done
 	app.log.LogEvent(&fxevent.Stopping{Signal: sig})
 
-	stopCtx, cancel := context.WithTimeout(context.Background(), app.StopTimeout())
+	stopCtx, cancel := app.clock.WithTimeout(context.Background(), app.StopTimeout())
 	defer cancel()
 
 	if err := app.Stop(stopCtx); err != nil {

@@ -34,6 +34,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/benbjohnson/clock"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -752,26 +753,29 @@ func TestTimeoutOptions(t *testing.T) {
 func TestAppRunTimeout(t *testing.T) {
 	t.Parallel()
 
-	// This context is only valid as long as this test is running.
-	// It lets us have goroutines that block forever
-	// (as far as the test is concerned) without leaking them.
-	testCtx, cancel := context.WithCancel(context.Background())
-	t.Cleanup(cancel)
-
 	// Fails with an error immediately.
 	failure := func(context.Context) error {
 		return errors.New("great sadness")
 	}
 
-	// Blocks forever--or at least until this test finishes running.
-	blockForever := func(context.Context) error {
-		<-testCtx.Done()
-		return errors.New("user should not see this")
+	// Builds a hook that takes much longer than the application timeout.
+	takeVeryLong := func(clock *clock.Mock) func(ctx context.Context) error {
+		return func(ctx context.Context) error {
+			// We'll exceed the start and stop timeouts,
+			// and then some.
+			for i := 0; i < 3; i++ {
+				clock.Add(time.Second)
+			}
+
+			return errors.New("user should not see this")
+		}
 	}
 
 	tests := []struct {
-		desc  string
-		hooks []Hook
+		desc string
+
+		// buildHook builds and returns the hooks for this test case.
+		buildHooks func(*clock.Mock) []Hook
 
 		// Type of the fxevent we want.
 		// Does not reflect the exact value.
@@ -780,27 +784,33 @@ func TestAppRunTimeout(t *testing.T) {
 		{
 			// Timeout starting an application.
 			desc: "OnStart timeout",
-			hooks: []Hook{
-				{OnStart: blockForever},
+			buildHooks: func(clock *clock.Mock) []Hook {
+				return []Hook{
+					{OnStart: takeVeryLong(clock)},
+				}
 			},
 			wantEventType: &fxevent.Started{},
 		},
 		{
 			// Timeout during a rollback because start failed.
 			desc: "rollback timeout",
-			hooks: []Hook{
-				// The hooks are separate because
-				// OnStop will not be run if that hook failed.
-				{OnStop: blockForever},
-				{OnStart: failure},
+			buildHooks: func(clock *clock.Mock) []Hook {
+				return []Hook{
+					// The hooks are separate because
+					// OnStop will not be run if that hook failed.
+					{OnStop: takeVeryLong(clock)},
+					{OnStart: failure},
+				}
 			},
 			wantEventType: &fxevent.Started{},
 		},
 		{
 			// Timeout during a stop.
 			desc: "OnStop timeout",
-			hooks: []Hook{
-				{OnStop: blockForever},
+			buildHooks: func(clock *clock.Mock) []Hook {
+				return []Hook{
+					{OnStop: takeVeryLong(clock)},
+				}
 			},
 			wantEventType: &fxevent.Stopped{},
 		},
@@ -810,6 +820,8 @@ func TestAppRunTimeout(t *testing.T) {
 		tt := tt
 		t.Run(tt.desc, func(t *testing.T) {
 			t.Parallel()
+
+			mockClock := clock.NewMock()
 
 			var (
 				exitCode int
@@ -837,11 +849,13 @@ func TestAppRunTimeout(t *testing.T) {
 			}
 
 			app, spy := NewSpied(
-				StartTimeout(time.Millisecond),
-				StopTimeout(time.Millisecond),
+				StartTimeout(time.Second),
+				StopTimeout(time.Second),
 				WithExit(exit),
+				WithClock(mockClock),
 				Invoke(func(lc Lifecycle) {
-					for _, h := range tt.hooks {
+					hooks := tt.buildHooks(mockClock)
+					for _, h := range hooks {
 						lc.Append(h)
 					}
 				}),
@@ -875,12 +889,14 @@ func TestAppStart(t *testing.T) {
 	t.Run("Timeout", func(t *testing.T) {
 		t.Parallel()
 
+		mockClock := clock.NewMock()
+
 		type A struct{}
 		blocker := func(lc Lifecycle) *A {
 			lc.Append(
 				Hook{
 					OnStart: func(ctx context.Context) error {
-						<-ctx.Done()
+						mockClock.Add(5 * time.Second)
 						return ctx.Err()
 					},
 				},
@@ -894,11 +910,12 @@ func TestAppStart(t *testing.T) {
 		spy := new(fxlog.Spy)
 		app := New(
 			WithLogger(func() fxevent.Logger { return spy }),
+			WithClock(mockClock),
 			Provide(blocker),
 			Invoke(func(*A) {}),
 		)
 
-		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond)
+		ctx, cancel := mockClock.WithTimeout(context.Background(), time.Second)
 
 		err := app.Start(ctx)
 		require.Error(t, err)
@@ -909,6 +926,8 @@ func TestAppStart(t *testing.T) {
 	t.Run("TimeoutWithFinishedHooks", func(t *testing.T) {
 		t.Parallel()
 
+		mockClock := clock.NewMock()
+
 		type A struct{}
 		type B struct{ A *A }
 		type C struct{ B *B }
@@ -916,6 +935,7 @@ func TestAppStart(t *testing.T) {
 			lc.Append(
 				Hook{
 					OnStart: func(context.Context) error {
+						mockClock.Add(100 * time.Millisecond)
 						return nil
 					},
 				},
@@ -926,7 +946,7 @@ func TestAppStart(t *testing.T) {
 			lc.Append(
 				Hook{
 					OnStart: func(context.Context) error {
-						time.Sleep(10 * time.Millisecond)
+						mockClock.Add(300 * time.Millisecond)
 						return nil
 					},
 				},
@@ -937,7 +957,7 @@ func TestAppStart(t *testing.T) {
 			lc.Append(
 				Hook{
 					OnStart: func(ctx context.Context) error {
-						<-ctx.Done()
+						mockClock.Add(5 * time.Second)
 						return ctx.Err()
 					},
 				},
@@ -952,11 +972,12 @@ func TestAppStart(t *testing.T) {
 		spy := new(fxlog.Spy)
 		app := New(
 			WithLogger(func() fxevent.Logger { return spy }),
+			WithClock(mockClock),
 			Provide(newA, newB, newC),
 			Invoke(func(*C) {}),
 		)
 
-		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+		ctx, cancel := mockClock.WithTimeout(context.Background(), time.Second)
 		defer cancel()
 
 		err := app.Start(ctx)
@@ -1211,8 +1232,10 @@ func TestAppStop(t *testing.T) {
 	t.Run("Timeout", func(t *testing.T) {
 		t.Parallel()
 
+		mockClock := clock.NewMock()
+
 		block := func(ctx context.Context) error {
-			<-ctx.Done()
+			mockClock.Add(5 * time.Second)
 			return ctx.Err()
 		}
 		// NOTE: for tests that gets cancelled/times out during lifecycle methods, it's possible
@@ -1222,12 +1245,13 @@ func TestAppStop(t *testing.T) {
 		spy := new(fxlog.Spy)
 		app := New(Invoke(func(l Lifecycle) { l.Append(Hook{OnStop: block}) }),
 			WithLogger(func() fxevent.Logger { return spy }),
+			WithClock(mockClock),
 		)
 
 		err := app.Start(context.Background())
 		require.Nil(t, err)
 
-		ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond)
+		ctx, cancel := mockClock.WithTimeout(context.Background(), time.Second)
 		defer cancel()
 
 		err = app.Stop(ctx)
