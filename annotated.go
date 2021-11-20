@@ -376,8 +376,8 @@ func (ann *annotated) results() (
 	err error,
 ) {
 	ft := reflect.TypeOf(ann.Target)
-
 	types = make([]reflect.Type, ft.NumOut())
+
 	for i := 0; i < ft.NumOut(); i++ {
 		types[i] = ft.Out(i)
 	}
@@ -396,21 +396,20 @@ func (ann *annotated) results() (
 		numStructs = len(ann.As)
 	}
 
+	// offsets[i][j] is index of result j in the ith generated fx.Out
+	// struct.
+	offsets := make([][]int, numStructs)
+
 	for i := 0; i < numStructs; i++ {
 		outFields = append(outFields, []reflect.StructField{
 			{
-				{
-					Name:      "Out",
-					Type:      reflect.TypeOf(Out{}),
-					Anonymous: true,
-				},
+				Name:      "Out",
+				Type:      reflect.TypeOf(Out{}),
+				Anonymous: true,
 			},
 		})
+		offsets[i] = make([]int, len(types))
 	}
-
-	// offsets[i] is index of result i in the generated fx.Out
-	// struct.
-	offsets := make([]int, ft.NumOut())
 
 	var hasError bool
 
@@ -429,40 +428,41 @@ func (ann *annotated) results() (
 			continue
 		}
 
-		field := reflect.StructField{
-			Name: fmt.Sprintf("Field%d", i),
-			Type: t,
-		}
+		for j := 0; j < numStructs; j++ {
+			field := reflect.StructField{
+				Name: fmt.Sprintf("Field%d", i),
+				Type: t,
+			}
 
-		for i := 0; i < numStructs; i++ {
-			if j < len(ann.As[i]) {
-				if !t.Implements(ann.As[i][j]) {
+			if len(ann.As) > 0 && i < len(ann.As[j]) {
+				if !t.Implements(ann.As[j][i]) {
 					return nil, nil, fmt.Errorf("invalid fx.As: %v does not implement %v", t, ann.As[i])
 				}
-				field.Type = ann.As[i][j]
+				field.Type = ann.As[j][i]
 			}
 			if i < len(ann.ResultTags) {
-				field.Tag = reflect.StructTag(ann.ResultTags[j])
+				field.Tag = reflect.StructTag(ann.ResultTags[i])
 			}
-			outFields[i] = append(outFields[i], field)
+			offsets[j][i] = len(outFields[j])
+			outFields[j] = append(outFields[j], field)
 		}
-
-		offsets[i] = len(outFields)
 	}
 
-	var types []reflect.Type
+	var resTypes []reflect.Type
 	for i := 0; i < numStructs; i++ {
-		types = append(types, reflect.StructOf(outFields[i]))
+		resTypes = append(resTypes, reflect.StructOf(outFields[i]))
 	}
+
 	if hasError {
-		types = append(types, _typeOfError)
+		resTypes = append(resTypes, _typeOfError)
 	}
 
-	return types, func(results []reflect.Value) []reflect.Value {
+	return resTypes, func(results []reflect.Value) []reflect.Value {
 		var outErr error
+		var remappedResults []reflect.Value
 
-		for outNum := 0; i < len(ann.As); i++ {
-			out := reflect.New(outType).Elem()
+		for structNum := 0; structNum < numStructs; structNum++ {
+			out := reflect.New(resTypes[structNum]).Elem()
 			for i, r := range results {
 				if i == len(results)-1 && hasError {
 					// If hasError and this is the last item,
@@ -474,21 +474,20 @@ func (ann *annotated) results() (
 					continue
 				}
 
-				out.Field(offsets[i]).Set(r)
+				out.Field(offsets[structNum][i]).Set(r)
 			}
-			//results = results[:0]
-			results = append(results, out)
+			remappedResults = append(remappedResults, out)
 		}
 
 		if hasError {
 			if outErr != nil {
-				results = append(results, reflect.ValueOf(outErr))
+				remappedResults = append(remappedResults, reflect.ValueOf(outErr))
 			} else {
-				results = append(results, _nilError)
+				remappedResults = append(remappedResults, _nilError)
 			}
 		}
 
-		return results
+		return remappedResults
 	}, nil
 }
 
