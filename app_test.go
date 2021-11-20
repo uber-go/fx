@@ -1683,7 +1683,27 @@ func TestOptionString(t *testing.T) {
 }
 
 func TestMain(m *testing.M) {
-	goleak.VerifyTestMain(m)
+	if os.Getenv("VerifySignalHandler") != "" {
+		app := New(
+			NopLogger,
+			Invoke(func(lifecycle Lifecycle) {
+				lifecycle.Append(
+					Hook{
+						OnStart: func(ctx context.Context) error {
+							fmt.Fprintf(os.Stderr, "ready\n")
+							return nil
+						},
+						OnStop: func(ctx context.Context) error {
+							fmt.Fprintf(os.Stdout, "ONSTOP\n")
+							return nil
+						},
+					})
+			}),
+		)
+		app.Run()
+	} else {
+		goleak.VerifyTestMain(m)
+	}
 }
 
 type testLogger struct{ t *testing.T }

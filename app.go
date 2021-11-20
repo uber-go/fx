@@ -802,7 +802,7 @@ func (app *App) Done() <-chan os.Signal {
 		return c
 	}
 
-	signal.Notify(c, _sigINT, _sigTERM)
+	signal.Notify(c, os.Interrupt, _sigINT, _sigTERM)
 	app.dones = append(app.dones, c)
 	return c
 }
