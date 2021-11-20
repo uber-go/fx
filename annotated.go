@@ -287,7 +287,8 @@ func (ann annotated) String() string {
 // Build builds and returns a constructor based on fx.In/fx.Out params and
 // results wrapping the original constructor passed to fx.Annotate.
 func (ann *annotated) Build() (interface{}, error) {
-	if reflect.TypeOf(ann.Target).Kind() != reflect.Func {
+	ft := reflect.TypeOf(ann.Target)
+	if ft.Kind() != reflect.Func {
 		return nil, fmt.Errorf("must provide constructor function, got %v (%T)", ann.Target, ann.Target)
 	}
 
@@ -301,7 +302,12 @@ func (ann *annotated) Build() (interface{}, error) {
 	origFn := reflect.ValueOf(ann.Target)
 	newFn := reflect.MakeFunc(newFnType, func(args []reflect.Value) []reflect.Value {
 		args = remapParams(args)
-		results := origFn.Call(args)
+		var results []reflect.Value
+		if ft.IsVariadic() {
+			results = origFn.CallSlice(args)
+		} else {
+			results = origFn.Call(args)
+		}
 		results = remapResults(results)
 		return results
 	})
@@ -522,6 +528,42 @@ func (ann *annotated) results() (
 //
 // If more tags are given than the number of parameters/results, only
 // the ones up to the number of parameters/results will be applied.
+//
+// Variadic functions
+//
+// If the provided function is variadic, Annotate treats its parameter as a
+// slice. For example,
+//
+//  fx.Annotate(func(w io.Writer, rs ...io.Reader) {
+//    // ...
+//  }, ...)
+//
+// Is equivalent to,
+//
+//  fx.Annotate(func(w io.Writer, rs []io.Reader) {
+//    // ...
+//  }, ...)
+//
+// You can use variadic parameters with Fx's value groups.
+// For example,
+//
+//  fx.Annotate(func(mux *http.ServeMux, handlers ...http.Handler) {
+//    // ...
+//  }, fx.ParamTags(``, `group:"server"`))
+//
+// If we provide the above to the application,
+// any constructor in the Fx application can inject its HTTP handlers
+// by using fx.Annotate, fx.Annotated, or fx.Out.
+//
+//  fx.Annotate(
+//    func(..) http.Handler { ... },
+//    fx.ResultTags(`group:"server"`),
+//  )
+//
+//  fx.Annotated{
+//    Target: func(..) http.Handler { ... },
+//    Group:  "server",
+//  }
 func Annotate(t interface{}, anns ...Annotation) interface{} {
 	result := annotated{Target: t}
 	for _, ann := range anns {
