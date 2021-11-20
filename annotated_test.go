@@ -203,6 +203,18 @@ func TestAnnotatedAs(t *testing.T) {
 				assert.Equal(t, "foo", s.String())
 			},
 		},
+		{
+			desc: "annotate as many interfaces",
+			provide: fx.Provide(
+				fx.Annotate(&asStringer{"foo"},
+					fx.As(new(fmt.Stringer)),
+					fx.As(new(myStringer))),
+			),
+			invoke: func(s fmt.Stringer, ms myStringer) {
+				assert.Equal(t, "foo", s.String())
+				assert.Equal(t, "foo", ms.String())
+			},
+		},
 	}
 
 	for _, tt := range tests {

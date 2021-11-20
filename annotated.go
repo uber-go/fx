@@ -244,9 +244,6 @@ func As(interfaces ...interface{}) Annotation {
 }
 
 func (at asAnnotation) apply(ann *annotated) error {
-	if len(ann.As) > 0 {
-		return errors.New("cannot apply more than one line of As")
-	}
 	types := make([]reflect.Type, len(at.targets))
 	for i, typ := range at.targets {
 		t := reflect.TypeOf(typ)
@@ -257,7 +254,7 @@ func (at asAnnotation) apply(ann *annotated) error {
 		types[i] = t
 	}
 
-	ann.As = types
+	ann.As = append(ann.As, types)
 	return nil
 }
 
@@ -265,7 +262,7 @@ type annotated struct {
 	Target     interface{}
 	ParamTags  []string
 	ResultTags []string
-	As         []reflect.Type
+	As         [][]reflect.Type
 }
 
 func (ann annotated) String() string {
@@ -393,12 +390,22 @@ func (ann *annotated) results() (
 		}, nil
 	}
 
-	outFields := []reflect.StructField{
-		{
-			Name:      "Out",
-			Type:      reflect.TypeOf(Out{}),
-			Anonymous: true,
-		},
+	var outFields [][]reflect.StructField
+	numStructs := 1
+	if len(ann.As) > 0 {
+		numStructs = len(ann.As)
+	}
+
+	for i := 0; i < numStructs; i++ {
+		outFields = append(outFields, []reflect.StructField{
+			{
+				{
+					Name:      "Out",
+					Type:      reflect.TypeOf(Out{}),
+					Anonymous: true,
+				},
+			},
+		})
 	}
 
 	// offsets[i] is index of result i in the generated fx.Out
@@ -406,6 +413,7 @@ func (ann *annotated) results() (
 	offsets := make([]int, ft.NumOut())
 
 	var hasError bool
+
 	for i, t := range types {
 		if t == _typeOfError {
 			// Guarantee that:
@@ -426,47 +434,52 @@ func (ann *annotated) results() (
 			Type: t,
 		}
 
-		if i < len(ann.As) {
-			if !t.Implements(ann.As[i]) {
-				return nil, nil, fmt.Errorf("invalid fx.As: %v does not implement %v", t, ann.As[i])
+		for i := 0; i < numStructs; i++ {
+			if j < len(ann.As[i]) {
+				if !t.Implements(ann.As[i][j]) {
+					return nil, nil, fmt.Errorf("invalid fx.As: %v does not implement %v", t, ann.As[i])
+				}
+				field.Type = ann.As[i][j]
 			}
-			field.Type = ann.As[i]
-		}
-
-		if i < len(ann.ResultTags) {
-			field.Tag = reflect.StructTag(ann.ResultTags[i])
+			if i < len(ann.ResultTags) {
+				field.Tag = reflect.StructTag(ann.ResultTags[j])
+			}
+			outFields[i] = append(outFields[i], field)
 		}
 
 		offsets[i] = len(outFields)
-		outFields = append(outFields, field)
 	}
 
-	outType := reflect.StructOf(outFields)
-	types = []reflect.Type{outType}
+	var types []reflect.Type
+	for i := 0; i < numStructs; i++ {
+		types = append(types, reflect.StructOf(outFields[i]))
+	}
 	if hasError {
 		types = append(types, _typeOfError)
 	}
 
 	return types, func(results []reflect.Value) []reflect.Value {
-		out := reflect.New(outType).Elem()
-
 		var outErr error
-		for i, r := range results {
-			if i == len(results)-1 && hasError {
-				// If hasError and this is the last item,
-				// we are guaranteed that this is an error
-				// object.
-				if err, _ := r.Interface().(error); err != nil {
-					outErr = err
-				}
-				continue
-			}
 
-			out.Field(offsets[i]).Set(r)
+		for outNum := 0; i < len(ann.As); i++ {
+			out := reflect.New(outType).Elem()
+			for i, r := range results {
+				if i == len(results)-1 && hasError {
+					// If hasError and this is the last item,
+					// we are guaranteed that this is an error
+					// object.
+					if err, _ := r.Interface().(error); err != nil {
+						outErr = err
+					}
+					continue
+				}
+
+				out.Field(offsets[i]).Set(r)
+			}
+			//results = results[:0]
+			results = append(results, out)
 		}
 
-		results = results[:0]
-		results = append(results, out)
 		if hasError {
 			if outErr != nil {
 				results = append(results, reflect.ValueOf(outErr))
