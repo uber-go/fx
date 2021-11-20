@@ -1684,10 +1684,10 @@ func TestOptionString(t *testing.T) {
 
 func TestMain(m *testing.M) {
 	if os.Getenv("VerifySignalHandler") != "" {
-		app := fx.New(
-			fx.Invoke(func(lifecycle fx.Lifecycle) {
+		app := New(
+			Invoke(func(lifecycle Lifecycle) {
 				lifecycle.Append(
-					fx.Hook{
+					Hook{
 						OnStart: func(ctx context.Context) error {
 							fmt.Printf("ok")
 							return nil
