@@ -29,7 +29,6 @@ import (
 	"os/exec"
 	"syscall"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -43,10 +42,8 @@ func TestCtrlCHandler(t *testing.T) {
 	cmd := exec.Command(bin)
 
 	// buffers used to capture the output of the child process.
-	var so bytes.Buffer
-	var se bytes.Buffer
-	cmd.Stdout = &so
-	cmd.Stderr = &se
+	so, _ := cmd.StdoutPipe()
+	se, _ := cmd.StderrPipe()
 
 	cmd.Env = []string{"VerifySignalHandler=1"}
 	// CREATE_NEW_PROCESS_GROUP is required to send SIGINT to
@@ -61,14 +58,8 @@ func TestCtrlCHandler(t *testing.T) {
 	c := make(chan struct{}, 1)
 
 	go func() {
-		// poll stdout of child proc to see if it's ready to be killed.
-		for {
-			if so.String() != "" {
-				c <- struct{}{}
-				break
-			}
-			time.Sleep(time.Millisecond * 50)
-		}
+		se.Read(make([]byte, 1024))
+		c <- struct{}{}
 	}()
 
 	// block until child proc is ready.
@@ -77,9 +68,16 @@ func TestCtrlCHandler(t *testing.T) {
 	// Send signal to child proc.
 	err = windows.GenerateConsoleCtrlEvent(1, uint32(childPid))
 	require.NoError(t, err)
+
+	// Drain out stdout/stderr before waiting.
+	buf := new(bytes.Buffer)
+	buf.ReadFrom(se)
+	buf.ReadFrom(so)
+
+	// Wait till child proc finishes
 	err = cmd.Wait()
 
-	// Check that onstop hook ran.
-	assert.Contains(t, se.String(), "HOOK OnStop")
+	// stdout should have ONSTOP printed on it from OnStop handler.
+	assert.Contains(t, buf.String(), "ONSTOP")
 	assert.NoError(t, err)
 }
