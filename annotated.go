@@ -453,41 +453,47 @@ func (ann *annotated) results() (
 		resTypes = append(resTypes, reflect.StructOf(fields))
 	}
 
+	outTypes := resTypes
 	if hasError {
-		resTypes = append(resTypes, _typeOfError)
+		outTypes = append(resTypes, _typeOfError)
 	}
 
-	return resTypes, func(results []reflect.Value) []reflect.Value {
-		var outErr error
-		var remappedResults []reflect.Value
+	return outTypes, func(results []reflect.Value) []reflect.Value {
+		var (
+			outErr     error
+			outResults []reflect.Value
+		)
 
-		for structNum, structType := range resTypes {
-			out := reflect.New(structType).Elem()
-			for i, r := range results {
-				if i == len(results)-1 && hasError {
-					// If hasError and this is the last item,
-					// we are guaranteed that this is an error
-					// object.
-					if err, _ := r.Interface().(error); err != nil {
-						outErr = err
-					}
-					continue
+		for _, resType := range resTypes {
+			outResults = append(outResults, reflect.New(resType).Elem())
+		}
+
+		for i, r := range results {
+			if i == len(results)-1 && hasError {
+				// If hasError and this is the last item,
+				// we are guaranteed that this is an error
+				// object.
+				if err, _ := r.Interface().(error); err != nil {
+					outErr = err
 				}
-
-				out.Field(offsets[structNum][i]).Set(r)
+				continue
 			}
-			remappedResults = append(remappedResults, out)
+			for j := range resTypes {
+				if fieldIdx := offsets[j][i]; fieldIdx > 0 {
+					outResults[j].Field(fieldIdx).Set(r)
+				}
+			}
 		}
 
 		if hasError {
 			if outErr != nil {
-				remappedResults = append(remappedResults, reflect.ValueOf(outErr))
+				outResults = append(outResults, reflect.ValueOf(outErr))
 			} else {
-				remappedResults = append(remappedResults, _nilError)
+				outResults = append(outResults, _nilError)
 			}
 		}
 
-		return remappedResults
+		return outResults
 	}, nil
 }
 

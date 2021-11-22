@@ -25,6 +25,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -275,6 +276,18 @@ func TestAnnotatedAs(t *testing.T) {
 				assert.NoError(t, err)
 				_, err = buf.Write([]byte("."))
 				assert.NoError(t, err)
+			},
+		},
+		{
+			desc: "annotate fewer items than provided constructor",
+			provide: fx.Provide(
+				fx.Annotate(func() (*bytes.Buffer, *strings.Builder) {
+					s := "Hello"
+					return bytes.NewBuffer([]byte(s)), &strings.Builder{}
+				},
+					fx.As(new(io.Reader))),
+			),
+			invoke: func(r io.Reader) {
 			},
 		},
 	}
