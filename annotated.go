@@ -449,8 +449,8 @@ func (ann *annotated) results() (
 	}
 
 	var resTypes []reflect.Type
-	for i := 0; i < numStructs; i++ {
-		resTypes = append(resTypes, reflect.StructOf(outFields[i]))
+	for _, fields := range outFields {
+		resTypes = append(resTypes, reflect.StructOf(fields))
 	}
 
 	if hasError {
@@ -461,8 +461,8 @@ func (ann *annotated) results() (
 		var outErr error
 		var remappedResults []reflect.Value
 
-		for structNum := 0; structNum < numStructs; structNum++ {
-			out := reflect.New(resTypes[structNum]).Elem()
+		for structNum, structType := range resTypes {
+			out := reflect.New(structType).Elem()
 			for i, r := range results {
 				if i == len(results)-1 && hasError {
 					// If hasError and this is the last item,
