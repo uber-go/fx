@@ -24,7 +24,10 @@
 package fx_test
 
 import (
-	"bytes"
+	"context"
+	"fmt"
+	"io"
+	"io/ioutil"
 	"os"
 	"os/exec"
 	"syscall"
@@ -32,52 +35,89 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/fx"
 	"golang.org/x/sys/windows"
 )
 
-func TestCtrlCHandler(t *testing.T) {
+// Regression test for https://github.com/uber-go/fx/issues/781.
+func TestWindowsCtrlCHandler(t *testing.T) {
+	// This test operates by launching a separate process,
+	// which we'll send a SIGINT to,
+	// and verifying the output of the application.
+
 	// Launch a separate process we will send SIGINT to.
-	bin, err := os.Executable()
-	require.NoError(t, err)
-	cmd := exec.Command(bin)
+	testExe, err := os.Executable()
+	require.NoError(t, err, "determine test executable")
+	cmd := exec.Command(testExe, "-test.run", "TestWindowsMinimalApp")
+	cmd.Env = append(os.Environ(), "FX_TEST_FAKE=1")
 
-	// buffers used to capture the output of the child process.
-	so, _ := cmd.StdoutPipe()
-	se, _ := cmd.StderrPipe()
-
-	cmd.Env = []string{"VerifySignalHandler=1"}
-	// CREATE_NEW_PROCESS_GROUP is required to send SIGINT to
-	// the child process.
+	// On Windows, we need to use GenerateConsoleCtrlEvent
+	// to SIGINT the child process.
+	//
+	// That API operates on Group ID granularity,
+	// so we need to make sure our new child process
+	// gets a new group ID rather than using the same ID
+	// as the test we're running.
 	cmd.SysProcAttr = &syscall.SysProcAttr{
 		CreationFlags: windows.CREATE_NEW_PROCESS_GROUP,
 	}
-	err = cmd.Start()
-	require.NoError(t, err)
-	childPid := cmd.Process.Pid
 
-	c := make(chan struct{}, 1)
+	stdout, err := cmd.StdoutPipe()
+	require.NoError(t, err, "create stdout")
 
+	stderr, err := cmd.StderrPipe()
+	require.NoError(t, err, "create stderr")
+
+	require.NoError(t, cmd.Start())
+
+	// Block until the child is ready by waiting for the "ready" text
+	// printed to stderr.
+	ready := make(chan struct{})
 	go func() {
-		se.Read(make([]byte, 1024))
-		c <- struct{}{}
+		defer close(ready)
+		stderr.Read(make([]byte, 1024))
 	}()
+	<-ready
 
-	// block until child proc is ready.
-	<-c
+	require.NoError(t,
+		windows.GenerateConsoleCtrlEvent(1, uint32(cmd.Process.Pid)),
+		"SIGINT child process")
 
-	// Send signal to child proc.
-	err = windows.GenerateConsoleCtrlEvent(1, uint32(childPid))
+	// Drain stdout and stderr, and wait for the process to exit.
+	output, err := ioutil.ReadAll(stdout)
 	require.NoError(t, err)
+	_, err = io.Copy(ioutil.Discard, stderr)
+	require.NoError(t, err)
+	require.NoError(t, cmd.Wait())
 
-	// Drain out stdout/stderr before waiting.
-	buf := new(bytes.Buffer)
-	buf.ReadFrom(se)
-	buf.ReadFrom(so)
+	assert.Contains(t, string(output), "ONSTOP",
+		"stdout should include ONSTOP")
+}
 
-	// Wait till child proc finishes
-	err = cmd.Wait()
+func TestWindowsMinimalApp(t *testing.T) {
+	// This is not a real test.
+	// It defines the behavior of the fake application
+	// that we spawn from TestWindowsCtrlCHandler.
+	if os.Getenv("FX_TEST_FAKE") != "1" {
+		return
+	}
 
-	// stdout should have ONSTOP printed on it from OnStop handler.
-	assert.Contains(t, buf.String(), "ONSTOP")
-	assert.NoError(t, err)
+	// An Fx application that prints "ready" to stderr
+	// once its start hooks have been invoked,
+	// and "ONSTOP" to stdout when its stop hooks have been invoked.
+	fx.New(
+		fx.NopLogger,
+		fx.Invoke(func(lifecycle fx.Lifecycle) {
+			lifecycle.Append(fx.Hook{
+				OnStart: func(ctx context.Context) error {
+					fmt.Fprintln(os.Stderr, "ready")
+					return nil
+				},
+				OnStop: func(ctx context.Context) error {
+					fmt.Fprintln(os.Stdout, "ONSTOP")
+					return nil
+				},
+			})
+		}),
+	).Run()
 }
