@@ -390,25 +390,27 @@ func (ann *annotated) results() (
 		}, nil
 	}
 
-	var outFields [][]reflect.StructField
 	numStructs := 1
 	if len(ann.As) > 0 {
 		numStructs = len(ann.As)
 	}
 
-	// offsets[i][j] is index of result j in the ith generated fx.Out
-	// struct.
-	offsets := make([][]int, numStructs)
+	type outStructInfo struct {
+		Fields  []reflect.StructField // fields of the struct
+		Offsets []int                 // Offsets[i] is the index of result i in Fields
+	}
+
+	outs := make([]outStructInfo, numStructs)
 
 	for i := 0; i < numStructs; i++ {
-		outFields = append(outFields, []reflect.StructField{
+		outs[i].Fields = []reflect.StructField{
 			{
 				Name:      "Out",
 				Type:      reflect.TypeOf(Out{}),
 				Anonymous: true,
 			},
-		})
-		offsets[i] = make([]int, len(types))
+		}
+		outs[i].Offsets = make([]int, len(types))
 	}
 
 	var hasError bool
@@ -443,14 +445,14 @@ func (ann *annotated) results() (
 			if i < len(ann.ResultTags) {
 				field.Tag = reflect.StructTag(ann.ResultTags[i])
 			}
-			offsets[j][i] = len(outFields[j])
-			outFields[j] = append(outFields[j], field)
+			outs[j].Offsets[i] = len(outs[j].Fields)
+			outs[j].Fields = append(outs[j].Fields, field)
 		}
 	}
 
 	var resTypes []reflect.Type
-	for _, fields := range outFields {
-		resTypes = append(resTypes, reflect.StructOf(fields))
+	for _, out := range outs {
+		resTypes = append(resTypes, reflect.StructOf(out.Fields))
 	}
 
 	outTypes := resTypes
@@ -479,7 +481,13 @@ func (ann *annotated) results() (
 				continue
 			}
 			for j := range resTypes {
-				if fieldIdx := offsets[j][i]; fieldIdx > 0 {
+				if fieldIdx := outs[j].Offsets[i]; fieldIdx > 0 {
+					// fieldIdx 0 is an invalid index
+					// because it refers to uninitialized
+					// outs and would point to fx.Out in the
+					// struct definition. We need to check this
+					// to prevent panic from setting fx.Out to
+					// a value.
 					outResults[j].Field(fieldIdx).Set(r)
 				}
 			}
