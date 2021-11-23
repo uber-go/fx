@@ -25,6 +25,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -203,6 +204,92 @@ func TestAnnotatedAs(t *testing.T) {
 				assert.Equal(t, "foo", s.String())
 			},
 		},
+		{
+			desc: "annotate as many interfaces",
+			provide: fx.Provide(
+				fx.Annotate(func() *asStringer {
+					return &asStringer{name: "stringer"}
+				},
+					fx.As(new(fmt.Stringer)),
+					fx.As(new(myStringer))),
+			),
+			invoke: func(s fmt.Stringer, ms myStringer) {
+				assert.Equal(t, "stringer", s.String())
+				assert.Equal(t, "stringer", ms.String())
+			},
+		},
+		{
+			desc: "annotate as many interfaces with both-annotated return values",
+			provide: fx.Provide(
+				fx.Annotate(func() (*asStringer, *bytes.Buffer) {
+					return &asStringer{name: "stringer"},
+						bytes.NewBuffer(make([]byte, 1))
+				},
+					fx.As(new(fmt.Stringer), new(io.Reader)),
+					fx.As(new(myStringer), new(io.Writer))),
+			),
+			invoke: func(s fmt.Stringer, ms myStringer, r io.Reader, w io.Writer) {
+				assert.Equal(t, "stringer", s.String())
+				assert.Equal(t, "stringer", ms.String())
+				_, err := w.Write([]byte("."))
+				assert.NoError(t, err)
+				buf := make([]byte, 1)
+				_, err = r.Read(buf)
+				assert.NoError(t, err)
+			},
+		},
+		{
+			desc: "annotate as many interfaces with different numbers of annotations",
+			provide: fx.Provide(
+				fx.Annotate(func() (*asStringer, *bytes.Buffer) {
+					return &asStringer{name: "stringer"},
+						bytes.NewBuffer(make([]byte, 1))
+				},
+					// annotate both in here
+					fx.As(new(fmt.Stringer), new(io.Writer)),
+					// annotate just myStringer here
+					fx.As(new(myStringer))),
+			),
+			invoke: func(s fmt.Stringer, ms myStringer, w io.Writer) {
+				assert.Equal(t, "stringer", s.String())
+				assert.Equal(t, "stringer", ms.String())
+				_, err := w.Write([]byte("."))
+				assert.NoError(t, err)
+			},
+		},
+		{
+			desc: "annotate many interfaces with varying annotation count and check original type",
+			provide: fx.Provide(
+				fx.Annotate(func() (*asStringer, *bytes.Buffer) {
+					return &asStringer{name: "stringer"},
+						bytes.NewBuffer(make([]byte, 1))
+				},
+					// annotate just myStringer here
+					fx.As(new(myStringer)),
+					// annotate both in here
+					fx.As(new(fmt.Stringer), new(io.Writer))),
+			),
+			invoke: func(s fmt.Stringer, ms myStringer, buf *bytes.Buffer, w io.Writer) {
+				assert.Equal(t, "stringer", s.String())
+				assert.Equal(t, "stringer", ms.String())
+				_, err := w.Write([]byte("."))
+				assert.NoError(t, err)
+				_, err = buf.Write([]byte("."))
+				assert.NoError(t, err)
+			},
+		},
+		{
+			desc: "annotate fewer items than provided constructor",
+			provide: fx.Provide(
+				fx.Annotate(func() (*bytes.Buffer, *strings.Builder) {
+					s := "Hello"
+					return bytes.NewBuffer([]byte(s)), &strings.Builder{}
+				},
+					fx.As(new(io.Reader))),
+			),
+			invoke: func(r io.Reader) {
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -240,12 +327,6 @@ func TestAnnotatedAsFailures(t *testing.T) {
 			provide:       fx.Provide(fx.Annotate(newAsStringer, fx.As(new(io.Writer)))),
 			invoke:        func() {},
 			errorContains: "does not implement",
-		},
-		{
-			desc:          "provide two lines of As",
-			provide:       fx.Provide(fx.Annotate(newAsStringer, fx.As(new(io.Writer)), fx.As(new(io.Reader)))),
-			invoke:        func() {},
-			errorContains: "cannot apply more than one line of As",
 		},
 		{
 			desc:    "don't provide original type using As",

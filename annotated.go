@@ -244,9 +244,6 @@ func As(interfaces ...interface{}) Annotation {
 }
 
 func (at asAnnotation) apply(ann *annotated) error {
-	if len(ann.As) > 0 {
-		return errors.New("cannot apply more than one line of As")
-	}
 	types := make([]reflect.Type, len(at.targets))
 	for i, typ := range at.targets {
 		t := reflect.TypeOf(typ)
@@ -257,7 +254,7 @@ func (at asAnnotation) apply(ann *annotated) error {
 		types[i] = t
 	}
 
-	ann.As = types
+	ann.As = append(ann.As, types)
 	return nil
 }
 
@@ -265,7 +262,7 @@ type annotated struct {
 	Target     interface{}
 	ParamTags  []string
 	ResultTags []string
-	As         []reflect.Type
+	As         [][]reflect.Type
 }
 
 func (ann annotated) String() string {
@@ -379,8 +376,8 @@ func (ann *annotated) results() (
 	err error,
 ) {
 	ft := reflect.TypeOf(ann.Target)
-
 	types = make([]reflect.Type, ft.NumOut())
+
 	for i := 0; i < ft.NumOut(); i++ {
 		types[i] = ft.Out(i)
 	}
@@ -393,19 +390,31 @@ func (ann *annotated) results() (
 		}, nil
 	}
 
-	outFields := []reflect.StructField{
-		{
-			Name:      "Out",
-			Type:      reflect.TypeOf(Out{}),
-			Anonymous: true,
-		},
+	numStructs := 1
+	if len(ann.As) > 0 {
+		numStructs = len(ann.As)
 	}
 
-	// offsets[i] is index of result i in the generated fx.Out
-	// struct.
-	offsets := make([]int, ft.NumOut())
+	type outStructInfo struct {
+		Fields  []reflect.StructField // fields of the struct
+		Offsets []int                 // Offsets[i] is the index of result i in Fields
+	}
+
+	outs := make([]outStructInfo, numStructs)
+
+	for i := 0; i < numStructs; i++ {
+		outs[i].Fields = []reflect.StructField{
+			{
+				Name:      "Out",
+				Type:      reflect.TypeOf(Out{}),
+				Anonymous: true,
+			},
+		}
+		outs[i].Offsets = make([]int, len(types))
+	}
 
 	var hasError bool
+
 	for i, t := range types {
 		if t == _typeOfError {
 			// Guarantee that:
@@ -421,36 +430,46 @@ func (ann *annotated) results() (
 			continue
 		}
 
-		field := reflect.StructField{
-			Name: fmt.Sprintf("Field%d", i),
-			Type: t,
-		}
-
-		if i < len(ann.As) {
-			if !t.Implements(ann.As[i]) {
-				return nil, nil, fmt.Errorf("invalid fx.As: %v does not implement %v", t, ann.As[i])
+		for j := 0; j < numStructs; j++ {
+			field := reflect.StructField{
+				Name: fmt.Sprintf("Field%d", i),
+				Type: t,
 			}
-			field.Type = ann.As[i]
-		}
 
-		if i < len(ann.ResultTags) {
-			field.Tag = reflect.StructTag(ann.ResultTags[i])
+			if len(ann.As) > 0 && i < len(ann.As[j]) {
+				if !t.Implements(ann.As[j][i]) {
+					return nil, nil, fmt.Errorf("invalid fx.As: %v does not implement %v", t, ann.As[i])
+				}
+				field.Type = ann.As[j][i]
+			}
+			if i < len(ann.ResultTags) {
+				field.Tag = reflect.StructTag(ann.ResultTags[i])
+			}
+			outs[j].Offsets[i] = len(outs[j].Fields)
+			outs[j].Fields = append(outs[j].Fields, field)
 		}
-
-		offsets[i] = len(outFields)
-		outFields = append(outFields, field)
 	}
 
-	outType := reflect.StructOf(outFields)
-	types = []reflect.Type{outType}
+	var resTypes []reflect.Type
+	for _, out := range outs {
+		resTypes = append(resTypes, reflect.StructOf(out.Fields))
+	}
+
+	outTypes := resTypes
 	if hasError {
-		types = append(types, _typeOfError)
+		outTypes = append(resTypes, _typeOfError)
 	}
 
-	return types, func(results []reflect.Value) []reflect.Value {
-		out := reflect.New(outType).Elem()
+	return outTypes, func(results []reflect.Value) []reflect.Value {
+		var (
+			outErr     error
+			outResults []reflect.Value
+		)
 
-		var outErr error
+		for _, resType := range resTypes {
+			outResults = append(outResults, reflect.New(resType).Elem())
+		}
+
 		for i, r := range results {
 			if i == len(results)-1 && hasError {
 				// If hasError and this is the last item,
@@ -461,21 +480,28 @@ func (ann *annotated) results() (
 				}
 				continue
 			}
-
-			out.Field(offsets[i]).Set(r)
-		}
-
-		results = results[:0]
-		results = append(results, out)
-		if hasError {
-			if outErr != nil {
-				results = append(results, reflect.ValueOf(outErr))
-			} else {
-				results = append(results, _nilError)
+			for j := range resTypes {
+				if fieldIdx := outs[j].Offsets[i]; fieldIdx > 0 {
+					// fieldIdx 0 is an invalid index
+					// because it refers to uninitialized
+					// outs and would point to fx.Out in the
+					// struct definition. We need to check this
+					// to prevent panic from setting fx.Out to
+					// a value.
+					outResults[j].Field(fieldIdx).Set(r)
+				}
 			}
 		}
 
-		return results
+		if hasError {
+			if outErr != nil {
+				outResults = append(outResults, reflect.ValueOf(outErr))
+			} else {
+				outResults = append(outResults, _nilError)
+			}
+		}
+
+		return outResults
 	}, nil
 }
 
