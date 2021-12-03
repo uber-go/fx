@@ -4,10 +4,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
-## Unreleased
+## [1.16.0] - 2021-12-02
+### Added
+- Add the ability to provide a function as multiple interfaces at once using `fx.As`.
+
 ### Changed
-- `fx.Annotate`: support variadic functions, and feeding value groups into
-  them.
+- `fx.Annotate`: support variadic functions, and feeding value groups into them.
+
+### Fixed
+- Fix an issue where OnStop hooks weren't getting called on SIGINT on Windows.
+- Fix a data race between app.Done() and shutdown.
+
+[1.16.0]: https://github.com/uber-go/fx/compare/v1.15.0...v1.16.0
 
 ## [1.15.0] - 2021-11-08
 ### Added
