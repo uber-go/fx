@@ -289,6 +289,10 @@ func (ann *annotated) Build() (interface{}, error) {
 		return nil, fmt.Errorf("must provide constructor function, got %v (%T)", ann.Target, ann.Target)
 	}
 
+	if err := ann.typeCheckOrigFn(); err != nil {
+		return nil, fmt.Errorf("error while applying annotation to function %T: %w", ann.Target, err)
+	}
+
 	paramTypes, remapParams := ann.parameters()
 	resultTypes, remapResults, err := ann.results()
 	if err != nil {
@@ -310,6 +314,37 @@ func (ann *annotated) Build() (interface{}, error) {
 	})
 
 	return newFn.Interface(), nil
+}
+
+// checks whether the target function is either
+// returning an fx.Out struct or an taking in a
+// fx.In struct as a parameter.
+func (ann *annotated) typeCheckOrigFn() error {
+	ft := reflect.TypeOf(ann.Target)
+	for i := 0; i < ft.NumOut(); i++ {
+		ot := ft.Out(i)
+		if ot.Kind() != reflect.Struct {
+			continue
+		}
+		for _, sf := range reflect.VisibleFields(ot) {
+			if sf.Type == reflect.TypeOf(Out{}) {
+				return fmt.Errorf("fx.Out structs cannot be annotated")
+			}
+		}
+	}
+
+	for i := 0; i < ft.NumIn(); i++ {
+		it := ft.In(i)
+		if it.Kind() != reflect.Struct {
+			continue
+		}
+		for _, sf := range reflect.VisibleFields(it) {
+			if sf.Type == reflect.TypeOf(In{}) {
+				return fmt.Errorf("fx.In structs cannot be annotated")
+			}
+		}
+	}
+	return nil
 }
 
 // parameters returns the type for the parameters of the annotated function,
