@@ -879,14 +879,22 @@ func TestAnnotate(t *testing.T) {
 		t.Parallel()
 
 		type A struct {
+			s string
+		}
+		type B struct {
 			fx.In
 		}
 
 		app := NewForTest(t,
-			fx.Provide(fx.Annotate(func(i A) {}), fx.ParamTags(`name:"in"`)),
+			fx.Provide(
+				fx.Annotate(func(i A) string { return i.s }, fx.ParamTags(`optional:"true"`)),
+				fx.Annotate(func(i B) string { return "ok" }, fx.ParamTags(`name:"problem"`)),
+			),
 		)
 		err := app.Err()
 		require.Error(t, err)
+		assert.NotContains(t, err.Error(), "error while applying annotation to function func(fx_test.A)")
+		assert.Contains(t, err.Error(), "error while applying annotation to function func(fx_test.B)")
 		assert.Contains(t, err.Error(), "fx.In structs cannot be annotated")
 	})
 }

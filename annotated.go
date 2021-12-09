@@ -326,10 +326,8 @@ func (ann *annotated) typeCheckOrigFn() error {
 		if ot.Kind() != reflect.Struct {
 			continue
 		}
-		for _, sf := range reflect.VisibleFields(ot) {
-			if sf.Type == reflect.TypeOf(Out{}) {
-				return fmt.Errorf("fx.Out structs cannot be annotated")
-			}
+		if ot.NumField() > 0 && ot.Field(0).Type == reflect.TypeOf(Out{}) {
+			return fmt.Errorf("fx.Out structs cannot be annotated")
 		}
 	}
 
@@ -338,10 +336,8 @@ func (ann *annotated) typeCheckOrigFn() error {
 		if it.Kind() != reflect.Struct {
 			continue
 		}
-		for _, sf := range reflect.VisibleFields(it) {
-			if sf.Type == reflect.TypeOf(In{}) {
-				return fmt.Errorf("fx.In structs cannot be annotated")
-			}
+		if it.NumField() > 0 && it.Field(0).Type == reflect.TypeOf(In{}) {
+			return fmt.Errorf("fx.In structs cannot be annotated")
 		}
 	}
 	return nil
