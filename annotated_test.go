@@ -850,4 +850,51 @@ func TestAnnotate(t *testing.T) {
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "must provide constructor function, got 42 (int)")
 	})
+
+	t.Run("annotate a fx.Out", func(t *testing.T) {
+		t.Parallel()
+
+		type A struct {
+			s string
+
+			fx.Out
+		}
+
+		f := func() A {
+			return A{s: "hi"}
+		}
+
+		app := NewForTest(t,
+			fx.Provide(
+				fx.Annotate(f, fx.ResultTags(`name:"out"`)),
+			),
+		)
+
+		err := app.Err()
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "fx.Out structs cannot be annotated")
+	})
+
+	t.Run("annotate a fx.In", func(t *testing.T) {
+		t.Parallel()
+
+		type A struct {
+			S string
+		}
+		type B struct {
+			fx.In
+		}
+
+		app := NewForTest(t,
+			fx.Provide(
+				fx.Annotate(func(i A) string { return i.S }, fx.ParamTags(`optional:"true"`)),
+				fx.Annotate(func(i B) string { return "ok" }, fx.ParamTags(`name:"problem"`)),
+			),
+		)
+		err := app.Err()
+		require.Error(t, err)
+		assert.NotContains(t, err.Error(), "invalid annotation function func(fx_test.A) string")
+		assert.Contains(t, err.Error(), "invalid annotation function func(fx_test.B) string")
+		assert.Contains(t, err.Error(), "fx.In structs cannot be annotated")
+	})
 }
