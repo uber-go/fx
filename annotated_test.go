@@ -855,9 +855,9 @@ func TestAnnotate(t *testing.T) {
 		t.Parallel()
 
 		type A struct {
-			fx.Out
-
 			s string
+
+			fx.Out
 		}
 
 		f := func() A {
