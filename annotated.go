@@ -26,6 +26,7 @@ import (
 	"reflect"
 	"strings"
 
+	"go.uber.org/dig"
 	"go.uber.org/fx/internal/fxreflect"
 )
 
@@ -290,7 +291,7 @@ func (ann *annotated) Build() (interface{}, error) {
 	}
 
 	if err := ann.typeCheckOrigFn(); err != nil {
-		return nil, fmt.Errorf("error while applying annotation to function %T: %w", ann.Target, err)
+		return nil, fmt.Errorf("invalid annotation function %T: %w", ann.Target, err)
 	}
 
 	paramTypes, remapParams := ann.parameters()
@@ -326,10 +327,8 @@ func (ann *annotated) typeCheckOrigFn() error {
 		if ot.Kind() != reflect.Struct {
 			continue
 		}
-		for i := 0; i < ot.NumField(); i++ {
-			if ot.Field(i).Type == reflect.TypeOf(Out{}) {
-				return errors.New("fx.Out structs cannot be annotated")
-			}
+		if dig.IsOut(reflect.New(ft.Out(i)).Elem().Interface()) {
+			return errors.New("fx.Out structs cannot be annotated")
 		}
 	}
 
@@ -338,10 +337,8 @@ func (ann *annotated) typeCheckOrigFn() error {
 		if it.Kind() != reflect.Struct {
 			continue
 		}
-		for i := 0; i < it.NumField(); i++ {
-			if it.Field(i).Type == reflect.TypeOf(In{}) {
-				return errors.New("fx.In structs cannot be annotated")
-			}
+		if dig.IsIn(reflect.New(ft.In(i)).Elem().Interface()) {
+			return errors.New("fx.In structs cannot be annotated")
 		}
 	}
 	return nil
