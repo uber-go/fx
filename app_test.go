@@ -130,8 +130,8 @@ func TestNewApp(t *testing.T) {
 
 		errMsg := err.Error()
 		assert.Contains(t, errMsg, "cycle detected in dependency graph")
-		assert.Contains(t, errMsg, "depends on fx_test.A")
-		assert.Contains(t, errMsg, "depends on fx_test.B")
+		assert.Contains(t, errMsg, "depends on func(fx_test.B) fx_test.A")
+		assert.Contains(t, errMsg, "depends on func(fx_test.A) fx_test.B")
 	})
 
 	t.Run("ProvidesDotGraph", func(t *testing.T) {
