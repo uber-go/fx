@@ -99,12 +99,18 @@ type provideOption struct {
 }
 
 func (o provideOption) apply(app *App) {
+	app.provides = append(app.provides, o.getProvides()...)
+}
+
+func (o provideOption) getProvides() []provide {
+	var provides []provide
 	for _, target := range o.Targets {
-		app.provides = append(app.provides, provide{
+		provides = append(provides, provide{
 			Target: target,
 			Stack:  o.Stack,
 		})
 	}
+	return provides
 }
 
 func (o provideOption) String() string {
@@ -152,6 +158,17 @@ func (o invokeOption) apply(app *App) {
 			Stack:  o.Stack,
 		})
 	}
+}
+
+func (o invokeOption) getInvokes() []invoke {
+	var invokes []invoke
+	for _, target := range o.Targets {
+		invokes = append(invokes, invoke{
+			Target: target,
+			Stack:  o.Stack,
+		})
+	}
+	return invokes
 }
 
 func (o invokeOption) String() string {
@@ -371,6 +388,8 @@ type App struct {
 	// Constructors and its dependencies.
 	provides []provide
 	invokes  []invoke
+	modules  []*module
+
 	// Used to setup logging within fx.
 	log            fxevent.Logger
 	logConstructor *provide // set only if fx.WithLogger was used
@@ -562,9 +581,21 @@ func New(opts ...Option) *App {
 		dig.DryRun(app.validate),
 	)
 
+	/*
+		for _, m := range app.modules {
+			m.build(app)
+		}
+	*/
+
 	for _, p := range app.provides {
 		app.provide(p)
 	}
+
+	/*
+		for _, m := range app.modules {
+			m.provide()
+		}
+	*/
 
 	frames := fxreflect.CallerStack(0, 0) // include New in the stack for default Provides
 	app.provide(provide{
