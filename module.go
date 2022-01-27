@@ -136,4 +136,8 @@ func (m *module) provide() {
 	for _, provide := range m.provides {
 		m.scope.Provide(provide.Target, dig.Export(true))
 	}
+
+	for _, m := range m.modules {
+		m.provide()
+	}
 }

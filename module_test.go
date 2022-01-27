@@ -28,25 +28,52 @@ import (
 	"go.uber.org/fx/fxtest"
 )
 
-func TestModule(t *testing.T) {
+func TestModuleSuccess(t *testing.T) {
 	t.Parallel()
 
-	type Logger struct {
-		Name string
-	}
+	t.Run("provide a dependency from a submodule", func(t *testing.T) {
+		type Logger struct {
+			Name string
+		}
 
-	redis := fx.Module("redis",
-		fx.Provide(func() *Logger {
-			return &Logger{Name: "redis"}
-		}),
-	)
+		redis := fx.Module("redis",
+			fx.Provide(func() *Logger {
+				return &Logger{Name: "redis"}
+			}),
+		)
 
-	app := fxtest.New(t,
-		redis,
-		fx.Invoke(func(l *Logger) {
-			assert.Equal(t, l.Name, "redis")
-		}),
-	)
+		app := fxtest.New(t,
+			redis,
+			fx.Invoke(func(l *Logger) {
+				assert.Equal(t, l.Name, "redis")
+			}),
+		)
 
-	defer app.RequireStart().RequireStop()
+		defer app.RequireStart().RequireStop()
+	})
+
+	t.Run("provide a dependency from sub-submodule", func(t *testing.T) {
+		type Logger struct {
+			Name string
+		}
+
+		grandchild := fx.Module("grandchild",
+			fx.Provide(func() *Logger {
+				return &Logger{Name: "redis"}
+			}),
+		)
+
+		child := fx.Module("child",
+			grandchild,
+		)
+
+		app := fxtest.New(t,
+			child,
+			fx.Invoke(func(l *Logger) {
+				assert.Equal(t, l.Name, "redis")
+			}),
+		)
+
+		defer app.RequireStart().RequireStop()
+	})
 }
