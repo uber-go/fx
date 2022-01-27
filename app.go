@@ -581,21 +581,17 @@ func New(opts ...Option) *App {
 		dig.DryRun(app.validate),
 	)
 
-	/*
-		for _, m := range app.modules {
-			m.build(app)
-		}
-	*/
+	for _, m := range app.modules {
+		m.build(app)
+	}
 
 	for _, p := range app.provides {
 		app.provide(p)
 	}
 
-	/*
-		for _, m := range app.modules {
-			m.provide()
-		}
-	*/
+	for _, m := range app.modules {
+		m.provide()
+	}
 
 	frames := fxreflect.CallerStack(0, 0) // include New in the stack for default Provides
 	app.provide(provide{

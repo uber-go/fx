@@ -18,12 +18,14 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package fx
+package fx_test
 
 import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/fx"
+	"go.uber.org/fx/fxtest"
 )
 
 func TestModule(t *testing.T) {
@@ -33,29 +35,18 @@ func TestModule(t *testing.T) {
 		Name string
 	}
 
-	/*
-		redis := Module("redis",
-			Provide(func() *Logger {
-				return &Logger{Name: "redis"}
-			}),
-		)
-
-		cassandra := Module("cassandra",
-			Provide(func() *Logger {
-				return &Logger{Name: "cassandra"}
-			}),
-		)
-	*/
-
-	app := New(
-		//redis,
-		//cassandra,
-		Provide(func() *Logger {
-			return &Logger{Name: "top"}
-		}),
-		Invoke(func(l *Logger) {
-			assert.Equal(t, l.Name, "top")
+	redis := fx.Module("redis",
+		fx.Provide(func() *Logger {
+			return &Logger{Name: "redis"}
 		}),
 	)
-	app.Run()
+
+	app := fxtest.New(t,
+		redis,
+		fx.Invoke(func(l *Logger) {
+			assert.Equal(t, l.Name, "redis")
+		}),
+	)
+
+	defer app.RequireStart().RequireStop()
 }

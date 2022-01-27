@@ -88,13 +88,13 @@ func (o moduleOption) apply(app *App) {
 }
 
 func (o moduleOption) applyOnModule(mod *module) {
-	newModule := module{
+	newModule := &module{
 		name:   o.Name,
 		parent: mod,
 	}
 
 	for _, m := range o.modules {
-		m.applyOnModule(&newModule)
+		m.applyOnModule(newModule)
 	}
 
 	for _, p := range o.provides {
@@ -114,7 +114,7 @@ type module struct {
 	scope    *dig.Scope
 	provides []provide
 	invokes  []invoke
-	modules  []module
+	modules  []*module
 }
 
 func (m *module) build(app *App) {
@@ -134,6 +134,6 @@ func (m *module) build(app *App) {
 
 func (m *module) provide() {
 	for _, provide := range m.provides {
-		m.scope.Provide(provide.Target)
+		m.scope.Provide(provide.Target, dig.Export(true))
 	}
 }
