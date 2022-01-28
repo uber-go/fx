@@ -970,6 +970,12 @@ func (app *App) executeInvokes() error {
 		}
 	}
 
+	for _, m := range app.modules {
+		if err := m.executeInvokes(); err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 

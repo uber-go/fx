@@ -24,6 +24,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.uber.org/fx"
 	"go.uber.org/fx/fxtest"
 )
@@ -32,6 +33,7 @@ func TestModuleSuccess(t *testing.T) {
 	t.Parallel()
 
 	t.Run("provide a dependency from a submodule", func(t *testing.T) {
+		t.Parallel()
 		type Logger struct {
 			Name string
 		}
@@ -52,7 +54,8 @@ func TestModuleSuccess(t *testing.T) {
 		defer app.RequireStart().RequireStop()
 	})
 
-	t.Run("provide a dependency from sub-submodule", func(t *testing.T) {
+	t.Run("provide a dependency from nested modules", func(t *testing.T) {
+		t.Parallel()
 		type Logger struct {
 			Name string
 		}
@@ -73,7 +76,49 @@ func TestModuleSuccess(t *testing.T) {
 				assert.Equal(t, l.Name, "redis")
 			}),
 		)
-
 		defer app.RequireStart().RequireStop()
+	})
+}
+
+func TestModuleFailures(t *testing.T) {
+	t.Parallel()
+
+	t.Run("invoke from submodule failed", func(t *testing.T) {
+		t.Parallel()
+
+		type A struct{}
+		type B struct{}
+
+		sub := fx.Module("sub",
+			fx.Provide(func() *A { return &A{} }),
+			fx.Invoke(func(*A, *B) { // missing dependency.
+				require.Fail(t, "this should not be called")
+			}),
+		)
+
+		app := NewForTest(t,
+			sub,
+			fx.Invoke(func(a *A) {
+				assert.NotNil(t, a)
+			}),
+		)
+
+		err := app.Err()
+		require.Error(t, err)
+	})
+
+	t.Run("provide the same dependency from multiple modules", func(t *testing.T) {
+		t.Parallel()
+
+		type A struct{}
+
+		app := NewForTest(t,
+			fx.Provide(func() A { return A{} }),
+			fx.Provide(func() A { return A{} }),
+			fx.Invoke(func(a A) {}),
+		)
+
+		err := app.Err()
+		require.Error(t, err)
 	})
 }

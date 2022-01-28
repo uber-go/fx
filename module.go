@@ -141,3 +141,12 @@ func (m *module) provide() {
 		m.provide()
 	}
 }
+
+func (m *module) executeInvokes() error {
+	for _, invoke := range m.invokes {
+		if err := m.scope.Invoke(invoke.Target); err != nil {
+			return err
+		}
+	}
+	return nil
+}
