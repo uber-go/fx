@@ -29,6 +29,9 @@ import (
 	"go.uber.org/fx/internal/fxreflect"
 )
 
+// Module is a named group of zero or more fx.Options. A Module is a
+// dependency graph with limited scope, and can be used for scoping
+// graph modifications (not implemented yet).
 func Module(name string, opts ...Option) Option {
 	mo := moduleOption{
 		Name: name,
@@ -54,7 +57,6 @@ type moduleOption struct {
 	provides []provideOption
 	invokes  []invokeOption
 	options  []Option
-	scope    *dig.Scope
 }
 
 func (o moduleOption) String() string {
