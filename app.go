@@ -590,7 +590,7 @@ func New(opts ...Option) *App {
 	}
 
 	for _, m := range app.modules {
-		m.provide()
+		m.provideAll()
 	}
 
 	frames := fxreflect.CallerStack(0, 0) // include New in the stack for default Provides

@@ -32,11 +32,12 @@ import (
 func TestModuleSuccess(t *testing.T) {
 	t.Parallel()
 
+	type Logger struct {
+		Name string
+	}
+
 	t.Run("provide a dependency from a submodule", func(t *testing.T) {
 		t.Parallel()
-		type Logger struct {
-			Name string
-		}
 
 		redis := fx.Module("redis",
 			fx.Provide(func() *Logger {
@@ -47,7 +48,7 @@ func TestModuleSuccess(t *testing.T) {
 		app := fxtest.New(t,
 			redis,
 			fx.Invoke(func(l *Logger) {
-				assert.Equal(t, l.Name, "redis")
+				assert.Equal(t, "redis", l.Name)
 			}),
 		)
 
@@ -56,9 +57,6 @@ func TestModuleSuccess(t *testing.T) {
 
 	t.Run("provide a dependency from nested modules", func(t *testing.T) {
 		t.Parallel()
-		type Logger struct {
-			Name string
-		}
 
 		grandchild := fx.Module("grandchild",
 			fx.Provide(func() *Logger {
@@ -73,10 +71,63 @@ func TestModuleSuccess(t *testing.T) {
 		app := fxtest.New(t,
 			child,
 			fx.Invoke(func(l *Logger) {
-				assert.Equal(t, l.Name, "redis")
+				assert.Equal(t, "redis", l.Name)
 			}),
 		)
 		defer app.RequireStart().RequireStop()
+	})
+
+	t.Run("invoke in module with dep from top module", func(t *testing.T) {
+		t.Parallel()
+		child := fx.Module("child",
+			fx.Invoke(func(l *Logger) {
+				assert.Equal(t, "my logger", l.Name)
+			}),
+		)
+		app := fxtest.New(t,
+			child,
+			fx.Provide(func() *Logger {
+				return &Logger{Name: "my logger"}
+			}),
+		)
+		defer app.RequireStart().RequireStop()
+	})
+
+	t.Run("provide in module with annotate", func(t *testing.T) {
+		t.Parallel()
+		child := fx.Module("child",
+			fx.Provide(fx.Annotate(func() *Logger {
+				return &Logger{Name: "good logger"}
+			}, fx.ResultTags(`name:"goodLogger"`))),
+		)
+		app := fxtest.New(t,
+			child,
+			fx.Invoke(fx.Annotate(func(l *Logger) {
+				assert.Equal(t, "good logger", l.Name)
+			}, fx.ParamTags(`name:"goodLogger"`))),
+		)
+		defer app.RequireStart().RequireStop()
+	})
+
+	t.Run("invoke in module with annotate", func(t *testing.T) {
+		t.Parallel()
+		ranInvoke := false
+		child := fx.Module("child",
+			// use something provided by the root module.
+			fx.Invoke(fx.Annotate(func(l *Logger) {
+				assert.Equal(t, "good logger", l.Name)
+				ranInvoke = true
+			})),
+		)
+		app := fxtest.New(t,
+			child,
+			fx.Provide(fx.Annotate(func() *Logger {
+				return &Logger{Name: "good logger"}
+			})),
+		)
+		require.NoError(t, app.Err())
+		defer app.RequireStart().RequireStop()
+		assert.True(t, ranInvoke)
 	})
 }
 
