@@ -54,6 +54,7 @@ type Option interface {
 	fmt.Stringer
 
 	apply(*App)
+	applyModule(*module)
 }
 
 // Provide registers any number of constructor functions, teaching the
@@ -100,6 +101,10 @@ type provideOption struct {
 
 func (o provideOption) apply(app *App) {
 	app.provides = append(app.provides, o.getProvides()...)
+}
+
+func (o provideOption) applyModule(mod *module) {
+	mod.provides = append(mod.provides, o.getProvides()...)
 }
 
 func (o provideOption) getProvides() []provide {
@@ -152,12 +157,11 @@ type invokeOption struct {
 }
 
 func (o invokeOption) apply(app *App) {
-	for _, target := range o.Targets {
-		app.invokes = append(app.invokes, invoke{
-			Target: target,
-			Stack:  o.Stack,
-		})
-	}
+	app.invokes = append(app.invokes, o.getInvokes()...)
+}
+
+func (o invokeOption) applyModule(mod *module) {
+	mod.invokes = append(mod.invokes, o.getInvokes()...)
 }
 
 func (o invokeOption) getInvokes() []invoke {
@@ -193,6 +197,10 @@ type errorOption []error
 
 func (errs errorOption) apply(app *App) {
 	app.err = multierr.Append(app.err, multierr.Combine(errs...))
+}
+
+func (errs errorOption) applyModule(mod *module) {
+	errs.apply(mod.app)
 }
 
 func (errs errorOption) String() string {
@@ -242,6 +250,12 @@ func (og optionGroup) apply(app *App) {
 	}
 }
 
+func (og optionGroup) applyModule(mod *module) {
+	for _, opt := range og {
+		opt.applyModule(mod)
+	}
+}
+
 func (og optionGroup) String() string {
 	items := make([]string, len(og))
 	for i, opt := range og {
@@ -261,6 +275,11 @@ func (t startTimeoutOption) apply(app *App) {
 	app.startTimeout = time.Duration(t)
 }
 
+func (t startTimeoutOption) applyModule(m *module) {
+	m.app.err = fmt.Errorf("fx.StartTimeout Option should be passed to top-level App, " +
+		"not to fx.Module")
+}
+
 func (t startTimeoutOption) String() string {
 	return fmt.Sprintf("fx.StartTimeout(%v)", time.Duration(t))
 }
@@ -274,6 +293,11 @@ type stopTimeoutOption time.Duration
 
 func (t stopTimeoutOption) apply(app *App) {
 	app.stopTimeout = time.Duration(t)
+}
+
+func (t stopTimeoutOption) applyModule(m *module) {
+	m.app.err = fmt.Errorf("fx.StopTimeout Option should be passed to top-level App, " +
+		"not to fx.Module")
 }
 
 func (t stopTimeoutOption) String() string {
@@ -312,6 +336,12 @@ func (l withLoggerOption) apply(app *App) {
 	}
 }
 
+func (l withLoggerOption) applyModule(m *module) {
+	// loggers shouldn't differ based on Module.
+	m.app.err = fmt.Errorf("fx.WithLogger Option should be passed to top-level App, " +
+		"not to fx.Module")
+}
+
 func (l withLoggerOption) String() string {
 	return fmt.Sprintf("fx.WithLogger(%s)", fxreflect.FuncName(l.constructor))
 }
@@ -336,6 +366,11 @@ type loggerOption struct{ p Printer }
 func (l loggerOption) apply(app *App) {
 	np := writerFromPrinter(l.p)
 	app.log = fxlog.DefaultLogger(np) // assuming np is thread-safe.
+}
+
+func (l loggerOption) applyModule(m *module) {
+	m.app.err = fmt.Errorf("fx.StartTimeout Option should be passed to top-level App, " +
+		"not to fx.Module")
 }
 
 func (l loggerOption) String() string {
@@ -447,6 +482,10 @@ func (eho errorHookOption) apply(app *App) {
 	app.errorHooks = append(app.errorHooks, eho...)
 }
 
+func (eho errorHookOption) applyModule(m *module) {
+	eho.apply(m.app)
+}
+
 func (eho errorHookOption) String() string {
 	items := make([]string, len(eho))
 	for i, eh := range eho {
@@ -476,6 +515,10 @@ type validateOption struct {
 
 func (o validateOption) apply(app *App) {
 	app.validate = o.validate
+}
+
+func (o validateOption) applyModule(m *module) {
+	m.app.validate = o.validate
 }
 
 func (o validateOption) String() string {

@@ -64,6 +64,25 @@ func TestSupply(t *testing.T) {
 		require.Same(t, bIn, bOut)
 	})
 
+	t.Run("SupplyInModule", func(t *testing.T) {
+		t.Parallel()
+
+		aIn, bIn := &A{}, &B{}
+		var aOut *A
+		var bOut *B
+
+		app := fxtest.New(
+			t,
+			fx.Module("module",
+				fx.Supply(aIn, bIn),
+			),
+			fx.Populate(&aOut, &bOut),
+		)
+		defer app.RequireStart().RequireStop()
+		require.Same(t, aIn, aOut)
+		require.Same(t, bIn, bOut)
+	})
+
 	t.Run("AnnotateIsSupplied", func(t *testing.T) {
 		t.Parallel()
 
@@ -134,18 +153,4 @@ func TestSupply(t *testing.T) {
 		require.Error(t, supplied[1].(*fxevent.Supplied).Err)
 	})
 
-	t.Run("supply in Module", func(t *testing.T) {
-		t.Parallel()
-
-		type foo struct{}
-
-		var spy fxlog.Spy
-		app := fx.New(
-			fx.WithLogger(func() fxevent.Logger { return &spy }),
-			fx.Module("module",
-				fx.Supply(&foo{}),
-			),
-		)
-		require.NoError(t, app.Err())
-	})
 }

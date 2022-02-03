@@ -97,6 +97,17 @@ func (o supplyOption) apply(app *App) {
 	}
 }
 
+func (o supplyOption) applyModule(m *module) {
+	for i, target := range o.Targets {
+		m.provides = append(m.provides, provide{
+			Target:     target,
+			Stack:      o.Stack,
+			IsSupply:   true,
+			SupplyType: o.Types[i],
+		})
+	}
+}
+
 func (o supplyOption) String() string {
 	items := make([]string, 0, len(o.Targets))
 	for _, typ := range o.Types {

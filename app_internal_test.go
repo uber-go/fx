@@ -89,6 +89,10 @@ func (o withExitOption) apply(app *App) {
 	app.osExit = o
 }
 
+func (o withExitOption) applyModule(m *module) {
+	m.app.osExit = o
+}
+
 // WithClock specifies how Fx accesses time operations.
 //
 // This is an internal option available only to tests defined in this package.
@@ -100,6 +104,10 @@ type withClockOption struct{ clock fxclock.Clock }
 
 func (o withClockOption) apply(app *App) {
 	app.clock = o.clock
+}
+
+func (o withClockOption) applyModule(m *module) {
+	m.app.clock = o.clock
 }
 
 func (o withClockOption) String() string {

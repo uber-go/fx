@@ -34,81 +34,53 @@ import (
 // graph modifications (not implemented yet).
 func Module(name string, opts ...Option) Option {
 	mo := moduleOption{
-		Name: name,
-	}
-	for _, opt := range opts {
-		switch o := opt.(type) {
-		case provideOption:
-			mo.provides = append(mo.provides, o)
-		case invokeOption:
-			mo.invokes = append(mo.invokes, o)
-		case moduleOption:
-			mo.modules = append(mo.modules, o)
-		default:
-			mo.options = append(mo.options, o)
-		}
+		name:    name,
+		options: opts,
 	}
 	return mo
 }
 
 type moduleOption struct {
-	Name     string
-	modules  []moduleOption
-	provides []provideOption
-	invokes  []invokeOption
-	options  []Option
+	name    string
+	options []Option
 }
 
 func (o moduleOption) String() string {
-	return fmt.Sprintf("module %s", o.Name)
+	return fmt.Sprintf("module %s", o.name)
 }
 
 func (o moduleOption) apply(app *App) {
 	// This is the top-level module's apply.
-	// Basically, this module acts as the "root" module that
-	// connects all of its submodules to the App.
-	// To do this, it needs to do the following, strictly in order:
-	// 1. Create a new Scope.
-	// 2. Create a new Module
-	// 3. Apply any child modules on the new module
-	// 4. Append the new module to the App's modules.
-
+	// This module acts as the "root" module that connects all of its
+	// its submodules to the rest of the App.
+	// 1. Create a new module
+	// 2. Apply child Options on the new module
+	// 3. Append the new module to the App's modules.
 	newModule := &module{
-		name: o.Name,
+		name: o.name,
 		app:  app,
 	}
-
-	for _, m := range o.modules {
-		m.applyOnModule(newModule)
-	}
-
-	for _, p := range o.provides {
-		newModule.provides = append(newModule.provides, p.getProvides()...)
-	}
-
-	for _, i := range o.invokes {
-		newModule.invokes = append(newModule.invokes, i.getInvokes()...)
+	for _, opt := range o.options {
+		opt.applyModule(newModule)
 	}
 	app.modules = append(app.modules, newModule)
 }
 
-func (o moduleOption) applyOnModule(mod *module) {
+func (o moduleOption) applyModule(mod *module) {
+	// This get called on any submodules' that are declared
+	// as part of another module.
+
+	// 1. Create a new module with the parent being the specified
+	// module.
+	// 2. Apply child Options on the new module.
+	// 3. Append it to the parent module.
 	newModule := &module{
-		name:   o.Name,
+		name:   o.name,
 		parent: mod,
 		app:    mod.app,
 	}
-
-	for _, m := range o.modules {
-		m.applyOnModule(newModule)
-	}
-
-	for _, p := range o.provides {
-		newModule.provides = append(newModule.provides, p.getProvides()...)
-	}
-
-	for _, i := range o.invokes {
-		newModule.invokes = append(newModule.invokes, i.getInvokes()...)
+	for _, opt := range o.options {
+		opt.applyModule(newModule)
 	}
 	mod.modules = append(mod.modules, newModule)
 }
@@ -123,9 +95,11 @@ type module struct {
 	app      *App
 }
 
+// builds the Scopes using the App's Container. Note that this happens
+// after applyModules' are called because the App's Container needs to
+// be built for any Scopes to be initialized, and applys' should be called
+// before the Container can get initialized.
 func (m *module) build(app *App) {
-	// Builds the scopes using the info so far.
-
 	if m.parent == nil {
 		m.scope = app.container.Scope(m.name)
 	} else {
