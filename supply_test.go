@@ -104,8 +104,7 @@ func TestSupply(t *testing.T) {
 		require.NotPanicsf(
 			t,
 			func() { fx.Supply(A{}, (*B)(nil)) },
-			"a wrapped nil should not panic",
-		)
+			"a wrapped nil should not panic")
 
 		require.PanicsWithValuef(
 			t,
@@ -133,5 +132,20 @@ func TestSupply(t *testing.T) {
 		require.Len(t, supplied, 2)
 		require.NoError(t, supplied[0].(*fxevent.Supplied).Err)
 		require.Error(t, supplied[1].(*fxevent.Supplied).Err)
+	})
+
+	t.Run("supply in Module", func(t *testing.T) {
+		t.Parallel()
+
+		type foo struct{}
+
+		var spy fxlog.Spy
+		app := fx.New(
+			fx.WithLogger(func() fxevent.Logger { return &spy }),
+			fx.Module("module",
+				fx.Supply(&foo{}),
+			),
+		)
+		require.NoError(t, app.Err())
 	})
 }

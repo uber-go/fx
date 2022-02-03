@@ -151,7 +151,7 @@ func (m *module) provideAll() {
 func (m *module) provide(p provide) {
 	constructor := p.Target
 	if _, ok := constructor.(Option); ok {
-		m.app.err = fmt.Errorf("fx.Option should be passed to fx.New directly, "+
+		m.app.err = fmt.Errorf("fx.Option should be passed to fx.Module directly, "+
 			"not to fx.Provide: fx.Provide received %v from:\n%+v",
 			constructor, p.Stack)
 		return
@@ -272,7 +272,7 @@ func (m *module) executeInvoke(i invoke) (err error) {
 
 	switch fn := fn.(type) {
 	case Option:
-		return fmt.Errorf("fx.Option should be passed to fx.New directly, "+
+		return fmt.Errorf("fx.Option should be passed to fx.Module directly, "+
 			"not to fx.Invoke: fx.Invoke received %v from:\n%+v",
 			fn, i.Stack)
 

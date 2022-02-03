@@ -21,6 +21,7 @@
 package fx_test
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -57,22 +58,32 @@ func TestModuleSuccess(t *testing.T) {
 
 	t.Run("provide a dependency from nested modules", func(t *testing.T) {
 		t.Parallel()
-
-		grandchild := fx.Module("grandchild",
-			fx.Provide(func() *Logger {
-				return &Logger{Name: "redis"}
-			}),
-		)
-
-		child := fx.Module("child",
-			grandchild,
-		)
-
 		app := fxtest.New(t,
-			child,
+			fx.Module("child",
+				fx.Module("grandchild",
+					fx.Provide(func() *Logger {
+						return &Logger{Name: "redis"}
+					}),
+				),
+			),
 			fx.Invoke(func(l *Logger) {
 				assert.Equal(t, "redis", l.Name)
 			}),
+		)
+		defer app.RequireStart().RequireStop()
+	})
+
+	t.Run("invoke from nested module", func(t *testing.T) {
+		t.Parallel()
+
+		app := fxtest.New(t,
+			fx.Module("child",
+				fx.Module("grandchild",
+					fx.Invoke(func(l *Logger) {
+						assert.Equal(t, "redis", l.Name)
+					}),
+				),
+			),
 		)
 		defer app.RequireStart().RequireStop()
 	})
@@ -156,6 +167,7 @@ func TestModuleFailures(t *testing.T) {
 
 		err := app.Err()
 		require.Error(t, err)
+		assert.Contains(t, err.Error(), "missing type: *fx_test.B")
 	})
 
 	t.Run("provide the same dependency from multiple modules", func(t *testing.T) {
@@ -171,5 +183,88 @@ func TestModuleFailures(t *testing.T) {
 
 		err := app.Err()
 		require.Error(t, err)
+		assert.Contains(t, err.Error(), "already provided by ")
+	})
+
+	t.Run("providing Modules should fail", func(t *testing.T) {
+		t.Parallel()
+		app := NewForTest(t,
+			fx.Module("module",
+				fx.Provide(
+					fx.Module("module"),
+				),
+			),
+		)
+		err := app.Err()
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "fx.Option should be passed to fx.Module directly, not to fx.Provide")
+	})
+
+	t.Run("invoking Modules should fail", func(t *testing.T) {
+		t.Parallel()
+		app := NewForTest(t,
+			fx.Module("module",
+				fx.Invoke(
+					fx.Invoke("module"),
+				),
+			),
+		)
+		err := app.Err()
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "fx.Option should be passed to fx.Module directly, not to fx.Invoke")
+	})
+
+	t.Run("annotate failure in Module", func(t *testing.T) {
+		t.Parallel()
+
+		type A struct{}
+		newA := func() A {
+			return A{}
+		}
+
+		app := NewForTest(t,
+			fx.Module("module",
+				fx.Provide(fx.Annotate(newA,
+					fx.ParamTags(`"name:"A1"`),
+					fx.ParamTags(`"name:"A2"`),
+				)),
+			),
+		)
+		err := app.Err()
+		require.Error(t, err)
+
+		assert.Contains(t, err.Error(), "encountered error while applying annotation")
+		assert.Contains(t, err.Error(), "cannot apply more than one line of ParamTags")
+	})
+
+	t.Run("provider in Module fails", func(t *testing.T) {
+		t.Parallel()
+
+		type A struct{}
+		type B struct{}
+
+		newA := func() (A, error) {
+			return A{}, nil
+		}
+		newB := func() (B, error) {
+			return B{}, errors.New("minor sadness")
+		}
+
+		app := NewForTest(t,
+			fx.Module("module",
+				fx.Provide(
+					newA,
+					newB,
+				),
+			),
+			fx.Invoke(func(A, B) {
+				assert.Fail(t, "this should never run")
+			}),
+		)
+
+		err := app.Err()
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "failed to build fx_test.B")
+		assert.Contains(t, err.Error(), "minor sadness")
 	})
 }
