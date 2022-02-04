@@ -23,11 +23,14 @@ package fx_test
 import (
 	"errors"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/fx"
+	"go.uber.org/fx/fxevent"
 	"go.uber.org/fx/fxtest"
+	"go.uber.org/fx/internal/fxlog"
 )
 
 func TestModuleSuccess(t *testing.T) {
@@ -139,6 +142,30 @@ func TestModuleSuccess(t *testing.T) {
 		require.NoError(t, app.Err())
 		defer app.RequireStart().RequireStop()
 		assert.True(t, ranInvoke)
+	})
+
+	t.Run("use Options in Module", func(t *testing.T) {
+		t.Parallel()
+
+		opts := fx.Options(
+			fx.Provide(fx.Annotate(func() string {
+				return "dog"
+			}, fx.ResultTags(`group:"pets"`))),
+			fx.Provide(fx.Annotate(func() string {
+				return "cat"
+			}, fx.ResultTags(`group:"pets"`))),
+		)
+
+		petModule := fx.Module("pets", opts)
+
+		app := fxtest.New(t,
+			petModule,
+			fx.Invoke(fx.Annotate(func(pets []string) {
+				assert.ElementsMatch(t, []string{"dog", "cat"}, pets)
+			}, fx.ParamTags(`group:"pets"`))),
+		)
+
+		defer app.RequireStart().RequireStop()
 	})
 }
 
@@ -266,5 +293,41 @@ func TestModuleFailures(t *testing.T) {
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "failed to build fx_test.B")
 		assert.Contains(t, err.Error(), "minor sadness")
+	})
+
+	t.Run("invalid Options in Module", func(t *testing.T) {
+		t.Parallel()
+
+		tests := []struct {
+			desc string
+			opt  fx.Option
+		}{
+			{
+				desc: "StartTimeout Option",
+				opt:  fx.StartTimeout(time.Second),
+			},
+			{
+				desc: "StopTimeout Option",
+				opt:  fx.StopTimeout(time.Second),
+			},
+			{
+				desc: "WithLogger Option",
+				opt:  fx.WithLogger(func() fxevent.Logger { return new(fxlog.Spy) }),
+			},
+		}
+
+		for _, tt := range tests {
+			tt := tt
+			t.Run(tt.desc, func(t *testing.T) {
+				t.Parallel()
+
+				app := NewForTest(t,
+					fx.Module("module",
+						tt.opt,
+					),
+				)
+				require.Error(t, app.Err())
+			})
+		}
 	})
 }
