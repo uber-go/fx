@@ -22,12 +22,21 @@ package fx
 
 import (
 	"fmt"
-	"reflect"
 
 	"go.uber.org/dig"
 	"go.uber.org/fx/fxevent"
 	"go.uber.org/fx/internal/fxreflect"
 )
+
+// A container represents a set of constructors to provide
+// dependencies, and a set of functions to invoke once all the
+// dependencies have been initialized.
+//
+// This definition corresponds to the dig.Container and dig.Scope.
+type container interface {
+	Invoke(interface{}, ...dig.InvokeOption) error
+	Provide(interface{}, ...dig.ProvideOption) error
+}
 
 // Module is a named group of zero or more fx.Options. A Module is a
 // dependency graph with limited scope, and can be used for scoping
@@ -99,45 +108,26 @@ type module struct {
 // after applyModules' are called because the App's Container needs to
 // be built for any Scopes to be initialized, and applys' should be called
 // before the Container can get initialized.
-func (m *module) build(app *App) {
+func (m *module) build(app *App, root *dig.Container) {
 	if m.parent == nil {
-		m.scope = app.container.Scope(m.name)
+		m.scope = root.Scope(m.name)
 	} else {
 		parentScope := m.parent.scope
 		m.scope = parentScope.Scope(m.name)
 	}
 
 	for i := 0; i < len(m.modules); i++ {
-		m.modules[i].build(app)
+		m.modules[i].build(app, root)
 	}
 }
 
 func (m *module) provideAll() {
-	for _, provide := range m.provides {
-		m.provide(provide)
-	}
-
-	for _, m := range m.modules {
-		m.provideAll()
-	}
-}
-
-func (m *module) provide(p provide) {
-	constructor := p.Target
-	if _, ok := constructor.(Option); ok {
-		m.app.err = fmt.Errorf("fx.Option should be passed to fx.Module directly, "+
-			"not to fx.Provide: fx.Provide received %v from:\n%+v",
-			constructor, p.Stack)
-		return
-	}
-
-	var info dig.ProvideInfo
-	opts := []dig.ProvideOption{
-		dig.FillProvideInfo(&info),
-	}
-	defer func() {
+	for _, p := range m.provides {
+		var info dig.ProvideInfo
+		if err := runProvide(m.scope, p, dig.FillProvideInfo(&info), dig.Export(true)); err != nil {
+			m.app.err = err
+		}
 		var ev fxevent.Event
-
 		switch {
 		case p.IsSupply:
 			ev = &fxevent.Supplied{
@@ -152,73 +142,16 @@ func (m *module) provide(p provide) {
 			}
 
 			ev = &fxevent.Provided{
-				ConstructorName: fxreflect.FuncName(constructor),
+				ConstructorName: fxreflect.FuncName(p.Target),
 				OutputTypeNames: outputNames,
 				Err:             m.app.err,
 			}
 		}
-
 		m.app.log.LogEvent(ev)
-	}()
+	}
 
-	switch constructor := constructor.(type) {
-	case annotationError:
-		// fx.Annotate failed. Turn it into an Fx error.
-		m.app.err = fmt.Errorf(
-			"encountered error while applying annotation using fx.Annotate to %s: %+v",
-			fxreflect.FuncName(constructor.target), constructor.err)
-		return
-
-	case annotated:
-		c, err := constructor.Build()
-		if err != nil {
-			m.app.err = fmt.Errorf("fx.Provide(%v) from:\n%+vFailed: %v", constructor, p.Stack, err)
-			return
-		}
-
-		if err := m.scope.Provide(c, append(opts, dig.Export(true))...); err != nil {
-			m.app.err = fmt.Errorf("fx.Provide(%v) from:\n%+vFailed: %v", constructor, p.Stack, err)
-		}
-
-	case Annotated:
-		ann := constructor
-		switch {
-		case len(ann.Group) > 0 && len(ann.Name) > 0:
-			m.app.err = fmt.Errorf(
-				"fx.Annotated may specify only one of Name or Group: received %v from:\n%+v",
-				ann, p.Stack)
-			return
-		case len(ann.Name) > 0:
-			opts = append(opts, dig.Name(ann.Name))
-		case len(ann.Group) > 0:
-			opts = append(opts, dig.Group(ann.Group))
-		}
-
-		if err := m.scope.Provide(constructor, append(opts, dig.Export(true))...); err != nil {
-			m.app.err = fmt.Errorf("fx.Provide(%v) from:\n%+vFailed: %v", ann, p.Stack, err)
-		}
-
-	default:
-		if reflect.TypeOf(constructor).Kind() == reflect.Func {
-			ft := reflect.ValueOf(constructor).Type()
-
-			for i := 0; i < ft.NumOut(); i++ {
-				t := ft.Out(i)
-
-				if t == reflect.TypeOf(Annotated{}) {
-					m.app.err = fmt.Errorf(
-						"fx.Annotated should be passed to fx.Provide directly, "+
-							"it should not be returned by the constructor: "+
-							"fx.Provide received %v from:\n%+v",
-						fxreflect.FuncName(constructor), p.Stack)
-					return
-				}
-			}
-		}
-
-		if err := m.scope.Provide(constructor, append(opts, dig.Export(true))...); err != nil {
-			m.app.err = fmt.Errorf("fx.Provide(%v) from:\n%+vFailed: %v", fxreflect.FuncName(constructor), p.Stack, err)
-		}
+	for _, m := range m.modules {
+		m.provideAll()
 	}
 }
 
@@ -232,10 +165,11 @@ func (m *module) executeInvokes() error {
 }
 
 func (m *module) executeInvoke(i invoke) (err error) {
-	fn := i.Target
-	fnName := fxreflect.FuncName(fn)
-
-	m.app.log.LogEvent(&fxevent.Invoking{FunctionName: fnName})
+	fnName := fxreflect.FuncName(i.Target)
+	m.app.log.LogEvent(&fxevent.Invoking{
+		FunctionName: fnName,
+	})
+	err = runInvoke(m.scope, i)
 	defer func() {
 		m.app.log.LogEvent(&fxevent.Invoked{
 			FunctionName: fnName,
@@ -243,21 +177,5 @@ func (m *module) executeInvoke(i invoke) (err error) {
 			Trace:        fmt.Sprintf("%+v", i.Stack), // format stack trace as multi-line
 		})
 	}()
-
-	switch fn := fn.(type) {
-	case Option:
-		return fmt.Errorf("fx.Option should be passed to fx.Module directly, "+
-			"not to fx.Invoke: fx.Invoke received %v from:\n%+v",
-			fn, i.Stack)
-
-	case annotated:
-		c, err := fn.Build()
-		if err != nil {
-			return err
-		}
-
-		return m.scope.Invoke(c)
-	default:
-		return m.scope.Invoke(fn)
-	}
+	return err
 }

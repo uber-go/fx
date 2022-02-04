@@ -418,12 +418,12 @@ var NopLogger = WithLogger(func() fxevent.Logger { return fxevent.NopLogger })
 type App struct {
 	err       error
 	clock     fxclock.Clock
-	container *dig.Container
 	lifecycle *lifecycleWrapper
-	// Constructors and its dependencies.
-	provides []provide
-	invokes  []invoke
-	modules  []*module
+
+	container *dig.Container
+	modules   []*module
+	provides  []provide
+	invokes   []invoke
 
 	// Used to setup logging within fx.
 	log            fxevent.Logger
@@ -625,7 +625,7 @@ func New(opts ...Option) *App {
 	)
 
 	for _, m := range app.modules {
-		m.build(app)
+		m.build(app, app.container)
 	}
 
 	for _, p := range app.provides {
@@ -902,104 +902,31 @@ func (app *App) provide(p provide) {
 		return
 	}
 
-	constructor := p.Target
-	if _, ok := constructor.(Option); ok {
-		app.err = fmt.Errorf("fx.Option should be passed to fx.New directly, "+
-			"not to fx.Provide: fx.Provide received %v from:\n%+v",
-			constructor, p.Stack)
-		return
-	}
-
 	var info dig.ProvideInfo
-	opts := []dig.ProvideOption{
-		dig.FillProvideInfo(&info),
+	if err := runProvide(app.container, p, dig.FillProvideInfo(&info)); err != nil {
+		app.err = err
 	}
-	defer func() {
-		var ev fxevent.Event
-
-		switch {
-		case p.IsSupply:
-			ev = &fxevent.Supplied{
-				TypeName: p.SupplyType.String(),
-				Err:      app.err,
-			}
-
-		default:
-			outputNames := make([]string, len(info.Outputs))
-			for i, o := range info.Outputs {
-				outputNames[i] = o.String()
-			}
-
-			ev = &fxevent.Provided{
-				ConstructorName: fxreflect.FuncName(constructor),
-				OutputTypeNames: outputNames,
-				Err:             app.err,
-			}
-		}
-
-		app.log.LogEvent(ev)
-	}()
-
-	switch constructor := constructor.(type) {
-	case annotationError:
-		// fx.Annotate failed. Turn it into an Fx error.
-		app.err = fmt.Errorf(
-			"encountered error while applying annotation using fx.Annotate to %s: %+v",
-			fxreflect.FuncName(constructor.target), constructor.err)
-		return
-
-	case annotated:
-		c, err := constructor.Build()
-		if err != nil {
-			app.err = fmt.Errorf("fx.Provide(%v) from:\n%+vFailed: %v", constructor, p.Stack, err)
-			return
-		}
-
-		if err := app.container.Provide(c, opts...); err != nil {
-			app.err = fmt.Errorf("fx.Provide(%v) from:\n%+vFailed: %v", constructor, p.Stack, err)
-		}
-
-	case Annotated:
-		ann := constructor
-		switch {
-		case len(ann.Group) > 0 && len(ann.Name) > 0:
-			app.err = fmt.Errorf(
-				"fx.Annotated may specify only one of Name or Group: received %v from:\n%+v",
-				ann, p.Stack)
-			return
-		case len(ann.Name) > 0:
-			opts = append(opts, dig.Name(ann.Name))
-		case len(ann.Group) > 0:
-			opts = append(opts, dig.Group(ann.Group))
-		}
-
-		if err := app.container.Provide(ann.Target, opts...); err != nil {
-			app.err = fmt.Errorf("fx.Provide(%v) from:\n%+vFailed: %v", ann, p.Stack, err)
+	var ev fxevent.Event
+	switch {
+	case p.IsSupply:
+		ev = &fxevent.Supplied{
+			TypeName: p.SupplyType.String(),
+			Err:      app.err,
 		}
 
 	default:
-		if reflect.TypeOf(constructor).Kind() == reflect.Func {
-			ft := reflect.ValueOf(constructor).Type()
-
-			for i := 0; i < ft.NumOut(); i++ {
-				t := ft.Out(i)
-
-				if t == reflect.TypeOf(Annotated{}) {
-					app.err = fmt.Errorf(
-						"fx.Annotated should be passed to fx.Provide directly, "+
-							"it should not be returned by the constructor: "+
-							"fx.Provide received %v from:\n%+v",
-						fxreflect.FuncName(constructor), p.Stack)
-					return
-				}
-			}
+		outputNames := make([]string, len(info.Outputs))
+		for i, o := range info.Outputs {
+			outputNames[i] = o.String()
 		}
 
-		if err := app.container.Provide(constructor, opts...); err != nil {
-			app.err = fmt.Errorf("fx.Provide(%v) from:\n%+vFailed: %v", fxreflect.FuncName(constructor), p.Stack, err)
+		ev = &fxevent.Provided{
+			ConstructorName: fxreflect.FuncName(p.Target),
+			OutputTypeNames: outputNames,
+			Err:             app.err,
 		}
 	}
-
+	app.log.LogEvent(ev)
 }
 
 // Execute invokes in order supplied to New, returning the first error
@@ -1023,10 +950,11 @@ func (app *App) executeInvokes() error {
 }
 
 func (app *App) executeInvoke(i invoke) (err error) {
-	fn := i.Target
-	fnName := fxreflect.FuncName(fn)
-
-	app.log.LogEvent(&fxevent.Invoking{FunctionName: fnName})
+	fnName := fxreflect.FuncName(i.Target)
+	app.log.LogEvent(&fxevent.Invoking{
+		FunctionName: fnName,
+	})
+	err = runInvoke(app.container, i)
 	defer func() {
 		app.log.LogEvent(&fxevent.Invoked{
 			FunctionName: fnName,
@@ -1034,23 +962,7 @@ func (app *App) executeInvoke(i invoke) (err error) {
 			Trace:        fmt.Sprintf("%+v", i.Stack), // format stack trace as multi-line
 		})
 	}()
-
-	switch fn := fn.(type) {
-	case Option:
-		return fmt.Errorf("fx.Option should be passed to fx.New directly, "+
-			"not to fx.Invoke: fx.Invoke received %v from:\n%+v",
-			fn, i.Stack)
-
-	case annotated:
-		c, err := fn.Build()
-		if err != nil {
-			return err
-		}
-
-		return app.container.Invoke(c)
-	default:
-		return app.container.Invoke(fn)
-	}
+	return err
 }
 
 type withTimeoutParams struct {

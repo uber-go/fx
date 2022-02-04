@@ -197,7 +197,7 @@ func TestModuleFailures(t *testing.T) {
 		)
 		err := app.Err()
 		require.Error(t, err)
-		assert.Contains(t, err.Error(), "fx.Option should be passed to fx.Module directly, not to fx.Provide")
+		assert.Contains(t, err.Error(), "fx.Option should be passed to fx.New directly, not to fx.Provide")
 	})
 
 	t.Run("invoking Modules should fail", func(t *testing.T) {
@@ -211,7 +211,7 @@ func TestModuleFailures(t *testing.T) {
 		)
 		err := app.Err()
 		require.Error(t, err)
-		assert.Contains(t, err.Error(), "fx.Option should be passed to fx.Module directly, not to fx.Invoke")
+		assert.Contains(t, err.Error(), "fx.Option should be passed to fx.New directly, not to fx.Invoke")
 	})
 
 	t.Run("annotate failure in Module", func(t *testing.T) {
