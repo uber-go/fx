@@ -161,6 +161,10 @@ func (m *module) executeInvokes() error {
 			return err
 		}
 	}
+
+	for _, m := range m.modules {
+		m.executeInvokes()
+	}
 	return nil
 }
 

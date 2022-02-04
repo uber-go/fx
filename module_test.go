@@ -78,16 +78,24 @@ func TestModuleSuccess(t *testing.T) {
 
 	t.Run("invoke from nested module", func(t *testing.T) {
 		t.Parallel()
-
+		invokeRan := false
 		app := fxtest.New(t,
+			fx.Provide(func() *Logger {
+				return &Logger{
+					Name: "redis",
+				}
+			}),
 			fx.Module("child",
 				fx.Module("grandchild",
 					fx.Invoke(func(l *Logger) {
 						assert.Equal(t, "redis", l.Name)
+						invokeRan = true
 					}),
 				),
 			),
 		)
+		require.True(t, invokeRan)
+		require.NoError(t, app.Err())
 		defer app.RequireStart().RequireStop()
 	})
 
