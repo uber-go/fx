@@ -211,8 +211,8 @@ func TestModuleFailures(t *testing.T) {
 		type A struct{}
 
 		app := NewForTest(t,
-			fx.Provide(func() A { return A{} }),
-			fx.Provide(func() A { return A{} }),
+			fx.Module("mod1", fx.Provide(func() A { return A{} })),
+			fx.Module("mod2", fx.Provide(func() A { return A{} })),
 			fx.Invoke(func(a A) {}),
 		)
 
