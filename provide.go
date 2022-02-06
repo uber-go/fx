@@ -23,10 +23,80 @@ package fx
 import (
 	"fmt"
 	"reflect"
+	"strings"
 
 	"go.uber.org/dig"
 	"go.uber.org/fx/internal/fxreflect"
 )
+
+// Provide registers any number of constructor functions, teaching the
+// application how to instantiate various types. The supplied constructor
+// function(s) may depend on other types available in the application, must
+// return one or more objects, and may return an error. For example:
+//
+//  // Constructs type *C, depends on *A and *B.
+//  func(*A, *B) *C
+//
+//  // Constructs type *C, depends on *A and *B, and indicates failure by
+//  // returning an error.
+//  func(*A, *B) (*C, error)
+//
+//  // Constructs types *B and *C, depends on *A, and can fail.
+//  func(*A) (*B, *C, error)
+//
+// The order in which constructors are provided doesn't matter, and passing
+// multiple Provide options appends to the application's collection of
+// constructors. Constructors are called only if one or more of their returned
+// types are needed, and their results are cached for reuse (so instances of a
+// type are effectively singletons within an application). Taken together,
+// these properties make it perfectly reasonable to Provide a large number of
+// constructors even if only a fraction of them are used.
+//
+// See the documentation of the In and Out types for advanced features,
+// including optional parameters and named instances.
+//
+// Constructor functions should perform as little external interaction as
+// possible, and should avoid spawning goroutines. Things like server listen
+// loops, background timer loops, and background processing goroutines should
+// instead be managed using Lifecycle callbacks.
+func Provide(constructors ...interface{}) Option {
+	return provideOption{
+		Targets: constructors,
+		Stack:   fxreflect.CallerStack(1, 0),
+	}
+}
+
+type provideOption struct {
+	Targets []interface{}
+	Stack   fxreflect.Stack
+}
+
+func (o provideOption) apply(app *App) {
+	app.provides = append(app.provides, o.getProvides()...)
+}
+
+func (o provideOption) applyModule(mod *module) {
+	mod.provides = append(mod.provides, o.getProvides()...)
+}
+
+func (o provideOption) getProvides() []provide {
+	var provides []provide
+	for _, target := range o.Targets {
+		provides = append(provides, provide{
+			Target: target,
+			Stack:  o.Stack,
+		})
+	}
+	return provides
+}
+
+func (o provideOption) String() string {
+	items := make([]string, len(o.Targets))
+	for i, c := range o.Targets {
+		items[i] = fxreflect.FuncName(c)
+	}
+	return fmt.Sprintf("fx.Provide(%s)", strings.Join(items, ", "))
+}
 
 func runProvide(c container, p provide, opts ...dig.ProvideOption) error {
 	constructor := p.Target

@@ -22,8 +22,67 @@ package fx
 
 import (
 	"fmt"
+	"strings"
+
+	"go.uber.org/fx/internal/fxreflect"
 )
 
+// Invoke registers functions that are executed eagerly on application start.
+// Arguments for these invocations are built using the constructors registered
+// by Provide. Passing multiple Invoke options appends the new invocations to
+// the application's existing list.
+//
+// Unlike constructors, invocations are always executed, and they're always
+// run in order. Invocations may have any number of returned values. If the
+// final returned object is an error, it's assumed to be a success indicator.
+// All other returned values are discarded.
+//
+// Typically, invoked functions take a handful of high-level objects (whose
+// constructors depend on lower-level objects) and introduce them to each
+// other. This kick-starts the application by forcing it to instantiate a
+// variety of types.
+//
+// To see an invocation in use, read through the package-level example. For
+// advanced features, including optional parameters and named instances, see
+// the documentation of the In and Out types.
+func Invoke(funcs ...interface{}) Option {
+	return invokeOption{
+		Targets: funcs,
+		Stack:   fxreflect.CallerStack(1, 0),
+	}
+}
+
+type invokeOption struct {
+	Targets []interface{}
+	Stack   fxreflect.Stack
+}
+
+func (o invokeOption) apply(app *App) {
+	app.invokes = append(app.invokes, o.getInvokes()...)
+}
+
+func (o invokeOption) applyModule(mod *module) {
+	mod.invokes = append(mod.invokes, o.getInvokes()...)
+}
+
+func (o invokeOption) getInvokes() []invoke {
+	var invokes []invoke
+	for _, target := range o.Targets {
+		invokes = append(invokes, invoke{
+			Target: target,
+			Stack:  o.Stack,
+		})
+	}
+	return invokes
+}
+
+func (o invokeOption) String() string {
+	items := make([]string, len(o.Targets))
+	for i, f := range o.Targets {
+		items[i] = fxreflect.FuncName(f)
+	}
+	return fmt.Sprintf("fx.Invoke(%s)", strings.Join(items, ", "))
+}
 func runInvoke(c container, i invoke) error {
 	fn := i.Target
 	switch fn := fn.(type) {

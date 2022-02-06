@@ -147,7 +147,6 @@ func TestModuleSuccess(t *testing.T) {
 				return &Logger{Name: "good logger"}
 			})),
 		)
-		require.NoError(t, app.Err())
 		defer app.RequireStart().RequireStop()
 		assert.True(t, ranInvoke)
 	})
