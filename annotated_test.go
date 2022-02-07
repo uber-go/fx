@@ -522,6 +522,10 @@ func TestAnnotate(t *testing.T) {
 	newSliceA := func(sa ...*a) *sliceA {
 		return &sliceA{sa}
 	}
+	newSliceAWithB := func(b *b, sa ...*a) *sliceA {
+		total := append(sa, b.a)
+		return &sliceA{total}
+	}
 
 	t.Run("Provide with optional", func(t *testing.T) {
 		t.Parallel()
@@ -597,6 +601,50 @@ func TestAnnotate(t *testing.T) {
 		require.NoError(t, app.Err())
 
 		assert.Len(t, got.sa, 2)
+	})
+
+	t.Run("Provide variadic function named with no given params", func(t *testing.T) {
+		t.Parallel()
+
+		var got *sliceA
+		app := fxtest.New(t,
+			fx.Provide(
+				fx.Annotate(newSliceA, fx.ParamTags(`name:"a"`)),
+			),
+			fx.Populate(&got),
+		)
+		defer app.RequireStart().RequireStop()
+		require.NoError(t, app.Err())
+
+		assert.Len(t, got.sa, 0)
+	})
+
+	t.Run("Invoke variadic function with multiple params", func(t *testing.T) {
+		t.Parallel()
+
+		app := fxtest.New(t,
+			fx.Supply(
+				fx.Annotate(newB(newA()), fx.ResultTags(`name:"b"`)),
+			),
+			fx.Invoke(fx.Annotate(newSliceAWithB, fx.ParamTags(`name:"b"`))),
+		)
+
+		defer app.RequireStart().RequireStop()
+		require.NoError(t, app.Err())
+	})
+
+	t.Run("Invoke variadic with a missing dependency", func(t *testing.T) {
+		t.Parallel()
+
+		app := NewForTest(t,
+			fx.Invoke(
+				fx.Annotate(newSliceA, fx.ParamTags(`optional:"false"`)),
+			),
+		)
+		err := app.Err()
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), `missing dependencies`)
+		assert.Contains(t, err.Error(), `missing type: []*fx_test.a`)
 	})
 
 	t.Run("Invoke with variadic function", func(t *testing.T) {
