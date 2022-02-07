@@ -360,7 +360,7 @@ func (ann *annotated) parameters() (
 
 	// No parameter annotations. Return the original types
 	// and an identity function.
-	if len(ann.ParamTags) == 0 {
+	if len(ann.ParamTags) == 0 && !ft.IsVariadic() {
 		return types, func(args []reflect.Value) []reflect.Value {
 			return args
 		}
@@ -381,9 +381,15 @@ func (ann *annotated) parameters() (
 			Type: t,
 		}
 
+		var paramTag string
 		if i < len(ann.ParamTags) {
-			field.Tag = reflect.StructTag(ann.ParamTags[i])
+			paramTag = ann.ParamTags[i]
 		}
+		if i == ft.NumIn()-1 && ft.IsVariadic() && !strings.Contains(paramTag, "optional:") &&
+			!strings.Contains(paramTag, "group:") {
+			paramTag = paramTag + " optional:\"true\""
+		}
+		field.Tag = reflect.StructTag(paramTag)
 
 		inFields = append(inFields, field)
 	}
