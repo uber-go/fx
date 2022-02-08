@@ -24,7 +24,19 @@ import (
 	"fmt"
 
 	"go.uber.org/dig"
+	"go.uber.org/fx/fxevent"
+	"go.uber.org/fx/internal/fxreflect"
 )
+
+// A container represents a set of constructors to provide
+// dependencies, and a set of functions to invoke once all the
+// dependencies have been initialized.
+//
+// This definition corresponds to the dig.Container and dig.Scope.
+type container interface {
+	Invoke(interface{}, ...dig.InvokeOption) error
+	Provide(interface{}, ...dig.ProvideOption) error
+}
 
 // Module is a named group of zero or more fx.Options.
 func Module(name string, opts ...Option) Option {
@@ -100,4 +112,65 @@ func (m *module) provideAll() {
 	for _, m := range m.modules {
 		m.provideAll()
 	}
+}
+
+func (m *module) provide(p provide) {
+	if m.app.err != nil {
+		return
+	}
+
+	var info dig.ProvideInfo
+	if err := runProvide(m.scope, p, dig.FillProvideInfo(&info), dig.Export(true)); err != nil {
+		m.app.err = err
+	}
+	var ev fxevent.Event
+	switch {
+	case p.IsSupply:
+		ev = &fxevent.Supplied{
+			TypeName: p.SupplyType.String(),
+			Err:      m.app.err,
+		}
+
+	default:
+		outputNames := make([]string, len(info.Outputs))
+		for i, o := range info.Outputs {
+			outputNames[i] = o.String()
+		}
+
+		ev = &fxevent.Provided{
+			ConstructorName: fxreflect.FuncName(p.Target),
+			OutputTypeNames: outputNames,
+			Err:             m.app.err,
+		}
+	}
+	m.app.log.LogEvent(ev)
+}
+
+func (m *module) executeInvokes() error {
+	for _, invoke := range m.invokes {
+		if err := m.executeInvoke(invoke); err != nil {
+			return err
+		}
+	}
+
+	for _, m := range m.modules {
+		if err := m.executeInvokes(); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (m *module) executeInvoke(i invoke) (err error) {
+	fnName := fxreflect.FuncName(i.Target)
+	m.app.log.LogEvent(&fxevent.Invoking{
+		FunctionName: fnName,
+	})
+	err = runInvoke(m.scope, i)
+	m.app.log.LogEvent(&fxevent.Invoked{
+		FunctionName: fnName,
+		Err:          err,
+		Trace:        fmt.Sprintf("%+v", i.Stack), // format stack trace as multi-line
+	})
+	return err
 }
