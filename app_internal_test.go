@@ -85,8 +85,8 @@ func (o withExitOption) String() string {
 	return fmt.Sprintf("WithExit(%v)", fxreflect.FuncName(o))
 }
 
-func (o withExitOption) apply(app *App) {
-	app.osExit = o
+func (o withExitOption) apply(m *module) {
+	m.app.osExit = o
 }
 
 // WithClock specifies how Fx accesses time operations.
@@ -98,8 +98,8 @@ func WithClock(clock fxclock.Clock) Option {
 
 type withClockOption struct{ clock fxclock.Clock }
 
-func (o withClockOption) apply(app *App) {
-	app.clock = o.clock
+func (o withClockOption) apply(m *module) {
+	m.app.clock = o.clock
 }
 
 func (o withClockOption) String() string {
