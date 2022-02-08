@@ -55,7 +55,7 @@ type moduleOption struct {
 }
 
 func (o moduleOption) String() string {
-	return fmt.Sprintf("module %s", o.name)
+	return fmt.Sprintf("fx.Module(%q, %v)", o.name, o.options)
 }
 
 func (o moduleOption) apply(app *App) {
