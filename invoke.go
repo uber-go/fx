@@ -66,12 +66,12 @@ func (o invokeOption) applyModule(mod *module) {
 }
 
 func (o invokeOption) getInvokes() []invoke {
-	var invokes []invoke
-	for _, target := range o.Targets {
-		invokes = append(invokes, invoke{
+	invokes := make([]invoke, len(o.Targets))
+	for i, target := range o.Targets {
+		invokes[i] = invoke{
 			Target: target,
 			Stack:  o.Stack,
-		})
+		}
 	}
 	return invokes
 }
