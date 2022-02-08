@@ -624,15 +624,9 @@ func TestAnnotate(t *testing.T) {
 
 		app := fxtest.New(t,
 			fx.Supply(
-<<<<<<< HEAD
 				fx.Annotate(newB(newA()), fx.ResultTags(`name:"b"`)),
 			),
 			fx.Invoke(fx.Annotate(newSliceAWithB, fx.ParamTags(`name:"b"`))),
-=======
-				fx.Annotate(newB(newA())),
-			),
-			fx.Invoke(fx.Annotate(newSliceAWithB)),
->>>>>>> 7ea7b903df9a5c0747e341c3f5a18d7a12c36912
 		)
 
 		defer app.RequireStart().RequireStop()
