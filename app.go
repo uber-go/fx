@@ -56,6 +56,124 @@ type Option interface {
 	apply(*module)
 }
 
+// Provide registers any number of constructor functions, teaching the
+// application how to instantiate various types. The supplied constructor
+// function(s) may depend on other types available in the application, must
+// return one or more objects, and may return an error. For example:
+//
+//  // Constructs type *C, depends on *A and *B.
+//  func(*A, *B) *C
+//
+//  // Constructs type *C, depends on *A and *B, and indicates failure by
+//  // returning an error.
+//  func(*A, *B) (*C, error)
+//
+//  // Constructs types *B and *C, depends on *A, and can fail.
+//  func(*A) (*B, *C, error)
+//
+// The order in which constructors are provided doesn't matter, and passing
+// multiple Provide options appends to the application's collection of
+// constructors. Constructors are called only if one or more of their returned
+// types are needed, and their results are cached for reuse (so instances of a
+// type are effectively singletons within an application). Taken together,
+// these properties make it perfectly reasonable to Provide a large number of
+// constructors even if only a fraction of them are used.
+//
+// See the documentation of the In and Out types for advanced features,
+// including optional parameters and named instances.
+//
+// Constructor functions should perform as little external interaction as
+// possible, and should avoid spawning goroutines. Things like server listen
+// loops, background timer loops, and background processing goroutines should
+// instead be managed using Lifecycle callbacks.
+func Provide(constructors ...interface{}) Option {
+	return provideOption{
+		Targets: constructors,
+		Stack:   fxreflect.CallerStack(1, 0),
+	}
+}
+
+type provideOption struct {
+	Targets []interface{}
+	Stack   fxreflect.Stack
+}
+
+func (o provideOption) apply(mod *module) {
+	mod.provides = append(mod.provides, o.getProvides()...)
+}
+
+func (o provideOption) getProvides() []provide {
+	var provides []provide
+	for _, target := range o.Targets {
+		provides = append(provides, provide{
+			Target: target,
+			Stack:  o.Stack,
+		})
+	}
+	return provides
+}
+
+func (o provideOption) String() string {
+	items := make([]string, len(o.Targets))
+	for i, c := range o.Targets {
+		items[i] = fxreflect.FuncName(c)
+	}
+	return fmt.Sprintf("fx.Provide(%s)", strings.Join(items, ", "))
+}
+
+// Invoke registers functions that are executed eagerly on application start.
+// Arguments for these invocations are built using the constructors registered
+// by Provide. Passing multiple Invoke options appends the new invocations to
+// the application's existing list.
+//
+// Unlike constructors, invocations are always executed, and they're always
+// run in order. Invocations may have any number of returned values. If the
+// final returned object is an error, it's assumed to be a success indicator.
+// All other returned values are discarded.
+//
+// Typically, invoked functions take a handful of high-level objects (whose
+// constructors depend on lower-level objects) and introduce them to each
+// other. This kick-starts the application by forcing it to instantiate a
+// variety of types.
+//
+// To see an invocation in use, read through the package-level example. For
+// advanced features, including optional parameters and named instances, see
+// the documentation of the In and Out types.
+func Invoke(funcs ...interface{}) Option {
+	return invokeOption{
+		Targets: funcs,
+		Stack:   fxreflect.CallerStack(1, 0),
+	}
+}
+
+type invokeOption struct {
+	Targets []interface{}
+	Stack   fxreflect.Stack
+}
+
+func (o invokeOption) apply(mod *module) {
+	mod.invokes = append(mod.invokes, o.getInvokes()...)
+}
+
+func (o invokeOption) getInvokes() []invoke {
+	invokes := make([]invoke, len(o.Targets))
+	for i, target := range o.Targets {
+		invokes[i] = invoke{
+			Target: target,
+			Stack:  o.Stack,
+		}
+	}
+	return invokes
+}
+
+func (o invokeOption) String() string {
+	items := make([]string, len(o.Targets))
+	for i, f := range o.Targets {
+		items[i] = fxreflect.FuncName(f)
+	}
+	return fmt.Sprintf("fx.Invoke(%s)", strings.Join(items, ", "))
+}
+
 // Error registers any number of errors with the application to short-circuit
 // startup. If more than one error is given, the errors are combined into a
 // single error.
@@ -752,6 +870,161 @@ func (app *App) dotGraph() (DotGraph, error) {
 	var b bytes.Buffer
 	err := dig.Visualize(app.container, &b)
 	return DotGraph(b.String()), err
+}
+
+func (m *module) provide(p provide) {
+	if m.app.err != nil {
+		return
+	}
+
+	constructor := p.Target
+	if _, ok := constructor.(Option); ok {
+		m.app.err = fmt.Errorf("fx.Option should be passed to fx.New directly, "+
+			"not to fx.Provide: fx.Provide received %v from:\n%+v",
+			constructor, p.Stack)
+		return
+	}
+
+	var info dig.ProvideInfo
+	opts := []dig.ProvideOption{
+		dig.FillProvideInfo(&info),
+		dig.Export(true),
+	}
+	defer func() {
+		var ev fxevent.Event
+
+		switch {
+		case p.IsSupply:
+			ev = &fxevent.Supplied{
+				TypeName: p.SupplyType.String(),
+				Err:      m.app.err,
+			}
+
+		default:
+			outputNames := make([]string, len(info.Outputs))
+			for i, o := range info.Outputs {
+				outputNames[i] = o.String()
+			}
+
+			ev = &fxevent.Provided{
+				ConstructorName: fxreflect.FuncName(p.Target),
+				OutputTypeNames: outputNames,
+				Err:             m.app.err,
+			}
+		}
+		m.app.log.LogEvent(ev)
+	}()
+
+	c := m.scope
+	switch constructor := constructor.(type) {
+	case annotationError:
+		// fx.Annotate failed. Turn it into an Fx error.
+		m.app.err = fmt.Errorf(
+			"encountered error while applying annotation using fx.Annotate to %s: %+v",
+			fxreflect.FuncName(constructor.target), constructor.err)
+		return
+
+	case annotated:
+		ctor, err := constructor.Build()
+		if err != nil {
+			m.app.err = fmt.Errorf("fx.Provide(%v) from:\n%+vFailed: %v", constructor, p.Stack, err)
+			return
+		}
+
+		if err := c.Provide(ctor, opts...); err != nil {
+			m.app.err = fmt.Errorf("fx.Provide(%v) from:\n%+vFailed: %v", constructor, p.Stack, err)
+			return
+		}
+
+	case Annotated:
+		ann := constructor
+		switch {
+		case len(ann.Group) > 0 && len(ann.Name) > 0:
+			m.app.err = fmt.Errorf(
+				"fx.Annotated may specify only one of Name or Group: received %v from:\n%+v",
+				ann, p.Stack)
+			return
+		case len(ann.Name) > 0:
+			opts = append(opts, dig.Name(ann.Name))
+		case len(ann.Group) > 0:
+			opts = append(opts, dig.Group(ann.Group))
+		}
+
+		if err := c.Provide(ann.Target, opts...); err != nil {
+			m.app.err = fmt.Errorf("fx.Provide(%v) from:\n%+vFailed: %v", ann, p.Stack, err)
+			return
+		}
+
+	default:
+		if reflect.TypeOf(constructor).Kind() == reflect.Func {
+			ft := reflect.ValueOf(constructor).Type()
+
+			for i := 0; i < ft.NumOut(); i++ {
+				t := ft.Out(i)
+
+				if t == reflect.TypeOf(Annotated{}) {
+					m.app.err = fmt.Errorf(
+						"fx.Annotated should be passed to fx.Provide directly, "+
+							"it should not be returned by the constructor: "+
+							"fx.Provide received %v from:\n%+v",
+						fxreflect.FuncName(constructor), p.Stack)
+					return
+				}
+			}
+		}
+
+		if err := c.Provide(constructor, opts...); err != nil {
+			m.app.err = fmt.Errorf("fx.Provide(%v) from:\n%+vFailed: %v", fxreflect.FuncName(constructor), p.Stack, err)
+			return
+		}
+	}
+}
+
+func (m *module) executeInvokes() error {
+	for _, invoke := range m.invokes {
+		if err := m.executeInvoke(invoke); err != nil {
+			return err
+		}
+	}
+
+	for _, m := range m.modules {
+		if err := m.executeInvokes(); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (m *module) executeInvoke(i invoke) (err error) {
+	fn := i.Target
+	fnName := fxreflect.FuncName(i.Target)
+
+	m.app.log.LogEvent(&fxevent.Invoking{FunctionName: fnName})
+	defer func() {
+		m.app.log.LogEvent(&fxevent.Invoked{
+			FunctionName: fnName,
+			Err:          err,
+			Trace:        fmt.Sprintf("%+v", i.Stack), // format stack trace as multi-line
+		})
+	}()
+
+	c := m.scope
+	switch fn := fn.(type) {
+	case Option:
+		return fmt.Errorf("fx.Option should be passed to fx.New directly, "+
+			"not to fx.Invoke: fx.Invoke received %v from:\n%+v",
+			fn, i.Stack)
+
+	case annotated:
+		af, err := fn.Build()
+		if err != nil {
+			return err
+		}
+
+		return c.Invoke(af)
+	default:
+		return c.Invoke(fn)
+	}
 }
 
 type withTimeoutParams struct {
