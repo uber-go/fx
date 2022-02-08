@@ -146,7 +146,9 @@ func (m *module) executeInvokes() error {
 	}
 
 	for _, m := range m.modules {
-		m.executeInvokes()
+		if err := m.executeInvokes(); err != nil {
+			return err
+		}
 	}
 	return nil
 }
