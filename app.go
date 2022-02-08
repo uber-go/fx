@@ -99,18 +99,12 @@ type provideOption struct {
 }
 
 func (o provideOption) apply(mod *module) {
-	mod.provides = append(mod.provides, o.getProvides()...)
-}
-
-func (o provideOption) getProvides() []provide {
-	var provides []provide
 	for _, target := range o.Targets {
-		provides = append(provides, provide{
+		mod.provides = append(mod.provides, provide{
 			Target: target,
 			Stack:  o.Stack,
 		})
 	}
-	return provides
 }
 
 func (o provideOption) String() string {
@@ -152,18 +146,12 @@ type invokeOption struct {
 }
 
 func (o invokeOption) apply(mod *module) {
-	mod.invokes = append(mod.invokes, o.getInvokes()...)
-}
-
-func (o invokeOption) getInvokes() []invoke {
-	invokes := make([]invoke, len(o.Targets))
-	for i, target := range o.Targets {
-		invokes[i] = invoke{
+	for _, target := range o.Targets {
+		mod.invokes = append(mod.invokes, invoke{
 			Target: target,
 			Stack:  o.Stack,
-		}
+		})
 	}
-	return invokes
 }
 
 func (o invokeOption) String() string {
