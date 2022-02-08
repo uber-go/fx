@@ -130,8 +130,8 @@ func TestNewApp(t *testing.T) {
 
 		errMsg := err.Error()
 		assert.Contains(t, errMsg, "cycle detected in dependency graph")
-		assert.Contains(t, errMsg, "depends on fx_test.A")
-		assert.Contains(t, errMsg, "depends on fx_test.B")
+		assert.Contains(t, errMsg, "depends on func(fx_test.B) fx_test.A")
+		assert.Contains(t, errMsg, "depends on func(fx_test.A) fx_test.B")
 	})
 
 	t.Run("ProvidesDotGraph", func(t *testing.T) {
@@ -1580,6 +1580,31 @@ func TestErrorHook(t *testing.T) {
 		assert.Contains(t, graphStr, `"fx_test.B" [color=red];`)
 		assert.Contains(t, graphStr, `"fx_test.A" [color=orange];`)
 	})
+
+	t.Run("GraphWithErrorInModule", func(t *testing.T) {
+		t.Parallel()
+
+		type A struct{}
+		type B struct{}
+
+		var errStr, graphStr string
+		h := errHandlerFunc(func(err error) {
+			errStr = err.Error()
+			graphStr, _ = VisualizeError(err)
+		})
+		NewForTest(t,
+			Module("module",
+				Provide(func() (B, error) { return B{}, fmt.Errorf("great sadness") }),
+				Provide(func(B) A { return A{} }),
+				Invoke(func(A) {}),
+				ErrorHook(&h),
+			),
+		)
+		assert.Contains(t, errStr, "great sadness")
+		assert.Contains(t, graphStr, `"fx_test.B" [color=red];`)
+		assert.Contains(t, graphStr, `"fx_test.A" [color=orange];`)
+	})
+
 }
 
 func TestOptionString(t *testing.T) {
