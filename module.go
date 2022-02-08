@@ -26,16 +26,6 @@ import (
 	"go.uber.org/dig"
 )
 
-// A container represents a set of constructors to provide
-// dependencies, and a set of functions to invoke once all the
-// dependencies have been initialized.
-//
-// This definition corresponds to the dig.Container and dig.Scope.
-type container interface {
-	Invoke(interface{}, ...dig.InvokeOption) error
-	Provide(interface{}, ...dig.ProvideOption) error
-}
-
 // Module is a named group of zero or more fx.Options. A Module is a
 // dependency graph with limited scope, and can be used for scoping
 // graph modifications (not implemented yet).
