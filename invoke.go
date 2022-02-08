@@ -57,11 +57,7 @@ type invokeOption struct {
 	Stack   fxreflect.Stack
 }
 
-func (o invokeOption) apply(app *App) {
-	app.invokes = append(app.invokes, o.getInvokes()...)
-}
-
-func (o invokeOption) applyModule(mod *module) {
+func (o invokeOption) apply(mod *module) {
 	mod.invokes = append(mod.invokes, o.getInvokes()...)
 }
 

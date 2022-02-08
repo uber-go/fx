@@ -58,24 +58,7 @@ func (o moduleOption) String() string {
 	return fmt.Sprintf("fx.Module(%q, %v)", o.name, o.options)
 }
 
-func (o moduleOption) apply(app *App) {
-	// This is the top-level module's apply.
-	// This module acts as the "root" module that connects all of its
-	// its submodules to the rest of the App.
-	// 1. Create a new module
-	// 2. Apply child Options on the new module
-	// 3. Append the new module to the App's modules.
-	newModule := &module{
-		name: o.name,
-		app:  app,
-	}
-	for _, opt := range o.options {
-		opt.applyModule(newModule)
-	}
-	app.modules = append(app.modules, newModule)
-}
-
-func (o moduleOption) applyModule(mod *module) {
+func (o moduleOption) apply(mod *module) {
 	// This get called on any submodules' that are declared
 	// as part of another module.
 
@@ -89,7 +72,7 @@ func (o moduleOption) applyModule(mod *module) {
 		app:    mod.app,
 	}
 	for _, opt := range o.options {
-		opt.applyModule(newModule)
+		opt.apply(newModule)
 	}
 	mod.modules = append(mod.modules, newModule)
 }

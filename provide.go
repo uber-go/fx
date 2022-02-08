@@ -71,11 +71,7 @@ type provideOption struct {
 	Stack   fxreflect.Stack
 }
 
-func (o provideOption) apply(app *App) {
-	app.provides = append(app.provides, o.getProvides()...)
-}
-
-func (o provideOption) applyModule(mod *module) {
+func (o provideOption) apply(mod *module) {
 	mod.provides = append(mod.provides, o.getProvides()...)
 }
 

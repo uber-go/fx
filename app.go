@@ -53,8 +53,7 @@ const DefaultTimeout = 15 * time.Second
 type Option interface {
 	fmt.Stringer
 
-	apply(*App)
-	applyModule(*module)
+	apply(*module)
 }
 
 // Error registers any number of errors with the application to short-circuit
@@ -69,12 +68,8 @@ func Error(errs ...error) Option {
 
 type errorOption []error
 
-func (errs errorOption) apply(app *App) {
-	app.err = multierr.Append(app.err, multierr.Combine(errs...))
-}
-
-func (errs errorOption) applyModule(mod *module) {
-	errs.apply(mod.app)
+func (errs errorOption) apply(mod *module) {
+	mod.app.err = multierr.Append(mod.app.err, multierr.Combine(errs...))
 }
 
 func (errs errorOption) String() string {
@@ -118,15 +113,9 @@ func Options(opts ...Option) Option {
 
 type optionGroup []Option
 
-func (og optionGroup) apply(app *App) {
+func (og optionGroup) apply(mod *module) {
 	for _, opt := range og {
-		opt.apply(app)
-	}
-}
-
-func (og optionGroup) applyModule(mod *module) {
-	for _, opt := range og {
-		opt.applyModule(mod)
+		opt.apply(mod)
 	}
 }
 
@@ -145,13 +134,13 @@ func StartTimeout(v time.Duration) Option {
 
 type startTimeoutOption time.Duration
 
-func (t startTimeoutOption) apply(app *App) {
-	app.startTimeout = time.Duration(t)
-}
-
-func (t startTimeoutOption) applyModule(m *module) {
-	m.app.err = fmt.Errorf("fx.StartTimeout Option should be passed to top-level App, " +
-		"not to fx.Module")
+func (t startTimeoutOption) apply(m *module) {
+	if m.parent != nil {
+		m.app.err = fmt.Errorf("fx.StartTimeout Option should be passed to top-level App, " +
+			"not to fx.Module")
+	} else {
+		m.app.startTimeout = time.Duration(t)
+	}
 }
 
 func (t startTimeoutOption) String() string {
@@ -165,13 +154,13 @@ func StopTimeout(v time.Duration) Option {
 
 type stopTimeoutOption time.Duration
 
-func (t stopTimeoutOption) apply(app *App) {
-	app.stopTimeout = time.Duration(t)
-}
-
-func (t stopTimeoutOption) applyModule(m *module) {
-	m.app.err = fmt.Errorf("fx.StopTimeout Option should be passed to top-level App, " +
-		"not to fx.Module")
+func (t stopTimeoutOption) apply(m *module) {
+	if m.parent != nil {
+		m.app.err = fmt.Errorf("fx.StopTimeout Option should be passed to top-level App, " +
+			"not to fx.Module")
+	} else {
+		m.app.stopTimeout = time.Duration(t)
+	}
 }
 
 func (t stopTimeoutOption) String() string {
@@ -203,17 +192,17 @@ type withLoggerOption struct {
 	Stack       fxreflect.Stack
 }
 
-func (l withLoggerOption) apply(app *App) {
-	app.logConstructor = &provide{
-		Target: l.constructor,
-		Stack:  l.Stack,
+func (l withLoggerOption) apply(m *module) {
+	if m.parent != nil {
+		// loggers shouldn't differ based on Module.
+		m.app.err = fmt.Errorf("fx.WithLogger Option should be passed to top-level App, " +
+			"not to fx.Module")
+	} else {
+		m.app.logConstructor = &provide{
+			Target: l.constructor,
+			Stack:  l.Stack,
+		}
 	}
-}
-
-func (l withLoggerOption) applyModule(m *module) {
-	// loggers shouldn't differ based on Module.
-	m.app.err = fmt.Errorf("fx.WithLogger Option should be passed to top-level App, " +
-		"not to fx.Module")
 }
 
 func (l withLoggerOption) String() string {
@@ -237,14 +226,14 @@ func Logger(p Printer) Option {
 
 type loggerOption struct{ p Printer }
 
-func (l loggerOption) apply(app *App) {
-	np := writerFromPrinter(l.p)
-	app.log = fxlog.DefaultLogger(np) // assuming np is thread-safe.
-}
-
-func (l loggerOption) applyModule(m *module) {
-	m.app.err = fmt.Errorf("fx.StartTimeout Option should be passed to top-level App, " +
-		"not to fx.Module")
+func (l loggerOption) apply(m *module) {
+	if m.parent != nil {
+		m.app.err = fmt.Errorf("fx.StartTimeout Option should be passed to top-level App, " +
+			"not to fx.Module")
+	} else {
+		np := writerFromPrinter(l.p)
+		m.app.log = fxlog.DefaultLogger(np) // assuming np is thread-safe.
+	}
 }
 
 func (l loggerOption) String() string {
@@ -295,9 +284,8 @@ type App struct {
 	lifecycle *lifecycleWrapper
 
 	container *dig.Container
+	root      *module
 	modules   []*module
-	provides  []provide
-	invokes   []invoke
 
 	// Used to setup logging within fx.
 	log            fxevent.Logger
@@ -352,12 +340,8 @@ func ErrorHook(funcs ...ErrorHandler) Option {
 
 type errorHookOption []ErrorHandler
 
-func (eho errorHookOption) apply(app *App) {
-	app.errorHooks = append(app.errorHooks, eho...)
-}
-
-func (eho errorHookOption) applyModule(m *module) {
-	eho.apply(m.app)
+func (eho errorHookOption) apply(m *module) {
+	m.app.errorHooks = append(m.app.errorHooks, eho...)
 }
 
 func (eho errorHookOption) String() string {
@@ -387,12 +371,13 @@ type validateOption struct {
 	validate bool
 }
 
-func (o validateOption) apply(app *App) {
-	app.validate = o.validate
-}
-
-func (o validateOption) applyModule(m *module) {
-	m.app.validate = o.validate
+func (o validateOption) apply(m *module) {
+	if m.parent != nil {
+		m.app.err = fmt.Errorf("fx.validate Option should be passed to top-level App, " +
+			"not to fx.Module")
+	} else {
+		m.app.validate = o.validate
+	}
 }
 
 func (o validateOption) String() string {
@@ -457,9 +442,11 @@ func New(opts ...Option) *App {
 		startTimeout: DefaultTimeout,
 		stopTimeout:  DefaultTimeout,
 	}
+	app.root = &module{app: app}
+	app.modules = append(app.modules, app.root)
 
 	for _, opt := range opts {
-		opt.apply(app)
+		opt.apply(app.root)
 	}
 
 	// There are a few levels of wrapping on the lifecycle here. To quickly
@@ -500,10 +487,6 @@ func New(opts ...Option) *App {
 
 	for _, m := range app.modules {
 		m.build(app, app.container)
-	}
-
-	for _, p := range app.provides {
-		app.provide(p)
 	}
 
 	for _, m := range app.modules {
@@ -807,12 +790,6 @@ func (app *App) provide(p provide) {
 // encountered.
 func (app *App) executeInvokes() error {
 	// TODO: consider taking a context to limit the time spent running invocations.
-
-	for _, i := range app.invokes {
-		if err := app.executeInvoke(i); err != nil {
-			return err
-		}
-	}
 
 	for _, m := range app.modules {
 		if err := m.executeInvokes(); err != nil {

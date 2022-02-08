@@ -86,18 +86,7 @@ type supplyOption struct {
 	Stack   fxreflect.Stack
 }
 
-func (o supplyOption) apply(app *App) {
-	for i, target := range o.Targets {
-		app.provides = append(app.provides, provide{
-			Target:     target,
-			Stack:      o.Stack,
-			IsSupply:   true,
-			SupplyType: o.Types[i],
-		})
-	}
-}
-
-func (o supplyOption) applyModule(m *module) {
+func (o supplyOption) apply(m *module) {
 	for i, target := range o.Targets {
 		m.provides = append(m.provides, provide{
 			Target:     target,
