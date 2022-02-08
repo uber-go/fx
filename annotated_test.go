@@ -633,7 +633,7 @@ func TestAnnotate(t *testing.T) {
 		require.NoError(t, app.Err())
 	})
 
-	t.Run("Invoke variadic with a missing dependency", func(t *testing.T) {
+	t.Run("Invoke non-optional variadic function with a missing dependency", func(t *testing.T) {
 		t.Parallel()
 
 		app := NewForTest(t,
