@@ -494,12 +494,12 @@ func New(opts ...Option) *App {
 	}
 
 	frames := fxreflect.CallerStack(0, 0) // include New in the stack for default Provides
-	app.provide(provide{
+	app.root.provide(provide{
 		Target: func() Lifecycle { return app.lifecycle },
 		Stack:  frames,
 	})
-	app.provide(provide{Target: app.shutdowner, Stack: frames})
-	app.provide(provide{Target: app.dotGraph, Stack: frames})
+	app.root.provide(provide{Target: app.shutdowner, Stack: frames})
+	app.root.provide(provide{Target: app.dotGraph, Stack: frames})
 
 	// If you are thinking about returning here after provides: do not (just yet)!
 	// If a custom logger was being used, we're still buffering messages.
@@ -524,7 +524,7 @@ func New(opts ...Option) *App {
 		return app
 	}
 
-	if err := app.executeInvokes(); err != nil {
+	if err := app.root.executeInvokes(); err != nil {
 		app.err = err
 
 		if dig.CanVisualizeError(err) {
@@ -752,52 +752,6 @@ func (app *App) dotGraph() (DotGraph, error) {
 	var b bytes.Buffer
 	err := dig.Visualize(app.container, &b)
 	return DotGraph(b.String()), err
-}
-
-func (app *App) provide(p provide) {
-	if app.err != nil {
-		return
-	}
-
-	var info dig.ProvideInfo
-	if err := runProvide(app.container, p, dig.FillProvideInfo(&info)); err != nil {
-		app.err = err
-	}
-	var ev fxevent.Event
-	switch {
-	case p.IsSupply:
-		ev = &fxevent.Supplied{
-			TypeName: p.SupplyType.String(),
-			Err:      app.err,
-		}
-
-	default:
-		outputNames := make([]string, len(info.Outputs))
-		for i, o := range info.Outputs {
-			outputNames[i] = o.String()
-		}
-
-		ev = &fxevent.Provided{
-			ConstructorName: fxreflect.FuncName(p.Target),
-			OutputTypeNames: outputNames,
-			Err:             app.err,
-		}
-	}
-	app.log.LogEvent(ev)
-}
-
-// Execute invokes in order supplied to New, returning the first error
-// encountered.
-func (app *App) executeInvokes() error {
-	// TODO: consider taking a context to limit the time spent running invocations.
-
-	for _, m := range app.modules {
-		if err := m.executeInvokes(); err != nil {
-			return err
-		}
-	}
-
-	return nil
 }
 
 type withTimeoutParams struct {

@@ -106,36 +106,44 @@ func (m *module) build(app *App, root *dig.Container) {
 
 func (m *module) provideAll() {
 	for _, p := range m.provides {
-		var info dig.ProvideInfo
-		if err := runProvide(m.scope, p, dig.FillProvideInfo(&info), dig.Export(true)); err != nil {
-			m.app.err = err
-		}
-		var ev fxevent.Event
-		switch {
-		case p.IsSupply:
-			ev = &fxevent.Supplied{
-				TypeName: p.SupplyType.String(),
-				Err:      m.app.err,
-			}
-
-		default:
-			outputNames := make([]string, len(info.Outputs))
-			for i, o := range info.Outputs {
-				outputNames[i] = o.String()
-			}
-
-			ev = &fxevent.Provided{
-				ConstructorName: fxreflect.FuncName(p.Target),
-				OutputTypeNames: outputNames,
-				Err:             m.app.err,
-			}
-		}
-		m.app.log.LogEvent(ev)
+		m.provide(p)
 	}
 
 	for _, m := range m.modules {
 		m.provideAll()
 	}
+}
+
+func (m *module) provide(p provide) {
+	if m.app.err != nil {
+		return
+	}
+
+	var info dig.ProvideInfo
+	if err := runProvide(m.scope, p, dig.FillProvideInfo(&info), dig.Export(true)); err != nil {
+		m.app.err = err
+	}
+	var ev fxevent.Event
+	switch {
+	case p.IsSupply:
+		ev = &fxevent.Supplied{
+			TypeName: p.SupplyType.String(),
+			Err:      m.app.err,
+		}
+
+	default:
+		outputNames := make([]string, len(info.Outputs))
+		for i, o := range info.Outputs {
+			outputNames[i] = o.String()
+		}
+
+		ev = &fxevent.Provided{
+			ConstructorName: fxreflect.FuncName(p.Target),
+			OutputTypeNames: outputNames,
+			Err:             m.app.err,
+		}
+	}
+	m.app.log.LogEvent(ev)
 }
 
 func (m *module) executeInvokes() error {
