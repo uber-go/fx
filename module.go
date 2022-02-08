@@ -159,12 +159,10 @@ func (m *module) executeInvoke(i invoke) (err error) {
 		FunctionName: fnName,
 	})
 	err = runInvoke(m.scope, i)
-	defer func() {
-		m.app.log.LogEvent(&fxevent.Invoked{
-			FunctionName: fnName,
-			Err:          err,
-			Trace:        fmt.Sprintf("%+v", i.Stack), // format stack trace as multi-line
-		})
-	}()
+	m.app.log.LogEvent(&fxevent.Invoked{
+		FunctionName: fnName,
+		Err:          err,
+		Trace:        fmt.Sprintf("%+v", i.Stack), // format stack trace as multi-line
+	})
 	return err
 }
