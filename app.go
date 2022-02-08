@@ -800,20 +800,6 @@ func (app *App) executeInvokes() error {
 	return nil
 }
 
-func (app *App) executeInvoke(i invoke) error {
-	fnName := fxreflect.FuncName(i.Target)
-	app.log.LogEvent(&fxevent.Invoking{
-		FunctionName: fnName,
-	})
-	err := runInvoke(app.container, i)
-	app.log.LogEvent(&fxevent.Invoked{
-		FunctionName: fnName,
-		Err:          err,
-		Trace:        fmt.Sprintf("%+v", i.Stack), // format stack trace as multi-line
-	})
-	return err
-}
-
 type withTimeoutParams struct {
 	log       fxevent.Logger
 	hook      string
