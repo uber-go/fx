@@ -64,6 +64,25 @@ func TestSupply(t *testing.T) {
 		require.Same(t, bIn, bOut)
 	})
 
+	t.Run("SupplyInModule", func(t *testing.T) {
+		t.Parallel()
+
+		aIn, bIn := &A{}, &B{}
+		var aOut *A
+		var bOut *B
+
+		app := fxtest.New(
+			t,
+			fx.Module("module",
+				fx.Supply(aIn, bIn),
+			),
+			fx.Populate(&aOut, &bOut),
+		)
+		defer app.RequireStart().RequireStop()
+		require.Same(t, aIn, aOut)
+		require.Same(t, bIn, bOut)
+	})
+
 	t.Run("AnnotateIsSupplied", func(t *testing.T) {
 		t.Parallel()
 
@@ -104,8 +123,7 @@ func TestSupply(t *testing.T) {
 		require.NotPanicsf(
 			t,
 			func() { fx.Supply(A{}, (*B)(nil)) },
-			"a wrapped nil should not panic",
-		)
+			"a wrapped nil should not panic")
 
 		require.PanicsWithValuef(
 			t,
@@ -134,4 +152,5 @@ func TestSupply(t *testing.T) {
 		require.NoError(t, supplied[0].(*fxevent.Supplied).Err)
 		require.Error(t, supplied[1].(*fxevent.Supplied).Err)
 	})
+
 }
