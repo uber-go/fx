@@ -28,6 +28,27 @@ import (
 	"go.uber.org/fx/internal/fxreflect"
 )
 
+// Decorate specifies one or more decorator functions to an fx application.
+// Decorator functions let users augment objects in the graph. They can take in
+// zero or more dependencies that must be provided to the application with fx.Provide,
+// and produce one or more values that can be used by other invoked values.
+//
+// An example decorator is the following function which accepts a value, augments that value,
+// and returns the replacement value.
+//
+//  fx.Decorate(func(log *zap.Logger) *zap.Logger {
+//    return log.Named("myapp")
+//  })
+//
+// The following decorator accepts multiple dependencies from the graph, augments and returns
+// one of them.
+//
+//  fx.Decorate(func(log *zap.Logger, cfg *Config) *zap.Logger {
+//    return log.Named(cfg.Name)
+//  })
+//
+// All modifications in the object graph due to a decorator are scoped to the fx.Module it was
+// specified from.
 func Decorate(decorators ...interface{}) Option {
 	return decorateOption{
 		Targets: decorators,

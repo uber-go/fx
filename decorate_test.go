@@ -184,6 +184,35 @@ func TestDecorateSuccess(t *testing.T) {
 		)
 		defer app.RequireStart().RequireStop()
 	})
+
+	t.Run("decorator with optional parameter", func(t *testing.T) {
+		type Config struct {
+			Name string
+		}
+		type Logger struct {
+			Name string
+		}
+		type DecoratorParam struct {
+			fx.In
+
+			Cfg *Config `optional:"true"`
+			Log *Logger
+		}
+
+		app := fxtest.New(t,
+			fx.Provide(func() *Logger { return &Logger{Name: "log"} }),
+			fx.Decorate(func(p DecoratorParam) *Logger {
+				if p.Cfg != nil {
+					return &Logger{Name: p.Cfg.Name}
+				}
+				return &Logger{Name: p.Log.Name}
+			}),
+			fx.Invoke(func(l *Logger) {
+				assert.Equal(t, l.Name, "log")
+			}),
+		)
+		defer app.RequireStart().RequireStop()
+	})
 }
 
 func TestDecorateFailure(t *testing.T) {
