@@ -87,23 +87,21 @@ type decorator struct {
 	Stack fxreflect.Stack
 }
 
-func runDecorator(c container, d decorator, opts ...dig.DecorateOption) error {
+func runDecorator(c container, d decorator, opts ...dig.DecorateOption) (err error) {
 	decorator := d.Target
+	defer func() {
+		if err != nil {
+			err = fmt.Errorf("fx.Decorate(%v) from:\n%+vFailed: %v", decorator, d.Stack, err)
+		}
+	}()
 
 	switch decorator := decorator.(type) {
 	case annotated:
-		dcor, err := decorator.Build()
-		if err != nil {
-			return fmt.Errorf("fx.Decorate(%v) from:\n%+vFailed: %v", decorator, d.Stack, err)
-		}
-
-		if err := c.Decorate(dcor, opts...); err != nil {
-			return fmt.Errorf("fx.Decorate(%v) from:\n%+vFailed: %v", decorator, d.Stack, err)
+		if dcor, err := decorator.Build(); err == nil {
+			err = c.Decorate(dcor, opts...)
 		}
 	default:
-		if err := c.Decorate(decorator, opts...); err != nil {
-			return fmt.Errorf("fx.Decorate(%v) from:\n%+vFailed: %v", decorator, d.Stack, err)
-		}
+		err = c.Decorate(decorator, opts...)
 	}
-	return nil
+	return
 }
