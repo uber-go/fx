@@ -21,9 +21,11 @@
 package fx_test
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.uber.org/fx"
 	"go.uber.org/fx/fxtest"
 )
@@ -181,5 +183,118 @@ func TestDecorateSuccess(t *testing.T) {
 			}, fx.ParamTags(``, `name:"versionNum"`))),
 		)
 		defer app.RequireStart().RequireStop()
+	})
+}
+
+func TestDecorateFailure(t *testing.T) {
+	t.Run("decorator returns an error", func(t *testing.T) {
+		type Logger struct {
+			Name string
+		}
+
+		app := NewForTest(t,
+			fx.Provide(func() *Logger {
+				return &Logger{Name: "root"}
+			}),
+			fx.Decorate(func(l *Logger) (*Logger, error) {
+				return &Logger{Name: l.Name + "decorated"}, errors.New("minor sadness")
+			}),
+			fx.Invoke(func(l *Logger) {
+				assert.Fail(t, "this should not be executed")
+			}),
+		)
+
+		err := app.Err()
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "minor sadness")
+	})
+
+	t.Run("decorate the same type twice from the same Module", func(t *testing.T) {
+		type Logger struct {
+			Name string
+		}
+
+		app := NewForTest(t,
+			fx.Provide(func() *Logger {
+				return &Logger{Name: "root"}
+			}),
+			fx.Decorate(func(l *Logger) *Logger {
+				return &Logger{Name: "dec1 " + l.Name}
+			}),
+			fx.Decorate(func(l *Logger) *Logger {
+				return &Logger{Name: "dec2 " + l.Name}
+			}),
+		)
+
+		err := app.Err()
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "*fx_test.Logger already decorated")
+	})
+
+	t.Run("annotated decorator returns an error", func(t *testing.T) {
+		type Logger struct {
+			Name string
+		}
+
+		tag := `name:"decoratedLogger"`
+		app := NewForTest(t,
+			fx.Provide(fx.Annotate(func() *Logger {
+				return &Logger{Name: "root"}
+			}, fx.ResultTags(tag))),
+			fx.Decorate(fx.Annotate(func(l *Logger) (*Logger, error) {
+				return &Logger{Name: "dec1 " + l.Name}, errors.New("major sadness")
+			}, fx.ParamTags(tag), fx.ResultTags(tag))),
+			fx.Invoke(fx.Annotate(func(l *Logger) {
+				assert.Fail(t, "this should never run")
+			}, fx.ParamTags(tag))),
+		)
+
+		err := app.Err()
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "major sadness")
+	})
+
+	t.Run("decorator missing a dependency", func(t *testing.T) {
+		type Logger struct {
+			Name string
+		}
+		type Config struct {
+			Name string
+		}
+
+		app := NewForTest(t,
+			fx.Provide(func() *Logger {
+				return &Logger{Name: "logger"}
+			}),
+			fx.Decorate(func(l *Logger, c *Config) *Logger {
+				return &Logger{Name: l.Name + c.Name}
+			}),
+			fx.Invoke(func(l *Logger) {
+				assert.Fail(t, "this should never run")
+			}),
+		)
+
+		err := app.Err()
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "missing dependencies")
+	})
+
+	t.Run("use a decorator like a provider", func(t *testing.T) {
+		type Logger struct {
+			Name string
+		}
+
+		app := NewForTest(t,
+			fx.Decorate(func() *Logger {
+				return &Logger{Name: "decorator"}
+			}),
+			fx.Invoke(func(l *Logger) {
+				assert.Fail(t, "this should never run")
+			}),
+		)
+
+		err := app.Err()
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "missing dependencies")
 	})
 }
