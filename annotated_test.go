@@ -603,6 +603,21 @@ func TestAnnotate(t *testing.T) {
 		assert.Len(t, got.sa, 2)
 	})
 
+	t.Run("Provide variadic function with no optional params", func(t *testing.T) {
+		t.Parallel()
+
+		app := fxtest.New(t,
+			fx.Provide(
+				fx.Annotate(newSliceA,
+					fx.ResultTags(`name:"as"`),
+				),
+				fx.Annotate(func(sa sliceA) []*a { return sa.sa }, fx.ParamTags(`name:"as"`)),
+			),
+		)
+		defer app.RequireStart().RequireStop()
+		require.NoError(t, app.Err())
+	})
+
 	t.Run("Provide variadic function named with no given params", func(t *testing.T) {
 		t.Parallel()
 
