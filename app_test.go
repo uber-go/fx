@@ -1693,6 +1693,11 @@ func TestOptionString(t *testing.T) {
 			give: Supply(Annotated{Target: bytes.NewReader(nil)}),
 			want: "fx.Supply(*bytes.Reader)",
 		},
+		{
+			desc: "Decorate",
+			give: Decorate(bytes.NewBufferString),
+			want: "fx.Decorate(bytes.NewBufferString())",
+		},
 	}
 
 	for _, tt := range tests {

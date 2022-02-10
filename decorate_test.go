@@ -61,7 +61,7 @@ func TestDecorateSuccess(t *testing.T) {
 		defer app.RequireStart().RequireStop()
 	})
 
-	t.Run("decorate a dependency from root", func(t *testing.T) {
+	t.Run("decorate a dependency in child module", func(t *testing.T) {
 		redis := fx.Module("redis",
 			fx.Decorate(func() *Logger {
 				return &Logger{Name: "redis"}
@@ -231,6 +231,30 @@ func TestDecorateFailure(t *testing.T) {
 			fx.Invoke(func(l *Logger) {
 				assert.Fail(t, "this should not be executed")
 			}),
+		)
+
+		err := app.Err()
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "minor sadness")
+	})
+
+	t.Run("decorator in a nested module returns an error", func(t *testing.T) {
+		type Logger struct {
+			Name string
+		}
+
+		app := NewForTest(t,
+			fx.Provide(func() *Logger {
+				return &Logger{Name: "root"}
+			}),
+			fx.Module("child",
+				fx.Decorate(func(l *Logger) (*Logger, error) {
+					return &Logger{Name: l.Name + "decorated"}, errors.New("minor sadness")
+				}),
+				fx.Invoke(func(l *Logger) {
+					assert.Fail(t, "this should not be executed")
+				}),
+			),
 		)
 
 		err := app.Err()

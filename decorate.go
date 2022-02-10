@@ -28,7 +28,7 @@ import (
 	"go.uber.org/fx/internal/fxreflect"
 )
 
-// Decorate specifies one or more decorator functions to an fx application.
+// Decorate specifies one or more decorator functions to an Fx application.
 // Decorator functions let users augment objects in the graph. They can take in
 // zero or more dependencies that must be provided to the application with fx.Provide,
 // and produce one or more values that can be used by other invoked values.
@@ -47,8 +47,38 @@ import (
 //    return log.Named(cfg.Name)
 //  })
 //
+// Similar to fx.Provide, functions passed to fx.Decorate may optionally return an error
+// as their last result. If a decorator returns a non-nil error, it will halt application startup.
+//
 // All modifications in the object graph due to a decorator are scoped to the fx.Module it was
-// specified from.
+// specified from. Decorations specified in the top-level fx.New call apply across the application.
+//
+// Decorators can be annotated using fx.Annotate, but not with fx.Annotated. Refer to documentation
+// on fx.Annotate() to learn how to use it for annotating functions.
+//
+// Decorators support fx.In and fx.Out structs, similar to how fx.Provide and fx.Invoke does.
+//
+// Decorators support value groups as well. For example, the following code shows a decorator
+// which takes in a value group using fx.In struct, and returns another value group.
+//
+//  type HandlerParam struct {
+//    fx.In
+//
+//    Handlers []Handler `group:"server"
+//  }
+//
+//  type HandlerResult struct {
+//    fx.Out
+//
+//    Handlers []Handler `group:"server"
+//  }
+//
+//  fx.New(
+//    // ...
+//    fx.Decorate(func(p HandlerParam) HandlerResult {
+//      // ...
+//    }),
+//  )
 func Decorate(decorators ...interface{}) Option {
 	return decorateOption{
 		Targets: decorators,
@@ -78,9 +108,9 @@ func (o decorateOption) String() string {
 	return fmt.Sprintf("fx.Decorate(%s)", strings.Join(items, ", "))
 }
 
-// provide is a single decorators used in Fx.
+// decorator is a single decorator used in Fx.
 type decorator struct {
-	// Constructor provided to Fx. This may be an fx.Annotated.
+	// Decorator provided to Fx.
 	Target interface{}
 
 	// Stack trace of where this provide was made.
