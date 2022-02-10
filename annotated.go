@@ -384,6 +384,9 @@ func (ann *annotated) parameters() (
 		if i < len(ann.ParamTags) {
 			field.Tag = reflect.StructTag(ann.ParamTags[i])
 		} else if i == ft.NumIn()-1 && ft.IsVariadic() {
+			// If a variadic argument is unannotated, mark it optional,
+			// so that just wrapping a function in fx.Annotate does not
+			// suddenly introduce a required []arg dependency.
 			field.Tag = reflect.StructTag(`optional:"true"`)
 		}
 
