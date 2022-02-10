@@ -300,9 +300,6 @@ func (ann *annotated) Build() (interface{}, error) {
 		return nil, err
 	}
 
-	fmt.Println(ft.IsVariadic())
-	fmt.Println(paramTypes)
-
 	newFnType := reflect.FuncOf(paramTypes, resultTypes, false)
 	origFn := reflect.ValueOf(ann.Target)
 	newFn := reflect.MakeFunc(newFnType, func(args []reflect.Value) []reflect.Value {
