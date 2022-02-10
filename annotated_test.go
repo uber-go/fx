@@ -611,7 +611,7 @@ func TestAnnotate(t *testing.T) {
 				fx.Annotate(newSliceA,
 					fx.ResultTags(`name:"as"`),
 				),
-				fx.Annotate(func(sa sliceA) []*a { return sa.sa }, fx.ParamTags(`name:"as"`)),
+				fx.Annotate(func(sa *sliceA) []*a { return sa.sa }, fx.ParamTags(`name:"as"`)),
 			),
 		)
 		defer app.RequireStart().RequireStop()
