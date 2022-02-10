@@ -606,16 +606,23 @@ func TestAnnotate(t *testing.T) {
 	t.Run("Provide variadic function with no optional params", func(t *testing.T) {
 		t.Parallel()
 
+		var got struct {
+			fx.In
+
+			Result *sliceA `name:"as"`
+		}
 		app := fxtest.New(t,
+			fx.Supply([]*a{{}, {}, {}}),
 			fx.Provide(
 				fx.Annotate(newSliceA,
 					fx.ResultTags(`name:"as"`),
 				),
-				fx.Annotate(func(sa *sliceA) []*a { return sa.sa }, fx.ParamTags(`name:"as"`)),
 			),
+			fx.Populate(&got),
 		)
 		defer app.RequireStart().RequireStop()
 		require.NoError(t, app.Err())
+		assert.Len(t, got.Result.sa, 3)
 	})
 
 	t.Run("Provide variadic function named with no given params", func(t *testing.T) {
