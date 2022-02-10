@@ -607,16 +607,16 @@ func TestAnnotate(t *testing.T) {
 		t.Parallel()
 
 		var got *sliceA
-		app := fxtest.New(t,
+		app := NewForTest(t,
 			fx.Provide(
 				fx.Annotate(newSliceA, fx.ParamTags(`name:"a"`)),
 			),
 			fx.Populate(&got),
 		)
-		defer app.RequireStart().RequireStop()
-		require.NoError(t, app.Err())
-
-		assert.Len(t, got.sa, 0)
+		err := app.Err()
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), `missing dependencies`)
+		assert.Contains(t, err.Error(), `missing type: []*fx_test.a[name="a"]`)
 	})
 
 	t.Run("Invoke variadic function with multiple params", func(t *testing.T) {

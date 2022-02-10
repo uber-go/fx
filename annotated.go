@@ -300,6 +300,9 @@ func (ann *annotated) Build() (interface{}, error) {
 		return nil, err
 	}
 
+	fmt.Println(ft.IsVariadic())
+	fmt.Println(paramTypes)
+
 	newFnType := reflect.FuncOf(paramTypes, resultTypes, false)
 	origFn := reflect.ValueOf(ann.Target)
 	newFn := reflect.MakeFunc(newFnType, func(args []reflect.Value) []reflect.Value {
@@ -381,15 +384,11 @@ func (ann *annotated) parameters() (
 			Type: t,
 		}
 
-		var paramTag string
 		if i < len(ann.ParamTags) {
-			paramTag = ann.ParamTags[i]
+			field.Tag = reflect.StructTag(ann.ParamTags[i])
+		} else if i == ft.NumIn()-1 && ft.IsVariadic() {
+			field.Tag = reflect.StructTag("optional:\"true\"")
 		}
-		if i == ft.NumIn()-1 && ft.IsVariadic() && !strings.Contains(paramTag, "optional:") &&
-			!strings.Contains(paramTag, "group:") {
-			paramTag = paramTag + " optional:\"true\""
-		}
-		field.Tag = reflect.StructTag(paramTag)
 
 		inFields = append(inFields, field)
 	}
