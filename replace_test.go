@@ -113,21 +113,28 @@ func TestReplaceFailure(t *testing.T) {
 
 		app := fxtest.New(t,
 			fx.Supply(
-				fx.Annotate(A{"A"}, fx.ResultTags(`group:"t"`)),
-				fx.Annotate(A{"B"}, fx.ResultTags(`group:"t"`)),
-				fx.Annotate(A{"C"}, fx.ResultTags(`group:"t"`)),
+				fx.Annotate(A{"A"}, fx.ResultTags(`name:"t"`)),
 			),
-			fx.Decorate(
-				fx.Annotate(func() A { return A{"a"} }, fx.ResultTags(`group:"t"`)),
+			fx.Replace(
+				fx.Annotate(A{"B"}, fx.ResultTags(`name:"t"`)),
 			),
-			/*
-				fx.Replace(
-					fx.Annotate(A{"C"}, fx.ResultTags(`group:"t"`)),
-					fx.Annotate(A{"B"}, fx.ResultTags(`group:"t"`)),
-				),
-			*/
-			fx.Invoke(fx.Annotate(func(a ...A) {
-				assert.ElementsMatch(t, []A{{"a"}, {"b"}, {"c"}}, a)
+			fx.Invoke(fx.Annotate(func(a A) {
+				assert.Equal(t, a.Value, "B")
+			}, fx.ParamTags(`name:"t"`))),
+		)
+		defer app.RequireStart().RequireStop()
+	})
+
+	t.Run("replace a value group with annotate", func(t *testing.T) {
+		t.Parallel()
+
+		app := fxtest.New(t,
+			fx.Supply(
+				fx.Annotate([]string{"A", "B", "C"}, fx.ResultTags(`group:"t"`)),
+			),
+			fx.Replace(fx.Annotate([]string{"a", "b", "c"}, fx.ResultTags(`group:"t"`))),
+			fx.Invoke(fx.Annotate(func(ss ...string) {
+				assert.ElementsMatch(t, []string{"a", "b", "c"}, ss)
 			}, fx.ParamTags(`group:"t"`))),
 		)
 		defer app.RequireStart().RequireStop()
