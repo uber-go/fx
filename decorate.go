@@ -56,7 +56,7 @@ import (
 // Decorators can be annotated using fx.Annotate, but not with fx.Annotated. Refer to documentation
 // on fx.Annotate() to learn how to use it for annotating functions.
 //
-// Decorators support fx.In and fx.Out structs, similar to how fx.Provide and fx.Invoke does.
+// Decorators support fx.In and fx.Out structs, similar to fx.Provide and fx.Invoke.
 //
 // Decorators support value groups as well. For example, the following code shows a decorator
 // which takes in a value group using fx.In struct, and returns another value group.

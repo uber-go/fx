@@ -35,7 +35,7 @@ func TestDecorateSuccess(t *testing.T) {
 		Name string
 	}
 
-	t.Run("decorate something from Module", func(t *testing.T) {
+	t.Run("objects provided by other modules are decorated", func(t *testing.T) {
 		redis := fx.Module("redis",
 			fx.Provide(func() *Logger {
 				return &Logger{Name: "redis"}
@@ -61,7 +61,7 @@ func TestDecorateSuccess(t *testing.T) {
 		defer app.RequireStart().RequireStop()
 	})
 
-	t.Run("decorate a dependency in child module", func(t *testing.T) {
+	t.Run("objects in child modules are decorated.", func(t *testing.T) {
 		redis := fx.Module("redis",
 			fx.Decorate(func() *Logger {
 				return &Logger{Name: "redis"}
@@ -80,7 +80,7 @@ func TestDecorateSuccess(t *testing.T) {
 		defer app.RequireStart().RequireStop()
 	})
 
-	t.Run("use Decorate in root", func(t *testing.T) {
+	t.Run("root decoration applies to all modules", func(t *testing.T) {
 		redis := fx.Module("redis",
 			fx.Invoke(func(l *Logger) {
 				assert.Equal(t, "decorated logger", l.Name)
@@ -262,7 +262,7 @@ func TestDecorateFailure(t *testing.T) {
 		assert.Contains(t, err.Error(), "minor sadness")
 	})
 
-	t.Run("decorate the same type twice from the same Module", func(t *testing.T) {
+	t.Run("decorating a type more than once in the same Module errors", func(t *testing.T) {
 		type Logger struct {
 			Name string
 		}
@@ -307,7 +307,7 @@ func TestDecorateFailure(t *testing.T) {
 		assert.Contains(t, err.Error(), "major sadness")
 	})
 
-	t.Run("decorator missing a dependency", func(t *testing.T) {
+	t.Run("all decorator dependencies must be provided", func(t *testing.T) {
 		type Logger struct {
 			Name string
 		}
@@ -332,7 +332,7 @@ func TestDecorateFailure(t *testing.T) {
 		assert.Contains(t, err.Error(), "missing dependencies")
 	})
 
-	t.Run("use a decorator like a provider", func(t *testing.T) {
+	t.Run("decorate cannot provide a non-existent type", func(t *testing.T) {
 		type Logger struct {
 			Name string
 		}
