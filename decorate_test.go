@@ -248,8 +248,11 @@ func TestDecorateFailure(t *testing.T) {
 				return &Logger{Name: "root"}
 			}),
 			fx.Module("child",
-				fx.Decorate(func(l *Logger) (*Logger, error) {
-					return &Logger{Name: l.Name + "decorated"}, errors.New("minor sadness")
+				fx.Decorate(func(l *Logger) *Logger {
+					return &Logger{Name: l.Name + "decorated"}
+				}),
+				fx.Decorate(func(l *Logger) *Logger {
+					return &Logger{Name: l.Name + "decorated"}
 				}),
 				fx.Invoke(func(l *Logger) {
 					assert.Fail(t, "this should not be executed")
@@ -259,7 +262,7 @@ func TestDecorateFailure(t *testing.T) {
 
 		err := app.Err()
 		require.Error(t, err)
-		assert.Contains(t, err.Error(), "minor sadness")
+		assert.Contains(t, err.Error(), "*fx_test.Logger already decorated")
 	})
 
 	t.Run("decorating a type more than once in the same Module errors", func(t *testing.T) {
