@@ -384,7 +384,7 @@ func (ann *annotated) parameters() (
 		if i < len(ann.ParamTags) {
 			field.Tag = reflect.StructTag(ann.ParamTags[i])
 		} else if i == ft.NumIn()-1 && ft.IsVariadic() {
-			field.Tag = reflect.StructTag("optional:\"true\"")
+			field.Tag = reflect.StructTag(`optional:"true"`)
 		}
 
 		inFields = append(inFields, field)
