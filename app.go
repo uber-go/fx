@@ -518,6 +518,13 @@ func New(opts ...Option) *App {
 		}
 	}
 
+	// Run decorators before executing any Invokes.
+	if err := app.root.decorate(); err != nil {
+		app.err = err
+
+		return app
+	}
+
 	// This error might have come from the provide loop above. We've
 	// already flushed to the custom logger, so we can return.
 	if app.err != nil {
