@@ -21,9 +21,11 @@
 package fx_test
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.uber.org/fx"
 	"go.uber.org/fx/fxtest"
 )
@@ -75,34 +77,6 @@ func TestReplaceSuccess(t *testing.T) {
 		)
 		defer app.RequireStart().RequireStop()
 	})
-}
-
-func TestReplaceFailure(t *testing.T) {
-	t.Parallel()
-
-	t.Run("replace same value twice", func(t *testing.T) {
-		t.Parallel()
-
-		type A struct {
-			Value string
-		}
-		a := &A{Value: "A"}
-		app := NewForTest(t,
-			fx.Provide(func() *A {
-				return &A{Value: "a"}
-			}),
-			fx.Module("child",
-				fx.Replace(a),
-				fx.Replace(a),
-				fx.Invoke(func(a *A) {
-					assert.Fail(t, "this should never run")
-				}),
-			),
-		)
-		err := app.Err()
-		assert.Error(t, err)
-		assert.Contains(t, err.Error(), "*fx_test.A already decorated")
-	})
 
 	t.Run("replace with annotate", func(t *testing.T) {
 		t.Parallel()
@@ -138,5 +112,74 @@ func TestReplaceFailure(t *testing.T) {
 			}, fx.ParamTags(`group:"t"`))),
 		)
 		defer app.RequireStart().RequireStop()
+	})
+}
+
+func TestReplaceFailure(t *testing.T) {
+	t.Parallel()
+
+	t.Run("replace same value twice", func(t *testing.T) {
+		t.Parallel()
+
+		type A struct {
+			Value string
+		}
+		a := &A{Value: "A"}
+		app := NewForTest(t,
+			fx.Provide(func() *A {
+				return &A{Value: "a"}
+			}),
+			fx.Module("child",
+				fx.Replace(a),
+				fx.Replace(a),
+				fx.Invoke(func(a *A) {
+					assert.Fail(t, "this should never run")
+				}),
+			),
+		)
+		err := app.Err()
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "*fx_test.A already decorated")
+	})
+
+	t.Run("replace a value that wasn't provided", func(t *testing.T) {
+		t.Parallel()
+
+		type A struct{}
+
+		app := NewForTest(t,
+			fx.Replace(A{}),
+			fx.Invoke(func(a *A) {
+			}),
+		)
+		err := app.Err()
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "missing type: *fx_test.A")
+	})
+
+	t.Run("replace panics on invalid values", func(t *testing.T) {
+		t.Parallel()
+
+		type A struct{}
+		type B struct{}
+
+		require.PanicsWithValuef(
+			t,
+			"untyped nil passed to fx.Replace",
+			func() { fx.Replace(A{}, nil) },
+			"a naked nil should panic",
+		)
+
+		require.PanicsWithValuef(
+			t,
+			"error value passed to fx.Replace",
+			func() { fx.Replace(A{}, errors.New("some error")) },
+			"a naked nil should panic",
+		)
+
+		require.NotPanicsf(
+			t,
+			func() { fx.Replace(A{}, (*B)(nil)) },
+			"a wrapped nil should not panic")
 	})
 }

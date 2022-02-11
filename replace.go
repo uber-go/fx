@@ -28,9 +28,13 @@ import (
 	"go.uber.org/fx/internal/fxreflect"
 )
 
-// Replace provides instantiated values for dependency injection as if
-// they had been provided using a constructor that simply returns them.
-// The most specific type of each value (as determined by reflection) is used.
+// Replace provides instantiated values for graph modification. Similar to
+// what fx.Supply is to fx.Provide, values provided by fx.Replace behaves
+// similar to values produced by decorators specified with fx.Decorate.
+//
+// Refer to the documentation on fx.Decorate to see how graph modifications
+// work with fx.Module.
+//
 // Replace panics if a value (or annotation target) is an untyped nil or an error.
 func Replace(values ...interface{}) Option {
 	decorators := make([]interface{}, len(values)) // one function per value
@@ -38,11 +42,6 @@ func Replace(values ...interface{}) Option {
 	for i, value := range values {
 		switch value := value.(type) {
 		case annotated:
-			var typ reflect.Type
-			value.Target, typ = newReplaceDecorator(value.Target)
-			decorators[i] = value
-			types[i] = typ
-		case Annotated:
 			var typ reflect.Type
 			value.Target, typ = newReplaceDecorator(value.Target)
 			decorators[i] = value
