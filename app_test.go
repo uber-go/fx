@@ -1698,6 +1698,11 @@ func TestOptionString(t *testing.T) {
 			give: Decorate(bytes.NewBufferString),
 			want: "fx.Decorate(bytes.NewBufferString())",
 		},
+		{
+			desc: "Replace",
+			give: Replace(bytes.NewReader(nil)),
+			want: "fx.Replace(*bytes.Reader)",
+		},
 	}
 
 	for _, tt := range tests {
