@@ -30,7 +30,7 @@ import (
 
 // Replace provides instantiated values for graph modification. Similar to
 // what fx.Supply is to fx.Provide, values provided by fx.Replace behaves
-// similar to values produced by decorators specified with fx.Decorate.
+// similarly to values produced by decorators specified with fx.Decorate.
 //
 // Refer to the documentation on fx.Decorate to see how graph modifications
 // work with fx.Module.

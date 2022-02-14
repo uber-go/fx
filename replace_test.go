@@ -104,7 +104,7 @@ func TestReplaceSuccess(t *testing.T) {
 
 		app := fxtest.New(t,
 			fx.Supply(
-				fx.Annotate([]string{"A", "B", "C"}, fx.ResultTags(`group:"t"`)),
+				fx.Annotate([]string{"A", "B", "C"}, fx.ResultTags(`group:"t,flatten"`)),
 			),
 			fx.Replace(fx.Annotate([]string{"a", "b", "c"}, fx.ResultTags(`group:"t"`))),
 			fx.Invoke(fx.Annotate(func(ss ...string) {
@@ -112,6 +112,28 @@ func TestReplaceSuccess(t *testing.T) {
 			}, fx.ParamTags(`group:"t"`))),
 		)
 		defer app.RequireStart().RequireStop()
+	})
+
+	t.Run("replace a value group supplied by a child module from root module", func(t *testing.T) {
+		t.Parallel()
+
+		foo := fx.Module("foo",
+			fx.Supply(
+				fx.Annotate([]string{"a", "b", "c"}, fx.ResultTags(`group:"t,flatten"`)),
+			),
+		)
+
+		fx.New(
+			fx.Module("wrapfoo",
+				foo,
+				fx.Replace(
+					fx.Annotate([]string{"d", "e", "f"}, fx.ResultTags(`group:"t"`)),
+				),
+				fx.Invoke(fx.Annotate(func(ss []string) {
+					assert.ElementsMatch(t, []string{"d", "e", "f"}, ss)
+				}, fx.ParamTags(`group:"t"`))),
+			),
+		)
 	})
 }
 
@@ -174,7 +196,7 @@ func TestReplaceFailure(t *testing.T) {
 			t,
 			"error value passed to fx.Replace",
 			func() { fx.Replace(A{}, errors.New("some error")) },
-			"a naked nil should panic",
+			"replacing with an error should panic",
 		)
 
 		require.NotPanicsf(
