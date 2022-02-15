@@ -59,15 +59,12 @@ func Supply(values ...interface{}) Option {
 	for i, value := range values {
 		switch value := value.(type) {
 		case annotated:
-			var typ reflect.Type
-			value.Target, typ = newSupplyConstructor(value.Target)
-			constructors[i] = value
-			types[i] = typ
 		case Annotated:
 			var typ reflect.Type
 			value.Target, typ = newSupplyConstructor(value.Target)
 			constructors[i] = value
 			types[i] = typ
+			break
 		default:
 			constructors[i], types[i] = newSupplyConstructor(value)
 		}
