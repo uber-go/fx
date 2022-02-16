@@ -72,6 +72,13 @@ func (l *ConsoleLogger) LogEvent(event Event) {
 		if e.Err != nil {
 			l.logf("Error after options were applied: %v", e.Err)
 		}
+	case *Decorated:
+		for _, rtype := range e.OutputTypeNames {
+			l.logf("DECORATE\t%v <= %v", rtype, e.DecoratorName)
+		}
+		if e.Err != nil {
+			l.logf("Error after options were applied: %v", e.Err)
+		}
 	case *Invoking:
 		l.logf("INVOKE\t\t%s", e.FunctionName)
 	case *Invoked:

@@ -37,6 +37,7 @@ func (*OnStopExecuting) event()   {}
 func (*OnStopExecuted) event()    {}
 func (*Supplied) event()          {}
 func (*Provided) event()          {}
+func (*Decorated) event()         {}
 func (*Invoking) event()          {}
 func (*Invoked) event()           {}
 func (*Stopping) event()          {}
@@ -122,6 +123,20 @@ type Provided struct {
 	OutputTypeNames []string
 
 	// Err is non-nil if we failed to provide this constructor.
+	Err error
+}
+
+// Decorated is emitted when a decorator is provided to Fx.
+type Decorated struct {
+	// DecoratorName is the name of the decorator function that was
+	// provided to Fx.
+	DecoratorName string
+
+	// OutputTypeNames is a list of names of types that are decorated by
+	// this decorator.
+	OutputTypeNames []string
+
+	// Err is non-nil if we failed to provide this decorator.
 	Err error
 }
 

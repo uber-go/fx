@@ -87,6 +87,17 @@ func (l *ZapLogger) LogEvent(event Event) {
 			l.Logger.Error("error encountered while applying options",
 				zap.Error(e.Err))
 		}
+	case *Decorated:
+		for _, rtype := range e.OutputTypeNames {
+			l.Logger.Info("decorated",
+				zap.String("decorator", e.DecoratorName),
+				zap.String("type", rtype),
+			)
+		}
+		if e.Err != nil {
+			l.Logger.Error("error encountered while applying options",
+				zap.Error(e.Err))
+		}
 	case *Invoking:
 		// Do not log stack as it will make logs hard to read.
 		l.Logger.Info("invoking",

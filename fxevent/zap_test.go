@@ -164,6 +164,26 @@ func TestZapLogger(t *testing.T) {
 			},
 		},
 		{
+			name: "Decorate",
+			give: &Decorated{
+				DecoratorName:   "bytes.NewBuffer()",
+				OutputTypeNames: []string{"*bytes.Buffer"},
+			},
+			wantMessage: "decorated",
+			wantFields: map[string]interface{}{
+				"decorator": "bytes.NewBuffer()",
+				"type":      "*bytes.Buffer",
+			},
+		},
+		{
+			name:        "Decorate with Error",
+			give:        &Decorated{Err: someError},
+			wantMessage: "error encountered while applying options",
+			wantFields: map[string]interface{}{
+				"error": "some error",
+			},
+		},
+		{
 			name:        "Invoking/Success",
 			give:        &Invoking{FunctionName: "bytes.NewBuffer()"},
 			wantMessage: "invoking",
