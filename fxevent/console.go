@@ -27,7 +27,7 @@ import (
 )
 
 // ConsoleLogger is an Fx event logger that attempts to write human-readable
-// mesasges to the console.
+// messages to the console.
 //
 // Use this during development.
 type ConsoleLogger struct {

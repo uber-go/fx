@@ -33,8 +33,9 @@ import (
 // the application's existing list.
 //
 // Unlike constructors, invocations are always executed, and they're always
-// run in order. Invocations may have any number of returned values. If the
-// final returned object is an error, it's assumed to be a success indicator.
+// run in order. Invocations may have any number of returned values.
+// If the final returned object is an error, it indicates whether the operation
+// was successful.
 // All other returned values are discarded.
 //
 // Typically, invoked functions take a handful of high-level objects (whose
