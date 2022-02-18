@@ -109,7 +109,7 @@ func runProvide(c container, p provide, opts ...dig.ProvideOption) error {
 			return fmt.Errorf("fx.Provide(%v) from:\n%+vFailed: %v", constructor, p.Stack, err)
 		}
 
-		opts = append(opts, constructor.FuncInfo)
+		opts = append(opts, dig.LocationForPC(constructor.FuncPtr))
 		if err := c.Provide(ctor, opts...); err != nil {
 			return fmt.Errorf("fx.Provide(%v) from:\n%+vFailed: %v", constructor, p.Stack, err)
 		}
