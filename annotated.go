@@ -303,7 +303,7 @@ func (ann *annotated) Build() (interface{}, error) {
 
 	newFnType := reflect.FuncOf(paramTypes, resultTypes, false)
 	origFn := reflect.ValueOf(ann.Target)
-	ann.FuncInfo = dig.LocationForPC(origFn.Pointer())
+	ann.FuncPtr = origFn.Pointer()
 	newFn := reflect.MakeFunc(newFnType, func(args []reflect.Value) []reflect.Value {
 		args = remapParams(args)
 		var results []reflect.Value
