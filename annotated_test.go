@@ -787,7 +787,7 @@ func TestAnnotate(t *testing.T) {
 		defer app.RequireStart().RequireStop()
 	})
 
-	t.Run("provide an already provided function error", func(t *testing.T) {
+	t.Run("provide an already provided function using Annotate", func(t *testing.T) {
 		t.Parallel()
 
 		app := NewForTest(t,
