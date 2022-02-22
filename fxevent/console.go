@@ -27,7 +27,7 @@ import (
 )
 
 // ConsoleLogger is an Fx event logger that attempts to write human-readable
-// mesasges to the console.
+// messages to the console.
 //
 // Use this during development.
 type ConsoleLogger struct {
@@ -68,6 +68,13 @@ func (l *ConsoleLogger) LogEvent(event Event) {
 	case *Provided:
 		for _, rtype := range e.OutputTypeNames {
 			l.logf("PROVIDE\t%v <= %v", rtype, e.ConstructorName)
+		}
+		if e.Err != nil {
+			l.logf("Error after options were applied: %v", e.Err)
+		}
+	case *Decorated:
+		for _, rtype := range e.OutputTypeNames {
+			l.logf("DECORATE\t%v <= %v", rtype, e.DecoratorName)
 		}
 		if e.Err != nil {
 			l.logf("Error after options were applied: %v", e.Err)

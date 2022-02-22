@@ -343,6 +343,44 @@ func TestNewApp(t *testing.T) {
 		assert.Contains(t, err.Error(), "/app_test.go")
 		assert.Contains(t, err.Error(), "Failed: must provide constructor function")
 	})
+
+	t.Run("Decorates", func(t *testing.T) {
+		t.Parallel()
+		spy := new(fxlog.Spy)
+
+		type A struct{ value int }
+		app := fxtest.New(t,
+			Provide(func() A { return A{value: 0} }),
+			Decorate(func(a A) A { return A{value: a.value + 1} }),
+			Invoke(func(a A) { assert.Equal(t, a.value, 1) }),
+			WithLogger(func() fxevent.Logger { return spy }))
+		defer app.RequireStart().RequireStop()
+
+		require.Equal(t,
+			[]string{"Provided", "Provided", "Provided", "Provided", "LoggerInitialized", "Decorated", "Invoking", "Invoked", "Started"},
+			spy.EventTypes())
+	})
+
+	t.Run("DecoratesFromManyModules", func(t *testing.T) {
+		t.Parallel()
+		spy := new(fxlog.Spy)
+
+		type A struct{ value int }
+		m := Module("decorator",
+			Decorate(func(a A) A { return A{value: a.value + 1} }),
+		)
+		app := fxtest.New(t,
+			m,
+			Provide(func() A { return A{value: 0} }),
+			Decorate(func(a A) A { return A{value: a.value + 1} }),
+			WithLogger(func() fxevent.Logger { return spy }),
+		)
+		defer app.RequireStart().RequireStop()
+
+		require.Equal(t,
+			[]string{"Provided", "Provided", "Provided", "Provided", "LoggerInitialized", "Decorated", "Decorated", "Started"},
+			spy.EventTypes())
+	})
 }
 
 func TestWithLoggerErrorUseDefault(t *testing.T) {
@@ -1697,6 +1735,11 @@ func TestOptionString(t *testing.T) {
 			desc: "Decorate",
 			give: Decorate(bytes.NewBufferString),
 			want: "fx.Decorate(bytes.NewBufferString())",
+		},
+		{
+			desc: "Replace",
+			give: Replace(bytes.NewReader(nil)),
+			want: "fx.Replace(*bytes.Reader)",
 		},
 	}
 

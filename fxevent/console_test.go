@@ -116,6 +116,19 @@ func TestConsoleLogger(t *testing.T) {
 			want: "[Fx] PROVIDE	*bytes.Buffer <= bytes.NewBuffer()\n",
 		},
 		{
+			name: "Decorated",
+			give: &Decorated{
+				DecoratorName:   "bytes.NewBuffer()",
+				OutputTypeNames: []string{"*bytes.Buffer"},
+			},
+			want: "[Fx] DECORATE	*bytes.Buffer <= bytes.NewBuffer()\n",
+		},
+		{
+			name: "DecorateError",
+			give: &Decorated{Err: errors.New("some error")},
+			want: "[Fx] Error after options were applied: some error\n",
+		},
+		{
 			name: "Invoking",
 			give: &Invoking{FunctionName: "bytes.NewBuffer()"},
 			want: "[Fx] INVOKE		bytes.NewBuffer()\n",

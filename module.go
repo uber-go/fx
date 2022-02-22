@@ -179,7 +179,19 @@ func (m *module) executeInvoke(i invoke) (err error) {
 
 func (m *module) decorate() (err error) {
 	for _, decorator := range m.decorators {
-		if err := runDecorator(m.scope, decorator); err != nil {
+		var info dig.DecorateInfo
+		err := runDecorator(m.scope, decorator, dig.FillDecorateInfo(&info))
+		outputNames := make([]string, len(info.Outputs))
+		for i, o := range info.Outputs {
+			outputNames[i] = o.String()
+		}
+
+		m.app.log.LogEvent(&fxevent.Decorated{
+			DecoratorName:   fxreflect.FuncName(decorator.Target),
+			OutputTypeNames: outputNames,
+			Err:             err,
+		})
+		if err != nil {
 			return err
 		}
 	}
