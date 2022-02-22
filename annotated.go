@@ -264,7 +264,7 @@ type annotated struct {
 	ParamTags  []string
 	ResultTags []string
 	As         [][]reflect.Type
-	FuncPtr   uintptr
+	FuncPtr    uintptr
 }
 
 func (ann annotated) String() string {
