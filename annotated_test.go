@@ -787,6 +787,22 @@ func TestAnnotate(t *testing.T) {
 		defer app.RequireStart().RequireStop()
 	})
 
+	t.Run("provide an already provided function using Annotate", func(t *testing.T) {
+		t.Parallel()
+
+		app := NewForTest(t,
+			fx.Provide(fx.Annotate(newA, fx.ResultTags(`name:"a"`))),
+			fx.Provide(fx.Annotate(newA, fx.ResultTags(`name:"a"`))),
+			fx.Invoke(
+				fx.Annotate(newB, fx.ParamTags(`name:"a"`)),
+			),
+		)
+		err := app.Err()
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "already provided")
+		assert.Contains(t, err.Error(), "\"go.uber.org/fx_test\".TestAnnotate.func1")
+	})
+
 	t.Run("specify more ParamTags than Params", func(t *testing.T) {
 		t.Parallel()
 
