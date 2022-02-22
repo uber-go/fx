@@ -7,21 +7,10 @@ An application framework for Go that:
 
 ## Installation
 
-We recommend locking to [SemVer](http://semver.org/) range `^1` using [Glide](https://github.com/Masterminds/glide):
+We recommend locking to [SemVer](http://semver.org/) range `^1` using [go mod](https://github.com/golang/go/wiki/Modules):
 
-```
-glide get 'go.uber.org/fx#^1'
-```
-
-Alternatively you can add it as a dependency using [go mod](https://github.com/golang/go/wiki/Modules):
-
-```
+```shell
 go get go.uber.org/fx@v1
-```
-
-Or by using [dep](https://github.com/golang/dep):
-```
-dep ensure -add go.uber.org/fx@1.0.0
 ```
 
 ## Stability
