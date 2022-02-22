@@ -213,6 +213,54 @@ func TestDecorateSuccess(t *testing.T) {
 		)
 		defer app.RequireStart().RequireStop()
 	})
+
+	t.Run("transitive decoration", func(t *testing.T) {
+		type Config struct {
+			Scope string
+		}
+		type Logger struct {
+			Cfg *Config
+		}
+		app := fxtest.New(t,
+			fx.Provide(func() *Config { return &Config{Scope: "root"} }),
+			fx.Module("child",
+				fx.Decorate(func() *Config { return &Config{Scope: "child"} }),
+				fx.Provide(func(cfg *Config) *Logger { return &Logger{Cfg: cfg} }),
+				fx.Invoke(func(l *Logger) {
+					assert.Equal(t, "child", l.Cfg.Scope)
+				}),
+			),
+		)
+		defer app.RequireStart().RequireStop()
+	})
+
+	t.Run("transitive and scoped decorations", func(t *testing.T) {
+		type Config struct {
+			Scope string
+		}
+		type Logger struct {
+			Cfg *Config
+		}
+		app := fxtest.New(t,
+			fx.Provide(func() *Config {
+				return &Config{Scope: "root"}
+			}),
+			fx.Provide(func(cfg *Config) *Logger {
+				return &Logger{Cfg: &Config{
+					Scope: cfg.Scope + " logger",
+				}}
+			}),
+			fx.Module("child",
+				fx.Decorate(func() *Config {
+					return &Config{Scope: "child"}
+				}),
+				fx.Invoke(func(l *Logger) {
+					assert.Equal(t, "child logger", l.Cfg.Scope)
+				}),
+			),
+		)
+		defer app.RequireStart().RequireStop()
+	})
 }
 
 func TestDecorateFailure(t *testing.T) {
