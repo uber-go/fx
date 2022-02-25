@@ -233,6 +233,36 @@ func TestDecorateSuccess(t *testing.T) {
 		)
 		defer app.RequireStart().RequireStop()
 	})
+
+	t.Run("ineffective transitive decoration", func(t *testing.T) {
+		type Config struct {
+			Scope string
+		}
+		type Logger struct {
+			Cfg *Config
+		}
+		app := fxtest.New(t,
+			fx.Provide(func() *Config {
+				return &Config{Scope: "root"}
+			}),
+			fx.Provide(func(cfg *Config) *Logger {
+				return &Logger{Cfg: &Config{
+					Scope: cfg.Scope + " logger",
+				}}
+			}),
+			fx.Module("child",
+				fx.Decorate(func() *Config {
+					return &Config{Scope: "child"}
+				}),
+				// Logger does not get replaced since it was provided
+				// from a different Scope.
+				fx.Invoke(func(l *Logger) {
+					assert.Equal(t, "root logger", l.Cfg.Scope)
+				}),
+			),
+		)
+		defer app.RequireStart().RequireStop()
+	})
 }
 
 func TestDecorateFailure(t *testing.T) {
