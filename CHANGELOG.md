@@ -4,6 +4,9 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## Unreleased
+- No changes yet.
+
 ## [1.17.0] - 2021-02-28
 ### Added
 - Add `fx.Module` which scopes any modifications made to the dependency graph.
