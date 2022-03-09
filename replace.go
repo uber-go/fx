@@ -28,14 +28,52 @@ import (
 	"go.uber.org/fx/internal/fxreflect"
 )
 
-// Replace provides instantiated values for graph modification. Similar to
-// what fx.Supply is to fx.Provide, values provided by fx.Replace behaves
-// similarly to values produced by decorators specified with fx.Decorate.
+// Replace provides instantiated values for graph modification as if
+// they had been provided using a decorator with fx.Decorate.
+// The most specific type of each value (as determined by reflection) is used.
 //
 // Refer to the documentation on fx.Decorate to see how graph modifications
 // work with fx.Module.
 //
+// This serves a purpose similar to what fx.Supply does for fx.Provide.
+//
+// For example, given,
+//
+//  var log *zap.Logger = ...
+//
+// The following two forms are equivalent.
+//
+//  fx.Replace(log)
+//
+//  fx.Decorate(
+//  	func() *zap.Logger {
+//  		return log
+//  	},
+//  )
+//
 // Replace panics if a value (or annotation target) is an untyped nil or an error.
+//
+// Replace Caveats
+//
+// As mentioned above, Replace uses the most specific type of the provided
+// value. For interface values, this refers to the type of the implementation,
+// not the interface. So if you try to replace an io.Writer, fx.Replace will
+// use the type of the implementation.
+//
+//   var stderr io.Writer = os.Stderr
+//   fx.Replace(stderr)
+//
+// Is equivalent to,
+//
+//   fx.Decorate(func() *os.File { return os.Stderr })
+//
+// This is typically NOT what you intended. To replace the io.Writer in the
+// container with the value above, we need to use the fx.Annotate function with
+// the fx.As annotation.
+//
+//  fx.Replace(
+//  	fx.Annotate(os.Stderr, fx.As(new(io.Writer)))
+//  )
 func Replace(values ...interface{}) Option {
 	decorators := make([]interface{}, len(values)) // one function per value
 	types := make([]reflect.Type, len(values))
