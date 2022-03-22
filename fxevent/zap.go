@@ -77,39 +77,39 @@ func (l *ZapLogger) LogEvent(event Event) {
 	case *Supplied:
 		l.Logger.Info("supplied",
 			zap.String("type", e.TypeName),
-			zap.String("module", e.ModuleName),
+			moduleField(e.ModuleName),
 			zap.Error(e.Err))
 	case *Provided:
 		for _, rtype := range e.OutputTypeNames {
 			l.Logger.Info("provided",
 				zap.String("constructor", e.ConstructorName),
-				zap.String("module", e.ModuleName),
+				moduleField(e.ModuleName),
 				zap.String("type", rtype),
 			)
 		}
 		if e.Err != nil {
 			l.Logger.Error("error encountered while applying options",
-				zap.String("module", e.ModuleName),
+				moduleField(e.ModuleName),
 				zap.Error(e.Err))
 		}
 	case *Decorated:
 		for _, rtype := range e.OutputTypeNames {
 			l.Logger.Info("decorated",
 				zap.String("decorator", e.DecoratorName),
-				zap.String("module", e.ModuleName),
+				moduleField(e.ModuleName),
 				zap.String("type", rtype),
 			)
 		}
 		if e.Err != nil {
 			l.Logger.Error("error encountered while applying options",
-				zap.String("module", e.ModuleName),
+				moduleField(e.ModuleName),
 				zap.Error(e.Err))
 		}
 	case *Invoking:
 		// Do not log stack as it will make logs hard to read.
 		l.Logger.Info("invoking",
 			zap.String("function", e.FunctionName),
-			zap.String("module", e.ModuleName),
+			moduleField(e.ModuleName),
 		)
 	case *Invoked:
 		if e.Err != nil {
@@ -117,7 +117,7 @@ func (l *ZapLogger) LogEvent(event Event) {
 				zap.Error(e.Err),
 				zap.String("stack", e.Trace),
 				zap.String("function", e.FunctionName),
-				zap.String("module", e.ModuleName),
+				moduleField(e.ModuleName),
 			)
 		}
 	case *Stopping:
@@ -146,4 +146,11 @@ func (l *ZapLogger) LogEvent(event Event) {
 			l.Logger.Info("initialized custom fxevent.Logger", zap.String("function", e.ConstructorName))
 		}
 	}
+}
+
+func moduleField(name string) zap.Field {
+	if len(name) == 0 {
+		return zap.Skip()
+	}
+	return zap.String("module", name)
 }

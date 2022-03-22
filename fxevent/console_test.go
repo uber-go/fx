@@ -100,7 +100,7 @@ func TestConsoleLogger(t *testing.T) {
 		{
 			name: "Supplied",
 			give: &Supplied{TypeName: "*bytes.Buffer", ModuleName: "myModule"},
-			want: "[Fx] SUPPLY	*bytes.Buffer from Module \"myModule\"\n",
+			want: "[Fx] SUPPLY	*bytes.Buffer from module \"myModule\"\n",
 		},
 		{
 			name: "SuppliedError",
@@ -114,7 +114,7 @@ func TestConsoleLogger(t *testing.T) {
 				ModuleName:      "myModule",
 				OutputTypeNames: []string{"*bytes.Buffer"},
 			},
-			want: "[Fx] PROVIDE	*bytes.Buffer <= bytes.NewBuffer() from Module \"myModule\"\n",
+			want: "[Fx] PROVIDE	*bytes.Buffer <= bytes.NewBuffer() from module \"myModule\"\n",
 		},
 		{
 			name: "Decorated",
@@ -123,7 +123,7 @@ func TestConsoleLogger(t *testing.T) {
 				ModuleName:      "myModule",
 				OutputTypeNames: []string{"*bytes.Buffer"},
 			},
-			want: "[Fx] DECORATE	*bytes.Buffer <= bytes.NewBuffer() from Module \"myModule\"\n",
+			want: "[Fx] DECORATE	*bytes.Buffer <= bytes.NewBuffer() from module \"myModule\"\n",
 		},
 		{
 			name: "DecorateError",
@@ -133,7 +133,7 @@ func TestConsoleLogger(t *testing.T) {
 		{
 			name: "Invoking",
 			give: &Invoking{FunctionName: "bytes.NewBuffer()"},
-			want: "[Fx] INVOKE		bytes.NewBuffer() from Module \"\"\n",
+			want: "[Fx] INVOKE		bytes.NewBuffer()\n",
 		},
 		{
 			name: "Invoked/Error",

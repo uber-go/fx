@@ -131,8 +131,7 @@ func TestZapLogger(t *testing.T) {
 			give:        &Supplied{TypeName: "*bytes.Buffer"},
 			wantMessage: "supplied",
 			wantFields: map[string]interface{}{
-				"type":   "*bytes.Buffer",
-				"module": "",
+				"type": "*bytes.Buffer",
 			},
 		},
 		{
@@ -140,9 +139,8 @@ func TestZapLogger(t *testing.T) {
 			give:        &Supplied{TypeName: "*bytes.Buffer", Err: someError},
 			wantMessage: "supplied",
 			wantFields: map[string]interface{}{
-				"type":   "*bytes.Buffer",
-				"module": "",
-				"error":  "some error",
+				"type":  "*bytes.Buffer",
+				"error": "some error",
 			},
 		},
 		{
@@ -164,8 +162,7 @@ func TestZapLogger(t *testing.T) {
 			give:        &Provided{Err: someError},
 			wantMessage: "error encountered while applying options",
 			wantFields: map[string]interface{}{
-				"error":  "some error",
-				"module": "",
+				"error": "some error",
 			},
 		},
 		{
@@ -187,8 +184,7 @@ func TestZapLogger(t *testing.T) {
 			give:        &Decorated{Err: someError},
 			wantMessage: "error encountered while applying options",
 			wantFields: map[string]interface{}{
-				"error":  "some error",
-				"module": "",
+				"error": "some error",
 			},
 		},
 		{
@@ -208,7 +204,6 @@ func TestZapLogger(t *testing.T) {
 				"error":    "some error",
 				"stack":    "",
 				"function": "bytes.NewBuffer()",
-				"module":   "",
 			},
 		},
 		{
