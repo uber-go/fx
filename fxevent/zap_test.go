@@ -131,7 +131,8 @@ func TestZapLogger(t *testing.T) {
 			give:        &Supplied{TypeName: "*bytes.Buffer"},
 			wantMessage: "supplied",
 			wantFields: map[string]interface{}{
-				"type": "*bytes.Buffer",
+				"type":   "*bytes.Buffer",
+				"module": "",
 			},
 		},
 		{
@@ -139,20 +140,23 @@ func TestZapLogger(t *testing.T) {
 			give:        &Supplied{TypeName: "*bytes.Buffer", Err: someError},
 			wantMessage: "supplied",
 			wantFields: map[string]interface{}{
-				"type":  "*bytes.Buffer",
-				"error": "some error",
+				"type":   "*bytes.Buffer",
+				"module": "",
+				"error":  "some error",
 			},
 		},
 		{
 			name: "Provide",
 			give: &Provided{
 				ConstructorName: "bytes.NewBuffer()",
+				ModuleName:      "myModule",
 				OutputTypeNames: []string{"*bytes.Buffer"},
 			},
 			wantMessage: "provided",
 			wantFields: map[string]interface{}{
 				"constructor": "bytes.NewBuffer()",
 				"type":        "*bytes.Buffer",
+				"module":      "myModule",
 			},
 		},
 		{
@@ -160,19 +164,22 @@ func TestZapLogger(t *testing.T) {
 			give:        &Provided{Err: someError},
 			wantMessage: "error encountered while applying options",
 			wantFields: map[string]interface{}{
-				"error": "some error",
+				"error":  "some error",
+				"module": "",
 			},
 		},
 		{
 			name: "Decorate",
 			give: &Decorated{
 				DecoratorName:   "bytes.NewBuffer()",
+				ModuleName:      "myModule",
 				OutputTypeNames: []string{"*bytes.Buffer"},
 			},
 			wantMessage: "decorated",
 			wantFields: map[string]interface{}{
 				"decorator": "bytes.NewBuffer()",
 				"type":      "*bytes.Buffer",
+				"module":    "myModule",
 			},
 		},
 		{
@@ -180,15 +187,17 @@ func TestZapLogger(t *testing.T) {
 			give:        &Decorated{Err: someError},
 			wantMessage: "error encountered while applying options",
 			wantFields: map[string]interface{}{
-				"error": "some error",
+				"error":  "some error",
+				"module": "",
 			},
 		},
 		{
 			name:        "Invoking/Success",
-			give:        &Invoking{FunctionName: "bytes.NewBuffer()"},
+			give:        &Invoking{ModuleName: "myModule", FunctionName: "bytes.NewBuffer()"},
 			wantMessage: "invoking",
 			wantFields: map[string]interface{}{
 				"function": "bytes.NewBuffer()",
+				"module":   "myModule",
 			},
 		},
 		{
@@ -199,6 +208,7 @@ func TestZapLogger(t *testing.T) {
 				"error":    "some error",
 				"stack":    "",
 				"function": "bytes.NewBuffer()",
+				"module":   "",
 			},
 		},
 		{

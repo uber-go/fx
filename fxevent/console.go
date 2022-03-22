@@ -63,24 +63,24 @@ func (l *ConsoleLogger) LogEvent(event Event) {
 		if e.Err != nil {
 			l.logf("ERROR\tFailed to supply %v: %v", e.TypeName, e.Err)
 		} else {
-			l.logf("SUPPLY\t%v", e.TypeName)
+			l.logf("SUPPLY\t%v from Module \"%v\"", e.TypeName, e.ModuleName)
 		}
 	case *Provided:
 		for _, rtype := range e.OutputTypeNames {
-			l.logf("PROVIDE\t%v <= %v", rtype, e.ConstructorName)
+			l.logf("PROVIDE\t%v <= %v from Module \"%v\"", rtype, e.ConstructorName, e.ModuleName)
 		}
 		if e.Err != nil {
 			l.logf("Error after options were applied: %v", e.Err)
 		}
 	case *Decorated:
 		for _, rtype := range e.OutputTypeNames {
-			l.logf("DECORATE\t%v <= %v", rtype, e.DecoratorName)
+			l.logf("DECORATE\t%v <= %v from Module \"%v\"", rtype, e.DecoratorName, e.ModuleName)
 		}
 		if e.Err != nil {
 			l.logf("Error after options were applied: %v", e.Err)
 		}
 	case *Invoking:
-		l.logf("INVOKE\t\t%s", e.FunctionName)
+		l.logf("INVOKE\t\t%s from Module \"%v\"", e.FunctionName, e.ModuleName)
 	case *Invoked:
 		if e.Err != nil {
 			l.logf("ERROR\t\tfx.Invoke(%v) called from:\n%+vFailed: %v", e.FunctionName, e.Trace, e.Err)

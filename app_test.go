@@ -423,7 +423,7 @@ func TestWithLoggerErrorUseDefault(t *testing.T) {
 	// Failed: must provide constructor function, got  (type *bytes.Buffer)
 
 	out := string(stderr)
-	assert.Contains(t, out, "[Fx] SUPPLY\t*zap.Logger\n")
+	assert.Contains(t, out, "[Fx] SUPPLY\t*zap.Logger from Module \"\"\n")
 	assert.Contains(t, out, "[Fx] ERROR\t\tFailed to initialize custom logger: fx.WithLogger")
 	assert.Contains(t, out, "must provide constructor function, got  (type *bytes.Buffer)\n")
 }
