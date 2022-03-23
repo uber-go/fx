@@ -105,8 +105,11 @@ type OnStopExecuted struct {
 
 // Supplied is emitted after a value is added with fx.Supply.
 type Supplied struct {
-	// Name of the type of value that was added.
+	// TypeName is the name of the type of value that was added.
 	TypeName string
+
+	// ModuleName is the name of the module in which the value was added to.
+	ModuleName string
 
 	// Err is non-nil if we failed to supply the value.
 	Err error
@@ -122,6 +125,10 @@ type Provided struct {
 	// this constructor.
 	OutputTypeNames []string
 
+	// ModuleName is the name of the module in which the constructor was
+	// provided to.
+	ModuleName string
+
 	// Err is non-nil if we failed to provide this constructor.
 	Err error
 }
@@ -131,6 +138,9 @@ type Decorated struct {
 	// DecoratorName is the name of the decorator function that was
 	// provided to Fx.
 	DecoratorName string
+
+	// ModuleName is the name of the module in which the value was added to.
+	ModuleName string
 
 	// OutputTypeNames is a list of names of types that are decorated by
 	// this decorator.
@@ -144,6 +154,9 @@ type Decorated struct {
 type Invoking struct {
 	// FunctionName is the name of the function that will be invoked.
 	FunctionName string
+
+	// ModuleName is the name of the module in which the value was added to.
+	ModuleName string
 }
 
 // Invoked is emitted after we invoke a function specified with fx.Invoke,
@@ -151,6 +164,9 @@ type Invoking struct {
 type Invoked struct {
 	// Functionname is the name of the function that was invoked.
 	FunctionName string
+
+	// ModuleName is the name of the module in which the value was added to.
+	ModuleName string
 
 	// Err is non-nil if the function failed to execute.
 	Err error

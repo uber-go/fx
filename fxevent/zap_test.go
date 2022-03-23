@@ -147,12 +147,14 @@ func TestZapLogger(t *testing.T) {
 			name: "Provide",
 			give: &Provided{
 				ConstructorName: "bytes.NewBuffer()",
+				ModuleName:      "myModule",
 				OutputTypeNames: []string{"*bytes.Buffer"},
 			},
 			wantMessage: "provided",
 			wantFields: map[string]interface{}{
 				"constructor": "bytes.NewBuffer()",
 				"type":        "*bytes.Buffer",
+				"module":      "myModule",
 			},
 		},
 		{
@@ -167,12 +169,14 @@ func TestZapLogger(t *testing.T) {
 			name: "Decorate",
 			give: &Decorated{
 				DecoratorName:   "bytes.NewBuffer()",
+				ModuleName:      "myModule",
 				OutputTypeNames: []string{"*bytes.Buffer"},
 			},
 			wantMessage: "decorated",
 			wantFields: map[string]interface{}{
 				"decorator": "bytes.NewBuffer()",
 				"type":      "*bytes.Buffer",
+				"module":    "myModule",
 			},
 		},
 		{
@@ -185,10 +189,11 @@ func TestZapLogger(t *testing.T) {
 		},
 		{
 			name:        "Invoking/Success",
-			give:        &Invoking{FunctionName: "bytes.NewBuffer()"},
+			give:        &Invoking{ModuleName: "myModule", FunctionName: "bytes.NewBuffer()"},
 			wantMessage: "invoking",
 			wantFields: map[string]interface{}{
 				"function": "bytes.NewBuffer()",
+				"module":   "myModule",
 			},
 		},
 		{

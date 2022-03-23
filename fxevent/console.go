@@ -62,25 +62,39 @@ func (l *ConsoleLogger) LogEvent(event Event) {
 	case *Supplied:
 		if e.Err != nil {
 			l.logf("ERROR\tFailed to supply %v: %v", e.TypeName, e.Err)
+		} else if e.ModuleName != "" {
+			l.logf("SUPPLY\t%v from module %q", e.TypeName, e.ModuleName)
 		} else {
-			l.logf("SUPPLY\t%v", e.TypeName)
+			l.logf("SUPPLY\t%v", e.TypeName, e.ModuleName)
 		}
 	case *Provided:
 		for _, rtype := range e.OutputTypeNames {
-			l.logf("PROVIDE\t%v <= %v", rtype, e.ConstructorName)
+			if e.ModuleName != "" {
+				l.logf("PROVIDE\t%v <= %v from module %q", rtype, e.ConstructorName, e.ModuleName)
+			} else {
+				l.logf("PROVIDE\t%v <= %v", rtype, e.ConstructorName)
+			}
 		}
 		if e.Err != nil {
 			l.logf("Error after options were applied: %v", e.Err)
 		}
 	case *Decorated:
 		for _, rtype := range e.OutputTypeNames {
-			l.logf("DECORATE\t%v <= %v", rtype, e.DecoratorName)
+			if e.ModuleName != "" {
+				l.logf("DECORATE\t%v <= %v from module %q", rtype, e.DecoratorName, e.ModuleName)
+			} else {
+				l.logf("DECORATE\t%v <= %v", rtype, e.DecoratorName)
+			}
 		}
 		if e.Err != nil {
 			l.logf("Error after options were applied: %v", e.Err)
 		}
 	case *Invoking:
-		l.logf("INVOKE\t\t%s", e.FunctionName)
+		if e.ModuleName != "" {
+			l.logf("INVOKE\t\t%s from module %q", e.FunctionName, e.ModuleName)
+		} else {
+			l.logf("INVOKE\t\t%s", e.FunctionName)
+		}
 	case *Invoked:
 		if e.Err != nil {
 			l.logf("ERROR\t\tfx.Invoke(%v) called from:\n%+vFailed: %v", e.FunctionName, e.Trace, e.Err)

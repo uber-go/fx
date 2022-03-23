@@ -129,8 +129,9 @@ func (m *module) provide(p provide) {
 	switch {
 	case p.IsSupply:
 		ev = &fxevent.Supplied{
-			TypeName: p.SupplyType.String(),
-			Err:      m.app.err,
+			TypeName:   p.SupplyType.String(),
+			ModuleName: m.name,
+			Err:        m.app.err,
 		}
 
 	default:
@@ -141,6 +142,7 @@ func (m *module) provide(p provide) {
 
 		ev = &fxevent.Provided{
 			ConstructorName: fxreflect.FuncName(p.Target),
+			ModuleName:      m.name,
 			OutputTypeNames: outputNames,
 			Err:             m.app.err,
 		}
@@ -167,10 +169,12 @@ func (m *module) executeInvoke(i invoke) (err error) {
 	fnName := fxreflect.FuncName(i.Target)
 	m.app.log.LogEvent(&fxevent.Invoking{
 		FunctionName: fnName,
+		ModuleName:   m.name,
 	})
 	err = runInvoke(m.scope, i)
 	m.app.log.LogEvent(&fxevent.Invoked{
 		FunctionName: fnName,
+		ModuleName:   m.name,
 		Err:          err,
 		Trace:        fmt.Sprintf("%+v", i.Stack), // format stack trace as multi-line
 	})
@@ -188,6 +192,7 @@ func (m *module) decorate() (err error) {
 
 		m.app.log.LogEvent(&fxevent.Decorated{
 			DecoratorName:   fxreflect.FuncName(decorator.Target),
+			ModuleName:      m.name,
 			OutputTypeNames: outputNames,
 			Err:             err,
 		})
