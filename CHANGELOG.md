@@ -4,8 +4,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
-## Unreleased
-- No changes yet.
+## [1.17.1] - 2021-03-23
+### Added
+- Logging for provide/invoke/decorate now includes the associated `fx.Module` name.
+
+### Fixed
+- Upgrade Dig dependency to v1.14.1 to address a couple of issues with decorations. Refer to
+  Dig v1.14.1 release notes for more details.
+
+[1.17.1]: https://github.com/uber-go/fx/compare/v1.17.0...v1.17.1
 
 ## [1.17.0] - 2021-02-28
 ### Added
