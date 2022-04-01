@@ -166,6 +166,27 @@ func TestZapLogger(t *testing.T) {
 			},
 		},
 		{
+			name: "Replace",
+			give: &Replaced{
+				ModuleName:      "myModule",
+				OutputTypeNames: []string{"*bytes.Buffer"},
+			},
+			wantMessage: "replaced",
+			wantFields: map[string]interface{}{
+				"type":   "*bytes.Buffer",
+				"module": "myModule",
+			},
+		},
+		{
+			name: "Replace/Error",
+			give: &Replaced{Err: someError},
+
+			wantMessage: "error encountered while replacing",
+			wantFields: map[string]interface{}{
+				"error": "some error",
+			},
+		},
+		{
 			name: "Decorate",
 			give: &Decorated{
 				DecoratorName:   "bytes.NewBuffer()",

@@ -78,6 +78,18 @@ func (l *ConsoleLogger) LogEvent(event Event) {
 		if e.Err != nil {
 			l.logf("Error after options were applied: %v", e.Err)
 		}
+
+	case *Replaced:
+		for _, rtype := range e.OutputTypeNames {
+			if e.ModuleName != "" {
+				l.logf("REPLACE\t%v from module %q", rtype, e.ModuleName)
+			} else {
+				l.logf("REPLACE\t%v", rtype)
+			}
+		}
+		if e.Err != nil {
+			l.logf("ERROR\tFailed to replace: %v", e.Err)
+		}
 	case *Decorated:
 		for _, rtype := range e.OutputTypeNames {
 			if e.ModuleName != "" {
