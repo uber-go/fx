@@ -37,6 +37,7 @@ func (*OnStopExecuting) event()   {}
 func (*OnStopExecuted) event()    {}
 func (*Supplied) event()          {}
 func (*Provided) event()          {}
+func (*Replaced) event()          {}
 func (*Decorated) event()         {}
 func (*Invoking) event()          {}
 func (*Invoked) event()           {}
@@ -130,6 +131,18 @@ type Provided struct {
 	ModuleName string
 
 	// Err is non-nil if we failed to provide this constructor.
+	Err error
+}
+
+// Replaced is emitted when a decorator is provided to Fx.
+type Replaced struct {
+	// OutputTypeNames is a list of names of types that were replaced.
+	OutputTypeNames []string
+
+	// ModuleName is the name of the module in which the value was added to.
+	ModuleName string
+
+	// Err is non-nil if we failed to supply the value.
 	Err error
 }
 

@@ -160,6 +160,19 @@ func TestConsoleLogger(t *testing.T) {
 			want: "[Fx] PROVIDE	*bytes.Buffer <= bytes.NewBuffer() from module \"myModule\"\n",
 		},
 		{
+			name: "Replaced",
+			give: &Replaced{
+				ModuleName:      "myModule",
+				OutputTypeNames: []string{"*bytes.Buffer"},
+			},
+			want: "[Fx] REPLACE	*bytes.Buffer from module \"myModule\"\n",
+		},
+		{
+			name: "ReplacedError",
+			give: &Replaced{Err: errors.New("some error")},
+			want: "[Fx] ERROR	Failed to replace: some error\n",
+		},
+		{
 			name: "Decorated",
 			give: &Decorated{
 				DecoratorName:   "bytes.NewBuffer()",

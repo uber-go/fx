@@ -205,6 +205,9 @@ type decorator struct {
 
 	// Stack trace of where this provide was made.
 	Stack fxreflect.Stack
+
+	// Whether this decorator was specified via fx.Replace
+	IsReplace bool
 }
 
 func runDecorator(c container, d decorator, opts ...dig.DecorateOption) (err error) {
