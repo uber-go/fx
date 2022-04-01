@@ -24,6 +24,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"strings"
 	"testing"
@@ -31,6 +32,20 @@ import (
 
 	"github.com/stretchr/testify/assert"
 )
+
+// richError prints a different output when formatted with %+v vs %v.
+type richError struct{}
+
+func (e *richError) Error() string { return "plain error" }
+
+func (e *richError) Format(w fmt.State, c rune) {
+	if w.Flag('+') && c == 'v' {
+		// Format differently for %+v.
+		io.WriteString(w, "rich error")
+	} else {
+		io.WriteString(w, e.Error())
+	}
+}
 
 func TestConsoleLogger(t *testing.T) {
 	t.Parallel()
@@ -66,6 +81,15 @@ func TestConsoleLogger(t *testing.T) {
 			want: "[Fx] HOOK OnStop		hook.onStart1 called by bytes.NewBuffer failed in 0s: some error\n",
 		},
 		{
+			name: "OnStopExecutedError/rich error",
+			give: &OnStopExecuted{
+				FunctionName: "hook.onStart1",
+				CallerName:   "bytes.NewBuffer",
+				Err:          &richError{},
+			},
+			want: "[Fx] HOOK OnStop		hook.onStart1 called by bytes.NewBuffer failed in 0s: rich error\n",
+		},
+		{
 			name: "OnStopExecuted",
 			give: &OnStopExecuted{
 				FunctionName: "hook.onStart1",
@@ -84,6 +108,15 @@ func TestConsoleLogger(t *testing.T) {
 			want: "[Fx] HOOK OnStart		hook.onStart1 called by bytes.NewBuffer failed in 0s: some error\n",
 		},
 		{
+			name: "OnStartExecutedError/rich error",
+			give: &OnStartExecuted{
+				FunctionName: "hook.onStart1",
+				CallerName:   "bytes.NewBuffer",
+				Err:          &richError{},
+			},
+			want: "[Fx] HOOK OnStart		hook.onStart1 called by bytes.NewBuffer failed in 0s: rich error\n",
+		},
+		{
 			name: "OnStartExecuted",
 			give: &OnStartExecuted{
 				FunctionName: "hook.onStart1",
@@ -98,6 +131,11 @@ func TestConsoleLogger(t *testing.T) {
 			want: "[Fx] Error after options were applied: some error\n",
 		},
 		{
+			name: "ProvideError/rich error",
+			give: &Provided{Err: &richError{}},
+			want: "[Fx] Error after options were applied: rich error\n",
+		},
+		{
 			name: "Supplied",
 			give: &Supplied{TypeName: "*bytes.Buffer", ModuleName: "myModule"},
 			want: "[Fx] SUPPLY	*bytes.Buffer from module \"myModule\"\n",
@@ -106,6 +144,11 @@ func TestConsoleLogger(t *testing.T) {
 			name: "SuppliedError",
 			give: &Supplied{TypeName: "*bytes.Buffer", Err: errors.New("great sadness")},
 			want: "[Fx] ERROR	Failed to supply *bytes.Buffer: great sadness\n",
+		},
+		{
+			name: "SuppliedError/rich error",
+			give: &Supplied{TypeName: "*bytes.Buffer", Err: &richError{}},
+			want: "[Fx] ERROR	Failed to supply *bytes.Buffer: rich error\n",
 		},
 		{
 			name: "Provided",
@@ -144,6 +187,11 @@ func TestConsoleLogger(t *testing.T) {
 			want: "[Fx] Error after options were applied: some error\n",
 		},
 		{
+			name: "DecorateError/rich error",
+			give: &Decorated{Err: &richError{}},
+			want: "[Fx] Error after options were applied: rich error\n",
+		},
+		{
 			name: "Invoking",
 			give: &Invoking{FunctionName: "bytes.NewBuffer()"},
 			want: "[Fx] INVOKE		bytes.NewBuffer()\n",
@@ -163,9 +211,28 @@ func TestConsoleLogger(t *testing.T) {
 			),
 		},
 		{
+			name: "Invoked/Error/rich",
+			give: &Invoked{
+				FunctionName: "bytes.NewBuffer()",
+				Err:          &richError{},
+				Trace:        "foo()\n\tbar/baz.go:42\n",
+			},
+			want: joinLines(
+				"[Fx] ERROR		fx.Invoke(bytes.NewBuffer()) called from:",
+				"foo()",
+				"	bar/baz.go:42",
+				"Failed: rich error",
+			),
+		},
+		{
 			name: "StartError",
 			give: &Started{Err: errors.New("some error")},
 			want: "[Fx] ERROR		Failed to start: some error\n",
+		},
+		{
+			name: "StartError/rich error",
+			give: &Started{Err: &richError{}},
+			want: "[Fx] ERROR		Failed to start: rich error\n",
 		},
 		{
 			name: "Stopping",
@@ -178,14 +245,29 @@ func TestConsoleLogger(t *testing.T) {
 			want: "[Fx] ERROR		Failed to stop cleanly: some error\n",
 		},
 		{
+			name: "Stopped/rich error",
+			give: &Stopped{Err: &richError{}},
+			want: "[Fx] ERROR		Failed to stop cleanly: rich error\n",
+		},
+		{
 			name: "RollingBack",
 			give: &RollingBack{StartErr: errors.New("some error")},
 			want: "[Fx] ERROR		Start failed, rolling back: some error\n",
 		},
 		{
+			name: "RollingBack/rich error",
+			give: &RollingBack{StartErr: &richError{}},
+			want: "[Fx] ERROR		Start failed, rolling back: rich error\n",
+		},
+		{
 			name: "RolledBack",
 			give: &RolledBack{Err: errors.New("some error")},
 			want: "[Fx] ERROR		Couldn't roll back cleanly: some error\n",
+		},
+		{
+			name: "RolledBack/rich error",
+			give: &RolledBack{Err: &richError{}},
+			want: "[Fx] ERROR		Couldn't roll back cleanly: rich error\n",
 		},
 		{
 			name: "Started",
@@ -196,6 +278,11 @@ func TestConsoleLogger(t *testing.T) {
 			name: "CustomLoggerError",
 			give: &LoggerInitialized{Err: errors.New("great sadness")},
 			want: "[Fx] ERROR		Failed to initialize custom logger: great sadness\n",
+		},
+		{
+			name: "CustomLoggerError/rich error",
+			give: &LoggerInitialized{Err: &richError{}},
+			want: "[Fx] ERROR		Failed to initialize custom logger: rich error\n",
 		},
 		{
 			name: "LoggerInitialized",
