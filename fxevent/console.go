@@ -88,7 +88,7 @@ func (l *ConsoleLogger) LogEvent(event Event) {
 			}
 		}
 		if e.Err != nil {
-			l.logf("ERROR\tFailed to replace: %v", e.Err)
+			l.logf("ERROR\tFailed to replace: %+v", e.Err)
 		}
 	case *Decorated:
 		for _, rtype := range e.OutputTypeNames {

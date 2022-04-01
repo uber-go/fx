@@ -136,8 +136,7 @@ type Provided struct {
 
 // Replaced is emitted when a decorator is provided to Fx.
 type Replaced struct {
-	// OutputTypeNames is a list of names of types that are decorated by
-	// this replacement.
+	// OutputTypeNames is a list of names of types that were replaced.
 	OutputTypeNames []string
 
 	// ModuleName is the name of the module in which the value was added to.
