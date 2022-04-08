@@ -357,7 +357,7 @@ func TestNewApp(t *testing.T) {
 		defer app.RequireStart().RequireStop()
 
 		require.Equal(t,
-			[]string{"Provided", "Provided", "Provided", "Provided", "LoggerInitialized", "Decorated", "Invoking", "Invoked", "Started"},
+			[]string{"Provided", "Provided", "Provided", "Provided", "Decorated", "LoggerInitialized", "Invoking", "Invoked", "Started"},
 			spy.EventTypes())
 	})
 
@@ -378,7 +378,7 @@ func TestNewApp(t *testing.T) {
 		defer app.RequireStart().RequireStop()
 
 		require.Equal(t,
-			[]string{"Provided", "Provided", "Provided", "Provided", "LoggerInitialized", "Decorated", "Decorated", "Started"},
+			[]string{"Provided", "Provided", "Provided", "Provided", "Decorated", "Decorated", "LoggerInitialized", "Started"},
 			spy.EventTypes())
 	})
 }

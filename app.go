@@ -404,7 +404,7 @@ func (app *App) constructCustomLogger(buffer *logBuffer) (err error) {
 		})
 	}()
 
-	if err := app.container.Provide(p.Target); err != nil {
+	if err := app.root.scope.Provide(p.Target); err != nil {
 		return fmt.Errorf("fx.WithLogger(%v) from:\n%+vFailed: %v",
 			fname, p.Stack, err)
 	}
@@ -412,7 +412,7 @@ func (app *App) constructCustomLogger(buffer *logBuffer) (err error) {
 	// TODO: Use dig.FillProvideInfo to inspect the provided constructor
 	// and fail the application if its signature didn't match.
 
-	return app.container.Invoke(func(log fxevent.Logger) {
+	return app.root.scope.Invoke(func(log fxevent.Logger) {
 		app.log = log
 		buffer.Connect(log)
 	})
@@ -501,6 +501,10 @@ func New(opts ...Option) *App {
 	app.root.provide(provide{Target: app.shutdowner, Stack: frames})
 	app.root.provide(provide{Target: app.dotGraph, Stack: frames})
 
+	// Run decorators before executing any Invokes -- including the one
+	// inside constructCustomLogger.
+	app.err = multierr.Append(app.err, app.root.decorate())
+
 	// If you are thinking about returning here after provides: do not (just yet)!
 	// If a custom logger was being used, we're still buffering messages.
 	// We'll want to flush them to the logger.
@@ -516,13 +520,6 @@ func New(opts ...Option) *App {
 			bufferLogger.Connect(fallbackLogger)
 			return app
 		}
-	}
-
-	// Run decorators before executing any Invokes.
-	if err := app.root.decorate(); err != nil {
-		app.err = err
-
-		return app
 	}
 
 	// This error might have come from the provide loop above. We've
