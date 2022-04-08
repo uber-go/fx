@@ -8,6 +8,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Fixed
 - Upgrade Dig dependency to v1.14.1 to address a couple of issues with decorations. Refer to
   Dig v1.14.1 release notes for more details.
+- `fx.WithLogger` no longer ignores decorations and replacements of types that
+  it depends on.
 
 ## [1.17.1] - 2021-03-23
 ### Added
