@@ -26,6 +26,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/fx/fxevent"
 	"go.uber.org/fx/internal/fxlog"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest"
+	"go.uber.org/zap/zaptest/observer"
 )
 
 func TestLogBufferConnect(t *testing.T) {
@@ -56,4 +59,20 @@ func TestLogBufferLog(t *testing.T) {
 
 	lb.Connect(spy)
 	assert.Equal(t, fxlog.Events{event}, spy.Events())
+}
+
+func TestWithLoggerDecorate(t *testing.T) {
+	t.Parallel()
+
+	core, logs := observer.New(zap.DebugLevel)
+	New(
+		Supply(zaptest.NewLogger(t)), // provide a logger
+		Replace(zap.New(core)),       // and replace it
+		WithLogger(func(log *zap.Logger) fxevent.Logger {
+			return &fxevent.ZapLogger{Logger: log}
+		}),
+	)
+
+	assert.NotZero(t, logs.Len(),
+		"should post to replacement logger")
 }
