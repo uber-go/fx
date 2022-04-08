@@ -404,7 +404,7 @@ func (app *App) constructCustomLogger(buffer *logBuffer) (err error) {
 		})
 	}()
 
-	if err := app.container.Provide(p.Target); err != nil {
+	if err := app.root.scope.Provide(p.Target); err != nil {
 		return fmt.Errorf("fx.WithLogger(%v) from:\n%+vFailed: %v",
 			fname, p.Stack, err)
 	}
@@ -412,7 +412,7 @@ func (app *App) constructCustomLogger(buffer *logBuffer) (err error) {
 	// TODO: Use dig.FillProvideInfo to inspect the provided constructor
 	// and fail the application if its signature didn't match.
 
-	return app.container.Invoke(func(log fxevent.Logger) {
+	return app.root.scope.Invoke(func(log fxevent.Logger) {
 		app.log = log
 		buffer.Connect(log)
 	})
