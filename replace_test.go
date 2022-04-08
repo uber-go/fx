@@ -123,7 +123,7 @@ func TestReplaceSuccess(t *testing.T) {
 			),
 		)
 
-		fx.New(
+		fxtest.New(t,
 			fx.Module("wrapfoo",
 				foo,
 				fx.Replace(
