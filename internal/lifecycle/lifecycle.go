@@ -22,7 +22,6 @@ package lifecycle
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"io"
 	"strings"
@@ -79,7 +78,7 @@ func (l *Lifecycle) Start(ctx context.Context) error {
 
 	for _, hook := range l.hooks {
 		// if ctx has cancelled, bail out of the loop.
-		if err := ctx.Err(); errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
+		if err := ctx.Err(); err != nil {
 			return err
 		}
 
@@ -137,7 +136,7 @@ func (l *Lifecycle) Stop(ctx context.Context) error {
 	// Run backward from last successful OnStart.
 	var errs []error
 	for ; l.numStarted > 0; l.numStarted-- {
-		if err := ctx.Err(); errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
+		if err := ctx.Err(); err != nil {
 			return err
 		}
 		hook := l.hooks[l.numStarted-1]
