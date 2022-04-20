@@ -119,6 +119,30 @@ func TestLifecycleStart(t *testing.T) {
 		assert.Equal(t, 2, starterCount, "expected the first and second starter to execute")
 		assert.Equal(t, 1, stopperCount, "expected the first stopper to execute since the second starter failed")
 	})
+
+	t.Run("DoNotRunStartHooksWithExpiredCtx", func(t *testing.T) {
+		t.Parallel()
+
+		l := New(testLogger(t), fxclock.System)
+		l.Append(Hook{
+			OnStart: func(context.Context) error {
+				assert.Fail(t, "this hook should not run")
+				return nil
+			},
+			OnStop: func(context.Context) error {
+				assert.Fail(t, "this hook should not run")
+				return nil
+			},
+		})
+		ctx, cancel := context.WithCancel(context.Background())
+		cancel()
+		err := l.Start(ctx)
+		require.Error(t, err)
+		// Note: Stop does not return an error here because no hooks
+		// have been started, so we don't end up any of the corresponding
+		// stop hooks.
+		require.NoError(t, l.Stop(ctx))
+	})
 }
 
 func TestLifecycleStop(t *testing.T) {
@@ -246,6 +270,26 @@ func TestLifecycleStop(t *testing.T) {
 
 		assert.Equal(t, err, l.Start(context.Background()))
 		l.Stop(context.Background())
+	})
+
+	t.Run("DoNotRunStopHooksWithExpiredCtx", func(t *testing.T) {
+		t.Parallel()
+
+		l := New(testLogger(t), fxclock.System)
+		l.Append(Hook{
+			OnStart: func(context.Context) error {
+				return nil
+			},
+			OnStop: func(context.Context) error {
+				assert.Fail(t, "this hook should not run")
+				return nil
+			},
+		})
+		ctx, cancel := context.WithCancel(context.Background())
+		err := l.Start(ctx)
+		require.NoError(t, err)
+		cancel()
+		require.Error(t, l.Stop(ctx))
 	})
 }
 
