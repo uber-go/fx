@@ -77,6 +77,11 @@ func (l *Lifecycle) Start(ctx context.Context) error {
 	l.mu.Unlock()
 
 	for _, hook := range l.hooks {
+		// if ctx has cancelled, bail out of the loop.
+		if err := ctx.Err(); err != nil {
+			return err
+		}
+
 		if hook.OnStart != nil {
 			l.mu.Lock()
 			l.runningHook = hook
@@ -131,6 +136,9 @@ func (l *Lifecycle) Stop(ctx context.Context) error {
 	// Run backward from last successful OnStart.
 	var errs []error
 	for ; l.numStarted > 0; l.numStarted-- {
+		if err := ctx.Err(); err != nil {
+			return err
+		}
 		hook := l.hooks[l.numStarted-1]
 		if hook.OnStop == nil {
 			continue
