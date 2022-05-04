@@ -65,7 +65,7 @@ func (l *ConsoleLogger) LogEvent(event Event) {
 		} else if e.ModuleName != "" {
 			l.logf("SUPPLY\t%v from module %q", e.TypeName, e.ModuleName)
 		} else {
-			l.logf("SUPPLY\t%v", e.TypeName, e.ModuleName)
+			l.logf("SUPPLY\t%v", e.TypeName)
 		}
 	case *Provided:
 		for _, rtype := range e.OutputTypeNames {
