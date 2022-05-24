@@ -134,7 +134,7 @@ type Provided struct {
 	Err error
 }
 
-// Replaced is emitted when a decorator is provided to Fx.
+// Replaced is emitted when a value replaces a type in Fx.
 type Replaced struct {
 	// OutputTypeNames is a list of names of types that were replaced.
 	OutputTypeNames []string
@@ -146,7 +146,7 @@ type Replaced struct {
 	Err error
 }
 
-// Decorated is emitted when a decorator is provided to Fx.
+// Decorated is emitted when a decorator is executed in Fx.
 type Decorated struct {
 	// DecoratorName is the name of the decorator function that was
 	// provided to Fx.
@@ -159,7 +159,7 @@ type Decorated struct {
 	// this decorator.
 	OutputTypeNames []string
 
-	// Err is non-nil if we failed to provide this decorator.
+	// Err is non-nil if we failed to run this decorator.
 	Err error
 }
 
