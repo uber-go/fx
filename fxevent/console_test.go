@@ -137,6 +137,11 @@ func TestConsoleLogger(t *testing.T) {
 		},
 		{
 			name: "Supplied",
+			give: &Supplied{TypeName: "*bytes.Buffer"},
+			want: "[Fx] SUPPLY	*bytes.Buffer\n",
+		},
+		{
+			name: "Supplied with module",
 			give: &Supplied{TypeName: "*bytes.Buffer", ModuleName: "myModule"},
 			want: "[Fx] SUPPLY	*bytes.Buffer from module \"myModule\"\n",
 		},
@@ -154,6 +159,14 @@ func TestConsoleLogger(t *testing.T) {
 			name: "Provided",
 			give: &Provided{
 				ConstructorName: "bytes.NewBuffer()",
+				OutputTypeNames: []string{"*bytes.Buffer"},
+			},
+			want: "[Fx] PROVIDE	*bytes.Buffer <= bytes.NewBuffer()\n",
+		},
+		{
+			name: "Provided with module",
+			give: &Provided{
+				ConstructorName: "bytes.NewBuffer()",
 				ModuleName:      "myModule",
 				OutputTypeNames: []string{"*bytes.Buffer"},
 			},
@@ -161,6 +174,13 @@ func TestConsoleLogger(t *testing.T) {
 		},
 		{
 			name: "Replaced",
+			give: &Replaced{
+				OutputTypeNames: []string{"*bytes.Buffer"},
+			},
+			want: "[Fx] REPLACE	*bytes.Buffer\n",
+		},
+		{
+			name: "Replaced with module",
 			give: &Replaced{
 				ModuleName:      "myModule",
 				OutputTypeNames: []string{"*bytes.Buffer"},
@@ -174,6 +194,14 @@ func TestConsoleLogger(t *testing.T) {
 		},
 		{
 			name: "Decorated",
+			give: &Decorated{
+				DecoratorName:   "bytes.NewBuffer()",
+				OutputTypeNames: []string{"*bytes.Buffer"},
+			},
+			want: "[Fx] DECORATE	*bytes.Buffer <= bytes.NewBuffer()\n",
+		},
+		{
+			name: "Decorated with module",
 			give: &Decorated{
 				DecoratorName:   "bytes.NewBuffer()",
 				ModuleName:      "myModule",
@@ -195,6 +223,14 @@ func TestConsoleLogger(t *testing.T) {
 			name: "Invoking",
 			give: &Invoking{FunctionName: "bytes.NewBuffer()"},
 			want: "[Fx] INVOKE		bytes.NewBuffer()\n",
+		},
+		{
+			name: "Invoking with module",
+			give: &Invoking{
+				FunctionName: "bytes.NewBuffer()",
+				ModuleName:   "myModule",
+			},
+			want: "[Fx] INVOKE		bytes.NewBuffer() from module \"myModule\"\n",
 		},
 		{
 			name: "Invoked/Error",
