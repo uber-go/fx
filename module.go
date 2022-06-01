@@ -166,7 +166,15 @@ func (m *module) executeInvokes() error {
 }
 
 func (m *module) executeInvoke(i invoke) (err error) {
-	fnName := fxreflect.FuncName(i.Target)
+	if len(i.Targets) == 0 {
+		return nil
+	}
+
+	fnName := fxreflect.FuncName(i.Targets)
+	if len(i.Targets) > 1 {
+			fnName += " and more..."
+	}
+	
 	m.app.log.LogEvent(&fxevent.Invoking{
 		FunctionName: fnName,
 		ModuleName:   m.name,

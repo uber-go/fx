@@ -61,8 +61,8 @@ type invokeOption struct {
 func (o invokeOption) apply(mod *module) {
 	for _, target := range o.Targets {
 		mod.invokes = append(mod.invokes, invoke{
-			Target: target,
-			Stack:  o.Stack,
+			Targets: []interface{}{target},
+			Stack:   o.Stack,
 		})
 	}
 }
@@ -74,22 +74,74 @@ func (o invokeOption) String() string {
 	}
 	return fmt.Sprintf("fx.Invoke(%s)", strings.Join(items, ", "))
 }
-func runInvoke(c container, i invoke) error {
-	fn := i.Target
-	switch fn := fn.(type) {
-	case Option:
-		return fmt.Errorf("fx.Option should be passed to fx.New directly, "+
-			"not to fx.Invoke: fx.Invoke received %v from:\n%+v",
-			fn, i.Stack)
 
-	case annotated:
-		af, err := fn.Build()
-		if err != nil {
-			return err
-		}
-
-		return c.Invoke(af)
-	default:
-		return c.Invoke(fn)
+// InvokeChain registers functions that are executed eagerly on application start.
+// Arguments for these invocations are built using the constructors registered
+// by Provide. Passing multiple InvokeChain options will invoke them synchronously
+// in the order they're passed in.
+//
+// Unlike constructors, invocations are always executed, and they're always
+// run in order. Invocations may have any number of returned values.
+// If the final returned object is an error, it indicates whether the operation
+// was successful.
+// All other returned values are discarded.
+//
+// Typically, invoked functions take a handful of high-level objects (whose
+// constructors depend on lower-level objects) and introduce them to each
+// other. This kick-starts the application by forcing it to instantiate a
+// variety of types.
+func InvokeChain(funcs ...interface{}) Option {
+	return invokeChainOption{
+		Targets: funcs,
+		Stack:   fxreflect.CallerStack(1, 0),
 	}
+}
+
+type invokeChainOption struct {
+	Targets []interface{}
+	Stack   fxreflect.Stack
+}
+
+func (o invokeChainOption) apply(mod *module) {
+	mod.invokes = append(mod.invokes, invoke{
+		Targets: o.Targets,
+		Stack:   o.Stack,
+	})
+}
+
+func (o invokeChainOption) String() string {
+	items := make([]string, len(o.Targets))
+	for i, f := range o.Targets {
+		items[i] = fxreflect.FuncName(f)
+	}
+	return fmt.Sprintf("fx.InvokeChain(%s)", strings.Join(items, ", "))
+}
+
+func runInvoke(c container, i invoke) error {
+	for _, fn := range i.Targets {
+		switch fn := fn.(type) {
+		case Option:
+			return fmt.Errorf("fx.Option should be passed to fx.New directly, "+
+				"not to fx.Invoke: fx.Invoke received %v from:\n%+v",
+				fn, i.Stack)
+
+		case annotated:
+			af, err := fn.Build()
+			if err != nil {
+				return err
+			}
+
+			err = c.Invoke(af)
+			if err != nil {
+				return err
+			}
+		default:
+			err := c.Invoke(fn)
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
 }

@@ -320,7 +320,7 @@ type provide struct {
 // invoke is a single invocation request to Fx.
 type invoke struct {
 	// Function to invoke.
-	Target interface{}
+	Targets []interface{}
 
 	// Stack trace of where this invoke was made.
 	Stack fxreflect.Stack

@@ -588,6 +588,47 @@ func TestInvokes(t *testing.T) {
 	})
 }
 
+func TestInvokesChains(t *testing.T) {
+	t.Parallel()
+
+	t.Run("Success event", func(t *testing.T) {
+		t.Parallel()
+
+		called := make(chan int, 2)
+
+		app, spy := NewSpied(
+			InvokeChain(
+				func() { called <- 1 },
+				func() { called <- 2 }),
+		)
+		require.NoError(t, app.Err())
+
+		invoked := spy.Events().SelectByTypeName("Invoked")
+		require.Len(t, invoked, 1)
+		assert.NoError(t, invoked[0].(*fxevent.Invoked).Err)
+
+		require.Equal(t, 1, <-called)
+		require.Equal(t, 2, <-called)
+	})
+
+	t.Run("Failure event", func(t *testing.T) {
+		t.Parallel()
+
+		app, spy := NewSpied(
+			InvokeChain(
+				func() {},
+				func() error {
+					return errors.New("great sadness")
+				}),
+		)
+		require.Error(t, app.Err())
+
+		invoked := spy.Events().SelectByTypeName("Invoked")
+		require.Len(t, invoked, 1)
+		assert.Error(t, invoked[0].(*fxevent.Invoked).Err)
+	})
+}
+
 func TestError(t *testing.T) {
 	t.Parallel()
 
