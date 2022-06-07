@@ -765,9 +765,25 @@ type withTimeoutParams struct {
 	lifecycle *lifecycleWrapper
 }
 
+var callbackExitedErr = fmt.Errorf("exited without returning")
+
 func withTimeout(ctx context.Context, param *withTimeoutParams) error {
 	c := make(chan error, 1)
-	go func() { c <- param.callback(ctx) }()
+	go func() {
+		// If runtime.Goexit() is called from within the callback
+		// then nothing is written to the chan.
+		// However the defer will still be called, so we can write to the chan,
+		// to avoid hanging until the timeout is reached.
+		callbackExited := false
+		defer func() {
+			if !callbackExited {
+				c <- callbackExitedErr
+			}
+		}()
+
+		c <- param.callback(ctx)
+		callbackExited = true
+	}()
 
 	var err error
 
@@ -782,7 +798,7 @@ func withTimeout(ctx context.Context, param *withTimeoutParams) error {
 			err = ctx.Err()
 		}
 	}
-	if err != context.DeadlineExceeded {
+	if err != context.DeadlineExceeded && err != callbackExitedErr {
 		return err
 	}
 	// On timeout, report running hook's caller and recorded
