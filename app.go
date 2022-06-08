@@ -765,7 +765,8 @@ type withTimeoutParams struct {
 	lifecycle *lifecycleWrapper
 }
 
-var callbackExitedErr = fmt.Errorf("exited without returning")
+// errHookCallbackExited is returned when a hook callback does not finish executing
+var errHookCallbackExited = fmt.Errorf("goroutine exited without returning")
 
 func withTimeout(ctx context.Context, param *withTimeoutParams) error {
 	c := make(chan error, 1)
@@ -777,7 +778,7 @@ func withTimeout(ctx context.Context, param *withTimeoutParams) error {
 		callbackExited := false
 		defer func() {
 			if !callbackExited {
-				c <- callbackExitedErr
+				c <- errHookCallbackExited
 			}
 		}()
 
@@ -798,7 +799,7 @@ func withTimeout(ctx context.Context, param *withTimeoutParams) error {
 			err = ctx.Err()
 		}
 	}
-	if err != context.DeadlineExceeded && err != callbackExitedErr {
+	if err != context.DeadlineExceeded && err != errHookCallbackExited {
 		return err
 	}
 	// On timeout, report running hook's caller and recorded

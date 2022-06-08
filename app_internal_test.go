@@ -21,10 +21,8 @@
 package fx
 
 import (
-	"context"
 	"fmt"
 	"os"
-	"runtime"
 	"sync"
 	"testing"
 
@@ -106,18 +104,4 @@ func (o withClockOption) apply(m *module) {
 
 func (o withClockOption) String() string {
 	return fmt.Sprintf("WithClock(%v)", o.clock)
-}
-
-func TestWithTimeoutGoexit(t *testing.T) {
-	ctx := context.Background()
-
-	err := withTimeout(ctx, &withTimeoutParams{
-		hook: "",
-		callback: func(ctx context.Context) error {
-			runtime.Goexit()
-			return nil
-		},
-	})
-
-	require.EqualError(t, err, "exited without returning")
 }
