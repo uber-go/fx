@@ -30,6 +30,7 @@ import (
 	"log"
 	"os"
 	"reflect"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -381,6 +382,7 @@ func TestNewApp(t *testing.T) {
 			[]string{"Provided", "Provided", "Provided", "Provided", "Decorated", "Decorated", "LoggerInitialized", "Started"},
 			spy.EventTypes())
 	})
+
 }
 
 func TestWithLoggerErrorUseDefault(t *testing.T) {
@@ -1261,6 +1263,24 @@ func TestAppStart(t *testing.T) {
 		assert.Contains(t, err.Error(), "fx.Provide received fx.Options(fx.Provide(go.uber.org/fx_test.TestAppStart")
 		assert.Contains(t, err.Error(), "go.uber.org/fx_test.TestAppStart")
 		assert.Contains(t, err.Error(), "/app_test.go")
+	})
+
+	t.Run("HookGoroutineExitsErrorMsg", func(t *testing.T) {
+		t.Parallel()
+
+		addHook := func(lc Lifecycle) {
+			lc.Append(Hook{
+				OnStart: func(ctx context.Context) error {
+					runtime.Goexit()
+					return nil
+				},
+			})
+		}
+		app := fxtest.New(t,
+			Invoke(addHook),
+		)
+		err := app.Start(context.Background()).Error()
+		assert.Contains(t, err, "OnStart hook added by go.uber.org/fx_test.TestAppStart.func10.1 failed: goroutine exited without returning")
 	})
 }
 
