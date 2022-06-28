@@ -22,6 +22,7 @@ package fx_test
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -982,5 +983,520 @@ func TestAnnotate(t *testing.T) {
 		assert.NotContains(t, err.Error(), "invalid annotation function func(fx_test.A) string")
 		assert.Contains(t, err.Error(), "invalid annotation function func(fx_test.B) string")
 		assert.Contains(t, err.Error(), "fx.In structs cannot be annotated")
+	})
+
+	t.Run("Hooks", testHookAnnotations)
+}
+
+func testHookAnnotations(t *testing.T) {
+	t.Parallel()
+
+	validateApp := func(t *testing.T, opts ...fx.Option) error {
+		return fx.ValidateApp(
+			append(opts, fx.Logger(fxtest.NewTestPrinter(t)))...,
+		)
+	}
+
+	t.Run("depend on result interface of target", func(t *testing.T) {
+		//t.Skip()
+		type stub interface {
+			String() string
+		}
+
+		var started bool
+
+		app := fxtest.New(t,
+			fx.Provide(
+				fx.Annotate(
+					func() (stub, error) {
+						b := []byte("expected")
+						return bytes.NewBuffer(b), nil
+					},
+					fx.OnStart(func(_ context.Context, s stub) error {
+						started = true
+						if !assert.Equal(t, "expected", s.String()) {
+							return fmt.Errorf(
+								"expected %q got %q",
+								"expected",
+								s.String(),
+							)
+						}
+						return nil
+					}),
+				),
+			),
+			fx.Invoke(func(s stub) {
+				require.Equal(t, "expected", s.String())
+			}),
+		)
+
+		ctx := context.Background()
+		assert.False(t, started)
+		require.NoError(t, app.Start(ctx))
+		assert.True(t, started)
+		require.NoError(t, app.Stop(ctx))
+	})
+
+	t.Run("start and stop without dependencies", func(t *testing.T) {
+		t.Parallel()
+
+		type stub interface{}
+
+		var (
+			invoked bool
+			started bool
+			stopped bool
+		)
+
+		app := fxtest.New(t,
+			fx.Provide(
+				fx.Annotate(
+					func() (stub, error) { return nil, nil },
+					fx.OnStart(func(context.Context) error {
+						started = true
+						return nil
+					}),
+					fx.OnStop(func(context.Context) error {
+						stopped = true
+						return nil
+					}),
+				),
+			),
+			fx.Invoke(func(s stub) {
+				invoked = s == nil
+			}),
+		)
+
+		ctx := context.Background()
+		assert.False(t, started)
+		require.NoError(t, app.Start(ctx))
+		assert.True(t, invoked)
+		assert.True(t, started)
+		assert.False(t, stopped)
+		require.NoError(t, app.Stop(ctx))
+		assert.True(t, stopped)
+
+	})
+
+	t.Run("depedency chain", func(t *testing.T) {
+		t.Parallel()
+
+		type (
+			a interface{}
+			b interface{}
+			c interface{}
+		)
+
+		var aHook, bHook bool
+
+		app := fxtest.New(t,
+			fx.Provide(
+				fx.Annotate(
+					func() (a, error) { return nil, nil },
+					fx.OnStart(func(context.Context) error {
+						aHook = true
+						return nil
+					}),
+				),
+			),
+			fx.Provide(
+				fx.Annotate(
+					func() (b, error) { return nil, nil },
+					fx.OnStart(func(context.Context) error {
+						bHook = true
+						return nil
+					}),
+				),
+			),
+			fx.Provide(func(a, b) c { return nil }),
+			fx.Invoke(func(c) {}),
+		)
+
+		ctx := context.Background()
+		assert.False(t, aHook)
+		assert.False(t, bHook)
+		require.NoError(t, app.Start(ctx))
+		assert.True(t, aHook)
+		assert.True(t, bHook)
+		require.NoError(t, app.Stop(ctx))
+	})
+
+	t.Run("with extra dependency parameter", func(t *testing.T) {
+		t.Parallel()
+
+		type (
+			a interface{}
+			b interface{}
+			c interface{}
+		)
+
+		var aHook bool
+
+		app := fxtest.New(t,
+			fx.Provide(
+				fx.Annotate(
+					func() (a, error) { return nil, nil },
+					fx.OnStart(func(context.Context, b) error {
+						aHook = true
+						return nil
+					}),
+				),
+			),
+			fx.Provide(func() b { return nil }),
+			fx.Provide(func(a, b) c { return nil }),
+			fx.Invoke(func(c) {}),
+		)
+
+		ctx := context.Background()
+		assert.False(t, aHook)
+		require.NoError(t, app.Start(ctx))
+		defer func() {
+			require.NoError(t, app.Stop(ctx))
+		}()
+		assert.True(t, aHook)
+	})
+
+	t.Run("with multiple extra dependency parameters", func(t *testing.T) {
+		t.Parallel()
+
+		type (
+			a interface{}
+			b interface{}
+			c interface{}
+		)
+
+		var aHook bool
+
+		app := fxtest.New(t,
+			fx.Provide(
+				fx.Annotate(
+					func() (a, error) { return nil, nil },
+					fx.OnStart(func(context.Context, b, c) error {
+						aHook = true
+						return nil
+					}),
+				),
+			),
+			fx.Provide(func() b { return nil }),
+			fx.Provide(func() c { return nil }),
+			fx.Invoke(func(a) {}),
+		)
+
+		ctx := context.Background()
+		assert.False(t, aHook)
+		require.NoError(t, app.Start(ctx))
+		defer func() {
+			require.NoError(t, app.Stop(ctx))
+		}()
+		assert.True(t, aHook)
+	})
+
+	t.Run("with unprovided dependency", func(t *testing.T) {
+		t.Parallel()
+
+		type (
+			a interface{}
+			b interface{}
+		)
+
+		err := validateApp(t,
+			fx.Provide(
+				fx.Annotate(
+					func() (a, error) { return nil, nil },
+					fx.OnStart(func(context.Context, b) error {
+						return nil
+					}),
+				),
+			),
+			fx.Invoke(func(a) {}),
+		)
+
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "missing type: fx_test.b")
+	})
+
+	t.Run("that returns error", func(t *testing.T) {
+		t.Parallel()
+
+		type stub interface{}
+
+		app := fxtest.New(t,
+			fx.Provide(
+				fx.Annotate(
+					func() (stub, error) { return nil, nil },
+					fx.OnStart(func(context.Context) error {
+						return errors.New("hook failed")
+					}),
+				),
+			),
+			fx.Invoke(func(stub) {}),
+		)
+
+		err := app.Start(context.Background())
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "hook failed")
+	})
+
+	t.Run("error with multiple hooks of the same type", func(t *testing.T) {
+		t.Parallel()
+
+		type stub interface{}
+
+		err := validateApp(t,
+			fx.Provide(
+				fx.Annotate(
+					func() stub { return nil },
+					fx.OnStart(func(context.Context) error { return nil }),
+					fx.OnStart(func(context.Context) error { return nil }),
+				),
+			),
+			fx.Invoke(func(s stub) {}),
+		)
+
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "cannot apply more than one")
+	})
+
+	t.Run("with Supply", func(t *testing.T) {
+		t.Parallel()
+
+		type (
+			A interface {
+				WriteString(string) (int, error)
+			}
+		)
+
+		buf := bytes.NewBuffer(nil)
+		cotr := fx.Provide(
+			fx.Annotate(
+				func() A {
+					return buf
+				},
+				fx.OnStart(func(_ context.Context, a A, s fmt.Stringer) error {
+					a.WriteString(s.String())
+					return nil
+				}),
+			),
+		)
+
+		supply := fx.Supply(
+			fx.Annotate(
+				&asStringer{"supply"},
+				fx.OnStart(func(_ context.Context) error {
+					return nil
+				}),
+				fx.As(new(fmt.Stringer)),
+			),
+		)
+
+		opts := fx.Options(
+			cotr,
+			supply,
+			fx.Invoke(func(A) {}),
+		)
+
+		app := fxtest.New(t, opts)
+		ctx := context.Background()
+		err := app.Start(ctx)
+		require.NoError(t, err)
+		require.NoError(t, app.Stop(ctx))
+		require.Equal(t, "supply", buf.String())
+	})
+
+	t.Run("with Decorate", func(t *testing.T) {
+		t.Parallel()
+
+		type (
+			A interface {
+				WriteString(string) (int, error)
+			}
+		)
+
+		buf := bytes.NewBuffer(nil)
+		cotr := fx.Provide(func() A { return buf })
+
+		var called bool
+		decorated := fx.Decorate(
+			fx.Annotate(
+				func(in A) A {
+					in.WriteString("decorated")
+					return in
+				},
+				fx.OnStart(func(_ context.Context, a A) error {
+					// assert that the interface we get is the decorated one
+					called = assert.Equal(t, "decorated", buf.String())
+					return nil
+				}),
+			),
+		)
+
+		opts := fx.Options(
+			cotr,
+			decorated,
+			fx.Invoke(func(A) {}),
+		)
+
+		app := fxtest.New(t, opts)
+		ctx := context.Background()
+		err := app.Start(ctx)
+		require.NoError(t, err)
+		require.NoError(t, app.Stop(ctx))
+		require.True(t, called)
+		require.Equal(t, "decorated", buf.String())
+	})
+
+	t.Run("with Supply and Decorate", func(t *testing.T) {
+		t.Parallel()
+
+		type (
+			A interface{}
+		)
+
+		ch := make(chan string, 3)
+
+		cotr := fx.Provide(
+			fx.Annotate(
+				func() A { return nil },
+				fx.OnStart(func(_ context.Context, s fmt.Stringer) error {
+					ch <- "constructor"
+					fmt.Printf("executing!\n")
+					require.Equal(t, "supply", s.String())
+					return nil
+				}),
+			),
+		)
+
+		supply := fx.Supply(
+			fx.Annotate(
+				&asStringer{"supply"},
+				fx.OnStart(func(_ context.Context) error {
+					ch <- "supply"
+					return nil
+				}),
+				fx.As(new(fmt.Stringer)),
+			),
+		)
+
+		decorated := fx.Decorate(
+			fx.Annotate(
+				func(in A) A { return in },
+				fx.OnStart(func(_ context.Context) error {
+					ch <- "decorated"
+					return nil
+				}),
+			),
+		)
+
+		opts := fx.Options(
+			cotr,
+			supply,
+			decorated,
+			fx.Invoke(func(A) {}),
+		)
+
+		app := fxtest.New(t, opts)
+		ctx := context.Background()
+		err := app.Start(ctx)
+		require.NoError(t, err)
+		require.NoError(t, app.Stop(ctx))
+		close(ch)
+
+		require.Equal(t, "supply", <-ch)
+		require.Equal(t, "constructor", <-ch)
+		require.Equal(t, "decorated", <-ch)
+	})
+
+	t.Run("with nil target", func(t *testing.T) {
+		type A interface{}
+		err := validateApp(t,
+			fx.Provide(
+				fx.Annotate(
+					func() A { return nil },
+					fx.OnStart(nil),
+				),
+			),
+		)
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "cannot use nil function")
+	})
+
+	t.Run("with non-func target", func(t *testing.T) {
+		type A interface{}
+		err := validateApp(t,
+			fx.Provide(
+				fx.Annotate(
+					func() A { return nil },
+					fx.OnStart(&struct{}{}),
+				),
+			),
+		)
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "must provide function")
+	})
+
+	t.Run("without context parameter", func(t *testing.T) {
+		type A interface{}
+		err := validateApp(t,
+			fx.Provide(
+				fx.Annotate(
+					func() A { return nil },
+					fx.OnStart(func() {}),
+				),
+			),
+		)
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "must be context.Context")
+	})
+
+	t.Run("with variatic hook", func(t *testing.T) {
+		type A interface{}
+		err := validateApp(t,
+			fx.Provide(
+				fx.Annotate(
+					func() A { return nil },
+					fx.OnStart(func(context.Context, ...A) error {
+						return nil
+					}),
+				),
+			),
+		)
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "must not accept variatic")
+	})
+
+	t.Run("without returning error", func(t *testing.T) {
+		type A interface{}
+		err := validateApp(t,
+			fx.Provide(
+				fx.Annotate(
+					func() A { return nil },
+					fx.OnStart(func(context.Context) {}),
+				),
+			),
+		)
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "must return only an error")
+	})
+
+	t.Run("with constructor error", func(t *testing.T) {
+		type A interface{}
+		app := fx.New(
+			fx.Provide(
+				fx.Annotate(
+					func() (A, error) {
+						return nil, errors.New("hooks should not be installed")
+					},
+					fx.OnStart(func(context.Context) error {
+						require.FailNow(t, "hook should not be called")
+						return nil
+					}),
+				),
+			),
+			fx.Invoke(func(A) {}),
+		)
+
+		err := app.Start(context.Background())
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "hooks should not be installed")
 	})
 }
