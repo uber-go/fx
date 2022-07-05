@@ -990,12 +990,6 @@ func TestAnnotate(t *testing.T) {
 func TestHookAnnotations(t *testing.T) {
 	t.Parallel()
 
-	validateApp := func(t *testing.T, opts ...fx.Option) error {
-		return fx.ValidateApp(
-			append(opts, fx.Logger(fxtest.NewTestPrinter(t)))...,
-		)
-	}
-
 	t.Run("depend on result interface of target", func(t *testing.T) {
 		type stub interface {
 			String() string
@@ -1149,72 +1143,6 @@ func TestHookAnnotations(t *testing.T) {
 		assert.Equal(t, 3, value)
 	})
 
-	t.Run("with unprovided dependency", func(t *testing.T) {
-		t.Parallel()
-
-		type (
-			a interface{}
-			b interface{}
-		)
-
-		err := validateApp(t,
-			fx.Provide(
-				fx.Annotate(
-					func() (a, error) { return nil, nil },
-					fx.OnStart(func(context.Context, b) error {
-						return nil
-					}),
-				),
-			),
-			fx.Invoke(func(a) {}),
-		)
-
-		require.Error(t, err)
-		require.Contains(t, err.Error(), "missing type: fx_test.b")
-	})
-
-	t.Run("that returns error", func(t *testing.T) {
-		t.Parallel()
-
-		type stub interface{}
-
-		app := fxtest.New(t,
-			fx.Provide(
-				fx.Annotate(
-					func() (stub, error) { return nil, nil },
-					fx.OnStart(func(context.Context) error {
-						return errors.New("hook failed")
-					}),
-				),
-			),
-			fx.Invoke(func(stub) {}),
-		)
-
-		err := app.Start(context.Background())
-		require.Error(t, err)
-		require.Contains(t, err.Error(), "hook failed")
-	})
-
-	t.Run("error with multiple hooks of the same type", func(t *testing.T) {
-		t.Parallel()
-
-		type stub interface{}
-
-		err := validateApp(t,
-			fx.Provide(
-				fx.Annotate(
-					func() stub { return nil },
-					fx.OnStart(func(context.Context) error { return nil }),
-					fx.OnStart(func(context.Context) error { return nil }),
-				),
-			),
-			fx.Invoke(func(s stub) {}),
-		)
-
-		require.Error(t, err)
-		require.Contains(t, err.Error(), "cannot apply more than one OnStart hook annotation")
-	})
-
 	t.Run("with Supply", func(t *testing.T) {
 		t.Parallel()
 
@@ -1361,18 +1289,115 @@ func TestHookAnnotations(t *testing.T) {
 		require.Equal(t, "decorated", <-ch)
 	})
 
-	t.Run("with nil target", func(t *testing.T) {
+}
+
+func TestHookAnnotationFailures(t *testing.T) {
+	validateApp := func(t *testing.T, opts ...fx.Option) error {
+		return fx.ValidateApp(
+			append(opts, fx.Logger(fxtest.NewTestPrinter(t)))...,
+		)
+	}
+
+	t.Run("with unprovided dependency", func(t *testing.T) {
+		t.Parallel()
+
+		type (
+			a interface{}
+			b interface{}
+		)
+
+		err := validateApp(t,
+			fx.Provide(
+				fx.Annotate(
+					func() (a, error) { return nil, nil },
+					fx.OnStart(func(context.Context, b) error {
+						return nil
+					}),
+				),
+			),
+			fx.Invoke(func(a) {}),
+		)
+
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "missing type: fx_test.b")
+	})
+
+	t.Run("that returns error", func(t *testing.T) {
+		t.Parallel()
+
+		type stub interface{}
+
+		app := fxtest.New(t,
+			fx.Provide(
+				fx.Annotate(
+					func() (stub, error) { return nil, nil },
+					fx.OnStart(func(context.Context) error {
+						return errors.New("hook failed")
+					}),
+				),
+			),
+			fx.Invoke(func(stub) {}),
+		)
+
+		err := app.Start(context.Background())
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "hook failed")
+	})
+
+	t.Run("error with multiple hooks of the same type", func(t *testing.T) {
+		t.Parallel()
+
+		type stub interface{}
+
+		err := validateApp(t,
+			fx.Provide(
+				fx.Annotate(
+					func() stub { return nil },
+					fx.OnStart(func(context.Context) error { return nil }),
+					fx.OnStart(func(context.Context) error { return nil }),
+				),
+			),
+			fx.Invoke(func(s stub) {}),
+		)
+
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "cannot apply more than one OnStart hook annotation")
+	})
+
+	t.Run("without returning error", func(t *testing.T) {
 		type A interface{}
 		err := validateApp(t,
 			fx.Provide(
 				fx.Annotate(
 					func() A { return nil },
-					fx.OnStart(nil),
+					fx.OnStart(func(context.Context) {}),
 				),
 			),
 		)
 		require.Error(t, err)
-		require.Contains(t, err.Error(), "cannot use nil function")
+		require.Contains(t, err.Error(), "must return only an error")
+	})
+
+	t.Run("with constructor error", func(t *testing.T) {
+		type A interface{}
+		app := fx.New(
+			fx.Provide(
+				fx.Annotate(
+					func() (A, error) {
+						return nil, errors.New("hooks should not be installed")
+					},
+					fx.OnStart(func(context.Context) error {
+						require.FailNow(t, "hook should not be called")
+						return nil
+					}),
+				),
+			),
+			fx.Invoke(func(A) {}),
+		)
+
+		err := app.Start(context.Background())
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "hooks should not be installed")
 	})
 
 	t.Run("with non-func target", func(t *testing.T) {
@@ -1419,39 +1444,18 @@ func TestHookAnnotations(t *testing.T) {
 		require.Contains(t, err.Error(), "must not accept variatic")
 	})
 
-	t.Run("without returning error", func(t *testing.T) {
+	t.Run("with nil target", func(t *testing.T) {
 		type A interface{}
 		err := validateApp(t,
 			fx.Provide(
 				fx.Annotate(
 					func() A { return nil },
-					fx.OnStart(func(context.Context) {}),
+					fx.OnStart(nil),
 				),
 			),
 		)
 		require.Error(t, err)
-		require.Contains(t, err.Error(), "must return only an error")
+		require.Contains(t, err.Error(), "cannot use nil function")
 	})
 
-	t.Run("with constructor error", func(t *testing.T) {
-		type A interface{}
-		app := fx.New(
-			fx.Provide(
-				fx.Annotate(
-					func() (A, error) {
-						return nil, errors.New("hooks should not be installed")
-					},
-					fx.OnStart(func(context.Context) error {
-						require.FailNow(t, "hook should not be called")
-						return nil
-					}),
-				),
-			),
-			fx.Invoke(func(A) {}),
-		)
-
-		err := app.Start(context.Background())
-		require.Error(t, err)
-		require.Contains(t, err.Error(), "hooks should not be installed")
-	})
 }
