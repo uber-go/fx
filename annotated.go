@@ -209,7 +209,7 @@ type lifecycleHookAnnotation struct {
 	Target interface{}
 }
 
-func (la *lifecycleHookAnnotation) apply(ann *annotated) error {
+func (la *lifecycleHookAnnotation) String() string {
 	name := "UnknownHookAnnotation"
 	switch la.Type {
 	case _onStartHookType:
@@ -217,11 +217,14 @@ func (la *lifecycleHookAnnotation) apply(ann *annotated) error {
 	case _onStopHookType:
 		name = _onStopHook
 	}
+	return name
+}
 
+func (la *lifecycleHookAnnotation) apply(ann *annotated) error {
 	if la.Target == nil {
 		return fmt.Errorf(
 			"cannot use nil function for %v hook annotation",
-			name,
+			la,
 		)
 	}
 
@@ -229,7 +232,7 @@ func (la *lifecycleHookAnnotation) apply(ann *annotated) error {
 		if la.Type == h.Type {
 			return fmt.Errorf(
 				"cannot apply more than one %v hook annotation",
-				name,
+				la,
 			)
 		}
 	}
