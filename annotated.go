@@ -730,10 +730,10 @@ func (ann *annotated) parameters(results ...reflect.Type) (
 
 	// append required types for hooks to types field, but do not
 	// include them as params in constructor call
-	for h, t := range ann.Hooks {
+	for i, t := range ann.Hooks {
 		params, _ := t.parameters(results...)
 		field := reflect.StructField{
-			Name: fmt.Sprintf("Hook%d", h),
+			Name: fmt.Sprintf("Hook%d", i),
 			Type: params,
 		}
 		inFields = append(inFields, field)
