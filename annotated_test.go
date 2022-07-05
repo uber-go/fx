@@ -990,6 +990,24 @@ func TestAnnotate(t *testing.T) {
 func TestHookAnnotations(t *testing.T) {
 	t.Parallel()
 
+	t.Run("with hook on invoke", func(t *testing.T) {
+		t.Parallel()
+
+		var called bool
+		hook := fx.Annotate(
+			func() {},
+			fx.OnStart(func(context.Context) error {
+				called = true
+				return nil
+			}),
+		)
+		app := fxtest.New(t, fx.Invoke(hook))
+
+		require.False(t, called)
+		require.NoError(t, app.Start(context.Background()))
+		require.True(t, called)
+	})
+
 	t.Run("depend on result interface of target", func(t *testing.T) {
 		type stub interface {
 			String() string

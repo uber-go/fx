@@ -395,7 +395,12 @@ func (la *lifecycleHookAnnotation) parameters(results ...reflect.Type) (
 		if len(args) != 0 {
 
 			p := args[0]
-			results := args[1]
+
+			var results reflect.Value
+
+			if len(args) > 1 {
+				results = args[1]
+			}
 
 			lc, _ = p.FieldByName("Lifecycle").Interface().(Lifecycle)
 
