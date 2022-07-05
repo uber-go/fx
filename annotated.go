@@ -427,7 +427,7 @@ func (la *lifecycleHookAnnotation) buildHook(fn func(context.Context) error) (ho
 	return
 }
 
-func (la *lifecycleHookAnnotation) Build(results ...reflect.Type) (reflect.Value, error) {
+func (la *lifecycleHookAnnotation) Build(results ...reflect.Type) reflect.Value {
 	in, paramMap := la.parameters(results...)
 	params := []reflect.Type{in}
 	for _, r := range results {
@@ -456,7 +456,7 @@ func (la *lifecycleHookAnnotation) Build(results ...reflect.Type) (reflect.Value
 		return []reflect.Value{}
 	})
 
-	return newFn, nil
+	return newFn
 }
 
 // OnStart is an Annotation that appends an OnStart Hook to the application
@@ -612,9 +612,7 @@ func (ann *annotated) Build() (interface{}, error) {
 
 	var hooks []reflect.Value
 	for _, hook := range ann.Hooks {
-		if hookFn, err := hook.Build(resultTypes...); err == nil {
-			hooks = append(hooks, hookFn)
-		}
+		hooks = append(hooks, hook.Build(resultTypes...))
 	}
 
 	newFnType := reflect.FuncOf(paramTypes, resultTypes, false)
