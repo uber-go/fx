@@ -985,10 +985,9 @@ func TestAnnotate(t *testing.T) {
 		assert.Contains(t, err.Error(), "fx.In structs cannot be annotated")
 	})
 
-	t.Run("Hooks", testHookAnnotations)
 }
 
-func testHookAnnotations(t *testing.T) {
+func TestHookAnnotations(t *testing.T) {
 	t.Parallel()
 
 	validateApp := func(t *testing.T, opts ...fx.Option) error {
@@ -998,7 +997,6 @@ func testHookAnnotations(t *testing.T) {
 	}
 
 	t.Run("depend on result interface of target", func(t *testing.T) {
-		//t.Skip()
 		type stub interface {
 			String() string
 		}
@@ -1014,13 +1012,7 @@ func testHookAnnotations(t *testing.T) {
 					},
 					fx.OnStart(func(_ context.Context, s stub) error {
 						started = true
-						if !assert.Equal(t, "expected", s.String()) {
-							return fmt.Errorf(
-								"expected %q got %q",
-								"expected",
-								s.String(),
-							)
-						}
+						require.Equal(t, "expected", s.String())
 						return nil
 					}),
 				),
@@ -1098,8 +1090,7 @@ func testHookAnnotations(t *testing.T) {
 						return nil
 					}),
 				),
-			),
-			fx.Provide(
+
 				fx.Annotate(
 					func() (b, error) { return nil, nil },
 					fx.OnStart(func(context.Context) error {
@@ -1107,8 +1098,9 @@ func testHookAnnotations(t *testing.T) {
 						return nil
 					}),
 				),
+
+				func(a, b) c { return nil },
 			),
-			fx.Provide(func(a, b) c { return nil }),
 			fx.Invoke(func(c) {}),
 		)
 
@@ -1120,75 +1112,41 @@ func testHookAnnotations(t *testing.T) {
 		assert.True(t, bHook)
 		require.NoError(t, app.Stop(ctx))
 	})
-
-	t.Run("with extra dependency parameter", func(t *testing.T) {
-		t.Parallel()
-
-		type (
-			a interface{}
-			b interface{}
-			c interface{}
-		)
-
-		var aHook bool
-
-		app := fxtest.New(t,
-			fx.Provide(
-				fx.Annotate(
-					func() (a, error) { return nil, nil },
-					fx.OnStart(func(context.Context, b) error {
-						aHook = true
-						return nil
-					}),
-				),
-			),
-			fx.Provide(func() b { return nil }),
-			fx.Provide(func(a, b) c { return nil }),
-			fx.Invoke(func(c) {}),
-		)
-
-		ctx := context.Background()
-		assert.False(t, aHook)
-		require.NoError(t, app.Start(ctx))
-		defer func() {
-			require.NoError(t, app.Stop(ctx))
-		}()
-		assert.True(t, aHook)
-	})
-
 	t.Run("with multiple extra dependency parameters", func(t *testing.T) {
 		t.Parallel()
 
 		type (
-			a interface{}
-			b interface{}
-			c interface{}
+			A interface{}
+			B interface{}
+			C interface{}
 		)
 
-		var aHook bool
+		var value int
 
 		app := fxtest.New(t,
 			fx.Provide(
 				fx.Annotate(
-					func() (a, error) { return nil, nil },
-					fx.OnStart(func(context.Context, b, c) error {
-						aHook = true
+					func() (A, error) { return nil, nil },
+					fx.OnStart(func(_ context.Context, b B, c C) error {
+						b1, _ := b.(int)
+						c1, _ := c.(int)
+						value = b1 + c1
 						return nil
 					}),
 				),
 			),
-			fx.Provide(func() b { return nil }),
-			fx.Provide(func() c { return nil }),
-			fx.Invoke(func(a) {}),
+			fx.Provide(func() B { return int(1) }),
+			fx.Provide(func() C { return int(2) }),
+			fx.Invoke(func(A) {}),
 		)
 
 		ctx := context.Background()
-		assert.False(t, aHook)
+		assert.Zero(t, value)
 		require.NoError(t, app.Start(ctx))
 		defer func() {
 			require.NoError(t, app.Stop(ctx))
 		}()
-		assert.True(t, aHook)
+		assert.Equal(t, 3, value)
 	})
 
 	t.Run("with unprovided dependency", func(t *testing.T) {
@@ -1254,20 +1212,19 @@ func testHookAnnotations(t *testing.T) {
 		)
 
 		require.Error(t, err)
-		require.Contains(t, err.Error(), "cannot apply more than one")
+		require.Contains(t, err.Error(), "cannot apply more than one OnStart hook annotation")
 	})
 
 	t.Run("with Supply", func(t *testing.T) {
 		t.Parallel()
 
-		type (
-			A interface {
-				WriteString(string) (int, error)
-			}
-		)
+		type A interface {
+			WriteString(string) (int, error)
+		}
 
 		buf := bytes.NewBuffer(nil)
-		cotr := fx.Provide(
+		var called bool
+		ctor := fx.Provide(
 			fx.Annotate(
 				func() A {
 					return buf
@@ -1282,7 +1239,8 @@ func testHookAnnotations(t *testing.T) {
 		supply := fx.Supply(
 			fx.Annotate(
 				&asStringer{"supply"},
-				fx.OnStart(func(_ context.Context) error {
+				fx.OnStart(func(context.Context) error {
+					called = true
 					return nil
 				}),
 				fx.As(new(fmt.Stringer)),
@@ -1290,30 +1248,30 @@ func testHookAnnotations(t *testing.T) {
 		)
 
 		opts := fx.Options(
-			cotr,
+			ctor,
 			supply,
 			fx.Invoke(func(A) {}),
 		)
 
 		app := fxtest.New(t, opts)
 		ctx := context.Background()
+		require.False(t, called)
 		err := app.Start(ctx)
 		require.NoError(t, err)
 		require.NoError(t, app.Stop(ctx))
 		require.Equal(t, "supply", buf.String())
+		require.True(t, called)
 	})
 
 	t.Run("with Decorate", func(t *testing.T) {
 		t.Parallel()
 
-		type (
-			A interface {
-				WriteString(string) (int, error)
-			}
-		)
+		type A interface {
+			WriteString(string) (int, error)
+		}
 
 		buf := bytes.NewBuffer(nil)
-		cotr := fx.Provide(func() A { return buf })
+		ctor := fx.Provide(func() A { return buf })
 
 		var called bool
 		decorated := fx.Decorate(
@@ -1331,7 +1289,7 @@ func testHookAnnotations(t *testing.T) {
 		)
 
 		opts := fx.Options(
-			cotr,
+			ctor,
 			decorated,
 			fx.Invoke(func(A) {}),
 		)
@@ -1348,18 +1306,15 @@ func testHookAnnotations(t *testing.T) {
 	t.Run("with Supply and Decorate", func(t *testing.T) {
 		t.Parallel()
 
-		type (
-			A interface{}
-		)
+		type A interface{}
 
 		ch := make(chan string, 3)
 
-		cotr := fx.Provide(
+		ctor := fx.Provide(
 			fx.Annotate(
 				func() A { return nil },
 				fx.OnStart(func(_ context.Context, s fmt.Stringer) error {
 					ch <- "constructor"
-					fmt.Printf("executing!\n")
 					require.Equal(t, "supply", s.String())
 					return nil
 				}),
@@ -1388,7 +1343,7 @@ func testHookAnnotations(t *testing.T) {
 		)
 
 		opts := fx.Options(
-			cotr,
+			ctor,
 			supply,
 			decorated,
 			fx.Invoke(func(A) {}),

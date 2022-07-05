@@ -306,7 +306,6 @@ func (la *lifecycleHookAnnotation) resolveMap(results []reflect.Type) (
 		}
 	}
 
-	fmt.Printf("Result map %+v\n", resultMap)
 	return
 }
 
@@ -319,7 +318,7 @@ func (la *lifecycleHookAnnotation) resolveLifecycleParamField(
 	if param.Kind() == reflect.Struct {
 		nf := param.NumField()
 		if n <= nf {
-			value = param.FieldByName(fmt.Sprintf("Field%d", n-1))
+			value = param.FieldByName(fmt.Sprintf("Field%d", n))
 		}
 	}
 
@@ -375,10 +374,7 @@ func (la *lifecycleHookAnnotation) parameters(results ...reflect.Type) (
 		}
 		params = append(params, field)
 
-		resolver := func(v reflect.Value, pos int) (value reflect.Value) {
-			value = la.resolveLifecycleParamField(v, i)
-			return
-		}
+		resolver := la.resolveLifecycleParamField
 
 		resolverIdx = append(resolverIdx, argSource{
 			pos:     i,
