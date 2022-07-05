@@ -611,8 +611,8 @@ func (ann *annotated) Build() (interface{}, error) {
 	paramTypes, remapParams, hookParams := ann.parameters(resultTypes...)
 
 	var hooks []reflect.Value
-	for _, hook := range ann.Hooks {
-		hooks = append(hooks, hook.Build(resultTypes...))
+	for _, hookBuilder := range ann.Hooks {
+		hooks = append(hooks, hookBuilder.Build(resultTypes...))
 	}
 
 	newFnType := reflect.FuncOf(paramTypes, resultTypes, false)
@@ -631,19 +631,18 @@ func (ann *annotated) Build() (interface{}, error) {
 		}
 		results = remapResults(results)
 
-		// if the results are greater than zero and the final result
+		// if the number of results is greater than zero and the final result
 		// is a non-nil error, do not execute hook installers
 		hasErrorResult := len(results) > 0 && results[len(results)-1].Type() == _typeOfError
 		if hasErrorResult {
-			err, ok := results[len(results)-1].Interface().(error)
-			if ok && err != nil {
+			if err, ok := results[len(results)-1].Interface().(error); ok && err != nil {
 				return results
 			}
 		}
 
-		for i, hook := range hooks {
+		for i, hookBuilder := range hooks {
 			hookArgs := hookParams(i, origArgs, results)
-			hook.Call(hookArgs)
+			hookBuilder.Call(hookArgs)
 		}
 
 		return results

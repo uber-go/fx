@@ -1394,7 +1394,7 @@ func TestHookAnnotationFailures(t *testing.T) {
 			errContains: "cannot use nil function",
 			annotation: fx.Annotate(
 				func() A { return nil },
-				fx.OnStart(nil),
+				fx.OnStop(nil),
 			),
 		},
 	}
