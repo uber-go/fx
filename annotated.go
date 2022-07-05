@@ -223,7 +223,7 @@ func (la *lifecycleHookAnnotation) String() string {
 func (la *lifecycleHookAnnotation) apply(ann *annotated) error {
 	if la.Target == nil {
 		return fmt.Errorf(
-			"cannot use nil function for %v hook annotation",
+			"cannot use nil function for %q hook annotation",
 			la,
 		)
 	}
@@ -231,7 +231,7 @@ func (la *lifecycleHookAnnotation) apply(ann *annotated) error {
 	for _, h := range ann.Hooks {
 		if la.Type == h.Type {
 			return fmt.Errorf(
-				"cannot apply more than one %v hook annotation",
+				"cannot apply more than one %q hook annotation",
 				la,
 			)
 		}
@@ -240,7 +240,8 @@ func (la *lifecycleHookAnnotation) apply(ann *annotated) error {
 	ft := la.targetType()
 	if ft.Kind() != reflect.Func {
 		return fmt.Errorf(
-			"must provide function for hook, got %v (%T)",
+			"must provide function for %q hook, got %v (%T)",
+			la,
 			la.Target,
 			la.Target,
 		)
@@ -319,8 +320,7 @@ func (la *lifecycleHookAnnotation) resolveLifecycleParamField(
 	value reflect.Value,
 ) {
 	if param.Kind() == reflect.Struct {
-		nf := param.NumField()
-		if n <= nf {
+		if n <= param.NumField() {
 			value = param.FieldByName(fmt.Sprintf("Field%d", n))
 		}
 	}
@@ -471,7 +471,9 @@ func (la *lifecycleHookAnnotation) Build(results ...reflect.Type) (reflect.Value
 //    }),
 //  )
 //
-// Only one OnStart annotation may be applied to a given function at a time.
+// Only one OnStart annotation may be applied to a given function at a time,
+// however functions may be annotated with other types of lifecylce Hooks, such
+// as OnStop.
 func OnStart(onStart interface{}) Annotation {
 	return &lifecycleHookAnnotation{
 		Type:   _onStartHookType,
@@ -491,7 +493,9 @@ func OnStart(onStart interface{}) Annotation {
 //    }),
 //  )
 //
-// Only one OnStop annotation may be applied to a given function at a time.
+// Only one OnStop annotation may be applied to a given function at a time,
+// however functions may be annotated with other types of lifecylce Hooks, such
+// as OnStart.
 func OnStop(onStop interface{}) Annotation {
 	return &lifecycleHookAnnotation{
 		Type:   _onStopHookType,

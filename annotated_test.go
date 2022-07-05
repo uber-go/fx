@@ -1334,7 +1334,7 @@ func TestHookAnnotationFailures(t *testing.T) {
 		},
 		{
 			name:        "with with multiple hooks of the same type",
-			errContains: "cannot apply more than one OnStart hook annotation",
+			errContains: "cannot apply more than one \"OnStart\" hook annotation",
 			annotation: fx.Annotate(
 				func() A { return nil },
 				fx.OnStart(func(context.Context) error { return nil }),
