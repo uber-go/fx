@@ -1292,10 +1292,37 @@ func TestHookAnnotations(t *testing.T) {
 }
 
 func TestHookAnnotationFailures(t *testing.T) {
+	t.Parallel()
 	validateApp := func(t *testing.T, opts ...fx.Option) error {
 		return fx.ValidateApp(
 			append(opts, fx.Logger(fxtest.NewTestPrinter(t)))...,
 		)
+	}
+
+	table := []struct {
+		name        string
+		opts        fx.Option
+		validateApp bool
+		errContains string
+	}{}
+
+	for _, tt := range table {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			if tt.validateApp {
+				err := validateApp(t, tt.opts)
+				require.Error(t, err)
+				require.Contains(t, err.Error(), tt.errContains)
+				return
+			}
+
+			app := fx.New(tt.opts)
+			ctx := context.Background()
+			err := app.Start(ctx)
+			require.Error(t, err)
+			require.Contains(t, err.Error(), tt.errContains)
+		})
 	}
 
 	t.Run("with unprovided dependency", func(t *testing.T) {
