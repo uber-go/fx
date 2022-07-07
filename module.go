@@ -44,20 +44,26 @@ func Module(name string, opts ...Option) Option {
 	mo := moduleOption{
 		name:    name,
 		options: opts,
+		applied: false,
 	}
-	return mo
+	return &mo
 }
 
 type moduleOption struct {
 	name    string
 	options []Option
+	applied bool
 }
 
 func (o moduleOption) String() string {
 	return fmt.Sprintf("fx.Module(%q, %v)", o.name, o.options)
 }
 
-func (o moduleOption) apply(mod *module) {
+func (o *moduleOption) apply(mod *module) {
+	if o.applied {
+		return
+	}
+	o.applied = true
 	// This get called on any submodules' that are declared
 	// as part of another module.
 
