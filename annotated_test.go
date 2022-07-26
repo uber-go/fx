@@ -1313,7 +1313,7 @@ func TestHookAnnotationFailures(t *testing.T) {
 		},
 		{
 			name:        "with hook that errors",
-			errContains: "OnStart hook failed",
+			errContains: "hook failed",
 			useNew:      true,
 			annotation: fx.Annotate(
 				func() (A, error) { return nil, nil },
