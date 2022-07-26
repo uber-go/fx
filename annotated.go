@@ -732,7 +732,6 @@ func (ann *annotated) parameters(results ...reflect.Type) (
 	}
 
 	types = []reflect.Type{reflect.StructOf(inFields)}
-
 	remap = func(args []reflect.Value) []reflect.Value {
 		params := args[0]
 		args = args[:0]
@@ -744,27 +743,21 @@ func (ann *annotated) parameters(results ...reflect.Type) (
 
 	hookValueMap = func(hook int, args []reflect.Value, results []reflect.Value) (out []reflect.Value) {
 		params := args[0]
-
 		if params.Kind() == reflect.Struct {
 			var zero reflect.Value
-			value := params.FieldByNameFunc(func(name string) bool {
-				return name == fmt.Sprintf("Hook%d", hook)
-			})
+			value := params.FieldByName(fmt.Sprintf("Hook%d", hook))
 
 			if value != zero {
 				out = append(out, value)
 			}
 		}
-
 		for _, r := range results {
 			if r.Type() != _typeOfError {
 				out = append(out, r)
 			}
 		}
-
 		return
 	}
-
 	return
 }
 

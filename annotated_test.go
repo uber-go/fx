@@ -994,8 +994,11 @@ func TestHookAnnotations(t *testing.T) {
 		t.Parallel()
 
 		var called bool
+		var invoked bool
 		hook := fx.Annotate(
-			func() {},
+			func() {
+				invoked = true
+			},
 			fx.OnStart(func(context.Context) error {
 				called = true
 				return nil
@@ -1006,6 +1009,7 @@ func TestHookAnnotations(t *testing.T) {
 		require.False(t, called)
 		require.NoError(t, app.Start(context.Background()))
 		require.True(t, called)
+		require.True(t, invoked)
 	})
 
 	t.Run("depend on result interface of target", func(t *testing.T) {
