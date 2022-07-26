@@ -237,7 +237,8 @@ func (la *lifecycleHookAnnotation) apply(ann *annotated) error {
 		}
 	}
 
-	ft := la.targetType()
+	ft := reflect.TypeOf(la.Target)
+
 	if ft.Kind() != reflect.Func {
 		return fmt.Errorf(
 			"must provide function for %q hook, got %v (%T)",
@@ -283,30 +284,20 @@ var (
 	_typeOfContext   reflect.Type = reflect.TypeOf((*context.Context)(nil)).Elem()
 )
 
-func (la *lifecycleHookAnnotation) targetType() (targetType reflect.Type) {
-	return reflect.TypeOf(la.Target)
-}
+type valueResolver func(reflect.Value, int) reflect.Value
 
 func (la *lifecycleHookAnnotation) resolveMap(results []reflect.Type) (
-	resultMap map[reflect.Type]struct {
-		resolve func(reflect.Value, int) reflect.Value
-	},
+	resultMap map[reflect.Type]valueResolver,
 ) {
 	// index the constructor results by type and position to allow
 	// for us to omit these from the in types that must be injected,
 	// and to allow us to interleave constructor results
 	// into our hook arguments.
-	resultMap = make(map[reflect.Type]struct {
-		resolve func(reflect.Value, int) reflect.Value
-	}, 0)
+	resultMap = make(map[reflect.Type]valueResolver, len(results))
 
 	for _, r := range results {
-		resultMap[r] = struct {
-			resolve func(reflect.Value, int) reflect.Value
-		}{
-			resolve: func(v reflect.Value, pos int) (value reflect.Value) {
-				return v
-			},
+		resultMap[r] = func(v reflect.Value, pos int) (value reflect.Value) {
+			return v
 		}
 	}
 
@@ -349,24 +340,24 @@ func (la *lifecycleHookAnnotation) parameters(results ...reflect.Type) (
 		},
 	}
 
-	type valueResolver func(reflect.Value, int) reflect.Value
 	type argSource struct {
 		pos     int
 		result  bool
 		resolve valueResolver
 	}
 
+	ft := reflect.TypeOf(la.Target)
 	resolverIdx := make([]argSource, 1)
-	ft := la.targetType()
+
 	for i := 1; i < ft.NumIn(); i++ {
 		t := ft.In(i)
-		resultIdx, isProvidedByResults := resultMap[t]
+		result, isProvidedByResults := resultMap[t]
 
 		if isProvidedByResults {
 			resolverIdx = append(resolverIdx, argSource{
 				pos:     i,
 				result:  true,
-				resolve: resultIdx.resolve,
+				resolve: result,
 			})
 			continue
 		}
@@ -377,11 +368,9 @@ func (la *lifecycleHookAnnotation) parameters(results ...reflect.Type) (
 		}
 		params = append(params, field)
 
-		resolver := la.resolveLifecycleParamField
-
 		resolverIdx = append(resolverIdx, argSource{
 			pos:     i,
-			resolve: resolver,
+			resolve: la.resolveLifecycleParamField,
 		})
 	}
 
@@ -393,29 +382,25 @@ func (la *lifecycleHookAnnotation) parameters(results ...reflect.Type) (
 		remapped = make([]reflect.Value, ft.NumIn())
 
 		if len(args) != 0 {
-
-			p := args[0]
-
-			var results reflect.Value
+			var (
+				results reflect.Value
+				p       = args[0]
+			)
 
 			if len(args) > 1 {
 				results = args[1]
 			}
 
 			lc, _ = p.FieldByName("Lifecycle").Interface().(Lifecycle)
-
 			for i := 1; i < ft.NumIn(); i++ {
 				resolver := resolverIdx[i]
-
 				source := p
 				if resolver.result {
 					source = results
 				}
-
 				remapped[i] = resolver.resolve(source, i)
 			}
 		}
-
 		return
 	}
 	return
@@ -615,9 +600,11 @@ func (ann *annotated) Build() (interface{}, error) {
 	}
 	paramTypes, remapParams, hookParams := ann.parameters(resultTypes...)
 
-	var hooks []reflect.Value
-	for _, hookBuilder := range ann.Hooks {
-		hooks = append(hooks, hookBuilder.Build(resultTypes...))
+	hookFns := make([]reflect.Value, len(ann.Hooks))
+	for i, builder := range ann.Hooks {
+		if hookFn := builder.Build(resultTypes...); !hookFn.IsZero() {
+			hookFns[i] = hookFn
+		}
 	}
 
 	newFnType := reflect.FuncOf(paramTypes, resultTypes, false)
@@ -645,9 +632,9 @@ func (ann *annotated) Build() (interface{}, error) {
 			}
 		}
 
-		for i, hookBuilder := range hooks {
+		for i, hookFn := range hookFns {
 			hookArgs := hookParams(i, origArgs, results)
-			hookBuilder.Call(hookArgs)
+			hookFn.Call(hookArgs)
 		}
 
 		return results
