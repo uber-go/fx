@@ -451,14 +451,27 @@ func (la *lifecycleHookAnnotation) Build(results ...reflect.Type) reflect.Value 
 
 // OnStart is an Annotation that appends an OnStart Hook to the application
 // Lifecycle when that function is called. This provides a way to create
-// Lifecycle OnStart hooks without building a function that takes a dependency
-// on the Lifecycle type.
+// Lifecycle OnStart (see Lifecycle type documentation) hooks without building a
+// function that takes a dependency on the Lifecycle type.
 //
 //  fx.Annotate(
-//    func(...) Server { ... },
+//    NewServer,
 //    fx.OnStart(func(ctx context.Context, server Server) error {
 //        return server.Listen(ctx)
 //    }),
+//  )
+//
+// Which is functionally the same as:
+//
+//  fx.Provide(
+//    func(lifecycle fx.Lifecycle, p Params) Server {
+//      server := NewServer(p)
+//      lifecycle.Append(fx.Hook{
+//	      OnStart: func(ctx context.Context) error {
+//		    return server.Listen(ctx)
+//	      },
+//      })
+//    }
 //  )
 //
 // Only one OnStart annotation may be applied to a given function at a time,
@@ -473,14 +486,27 @@ func OnStart(onStart interface{}) Annotation {
 
 // OnStop is an Annotation that appends an OnStop Hook to the application
 // Lifecycle when that function is called. This provides a way to create
-// Lifecycle OnStop hooks without building a function that takes a dependency
-// on the Lifecycle type.
+// Lifecycle OnStop (see Lifecycle type documentation) hooks without building a
+// function that takes a dependency on the Lifecycle type.
 //
 //  fx.Annotate(
-//    func(...) Server { ... },
+//    NewServer,
 //    fx.OnStop(func(ctx context.Context, server Server) error {
 //        return server.Shutdown(ctx)
 //    }),
+//  )
+//
+// Which is functionally the same as:
+//
+//  fx.Provide(
+//    func(lifecycle fx.Lifecycle, p Params) Server {
+//      server := NewServer(p)
+//      lifecycle.Append(fx.Hook{
+//	      OnStart: func(ctx context.Context) error {
+//		    return server.Shutdown(ctx)
+//	      },
+//      })
+//    }
 //  )
 //
 // Only one OnStop annotation may be applied to a given function at a time,
@@ -672,7 +698,10 @@ func (ann *annotated) typeCheckOrigFn() error {
 
 // parameters returns the type for the parameters of the annotated function,
 // and a function that maps the arguments of the annotated function
-// back to the arguments of the target function.
+// back to the arguments of the target function and a function that maps
+// values to any lifecycle hook annotations. It accepts a variactic set
+// of reflect.Type which allows for omitting any resulting constructor types
+// from required parameters for annotation hooks.
 func (ann *annotated) parameters(results ...reflect.Type) (
 	types []reflect.Type,
 	remap func([]reflect.Value) []reflect.Value,
