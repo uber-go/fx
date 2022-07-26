@@ -987,29 +987,53 @@ func TestAnnotate(t *testing.T) {
 
 }
 
+func assertApp(
+	t *testing.T,
+	app interface {
+		Start(context.Context) error
+		Stop(context.Context) error
+	},
+	started *bool,
+	stopped *bool,
+	invoked *bool,
+) {
+	t.Helper()
+	ctx := context.Background()
+	assert.False(t, *started)
+	require.NoError(t, app.Start(ctx))
+	assert.True(t, *started)
+
+	if invoked != nil {
+		assert.True(t, *invoked)
+	}
+
+	if stopped != nil {
+		assert.False(t, *stopped)
+		require.NoError(t, app.Stop(ctx))
+		assert.True(t, *stopped)
+	}
+}
+
 func TestHookAnnotations(t *testing.T) {
 	t.Parallel()
 
 	t.Run("with hook on invoke", func(t *testing.T) {
 		t.Parallel()
 
-		var called bool
+		var started bool
 		var invoked bool
 		hook := fx.Annotate(
 			func() {
 				invoked = true
 			},
 			fx.OnStart(func(context.Context) error {
-				called = true
+				started = true
 				return nil
 			}),
 		)
 		app := fxtest.New(t, fx.Invoke(hook))
 
-		require.False(t, called)
-		require.NoError(t, app.Start(context.Background()))
-		require.True(t, called)
-		require.True(t, invoked)
+		assertApp(t, app, &started, nil, &invoked)
 	})
 
 	t.Run("depend on result interface of target", func(t *testing.T) {
@@ -1038,11 +1062,7 @@ func TestHookAnnotations(t *testing.T) {
 			}),
 		)
 
-		ctx := context.Background()
-		assert.False(t, started)
-		require.NoError(t, app.Start(ctx))
-		assert.True(t, started)
-		require.NoError(t, app.Stop(ctx))
+		assertApp(t, app, &started, nil, nil)
 	})
 
 	t.Run("start and stop without dependencies", func(t *testing.T) {
@@ -1075,58 +1095,9 @@ func TestHookAnnotations(t *testing.T) {
 			}),
 		)
 
-		ctx := context.Background()
-		assert.False(t, started)
-		require.NoError(t, app.Start(ctx))
-		assert.True(t, invoked)
-		assert.True(t, started)
-		assert.False(t, stopped)
-		require.NoError(t, app.Stop(ctx))
-		assert.True(t, stopped)
-
+		assertApp(t, app, &started, &stopped, &invoked)
 	})
 
-	t.Run("depedency chain", func(t *testing.T) {
-		t.Parallel()
-
-		type (
-			a interface{}
-			b interface{}
-			c interface{}
-		)
-
-		var aHook, bHook bool
-
-		provided := fx.Provide(
-			fx.Annotate(
-				func() (a, error) { return nil, nil },
-				fx.OnStart(func(context.Context) error {
-					aHook = true
-					return nil
-				}),
-			),
-
-			fx.Annotate(
-				func() (b, error) { return nil, nil },
-				fx.OnStart(func(context.Context) error {
-					bHook = true
-					return nil
-				}),
-			),
-
-			func(a, b) c { return nil },
-		)
-
-		app := fxtest.New(t, provided, fx.Invoke(func(c) {}))
-
-		ctx := context.Background()
-		assert.False(t, aHook)
-		assert.False(t, bHook)
-		require.NoError(t, app.Start(ctx))
-		assert.True(t, aHook)
-		assert.True(t, bHook)
-		require.NoError(t, app.Stop(ctx))
-	})
 	t.Run("with multiple extra dependency parameters", func(t *testing.T) {
 		t.Parallel()
 
@@ -1174,28 +1145,27 @@ func TestHookAnnotations(t *testing.T) {
 		buf := bytes.NewBuffer(nil)
 		var called bool
 
-		hook := fx.Annotate(
-			func() A {
-				return buf
-			},
-			fx.OnStart(func(_ context.Context, a A, s fmt.Stringer) error {
-				a.WriteString(s.String())
-				return nil
-			}),
+		ctor := fx.Provide(
+			fx.Annotate(
+				func() A {
+					return buf
+				},
+				fx.OnStart(func(_ context.Context, a A, s fmt.Stringer) error {
+					a.WriteString(s.String())
+					return nil
+				}),
+			),
 		)
 
-		ctor := fx.Provide(hook)
-
-		hook = fx.Annotate(
-			&asStringer{"supply"},
-			fx.OnStart(func(context.Context) error {
-				called = true
-				return nil
-			}),
-			fx.As(new(fmt.Stringer)),
-		)
-
-		supply := fx.Supply(hook)
+		supply := fx.Supply(
+			fx.Annotate(
+				&asStringer{"supply"},
+				fx.OnStart(func(context.Context) error {
+					called = true
+					return nil
+				}),
+				fx.As(new(fmt.Stringer)),
+			))
 
 		opts := fx.Options(
 			ctor,
@@ -1231,7 +1201,6 @@ func TestHookAnnotations(t *testing.T) {
 				return in
 			},
 			fx.OnStart(func(_ context.Context, a A) error {
-				// assert that the interface we get is the decorated one
 				called = assert.Equal(t, "decorated", buf.String())
 				return nil
 			}),
@@ -1247,8 +1216,7 @@ func TestHookAnnotations(t *testing.T) {
 
 		app := fxtest.New(t, opts)
 		ctx := context.Background()
-		err := app.Start(ctx)
-		require.NoError(t, err)
+		require.NoError(t, app.Start(ctx))
 		require.NoError(t, app.Stop(ctx))
 		require.True(t, called)
 		require.Equal(t, "decorated", buf.String())
@@ -1345,7 +1313,7 @@ func TestHookAnnotationFailures(t *testing.T) {
 		},
 		{
 			name:        "with hook that errors",
-			errContains: "hook failed",
+			errContains: "OnStart hook failed",
 			useNew:      true,
 			annotation: fx.Annotate(
 				func() (A, error) { return nil, nil },
@@ -1355,8 +1323,8 @@ func TestHookAnnotationFailures(t *testing.T) {
 			),
 		},
 		{
-			name:        "with with multiple hooks of the same type",
-			errContains: "cannot apply more than one \"OnStart\" hook annotation",
+			name:        "with multiple hooks of the same type",
+			errContains: `cannot apply more than one "OnStart" hook annotation`,
 			annotation: fx.Annotate(
 				func() A { return nil },
 				fx.OnStart(func(context.Context) error { return nil }),
