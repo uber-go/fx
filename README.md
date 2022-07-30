@@ -22,8 +22,8 @@ No breaking changes will be made to exported APIs before `v2.0.0`.
 This project follows the [Go Release Policy][release-policy]. Each major
 version of Go is supported until there are two newer major releases.
 
-[doc-img]: http://img.shields.io/badge/GoDoc-Reference-blue.svg
-[doc]: https://godoc.org/go.uber.org/fx
+[doc-img]: https://pkg.go.dev/badge/go.uber.org/fx
+[doc]: https://pkg.go.dev/go.uber.org/fx
 [release-img]: https://img.shields.io/github/release/uber-go/fx.svg
 [release]: https://github.com/uber-go/fx/releases
 [ci-img]: https://github.com/uber-go/fx/actions/workflows/go.yml/badge.svg
