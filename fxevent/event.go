@@ -173,7 +173,7 @@ type Invoking struct {
 }
 
 // Invoked is emitted after we invoke a function specified with fx.Invoke,
-// whether it succeded or failed.
+// whether it succeeded or failed.
 type Invoked struct {
 	// Functionname is the name of the function that was invoked.
 	FunctionName string
@@ -219,7 +219,7 @@ type RollingBack struct {
 }
 
 // RolledBack is emitted after a service has been rolled back, whether it
-// succeded or not.
+// succeeded or not.
 type RolledBack struct {
 	// Err is non-nil if the rollback failed.
 	Err error
