@@ -33,7 +33,7 @@ import (
 	"go.uber.org/fx/internal/testutil"
 )
 
-// If a testing.T is unspecified, degarde to printing to stderr to provide
+// If a testing.T is unspecified, degrade to printing to stderr to provide
 // meaningful messages.
 type panicT struct {
 	W io.Writer // stream to which we'll write messages
