@@ -913,7 +913,7 @@ func TestAnnotate(t *testing.T) {
 		err := app.Err()
 		require.Error(t, err)
 
-		// Exmaple:
+		// Example:
 		// fx.Provide(fx.Annotate(42, fx.ResultTags(["name:\"buf\""])) from:
 		// go.uber.org/fx_test.TestAnnotate.func17
 		//     /Users/abg/dev/fx/annotated_test.go:697
