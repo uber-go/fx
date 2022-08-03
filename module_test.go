@@ -112,6 +112,21 @@ func TestModuleSuccess(t *testing.T) {
 		defer app.RequireStart().RequireStop()
 		require.NoError(t, app.Err())
 	})
+	t.Run("soft provided to fx.Out struct", func(t *testing.T) {
+		t.Parallel()
+
+		type Result struct {
+			fx.Out
+
+			Bars []int `group:"bar,soft"`
+		}
+		app := NewForTest(t,
+			fx.Provide(func() Result { return Result{Bars: []int{1, 2, 3}} }),
+		)
+		err := app.Err()
+		require.Error(t, err, "failed to create app")
+		assert.Contains(t, err.Error(), "cannot use soft with result value groups")
+	})
 	t.Run("invoke from nested module", func(t *testing.T) {
 		t.Parallel()
 		invokeRan := false
