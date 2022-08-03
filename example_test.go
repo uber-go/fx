@@ -73,7 +73,7 @@ func NewLogger() *log.Logger {
 // Functions may also return multiple objects. For example, we could combine
 // NewHandler and NewLogger into a single function:
 //
-//   func NewHandlerAndLogger() (*log.Logger, http.Handler, error)
+//	func NewHandlerAndLogger() (*log.Logger, http.Handler, error)
 //
 // Fx also understands this idiom, and would treat NewHandlerAndLogger as the
 // constructor for both the *log.Logger and http.Handler types. Just like
@@ -94,13 +94,13 @@ func NewHandler(logger *log.Logger) (http.Handler, error) {
 // the application's start and stop phases. In a non-Fx application, the main
 // function often includes blocks like this:
 //
-//   srv, err := NewServer() // some long-running network server
-//   if err != nil {
-//     log.Fatalf("failed to construct server: %v", err)
-//   }
-//   // Construct other objects as necessary.
-//   go srv.Start()
-//   defer srv.Stop()
+//	srv, err := NewServer() // some long-running network server
+//	if err != nil {
+//	  log.Fatalf("failed to construct server: %v", err)
+//	}
+//	// Construct other objects as necessary.
+//	go srv.Start()
+//	defer srv.Stop()
 //
 // In this example, the programmer explicitly constructs a bunch of objects,
 // crashing the program if any of the constructors encounter unrecoverable

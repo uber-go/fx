@@ -35,25 +35,25 @@ import (
 //
 // For example,
 //
-//   func NewReadOnlyConnection(...) (*Connection, error)
+//	func NewReadOnlyConnection(...) (*Connection, error)
 //
-//   fx.Provide(fx.Annotated{
-//     Name: "ro",
-//     Target: NewReadOnlyConnection,
-//   })
+//	fx.Provide(fx.Annotated{
+//	  Name: "ro",
+//	  Target: NewReadOnlyConnection,
+//	})
 //
 // Is equivalent to,
 //
-//   type result struct {
-//     fx.Out
+//	type result struct {
+//	  fx.Out
 //
-//     Connection *Connection `name:"ro"`
-//   }
+//	  Connection *Connection `name:"ro"`
+//	}
 //
-//   fx.Provide(func(...) (result, error) {
-//     conn, err := NewReadOnlyConnection(...)
-//     return result{Connection: conn}, err
-//   })
+//	fx.Provide(func(...) (result, error) {
+//	  conn, err := NewReadOnlyConnection(...)
+//	  return result{Connection: conn}, err
+//	})
 //
 // Annotated cannot be used with constructors which produce fx.Out objects.
 //
@@ -170,14 +170,14 @@ var _ resultTagsAnnotation = resultTagsAnnotation{}
 // Given func(T1, T2, T3, ..., TN), this generates a type roughly
 // equivalent to,
 //
-//   struct {
-//     fx.Out
+//	struct {
+//	  fx.Out
 //
-//     Field1 T1 `$tags[0]`
-//     Field2 T2 `$tags[1]`
-//     ...
-//     FieldN TN `$tags[N-1]`
-//   }
+//	  Field1 T1 `$tags[0]`
+//	  Field2 T2 `$tags[1]`
+//	  ...
+//	  FieldN TN `$tags[N-1]`
+//	}
 //
 // If there has already been a ResultTag that was applied, this
 // will return an error.
@@ -454,25 +454,25 @@ func (la *lifecycleHookAnnotation) Build(results ...reflect.Type) reflect.Value 
 // Lifecycle OnStart (see Lifecycle type documentation) hooks without building a
 // function that takes a dependency on the Lifecycle type.
 //
-//  fx.Annotate(
-//    NewServer,
-//    fx.OnStart(func(ctx context.Context, server Server) error {
-//        return server.Listen(ctx)
-//    }),
-//  )
+//	fx.Annotate(
+//	  NewServer,
+//	  fx.OnStart(func(ctx context.Context, server Server) error {
+//	      return server.Listen(ctx)
+//	  }),
+//	)
 //
 // Which is functionally the same as:
 //
-//  fx.Provide(
-//    func(lifecycle fx.Lifecycle, p Params) Server {
-//      server := NewServer(p)
-//      lifecycle.Append(fx.Hook{
-//	      OnStart: func(ctx context.Context) error {
-//		    return server.Listen(ctx)
-//	      },
-//      })
-//    }
-//  )
+//	 fx.Provide(
+//	   func(lifecycle fx.Lifecycle, p Params) Server {
+//	     server := NewServer(p)
+//	     lifecycle.Append(fx.Hook{
+//		      OnStart: func(ctx context.Context) error {
+//			    return server.Listen(ctx)
+//		      },
+//	     })
+//	   }
+//	 )
 //
 // Only one OnStart annotation may be applied to a given function at a time,
 // however functions may be annotated with other types of lifecylce Hooks, such
@@ -489,25 +489,25 @@ func OnStart(onStart interface{}) Annotation {
 // Lifecycle OnStop (see Lifecycle type documentation) hooks without building a
 // function that takes a dependency on the Lifecycle type.
 //
-//  fx.Annotate(
-//    NewServer,
-//    fx.OnStop(func(ctx context.Context, server Server) error {
-//        return server.Shutdown(ctx)
-//    }),
-//  )
+//	fx.Annotate(
+//	  NewServer,
+//	  fx.OnStop(func(ctx context.Context, server Server) error {
+//	      return server.Shutdown(ctx)
+//	  }),
+//	)
 //
 // Which is functionally the same as:
 //
-//  fx.Provide(
-//    func(lifecycle fx.Lifecycle, p Params) Server {
-//      server := NewServer(p)
-//      lifecycle.Append(fx.Hook{
-//	      OnStart: func(ctx context.Context) error {
-//		    return server.Shutdown(ctx)
-//	      },
-//      })
-//    }
-//  )
+//	 fx.Provide(
+//	   func(lifecycle fx.Lifecycle, p Params) Server {
+//	     server := NewServer(p)
+//	     lifecycle.Append(fx.Hook{
+//		      OnStart: func(ctx context.Context) error {
+//			    return server.Shutdown(ctx)
+//		      },
+//	     })
+//	   }
+//	 )
 //
 // Only one OnStop annotation may be applied to a given function at a time,
 // however functions may be annotated with other types of lifecylce Hooks, such
@@ -531,16 +531,16 @@ var _ asAnnotation = asAnnotation{}
 // For example, the following code specifies that the return type of
 // bytes.NewBuffer (bytes.Buffer) should be provided as io.Writer type:
 //
-//   fx.Provide(
-//     fx.Annotate(bytes.NewBuffer(...), fx.As(new(io.Writer)))
-//   )
+//	fx.Provide(
+//	  fx.Annotate(bytes.NewBuffer(...), fx.As(new(io.Writer)))
+//	)
 //
 // In other words, the code above is equivalent to:
 //
-//  fx.Provide(func() io.Writer {
-//    return bytes.NewBuffer()
-//    // provides io.Writer instead of *bytes.Buffer
-//  })
+//	fx.Provide(func() io.Writer {
+//	  return bytes.NewBuffer()
+//	  // provides io.Writer instead of *bytes.Buffer
+//	})
 //
 // Note that the bytes.Buffer type is provided as an io.Writer type, so this
 // constructor does NOT provide both bytes.Buffer and io.Writer type; it just
@@ -550,20 +550,20 @@ var _ asAnnotation = asAnnotation{}
 // gets mapped to corresponding positional result of the annotated function.
 //
 // For example,
-//  func a() (bytes.Buffer, bytes.Buffer) {
-//    ...
-//  }
-//  fx.Provide(
-//    fx.Annotate(a, fx.As(new(io.Writer), new(io.Reader)))
-//  )
+//
+//	func a() (bytes.Buffer, bytes.Buffer) {
+//	  ...
+//	}
+//	fx.Provide(
+//	  fx.Annotate(a, fx.As(new(io.Writer), new(io.Reader)))
+//	)
 //
 // Is equivalent to,
 //
-//  fx.Provide(func() (io.Writer, io.Reader) {
-//    w, r := a()
-//    return w, r
-//  }
-//
+//	fx.Provide(func() (io.Writer, io.Reader) {
+//	  w, r := a()
+//	  return w, r
+//	}
 func As(interfaces ...interface{}) Annotation {
 	return asAnnotation{interfaces}
 }
@@ -932,45 +932,46 @@ func (ann *annotated) results() (
 // without you having to declare separate struct definitions for them.
 //
 // For example,
-//   func NewGateway(ro, rw *db.Conn) *Gateway { ... }
-//   fx.Provide(
-//     fx.Annotate(
-//       NewGateway,
-//       fx.ParamTags(`name:"ro" optional:"true"`, `name:"rw"`),
-//       fx.ResultTags(`name:"foo"`),
-//     ),
-//   )
+//
+//	func NewGateway(ro, rw *db.Conn) *Gateway { ... }
+//	fx.Provide(
+//	  fx.Annotate(
+//	    NewGateway,
+//	    fx.ParamTags(`name:"ro" optional:"true"`, `name:"rw"`),
+//	    fx.ResultTags(`name:"foo"`),
+//	  ),
+//	)
 //
 // Is equivalent to,
 //
-//  type params struct {
-//    fx.In
+//	type params struct {
+//	  fx.In
 //
-//    RO *db.Conn `name:"ro" optional:"true"`
-//    RW *db.Conn `name:"rw"`
-//  }
+//	  RO *db.Conn `name:"ro" optional:"true"`
+//	  RW *db.Conn `name:"rw"`
+//	}
 //
-//  type result struct {
-//    fx.Out
+//	type result struct {
+//	  fx.Out
 //
-//    GW *Gateway `name:"foo"`
-//   }
+//	  GW *Gateway `name:"foo"`
+//	 }
 //
-//   fx.Provide(func(p params) result {
-//     return result{GW: NewGateway(p.RO, p.RW)}
-//   })
+//	 fx.Provide(func(p params) result {
+//	   return result{GW: NewGateway(p.RO, p.RW)}
+//	 })
 //
 // Using the same annotation multiple times is invalid.
 // For example, the following will fail with an error:
 //
-//  fx.Provide(
-//    fx.Annotate(
-//      NewGateWay,
-//      fx.ParamTags(`name:"ro" optional:"true"`),
-//      fx.ParamTags(`name:"rw"), // ERROR: ParamTags was already used above
-//      fx.ResultTags(`name:"foo"`)
-//    )
-//  )
+//	fx.Provide(
+//	  fx.Annotate(
+//	    NewGateWay,
+//	    fx.ParamTags(`name:"ro" optional:"true"`),
+//	    fx.ParamTags(`name:"rw"), // ERROR: ParamTags was already used above
+//	    fx.ResultTags(`name:"foo"`)
+//	  )
+//	)
 //
 // is considered an invalid usage and will not apply any of the
 // Annotations to NewGateway.
@@ -978,41 +979,41 @@ func (ann *annotated) results() (
 // If more tags are given than the number of parameters/results, only
 // the ones up to the number of parameters/results will be applied.
 //
-// Variadic functions
+// # Variadic functions
 //
 // If the provided function is variadic, Annotate treats its parameter as a
 // slice. For example,
 //
-//  fx.Annotate(func(w io.Writer, rs ...io.Reader) {
-//    // ...
-//  }, ...)
+//	fx.Annotate(func(w io.Writer, rs ...io.Reader) {
+//	  // ...
+//	}, ...)
 //
 // Is equivalent to,
 //
-//  fx.Annotate(func(w io.Writer, rs []io.Reader) {
-//    // ...
-//  }, ...)
+//	fx.Annotate(func(w io.Writer, rs []io.Reader) {
+//	  // ...
+//	}, ...)
 //
 // You can use variadic parameters with Fx's value groups.
 // For example,
 //
-//  fx.Annotate(func(mux *http.ServeMux, handlers ...http.Handler) {
-//    // ...
-//  }, fx.ParamTags(``, `group:"server"`))
+//	fx.Annotate(func(mux *http.ServeMux, handlers ...http.Handler) {
+//	  // ...
+//	}, fx.ParamTags(``, `group:"server"`))
 //
 // If we provide the above to the application,
 // any constructor in the Fx application can inject its HTTP handlers
 // by using fx.Annotate, fx.Annotated, or fx.Out.
 //
-//  fx.Annotate(
-//    func(..) http.Handler { ... },
-//    fx.ResultTags(`group:"server"`),
-//  )
+//	fx.Annotate(
+//	  func(..) http.Handler { ... },
+//	  fx.ResultTags(`group:"server"`),
+//	)
 //
-//  fx.Annotated{
-//    Target: func(..) http.Handler { ... },
-//    Group:  "server",
-//  }
+//	fx.Annotated{
+//	  Target: func(..) http.Handler { ... },
+//	  Group:  "server",
+//	}
 func Annotate(t interface{}, anns ...Annotation) interface{} {
 	result := annotated{Target: t}
 	for _, ann := range anns {
