@@ -444,6 +444,22 @@ func TestAnnotatedWrongUsage(t *testing.T) {
 		)
 		assert.Contains(t, app.Err().Error(), "embeds a dig.In", "expected error when result types were annotated")
 	})
+
+	t.Run("invalid group option", func(t *testing.T) {
+		t.Parallel()
+
+		app := NewForTest(t,
+			fx.Provide(
+				fx.Annotated{
+					Group: "foo,soft",
+					Target: func() string {
+						return "sad times"
+					},
+				},
+			),
+		)
+		assert.Contains(t, app.Err().Error(), "cannot use soft with result value groups", "expected error when invalid group option is provided")
+	})
 }
 
 func TestAnnotatedString(t *testing.T) {
@@ -640,6 +656,34 @@ func TestAnnotate(t *testing.T) {
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), `missing dependencies`)
 		assert.Contains(t, err.Error(), `missing type: []*fx_test.a[name="a"]`)
+	})
+
+	t.Run("Invoke function with soft group param", func(t *testing.T) {
+		t.Parallel()
+		newF := func(foos []int, bar string) {
+			assert.ElementsMatch(t, []int{10}, foos)
+		}
+		app := fxtest.New(t,
+			fx.Provide(
+				fx.Annotate(
+					func() (int, string) { return 10, "hello" },
+					fx.ResultTags(`group:"foos"`),
+				),
+				fx.Annotate(
+					func() int {
+						require.FailNow(t, "this function should not be called")
+						return 20
+					},
+					fx.ResultTags(`group:"foos"`),
+				),
+			),
+			fx.Invoke(
+				fx.Annotate(newF, fx.ParamTags(`group:"foos,soft"`)),
+			),
+		)
+
+		defer app.RequireStart().RequireStop()
+		require.NoError(t, app.Err())
 	})
 
 	t.Run("Invoke variadic function with multiple params", func(t *testing.T) {
@@ -984,7 +1028,6 @@ func TestAnnotate(t *testing.T) {
 		assert.Contains(t, err.Error(), "invalid annotation function func(fx_test.B) string")
 		assert.Contains(t, err.Error(), "fx.In structs cannot be annotated")
 	})
-
 }
 
 func assertApp(
@@ -1279,7 +1322,6 @@ func TestHookAnnotations(t *testing.T) {
 		require.Equal(t, "constructor", <-ch)
 		require.Equal(t, "decorated", <-ch)
 	})
-
 }
 
 func TestHookAnnotationFailures(t *testing.T) {

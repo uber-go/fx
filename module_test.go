@@ -76,6 +76,42 @@ func TestModuleSuccess(t *testing.T) {
 		defer app.RequireStart().RequireStop()
 	})
 
+	t.Run("provide a value to a soft group value from nested modules", func(t *testing.T) {
+		t.Parallel()
+		type Param struct {
+			fx.In
+
+			Foos []string `group:"foo,soft"`
+			Bar  int
+		}
+		type Result struct {
+			fx.Out
+
+			Foo string `group:"foo"`
+			Bar int
+		}
+		app := fxtest.New(t,
+			fx.Module("child",
+				fx.Module("grandchild",
+					fx.Provide(fx.Annotate(
+						func() string {
+							require.FailNow(t, "should not be called")
+							return "there"
+						},
+						fx.ResultTags(`group:"foo"`),
+					)),
+					fx.Provide(func() Result {
+						return Result{Foo: "hello", Bar: 10}
+					}),
+				),
+			),
+			fx.Invoke(func(p Param) {
+				assert.ElementsMatch(t, []string{"hello"}, p.Foos)
+			}),
+		)
+		defer app.RequireStart().RequireStop()
+		require.NoError(t, app.Err())
+	})
 	t.Run("invoke from nested module", func(t *testing.T) {
 		t.Parallel()
 		invokeRan := false

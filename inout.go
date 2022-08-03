@@ -163,6 +163,26 @@ import "go.uber.org/dig"
 // Note that values in a value group are unordered. Fx makes no guarantees
 // about the order in which these values will be produced.
 //
+// To declare a soft relationship between a group an its constructors, use the
+// `soft` option on the group tag (`group:"[groupname],soft"`). A soft group
+// will be populated only with values from already-executed constructors, this
+// means constructors of soft value groups will be called only if they provide
+// another requested value.
+//
+//   type Params struct {
+//	  fx.In
+//
+//    Handlers []Handler `group:"server"`
+//    Logger   *zap.Logger
+//   }
+//   func NewHandlerAndLogger() (Handler, *zap.Logger) { ... }
+//   func NewHandler() Handler { ... }
+//   func Foo(Params) { ... }
+//
+// When `NewHandlerAndLogger` and `NewHandler`are provided, and `Foo` invoked,
+// the only constructor called is `NewHandler`, because this also provides
+// `*zap.Logger` needed in the `Params` struct.
+//
 // # Unexported fields
 //
 // By default, a type that embeds fx.In may not have any unexported fields. The

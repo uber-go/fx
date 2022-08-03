@@ -22,6 +22,7 @@ package fx_test
 
 import (
 	"errors"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -183,6 +184,55 @@ func TestDecorateSuccess(t *testing.T) {
 			}, fx.ParamTags(``, `name:"versionNum"`))),
 		)
 		defer app.RequireStart().RequireStop()
+	})
+
+	t.Run("decorator with soft value group", func(t *testing.T) {
+		app := fxtest.New(t,
+			fx.Provide(
+				fx.Annotate(
+					func() (string, int) { return "cheeseburger", 15 },
+					fx.ResultTags(`group:"burger"`, `group:"potato"`),
+				),
+			),
+			fx.Provide(
+				fx.Annotate(
+					func() (string, int) { return "mushroomburger", 35 },
+					fx.ResultTags(`group:"burger"`, `group:"potato"`),
+				),
+			),
+			fx.Provide(
+				fx.Annotate(
+					func() string {
+						require.FailNow(t, "should not be called")
+						return "veggieburger"
+					},
+					fx.ResultTags(`group:"burger"`, `group:"potato"`),
+				),
+			),
+			fx.Decorate(
+				fx.Annotate(
+					func(burgers []string) []string {
+						retBurg := make([]string, len(burgers))
+						for i, burger := range burgers {
+							retBurg[i] = strings.ToUpper(burger)
+						}
+						return retBurg
+					},
+					fx.ParamTags(`group:"burger,soft"`),
+					fx.ResultTags(`group:"burger"`),
+				),
+			),
+			fx.Invoke(
+				fx.Annotate(
+					func(burgers []string, fries []int) {
+						assert.ElementsMatch(t, []string{"CHEESEBURGER", "MUSHROOMBURGER"}, burgers)
+					},
+					fx.ParamTags(`group:"burger,soft"`, `group:"potato"`),
+				),
+			),
+		)
+		defer app.RequireStart().RequireStop()
+		require.NoError(t, app.Err())
 	})
 
 	t.Run("decorator with optional parameter", func(t *testing.T) {
