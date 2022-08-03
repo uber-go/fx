@@ -22,7 +22,6 @@ package fx_test
 
 import (
 	"io"
-	"io/ioutil"
 	"strings"
 	"testing"
 
@@ -77,7 +76,7 @@ func TestPopulate(t *testing.T) {
 		)
 		app.RequireStart().RequireStop()
 
-		bs, err := ioutil.ReadAll(reader)
+		bs, err := io.ReadAll(reader)
 		require.NoError(t, err, "Failed to use populated io.Reader")
 		assert.Equal(t, "hello world", string(bs), "Unexpected reader")
 	})

@@ -26,7 +26,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"log"
 	"os"
 	"reflect"
@@ -391,7 +390,7 @@ func TestWithLoggerErrorUseDefault(t *testing.T) {
 
 	// Temporarily hijack stderr and restore it after this test so
 	// that we can assert its contents.
-	f, err := ioutil.TempFile(t.TempDir(), "stderr")
+	f, err := os.CreateTemp(t.TempDir(), "stderr")
 	if err != nil {
 		t.Fatalf("could not open a file for writing")
 	}
@@ -412,7 +411,7 @@ func TestWithLoggerErrorUseDefault(t *testing.T) {
 		"must provide constructor function, got  (type *bytes.Buffer)",
 	)
 
-	stderr, err := ioutil.ReadFile(f.Name())
+	stderr, err := os.ReadFile(f.Name())
 	require.NoError(t, err)
 
 	// Example output:
