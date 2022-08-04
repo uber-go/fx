@@ -22,8 +22,10 @@ package fx_test
 
 import (
 	"context"
+	"fmt"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -86,6 +88,62 @@ func TestShutdown(t *testing.T) {
 		// doesn't work as expected.
 		assert.NotNil(t, <-done1, "done channel 1 did not receive signal")
 		assert.NotNil(t, <-done2, "done channel 2 did not receive signal")
+	})
+
+	t.Run("shutdown app with exit code(s)", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("default", func(t *testing.T) {
+			t.Parallel()
+			var s fx.Shutdowner
+			app := fxtest.New(t, fx.Populate(&s))
+
+			done := app.Done()
+			defer app.RequireStart().RequireStop()
+
+			assert.NoError(t, s.Shutdown(), "error returned from first shutdown call")
+			ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+			defer cancel()
+
+			signal, err := app.Wait(ctx)
+			assert.NoError(t, err, "error in app wait")
+			assert.NotEmpty(t, signal, "no shutdown signal")
+			assert.NotNil(t, signal.Signal)
+			assert.Zero(t, signal.ExitCode)
+			assert.Equal(t, signal.Signal, <-done)
+			assert.NoError(t, ctx.Err())
+		})
+
+		for expected := 0; expected <= 3; expected++ {
+			expected := expected
+			t.Run(fmt.Sprintf("with exit code %v", expected), func(t *testing.T) {
+				t.Parallel()
+				var s fx.Shutdowner
+				app := fxtest.New(
+					t,
+					fx.Populate(&s),
+				)
+
+				done := app.Done()
+				defer app.RequireStart().RequireStop()
+
+				assert.NoError(
+					t,
+					s.Shutdown(fx.ShutdownCode(expected)),
+					"error in app shutdown",
+				)
+
+				ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+				defer cancel()
+
+				signal, err := app.Wait(ctx)
+				assert.NoError(t, err, "error in app wait")
+				assert.NotEmpty(t, signal, "no shutdown signal")
+				assert.NotNil(t, signal.Signal)
+				assert.Equal(t, expected, signal.ExitCode)
+				assert.Equal(t, signal.Signal, <-done)
+			})
+		}
 	})
 }
 

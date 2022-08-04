@@ -287,9 +287,12 @@ type App struct {
 	errorHooks []ErrorHandler
 	validate   bool
 	// Used to signal shutdowns.
-	donesMu     sync.Mutex // guards dones and shutdownSig
-	dones       []chan os.Signal
-	shutdownSig os.Signal
+	donesMu        sync.Mutex // guards dones and shutdownSig
+	dones          []chan os.Signal
+	shutdownSig    os.Signal
+	waitsMu        sync.Mutex // guards waits and shutdownCode
+	waits          []chan ShutdownSignal
+	shutdownSignal *ShutdownSignal
 
 	osExit func(code int) // os.Exit override; used for testing only
 }
@@ -681,6 +684,31 @@ func (app *App) Done() <-chan os.Signal {
 	signal.Notify(c, os.Interrupt, _sigINT, _sigTERM)
 	app.dones = append(app.dones, c)
 	return c
+}
+
+func (app *App) wait() <-chan ShutdownSignal {
+	c := make(chan ShutdownSignal, 1)
+
+	app.waitsMu.Lock()
+	defer app.waitsMu.Unlock()
+
+	if app.shutdownSignal != nil {
+		c <- *app.shutdownSignal
+		return c
+	}
+
+	app.waits = append(app.waits, c)
+	return c
+}
+
+func (app *App) Wait(ctx context.Context) (ShutdownSignal, error) {
+	c := app.wait()
+	select {
+	case s := <-c:
+		return s, nil
+	case <-ctx.Done():
+		return ShutdownSignal{}, ctx.Err()
+	}
 }
 
 // StartTimeout returns the configured startup timeout. Apps default to using

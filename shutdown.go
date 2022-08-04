@@ -23,6 +23,8 @@ package fx
 import (
 	"fmt"
 	"os"
+
+	"go.uber.org/multierr"
 )
 
 // Shutdowner provides a method that can manually trigger the shutdown of the
@@ -39,8 +41,26 @@ type ShutdownOption interface {
 	apply(*shutdowner)
 }
 
+type shutdownCode int
+
+func (c shutdownCode) apply(s *shutdowner) {
+	s.exitCode = int(c)
+}
+
+// ShutdownCode implements a shutdown option that allows a user specify the
+// os.Exit code that an application should exit with.
+func ShutdownCode(code int) ShutdownOption {
+	return shutdownCode(code)
+}
+
 type shutdowner struct {
-	app *App
+	exitCode int
+	app      *App
+}
+
+type ShutdownSignal struct {
+	Signal   os.Signal
+	ExitCode int
 }
 
 // Shutdown broadcasts a signal to all of the application's Done channels
@@ -49,14 +69,25 @@ type shutdowner struct {
 // In practice this means Shutdowner.Shutdown should not be called from an
 // fx.Invoke, but from a fx.Lifecycle.OnStart hook.
 func (s *shutdowner) Shutdown(opts ...ShutdownOption) error {
-	return s.app.broadcastSignal(_sigTERM)
+	for _, opt := range opts {
+		opt.apply(s)
+	}
+
+	return s.app.broadcastSignal(_sigTERM, s.exitCode)
 }
 
 func (app *App) shutdowner() Shutdowner {
 	return &shutdowner{app: app}
 }
 
-func (app *App) broadcastSignal(signal os.Signal) error {
+func (app *App) broadcastSignal(signal os.Signal, code int) error {
+	return multierr.Combine(
+		app.broadcastDoneSignal(signal),
+		app.broadcastWaitSignal(signal, code),
+	)
+}
+
+func (app *App) broadcastDoneSignal(signal os.Signal) error {
 	app.donesMu.Lock()
 	defer app.donesMu.Unlock()
 
@@ -76,6 +107,35 @@ func (app *App) broadcastSignal(signal os.Signal) error {
 	if unsent != 0 {
 		return fmt.Errorf("failed to send %v signal to %v out of %v channels",
 			signal, unsent, len(app.dones),
+		)
+	}
+
+	return nil
+}
+
+func (app *App) broadcastWaitSignal(signal os.Signal, code int) error {
+	app.waitsMu.Lock()
+	defer app.waitsMu.Unlock()
+
+	app.shutdownSignal = &ShutdownSignal{
+		Signal:   signal,
+		ExitCode: code,
+	}
+
+	var unsent int
+	for _, wait := range app.waits {
+		select {
+		case wait <- *app.shutdownSignal:
+		default:
+			// shutdown called when wait channel has already received a
+			// termination signal that has not been cleared
+			unsent++
+		}
+	}
+
+	if unsent != 0 {
+		return fmt.Errorf("failed to send %v codes to %v out of %v channels",
+			signal, unsent, len(app.waits),
 		)
 	}
 
