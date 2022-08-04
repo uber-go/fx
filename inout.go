@@ -201,10 +201,8 @@ import "go.uber.org/dig"
 //	     ),
 //	     fx.Invoke(
 //	       fx.Annotate(func(s []string) {
-//	              // s will be an empty slice
-//			    },
-//	         fx.ParamTags(`group:"strings,soft"`),
-//	       ),
+//	         // s will be an empty slice
+//	       }, fx.ParamTags(`group:"strings,soft"`)),
 //	     ),
 //	  )
 //
@@ -220,17 +218,13 @@ import "go.uber.org/dig"
 //	     ),
 //	     fx.Invoke(
 //	       fx.Annotate(func(b []string) {
-//	              // b will be ["hello"]
-//			    },
-//	         fx.ParamTags(`group:"strings"`),
-//	       ),
+//	         // b will be ["hello"]
+//	       }, fx.ParamTags(`group:"strings"`)),
 //	     ),
 //	     fx.Invoke(
 //	       fx.Annotate(func(s []string) {
-//	              // s will be ["hello"]
-//			    },
-//	         fx.ParamTags(`group:"strings,soft"`),
-//	       ),
+//	         // s will be ["hello"]
+//	       }, fx.ParamTags(`group:"strings,soft"`)),
 //	     ),
 //	  )
 //

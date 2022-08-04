@@ -450,12 +450,8 @@ func TestAnnotatedWrongUsage(t *testing.T) {
 
 		app := NewForTest(t,
 			fx.Provide(
-				fx.Annotated{
-					Group: "foo,soft",
-					Target: func() string {
-						return "sad times"
-					},
-				},
+				fx.Annotate(func() string { return "sad times" },
+					fx.ResultTags(`group:"foo,soft"`)),
 			),
 		)
 		assert.Contains(t, app.Err().Error(), "cannot use soft with result value groups", "expected error when invalid group option is provided")
