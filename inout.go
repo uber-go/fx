@@ -192,41 +192,41 @@ import "go.uber.org/dig"
 // In the next example, the slice `s` isn't populated as the provider would be
 // called only because of `strings` soft group value
 //
-//	   app := fx.New(
-//	     fx.Provide(
-//	       fx.Annotate(
-//	         func() (string,int) { return "hello" },
-//	         fx.ResultTags(`group:"strings"`),
-//	       ),
-//	     ),
-//	     fx.Invoke(
-//	       fx.Annotate(func(s []string) {
-//	         // s will be an empty slice
-//	       }, fx.ParamTags(`group:"strings,soft"`)),
-//	     ),
-//	  )
+//	  app := fx.New(
+//	    fx.Provide(
+//	      fx.Annotate(
+//	        func() (string,int) { return "hello" },
+//	        fx.ResultTags(`group:"strings"`),
+//	      ),
+//	    ),
+//	    fx.Invoke(
+//	      fx.Annotate(func(s []string) {
+//	        // s will be an empty slice
+//	      }, fx.ParamTags(`group:"strings,soft"`)),
+//	    ),
+//	 )
 //
-//	 In the next example, the slice `s` will be populated because there is a
-//	 consumer for the same type which hasn't a `soft` dependency
+//	In the next example, the slice `s` will be populated because there is a
+//	consumer for the same type which hasn't a `soft` dependency
 //
-//	   app := fx.New(
-//	     fx.Provide(
-//	       fx.Annotate(
-//	         func() string { "hello" },
-//	         fx.ResultTags(`group:"strings"`),
-//	       ),
-//	     ),
-//	     fx.Invoke(
-//	       fx.Annotate(func(b []string) {
-//	         // b will be ["hello"]
-//	       }, fx.ParamTags(`group:"strings"`)),
-//	     ),
-//	     fx.Invoke(
-//	       fx.Annotate(func(s []string) {
-//	         // s will be ["hello"]
-//	       }, fx.ParamTags(`group:"strings,soft"`)),
-//	     ),
-//	  )
+//	  app := fx.New(
+//	    fx.Provide(
+//	      fx.Annotate(
+//	        func() string { "hello" },
+//	        fx.ResultTags(`group:"strings"`),
+//	      ),
+//	    ),
+//	    fx.Invoke(
+//	      fx.Annotate(func(b []string) {
+//	        // b will be ["hello"]
+//	      }, fx.ParamTags(`group:"strings"`)),
+//	    ),
+//	    fx.Invoke(
+//	      fx.Annotate(func(s []string) {
+//	        // s will be ["hello"]
+//	      }, fx.ParamTags(`group:"strings,soft"`)),
+//	    ),
+//	 )
 //
 // # Unexported fields
 //
