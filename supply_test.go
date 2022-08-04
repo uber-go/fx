@@ -153,4 +153,45 @@ func TestSupply(t *testing.T) {
 		require.Error(t, supplied[1].(*fxevent.Supplied).Err)
 	})
 
+	t.Run("SupplyToASoftGroup", func(t *testing.T) {
+		t.Parallel()
+
+		type Param struct {
+			fx.In
+
+			Foos []string `group:"foo,soft"`
+			Bar  []int    `group:"bar"`
+		}
+		type Result struct {
+			fx.Out
+
+			Foo string `group:"foo"`
+			Bar int    `group:"bar"`
+		}
+		app := fxtest.New(t,
+			fx.Supply(
+				Result{
+					Foo: "sad",
+					Bar: 20,
+				}),
+			fx.Supply(
+				fx.Annotated{
+					Target: 10,
+					Group:  "bar",
+				},
+				fx.Annotated{
+					Target: "bye",
+					Group:  "foo",
+				}),
+			fx.Supply(fx.Annotated{
+				Target: "hello",
+				Group:  "foo",
+			}),
+			fx.Invoke(func(p Param) {
+				assert.ElementsMatch(t, []string{"sad"}, p.Foos)
+			}),
+		)
+
+		defer app.RequireStart().RequireStop()
+	})
 }

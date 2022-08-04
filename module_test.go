@@ -76,6 +76,43 @@ func TestModuleSuccess(t *testing.T) {
 		defer app.RequireStart().RequireStop()
 	})
 
+	t.Run("provide a value to a soft group value from nested modules", func(t *testing.T) {
+		t.Parallel()
+		type Param struct {
+			fx.In
+
+			Foos []string `group:"foo,soft"`
+			Bar  int
+		}
+		type Result struct {
+			fx.Out
+
+			Foo string `group:"foo"`
+			Bar int
+		}
+		app := fxtest.New(t,
+			fx.Module("child",
+				fx.Module("grandchild",
+					fx.Provide(fx.Annotate(
+						func() string {
+							require.FailNow(t, "should not be called")
+							return "there"
+						},
+						fx.ResultTags(`group:"foo"`),
+					)),
+					fx.Provide(func() Result {
+						return Result{Foo: "hello", Bar: 10}
+					}),
+				),
+			),
+			fx.Invoke(func(p Param) {
+				assert.ElementsMatch(t, []string{"hello"}, p.Foos)
+			}),
+		)
+		defer app.RequireStart().RequireStop()
+		require.NoError(t, app.Err())
+	})
+
 	t.Run("invoke from nested module", func(t *testing.T) {
 		t.Parallel()
 		invokeRan := false
@@ -269,6 +306,22 @@ func TestModuleFailures(t *testing.T) {
 
 		assert.Contains(t, err.Error(), "encountered error while applying annotation")
 		assert.Contains(t, err.Error(), "cannot apply more than one line of ParamTags")
+	})
+
+	t.Run("soft provided to fx.Out struct", func(t *testing.T) {
+		t.Parallel()
+
+		type Result struct {
+			fx.Out
+
+			Bars []int `group:"bar,soft"`
+		}
+		app := NewForTest(t,
+			fx.Provide(func() Result { return Result{Bars: []int{1, 2, 3}} }),
+		)
+		err := app.Err()
+		require.Error(t, err, "failed to create app")
+		assert.Contains(t, err.Error(), "cannot use soft with result value groups")
 	})
 
 	t.Run("provider in Module fails", func(t *testing.T) {

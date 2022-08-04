@@ -163,6 +163,71 @@ import "go.uber.org/dig"
 // Note that values in a value group are unordered. Fx makes no guarantees
 // about the order in which these values will be produced.
 //
+// To declare a soft relationship between a group and its constructors, use
+// the `soft` option on the group tag (`group:"[groupname],soft"`), this
+// option can only be used for input parameters, e.g. `fx.In` structures.
+// A soft group will be populated only with values from already-executed
+// constructors.
+//
+//	 type Params struct {
+//	   fx.In
+//
+//	   Handlers []Handler `group:"server"`
+//	   Logger   *zap.Logger
+//	 }
+//
+//	 NewHandlerAndLogger := func() (Handler, *zap.Logger) { ... }
+//	 NewHandler := func() Handler { ... }
+//	 Foo := func(Params) { ... }
+//
+//	app := fx.New(
+//	  fx.Provide(NewHandlerAndLogger),
+//	  fx.Provide(NewHandler),
+//	  fx.Invoke(Foo),
+//	)
+//
+// The only constructor called is `NewHandler`, because this also provides
+// `*zap.Logger` needed in the `Params` struct received by `foo`
+//
+// In the next example, the slice `s` isn't populated as the provider would be
+// called only because of `strings` soft group value
+//
+//	  app := fx.New(
+//	    fx.Provide(
+//	      fx.Annotate(
+//	        func() (string,int) { return "hello" },
+//	        fx.ResultTags(`group:"strings"`),
+//	      ),
+//	    ),
+//	    fx.Invoke(
+//	      fx.Annotate(func(s []string) {
+//	        // s will be an empty slice
+//	      }, fx.ParamTags(`group:"strings,soft"`)),
+//	    ),
+//	 )
+//
+//	In the next example, the slice `s` will be populated because there is a
+//	consumer for the same type which hasn't a `soft` dependency
+//
+//	  app := fx.New(
+//	    fx.Provide(
+//	      fx.Annotate(
+//	        func() string { "hello" },
+//	        fx.ResultTags(`group:"strings"`),
+//	      ),
+//	    ),
+//	    fx.Invoke(
+//	      fx.Annotate(func(b []string) {
+//	        // b will be ["hello"]
+//	      }, fx.ParamTags(`group:"strings"`)),
+//	    ),
+//	    fx.Invoke(
+//	      fx.Annotate(func(s []string) {
+//	        // s will be ["hello"]
+//	      }, fx.ParamTags(`group:"strings,soft"`)),
+//	    ),
+//	 )
+//
 // # Unexported fields
 //
 // By default, a type that embeds fx.In may not have any unexported fields. The
