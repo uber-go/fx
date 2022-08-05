@@ -16,6 +16,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
   Dig v1.14.1 release notes for more details.
 - `fx.WithLogger` no longer ignores decorations and replacements of types that
   it depends on.
+- Don't run lifecycle hooks if the context for them has already expired.
+- `App.Start` and `App.Stop` no longer deadlock if the OnStart/OnStop hook
+  exits the current goroutine.
+- `fxevent.ConsoleLogger` no longer emits an extraneous argument for the
+  Supplied event.
 
 ### Deprecated
 - `fx.Extract` in favor of `fx.Populate`.
