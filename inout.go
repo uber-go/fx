@@ -170,6 +170,11 @@ import "go.uber.org/dig"
 // if a constructor's output type is only consumed by a soft value group,
 // it will not be run.
 //
+// Note that Fx does not guarantee precise execution order of constructors
+// or invokers, which means that the change in code that affects execution
+// ordering of other constructors or functions will affect the values
+// populated in this group.
+//
 // To declare a soft relationship between a group and its constructors, use
 // the `soft` option on the group tag (`group:"[groupname],soft"`).
 // This option is only valid for input parameters.
