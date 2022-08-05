@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 - Soft value groups that lets you specify value groups as best-effort dependencies.
 - `fx.OnStart` and `fx.OnStop` annotations which lets you annotate dependencies to provide
   OnStart and OnStop lifecycle hooks.
-- `fx.Replaced` event.
+- A new `fxevent.Replaced` event written to `fxevent.Logger` following an `fx.Replace`.
 
 ### Fixed
 - Upgrade Dig dependency to v1.14.1 to address a couple of issues with decorations. Refer to
