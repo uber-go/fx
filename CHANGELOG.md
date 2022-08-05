@@ -25,7 +25,6 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Deprecated
 - `fx.Extract` in favor of `fx.Populate`.
 
-
   [1.18.0]: https://github.com/uber-go/fx/compare/v1.17.1...v1.18.0
 
 ## [1.17.1] - 2022-03-23
