@@ -8,7 +8,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Added
 - Soft value groups that lets you specify value groups as best-effort dependencies.
 - `fx.OnStart` and `fx.OnStop` annotations which lets you annotate dependencies to provide
-  onStart and onStop lifecycle hooks.
+  OnStart and OnStop lifecycle hooks.
 - `fx.Replaced` event.
 
 ### Fixed
