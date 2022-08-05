@@ -4,20 +4,29 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
-## Unreleased
+## [1.18.0] - 2022-08-05
+### Added
+- Soft value groups that lets you specify value groups as best-effort dependencies.
+- `fx.OnStart` and `fx.OnStop` annotations which lets you annotate dependencies to provide
+  onStart and onStop lifecycle hooks.
+- `fx.Replaced` event.
+
 ### Fixed
 - Upgrade Dig dependency to v1.14.1 to address a couple of issues with decorations. Refer to
   Dig v1.14.1 release notes for more details.
 - `fx.WithLogger` no longer ignores decorations and replacements of types that
   it depends on.
 
-## [1.17.1] - 2021-03-23
+### Deprecated
+- `fx.Extract` in favor of `fx.Populate`.
+
+## [1.17.1] - 2022-03-23
 ### Added
 - Logging for provide/invoke/decorate now includes the associated `fx.Module` name.
 
 [1.17.1]: https://github.com/uber-go/fx/compare/v1.17.0...v1.17.1
 
-## [1.17.0] - 2021-02-28
+## [1.17.0] - 2022-02-28
 ### Added
 - Add `fx.Module` which scopes any modifications made to the dependency graph.
 - Add `fx.Decorate` and `fx.Replace` that lets you modify a dependency graph with decorators.
