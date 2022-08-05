@@ -71,7 +71,7 @@ import "go.uber.org/dig"
 //
 // # Optional Dependencies
 //
-// Constructors often have soft dependencies on some types: if those types are
+// Constructors often have optional dependencies on some types: if those types are
 // missing, they can operate in a degraded state. Fx supports optional
 // dependencies via the `optional:"true"` tag to fields on parameter structs.
 //
@@ -163,22 +163,27 @@ import "go.uber.org/dig"
 // Note that values in a value group are unordered. Fx makes no guarantees
 // about the order in which these values will be produced.
 //
+// # Soft Value Groups
+//
+// A soft value group can be thought of as a best-attempt at populating the
+// group with values from constructors that have already run. In other words,
+// if a constructor's output type is only consumed by a soft value group,
+// it will not be run.
+//
 // To declare a soft relationship between a group and its constructors, use
-// the `soft` option on the group tag (`group:"[groupname],soft"`), this
-// option can only be used for input parameters, e.g. `fx.In` structures.
-// A soft group will be populated only with values from already-executed
-// constructors.
+// the `soft` option on the group tag (`group:"[groupname],soft"`).
+// This option is only valid for input parameters.
 //
-//	 type Params struct {
-//	   fx.In
+//	type Params struct {
+//	  fx.In
 //
-//	   Handlers []Handler `group:"server"`
-//	   Logger   *zap.Logger
-//	 }
+//	  Handlers []Handler `group:"server"`
+//	  Logger   *zap.Logger
+//	}
 //
-//	 NewHandlerAndLogger := func() (Handler, *zap.Logger) { ... }
-//	 NewHandler := func() Handler { ... }
-//	 Foo := func(Params) { ... }
+//	NewHandlerAndLogger := func() (Handler, *zap.Logger) { ... }
+//	NewHandler := func() Handler { ... }
+//	Foo := func(Params) { ... }
 //
 //	app := fx.New(
 //	  fx.Provide(NewHandlerAndLogger),
@@ -187,46 +192,46 @@ import "go.uber.org/dig"
 //	)
 //
 // The only constructor called is `NewHandler`, because this also provides
-// `*zap.Logger` needed in the `Params` struct received by `foo`
+// `*zap.Logger` needed in the `Params` struct received by `Foo`.
 //
 // In the next example, the slice `s` isn't populated as the provider would be
-// called only because of `strings` soft group value
+// called only because `strings` soft group value is its only consumer.
 //
-//	  app := fx.New(
-//	    fx.Provide(
-//	      fx.Annotate(
-//	        func() (string,int) { return "hello" },
-//	        fx.ResultTags(`group:"strings"`),
-//	      ),
-//	    ),
-//	    fx.Invoke(
-//	      fx.Annotate(func(s []string) {
-//	        // s will be an empty slice
-//	      }, fx.ParamTags(`group:"strings,soft"`)),
-//	    ),
-//	 )
+//	 app := fx.New(
+//	   fx.Provide(
+//	     fx.Annotate(
+//	       func() (string,int) { return "hello" },
+//	       fx.ResultTags(`group:"strings"`),
+//	     ),
+//	   ),
+//	   fx.Invoke(
+//	     fx.Annotate(func(s []string) {
+//	       // s will be an empty slice
+//	     }, fx.ParamTags(`group:"strings,soft"`)),
+//	   ),
+//	)
 //
-//	In the next example, the slice `s` will be populated because there is a
-//	consumer for the same type which hasn't a `soft` dependency
+// In the next example, the slice `s` will be populated because there is a
+// consumer for the same type which is not a `soft` dependency.
 //
-//	  app := fx.New(
-//	    fx.Provide(
-//	      fx.Annotate(
-//	        func() string { "hello" },
-//	        fx.ResultTags(`group:"strings"`),
-//	      ),
-//	    ),
-//	    fx.Invoke(
-//	      fx.Annotate(func(b []string) {
-//	        // b will be ["hello"]
-//	      }, fx.ParamTags(`group:"strings"`)),
-//	    ),
-//	    fx.Invoke(
-//	      fx.Annotate(func(s []string) {
-//	        // s will be ["hello"]
-//	      }, fx.ParamTags(`group:"strings,soft"`)),
-//	    ),
-//	 )
+//	 app := fx.New(
+//	   fx.Provide(
+//	     fx.Annotate(
+//	       func() string { "hello" },
+//	       fx.ResultTags(`group:"strings"`),
+//	     ),
+//	   ),
+//	   fx.Invoke(
+//	     fx.Annotate(func(b []string) {
+//	       // b is []string{"hello"}
+//	     }, fx.ParamTags(`group:"strings"`)),
+//	   ),
+//	   fx.Invoke(
+//	     fx.Annotate(func(s []string) {
+//	       // s is []string{"hello"}
+//	     }, fx.ParamTags(`group:"strings,soft"`)),
+//	   ),
+//	)
 //
 // # Unexported fields
 //
