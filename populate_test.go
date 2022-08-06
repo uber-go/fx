@@ -140,6 +140,7 @@ func TestPopulate(t *testing.T) {
 			V2 *t1 `name:"n2"`
 		}{}
 
+		var v1, v2 *t1
 		app := fxtest.New(t,
 			Provide(func() result {
 				return result{
@@ -149,6 +150,10 @@ func TestPopulate(t *testing.T) {
 			}),
 
 			Populate(&targets),
+			Populate(
+				Annotated{Name: "n1", Target: &v1},
+				Annotated{Name: "n2", Target: &v2},
+			),
 		)
 		app.RequireStart().RequireStop()
 
@@ -156,6 +161,9 @@ func TestPopulate(t *testing.T) {
 		require.NotNil(t, targets.V2, "did not populate field 2")
 		// Cannot use assert.Equal here as we want to compare pointers.
 		assert.False(t, targets.V1 == targets.V2, "fields should be different")
+
+		require.True(t, v1 == targets.V1, "v1 should be equal field 1")
+		require.True(t, v2 == targets.V2, "v2 should be equal field 2")
 	})
 
 	t.Run("populate group", func(t *testing.T) {
@@ -174,6 +182,7 @@ func TestPopulate(t *testing.T) {
 			Group []*t1 `group:"g"`
 		}{}
 
+		var grp []*t1
 		app := fxtest.New(t,
 			Provide(func() result {
 				return result{
@@ -183,6 +192,7 @@ func TestPopulate(t *testing.T) {
 			}),
 
 			Populate(&targets),
+			Populate(Annotated{Group: "g", Target: &grp}),
 		)
 		app.RequireStart().RequireStop()
 
@@ -191,6 +201,11 @@ func TestPopulate(t *testing.T) {
 		require.NotNil(t, targets.Group[1], "did not populate group value 2")
 		// Cannot use assert.Equal here as we want to compare pointers.
 		assert.False(t, targets.Group[0] == targets.Group[1], "group values should be different")
+
+		require.Len(t, grp, 2, "Expected group to have 2 values")
+		// group order random
+		require.True(t, grp[0] == targets.Group[0] || grp[0] == targets.Group[1], "group value 0 should be same")
+		require.True(t, grp[1] == targets.Group[1] || grp[1] == targets.Group[0], "group value 1 should be same")
 	})
 }
 
