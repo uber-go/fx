@@ -72,11 +72,29 @@ type provideOption struct {
 }
 
 func (o provideOption) apply(mod *module) {
+	private := false
+	// Check if the last option was a private provide
+	if po, ok := o.Targets[len(o.Targets)-1].(*privateProvideOption); ok {
+		private = po.private
+	}
+
 	for _, target := range o.Targets {
 		mod.provides = append(mod.provides, provide{
-			Target: target,
-			Stack:  o.Stack,
+			Target:  target,
+			Stack:   o.Stack,
+			Private: private,
 		})
+	}
+}
+
+type privateProvideOption struct {
+	private bool
+}
+
+// Private ...
+func Private(isPrivate bool) interface{} {
+	return &privateProvideOption{
+		private: isPrivate,
 	}
 }
 
