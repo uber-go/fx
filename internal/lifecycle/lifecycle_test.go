@@ -291,6 +291,32 @@ func TestLifecycleStop(t *testing.T) {
 		cancel()
 		require.Error(t, l.Stop(ctx))
 	})
+
+	t.Run("nil ctx", func(t *testing.T) {
+		t.Parallel()
+
+		l := New(testLogger(t), fxclock.System)
+		l.Append(Hook{
+			OnStart: func(context.Context) error {
+				assert.Fail(t, "this hook should not run")
+				return nil
+			},
+			OnStop: func(context.Context) error {
+				assert.Fail(t, "this hook should not run")
+				return nil
+			},
+		})
+		//lint:ignore SA1012 this test specifically tests for the lint failure
+		err := l.Start(nil)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "called OnStart with nil context")
+
+		//lint:ignore SA1012 this test specifically tests for the lint failure
+		err = l.Stop(nil)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "called OnStop with nil context")
+
+	})
 }
 
 func TestHookRecordsFormat(t *testing.T) {
