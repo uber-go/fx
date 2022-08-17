@@ -7,9 +7,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ## Unreleased
 - No changes yet.
 
-## [1.18.1] = 2022-08-08
+## [1.18.1] - 2022-08-08
 ### Fixed
 - Fix a nil panic when `nil` is passed to `OnStart` and `OnStop` lifecycle methods.
+
+  [1.18.1]: https://github.com/uber-go/fx/compare/v1.18.0...v1.18.1
 
 ## [1.18.0] - 2022-08-05
 ### Added
