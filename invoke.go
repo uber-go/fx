@@ -44,10 +44,10 @@ import (
 //
 //	fx.New(
 //		fx.Invoke(func3),
-//			fx.Module("someModule",
-//				fx.Invoke(func1),
-//				fx.Invoke(func2),
-//			),
+//		fx.Module("someModule",
+//			fx.Invoke(func1),
+//			fx.Invoke(func2),
+//		),
 //		fx.Invoke(func4),
 //	)
 //
