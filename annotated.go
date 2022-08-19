@@ -961,6 +961,9 @@ func (ann *annotated) results() (
 //	   return result{GW: NewGateway(p.RO, p.RW)}
 //	 })
 //
+// Annotate cannot be used on functions that takes in or returns
+// [In] or [Out] structs.
+//
 // Using the same annotation multiple times is invalid.
 // For example, the following will fail with an error:
 //
