@@ -40,6 +40,8 @@ type container interface {
 }
 
 // Module is a named group of zero or more fx.Options.
+// A Module creates a scope in which certain operations are taken
+// place. For more information, see [Decorate], [Replace], or [Invoke].
 func Module(name string, opts ...Option) Option {
 	mo := moduleOption{
 		name:    name,
@@ -151,17 +153,18 @@ func (m *module) provide(p provide) {
 }
 
 func (m *module) executeInvokes() error {
+	for _, m := range m.modules {
+		if err := m.executeInvokes(); err != nil {
+			return err
+		}
+	}
+
 	for _, invoke := range m.invokes {
 		if err := m.executeInvoke(invoke); err != nil {
 			return err
 		}
 	}
 
-	for _, m := range m.modules {
-		if err := m.executeInvokes(); err != nil {
-			return err
-		}
-	}
 	return nil
 }
 
