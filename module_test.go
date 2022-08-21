@@ -211,6 +211,36 @@ func TestModuleSuccess(t *testing.T) {
 
 		defer app.RequireStart().RequireStop()
 	})
+
+	t.Run("Invoke order in Modules", func(t *testing.T) {
+		t.Parallel()
+
+		type person struct {
+			age int
+		}
+
+		app := fxtest.New(t,
+			fx.Provide(func() *person {
+				return &person{
+					age: 1,
+				}
+			}),
+			fx.Invoke(func(p *person) {
+				assert.Equal(t, 2, p.age)
+				p.age += 1
+			}),
+			fx.Module("module",
+				fx.Invoke(func(p *person) {
+					assert.Equal(t, 1, p.age)
+					p.age += 1
+				}),
+			),
+			fx.Invoke(func(p *person) {
+				assert.Equal(t, 3, p.age)
+			}),
+		)
+		require.NoError(t, app.Err())
+	})
 }
 
 func TestModuleFailures(t *testing.T) {

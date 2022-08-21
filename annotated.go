@@ -955,11 +955,14 @@ func (ann *annotated) results() (
 //	  fx.Out
 //
 //	  GW *Gateway `name:"foo"`
-//	 }
+//	}
 //
-//	 fx.Provide(func(p params) result {
+//	fx.Provide(func(p params) result {
 //	   return result{GW: NewGateway(p.RO, p.RW)}
-//	 })
+//	})
+//
+// Annotate cannot be used on functions that takes in or returns
+// [In] or [Out] structs.
 //
 // Using the same annotation multiple times is invalid.
 // For example, the following will fail with an error:
