@@ -1443,9 +1443,8 @@ func TestHookAnnotationFailures(t *testing.T) {
 				return
 			}
 
-			app := fx.New(opts)
-			ctx := context.Background()
-			err := app.Start(ctx)
+			app := NewForTest(t, opts)
+			err := app.Start(context.Background())
 			require.Error(t, err)
 			require.Contains(t, err.Error(), tt.errContains)
 		})
