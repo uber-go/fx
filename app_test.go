@@ -1282,6 +1282,47 @@ func TestAppStart(t *testing.T) {
 		err := app.Start(context.Background()).Error()
 		assert.Contains(t, err, "OnStart hook added by go.uber.org/fx_test.TestAppStart.func10.1 failed: goroutine exited without returning")
 	})
+
+	t.Run("Start/Stop should be called exactly once only.", func(t *testing.T) {
+		t.Parallel()
+		startCalled := 0
+		stopCalled := 0
+		app := fxtest.New(t,
+			Provide(Annotate(func() int { return 0 },
+				OnStart(func(context.Context) error {
+					startCalled += 1
+					return nil
+				}),
+				OnStop(func(context.Context) error {
+					stopCalled += 1
+					return nil
+				})),
+			),
+			Invoke(func(i int) {
+				assert.Equal(t, 0, i)
+			}),
+		)
+		var wg sync.WaitGroup
+		for i := 0; i < 10; i++ {
+			wg.Add(1)
+			go func() {
+				app.Start(context.Background())
+				wg.Done()
+			}()
+		}
+		wg.Wait()
+		assert.Equal(t, 1, startCalled)
+		for i := 0; i < 10; i++ {
+			wg.Add(1)
+			go func() {
+				app.Stop(context.Background())
+				wg.Done()
+			}()
+		}
+		wg.Wait()
+		assert.Equal(t, 1, stopCalled)
+	})
+
 }
 
 func TestAppStop(t *testing.T) {
@@ -1334,38 +1375,6 @@ func TestAppStop(t *testing.T) {
 		err := app.Stop(context.Background())
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "OnStop fail")
-	})
-
-	t.Run("Stop should be called exactly once only.", func(t *testing.T) {
-		t.Parallel()
-
-		stopCalled := 0
-		app := fxtest.New(t,
-			Provide(Annotate(func() int { return 0 },
-				OnStop(func(context.Context) error {
-					stopCalled += 1
-					return nil
-				})),
-			),
-			Invoke(func(i int) {
-				assert.Equal(t, 0, i)
-			}),
-		)
-		app.Start(context.Background())
-		var wg sync.WaitGroup
-		for i := 0; i < 10; i++ {
-			wg.Add(1)
-			go func() {
-				app.Stop(context.Background())
-				wg.Done()
-			}()
-		}
-		wg.Wait()
-		assert.Equal(t, 1, stopCalled)
-
-		err := app.Stop(context.Background())
-		require.NotNil(t, err)
-		assert.Equal(t, "app has already been stopped", err.Error())
 	})
 }
 
