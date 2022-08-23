@@ -31,6 +31,7 @@ import (
 	"reflect"
 	"runtime"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -1333,6 +1334,38 @@ func TestAppStop(t *testing.T) {
 		err := app.Stop(context.Background())
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "OnStop fail")
+	})
+
+	t.Run("Stop should be called exactly once only.", func(t *testing.T) {
+		t.Parallel()
+
+		stopCalled := 0
+		app := fxtest.New(t,
+			Provide(Annotate(func() int { return 0 },
+				OnStop(func(context.Context) error {
+					stopCalled += 1
+					return nil
+				})),
+			),
+			Invoke(func(i int) {
+				assert.Equal(t, 0, i)
+			}),
+		)
+		app.Start(context.Background())
+		var wg sync.WaitGroup
+		for i := 0; i < 10; i++ {
+			wg.Add(1)
+			go func() {
+				app.Stop(context.Background())
+				wg.Done()
+			}()
+		}
+		wg.Wait()
+		assert.Equal(t, 1, stopCalled)
+
+		err := app.Stop(context.Background())
+		require.NotNil(t, err)
+		assert.Equal(t, "app has already been stopped", err.Error())
 	})
 }
 

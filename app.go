@@ -300,6 +300,10 @@ type App struct {
 	dones       []chan os.Signal
 	shutdownSig os.Signal
 
+	// Used to make sure Stop is called only once.
+	stoppedMu sync.Mutex
+	stopped   bool
+
 	osExit func(code int) // os.Exit override; used for testing only
 }
 
@@ -700,6 +704,15 @@ func (app *App) start(ctx context.Context) error {
 // called are executed. However, all those hooks are executed, even if some
 // fail.
 func (app *App) Stop(ctx context.Context) (err error) {
+	// Protect the Stop hooks from being called multiple times.
+	app.stoppedMu.Lock()
+	if app.stopped {
+		app.stoppedMu.Unlock()
+		return errors.New("app has already been stopped")
+	}
+	app.stopped = true
+	app.stoppedMu.Unlock()
+
 	defer func() {
 		app.log.LogEvent(&fxevent.Stopped{Err: err})
 	}()
