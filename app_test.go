@@ -1306,8 +1306,8 @@ func TestAppStart(t *testing.T) {
 		for i := 0; i < 10; i++ {
 			wg.Add(1)
 			go func() {
+				defer wg.Done()
 				app.Start(context.Background())
-				wg.Done()
 			}()
 		}
 		wg.Wait()
@@ -1315,8 +1315,8 @@ func TestAppStart(t *testing.T) {
 		for i := 0; i < 10; i++ {
 			wg.Add(1)
 			go func() {
+				defer wg.Done()
 				app.Stop(context.Background())
-				wg.Done()
 			}()
 		}
 		wg.Wait()
