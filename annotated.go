@@ -250,23 +250,14 @@ func (la *lifecycleHookAnnotation) apply(ann *annotated) error {
 		)
 	}
 
-	if ft.NumIn() < 1 || ft.In(0) != _typeOfContext {
-		return fmt.Errorf(
-			"first argument of hook must be context.Context, got %v (%T)",
-			la.Target,
-			la.Target,
-		)
-	}
-
-	hasOut := ft.NumOut() == 1
-	returnsErr := hasOut && ft.Out(0) == _typeOfError
-
-	if !hasOut || !returnsErr {
-		return fmt.Errorf(
-			"hooks must return only an error type, got %v (%T)",
-			la.Target,
-			la.Target,
-		)
+	if n := ft.NumOut(); n > 0 {
+		if n > 1 || ft.Out(0) != _typeOfError {
+			return fmt.Errorf(
+				"optional hook return may only be an error, got %v (%T)",
+				la.Target,
+				la.Target,
+			)
+		}
 	}
 
 	if ft.IsVariadic() {
@@ -349,10 +340,18 @@ func (la *lifecycleHookAnnotation) parameters(results ...reflect.Type) (
 	}
 
 	ft := reflect.TypeOf(la.Target)
-	resolverIdx := make([]argSource, 1)
+	resolverIdx := make([]argSource, 0)
 
-	for i := 1; i < ft.NumIn(); i++ {
+	for i := 0; i < ft.NumIn(); i++ {
 		t := ft.In(i)
+
+		// If the first parameter is a context, add a sentinel value and skip
+		// it; it will be injected as part of the actual function call.
+		if i == 0 && t == _typeOfContext {
+			resolverIdx = append(resolverIdx, argSource{})
+			continue
+		}
+
 		result, isProvidedByResults := resultMap[t]
 
 		if isProvidedByResults {
@@ -383,7 +382,7 @@ func (la *lifecycleHookAnnotation) parameters(results ...reflect.Type) (
 	) (lc Lifecycle, remapped []reflect.Value) {
 		remapped = make([]reflect.Value, ft.NumIn())
 
-		if len(args) != 0 {
+		if len(args) > 0 {
 			var (
 				results reflect.Value
 				p       = args[0]
@@ -394,7 +393,13 @@ func (la *lifecycleHookAnnotation) parameters(results ...reflect.Type) (
 			}
 
 			lc, _ = p.FieldByName("Lifecycle").Interface().(Lifecycle)
-			for i := 1; i < ft.NumIn(); i++ {
+			for i := 0; i < ft.NumIn(); i++ {
+				// If the first field is a context, skip it; as it will be
+				// injected separately as part of the actual function call.
+				if i == 0 && ft.In(i) == _typeOfContext {
+					continue
+				}
+
 				resolver := resolverIdx[i]
 				source := p
 				if resolver.result {
@@ -428,13 +433,23 @@ func (la *lifecycleHookAnnotation) Build(results ...reflect.Type) reflect.Value 
 		}
 	}
 
-	origFn := reflect.ValueOf(la.Target)
-	newFnType := reflect.FuncOf(params, nil, false)
+	var (
+		origFn    = reflect.ValueOf(la.Target)
+		origFnT   = origFn.Type()
+		newFnType = reflect.FuncOf(params, nil, false)
+	)
+
 	newFn := reflect.MakeFunc(newFnType, func(args []reflect.Value) []reflect.Value {
-		var lc Lifecycle
-		lc, args = paramMap(args)
+		lc, args := paramMap(args)
+
 		hookFn := func(ctx context.Context) (err error) {
-			args[0] = reflect.ValueOf(ctx)
+			// If the hook function has multiple parameters, and the first
+			// parameter is a context, inject the provided context.
+			if origFnT.NumIn() > 0 {
+				if origFnT.In(0) == _typeOfContext {
+					args[0] = reflect.ValueOf(ctx)
+				}
+			}
 
 			results := origFn.Call(args)
 			if len(results) > 0 && results[0].Type() == _typeOfError {

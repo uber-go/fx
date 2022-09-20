@@ -39,7 +39,7 @@ func ExampleError() {
 			return fx.Error(errors.New("$PORT is not set"))
 		}
 		return fx.Provide(&http.Server{
-			Addr: fmt.Sprintf(":%s", port),
+			Addr: fmt.Sprintf("127.0.0.1:%s", port),
 		})
 	}
 
