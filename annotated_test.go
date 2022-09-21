@@ -69,6 +69,14 @@ func TestAnnotated(t *testing.T) {
 	})
 }
 
+type fromStringer struct {
+	name string
+}
+
+func (from *fromStringer) String() string {
+	return from.name
+}
+
 type asStringer struct {
 	name string
 }
@@ -91,6 +99,12 @@ func TestAnnotatedFrom(t *testing.T) {
 		String() string
 	}
 
+	newFromStringer := func() *fromStringer {
+		return &fromStringer{
+			name: "a good stringer",
+		}
+	}
+
 	tests := []struct {
 		desc    string
 		provide fx.Option
@@ -99,22 +113,127 @@ func TestAnnotatedFrom(t *testing.T) {
 		{
 			desc: "provide a good stringer",
 			provide: fx.Provide(
-				func() *asStringer {
-					return &asStringer{
-						name: "a very good stringer",
-					}
-				},
+				newFromStringer,
 				fx.Annotate(
-					func(inStringer myStringer) fmt.Stringer {
-						return &asStringer{
-							name: inStringer.String(),
+					func(myStringer myStringer) fmt.Stringer {
+						return &fromStringer{
+							name: myStringer.String(),
 						}
 					},
-					fx.From(new(*asStringer)),
+					fx.From(new(*fromStringer)),
 				),
 			),
 			invoke: func(s fmt.Stringer) {
-				assert.Equal(t, s.String(), "a very good stringer")
+				assert.Equal(t, s.String(), "a good stringer")
+			},
+		},
+		{
+			desc: "value type implementing interface",
+			provide: fx.Provide(
+				func() anotherStringer {
+					return anotherStringer{
+						"another stringer",
+					}
+				},
+				fx.Annotate(
+					func(myStringer myStringer) fmt.Stringer {
+						return &fromStringer{
+							name: myStringer.String(),
+						}
+					},
+					fx.From(new(anotherStringer)),
+				),
+			),
+			invoke: func(s fmt.Stringer) {
+				assert.Equal(t, s.String(), "another stringer")
+			},
+		},
+		{
+			desc: "provide with multiple types From",
+			provide: fx.Provide(
+				newFromStringer,
+				func() anotherStringer {
+					return anotherStringer{
+						"another stringer",
+					}
+				},
+				fx.Annotate(
+					func(myStringer1 myStringer, myStringer2 myStringer) fmt.Stringer {
+						return &fromStringer{
+							name: myStringer1.String() + " and " + myStringer2.String(),
+						}
+					},
+					fx.From(new(anotherStringer), new(*fromStringer)),
+				),
+			),
+			invoke: func(s fmt.Stringer) {
+				assert.Equal(t, s.String(), "another stringer and a good stringer")
+			},
+		},
+		{
+			desc: "provide from with param annotation",
+			provide: fx.Provide(
+				fx.Annotate(
+					newFromStringer,
+					fx.ResultTags(`name:"struct1"`),
+				),
+				fx.Annotate(
+					func(myStringer myStringer) fmt.Stringer {
+						return &fromStringer{
+							name: myStringer.String(),
+						}
+					},
+					fx.From(new(*fromStringer)),
+					fx.ParamTags(`name:"struct1"`),
+				),
+			),
+			invoke: func(s fmt.Stringer) {
+				assert.Equal(t, s.String(), "a good stringer")
+			},
+		},
+		{
+			// same as the test above, except now we annotate
+			// it in a different order.
+			desc: "provide from with param annotation, in different order",
+			provide: fx.Provide(
+				fx.Annotate(
+					newFromStringer,
+					fx.ResultTags(`name:"struct1"`),
+				),
+				fx.Annotate(
+					func(myStringer myStringer) fmt.Stringer {
+						return &fromStringer{
+							name: myStringer.String(),
+						}
+					},
+					fx.From(new(*fromStringer)),
+					fx.ParamTags(`name:"struct1"`),
+				),
+			),
+			invoke: func(s fmt.Stringer) {
+				assert.Equal(t, s.String(), "a good stringer")
+			},
+		},
+		{
+			desc: "annotate fewer items than required for constructor",
+			provide: fx.Provide(
+				newFromStringer,
+				func() anotherStringer {
+					return anotherStringer{
+						"another stringer",
+					}
+				},
+				fx.Annotate(
+					func(myStringer1 myStringer, fromStringer2 *fromStringer) fmt.Stringer {
+						return &fromStringer{
+							name: myStringer1.String() + " and " + fromStringer2.String(),
+						}
+					},
+					fx.From(new(anotherStringer)),
+				),
+			),
+			invoke: func(s fmt.Stringer) {
+				assert.Equal(t, s.String(), "another stringer and a good stringer")
 			},
 		},
 	}
@@ -132,6 +251,114 @@ func TestAnnotatedFrom(t *testing.T) {
 				fx.Invoke(tt.invoke),
 			)
 			require.NoError(t, app.Err())
+		})
+	}
+}
+
+func TestAnnotatedFromFailures(t *testing.T) {
+	t.Parallel()
+	type myStringer interface {
+		String() string
+	}
+
+	newFromStringer := func() *fromStringer {
+		return &fromStringer{name: "stringer"}
+	}
+
+	tests := []struct {
+		desc          string
+		provide       fx.Option
+		invoke        interface{}
+		errorContains string
+	}{
+		{
+			desc: "provide when an illegal type From",
+			provide: fx.Provide(
+				fx.Annotate(
+					func(writer io.Writer) fmt.Stringer {
+						return &fromStringer{}
+					},
+					fx.From(new(*fromStringer)),
+				),
+			),
+			invoke:        func() {},
+			errorContains: "does not implement",
+		},
+		{
+			desc: "don't provide original type using From",
+			provide: fx.Provide(
+				fx.Annotate(
+					func(myStringer myStringer) fmt.Stringer {
+						return &fromStringer{
+							name: myStringer.String(),
+						}
+					},
+					fx.From(new(*fromStringer)),
+				),
+			),
+			invoke: func(stringer fmt.Stringer) {
+				fmt.Println(stringer.String())
+			},
+			errorContains: "missing type: *fx_test.fromStringer",
+		},
+		{
+			desc: "fail to provide with name annotation",
+			provide: fx.Provide(
+				fx.Annotate(
+					newFromStringer,
+				),
+				fx.Annotate(
+					func(myStringer myStringer) fmt.Stringer {
+						return &fromStringer{
+							name: myStringer.String(),
+						}
+					},
+					fx.From(new(*fromStringer)),
+					fx.ParamTags(`name:"struct1"`),
+				),
+			),
+			invoke: func(s fmt.Stringer) {
+				assert.Equal(t, s.String(), "a good stringer")
+			},
+			errorContains: `missing type: *fx_test.fromStringer[name="struct1"]`,
+		},
+		{
+			desc: "non-pointer argument to From",
+			provide: fx.Provide(
+				fx.Annotate(
+					newFromStringer,
+					fx.From("foo"),
+				),
+			),
+			errorContains: "argument must either be a pointer to a struct or a pointer to a struct pointer: got string",
+		},
+		{
+			desc: "multiple from annotations",
+			provide: fx.Provide(
+				fx.Annotate(
+					newFromStringer,
+					fx.From(new(asStringer)),
+					fx.From(new(asStringer)),
+				),
+			),
+			errorContains: "fx.From does not support multiple annotations",
+		},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.desc, func(t *testing.T) {
+			t.Parallel()
+			app := NewForTest(t,
+				fx.WithLogger(func() fxevent.Logger {
+					return fxtest.NewTestLogger(t)
+				}),
+				tt.provide,
+				fx.Invoke(tt.invoke),
+			)
+			err := app.Err()
+			require.Error(t, err)
+			assert.Contains(t, err.Error(), tt.errorContains)
 		})
 	}
 }
