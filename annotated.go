@@ -585,11 +585,39 @@ func (at asAnnotation) apply(ann *annotated) error {
 	return nil
 }
 
+type fromAnnotation struct {
+	targets []interface{}
+}
+
+var _ Annotation = fromAnnotation{}
+
+func From(interfaces ...interface{}) Annotation {
+	return fromAnnotation{interfaces}
+}
+
+func (fr fromAnnotation) apply(ann *annotated) error {
+	if len(ann.From) > 0 {
+		return fmt.Errorf("only single fx.From annotation allowed")
+	}
+	types := make([]reflect.Type, len(fr.targets))
+	for i, typ := range fr.targets {
+		t := reflect.TypeOf(typ)
+		if t.Kind() != reflect.Ptr || t.Elem().Kind() != reflect.Ptr || t.Elem().Elem().Kind() != reflect.Struct {
+			return fmt.Errorf("fx.From: argument must be a pointer a struct: got %v", t)
+		}
+		t = t.Elem()
+		types[i] = t
+	}
+	ann.From = append(ann.From, types)
+	return nil
+}
+
 type annotated struct {
 	Target     interface{}
 	ParamTags  []string
 	ResultTags []string
 	As         [][]reflect.Type
+	From       [][]reflect.Type
 	FuncPtr    uintptr
 	Hooks      []*lifecycleHookAnnotation
 }
@@ -606,6 +634,9 @@ func (ann annotated) String() string {
 	}
 	if as := ann.As; len(as) > 0 {
 		fmt.Fprintf(&sb, ", fx.As(%v)", as)
+	}
+	if from := ann.From; len(from) > 0 {
+		fmt.Fprintf(&sb, ", fx.As(%v)", from)
 	}
 	return sb.String()
 }
@@ -626,7 +657,10 @@ func (ann *annotated) Build() (interface{}, error) {
 	if err != nil {
 		return nil, err
 	}
-	paramTypes, remapParams, hookParams := ann.parameters(resultTypes...)
+	paramTypes, remapParams, hookParams, err := ann.parameters(resultTypes...)
+	if err != nil {
+		return nil, err
+	}
 
 	hookFns := make([]reflect.Value, len(ann.Hooks))
 	for i, builder := range ann.Hooks {
@@ -708,6 +742,7 @@ func (ann *annotated) parameters(results ...reflect.Type) (
 	types []reflect.Type,
 	remap func([]reflect.Value) []reflect.Value,
 	hookValueMap func(int, []reflect.Value, []reflect.Value) []reflect.Value,
+	err error,
 ) {
 	ft := reflect.TypeOf(ann.Target)
 
@@ -718,10 +753,10 @@ func (ann *annotated) parameters(results ...reflect.Type) (
 
 	// No parameter annotations. Return the original types
 	// and an identity function.
-	if len(ann.ParamTags) == 0 && !ft.IsVariadic() && len(ann.Hooks) == 0 {
+	if len(ann.ParamTags) == 0 && !ft.IsVariadic() && len(ann.Hooks) == 0 && len(ann.From) == 0 {
 		return types, func(args []reflect.Value) []reflect.Value {
 			return args
-		}, nil
+		}, nil, nil
 	}
 
 	// Turn parameters into an fx.In struct.
@@ -739,8 +774,16 @@ func (ann *annotated) parameters(results ...reflect.Type) (
 			Type: t,
 		}
 
-		if i < len(ann.ParamTags) {
-			field.Tag = reflect.StructTag(ann.ParamTags[i])
+		if ann.From != nil && i < len(ann.From) || i < len(ann.ParamTags) {
+			if ann.From != nil && i < len(ann.From) {
+				if !ann.From[0][i].Implements(t) {
+					return nil, nil, nil, fmt.Errorf("invalid fx.From: %v does not implement %v", ann.From[0][i], t)
+				}
+				field.Type = ann.From[0][i]
+			}
+			if i < len(ann.ParamTags) {
+				field.Tag = reflect.StructTag(ann.ParamTags[i])
+			}
 		} else if i == ft.NumIn()-1 && ft.IsVariadic() {
 			// If a variadic argument is unannotated, mark it optional,
 			// so that just wrapping a function in fx.Annotate does not

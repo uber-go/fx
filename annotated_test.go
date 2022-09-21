@@ -85,6 +85,57 @@ func (a anotherStringer) String() string {
 	return a.name
 }
 
+func TestAnnotatedFrom(t *testing.T) {
+	t.Parallel()
+	type myStringer interface {
+		String() string
+	}
+
+	tests := []struct {
+		desc    string
+		provide fx.Option
+		invoke  interface{}
+	}{
+		{
+			desc: "provide a good stringer",
+			provide: fx.Provide(
+				func() *asStringer {
+					return &asStringer{
+						name: "a very good stringer",
+					}
+				},
+				fx.Annotate(
+					func(inStringer myStringer) fmt.Stringer {
+						return &asStringer{
+							name: inStringer.String(),
+						}
+					},
+					fx.From(new(*asStringer)),
+				),
+			),
+			invoke: func(s fmt.Stringer) {
+				assert.Equal(t, s.String(), "a very good stringer")
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.desc, func(t *testing.T) {
+			t.Parallel()
+
+			app := NewForTest(t,
+				fx.WithLogger(func() fxevent.Logger {
+					return fxtest.NewTestLogger(t)
+				}),
+				tt.provide,
+				fx.Invoke(tt.invoke),
+			)
+			require.NoError(t, app.Err())
+		})
+	}
+}
+
 func TestAnnotatedAs(t *testing.T) {
 	t.Parallel()
 	type in struct {
