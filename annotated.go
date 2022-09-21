@@ -591,19 +591,21 @@ type fromAnnotation struct {
 
 var _ Annotation = fromAnnotation{}
 
+// From is an Annotation that annotates the parameters for a function (i.e. a
+// constructor) that accepts interfaces. Very much the opposite of fx.As(...).
 func From(interfaces ...interface{}) Annotation {
 	return fromAnnotation{interfaces}
 }
 
 func (fr fromAnnotation) apply(ann *annotated) error {
 	if len(ann.From) > 0 {
-		return fmt.Errorf("only single fx.From annotation allowed")
+		return fmt.Errorf("fx.From does not support multiple annotations")
 	}
 	types := make([]reflect.Type, len(fr.targets))
 	for i, typ := range fr.targets {
 		t := reflect.TypeOf(typ)
-		if t.Kind() != reflect.Ptr || t.Elem().Kind() != reflect.Ptr || t.Elem().Elem().Kind() != reflect.Struct {
-			return fmt.Errorf("fx.From: argument must be a pointer a struct: got %v", t)
+		if t.Kind() != reflect.Ptr || t.Elem().Kind() != reflect.Ptr && t.Elem().Kind() != reflect.Struct || t.Elem().Kind() == reflect.Ptr && t.Elem().Elem().Kind() != reflect.Struct {
+			return fmt.Errorf("fx.From: argument must either be a pointer to a struct or a pointer to a struct pointer: got %v", t)
 		}
 		t = t.Elem()
 		types[i] = t
@@ -774,8 +776,8 @@ func (ann *annotated) parameters(results ...reflect.Type) (
 			Type: t,
 		}
 
-		if ann.From != nil && i < len(ann.From) || i < len(ann.ParamTags) {
-			if ann.From != nil && i < len(ann.From) {
+		if len(ann.From) > 0 && i < len(ann.From[0]) || i < len(ann.ParamTags) {
+			if len(ann.From) > 0 && i < len(ann.From[0]) {
 				if !ann.From[0][i].Implements(t) {
 					return nil, nil, nil, fmt.Errorf("invalid fx.From: %v does not implement %v", ann.From[0][i], t)
 				}
