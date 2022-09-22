@@ -81,12 +81,23 @@ func (o moduleOption) apply(mod *module) {
 type module struct {
 	parent     *module
 	name       string
-	scope      *dig.Scope
+	scope      scope
 	provides   []provide
 	invokes    []invoke
 	decorators []decorator
 	modules    []*module
 	app        *App
+}
+
+// scope is a private wrapper interface for dig.Container and dig.Scope.
+// We can consider moving this into Fx using type constraints after Go 1.20
+// is released and 1.17 is deprecated.
+type scope interface {
+	Decorate(f interface{}, opts ...dig.DecorateOption) error
+	Invoke(f interface{}, opts ...dig.InvokeOption) error
+	Provide(f interface{}, opts ...dig.ProvideOption) error
+	Scope(name string, opts ...dig.ScopeOption) *dig.Scope
+	String() string
 }
 
 // builds the Scopes using the App's Container. Note that this happens
@@ -95,9 +106,7 @@ type module struct {
 // before the Container can get initialized.
 func (m *module) build(app *App, root *dig.Container) {
 	if m.parent == nil {
-		m.scope = root.Scope(m.name)
-		// TODO: Once fx.Decorate is in-place,
-		// use the root container instead of subscope.
+		m.scope = root
 	} else {
 		parentScope := m.parent.scope
 		m.scope = parentScope.Scope(m.name)
