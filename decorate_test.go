@@ -313,6 +313,39 @@ func TestDecorateSuccess(t *testing.T) {
 		)
 		defer app.RequireStart().RequireStop()
 	})
+
+	t.Run("decoration must execute when required by a member of group", func(t *testing.T) {
+		type Drinks interface {
+		}
+		type Coffee struct {
+			Type  string
+			Name  string
+			Price int
+		}
+		type PriceService struct {
+			DefaultPrice int
+		}
+		app := fxtest.New(t,
+			fx.Provide(func() *PriceService {
+				return &PriceService{DefaultPrice: 3}
+			}),
+			fx.Decorate(func(service *PriceService) *PriceService {
+				service.DefaultPrice = 10
+				return service
+			}),
+			fx.Provide(fx.Annotated{Group: "drinks", Target: func(service *PriceService) Drinks {
+				assert.Equal(t, 10, service.DefaultPrice)
+				return &Coffee{Type: "coffee", Name: "Americano", Price: service.DefaultPrice}
+			}}),
+			fx.Provide(fx.Annotated{Group: "drinks", Target: func() Drinks {
+				return &Coffee{Type: "coffee", Name: "Cold Brew", Price: 4}
+			}}),
+			fx.Invoke(fx.Annotate(func(drinks []Drinks) {
+				assert.Len(t, drinks, 2)
+			}, fx.ParamTags(`group:"drinks"`))),
+		)
+		defer app.RequireStart().RequireStop()
+	})
 }
 
 func TestDecorateFailure(t *testing.T) {
