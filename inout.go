@@ -206,7 +206,7 @@ import "go.uber.org/dig"
 //	 app := fx.New(
 //	   fx.Provide(
 //	     fx.Annotate(
-//	       func() (string,int) { return "hello" },
+//	       func() (string, int) { return "hello", 42 },
 //	       fx.ResultTags(`group:"strings"`),
 //	     ),
 //	   ),
