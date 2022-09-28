@@ -105,9 +105,11 @@ func (app *App) broadcastDoneSignal(signal os.Signal) error {
 	}
 
 	if unsent != 0 {
-		return fmt.Errorf("failed to send %v signal to %v out of %v channels",
-			signal, unsent, len(app.dones),
-		)
+		return ErrOnUnsentSignal{
+			Signal:   signal,
+			Unsent:   unsent,
+			Channels: len(app.dones),
+		}
 	}
 
 	return nil
@@ -134,10 +136,30 @@ func (app *App) broadcastWaitSignal(signal os.Signal, code int) error {
 	}
 
 	if unsent != 0 {
-		return fmt.Errorf("failed to send %v codes to %v out of %v channels",
-			signal, unsent, len(app.waits),
-		)
+		return ErrOnUnsentSignal{
+			Signal:   signal,
+			Unsent:   unsent,
+			Code:     code,
+			Channels: len(app.waits),
+		}
 	}
 
 	return nil
+}
+
+// ErrOnUnsentSignal ... TBD
+type ErrOnUnsentSignal struct {
+	Signal   os.Signal
+	Unsent   int
+	Code     int
+	Channels int
+}
+
+func (err ErrOnUnsentSignal) Error() string {
+	return fmt.Sprintf(
+		"failed to send %v signal to %v out of %v channels",
+		err.Signal,
+		err.Unsent,
+		err.Channels,
+	)
 }

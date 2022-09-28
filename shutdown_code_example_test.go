@@ -21,10 +21,7 @@
 package fx_test
 
 import (
-	"context"
 	"fmt"
-	"time"
-
 	"go.uber.org/fx"
 )
 
@@ -39,16 +36,11 @@ func ExampleShutdownCode() {
 
 	app.Run()
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
-	defer cancel()
+	wait := app.Wait()
 
-	shutdown, err := app.Wait(ctx)
+	signal := <-wait
 
-	if err != nil {
-		panic(err)
-	}
-
-	fmt.Printf("os.Exit(%v)\n", shutdown.ExitCode)
+	fmt.Printf("os.Exit(%v)\n", signal.ExitCode)
 
 	// Output:
 	// os.Exit(1)

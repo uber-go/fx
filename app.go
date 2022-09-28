@@ -686,7 +686,7 @@ func (app *App) Done() <-chan os.Signal {
 	return c
 }
 
-func (app *App) wait() <-chan ShutdownSignal {
+func (app *App) Wait() <-chan ShutdownSignal {
 	c := make(chan ShutdownSignal, 1)
 
 	app.waitsMu.Lock()
@@ -699,16 +699,6 @@ func (app *App) wait() <-chan ShutdownSignal {
 
 	app.waits = append(app.waits, c)
 	return c
-}
-
-func (app *App) Wait(ctx context.Context) (ShutdownSignal, error) {
-	c := app.wait()
-	select {
-	case s := <-c:
-		return s, nil
-	case <-ctx.Done():
-		return ShutdownSignal{}, ctx.Err()
-	}
 }
 
 // StartTimeout returns the configured startup timeout. Apps default to using

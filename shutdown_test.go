@@ -22,10 +22,10 @@ package fx_test
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sync"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -98,20 +98,45 @@ func TestShutdown(t *testing.T) {
 			var s fx.Shutdowner
 			app := fxtest.New(t, fx.Populate(&s))
 
-			done := app.Done()
 			defer app.RequireStart().RequireStop()
 
-			assert.NoError(t, s.Shutdown(), "error returned from first shutdown call")
-			ctx, cancel := context.WithTimeout(context.Background(), time.Second)
-			defer cancel()
+			waits := append(
+				[]<-chan fx.ShutdownSignal{},
+				app.Wait(),
+				app.Wait(),
+			)
 
-			signal, err := app.Wait(ctx)
-			assert.NoError(t, err, "error in app wait")
-			assert.NotEmpty(t, signal, "no shutdown signal")
-			assert.NotNil(t, signal.Signal)
-			assert.Zero(t, signal.ExitCode)
-			assert.Equal(t, signal.Signal, <-done)
-			assert.NoError(t, ctx.Err())
+			assert.NoError(t, s.Shutdown(), "error returned from first shutdown call")
+
+			for _, ch := range waits {
+				signal := <-ch
+				assert.NotEmpty(t, signal, "no shutdown signal")
+				assert.NotNil(t, signal.Signal)
+				assert.Zero(t, signal.ExitCode)
+			}
+		})
+
+		t.Run("unsent", func(t *testing.T) {
+			t.Parallel()
+
+			var s fx.Shutdowner
+			app := fxtest.New(
+				t,
+				fx.Populate(&s),
+			)
+
+			wait := app.Wait()
+			defer app.RequireStart().RequireStop()
+			assert.NoError(t, s.Shutdown(), "error returned from first shutdown call")
+
+			err := s.Shutdown()
+			assert.Error(t, err)
+			var o fx.ErrOnUnsentSignal
+			assert.True(t, errors.As(err, &o))
+
+			assert.Equal(t, 1, o.Unsent)
+			assert.Equal(t, 1, o.Channels)
+			assert.NotNil(t, <-wait)
 		})
 
 		for expected := 0; expected <= 3; expected++ {
@@ -124,8 +149,9 @@ func TestShutdown(t *testing.T) {
 					fx.Populate(&s),
 				)
 
-				done := app.Done()
 				defer app.RequireStart().RequireStop()
+
+				wait := app.Wait()
 
 				assert.NoError(
 					t,
@@ -133,15 +159,10 @@ func TestShutdown(t *testing.T) {
 					"error in app shutdown",
 				)
 
-				ctx, cancel := context.WithTimeout(context.Background(), time.Second)
-				defer cancel()
-
-				signal, err := app.Wait(ctx)
-				assert.NoError(t, err, "error in app wait")
+				signal := <-wait
 				assert.NotEmpty(t, signal, "no shutdown signal")
 				assert.NotNil(t, signal.Signal)
 				assert.Equal(t, expected, signal.ExitCode)
-				assert.Equal(t, signal.Signal, <-done)
 			})
 		}
 	})
