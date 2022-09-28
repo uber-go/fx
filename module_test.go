@@ -514,14 +514,14 @@ func TestModuleFailures(t *testing.T) {
 			}),
 			fx.Provide(&bytes.Buffer{}), // not passing in a constructor
 			fx.Invoke(func(s string) {
-				assert.Equal(t, "redis", s)
+				assert.Fail(t, "this should never run")
 			}),
 		)
 
 		app := fx.New(
 			redis,
 			fx.Invoke(func(s string) {
-				assert.Equal(t, "redis", s)
+				assert.Fail(t, "this should never run")
 			}),
 		)
 
@@ -549,7 +549,7 @@ func TestModuleFailures(t *testing.T) {
 				return nil, errors.New("error building logger")
 			}),
 			fx.Invoke(func(s string) {
-				assert.Equal(t, "redis", s)
+				assert.Fail(t, "this should never run")
 			}),
 		)
 
@@ -558,7 +558,7 @@ func TestModuleFailures(t *testing.T) {
 			redis,
 			fx.Logger(log.New(&buff, "", 0)),
 			fx.Invoke(func(s string) {
-				assert.Equal(t, "redis", s)
+				assert.Fail(t, "this should never run")
 			}),
 		)
 
@@ -585,7 +585,7 @@ func TestModuleFailures(t *testing.T) {
 				panic("must not be called")
 			}),
 			fx.Invoke(func(s string) {
-				assert.Equal(t, "redis", s)
+				assert.Fail(t, "this should never run")
 			}),
 		)
 
@@ -594,7 +594,7 @@ func TestModuleFailures(t *testing.T) {
 			redis,
 			fx.Logger(log.New(&buff, "", 0)),
 			fx.Invoke(func(s string) {
-				assert.Equal(t, "redis", s)
+				assert.Fail(t, "this should never run")
 			}),
 		)
 
@@ -604,6 +604,36 @@ func TestModuleFailures(t *testing.T) {
 
 		out := buff.String()
 		assert.Contains(t, out, "[Fx] PROVIDE\t*zap.Logger")
+		assert.Contains(t, out, "[Fx] ERROR\t\tFailed to initialize custom logger")
+	})
+
+	t.Run("Invalid input for WithLogger", func(t *testing.T) {
+		t.Parallel()
+
+		redis := fx.Module("redis",
+			fx.Provide(func() string {
+				return "redis"
+			}),
+			fx.WithLogger(&fxlog.Spy{}), // not passing in a constructor for WithLogger
+			fx.Invoke(func(s string) {
+				assert.Fail(t, "this should never run")
+			}),
+		)
+
+		var buff bytes.Buffer
+		app := fx.New(
+			redis,
+			fx.Logger(log.New(&buff, "", 0)),
+			fx.Invoke(func(s string) {
+				assert.Fail(t, "this should never run")
+			}),
+		)
+
+		err := app.Err()
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "fx.WithLogger", "from:", "Failed")
+
+		out := buff.String()
 		assert.Contains(t, out, "[Fx] ERROR\t\tFailed to initialize custom logger")
 	})
 }
