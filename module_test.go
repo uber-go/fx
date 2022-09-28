@@ -21,6 +21,7 @@
 package fx_test
 
 import (
+	"bytes"
 	"errors"
 	"testing"
 	"time"
@@ -241,6 +242,124 @@ func TestModuleSuccess(t *testing.T) {
 		)
 		require.NoError(t, app.Err())
 	})
+
+	t.Run("custom logger for module", func(t *testing.T) {
+		t.Parallel()
+
+		var spy fxlog.Spy
+
+		redis := fx.Module("redis",
+			fx.Provide(func() *Logger {
+				return &Logger{Name: "redis"}
+			}),
+			fx.Invoke(func(r *Logger) {
+				assert.Equal(t, "redis", r.Name)
+			}),
+			fx.NopLogger,
+		)
+
+		app := fxtest.New(t,
+			redis,
+			fx.Supply(&spy),
+			fx.WithLogger(func(spy *fxlog.Spy) fxevent.Logger {
+				return spy
+			}),
+			fx.Invoke(func(r *Logger) {
+				assert.Equal(t, "redis", r.Name)
+			}),
+		)
+
+		// events from module with a custom logger not logged in app logger
+		assert.Equal(t, []string{
+			"Supplied", "Provided", "Provided", "Provided",
+			"LoggerInitialized", "Invoking", "Invoked",
+		}, spy.EventTypes())
+
+		spy.Reset()
+		app.RequireStart().RequireStop()
+
+		require.NoError(t, app.Err())
+
+		assert.Equal(t, []string{"Started", "Stopped"}, spy.EventTypes())
+	})
+
+	t.Run("Not using a custom logger for module defaults to app logger", func(t *testing.T) {
+		t.Parallel()
+
+		var spy fxlog.Spy
+
+		redis := fx.Module("redis",
+			fx.Provide(func() *Logger {
+				return &Logger{Name: "redis"}
+			}),
+			fx.Invoke(func(r *Logger) {
+				assert.Equal(t, "redis", r.Name)
+			}),
+		)
+
+		app := fxtest.New(t,
+			redis,
+			fx.Supply(&spy),
+			fx.WithLogger(func(spy *fxlog.Spy) fxevent.Logger {
+				return spy
+			}),
+			fx.Invoke(func(r *Logger) {
+				assert.Equal(t, "redis", r.Name)
+			}),
+		)
+
+		// events from module also logged in app logger
+		assert.Equal(t, []string{
+			"Supplied", "Provided", "Provided", "Provided", "Provided",
+			"LoggerInitialized", "Invoking", "Invoked", "Invoking", "Invoked",
+		}, spy.EventTypes())
+
+		spy.Reset()
+		app.RequireStart().RequireStop()
+
+		require.NoError(t, app.Err())
+
+		assert.Equal(t, []string{"Started", "Stopped"}, spy.EventTypes())
+	})
+
+	t.Run("error in Provide shows logs in module", func(t *testing.T) {
+		t.Parallel()
+
+		var spy fxlog.Spy
+
+		redis := fx.Module("redis",
+			fx.Provide(func() *Logger {
+				return &Logger{Name: "redis"}
+			}),
+			fx.Supply(&spy),
+			fx.WithLogger(func(spy *fxlog.Spy) fxevent.Logger {
+				return spy
+			}),
+			fx.Provide(&bytes.Buffer{}), // not passing in a constructor
+			fx.Invoke(func(r *Logger) {
+				assert.Equal(t, "redis", r.Name)
+			}),
+		)
+
+		app := fx.New(
+			redis,
+			fx.Invoke(func(r *Logger) {
+				assert.Equal(t, "redis", r.Name)
+			}),
+		)
+
+		err := app.Err()
+		require.Error(t, err)
+		assert.Contains(t,
+			err.Error(),
+			"must provide constructor function, got  (type *bytes.Buffer)",
+		)
+
+		assert.Equal(t,
+			[]string{"Provided", "Supplied", "Provided", "LoggerInitialized"},
+			spy.EventTypes(),
+		)
+	})
 }
 
 func TestModuleFailures(t *testing.T) {
@@ -399,10 +518,6 @@ func TestModuleFailures(t *testing.T) {
 			{
 				desc: "StopTimeout Option",
 				opt:  fx.StopTimeout(time.Second),
-			},
-			{
-				desc: "WithLogger Option",
-				opt:  fx.WithLogger(func() fxevent.Logger { return new(fxlog.Spy) }),
 			},
 		}
 
