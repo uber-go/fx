@@ -301,10 +301,6 @@ type App struct {
 	dones       []chan os.Signal
 	shutdownSig os.Signal
 
-	// Used to make sure Start/Stop is called only once.
-	runStart sync.Once
-	runStop  sync.Once
-
 	osExit func(code int) // os.Exit override; used for testing only
 }
 
@@ -667,25 +663,21 @@ var (
 // Note that Start short-circuits immediately if the New constructor
 // encountered any errors in application initialization.
 func (app *App) Start(ctx context.Context) (err error) {
-	app.runStart.Do(func() {
-		defer func() {
-			app.log.LogEvent(&fxevent.Started{Err: err})
-		}()
+	defer func() {
+		app.log.LogEvent(&fxevent.Started{Err: err})
+	}()
 
-		if app.err != nil {
-			// Some provides failed, short-circuit immediately.
-			err = app.err
-			return
-		}
+	if app.err != nil {
+		// Some provides failed, short-circuit immediately.
+		return app.err
+	}
 
-		err = withTimeout(ctx, &withTimeoutParams{
-			hook:      _onStartHook,
-			callback:  app.start,
-			lifecycle: app.lifecycle,
-			log:       app.log,
-		})
+	return withTimeout(ctx, &withTimeoutParams{
+		hook:      _onStartHook,
+		callback:  app.start,
+		lifecycle: app.lifecycle,
+		log:       app.log,
 	})
-	return
 }
 
 func (app *App) start(ctx context.Context) error {
@@ -713,20 +705,16 @@ func (app *App) start(ctx context.Context) error {
 // called are executed. However, all those hooks are executed, even if some
 // fail.
 func (app *App) Stop(ctx context.Context) (err error) {
-	app.runStop.Do(func() {
-		// Protect the Stop hooks from being called multiple times.
-		defer func() {
-			app.log.LogEvent(&fxevent.Stopped{Err: err})
-		}()
+	defer func() {
+		app.log.LogEvent(&fxevent.Stopped{Err: err})
+	}()
 
-		err = withTimeout(ctx, &withTimeoutParams{
-			hook:      _onStopHook,
-			callback:  app.lifecycle.Stop,
-			lifecycle: app.lifecycle,
-			log:       app.log,
-		})
+	return withTimeout(ctx, &withTimeoutParams{
+		hook:      _onStopHook,
+		callback:  app.lifecycle.Stop,
+		lifecycle: app.lifecycle,
+		log:       app.log,
 	})
-	return
 }
 
 // Done returns a channel of signals to block on after starting the

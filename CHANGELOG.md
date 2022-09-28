@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ## Unreleased
 - No changes yet.
 
+## [1.18.2] - 2022-09-28
+### Added
+- Clarify ordering of `Invoke`s in `Module`s.
+
+### Fixed
+- Fix `Decorate` not being applied to transitive dependencies at root `App` level.
+
+  [1.18.2]: https://github.com/uber-go/fx/compare/v1.18.1...v1.18.2
+
 ## [1.18.1] - 2022-08-08
 ### Fixed
 - Fix a nil panic when `nil` is passed to `OnStart` and `OnStop` lifecycle methods.
