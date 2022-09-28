@@ -21,11 +21,54 @@
 package fx
 
 import (
+	"errors"
 	"fmt"
 	"os"
 
 	"go.uber.org/multierr"
 )
+
+var errReceiverBlocked = errors.New("receiver is blocked")
+
+type signalReceiver interface {
+	ReceiveShutdownSignal(ShutdownSignal) error
+}
+
+type osSignalReceiver struct{ ch chan<- os.Signal }
+
+var _ signalReceiver = (*osSignalReceiver)(nil)
+
+func newOSSignalReceiver() (*osSignalReceiver, <-chan os.Signal) {
+	ch := make(chan os.Signal, 1)
+	return &osSignalReceiver{ch: ch}, ch
+}
+
+func (r *osSignalReceiver) ReceiveShutdownSignal(sig ShutdownSignal) error {
+	select {
+	case r.ch <- sig.Signal:
+		return nil
+	default:
+		return errReceiverBlocked
+	}
+}
+
+type shutdownSignalReceiver struct{ ch chan<- ShutdownSignal }
+
+var _ signalReceiver = (*shutdownSignalReceiver)(nil)
+
+func newShutdownSignalReceiver() (*shutdownSignalReceiver, <-chan ShutdownSignal) {
+	ch := make(chan ShutdownSignal, 1)
+	return &shutdownSignalReceiver{ch: ch}, ch
+}
+
+func (r *shutdownSignalReceiver) ReceiveShutdownSignal(sig ShutdownSignal) error {
+	select {
+	case r.ch <- sig:
+		return nil
+	default:
+		return errReceiverBlocked
+	}
+}
 
 // Shutdowner provides a method that can manually trigger the shutdown of the
 // application by sending a signal to all open Done channels. Shutdowner works
@@ -81,70 +124,40 @@ func (app *App) shutdowner() Shutdowner {
 }
 
 func (app *App) broadcastSignal(signal os.Signal, code int) error {
-	return multierr.Combine(
-		app.broadcastDoneSignal(signal),
-		app.broadcastWaitSignal(signal, code),
-	)
-}
+	app.shutdownMu.Lock()
+	defer app.shutdownMu.Unlock()
 
-func (app *App) broadcastDoneSignal(signal os.Signal) error {
-	app.donesMu.Lock()
-	defer app.donesMu.Unlock()
-
-	app.shutdownSig = signal
-
-	var unsent int
-	for _, done := range app.dones {
-		select {
-		case done <- signal:
-		default:
-			// shutdown called when done channel has already received a
-			// termination signal that has not been cleared
-			unsent++
-		}
-	}
-
-	if unsent != 0 {
-		return ErrOnUnsentSignal{
-			Signal:   signal,
-			Unsent:   unsent,
-			Channels: len(app.dones),
-		}
-	}
-
-	return nil
-}
-
-func (app *App) broadcastWaitSignal(signal os.Signal, code int) error {
-	app.waitsMu.Lock()
-	defer app.waitsMu.Unlock()
-
-	app.shutdownSignal = &ShutdownSignal{
+	sig := ShutdownSignal{
 		Signal:   signal,
 		ExitCode: code,
 	}
+	app.shutdownSig = &sig
 
-	var unsent int
-	for _, wait := range app.waits {
-		select {
-		case wait <- *app.shutdownSignal:
-		default:
-			// shutdown called when wait channel has already received a
-			// termination signal that has not been cleared
-			unsent++
+	var (
+		unsent    int
+		resultErr error
+	)
+	for _, rcv := range app.sigReceivers {
+		// shutdown called when done channel has already received a
+		// termination signal that has not been cleared
+		if err := rcv.ReceiveShutdownSignal(sig); err != nil {
+			if errors.Is(err, errReceiverBlocked) {
+				unsent++
+			} else {
+				resultErr = multierr.Append(resultErr, err)
+			}
 		}
 	}
 
 	if unsent != 0 {
-		return ErrOnUnsentSignal{
+		resultErr = multierr.Append(resultErr, &ErrOnUnsentSignal{
 			Signal:   signal,
 			Unsent:   unsent,
-			Code:     code,
-			Channels: len(app.waits),
-		}
+			Channels: len(app.sigReceivers),
+		})
 	}
 
-	return nil
+	return resultErr
 }
 
 // ErrOnUnsentSignal ... TBD
@@ -155,7 +168,7 @@ type ErrOnUnsentSignal struct {
 	Channels int
 }
 
-func (err ErrOnUnsentSignal) Error() string {
+func (err *ErrOnUnsentSignal) Error() string {
 	return fmt.Sprintf(
 		"failed to send %v signal to %v out of %v channels",
 		err.Signal,

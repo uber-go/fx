@@ -131,7 +131,7 @@ func TestShutdown(t *testing.T) {
 
 			err := s.Shutdown()
 			assert.Error(t, err)
-			var o fx.ErrOnUnsentSignal
+			var o *fx.ErrOnUnsentSignal
 			assert.True(t, errors.As(err, &o))
 
 			assert.Equal(t, 1, o.Unsent)
