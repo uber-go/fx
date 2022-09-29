@@ -247,41 +247,67 @@ func TestModuleSuccess(t *testing.T) {
 	t.Run("custom logger for module", func(t *testing.T) {
 		t.Parallel()
 
-		var spy fxlog.Spy
+		tests := []struct {
+			desc           string
+			giveWithLogger fx.Option
+			wantEventTypes []string
+		}{
+			{
+				desc:           "custom logger for module",
+				giveWithLogger: fx.NopLogger,
+				wantEventTypes: []string{
+					"Supplied", "Provided", "Provided", "Provided",
+					"LoggerInitialized", "Invoking", "Invoked",
+				},
+			},
+			{
+				desc:           "Not using a custom logger for module defaults to app logger",
+				giveWithLogger: fx.Options(),
+				wantEventTypes: []string{
+					"Supplied", "Provided", "Provided", "Provided", "Provided",
+					"LoggerInitialized", "Invoking", "Invoked", "Invoking", "Invoked",
+				},
+			},
+		}
 
-		redis := fx.Module("redis",
-			fx.Provide(func() *Logger {
-				return &Logger{Name: "redis"}
-			}),
-			fx.Invoke(func(r *Logger) {
-				assert.Equal(t, "redis", r.Name)
-			}),
-			fx.NopLogger,
-		)
+		for _, tt := range tests {
+			tt := tt
+			t.Run(tt.desc, func(t *testing.T) {
+				t.Parallel()
+				var spy fxlog.Spy
 
-		app := fxtest.New(t,
-			redis,
-			fx.Supply(&spy),
-			fx.WithLogger(func(spy *fxlog.Spy) fxevent.Logger {
-				return spy
-			}),
-			fx.Invoke(func(r *Logger) {
-				assert.Equal(t, "redis", r.Name)
-			}),
-		)
+				redis := fx.Module("redis",
+					fx.Provide(func() *Logger {
+						return &Logger{Name: "redis"}
+					}),
+					fx.Invoke(func(r *Logger) {
+						assert.Equal(t, "redis", r.Name)
+					}),
+					tt.giveWithLogger,
+				)
 
-		// events from module with a custom logger not logged in app logger
-		assert.Equal(t, []string{
-			"Supplied", "Provided", "Provided", "Provided",
-			"LoggerInitialized", "Invoking", "Invoked",
-		}, spy.EventTypes())
+				app := fxtest.New(t,
+					redis,
+					fx.Supply(&spy),
+					fx.WithLogger(func(spy *fxlog.Spy) fxevent.Logger {
+						return spy
+					}),
+					fx.Invoke(func(r *Logger) {
+						assert.Equal(t, "redis", r.Name)
+					}),
+				)
 
-		spy.Reset()
-		app.RequireStart().RequireStop()
+				// events from module with a custom logger not logged in app logger
+				assert.Equal(t, tt.wantEventTypes, spy.EventTypes())
 
-		require.NoError(t, app.Err())
+				spy.Reset()
+				app.RequireStart().RequireStop()
 
-		assert.Equal(t, []string{"Started", "Stopped"}, spy.EventTypes())
+				require.NoError(t, app.Err())
+
+				assert.Equal(t, []string{"Started", "Stopped"}, spy.EventTypes())
+			})
+		}
 	})
 
 	type NamedSpy struct {
@@ -397,45 +423,6 @@ func TestModuleSuccess(t *testing.T) {
 		require.NoError(t, app.Err())
 
 		assert.Equal(t, []string{"Started", "Stopped"}, appSpy.EventTypes())
-	})
-
-	t.Run("Not using a custom logger for module defaults to app logger", func(t *testing.T) {
-		t.Parallel()
-
-		var spy fxlog.Spy
-
-		redis := fx.Module("redis",
-			fx.Provide(func() *Logger {
-				return &Logger{Name: "redis"}
-			}),
-			fx.Invoke(func(r *Logger) {
-				assert.Equal(t, "redis", r.Name)
-			}),
-		)
-
-		app := fxtest.New(t,
-			redis,
-			fx.Supply(&spy),
-			fx.WithLogger(func(spy *fxlog.Spy) fxevent.Logger {
-				return spy
-			}),
-			fx.Invoke(func(r *Logger) {
-				assert.Equal(t, "redis", r.Name)
-			}),
-		)
-
-		// events from module also logged in app logger
-		assert.Equal(t, []string{
-			"Supplied", "Provided", "Provided", "Provided", "Provided",
-			"LoggerInitialized", "Invoking", "Invoked", "Invoking", "Invoked",
-		}, spy.EventTypes())
-
-		spy.Reset()
-		app.RequireStart().RequireStop()
-
-		require.NoError(t, app.Err())
-
-		assert.Equal(t, []string{"Started", "Stopped"}, spy.EventTypes())
 	})
 }
 
@@ -618,24 +605,33 @@ func TestModuleFailures(t *testing.T) {
 
 		var spy fxlog.Spy
 
-		spyAsLogger := []fx.Option{
+		spyAsLogger := fx.Options(
 			fx.Supply(&spy),
 			fx.WithLogger(func(spy *fxlog.Spy) fxevent.Logger {
 				return spy
 			}),
-		}
+		)
+
+		defaultModuleOpts := fx.Options(
+			fx.Provide(func() string {
+				return "redis"
+			}),
+			fx.Invoke(func(s string) {
+				assert.Fail(t, "this should never run")
+			}),
+		)
 
 		tests := []struct {
 			desc            string
-			giveModuleOpts  []fx.Option
-			giveAppOpts     []fx.Option
+			giveModuleOpts  fx.Option
+			giveAppOpts     fx.Option
 			wantErrContains []string
 			wantEventTypes  []string
 		}{
 			{
 				desc:           "error in Provide shows logs in module",
-				giveModuleOpts: append(spyAsLogger, fx.Provide(&bytes.Buffer{})), // not passing in a constructor
-				giveAppOpts:    []fx.Option{},
+				giveModuleOpts: fx.Options(spyAsLogger, fx.Provide(&bytes.Buffer{})), // not passing in a constructor
+				giveAppOpts:    fx.Options(),
 				wantErrContains: []string{
 					"must provide constructor function, got  (type *bytes.Buffer)",
 				},
@@ -645,11 +641,9 @@ func TestModuleFailures(t *testing.T) {
 			},
 			{
 				desc: "logger in module failed to build",
-				giveModuleOpts: []fx.Option{
-					fx.WithLogger(func() (fxevent.Logger, error) {
-						return nil, errors.New("error building logger")
-					}),
-				},
+				giveModuleOpts: fx.WithLogger(func() (fxevent.Logger, error) {
+					return nil, errors.New("error building logger")
+				}),
 				giveAppOpts:     spyAsLogger,
 				wantErrContains: []string{"error building logger"},
 				wantEventTypes: []string{
@@ -659,7 +653,7 @@ func TestModuleFailures(t *testing.T) {
 			},
 			{
 				desc: "logger dependency in module failed to build",
-				giveModuleOpts: []fx.Option{
+				giveModuleOpts: fx.Options(
 					fx.Provide(func() (*zap.Logger, error) {
 						return nil, errors.New("error building logger dependency")
 					}),
@@ -667,7 +661,7 @@ func TestModuleFailures(t *testing.T) {
 						t.Errorf("WithLogger must not be called")
 						panic("must not be called")
 					}),
-				},
+				),
 				giveAppOpts:     spyAsLogger,
 				wantErrContains: []string{"error building logger dependency"},
 				wantEventTypes: []string{
@@ -676,11 +670,9 @@ func TestModuleFailures(t *testing.T) {
 				},
 			},
 			{
-				desc: "Invalid input for WithLogger",
-				giveModuleOpts: []fx.Option{
-					fx.WithLogger(&fxlog.Spy{}), // not passing in a constructor for WithLogger
-				},
-				giveAppOpts: spyAsLogger,
+				desc:           "Invalid input for WithLogger",
+				giveModuleOpts: fx.WithLogger(&fxlog.Spy{}), // not passing in a constructor for WithLogger
+				giveAppOpts:    spyAsLogger,
 				wantErrContains: []string{
 					"fx.WithLogger", "from:", "Failed",
 				},
@@ -694,25 +686,16 @@ func TestModuleFailures(t *testing.T) {
 			spy.Reset()
 			t.Run(tt.desc, func(t *testing.T) {
 				redis := fx.Module("redis",
-					append(
-						tt.giveModuleOpts,
-						fx.Provide(func() string {
-							return "redis"
-						}),
-						fx.Invoke(func(s string) {
-							assert.Fail(t, "this should never run")
-						}),
-					)...,
+					tt.giveModuleOpts,
+					defaultModuleOpts,
 				)
 
 				app := fx.New(
-					append(
-						tt.giveAppOpts,
-						redis,
-						fx.Invoke(func(s string) {
-							assert.Fail(t, "this should never run")
-						}),
-					)...,
+					tt.giveAppOpts,
+					redis,
+					fx.Invoke(func(s string) {
+						assert.Fail(t, "this should never run")
+					}),
 				)
 				err := app.Err()
 				require.Error(t, err)
