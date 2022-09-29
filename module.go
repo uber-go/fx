@@ -110,12 +110,14 @@ type scope interface {
 func (m *module) build(app *App, root *dig.Container) {
 	if m.parent == nil {
 		m.scope = root
+		m.log = app.log
 	} else {
 		parentScope := m.parent.scope
 		m.scope = parentScope.Scope(m.name)
+		// use parent module's logger by default
+		m.log = m.parent.log
 	}
 
-	m.log = app.log
 	if m.logConstructor != nil {
 		// Since user supplied a custom logger, use a buffered logger
 		// to hold all messages until user supplied logger is
@@ -173,14 +175,14 @@ func (m *module) provide(p provide) {
 	m.log.LogEvent(ev)
 }
 
+// Constructs custom loggers for all modules in the tree
 func (m *module) constructAllCustomLoggers() {
 	if m.logConstructor != nil {
-		buffer, ok := m.log.(*logBuffer)
-		if ok {
+		if buffer, ok := m.log.(*logBuffer); ok {
 			// default to app logger if custom logger constructor fails
 			if err := m.constructCustomLogger(buffer); err != nil {
 				m.app.err = multierr.Append(m.app.err, err)
-				m.log = m.app.log
+				m.log = m.parent.log
 				buffer.Connect(m.log)
 			}
 		}
@@ -203,8 +205,8 @@ func (m *module) constructCustomLogger(buffer *logBuffer) (err error) {
 	}()
 
 	if err := m.scope.Provide(p.Target); err != nil {
-		return fmt.Errorf("fx.WithLogger(%v) from:\n%+vFailed: %v",
-			fname, p.Stack, err)
+		return fmt.Errorf("fx.WithLogger(%v) from:\n%+v\nin Module: %v\nFailed: %w",
+			fname, p.Stack, m.name, err)
 	}
 
 	// TODO: Use dig.FillProvideInfo to inspect the provided constructor
