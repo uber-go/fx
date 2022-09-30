@@ -179,7 +179,7 @@ func (m *module) provide(p provide) {
 func (m *module) constructAllCustomLoggers() {
 	if m.logConstructor != nil {
 		if buffer, ok := m.log.(*logBuffer); ok {
-			// default to app logger if custom logger constructor fails
+			// default to parent's logger if custom logger constructor fails
 			if err := m.constructCustomLogger(buffer); err != nil {
 				m.app.err = multierr.Append(m.app.err, err)
 				m.log = m.parent.log
@@ -204,13 +204,12 @@ func (m *module) constructCustomLogger(buffer *logBuffer) (err error) {
 		})
 	}()
 
-	if err := m.scope.Provide(p.Target); err != nil {
-		return fmt.Errorf("fx.WithLogger(%v) from:\n%+v\nin Module: %v\nFailed: %w",
-			fname, p.Stack, m.name, err)
-	}
-
 	// TODO: Use dig.FillProvideInfo to inspect the provided constructor
 	// and fail the application if its signature didn't match.
+	if err := m.scope.Provide(p.Target); err != nil {
+		return fmt.Errorf("fx.WithLogger(%v) from:\n%+v\nin Module: %q\nFailed: %w",
+			fname, p.Stack, m.name, err)
+	}
 
 	return m.scope.Invoke(func(log fxevent.Logger) {
 		m.log = log

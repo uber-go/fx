@@ -42,6 +42,10 @@ func TestModuleSuccess(t *testing.T) {
 		Name string
 	}
 
+	type Foo struct {
+		Name string
+	}
+
 	t.Run("provide a dependency from a submodule", func(t *testing.T) {
 		t.Parallel()
 
@@ -250,12 +254,12 @@ func TestModuleSuccess(t *testing.T) {
 		tests := []struct {
 			desc           string
 			giveWithLogger fx.Option
-			wantEventTypes []string
+			wantEvents     []string
 		}{
 			{
 				desc:           "custom logger for module",
 				giveWithLogger: fx.NopLogger,
-				wantEventTypes: []string{
+				wantEvents: []string{
 					"Supplied", "Provided", "Provided", "Provided",
 					"LoggerInitialized", "Invoking", "Invoked",
 				},
@@ -263,7 +267,7 @@ func TestModuleSuccess(t *testing.T) {
 			{
 				desc:           "Not using a custom logger for module defaults to app logger",
 				giveWithLogger: fx.Options(),
-				wantEventTypes: []string{
+				wantEvents: []string{
 					"Supplied", "Provided", "Provided", "Provided", "Provided",
 					"LoggerInitialized", "Invoking", "Invoked", "Invoking", "Invoked",
 				},
@@ -277,10 +281,10 @@ func TestModuleSuccess(t *testing.T) {
 				var spy fxlog.Spy
 
 				redis := fx.Module("redis",
-					fx.Provide(func() *Logger {
-						return &Logger{Name: "redis"}
+					fx.Provide(func() *Foo {
+						return &Foo{Name: "redis"}
 					}),
-					fx.Invoke(func(r *Logger) {
+					fx.Invoke(func(r *Foo) {
 						assert.Equal(t, "redis", r.Name)
 					}),
 					tt.giveWithLogger,
@@ -292,13 +296,13 @@ func TestModuleSuccess(t *testing.T) {
 					fx.WithLogger(func(spy *fxlog.Spy) fxevent.Logger {
 						return spy
 					}),
-					fx.Invoke(func(r *Logger) {
+					fx.Invoke(func(r *Foo) {
 						assert.Equal(t, "redis", r.Name)
 					}),
 				)
 
 				// events from module with a custom logger not logged in app logger
-				assert.Equal(t, tt.wantEventTypes, spy.EventTypes())
+				assert.Equal(t, tt.wantEvents, spy.EventTypes())
 
 				spy.Reset()
 				app.RequireStart().RequireStop()
@@ -322,8 +326,8 @@ func TestModuleSuccess(t *testing.T) {
 		moduleSpy := NamedSpy{name: "redis"}
 
 		redis := fx.Module("redis",
-			fx.Provide(func() *Logger {
-				return &Logger{Name: "redis"}
+			fx.Provide(func() *Foo {
+				return &Foo{Name: "redis"}
 			}),
 			fx.Supply(&appSpy),
 			fx.Replace(&moduleSpy),
@@ -331,7 +335,7 @@ func TestModuleSuccess(t *testing.T) {
 				assert.Equal(t, "redis", spy.name)
 				return spy
 			}),
-			fx.Invoke(func(r *Logger) {
+			fx.Invoke(func(r *Foo) {
 				assert.Equal(t, "redis", r.Name)
 			}),
 		)
@@ -342,7 +346,7 @@ func TestModuleSuccess(t *testing.T) {
 				assert.Equal(t, "app", spy.name)
 				return spy
 			}),
-			fx.Invoke(func(r *Logger) {
+			fx.Invoke(func(r *Foo) {
 				assert.Equal(t, "redis", r.Name)
 			}),
 		)
@@ -372,10 +376,10 @@ func TestModuleSuccess(t *testing.T) {
 		childSpy := NamedSpy{name: "child"}
 
 		grandchild := fx.Module("grandchild",
-			fx.Provide(func() *Logger {
-				return &Logger{Name: "grandchild"}
+			fx.Provide(func() *Foo {
+				return &Foo{Name: "grandchild"}
 			}),
-			fx.Invoke(func(r *Logger) {
+			fx.Invoke(func(r *Foo) {
 				assert.Equal(t, "grandchild", r.Name)
 			}),
 		)
@@ -388,7 +392,7 @@ func TestModuleSuccess(t *testing.T) {
 				assert.Equal(t, "child", spy.name)
 				return spy
 			}),
-			fx.Invoke(func(r *Logger) {
+			fx.Invoke(func(r *Foo) {
 				assert.Equal(t, "grandchild", r.Name)
 			}),
 		)
@@ -399,23 +403,21 @@ func TestModuleSuccess(t *testing.T) {
 				assert.Equal(t, "app", spy.name)
 				return spy
 			}),
-			fx.Invoke(func(r *Logger) {
+			fx.Invoke(func(r *Foo) {
 				assert.Equal(t, "grandchild", r.Name)
 			}),
 		)
 
-		// events from grandchild also logged in child logger
 		assert.Equal(t, []string{
 			"Supplied", "Provided", "Replaced", "LoggerInitialized",
 			//Invoke logged twice, once from child and another from grandchild
 			"Invoking", "Invoked", "Invoking", "Invoked",
-		}, childSpy.EventTypes())
+		}, childSpy.EventTypes(), "events from grandchild also logged in child logger")
 
-		// events from modules do not appear in app logger
 		assert.Equal(t, []string{
 			"Provided", "Provided", "Provided",
 			"LoggerInitialized", "Invoking", "Invoked",
-		}, appSpy.EventTypes())
+		}, appSpy.EventTypes(), "events from modules do not appear in app logger")
 
 		appSpy.Reset()
 		app.RequireStart().RequireStop()
@@ -626,7 +628,7 @@ func TestModuleFailures(t *testing.T) {
 			giveModuleOpts  fx.Option
 			giveAppOpts     fx.Option
 			wantErrContains []string
-			wantEventTypes  []string
+			wantEvents      []string
 		}{
 			{
 				desc:           "error in Provide shows logs in module",
@@ -635,7 +637,7 @@ func TestModuleFailures(t *testing.T) {
 				wantErrContains: []string{
 					"must provide constructor function, got  (type *bytes.Buffer)",
 				},
-				wantEventTypes: []string{
+				wantEvents: []string{
 					"Supplied", "Provided", "LoggerInitialized",
 				},
 			},
@@ -646,7 +648,7 @@ func TestModuleFailures(t *testing.T) {
 				}),
 				giveAppOpts:     spyAsLogger,
 				wantErrContains: []string{"error building logger"},
-				wantEventTypes: []string{
+				wantEvents: []string{
 					"Supplied", "Provided", "Provided", "Provided",
 					"LoggerInitialized", "Provided", "LoggerInitialized",
 				},
@@ -664,7 +666,7 @@ func TestModuleFailures(t *testing.T) {
 				),
 				giveAppOpts:     spyAsLogger,
 				wantErrContains: []string{"error building logger dependency"},
-				wantEventTypes: []string{
+				wantEvents: []string{
 					"Supplied", "Provided", "Provided", "Provided",
 					"LoggerInitialized", "Provided", "Provided", "LoggerInitialized",
 				},
@@ -676,7 +678,7 @@ func TestModuleFailures(t *testing.T) {
 				wantErrContains: []string{
 					"fx.WithLogger", "from:", "Failed",
 				},
-				wantEventTypes: []string{
+				wantEvents: []string{
 					"Supplied", "Provided", "Provided", "Provided",
 					"LoggerInitialized", "Provided", "LoggerInitialized",
 				},
@@ -700,14 +702,11 @@ func TestModuleFailures(t *testing.T) {
 				err := app.Err()
 				require.Error(t, err)
 				for _, contains := range tt.wantErrContains {
-					assert.Contains(t,
-						err.Error(),
-						contains,
-					)
+					assert.Contains(t, err.Error(), contains)
 				}
 
 				assert.Equal(t,
-					tt.wantEventTypes,
+					tt.wantEvents,
 					spy.EventTypes(),
 				)
 			})
