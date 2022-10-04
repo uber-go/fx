@@ -362,11 +362,14 @@ func TestModuleSuccess(t *testing.T) {
 		}, appSpy.EventTypes())
 
 		appSpy.Reset()
+		moduleSpy.Reset()
+
 		app.RequireStart().RequireStop()
 
 		require.NoError(t, app.Err())
 
 		assert.Equal(t, []string{"Started", "Stopped"}, appSpy.EventTypes())
+		assert.Equal(t, []string{}, moduleSpy.EventTypes())
 	})
 
 	t.Run("module uses parent module's logger to log events", func(t *testing.T) {
@@ -420,11 +423,14 @@ func TestModuleSuccess(t *testing.T) {
 		}, appSpy.EventTypes(), "events from modules do not appear in app logger")
 
 		appSpy.Reset()
+		childSpy.Reset()
+
 		app.RequireStart().RequireStop()
 
 		require.NoError(t, app.Err())
 
 		assert.Equal(t, []string{"Started", "Stopped"}, appSpy.EventTypes())
+		assert.Equal(t, []string{}, childSpy.EventTypes())
 	})
 }
 
