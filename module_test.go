@@ -369,7 +369,7 @@ func TestModuleSuccess(t *testing.T) {
 		require.NoError(t, app.Err())
 
 		assert.Equal(t, []string{"Started", "Stopped"}, appSpy.EventTypes())
-		assert.Equal(t, 1, len(moduleSpy.EventTypes())
+		assert.Empty(t, moduleSpy.EventTypes())
 	})
 
 	t.Run("module uses parent module's logger to log events", func(t *testing.T) {
@@ -430,7 +430,7 @@ func TestModuleSuccess(t *testing.T) {
 		require.NoError(t, app.Err())
 
 		assert.Equal(t, []string{"Started", "Stopped"}, appSpy.EventTypes())
-		assert.Equal(t, []string{}, childSpy.EventTypes())
+		assert.Empty(t, childSpy.EventTypes())
 	})
 }
 
