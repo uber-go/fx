@@ -193,9 +193,10 @@ type withLoggerOption struct {
 
 func (l withLoggerOption) apply(m *module) {
 	if m.parent != nil {
-		// loggers shouldn't differ based on Module.
-		m.app.err = fmt.Errorf("fx.WithLogger Option should be passed to top-level App, " +
-			"not to fx.Module")
+		m.logConstructor = &provide{
+			Target: l.constructor,
+			Stack:  l.Stack,
+		}
 	} else {
 		m.app.logConstructor = &provide{
 			Target: l.constructor,
@@ -519,6 +520,10 @@ func New(opts ...Option) *App {
 			bufferLogger.Connect(fallbackLogger)
 			return app
 		}
+	}
+
+	for _, m := range app.modules {
+		m.constructAllCustomLoggers()
 	}
 
 	// This error might have come from the provide loop above. We've

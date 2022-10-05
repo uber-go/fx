@@ -26,6 +26,7 @@ import (
 	"go.uber.org/dig"
 	"go.uber.org/fx/fxevent"
 	"go.uber.org/fx/internal/fxreflect"
+	"go.uber.org/multierr"
 )
 
 // A container represents a set of constructors to provide
@@ -79,14 +80,16 @@ func (o moduleOption) apply(mod *module) {
 }
 
 type module struct {
-	parent     *module
-	name       string
-	scope      scope
-	provides   []provide
-	invokes    []invoke
-	decorators []decorator
-	modules    []*module
-	app        *App
+	parent         *module
+	name           string
+	scope          scope
+	provides       []provide
+	invokes        []invoke
+	decorators     []decorator
+	modules        []*module
+	app            *App
+	log            fxevent.Logger
+	logConstructor *provide
 }
 
 // scope is a private wrapper interface for dig.Container and dig.Scope.
@@ -107,9 +110,20 @@ type scope interface {
 func (m *module) build(app *App, root *dig.Container) {
 	if m.parent == nil {
 		m.scope = root
+		m.log = app.log
 	} else {
 		parentScope := m.parent.scope
 		m.scope = parentScope.Scope(m.name)
+		// use parent module's logger by default
+		m.log = m.parent.log
+	}
+
+	if m.logConstructor != nil {
+		// Since user supplied a custom logger, use a buffered logger
+		// to hold all messages until user supplied logger is
+		// instantiated. Then we flush those messages after fully
+		// constructing the custom logger.
+		m.log = new(logBuffer)
 	}
 
 	for _, mod := range m.modules {
@@ -158,7 +172,49 @@ func (m *module) provide(p provide) {
 			Err:             m.app.err,
 		}
 	}
-	m.app.log.LogEvent(ev)
+	m.log.LogEvent(ev)
+}
+
+// Constructs custom loggers for all modules in the tree
+func (m *module) constructAllCustomLoggers() {
+	if m.logConstructor != nil {
+		if buffer, ok := m.log.(*logBuffer); ok {
+			// default to parent's logger if custom logger constructor fails
+			if err := m.constructCustomLogger(buffer); err != nil {
+				m.app.err = multierr.Append(m.app.err, err)
+				m.log = m.parent.log
+				buffer.Connect(m.log)
+			}
+		}
+	}
+
+	for _, mod := range m.modules {
+		mod.constructAllCustomLoggers()
+	}
+}
+
+// Mirroring the behavior of app.constructCustomLogger
+func (m *module) constructCustomLogger(buffer *logBuffer) (err error) {
+	p := m.logConstructor
+	fname := fxreflect.FuncName(p.Target)
+	defer func() {
+		m.log.LogEvent(&fxevent.LoggerInitialized{
+			Err:             err,
+			ConstructorName: fname,
+		})
+	}()
+
+	// TODO: Use dig.FillProvideInfo to inspect the provided constructor
+	// and fail the application if its signature didn't match.
+	if err := m.scope.Provide(p.Target); err != nil {
+		return fmt.Errorf("fx.WithLogger(%v) from:\n%+v\nin Module: %q\nFailed: %w",
+			fname, p.Stack, m.name, err)
+	}
+
+	return m.scope.Invoke(func(log fxevent.Logger) {
+		m.log = log
+		buffer.Connect(log)
+	})
 }
 
 func (m *module) executeInvokes() error {
@@ -179,12 +235,12 @@ func (m *module) executeInvokes() error {
 
 func (m *module) executeInvoke(i invoke) (err error) {
 	fnName := fxreflect.FuncName(i.Target)
-	m.app.log.LogEvent(&fxevent.Invoking{
+	m.log.LogEvent(&fxevent.Invoking{
 		FunctionName: fnName,
 		ModuleName:   m.name,
 	})
 	err = runInvoke(m.scope, i)
-	m.app.log.LogEvent(&fxevent.Invoked{
+	m.log.LogEvent(&fxevent.Invoked{
 		FunctionName: fnName,
 		ModuleName:   m.name,
 		Err:          err,
@@ -203,14 +259,14 @@ func (m *module) decorate() (err error) {
 		}
 
 		if decorator.IsReplace {
-			m.app.log.LogEvent(&fxevent.Replaced{
+			m.log.LogEvent(&fxevent.Replaced{
 				ModuleName:      m.name,
 				OutputTypeNames: outputNames,
 				Err:             err,
 			})
 		} else {
 
-			m.app.log.LogEvent(&fxevent.Decorated{
+			m.log.LogEvent(&fxevent.Decorated{
 				DecoratorName:   fxreflect.FuncName(decorator.Target),
 				ModuleName:      m.name,
 				OutputTypeNames: outputNames,
