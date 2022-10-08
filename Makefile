@@ -11,6 +11,10 @@ GO_FILES = $(shell \
 
 MODULES = . ./tools ./docs
 
+# 'make cover' should not run on docs by default.
+# We run that separately explicitly on a specific platform.
+COVER_MODULES ?= $(filter-out ./docs,$(MODULES))
+
 .PHONY: build
 build:
 	go build ./...
@@ -25,7 +29,7 @@ test:
 
 .PHONY: cover
 cover:
-	@$(foreach dir,$(MODULES), \
+	@$(foreach dir,$(COVER_MODULES), \
 		(cd $(dir) && \
 		echo "[cover] $(dir)" && \
 		go test -race -coverprofile=cover.out -coverpkg=./... ./... && \
