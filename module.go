@@ -187,6 +187,8 @@ func (m *module) constructAllCustomLoggers() {
 			}
 		}
 		m.fallbackLogger = nil
+	} else if m.parent != nil {
+		m.log = m.parent.log
 	}
 
 	for _, mod := range m.modules {
