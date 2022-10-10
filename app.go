@@ -289,12 +289,10 @@ type App struct {
 	validate   bool
 
 	// Used to signal shutdowns.
-	donesMu        sync.Mutex // guards dones and shutdownSig
-	dones          []chan os.Signal
-	shutdownSig    os.Signal
-	waitsMu        sync.Mutex // guards waits and shutdownCode
-	waits          []chan ShutdownSignal
-	shutdownSignal *ShutdownSignal
+	shutdownMu   sync.Mutex
+	shutdownSig  *ShutdownSignal
+	sigReceivers []signalReceiver
+	signalOnce   sync.Once
 
 	// Used to make sure Start/Stop is called only once.
 	runStart sync.Once
@@ -577,6 +575,10 @@ func (app *App) run(done <-chan ShutdownSignal) (exitCode int) {
 	defer cancel()
 
 	if err := app.Stop(stopCtx); err != nil {
+		// if we encounter a timeout during stop, force exit code 1
+		if errors.Is(err, context.DeadlineExceeded) {
+			return 1
+		}
 		return sig.ExitCode
 	}
 
@@ -618,7 +620,9 @@ var (
 // encountered any errors in application initialization.
 func (app *App) Start(ctx context.Context) (err error) {
 	defer func() {
-		app.log().LogEvent(&fxevent.Started{Err: err})
+		app.runStart.Do(func() {
+			app.log.LogEvent(&fxevent.Started{Err: err})
+		})
 	}()
 
 	if app.err != nil {
@@ -659,19 +663,23 @@ func (app *App) start(ctx context.Context) error {
 // called are executed. However, all those hooks are executed, even if some
 // fail.
 func (app *App) Stop(ctx context.Context) (err error) {
-	app.runStop.Do(func() {
+
+	defer func() {
 		// Protect the Stop hooks from being called multiple times.
-		defer func() {
+		app.runStop.Do(func() {
 			app.log.LogEvent(&fxevent.Stopped{Err: err})
 			close(app.stopch)
-		}()
+		})
+	}()
 
-	return withTimeout(ctx, &withTimeoutParams{
+	err = withTimeout(ctx, &withTimeoutParams{
 		hook:      _onStopHook,
 		callback:  app.lifecycle.Stop,
 		lifecycle: app.lifecycle,
 		log:       app.log(),
 	})
+
+	return
 }
 
 // Done returns a channel of signals to block on after starting the

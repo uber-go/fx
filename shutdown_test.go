@@ -22,7 +22,6 @@ package fx_test
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"sync"
 	"testing"
@@ -131,11 +130,6 @@ func TestShutdown(t *testing.T) {
 
 			err := s.Shutdown()
 			assert.Error(t, err)
-			var o *fx.ErrOnUnsentSignal
-			assert.True(t, errors.As(err, &o))
-
-			assert.Equal(t, 1, o.Unsent)
-			assert.Equal(t, 1, o.Channels)
 			assert.NotNil(t, <-wait)
 		})
 

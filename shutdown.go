@@ -150,7 +150,7 @@ func (app *App) broadcastSignal(signal os.Signal, code int) error {
 	}
 
 	if unsent != 0 {
-		resultErr = multierr.Append(resultErr, &ErrOnUnsentSignal{
+		resultErr = multierr.Append(resultErr, &errOnUnsentSignal{
 			Signal:   signal,
 			Unsent:   unsent,
 			Channels: len(app.sigReceivers),
@@ -160,15 +160,14 @@ func (app *App) broadcastSignal(signal os.Signal, code int) error {
 	return resultErr
 }
 
-// ErrOnUnsentSignal ... TBD
-type ErrOnUnsentSignal struct {
+type errOnUnsentSignal struct {
 	Signal   os.Signal
 	Unsent   int
 	Code     int
 	Channels int
 }
 
-func (err *ErrOnUnsentSignal) Error() string {
+func (err *errOnUnsentSignal) Error() string {
 	return fmt.Sprintf(
 		"failed to send %v signal to %v out of %v channels",
 		err.Signal,

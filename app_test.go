@@ -917,7 +917,7 @@ func TestAppRunTimeout(t *testing.T) {
 
 			err, _ := errv.Interface().(error)
 			assert.ErrorIs(t, err, context.DeadlineExceeded,
-				"should fail because of a timeout")
+				"should fail because of a timeout: %v", err)
 		})
 	}
 }
