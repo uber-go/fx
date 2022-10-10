@@ -89,6 +89,7 @@ type module struct {
 	modules        []*module
 	app            *App
 	log            fxevent.Logger
+	fallbackLogger fxevent.Logger
 	logConstructor *provide
 }
 
@@ -110,7 +111,6 @@ type scope interface {
 func (m *module) build(app *App, root *dig.Container) {
 	if m.parent == nil {
 		m.scope = root
-		m.log = app.log
 	} else {
 		parentScope := m.parent.scope
 		m.scope = parentScope.Scope(m.name)
@@ -123,7 +123,7 @@ func (m *module) build(app *App, root *dig.Container) {
 		// to hold all messages until user supplied logger is
 		// instantiated. Then we flush those messages after fully
 		// constructing the custom logger.
-		m.log = new(logBuffer)
+		m.fallbackLogger, m.log = m.log, new(logBuffer)
 	}
 
 	for _, mod := range m.modules {
@@ -182,10 +182,11 @@ func (m *module) constructAllCustomLoggers() {
 			// default to parent's logger if custom logger constructor fails
 			if err := m.constructCustomLogger(buffer); err != nil {
 				m.app.err = multierr.Append(m.app.err, err)
-				m.log = m.parent.log
+				m.log = m.fallbackLogger
 				buffer.Connect(m.log)
 			}
 		}
+		m.fallbackLogger = nil
 	}
 
 	for _, mod := range m.modules {
