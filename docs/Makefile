@@ -1,8 +1,12 @@
 export PATH := $(shell pwd)/bin:$(PATH)
 
 MDOX = $(shell pwd)/../bin/mdox
-MDOX_FMT_FLAGS = --soft-wraps --links.validate --links.validate.config-file $(shell pwd)/.mdox-validate.yaml
 MD_FILES ?= $(shell git ls-files '*.md')
+MDOX_FMT_FLAGS = \
+	 --soft-wraps \
+	 --no-gofmt \
+	 --links.validate \
+	 --links.validate.config-file $(shell pwd)/.mdox-validate.yaml
 
 .PHONY:
 fmt: $(MDOX)
