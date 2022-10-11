@@ -2,7 +2,7 @@ export PATH := $(shell pwd)/bin:$(PATH)
 
 MDOX = $(shell pwd)/../bin/mdox
 MDOX_FMT_FLAGS = --soft-wraps --links.validate
-MD_FILES = $(shell find . -name '*.md')
+MD_FILES = $(shell find . -name '*.md') ../README.md
 
 .PHONY:
 fmt: $(MDOX)
