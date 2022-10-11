@@ -192,16 +192,9 @@ type withLoggerOption struct {
 }
 
 func (l withLoggerOption) apply(m *module) {
-	if m.parent != nil {
-		m.logConstructor = &provide{
-			Target: l.constructor,
-			Stack:  l.Stack,
-		}
-	} else {
-		m.app.logConstructor = &provide{
-			Target: l.constructor,
-			Stack:  l.Stack,
-		}
+	m.logConstructor = &provide{
+		Target: l.constructor,
+		Stack:  l.Stack,
 	}
 }
 
@@ -228,11 +221,11 @@ type loggerOption struct{ p Printer }
 
 func (l loggerOption) apply(m *module) {
 	if m.parent != nil {
-		m.app.err = fmt.Errorf("fx.StartTimeout Option should be passed to top-level App, " +
+		m.app.err = fmt.Errorf("fx.Logger Option should be passed to top-level App, " +
 			"not to fx.Module")
 	} else {
 		np := writerFromPrinter(l.p)
-		m.app.log = fxlog.DefaultLogger(np) // assuming np is thread-safe.
+		m.log = fxlog.DefaultLogger(np) // assuming np is thread-safe.
 	}
 }
 
@@ -287,9 +280,6 @@ type App struct {
 	root      *module
 	modules   []*module
 
-	// Used to setup logging within fx.
-	log            fxevent.Logger
-	logConstructor *provide // set only if fx.WithLogger was used
 	// Timeouts used
 	startTimeout time.Duration
 	stopTimeout  time.Duration
@@ -393,31 +383,6 @@ func ValidateApp(opts ...Option) error {
 	return app.Err()
 }
 
-// Builds and connects the custom logger, returning an error if it failed.
-func (app *App) constructCustomLogger(buffer *logBuffer) (err error) {
-	p := app.logConstructor
-	fname := fxreflect.FuncName(p.Target)
-	defer func() {
-		app.log.LogEvent(&fxevent.LoggerInitialized{
-			Err:             err,
-			ConstructorName: fname,
-		})
-	}()
-
-	if err := app.root.scope.Provide(p.Target); err != nil {
-		return fmt.Errorf("fx.WithLogger(%v) from:\n%+vFailed: %v",
-			fname, p.Stack, err)
-	}
-
-	// TODO: Use dig.FillProvideInfo to inspect the provided constructor
-	// and fail the application if its signature didn't match.
-
-	return app.root.scope.Invoke(func(log fxevent.Logger) {
-		app.log = log
-		buffer.Connect(log)
-	})
-}
-
 // New creates and initializes an App, immediately executing any functions
 // registered via Invoke options. See the documentation of the App struct for
 // details on the application's initialization, startup, and shutdown logic.
@@ -425,6 +390,12 @@ func New(opts ...Option) *App {
 	logger := fxlog.DefaultLogger(os.Stderr)
 
 	app := &App{
+		clock:        fxclock.System,
+		startTimeout: DefaultTimeout,
+		stopTimeout:  DefaultTimeout,
+	}
+	app.root = &module{
+		app: app,
 		// We start with a logger that writes to stderr. One of the
 		// following three things can change this:
 		//
@@ -437,12 +408,8 @@ func New(opts ...Option) *App {
 		// user gave us. For the last case, however, we need to fall
 		// back to what was provided to fx.Logger if fx.WithLogger
 		// fails.
-		log:          logger,
-		clock:        fxclock.System,
-		startTimeout: DefaultTimeout,
-		stopTimeout:  DefaultTimeout,
+		log: logger,
 	}
-	app.root = &module{app: app}
 	app.modules = append(app.modules, app.root)
 
 	for _, opt := range opts {
@@ -460,24 +427,6 @@ func New(opts ...Option) *App {
 	//   "current" logger associated with the fx.App.
 	app.lifecycle = &lifecycleWrapper{
 		lifecycle.New(appLogger{app}, app.clock),
-	}
-
-	var (
-		bufferLogger *logBuffer // nil if WithLogger was not used
-
-		// Logger we fall back to if the custom logger fails to build.
-		// This will be a DefaultLogger that writes to stderr if the
-		// user didn't use fx.Logger, and a DefaultLogger that writes
-		// to their output stream if they did.
-		fallbackLogger fxevent.Logger
-	)
-	if app.logConstructor != nil {
-		// Since user supplied a custom logger, use a buffered logger
-		// to hold all messages until user supplied logger is
-		// instantiated. Then we flush those messages after fully
-		// constructing the custom logger.
-		bufferLogger = new(logBuffer)
-		fallbackLogger, app.log = app.log, bufferLogger
 	}
 
 	app.container = dig.New(
@@ -509,19 +458,7 @@ func New(opts ...Option) *App {
 	// If a custom logger was being used, we're still buffering messages.
 	// We'll want to flush them to the logger.
 
-	// If WithLogger and Printer are both provided, WithLogger takes
-	// precedence.
-	if app.logConstructor != nil {
-		// If we failed to build the provided logger, flush the buffer
-		// to the fallback logger instead.
-		if err := app.constructCustomLogger(bufferLogger); err != nil {
-			app.err = multierr.Append(app.err, err)
-			app.log = fallbackLogger
-			bufferLogger.Connect(fallbackLogger)
-			return app
-		}
-	}
-
+	// custom app logger will be initialized by the root module.
 	for _, m := range app.modules {
 		m.constructAllCustomLoggers()
 	}
@@ -547,6 +484,10 @@ func New(opts ...Option) *App {
 	}
 
 	return app
+}
+
+func (app *App) log() fxevent.Logger {
+	return app.root.log
 }
 
 // DotGraph contains a DOT language visualization of the dependency graph in
@@ -617,7 +558,7 @@ func (app *App) run(done <-chan os.Signal) (exitCode int) {
 	}
 
 	sig := <-done
-	app.log.LogEvent(&fxevent.Stopping{Signal: sig})
+	app.log().LogEvent(&fxevent.Stopping{Signal: sig})
 
 	stopCtx, cancel := app.clock.WithTimeout(context.Background(), app.StopTimeout())
 	defer cancel()
@@ -664,7 +605,7 @@ var (
 // encountered any errors in application initialization.
 func (app *App) Start(ctx context.Context) (err error) {
 	defer func() {
-		app.log.LogEvent(&fxevent.Started{Err: err})
+		app.log().LogEvent(&fxevent.Started{Err: err})
 	}()
 
 	if app.err != nil {
@@ -676,17 +617,17 @@ func (app *App) Start(ctx context.Context) (err error) {
 		hook:      _onStartHook,
 		callback:  app.start,
 		lifecycle: app.lifecycle,
-		log:       app.log,
+		log:       app.log(),
 	})
 }
 
 func (app *App) start(ctx context.Context) error {
 	if err := app.lifecycle.Start(ctx); err != nil {
 		// Start failed, rolling back.
-		app.log.LogEvent(&fxevent.RollingBack{StartErr: err})
+		app.log().LogEvent(&fxevent.RollingBack{StartErr: err})
 
 		stopErr := app.lifecycle.Stop(ctx)
-		app.log.LogEvent(&fxevent.RolledBack{Err: stopErr})
+		app.log().LogEvent(&fxevent.RolledBack{Err: stopErr})
 
 		if stopErr != nil {
 			return multierr.Append(err, stopErr)
@@ -706,14 +647,14 @@ func (app *App) start(ctx context.Context) error {
 // fail.
 func (app *App) Stop(ctx context.Context) (err error) {
 	defer func() {
-		app.log.LogEvent(&fxevent.Stopped{Err: err})
+		app.log().LogEvent(&fxevent.Stopped{Err: err})
 	}()
 
 	return withTimeout(ctx, &withTimeoutParams{
 		hook:      _onStopHook,
 		callback:  app.lifecycle.Stop,
 		lifecycle: app.lifecycle,
-		log:       app.log,
+		log:       app.log(),
 	})
 }
 
@@ -839,5 +780,5 @@ func withTimeout(ctx context.Context, param *withTimeoutParams) error {
 type appLogger struct{ app *App }
 
 func (l appLogger) LogEvent(ev fxevent.Event) {
-	l.app.log.LogEvent(ev)
+	l.app.log().LogEvent(ev)
 }

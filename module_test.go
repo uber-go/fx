@@ -23,6 +23,7 @@ package fx_test
 import (
 	"bytes"
 	"errors"
+	"log"
 	"testing"
 	"time"
 
@@ -590,6 +591,10 @@ func TestModuleFailures(t *testing.T) {
 			{
 				desc: "StopTimeout Option",
 				opt:  fx.StopTimeout(time.Second),
+			},
+			{
+				desc: "Logger Option",
+				opt:  fx.Logger(log.New(&bytes.Buffer{}, "", 0)),
 			},
 		}
 
