@@ -25,6 +25,7 @@ package fx
 
 import (
 	// Tools we use during development.
+	_ "github.com/bwplotka/mdox"
 	_ "golang.org/x/lint/golint"
 	_ "honnef.co/go/tools/cmd/staticcheck"
 )
