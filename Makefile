@@ -24,8 +24,11 @@ test:
 
 .PHONY: cover
 cover:
-	go test -race -coverprofile=cover.out -coverpkg=./... ./...
-	go tool cover -html=cover.out -o cover.html
+	@$(foreach dir,$(MODULES), \
+		(cd $(dir) && \
+		echo "[cover] $(dir)" && \
+		go test -race -coverprofile=cover.out -coverpkg=./... ./... && \
+		go tool cover -html=cover.out -o cover.html) &&) true
 
 $(GOLINT): tools/go.mod
 	cd tools && go install golang.org/x/lint/golint
