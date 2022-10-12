@@ -72,6 +72,10 @@ lint: $(GOLINT) $(STATICCHECK) $(FXLINT) docs-check
 		git --no-pager diff; \
 	fi
 
+.PHONY: docs
+docs:
+	cd docs && yarn build
+
 .PHONY: docs-check
 docs-check: $(MDOX)
 	@echo "Checking documentation"
