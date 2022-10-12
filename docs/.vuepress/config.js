@@ -69,6 +69,12 @@ module.exports = {
           'result-objects.md',
         ],
       },
+      {
+        title: 'Concepts',
+        children: [
+          'lifecycle.md',
+        ],
+      },
     ]
   },
 
