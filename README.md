@@ -10,6 +10,9 @@ Fx is a dependency injection system for Go.
   and well-integrated shareable components.
 - Battle tested: Fx is the backbone of nearly all Go services at Uber.
 
+See our [docs](https://uber-go.github.io/fx/) to get started and/or
+learn more about Fx.
+
 ## Installation
 
 Use Go modules to install Fx in your application.
