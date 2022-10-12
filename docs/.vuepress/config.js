@@ -38,6 +38,10 @@ module.exports = {
     lastUpdated: true,
     nav: [
       {
+        text: 'Guide',
+        link: '/intro',
+      },
+      {
         text: 'API Reference',
         link: 'https://pkg.go.dev/go.uber.org/fx'
       }
@@ -55,6 +59,13 @@ module.exports = {
           'get-started/another-handler.md',
           'get-started/many-handlers.md',
           'get-started/conclusion.md',
+        ],
+      },
+      'intro.md',
+      {
+        title: 'Features',
+        children: [
+          'parameter-objects.md',
         ],
       },
     ]
