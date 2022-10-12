@@ -8,14 +8,20 @@ and is not shared with other functions.
 That is, a parameter object is not a general purpose object like "user"
 but purpose-built, like "parameters for the `GetUser` function".
 
-In Fx, parameter objects consist of exported fields exclusively,
+In Fx, parameter objects contain exported fields exclusively,
 and are always tagged with `fx.In`.
+
+**Related**
+
+- [Result objects](result-objects.md) are the result analog of
+  parameter objects.
 
 ## Using parameter objects
 
 To use parameter objects in Fx, take the following steps:
 
-1. Define a new struct type named after your constructor.
+1. Define a new struct type named after your constructor
+   with a `Params` suffix.
    If the constructor is named `NewClient`, name the struct `ClientParams`.
    If the constructor is named `New`, name the struct `Params`.
    This naming isn't strictly necessary, but it's a good convention to follow.
@@ -62,4 +68,5 @@ To use parameter objects in Fx, take the following steps:
 
 <!--
 TODO: cover various tags supported on a parameter object.
+TODO: cover adding new parameters
 -->
