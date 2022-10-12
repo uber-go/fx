@@ -1,4 +1,4 @@
-// Copyright (c) 2019-2021 Uber Technologies, Inc.
+// Copyright (c) 2022 Uber Technologies, Inc.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -18,14 +18,41 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-//go:build tools
-// +build tools
-
-package fx
+package iotest
 
 import (
-	// Tools we use during development.
-	_ "github.com/bwplotka/mdox"
-	_ "golang.org/x/lint/golint"
-	_ "honnef.co/go/tools/cmd/staticcheck"
+	"errors"
+	"strings"
+	"testing"
+	"testing/iotest"
+
+	"github.com/stretchr/testify/assert"
+	"go.uber.org/fx/docs/internal/test"
 )
+
+func TestReadAll(t *testing.T) {
+	t.Run("success", func(t *testing.T) {
+		got := ReadAll(t, strings.NewReader("hello"))
+		assert.Equal(t, "hello", got)
+	})
+
+	t.Run("failure", func(t *testing.T) {
+		newT := fakeT{T: t}
+		ReadAll(&newT, iotest.ErrReader(errors.New("great sadness")))
+		assert.True(t, newT.failed, "test must have failed")
+	})
+}
+
+type fakeT struct {
+	test.T
+
+	failed bool
+}
+
+func (t *fakeT) Errorf(msg string, args ...any) {
+	t.failed = true
+}
+
+func (t *fakeT) FailNow() {
+	t.failed = true
+}

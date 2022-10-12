@@ -47,5 +47,9 @@ jobs:
     - name: Test
       run: make cover
 
+    - name: Test documentation
+      run: make cover COVER_MODULES=./docs
+      if: matrix.latest
+
     - name: Upload coverage to codecov.io
       uses: codecov/codecov-action@v1

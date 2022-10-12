@@ -1,4 +1,4 @@
-// Copyright (c) 2019-2021 Uber Technologies, Inc.
+// Copyright (c) 2022 Uber Technologies, Inc.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -18,14 +18,52 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-//go:build tools
-// +build tools
-
-package fx
+package exectest
 
 import (
-	// Tools we use during development.
-	_ "github.com/bwplotka/mdox"
-	_ "golang.org/x/lint/golint"
-	_ "honnef.co/go/tools/cmd/staticcheck"
+	"fmt"
+	"io"
+	"os"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
+
+func TestStartOutputReader_Stdout(t *testing.T) {
+	cmd := Command(t, func() {
+		fmt.Println("hello")
+		fmt.Println("world")
+	})
+
+	r := StartWithOutput(t, cmd)
+	got, err := io.ReadAll(r)
+	require.NoError(t, err)
+	assert.Equal(t, "hello\nworld\n", string(got))
+}
+
+func TestStartOutputReader_Stderr(t *testing.T) {
+	cmd := Command(t, func() {
+		fmt.Fprintln(os.Stderr, "great")
+		fmt.Fprintln(os.Stderr, "sadness")
+	})
+
+	r := StartWithOutput(t, cmd)
+	got, err := io.ReadAll(r)
+	require.NoError(t, err)
+	assert.Equal(t, "great\nsadness\n", string(got))
+}
+
+func TestStartOutputReader_Combined(t *testing.T) {
+	cmd := Command(t, func() {
+		fmt.Println("foo")
+		fmt.Fprintln(os.Stderr, "bar")
+		fmt.Println("baz")
+		fmt.Fprintln(os.Stderr, "qux")
+	})
+
+	r := StartWithOutput(t, cmd)
+	got, err := io.ReadAll(r)
+	require.NoError(t, err)
+	assert.Equal(t, "foo\nbar\nbaz\nqux\n", string(got))
+}
