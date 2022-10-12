@@ -1,4 +1,4 @@
-# Getting started with Fx
+# Get started with Fx
 
 This introduces you to the basics of Fx.
 In this tutorial you will:
@@ -32,7 +32,7 @@ This application won't do anything yet except print a bunch of logs.
 
 3. Write a minimal `main.go`.
 
-   ```go mdox-exec="region 01-minimal/main.go main"
+   ```go mdox-exec='region ex/get-started/01-minimal/main.go main'
    package main
 
    import "go.uber.org/fx"
@@ -89,7 +89,7 @@ Let's add an HTTP server to it.
 
 1. Write a function to build your HTTP server.
 
-   ```go mdox-exec="region 02-http-server/main.go partial"
+   ```go mdox-exec='region ex/get-started/02-http-server/main.go partial'
    // NewHTTPServer builds an HTTP server that will begin serving requests
    // when the Fx application starts.
    func NewHTTPServer(lc fx.Lifecycle) *http.Server {
@@ -104,7 +104,7 @@ Let's add an HTTP server to it.
 2. Add a *lifecycle hook* to the application with the `fx.Lifecycle` object.
    This tells Fx how to start and stop the HTTP server.
 
-   ```go mdox-exec="region 02-http-server/main.go full"
+   ```go mdox-exec='region ex/get-started/02-http-server/main.go full'
    func NewHTTPServer(lc fx.Lifecycle) *http.Server {
    	srv := &http.Server{Addr: ":8080"}
    	lc.Append(fx.Hook{
@@ -127,7 +127,7 @@ Let's add an HTTP server to it.
 
 3. Provide this to your Fx application above with `fx.Provide`.
 
-   ```go mdox-exec="region 02-http-server/main.go provide-server"
+   ```go mdox-exec='region ex/get-started/02-http-server/main.go provide-server'
    func main() {
    	fx.New(
    		fx.Provide(NewHTTPServer),
@@ -152,7 +152,7 @@ Let's add an HTTP server to it.
 
 5. To fix that, add an `fx.Invoke` that requests the constructed server.
 
-   ```go mdox-exec="region 02-http-server/main.go app"
+   ```go mdox-exec='region ex/get-started/02-http-server/main.go app'
    	fx.New(
    		fx.Provide(NewHTTPServer),
    		fx.Invoke(func(*http.Server) {}),
@@ -223,7 +223,7 @@ Let's fix that.
    to the response.
    Add the following to the bottom of your file.
 
-   ```go mdox-exec="region 03-echo-handler/main.go echo-handler"
+   ```go mdox-exec='region ex/get-started/03-echo-handler/main.go echo-handler'
    // EchoHandler is an http.Handler that copies its request body
    // back to the response.
    type EchoHandler struct{}
@@ -243,7 +243,7 @@ Let's fix that.
 
    Provide this to the application.
 
-   ```go mdox-exec="region 03-echo-handler/main.go provide-handler"
+   ```go mdox-exec='region ex/get-started/03-echo-handler/main.go provide-handler'
        fx.Provide(
          NewHTTPServer,
          NewEchoHandler,
@@ -255,7 +255,7 @@ Let's fix that.
    to route requests to this handler.
    The new function will accept the `*EchoHandler` as an argument.
 
-   ```go mdox-exec="region 03-echo-handler/main.go serve-mux"
+   ```go mdox-exec='region ex/get-started/03-echo-handler/main.go serve-mux'
    // NewServeMux builds a ServeMux that will route requests
    // to the given EchoHandler.
    func NewServeMux(echo *EchoHandler) *http.ServeMux {
@@ -267,7 +267,7 @@ Let's fix that.
 
    Likewise, provide this to the application.
 
-   ```go mdox-exec="region 03-echo-handler/main.go provides"
+   ```go mdox-exec='region ex/get-started/03-echo-handler/main.go provides'
        fx.Provide(
          NewHTTPServer,
          NewServeMux,
@@ -281,7 +281,7 @@ Let's fix that.
 3. Lastly, modify the `NewHTTPServer` function to connect
    the server to this `*ServeMux`.
 
-   ```go mdox-exec="region 03-echo-handler/main.go connect-mux"
+   ```go mdox-exec='region ex/get-started/03-echo-handler/main.go connect-mux'
    func NewHTTPServer(lc fx.Lifecycle, mux *http.ServeMux) *http.Server {
      srv := &http.Server{Addr: ":8080", Handler: mux}
      lc.Append(fx.Hook{
@@ -334,7 +334,7 @@ but you should be able to use any logging system.
    but for real applications, you should use `zap.NewProduction`
    or build a more customized logger.
 
-   ```go mdox-exec="region 04-logger/main.go provides"
+   ```go mdox-exec='region ex/get-started/04-logger/main.go provides'
        fx.Provide(
          NewHTTPServer,
          NewServeMux,
@@ -346,7 +346,7 @@ but you should be able to use any logging system.
 2. Add a field to hold the logger on `EchoHandler`,
    and in `NewEchoHandler` add a new logger argument to set this field.
 
-   ```go mdox-exec="region 04-logger/main.go echo-init"
+   ```go mdox-exec='region ex/get-started/04-logger/main.go echo-init'
    type EchoHandler struct {
    	log *zap.Logger
    }
@@ -359,7 +359,7 @@ but you should be able to use any logging system.
 3. In the `EchoHandler.ServeHTTP` method,
    use the logger instead of printing to standard error.
 
-   ```go mdox-exec="region 04-logger/main.go echo-serve"
+   ```go mdox-exec='region ex/get-started/04-logger/main.go echo-serve'
    func (h *EchoHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
    	if _, err := io.Copy(w, r.Body); err != nil {
    		h.log.Warn("Failed to handle request", zap.Error(err))
@@ -370,7 +370,7 @@ but you should be able to use any logging system.
 4. Similarly, update `NewHTTPServer` to expect a logger
    and log the "Starting HTTP server" message to that.
 
-   ```go mdox-exec="region 04-logger/main.go http-server"
+   ```go mdox-exec='region ex/get-started/04-logger/main.go http-server'
    func NewHTTPServer(lc fx.Lifecycle, mux *http.ServeMux, log *zap.Logger) *http.Server {
      srv := &http.Server{Addr: ":8080", Handler: mux}
      lc.Append(fx.Hook{
@@ -385,7 +385,7 @@ but you should be able to use any logging system.
 
 5. (**Optional**) You can use the same Zap logger for Fx's own logs as well.
 
-   ```go mdox-exec="region 04-logger/main.go fx-logger"
+   ```go mdox-exec='region ex/get-started/04-logger/main.go fx-logger'
    func main() {
      fx.New(
        fx.WithLogger(func(log *zap.Logger) fxevent.Logger {
@@ -445,7 +445,7 @@ Let's try to fix this.
    This is an extension of `http.Handler` where the handler knows its
    registration path.
 
-   ```go mdox-exec="region 05-registration/main.go route"
+   ```go mdox-exec='region ex/get-started/05-registration/main.go route'
    // Route is an http.Handler that knows the mux pattern
    // under which it will be registered.
    type Route interface {
@@ -458,7 +458,7 @@ Let's try to fix this.
 
 2. Modify `EchoHandler` to implement this interface.
 
-   ```go mdox-exec="region 05-registration/main.go echo-pattern"
+   ```go mdox-exec='region ex/get-started/05-registration/main.go echo-pattern'
    func (*EchoHandler) Pattern() string {
    	return "/echo"
    }
@@ -467,7 +467,7 @@ Let's try to fix this.
 3. In `main()`, annotate the `NewEchoHandler` entry to state that the handler
    should be provided as a Route.
 
-   ```go mdox-exec="region 05-registration/main.go provides"
+   ```go mdox-exec='region ex/get-started/05-registration/main.go provides'
        fx.Provide(
          NewHTTPServer,
          NewServeMux,
@@ -481,7 +481,7 @@ Let's try to fix this.
 
 4. Modify `NewServeMux` to accept a Route and use its provided pattern.
 
-   ```go mdox-exec="region 05-registration/main.go mux"
+   ```go mdox-exec='region ex/get-started/05-registration/main.go mux'
    // NewServeMux builds a ServeMux that will route requests
    // to the given Route.
    func NewServeMux(route Route) *http.ServeMux {
@@ -531,7 +531,7 @@ Let's add another.
 
 1. Build a new handler in the same file.
 
-   ```go mdox-exec="region 06-another-handler/main.go hello-init"
+   ```go mdox-exec='region ex/get-started/06-another-handler/main.go hello-init'
    // HelloHandler is an HTTP handler that
    // prints a greeting to the user.
    type HelloHandler struct {
@@ -546,7 +546,7 @@ Let's add another.
 
 2. Implement the `Route` interface for this handler.
 
-   ```go mdox-exec="region 06-another-handler/main.go hello-methods"
+   ```go mdox-exec='region ex/get-started/06-another-handler/main.go hello-methods'
    func (*HelloHandler) Pattern() string {
    	return "/hello"
    }
@@ -572,7 +572,7 @@ Let's add another.
 
 3. Provide this to the application as a `Route` next to `NewEchoHandler`.
 
-   ```go mdox-exec="region 06-another-handler/main.go hello-provide-partial"
+   ```go mdox-exec='region ex/get-started/06-another-handler/main.go hello-provide-partial'
          fx.Annotate(
            NewEchoHandler,
            fx.As(new(Route)),
@@ -610,7 +610,7 @@ Let's add another.
 5. Annotate `NewEchoHandler` and `NewHelloHandler` in `main()` with names for
    both handlers.
 
-   ```go mdox-exec="region 06-another-handler/main.go route-provides"
+   ```go mdox-exec='region ex/get-started/06-another-handler/main.go route-provides'
          fx.Annotate(
            NewEchoHandler,
            fx.As(new(Route)),
@@ -625,7 +625,7 @@ Let's add another.
 
 6. Add another Route parameter to `NewServeMux`.
 
-   ```go mdox-exec="region 06-another-handler/main.go mux"
+   ```go mdox-exec='region ex/get-started/06-another-handler/main.go mux'
    // NewServeMux builds a ServeMux that will route requests
    // to the given routes.
    func NewServeMux(route1, route2 Route) *http.ServeMux {
@@ -638,7 +638,7 @@ Let's add another.
 
 7. Annotate `NewServeMux` in `main()` to pick these two *names values*.
 
-   ```go mdox-exec="region 06-another-handler/main.go mux-provide"
+   ```go mdox-exec='region ex/get-started/06-another-handler/main.go mux-provide'
        fx.Provide(
          NewHTTPServer,
          fx.Annotate(
@@ -696,7 +696,7 @@ Let's do that.
 
 1. Modify `NewServeMux` to operate on a list of `Route` objects.
 
-   ```go mdox-exec="region 07-many-handlers/main.go mux"
+   ```go mdox-exec='region ex/get-started/07-many-handlers/main.go mux'
    func NewServeMux(routes []Route) *http.ServeMux {
    	mux := http.NewServeMux()
    	for _, route := range routes {
@@ -709,7 +709,7 @@ Let's do that.
 2. Annotate the `NewServeMux` entry in `main` to say
    that it accepts a slice that contains the contents of the "routes" group.
 
-   ```go mdox-exec="region 07-many-handlers/main.go mux-provide"
+   ```go mdox-exec='region ex/get-started/07-many-handlers/main.go mux-provide'
        fx.Provide(
          NewHTTPServer,
          fx.Annotate(
@@ -721,7 +721,7 @@ Let's do that.
 3. Define a new function `AsRoute` to build functions that feed into this
    group.
 
-   ```go mdox-exec="region 07-many-handlers/main.go AsRoute"
+   ```go mdox-exec='region ex/get-started/07-many-handlers/main.go AsRoute'
    // AsRoute annotates the given constructor to state that
    // it provides a route to the "routes" group.
    func AsRoute(f any) any {
@@ -736,7 +736,7 @@ Let's do that.
 4. Wrap the `NewEchoHandler` and `NewHelloHandler` constructors in `main()`
    with `AsRoute` so that they feed their routes into this group.
 
-   ```go mdox-exec="region 07-many-handlers/main.go route-provides"
+   ```go mdox-exec='region ex/get-started/07-many-handlers/main.go route-provides'
        fx.Provide(
          AsRoute(NewEchoHandler),
          AsRoute(NewHelloHandler),

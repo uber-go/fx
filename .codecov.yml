@@ -1,5 +1,5 @@
 ignore:
-  - "docs/get-started/*/main.go"
+  - "docs/ex/**/*.go"
 
 coverage:
   range: 80..100

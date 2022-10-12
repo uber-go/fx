@@ -1,0 +1,22 @@
+{
+  "name": "Fx",
+  "version": "0.0.1",
+  "description": "Dependency injection system for Go.",
+  "main": "index.js",
+  "authors": {
+    "name": "Uber Technologies",
+    "email": "oss@uber.com"
+  },
+  "repository": "https://github.com/uber-go/fx",
+  "scripts": {
+    "dev": "vuepress dev",
+    "build": "vuepress build"
+  },
+  "license": "MIT",
+  "devDependencies": {
+    "@vuepress/plugin-back-to-top": "^1.9.7",
+    "@vuepress/plugin-medium-zoom": "^1.9.7",
+    "vuepress": "^1.5.3",
+    "vuepress-plugin-fulltext-search": "^2.2.1"
+  }
+}

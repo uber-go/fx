@@ -2,9 +2,21 @@
 
 If you'd like to contribute to Fx's documentation, read this first.
 
+## Setup
+
+To get set up, run the following commands:
+
+```bash
+yarn install
+yarn dev
+```
+
+This will start up a development server.
+It will update live as you edit and save files.
+
 ## Document by purpose
 
-Documentation in this folder should fall in one of the following categories.
+Documentation in this folder falls in one of the following categories.
 
 - **Tutorials**: These hold step-by-step instructions for an end-to-end project
   that a beginner could follow along to.
@@ -38,11 +50,6 @@ which suggests separating documentation into four categories:
 the three above, and references, which we get from our generated API reference.
 
 ## Formatting
-
-### GitHub Flavored Markdown
-
-The documentation is hosted on GitHub,
-and therefore it follows [GitHub Flavored Markdown](https://github.github.com/gfm/).
 
 ### ATX-style headers
 
@@ -94,7 +101,7 @@ running a command and using its output as part of a code block.
 To use this, declare a regular code block and tag it with `mdoc-exec`.
 
 ```markdown
-```go mdox-exec="cat foo.go"
+```go mdox-exec='cat foo.go'
 // doesn't matter
 ```
 
@@ -102,14 +109,14 @@ The contents of the code block will be replaced
 with the output of the command when you run `make fmt`.
 `make check` will ensure that the contents are up-to-date.
 
-The command runs inside the directory where the Markdown file resides.
-All paths should be relative to that directory.
+The command runs with the working directory set to docs/.
+Store code in ex/ and reference it directly.
 
 ### region
 
 The `region` shell script is a command intended to be used with `mdox-exec`.
 
-```plain mdox-exec="region" mdox-expect-exit-code="1"
+```plain mdox-exec='region' mdox-expect-exit-code='1'
 USAGE: region FILE REGION1 REGION2 ...
 
 Extracts text from FILE marked by "// region" blocks.
