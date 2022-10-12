@@ -68,5 +68,50 @@ To use parameter objects in Fx, take the following steps:
 
 <!--
 TODO: cover various tags supported on a parameter object.
-TODO: cover adding new parameters
 -->
+
+## Adding new parameters
+
+You can add new parameters for a constructor
+by adding new fields to a parameter object.
+For this to be backwards compatible,
+the new fields must be **optional**.
+
+1. Take an existing parameter object.
+
+   ```go mdox-exec='region ex/parameter-objects/extend.go start'
+   type Params struct {
+     fx.In
+
+     Config     ClientConfig
+     HTTPClient *http.Client
+   }
+
+   func New(p Params) (*Client, error) {
+   ```
+
+2. Add a new field to it for your new dependency
+   and **mark it optional** to keep this change backwards compatible.
+
+   ```go mdox-exec='region ex/parameter-objects/extend.go full'
+   type Params struct {
+   	fx.In
+
+   	Config     ClientConfig
+   	HTTPClient *http.Client
+   	Logger     *zap.Logger `optional:"true"`
+   }
+   ```
+
+3. In your constructor, consume this field.
+   Be sure to handle the case when this field is absent --
+   it will take the zero value of its type in that case.
+
+   ```go mdox-exec='region ex/parameter-objects/extend.go consume'
+   func New(p Params) (*Client, error) {
+     log := p.Logger
+     if log == nil {
+       log = zap.NewNop()
+     }
+     // ...
+   ```

@@ -22,49 +22,45 @@ package paramobject
 
 import (
 	"net/http"
+	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"go.uber.org/fx"
+	"go.uber.org/fx/fxtest"
 	"go.uber.org/zap"
 )
 
-// Client sends requests to a server.
-type Client struct {
-	url  string
-	http *http.Client
-	log  *zap.Logger
-}
+func TestExtendParams(t *testing.T) {
+	t.Run("absent", func(t *testing.T) {
+		var got *Client
+		app := fxtest.New(t,
+			fx.Supply(
+				ClientConfig{},
+				new(http.Client),
+			),
+			fx.Provide(New),
+			fx.Populate(&got),
+		)
+		app.RequireStart().RequireStop()
 
-// ClientConfig defines the configuration for the client.
-type ClientConfig struct {
-	URL string
-}
+		assert.NotNil(t, got.log)
+	})
 
-// ClientParams defines the parameters necessary to build a client.
-// region empty
-// region fxin
-// region fields
-type ClientParams struct {
-	// endregion empty
-	fx.In
-	// endregion fxin
+	t.Run("present", func(t *testing.T) {
+		var got *Client
+		log := zap.NewExample()
+		app := fxtest.New(t,
+			fx.Supply(
+				ClientConfig{},
+				new(http.Client),
+				log,
+			),
+			fx.Provide(New),
+			fx.Populate(&got),
+		)
+		app.RequireStart().RequireStop()
 
-	Config     ClientConfig
-	HTTPClient *http.Client
-	// region empty
-}
-
-// endregion fields
-// endregion empty
-
-// NewClient builds a new client.
-// region takeparam
-// region consume
-func NewClient(p ClientParams) (*Client, error) {
-	// endregion takeparam
-	return &Client{
-		url:  p.Config.URL,
-		http: p.HTTPClient,
-		// ...
-	}, nil
-	// endregion consume
+		// Log must be what we provided.
+		assert.True(t, got.log == log, "log did not match")
+	})
 }
