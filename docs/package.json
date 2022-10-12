@@ -17,6 +17,7 @@
     "@vuepress/plugin-back-to-top": "^1.9.7",
     "@vuepress/plugin-medium-zoom": "^1.9.7",
     "vuepress": "^1.5.3",
-    "vuepress-plugin-fulltext-search": "^2.2.1"
+    "vuepress-plugin-fulltext-search": "^2.2.1",
+    "vuepress-plugin-mermaidjs": "1.9.1"
   }
 }
