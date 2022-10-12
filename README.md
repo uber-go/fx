@@ -5,6 +5,9 @@ An application framework for Go that:
 - Makes dependency injection easy.
 - Eliminates the need for global state and `func init()`.
 
+See our [docs](https://uber-go.github.io/fx/) to get started and/or
+learn more about Fx.
+
 ## Installation
 
 We recommend locking to [SemVer](http://semver.org/) range `^1` using [go mod](https://github.com/golang/go/wiki/Modules):
