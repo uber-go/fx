@@ -62,6 +62,12 @@ module.exports = {
         ],
       },
       'intro.md',
+      {
+        title: 'Features',
+        children: [
+          'parameter-objects.md',
+        ],
+      },
     ]
   },
 
