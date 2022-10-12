@@ -76,6 +76,12 @@ module.exports = {
         ],
       },
       {
+        title: 'Community',
+        children: [
+          'contributing.md',
+        ],
+      },
+      {
         title: 'Release notes',
         path: 'changelog.md',
       },
