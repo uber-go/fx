@@ -97,9 +97,7 @@ Any other constructor in the application can also feed values
 into this value group as long as the result conforms to the `Route` interface.
 They will all be collected together and passed into our `ServeMux` constructor.
 
-<!--
-
 **Related Resources**
 
-* TODO: link to value groups documentation
--->
+* [Value groups](/value-groups.md) further explains what value groups are,
+  and how to use them.
