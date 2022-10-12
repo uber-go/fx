@@ -42,9 +42,22 @@ module.exports = {
         link: 'https://pkg.go.dev/go.uber.org/fx'
       }
     ],
-    sidebar: {
-      '/get-started': 'auto',
-    }
+    sidebar: [
+      {
+        title: 'Get Started',
+        path: '/get-started/',
+        children: [
+          'get-started/minimal.md',
+          'get-started/http-server.md',
+          'get-started/echo-handler.md',
+          'get-started/logger.md',
+          'get-started/registration.md',
+          'get-started/another-handler.md',
+          'get-started/many-handlers.md',
+          'get-started/conclusion.md',
+        ],
+      },
+    ]
   },
 
   /**

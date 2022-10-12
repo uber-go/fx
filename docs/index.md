@@ -16,7 +16,7 @@ features:
         Fx is the backbone of nearly all Go services at Uber.
       title: Battle-tested
 actionText: Get Started →
-actionLink: /get-started.html
+actionLink: /get-started/
 ---
 
 
