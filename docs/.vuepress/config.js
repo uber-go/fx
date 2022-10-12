@@ -75,6 +75,10 @@ module.exports = {
           'lifecycle.md',
         ],
       },
+      {
+        title: 'Release notes',
+        path: 'changelog.md',
+      },
     ]
   },
 
