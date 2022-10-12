@@ -8,14 +8,20 @@ and is not shared with other functions.
 That is, a parameter object is not a general purpose object like "user"
 but purpose-built, like "parameters for the `GetUser` function".
 
-In Fx, parameter objects consist of exported fields exclusively,
+In Fx, parameter objects contain exported fields exclusively,
 and are always tagged with `fx.In`.
+
+**Related**
+
+- [Result objects](result-objects.md) are the result analog of
+  parameter objects.
 
 ## Using parameter objects
 
 To use parameter objects in Fx, take the following steps:
 
-1. Define a new struct type named after your constructor.
+1. Define a new struct type named after your constructor
+   with a `Params` suffix.
    If the constructor is named `NewClient`, name the struct `ClientParams`.
    If the constructor is named `New`, name the struct `Params`.
    This naming isn't strictly necessary, but it's a good convention to follow.
@@ -63,3 +69,49 @@ To use parameter objects in Fx, take the following steps:
 <!--
 TODO: cover various tags supported on a parameter object.
 -->
+
+## Adding new parameters
+
+You can add new parameters for a constructor
+by adding new fields to a parameter object.
+For this to be backwards compatible,
+the new fields must be **optional**.
+
+1. Take an existing parameter object.
+
+   ```go mdox-exec='region ex/parameter-objects/extend.go start'
+   type Params struct {
+     fx.In
+
+     Config     ClientConfig
+     HTTPClient *http.Client
+   }
+
+   func New(p Params) (*Client, error) {
+   ```
+
+2. Add a new field to it for your new dependency
+   and **mark it optional** to keep this change backwards compatible.
+
+   ```go mdox-exec='region ex/parameter-objects/extend.go full'
+   type Params struct {
+   	fx.In
+
+   	Config     ClientConfig
+   	HTTPClient *http.Client
+   	Logger     *zap.Logger `optional:"true"`
+   }
+   ```
+
+3. In your constructor, consume this field.
+   Be sure to handle the case when this field is absent --
+   it will take the zero value of its type in that case.
+
+   ```go mdox-exec='region ex/parameter-objects/extend.go consume'
+   func New(p Params) (*Client, error) {
+     log := p.Logger
+     if log == nil {
+       log = zap.NewNop()
+     }
+     // ...
+   ```

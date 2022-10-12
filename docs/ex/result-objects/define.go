@@ -18,53 +18,38 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package paramobject
+package resultobject
 
-import (
-	"net/http"
+import "go.uber.org/fx"
 
-	"go.uber.org/fx"
-	"go.uber.org/zap"
-)
+// Client is a client to make requests.
+type Client struct{}
 
-// Client sends requests to a server.
-type Client struct {
-	url  string
-	http *http.Client
-	log  *zap.Logger
-}
-
-// ClientConfig defines the configuration for the client.
-type ClientConfig struct {
-	URL string
-}
-
-// ClientParams defines the parameters necessary to build a client.
+// ClientResult holds the result of NewClient.
 // region empty
-// region fxin
+// region fxout
 // region fields
-type ClientParams struct {
+type ClientResult struct {
 	// endregion empty
-	fx.In
-	// endregion fxin
+	fx.Out
+	// endregion fxout
 
-	Config     ClientConfig
-	HTTPClient *http.Client
+	Client *Client
 	// region empty
 }
 
-// endregion fields
 // endregion empty
+// endregion fields
 
-// NewClient builds a new client.
-// region takeparam
-// region consume
-func NewClient(p ClientParams) (*Client, error) {
-	// endregion takeparam
-	return &Client{
-		url:  p.Config.URL,
-		http: p.HTTPClient,
+// NewClient builds a new Client.
+// region returnresult
+// region produce
+func NewClient() (ClientResult, error) {
+	// endregion returnresult
+	client := &Client{
 		// ...
-	}, nil
-	// endregion consume
+	}
+	return ClientResult{Client: client}, nil
 }
+
+// endregion produce

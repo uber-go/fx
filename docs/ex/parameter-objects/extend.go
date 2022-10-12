@@ -27,44 +27,33 @@ import (
 	"go.uber.org/zap"
 )
 
-// Client sends requests to a server.
-type Client struct {
-	url  string
-	http *http.Client
-	log  *zap.Logger
-}
-
-// ClientConfig defines the configuration for the client.
-type ClientConfig struct {
-	URL string
-}
-
-// ClientParams defines the parameters necessary to build a client.
-// region empty
-// region fxin
-// region fields
-type ClientParams struct {
-	// endregion empty
+// Params defines the paramters of new.
+// region start
+// region full
+type Params struct {
 	fx.In
-	// endregion fxin
 
 	Config     ClientConfig
 	HTTPClient *http.Client
-	// region empty
+	// endregion start
+	Logger *zap.Logger `optional:"true"`
+	// region start
 }
 
-// endregion fields
-// endregion empty
+// endregion start
+// endregion full
 
-// NewClient builds a new client.
-// region takeparam
+// New builds a new Client.
+// region start
 // region consume
-func NewClient(p ClientParams) (*Client, error) {
-	// endregion takeparam
-	return &Client{
-		url:  p.Config.URL,
-		http: p.HTTPClient,
-		// ...
-	}, nil
+func New(p Params) (*Client, error) {
+	// endregion start
+	log := p.Logger
+	if log == nil {
+		log = zap.NewNop()
+	}
+	// ...
 	// endregion consume
+
+	return &Client{log: log}, nil
 }

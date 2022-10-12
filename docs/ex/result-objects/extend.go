@@ -18,53 +18,43 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package paramobject
+package resultobject
 
-import (
-	"net/http"
+import "go.uber.org/fx"
 
-	"go.uber.org/fx"
-	"go.uber.org/zap"
-)
+// Inspector inspects client state.
+type Inspector struct{}
 
-// Client sends requests to a server.
-type Client struct {
-	url  string
-	http *http.Client
-	log  *zap.Logger
+// Result is the result of this module.
+// region full
+// region start
+type Result struct {
+	fx.Out
+
+	Client *Client
+	// endregion start
+	Inspector *Inspector
+	// region start
 }
 
-// ClientConfig defines the configuration for the client.
-type ClientConfig struct {
-	URL string
-}
+// endregion start
+// endregion full
 
-// ClientParams defines the parameters necessary to build a client.
-// region empty
-// region fxin
-// region fields
-type ClientParams struct {
-	// endregion empty
-	fx.In
-	// endregion fxin
-
-	Config     ClientConfig
-	HTTPClient *http.Client
-	// region empty
-}
-
-// endregion fields
-// endregion empty
-
-// NewClient builds a new client.
-// region takeparam
-// region consume
-func NewClient(p ClientParams) (*Client, error) {
-	// endregion takeparam
-	return &Client{
-		url:  p.Config.URL,
-		http: p.HTTPClient,
+// New builds a result.
+// region start
+func New() (Result, error) {
+	client := &Client{
 		// ...
+	}
+	// region produce
+	return Result{
+		Client: client,
+		// endregion start
+		Inspector: &Inspector{
+			// ...
+		},
+		// region start
 	}, nil
-	// endregion consume
+	// endregion start
+	// endregion produce
 }

@@ -66,6 +66,7 @@ module.exports = {
         title: 'Features',
         children: [
           'parameter-objects.md',
+          'result-objects.md',
         ],
       },
     ]
