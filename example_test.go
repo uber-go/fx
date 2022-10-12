@@ -23,6 +23,7 @@ package fx_test
 import (
 	"context"
 	"log"
+	"net"
 	"net/http"
 	"os"
 	"time"
@@ -145,9 +146,11 @@ func NewMux(lc fx.Lifecycle, logger *log.Logger) *http.ServeMux {
 		// passed via Go's usual context.Context.
 		OnStart: func(context.Context) error {
 			logger.Print("Starting HTTP server.")
-			// In production, we'd want to separate the Listen and Serve phases for
-			// better error-handling.
-			go server.ListenAndServe()
+			ln, err := net.Listen("tcp", server.Addr)
+			if err != nil {
+				return err
+			}
+			go server.Serve(ln)
 			return nil
 		},
 		OnStop: func(ctx context.Context) error {

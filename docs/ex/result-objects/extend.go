@@ -1,4 +1,4 @@
-// Copyright (c) 2019-2021 Uber Technologies, Inc.
+// Copyright (c) 2022 Uber Technologies, Inc.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -18,14 +18,43 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-//go:build tools
-// +build tools
+package resultobject
 
-package fx
+import "go.uber.org/fx"
 
-import (
-	// Tools we use during development.
-	_ "github.com/bwplotka/mdox"
-	_ "golang.org/x/lint/golint"
-	_ "honnef.co/go/tools/cmd/staticcheck"
-)
+// Inspector inspects client state.
+type Inspector struct{}
+
+// Result is the result of this module.
+// region full
+// region start
+type Result struct {
+	fx.Out
+
+	Client *Client
+	// endregion start
+	Inspector *Inspector
+	// region start
+}
+
+// endregion start
+// endregion full
+
+// New builds a result.
+// region start
+func New() (Result, error) {
+	client := &Client{
+		// ...
+	}
+	// region produce
+	return Result{
+		Client: client,
+		// endregion start
+		Inspector: &Inspector{
+			// ...
+		},
+		// region start
+	}, nil
+	// endregion start
+	// endregion produce
+}

@@ -1,4 +1,4 @@
-// Copyright (c) 2019-2021 Uber Technologies, Inc.
+// Copyright (c) 2022 Uber Technologies, Inc.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -18,14 +18,23 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-//go:build tools
-// +build tools
-
-package fx
+package resultobject
 
 import (
-	// Tools we use during development.
-	_ "github.com/bwplotka/mdox"
-	_ "golang.org/x/lint/golint"
-	_ "honnef.co/go/tools/cmd/staticcheck"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"go.uber.org/fx"
+	"go.uber.org/fx/fxtest"
 )
+
+func TestClientResult(t *testing.T) {
+	var got *Client
+	app := fxtest.New(t,
+		fx.Provide(NewClient),
+		fx.Populate(&got),
+	)
+	app.RequireStart().RequireStop()
+
+	assert.NotNil(t, got)
+}

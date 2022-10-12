@@ -1,4 +1,4 @@
-// Copyright (c) 2019-2021 Uber Technologies, Inc.
+// Copyright (c) 2022 Uber Technologies, Inc.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -18,14 +18,44 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-//go:build tools
-// +build tools
-
-package fx
+package exectest
 
 import (
-	// Tools we use during development.
-	_ "github.com/bwplotka/mdox"
-	_ "golang.org/x/lint/golint"
-	_ "honnef.co/go/tools/cmd/staticcheck"
+	"bytes"
+	"fmt"
+	"os"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
+
+func TestCommandSuccess(t *testing.T) {
+	cmd := Command(t, func() {
+		fmt.Println("hello world")
+	})
+
+	out, err := cmd.Output()
+	require.NoError(t, err)
+	assert.Equal(t, "hello world\n", string(out))
+
+	assert.True(t, cmd.ProcessState.Exited(), "must exit")
+	assert.Zero(t, cmd.ProcessState.ExitCode(), "exit code")
+}
+
+func TestCommandNonZero(t *testing.T) {
+	cmd := Command(t, func() {
+		fmt.Fprintln(os.Stderr, "great sadness")
+		os.Exit(1)
+	})
+
+	var stderr bytes.Buffer
+	cmd.Stderr = &stderr
+
+	err := cmd.Run()
+	require.Error(t, err, "command must fail")
+
+	assert.Equal(t, "great sadness\n", stderr.String())
+	assert.True(t, cmd.ProcessState.Exited(), "must exit")
+	assert.Equal(t, 1, cmd.ProcessState.ExitCode(), "exit code")
+}

@@ -1,4 +1,4 @@
-// Copyright (c) 2019-2021 Uber Technologies, Inc.
+// Copyright (c) 2022 Uber Technologies, Inc.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -18,14 +18,38 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-//go:build tools
-// +build tools
+package resultobject
 
-package fx
+import "go.uber.org/fx"
 
-import (
-	// Tools we use during development.
-	_ "github.com/bwplotka/mdox"
-	_ "golang.org/x/lint/golint"
-	_ "honnef.co/go/tools/cmd/staticcheck"
-)
+// Client is a client to make requests.
+type Client struct{}
+
+// ClientResult holds the result of NewClient.
+// region empty
+// region fxout
+// region fields
+type ClientResult struct {
+	// endregion empty
+	fx.Out
+	// endregion fxout
+
+	Client *Client
+	// region empty
+}
+
+// endregion empty
+// endregion fields
+
+// NewClient builds a new Client.
+// region returnresult
+// region produce
+func NewClient() (ClientResult, error) {
+	// endregion returnresult
+	client := &Client{
+		// ...
+	}
+	return ClientResult{Client: client}, nil
+}
+
+// endregion produce

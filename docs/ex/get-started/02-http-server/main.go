@@ -1,4 +1,4 @@
-// Copyright (c) 2019-2021 Uber Technologies, Inc.
+// Copyright (c) 2022 Uber Technologies, Inc.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -18,14 +18,56 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-//go:build tools
-// +build tools
-
-package fx
+package main
 
 import (
-	// Tools we use during development.
-	_ "github.com/bwplotka/mdox"
-	_ "golang.org/x/lint/golint"
-	_ "honnef.co/go/tools/cmd/staticcheck"
+	"context"
+	"fmt"
+	"net"
+	"net/http"
+
+	"go.uber.org/fx"
 )
+
+// region provide-server
+func main() {
+	// region app
+	fx.New(
+		fx.Provide(NewHTTPServer),
+		// endregion provide-server
+		fx.Invoke(func(*http.Server) {}),
+	// region provide-server
+	).Run()
+	// endregion app
+}
+
+// endregion provide-server
+
+// region partial
+
+// NewHTTPServer builds an HTTP server that will begin serving requests
+// when the Fx application starts.
+// region full
+func NewHTTPServer(lc fx.Lifecycle) *http.Server {
+	srv := &http.Server{Addr: ":8080"}
+	// endregion partial
+	lc.Append(fx.Hook{
+		OnStart: func(ctx context.Context) error {
+			ln, err := net.Listen("tcp", srv.Addr)
+			if err != nil {
+				return err
+			}
+			fmt.Println("Starting HTTP server at", srv.Addr)
+			go srv.Serve(ln)
+			return nil
+		},
+		OnStop: func(ctx context.Context) error {
+			return srv.Shutdown(ctx)
+		},
+	})
+	// region partial
+	return srv
+}
+
+// endregion partial
+// region full

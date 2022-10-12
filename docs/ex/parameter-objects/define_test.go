@@ -1,4 +1,4 @@
-// Copyright (c) 2019-2021 Uber Technologies, Inc.
+// Copyright (c) 2022 Uber Technologies, Inc.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -18,14 +18,32 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-//go:build tools
-// +build tools
-
-package fx
+package paramobject
 
 import (
-	// Tools we use during development.
-	_ "github.com/bwplotka/mdox"
-	_ "golang.org/x/lint/golint"
-	_ "honnef.co/go/tools/cmd/staticcheck"
+	"net/http"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"go.uber.org/fx"
+	"go.uber.org/fx/fxtest"
 )
+
+func TestClientParams(t *testing.T) {
+	client := new(http.Client)
+	var got *Client
+	app := fxtest.New(t,
+		fx.Supply(
+			ClientConfig{URL: "http://example.com"},
+			client,
+		),
+		fx.Provide(NewClient),
+		fx.Populate(&got),
+	)
+	app.RequireStart().RequireStop()
+
+	assert.Equal(t, "http://example.com", got.url)
+
+	// == instead of assert.Equal to match pointers.
+	assert.True(t, client == got.http, "HTTP client did not match")
+}

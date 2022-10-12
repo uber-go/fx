@@ -1,4 +1,4 @@
-// Copyright (c) 2019-2021 Uber Technologies, Inc.
+// Copyright (c) 2022 Uber Technologies, Inc.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -18,14 +18,53 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-//go:build tools
-// +build tools
-
-package fx
+package paramobject
 
 import (
-	// Tools we use during development.
-	_ "github.com/bwplotka/mdox"
-	_ "golang.org/x/lint/golint"
-	_ "honnef.co/go/tools/cmd/staticcheck"
+	"net/http"
+
+	"go.uber.org/fx"
+	"go.uber.org/zap"
 )
+
+// Client sends requests to a server.
+type Client struct {
+	url  string
+	http *http.Client
+	log  *zap.Logger
+}
+
+// ClientConfig defines the configuration for the client.
+type ClientConfig struct {
+	URL string
+}
+
+// ClientParams defines the parameters necessary to build a client.
+// region empty
+// region fxin
+// region fields
+type ClientParams struct {
+	// endregion empty
+	fx.In
+	// endregion fxin
+
+	Config     ClientConfig
+	HTTPClient *http.Client
+	// region empty
+}
+
+// endregion fields
+// endregion empty
+
+// NewClient builds a new client.
+// region takeparam
+// region consume
+func NewClient(p ClientParams) (*Client, error) {
+	// endregion takeparam
+	return &Client{
+		url:  p.Config.URL,
+		http: p.HTTPClient,
+		// ...
+	}, nil
+	// endregion consume
+}
