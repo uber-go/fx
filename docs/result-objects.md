@@ -67,5 +67,49 @@ To use result objects in Fx, take the following steps:
 
 <!--
 TODO: cover various tags supported on a result object.
-TODO: cover adding new results
 -->
+
+## Adding new results
+
+You can add new values to an existing result object
+in a completely backwards compatible manner.
+
+1. Take an existing result object.
+
+   ```go mdox-exec='region ex/result-objects/extend.go start'
+   type Result struct {
+     fx.Out
+
+     Client *Client
+   }
+
+   func New() (Result, error) {
+     client := &Client{
+       // ...
+     }
+     return Result{
+       Client: client,
+     }, nil
+   ```
+
+2. Add a new field to it for your new result.
+
+   ```go mdox-exec='region ex/result-objects/extend.go full'
+   type Result struct {
+   	fx.Out
+
+   	Client    *Client
+   	Inspector *Inspector
+   }
+   ```
+
+3. In your constructor, set this field.
+
+   ```go mdox-exec='region ex/result-objects/extend.go produce'
+   	return Result{
+   		Client:    client,
+   		Inspector: &Inspector{
+   			// ...
+   		},
+   	}, nil
+   ```
