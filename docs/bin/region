@@ -2,7 +2,7 @@
 set -euo pipefail
 IFS=$'\n\t'
 
-if [[ $# -ne 2 ]]; then
+if [[ $# -lt 2 ]]; then
 	echo >&2 'USAGE: region FILE REGION1 REGION2 ...'
 	echo >&2
 	echo >&2 'Extracts text from FILE marked by "// region" blocks.'
