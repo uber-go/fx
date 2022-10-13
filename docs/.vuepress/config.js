@@ -74,6 +74,7 @@ module.exports = {
         title: 'Concepts',
         children: [
           'lifecycle.md',
+          'modules.md',
         ],
       },
       {
