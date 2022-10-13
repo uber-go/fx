@@ -68,7 +68,10 @@ module.exports = {
           'parameter-objects.md',
           'result-objects.md',
           'annotate.md',
-          'value-groups.md',
+          {
+            title: 'Value Groups',
+            path: '/value-groups/',
+          },
         ],
       },
       {
