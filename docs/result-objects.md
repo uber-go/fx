@@ -47,9 +47,9 @@ To use result objects in Fx, take the following steps:
 
    ```go mdox-exec='region ex/result-objects/define.go fields'
    type ClientResult struct {
-   	fx.Out
+     fx.Out
 
-   	Client *Client
+     Client *Client
    }
    ```
 
@@ -58,10 +58,10 @@ To use result objects in Fx, take the following steps:
 
    ```go mdox-exec='region ex/result-objects/define.go produce'
    func NewClient() (ClientResult, error) {
-   	client := &Client{
-   		// ...
-   	}
-   	return ClientResult{Client: client}, nil
+     client := &Client{
+       // ...
+     }
+     return ClientResult{Client: client}, nil
    }
    ```
 
@@ -96,20 +96,20 @@ in a completely backwards compatible manner.
 
    ```go mdox-exec='region ex/result-objects/extend.go full'
    type Result struct {
-   	fx.Out
+     fx.Out
 
-   	Client    *Client
-   	Inspector *Inspector
+     Client *Client
+     Inspector *Inspector
    }
    ```
 
 3. In your constructor, set this field.
 
    ```go mdox-exec='region ex/result-objects/extend.go produce'
-   	return Result{
-   		Client:    client,
-   		Inspector: &Inspector{
-   			// ...
-   		},
-   	}, nil
+     return Result{
+       Client: client,
+       Inspector: &Inspector{
+         // ...
+       },
+     }, nil
    ```

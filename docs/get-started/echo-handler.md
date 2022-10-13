@@ -15,14 +15,14 @@ Let's fix that.
 
    // NewEchoHandler builds a new EchoHandler.
    func NewEchoHandler() *EchoHandler {
-   	return &EchoHandler{}
+     return &EchoHandler{}
    }
 
    // ServeHTTP handles an HTTP request to the /echo endpoint.
    func (*EchoHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-   	if _, err := io.Copy(w, r.Body); err != nil {
-   		fmt.Fprintln(os.Stderr, "Failed to handle request:", err)
-   	}
+     if _, err := io.Copy(w, r.Body); err != nil {
+       fmt.Fprintln(os.Stderr, "Failed to handle request:", err)
+     }
    }
    ```
 
@@ -44,9 +44,9 @@ Let's fix that.
    // NewServeMux builds a ServeMux that will route requests
    // to the given EchoHandler.
    func NewServeMux(echo *EchoHandler) *http.ServeMux {
-   	mux := http.NewServeMux()
-   	mux.Handle("/echo", echo)
-   	return mux
+     mux := http.NewServeMux()
+     mux.Handle("/echo", echo)
+     return mux
    }
    ```
 

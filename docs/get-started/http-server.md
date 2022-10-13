@@ -10,8 +10,8 @@ Let's add an HTTP server to it.
    // NewHTTPServer builds an HTTP server that will begin serving requests
    // when the Fx application starts.
    func NewHTTPServer(lc fx.Lifecycle) *http.Server {
-   	srv := &http.Server{Addr: ":8080"}
-   	return srv
+     srv := &http.Server{Addr: ":8080"}
+     return srv
    }
    ```
 
@@ -23,22 +23,22 @@ Let's add an HTTP server to it.
 
    ```go mdox-exec='region ex/get-started/02-http-server/main.go full'
    func NewHTTPServer(lc fx.Lifecycle) *http.Server {
-   	srv := &http.Server{Addr: ":8080"}
-   	lc.Append(fx.Hook{
-   		OnStart: func(ctx context.Context) error {
-   			ln, err := net.Listen("tcp", srv.Addr)
-   			if err != nil {
-   				return err
-   			}
-   			fmt.Println("Starting HTTP server at", srv.Addr)
-   			go srv.Serve(ln)
-   			return nil
-   		},
-   		OnStop: func(ctx context.Context) error {
-   			return srv.Shutdown(ctx)
-   		},
-   	})
-   	return srv
+     srv := &http.Server{Addr: ":8080"}
+     lc.Append(fx.Hook{
+       OnStart: func(ctx context.Context) error {
+         ln, err := net.Listen("tcp", srv.Addr)
+         if err != nil {
+           return err
+         }
+         fmt.Println("Starting HTTP server at", srv.Addr)
+         go srv.Serve(ln)
+         return nil
+       },
+       OnStop: func(ctx context.Context) error {
+         return srv.Shutdown(ctx)
+       },
+     })
+     return srv
    }
    ```
 
@@ -46,9 +46,9 @@ Let's add an HTTP server to it.
 
    ```go mdox-exec='region ex/get-started/02-http-server/main.go provide-server'
    func main() {
-   	fx.New(
-   		fx.Provide(NewHTTPServer),
-   	).Run()
+     fx.New(
+       fx.Provide(NewHTTPServer),
+     ).Run()
    }
    ```
 
@@ -70,10 +70,10 @@ Let's add an HTTP server to it.
 5. To fix that, add an `fx.Invoke` that requests the constructed server.
 
    ```go mdox-exec='region ex/get-started/02-http-server/main.go app'
-   	fx.New(
-   		fx.Provide(NewHTTPServer),
-   		fx.Invoke(func(*http.Server) {}),
-   	).Run()
+     fx.New(
+       fx.Provide(NewHTTPServer),
+       fx.Invoke(func(*http.Server) {}),
+     ).Run()
    ```
 
 6. Run the application again.

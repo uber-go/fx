@@ -48,10 +48,10 @@ To use parameter objects in Fx, take the following steps:
 
    ```go mdox-exec='region ex/parameter-objects/define.go fields'
    type ClientParams struct {
-   	fx.In
+     fx.In
 
-   	Config     ClientConfig
-   	HTTPClient *http.Client
+     Config     ClientConfig
+     HTTPClient *http.Client
    }
    ```
 
@@ -95,11 +95,11 @@ the new fields must be **optional**.
 
    ```go mdox-exec='region ex/parameter-objects/extend.go full'
    type Params struct {
-   	fx.In
+     fx.In
 
-   	Config     ClientConfig
-   	HTTPClient *http.Client
-   	Logger     *zap.Logger `optional:"true"`
+     Config     ClientConfig
+     HTTPClient *http.Client
+     Logger *zap.Logger `optional:"true"`
    }
    ```
 
