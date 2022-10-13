@@ -11,7 +11,7 @@ This application won't do anything yet except print a bunch of logs.
    import "go.uber.org/fx"
 
    func main() {
-   	fx.New().Run()
+     fx.New().Run()
    }
    ```
 
