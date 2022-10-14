@@ -67,6 +67,7 @@ module.exports = {
         children: [
           'parameter-objects.md',
           'result-objects.md',
+          'annotate.md',
           'value-groups.md',
         ],
       },
