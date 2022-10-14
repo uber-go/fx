@@ -76,6 +76,10 @@ module.exports = {
                 title: 'Feeding',
                 path: 'value-groups/feed.md',
               },
+              {
+                title: 'Consuming',
+                path: 'value-groups/consume.md',
+              },
             ],
           },
         ],

@@ -26,6 +26,7 @@ Fx produces the values fed into a value group in a random order.
 To learn how to use value groups, see,
 
 - [Feeding value groups](feed.md)
+- [Consuming value groups](consume.md)
 
 ## Dependency strictness
 
