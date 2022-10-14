@@ -68,7 +68,20 @@ module.exports = {
           'parameter-objects.md',
           'result-objects.md',
           'annotate.md',
-          'value-groups.md',
+          {
+            title: 'Value Groups',
+            path: '/value-groups/',
+            children: [
+              {
+                title: 'Feeding',
+                path: 'value-groups/feed.md',
+              },
+              {
+                title: 'Consuming',
+                path: 'value-groups/consume.md',
+              },
+            ],
+          },
         ],
       },
       {
