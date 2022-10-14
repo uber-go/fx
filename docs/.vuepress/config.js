@@ -71,6 +71,12 @@ module.exports = {
           {
             title: 'Value Groups',
             path: '/value-groups/',
+            children: [
+              {
+                title: 'Feeding',
+                path: 'value-groups/feed.md',
+              },
+            ],
           },
         ],
       },

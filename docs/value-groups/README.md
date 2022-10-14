@@ -21,6 +21,12 @@ Fx produces the values fed into a value group in a random order.
 **Do not** make any assumptions about value group ordering.
 :::
 
+## Using value groups
+
+To learn how to use value groups, see,
+
+- [Feeding value groups](feed.md)
+
 ## Dependency strictness
 
 Dependencies formed by value groups can be:
