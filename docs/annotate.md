@@ -4,10 +4,12 @@ You can annotate functions and values with the `fx.Annotate` function
 before passing them to
 `fx.Provide`, `fx.Supply`, `fx.Invoke`, `fx.Decorate`, or `fx.Replace`.
 
-This allows you to re-use a plain Go function
-with features like [value groups](value-groups.md)
+This allows you to re-use a plain Go function to do the following
 without manually wrapping the function to use
 [parameter](parameter-objects.md) or [result](result-objects.md) objects.
+
+- [feed values to a value group](value-groups/feed.md#with-annotated-functions)
+- [consume values from a value group](value-groups/consume.md#with-annotated-functions)
 
 <!-- TODO: named values and optional dependencies in the list above -->
 
