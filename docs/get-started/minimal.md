@@ -3,7 +3,7 @@
 Let's build the hello-world equivalent of an Fx application.
 This application won't do anything yet except print a bunch of logs.
 
-3. Write a minimal `main.go`.
+1. Write a minimal `main.go`.
 
    ```go mdox-exec='region ex/get-started/01-minimal/main.go main'
    package main
@@ -15,7 +15,7 @@ This application won't do anything yet except print a bunch of logs.
    }
    ```
 
-4. Run the application.
+2. Run the application.
 
    ```bash
    go run .
