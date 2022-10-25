@@ -105,6 +105,7 @@ var _outAnnotationField = reflect.StructField{
 // for annotating the parameter and result types of a function.
 type Annotation interface {
 	apply(*annotated) error
+	build(*annotated) (interface{}, error)
 }
 
 var (
@@ -127,6 +128,106 @@ func (e *annotationError) Error() string {
 
 type paramTagsAnnotation struct {
 	tags []string
+}
+
+// build implements Annotation
+func (pt paramTagsAnnotation) build(ann *annotated) (interface{}, error) {
+	paramTypes, remap := pt.parameters(ann)
+	resultTypes, _ := ann.currentResultTypes()
+
+	origFn := reflect.ValueOf(ann.Target)
+	newFnType := reflect.FuncOf(paramTypes, resultTypes, false)
+	newFn := reflect.MakeFunc(newFnType, func(args []reflect.Value) []reflect.Value {
+		args = remap(args)
+		return origFn.Call(args)
+	})
+	return newFn.Interface(), nil
+}
+
+func (pt paramTagsAnnotation) parameters(ann *annotated) (
+	types []reflect.Type,
+	remap func([]reflect.Value) []reflect.Value,
+) {
+	ft := reflect.TypeOf(ann.Target)
+	types = make([]reflect.Type, ft.NumIn())
+	for i := 0; i < ft.NumIn(); i++ {
+		types[i] = ft.In(i)
+	}
+
+	// No parameter annotations. Return the original types
+	// and an identity function.
+	if len(pt.tags) == 0 {
+		return types, func(args []reflect.Value) []reflect.Value {
+			return args
+		}
+	}
+
+	// Turn parameters into an fx.In struct.
+	inFields := []reflect.StructField{
+		{
+			Name:      "In",
+			Type:      reflect.TypeOf(In{}),
+			Anonymous: true,
+		},
+	}
+
+	// there was a variadic argument, so it was pre-transformed
+	if len(types) > 0 && types[0].Kind() == reflect.Struct &&
+		dig.IsIn(reflect.New(types[0]).Elem().Interface()) {
+		offset := 1
+		paramType := types[0]
+
+		for i := 1; i < paramType.NumField(); i++ {
+			origField := paramType.Field(i)
+			field := reflect.StructField{
+				Name: origField.Name,
+				Type: origField.Type,
+				Tag:  origField.Tag,
+			}
+			if field.Type == _typeOfLifecycle {
+				offset += 1
+			} else if i-offset < len(pt.tags) {
+				field.Tag = reflect.StructTag(pt.tags[i-offset])
+			}
+
+			inFields = append(inFields, field)
+		}
+
+		types = []reflect.Type{reflect.StructOf(inFields)}
+		return types, func(args []reflect.Value) []reflect.Value {
+			param := args[0]
+			args[0] = reflect.New(paramType).Elem()
+			for i := 1; i < paramType.NumField(); i++ {
+				args[0].Field(i).Set(param.Field(i))
+			}
+			return args
+		}
+	}
+
+	offset := 0
+	for i, t := range types {
+		field := reflect.StructField{
+			Name: fmt.Sprintf("Field%d", i),
+			Type: t,
+		}
+		if t == _typeOfLifecycle {
+			offset += 1
+		} else if i-offset < len(pt.tags) {
+			field.Tag = reflect.StructTag(pt.tags[i-offset])
+		}
+
+		inFields = append(inFields, field)
+	}
+
+	types = []reflect.Type{reflect.StructOf(inFields)}
+	return types, func(args []reflect.Value) []reflect.Value {
+		params := args[0]
+		args = args[:0]
+		for i := 0; i < ft.NumIn(); i++ {
+			args = append(args, params.Field(i+1))
+		}
+		return args
+	}
 }
 
 var _ Annotation = paramTagsAnnotation{}
@@ -165,6 +266,157 @@ type resultTagsAnnotation struct {
 	tags []string
 }
 
+// build implements Annotation
+func (rt resultTagsAnnotation) build(ann *annotated) (interface{}, error) {
+	paramTypes := ann.currentParamTypes()
+
+	resultTypes, remapResults, err := rt.results(ann)
+	if err != nil {
+		return nil, err
+	}
+
+	origFn := reflect.ValueOf(ann.Target)
+	newFnType := reflect.FuncOf(paramTypes, resultTypes, false)
+	newFn := reflect.MakeFunc(newFnType, func(args []reflect.Value) []reflect.Value {
+		results := origFn.Call(args)
+		return remapResults(results)
+	})
+	return newFn.Interface(), nil
+}
+
+/*
+func () (A,B,C,error)
+RT `name:"A"`, `name:"B"`, `name:"C"`
+--> func() (struct {Out;Field0 A `name:"A"`;Field1 B `name:"B"`;Field2 C `name:"C"`;}, error)
+
+As (IA, IB, IC)
+*/
+func (rt resultTagsAnnotation) results(ann *annotated) (
+	types []reflect.Type,
+	remap func([]reflect.Value) []reflect.Value,
+	err error,
+) {
+	types, hasError := ann.currentResultTypes()
+
+	// No result annotations. Return the original types
+	// and an identity function.
+	if len(rt.tags) == 0 {
+		return types, func(results []reflect.Value) []reflect.Value {
+			return results
+		}, nil
+	}
+
+	// if there's no Out struct among the return types, there was no As annotation applied
+	// just replace original result types with an Out struct and apply tags
+	var (
+		newOut       outStructInfo
+		existingOuts []reflect.Type
+	)
+
+	newOut.Fields = []reflect.StructField{
+		{
+			Name:      "Out",
+			Type:      reflect.TypeOf(Out{}),
+			Anonymous: true,
+		},
+	}
+	newOut.Offsets = make([]int, len(types))
+
+	for i, t := range types {
+		if t.Kind() != reflect.Struct {
+			// this must be from the original function
+			// apply the tags
+			field := reflect.StructField{
+				Name: fmt.Sprintf("Field%d", i),
+				Type: t,
+			}
+			if i < len(rt.tags) {
+				field.Tag = reflect.StructTag(rt.tags[i])
+			}
+			newOut.Offsets[i] = len(newOut.Fields)
+			newOut.Fields = append(newOut.Fields, field)
+			continue
+		}
+		if dig.IsOut(reflect.New(t).Elem().Interface()) {
+			// this must be from an As annotation
+			// apply the tags to the existing type
+			taggedFields := make([]reflect.StructField, t.NumField())
+			taggedFields[0] = reflect.StructField{
+				Name:      "Out",
+				Type:      reflect.TypeOf(Out{}),
+				Anonymous: true,
+			}
+			for j, tag := range rt.tags {
+				if j+1 < t.NumField() {
+					field := t.Field(j + 1)
+					taggedFields[j+1] = reflect.StructField{
+						Name: field.Name,
+						Type: field.Type,
+						Tag:  reflect.StructTag(tag),
+					}
+				}
+			}
+			existingOuts = append(existingOuts, reflect.StructOf(taggedFields))
+		}
+	}
+
+	resType := reflect.StructOf(newOut.Fields)
+
+	outTypes := []reflect.Type{resType}
+	// append existing outs back to outTypes
+	outTypes = append(outTypes, existingOuts...)
+	if hasError {
+		outTypes = append(outTypes, _typeOfError)
+	}
+
+	return outTypes, func(results []reflect.Value) []reflect.Value {
+		var (
+			outErr     error
+			outResults []reflect.Value
+		)
+		outResults = append(outResults, reflect.New(resType).Elem())
+
+		tIdx := 0
+		for i, r := range results {
+			if i == len(results)-1 && hasError {
+				// If hasError and this is the last item,
+				// we are guaranteed that this is an error
+				// object.
+				if err, _ := r.Interface().(error); err != nil {
+					outErr = err
+				}
+				continue
+			}
+			if r.Type().Kind() == reflect.Struct {
+				tIdx += 1
+				newResult := reflect.New(outTypes[tIdx]).Elem()
+				for j := 0; j < outTypes[tIdx].NumField(); j++ {
+					newResult.Field(j).Set(r.Field(j))
+				}
+				outResults = append(outResults, newResult)
+			} else if fieldIdx := newOut.Offsets[i]; fieldIdx > 0 {
+				// fieldIdx 0 is an invalid index
+				// because it refers to uninitialized
+				// outs and would point to fx.Out in the
+				// struct definition. We need to check this
+				// to prevent panic from setting fx.Out to
+				// a value.
+				outResults[0].Field(fieldIdx).Set(r)
+			}
+		}
+
+		if hasError {
+			if outErr != nil {
+				outResults = append(outResults, reflect.ValueOf(outErr))
+			} else {
+				outResults = append(outResults, _nilError)
+			}
+		}
+
+		return outResults
+	}, nil
+}
+
 var _ Annotation = resultTagsAnnotation{}
 
 // Given func(T1, T2, T3, ..., TN), this generates a type roughly
@@ -196,6 +448,11 @@ func ResultTags(tags ...string) Annotation {
 	return resultTagsAnnotation{tags}
 }
 
+type outStructInfo struct {
+	Fields  []reflect.StructField // fields of the struct
+	Offsets []int                 // Offsets[i] is the index of result i in Fields
+}
+
 type _lifecycleHookAnnotationType int
 
 const (
@@ -207,6 +464,197 @@ const (
 type lifecycleHookAnnotation struct {
 	Type   _lifecycleHookAnnotationType
 	Target interface{}
+}
+
+// build implements Annotation
+func (la *lifecycleHookAnnotation) build(ann *annotated) (interface{}, error) {
+	// allow annotated hook function?
+	var err error
+	resultTypes, hasError := ann.currentResultTypes()
+	switch hookFn := la.Target.(type) {
+	case annotated:
+		la.Target, err = hookFn.Build()
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	hookInstaller, paramTypes, remapParams, err := la.buildHookInstaller(ann)
+	if err != nil {
+		return nil, err
+	}
+	origFn := reflect.ValueOf(ann.Target)
+	newFnType := reflect.FuncOf(paramTypes, resultTypes, false)
+	newFn := reflect.MakeFunc(newFnType, func(args []reflect.Value) []reflect.Value {
+		origArgs := make([]reflect.Value, len(args))
+		copy(origArgs, args)
+		args = remapParams(args)
+		results := origFn.Call(args)
+		if hasError {
+			if err, _ := results[len(results)-1].Interface().(error); err != nil {
+				// if constructor returned error, do not call hook installer
+				return results
+			}
+		}
+		hookInstaller.Call(append(origArgs, results...))
+		return results
+	})
+	return newFn.Interface(), nil
+}
+
+func (la *lifecycleHookAnnotation) buildHookInstaller(ann *annotated) (
+	hookInstaller reflect.Value,
+	paramTypes []reflect.Type,
+	remapParams func([]reflect.Value) []reflect.Value, // function to remap parameters to function being annotated
+	err error,
+) {
+	paramTypes = ann.currentParamTypes()
+	paramTypes, remapParams = injectLifecycle(paramTypes)
+
+	resultTypes, hasError := ann.currentResultTypes()
+	if hasError {
+		resultTypes = resultTypes[:len(resultTypes)-1]
+	}
+
+	origFn := reflect.ValueOf(la.Target)
+	origFnT := reflect.TypeOf(la.Target)
+	invokeParamTypes := []reflect.Type{
+		_typeOfLifecycle,
+	}
+	for i := 0; i < origFnT.NumIn(); i++ {
+		invokeParamTypes = append(invokeParamTypes, origFnT.In(i))
+	}
+	invokeFnT := reflect.FuncOf(invokeParamTypes, []reflect.Type{}, false)
+	invokeFn := reflect.MakeFunc(invokeFnT, func(args []reflect.Value) (results []reflect.Value) {
+		lc := args[0].Interface().(Lifecycle)
+		args = args[1:]
+		hookFn := func(ctx context.Context) (err error) {
+			// If the hook function has multiple parameters, and the first
+			// parameter is a context, inject the provided context.
+			if origFnT.NumIn() > 0 {
+				paramType := origFnT.In(0)
+				if paramType == _typeOfContext {
+					args[0] = reflect.ValueOf(ctx)
+				} else if paramType.Kind() == reflect.Struct && dig.IsIn(reflect.New(paramType).Elem().Interface()) {
+					for i := 1; i < paramType.NumField(); i++ {
+						field := paramType.Field(i)
+					}
+				}
+			}
+
+			results := origFn.Call(args)
+			if len(results) > 0 && results[0].Type() == _typeOfError {
+				err, _ = results[0].Interface().(error)
+			}
+
+			return
+		}
+		lc.Append(la.buildHook(hookFn))
+	})
+
+	installerType := reflect.FuncOf(append(paramTypes, resultTypes...), []reflect.Type{}, false)
+	hookInstaller = reflect.MakeFunc(installerType, func(args []reflect.Value) (result []reflect.Value) {
+		var hookScope *dig.Scope
+		switch la.Type {
+		case _onStartHookType:
+			hookScope = ann.container.Scope("onStartHookScope")
+		case _onStopHookType:
+			hookScope = ann.container.Scope("onStopHookScope")
+		}
+		hookScope.Provide(makeHookScopeCtor(paramTypes, resultTypes))
+		hookScope.Invoke(invokeFn.Interface())
+		return
+	})
+}
+
+func makeHookScopeCtor(paramTypes []reflect.Type, resultTypes []reflect.Type) interface{} {
+	fields := []reflect.StructField{
+		{
+			Name:      "Out",
+			Type:      reflect.TypeOf(Out{}),
+			Anonymous: true,
+		},
+	}
+	if len(paramTypes) > 0 && paramTypes[0].Kind() == reflect.Struct &&
+		dig.IsIn(reflect.New(paramTypes[0]).Elem().Interface()) {
+		taggedParam := paramTypes[0]
+		for i := 1; i < taggedParam.NumField(); i++ {
+			origField := taggedParam.Field(i)
+			field := reflect.StructField{
+				Name: fmt.Sprintf("Field%d", i-1),
+				Type: origField.Type,
+				Tag:  origField.Tag,
+			}
+			fields = append(fields, field)
+		}
+	} else {
+		for i, t := range paramTypes {
+			field := reflect.StructField{
+				Name: fmt.Sprintf("Field%d", i),
+				Type: t,
+			}
+			fields = append(fields, field)
+		}
+	}
+	outTypes := make([]reflect.Type, len(resultTypes)+1)
+	outTypes[0] = reflect.StructOf(fields)
+	for i, t := range resultTypes {
+		outTypes[i+1] = t
+	}
+	ctorType := reflect.FuncOf([]reflect.Type{}, outTypes, false)
+	ctor := reflect.MakeFunc(ctorType, func(args []reflect.Value) []reflect.Value {
+
+		return []reflect.Value{}
+	})
+}
+
+func injectLifecycle(paramTypes []reflect.Type) ([]reflect.Type, func([]reflect.Value) []reflect.Value) {
+	// since lifecycle already exists in param types, no need to inject again
+	if lifecycleExists(paramTypes) {
+		return paramTypes, func(args []reflect.Value) []reflect.Value {
+			return args
+		}
+	}
+	// If params are tagged or there's an untagged variadic arguement,
+	// add a Lifecycle field to the param struct
+	if len(paramTypes) > 0 && paramTypes[0].Kind() == reflect.Struct &&
+		dig.IsIn(reflect.New(paramTypes[0]).Elem().Interface()) {
+		taggedParam := paramTypes[0]
+		fields := []reflect.StructField{
+			taggedParam.Field(0),
+			{
+				Name: "Lifecycle",
+				Type: _typeOfLifecycle,
+			},
+		}
+		for i := 1; i < taggedParam.NumField(); i++ {
+			fields = append(fields, taggedParam.Field(i))
+		}
+		newParamType := reflect.StructOf(fields)
+		return []reflect.Type{newParamType}, func(args []reflect.Value) []reflect.Value {
+			param := args[0]
+			args[0] = reflect.New(taggedParam).Elem()
+			for i := 1; i < taggedParam.NumField(); i++ {
+				args[0].Field(i).Set(param.Field(i + 1))
+			}
+			return args
+		}
+	}
+
+	return append([]reflect.Type{_typeOfLifecycle}, paramTypes...), func(args []reflect.Value) []reflect.Value {
+		return args[1:]
+	}
+}
+func lifecycleExists(paramTypes []reflect.Type) bool {
+	for _, t := range paramTypes {
+		if t == _typeOfLifecycle {
+			return true
+		}
+		if t.Kind() == reflect.Struct && dig.IsIn(reflect.New(t).Elem().Interface()) {
+			return t.Field(1).Type == _typeOfLifecycle
+		}
+	}
+	return false
 }
 
 var _ Annotation = (*lifecycleHookAnnotation)(nil)
@@ -538,6 +986,169 @@ func OnStop(onStop interface{}) Annotation {
 
 type asAnnotation struct {
 	targets []interface{}
+	types   []reflect.Type
+}
+
+// build implements Annotation
+func (at asAnnotation) build(ann *annotated) (interface{}, error) {
+	paramTypes := ann.currentParamTypes()
+
+	resultTypes, remapResults, err := at.results(ann)
+	if err != nil {
+		return nil, err
+	}
+
+	origFn := reflect.ValueOf(ann.Target)
+	newFnType := reflect.FuncOf(paramTypes, resultTypes, false)
+	newFn := reflect.MakeFunc(newFnType, func(args []reflect.Value) []reflect.Value {
+		results := origFn.Call(args)
+		return remapResults(results)
+	})
+	return newFn.Interface(), nil
+}
+
+func (at asAnnotation) results(ann *annotated) (
+	types []reflect.Type,
+	remap func([]reflect.Value) []reflect.Value,
+	err error,
+) {
+	types, hasError := ann.currentResultTypes()
+
+	fields := []reflect.StructField{
+		{
+			Name:      "Out",
+			Type:      reflect.TypeOf(Out{}),
+			Anonymous: true,
+		},
+	}
+
+	// if already went through a ResultTags annotation,
+	if taggedResType, resultTagged := checkIfResultTagged(types); resultTagged {
+		for i := 1; i < taggedResType.NumField(); i++ {
+			origField := taggedResType.Field(i)
+			t := origField.Type
+			field := reflect.StructField{
+				Name: fmt.Sprintf("Field%d", i-1),
+				Tag:  origField.Tag,
+			}
+
+			if i-1 < len(at.types) {
+				if !t.Implements(at.types[i-1]) {
+					return nil, nil, fmt.Errorf("invalid fx.As: %v does not implement %v", t, ann.As[i])
+				}
+				field.Type = at.types[i-1]
+				fields = append(fields, field)
+			}
+		}
+		resType := reflect.StructOf(fields)
+		var outTypes []reflect.Type
+		if hasError {
+			outTypes = append(types[0:len(types)-1], resType, types[len(types)-1])
+		} else {
+			outTypes = append(types, resType)
+		}
+		return outTypes, func(results []reflect.Value) []reflect.Value {
+			var (
+				outErr     error
+				outResults []reflect.Value
+			)
+			newOutResult := reflect.New(resType).Elem()
+
+			for i, r := range results {
+				if i == len(results)-1 && hasError {
+					// If hasError and this is the last item,
+					// we are guaranteed that this is an error
+					// object.
+					if err, _ := r.Interface().(error); err != nil {
+						outErr = err
+					}
+					continue
+				}
+				outResults = append(outResults, r)
+				if i == 0 {
+					for j := 1; j < resType.NumField(); j++ {
+						newOutResult.Field(j).Set(r.Field(j))
+					}
+				}
+			}
+
+			outResults = append(outResults, newOutResult)
+
+			if hasError {
+				if outErr != nil {
+					outResults = append(outResults, reflect.ValueOf(outErr))
+				} else {
+					outResults = append(outResults, _nilError)
+				}
+			}
+
+			return outResults
+		}, nil
+	}
+	// not yet went through a ResultTags annotation
+	for i, t := range types {
+		if t.Kind() == reflect.Struct || t == _typeOfError {
+			continue
+		}
+
+		field := reflect.StructField{Name: fmt.Sprintf("Field%d", i)}
+
+		if i < len(at.types) {
+			if !t.Implements(at.types[i]) {
+				return nil, nil, fmt.Errorf("invalid fx.As: %v does not implement %v", t, ann.As[i])
+			}
+			field.Type = at.types[i]
+			fields = append(fields, field)
+		}
+	}
+	resType := reflect.StructOf(fields)
+	var outTypes []reflect.Type
+	if hasError {
+		outTypes = append(types[0:len(types)-1], resType, types[len(types)-1])
+	} else {
+		outTypes = append(types, resType)
+	}
+	return outTypes, func(results []reflect.Value) []reflect.Value {
+		var (
+			outErr     error
+			outResults []reflect.Value
+		)
+		newOutResult := reflect.New(resType).Elem()
+
+		for i, r := range results {
+			if i == len(results)-1 && hasError {
+				// If hasError and this is the last item,
+				// we are guaranteed that this is an error
+				// object.
+				if err, _ := r.Interface().(error); err != nil {
+					outErr = err
+				}
+				continue
+			}
+			outResults = append(outResults, r)
+			if r.Type().Kind() != reflect.Struct && newOutResult.NumField() > i+1 {
+				newOutResult.Field(i + 1).Set(r)
+			}
+		}
+
+		outResults = append(outResults, newOutResult)
+
+		if hasError {
+			if outErr != nil {
+				outResults = append(outResults, reflect.ValueOf(outErr))
+			} else {
+				outResults = append(outResults, _nilError)
+			}
+		}
+
+		return outResults
+	}, nil
+}
+
+func checkIfResultTagged(results []reflect.Type) (reflect.Type, bool) {
+	taggedResType := results[0]
+	resultTagged := taggedResType.Kind() == reflect.Struct
+	return taggedResType, resultTagged
 }
 
 var _ Annotation = asAnnotation{}
@@ -582,7 +1193,11 @@ var _ Annotation = asAnnotation{}
 //	  return w, r
 //	}
 func As(interfaces ...interface{}) Annotation {
-	return asAnnotation{interfaces}
+	types := make([]reflect.Type, len(interfaces))
+	for i, typ := range interfaces {
+		types[i] = reflect.TypeOf(typ).Elem()
+	}
+	return asAnnotation{targets: interfaces, types: types}
 }
 
 func (at asAnnotation) apply(ann *annotated) error {
@@ -601,12 +1216,14 @@ func (at asAnnotation) apply(ann *annotated) error {
 }
 
 type annotated struct {
-	Target     interface{}
-	ParamTags  []string
-	ResultTags []string
-	As         [][]reflect.Type
-	FuncPtr    uintptr
-	Hooks      []*lifecycleHookAnnotation
+	Target      interface{}
+	Annotations []Annotation
+	ParamTags   []string
+	ResultTags  []string
+	As          [][]reflect.Type
+	FuncPtr     uintptr
+	Hooks       []*lifecycleHookAnnotation
+	container   *dig.Container
 }
 
 func (ann annotated) String() string {
@@ -628,6 +1245,78 @@ func (ann annotated) String() string {
 // Build builds and returns a constructor based on fx.In/fx.Out params and
 // results wrapping the original constructor passed to fx.Annotate.
 func (ann *annotated) Build() (interface{}, error) {
+	// return ann.build()
+	ann.container = dig.New()
+	ft := reflect.TypeOf(ann.Target)
+	if ft.Kind() != reflect.Func {
+		return nil, fmt.Errorf("must provide constructor function, got %v (%T)", ann.Target, ann.Target)
+	}
+
+	if err := ann.typeCheckOrigFn(); err != nil {
+		return nil, fmt.Errorf("invalid annotation function %T: %w", ann.Target, err)
+	}
+
+	// app
+	ann.prebuild()
+
+	var err error
+	for _, annotation := range ann.Annotations {
+		if ann.Target, err = annotation.build(ann); err != nil {
+			return nil, err
+		}
+	}
+	// before returning the transformed function, do a final check to see if an As annotation was applied
+	// if there are more than one Out struct returning, at least one As annotation was applied
+	// if it was, wrap the function one more time to remove the first out type
+	return ann.Target, nil
+}
+
+// prebuild checks if function being annotated is variadic
+// and applies optional tag to the variadic argument before
+// applying any other annotations
+func (ann *annotated) prebuild() {
+	ft := reflect.TypeOf(ann.Target)
+	if !ft.IsVariadic() {
+		return
+	}
+
+	resultTypes, _ := ann.currentResultTypes()
+
+	fields := []reflect.StructField{
+		{
+			Name:      "In",
+			Type:      reflect.TypeOf(In{}),
+			Anonymous: true,
+		},
+	}
+	for i := 0; i < ft.NumIn(); i++ {
+		field := reflect.StructField{
+			Name: fmt.Sprintf("Field%d", i),
+			Type: ft.In(i),
+		}
+		if i == ft.NumIn()-1 {
+			// Mark a variadic argument optional by default
+			// so that just wrapping a function in fx.Annotate does not
+			// suddenly introduce a required []arg dependency.
+			field.Tag = reflect.StructTag(`optional:"true"`)
+		}
+	}
+	paramType := reflect.StructOf(fields)
+
+	origFn := reflect.ValueOf(ann.Target)
+	newFnType := reflect.FuncOf([]reflect.Type{paramType}, resultTypes, false)
+	newFn := reflect.MakeFunc(newFnType, func(args []reflect.Value) []reflect.Value {
+		params := args[0]
+		args = args[:0]
+		for i := 0; i < ft.NumIn(); i++ {
+			args = append(args, params.Field(i+1))
+		}
+		return origFn.CallSlice(args)
+	})
+	ann.Target = newFn.Interface()
+}
+
+func (ann *annotated) build() (interface{}, error) {
 	ft := reflect.TypeOf(ann.Target)
 	if ft.Kind() != reflect.Func {
 		return nil, fmt.Errorf("must provide constructor function, got %v (%T)", ann.Target, ann.Target)
@@ -691,8 +1380,15 @@ func (ann *annotated) Build() (interface{}, error) {
 // fx.In struct as a parameter.
 func (ann *annotated) typeCheckOrigFn() error {
 	ft := reflect.TypeOf(ann.Target)
-	for i := 0; i < ft.NumOut(); i++ {
+	numOut := ft.NumOut()
+	for i := 0; i < numOut; i++ {
 		ot := ft.Out(i)
+		if ot == _typeOfError && i != numOut-1 {
+			return fmt.Errorf(
+				"only the last result can be an error: "+
+					"%v (%v) returns error as result %d",
+				fxreflect.FuncName(ann.Target), ft, i)
+		}
 		if ot.Kind() != reflect.Struct {
 			continue
 		}
@@ -711,6 +1407,30 @@ func (ann *annotated) typeCheckOrigFn() error {
 		}
 	}
 	return nil
+}
+
+func (ann *annotated) currentResultTypes() (resultTypes []reflect.Type, hasError bool) {
+	ft := reflect.TypeOf(ann.Target)
+	numOut := ft.NumOut()
+	resultTypes = make([]reflect.Type, numOut)
+
+	for i := 0; i < numOut; i++ {
+		resultTypes[i] = ft.Out(i)
+		if resultTypes[i] == _typeOfError && i == numOut-1 {
+			hasError = true
+		}
+	}
+	return
+}
+
+func (ann *annotated) currentParamTypes() []reflect.Type {
+	ft := reflect.TypeOf(ann.Target)
+	paramTypes := make([]reflect.Type, ft.NumIn())
+
+	for i := 0; i < ft.NumIn(); i++ {
+		paramTypes[i] = ft.In(i)
+	}
+	return paramTypes
 }
 
 // parameters returns the type for the parameters of the annotated function,
@@ -1044,5 +1764,6 @@ func Annotate(t interface{}, anns ...Annotation) interface{} {
 			}
 		}
 	}
+	result.Annotations = anns
 	return result
 }

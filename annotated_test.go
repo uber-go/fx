@@ -213,12 +213,18 @@ func TestAnnotatedAs(t *testing.T) {
 					return &asStringer{name: "stringer"}
 				},
 					fx.As(new(fmt.Stringer)),
-					fx.As(new(myStringer))),
+					fx.As(new(myStringer)),
+					fx.ResultTags(`name:"stringer"`)),
 			),
-			invoke: func(s fmt.Stringer, ms myStringer) {
-				assert.Equal(t, "stringer", s.String())
-				assert.Equal(t, "stringer", ms.String())
-			},
+			invoke: fx.Annotate(
+				func(
+					S fmt.Stringer,
+					MS myStringer,
+				) {
+					assert.Equal(t, "stringer", S.String())
+					assert.Equal(t, "stringer", MS.String())
+				}, fx.ParamTags(`name:"stringer"`, `name:"stringer"`),
+			),
 		},
 		{
 			desc: "annotate as many interfaces with both-annotated return values",
