@@ -87,6 +87,7 @@ Let's try to fix this.
 
 We introduced an interface to decouple the implementation
 from the consumer.
-We then annotated a previously provided constructor
-with `fx.Annotate` and `fx.As` to cast its result to that interface.
+We then [annotated](../annotate.md) a previously provided constructor
+with `fx.Annotate` and `fx.As`
+to [cast its result to that interface](../annotate.md#casting-structs-to-interfaces).
 This way, `NewEchoHandler` was able to continue returning an `*EchoHandler`.

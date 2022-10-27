@@ -1,4 +1,4 @@
-// Copyright (c) 2019 Uber Technologies, Inc.
+// Copyright (c) 2022 Uber Technologies, Inc.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -18,39 +18,40 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package fx_test
+package feed
 
 import (
-	"errors"
-	"fmt"
-	"net/http"
-	"os"
+	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"go.uber.org/fx"
+	"go.uber.org/fx/fxtest"
 )
 
-func ExampleError() {
-	// A module that provides a HTTP server depends on
-	// the $PORT environment variable. If the variable
-	// is unset, the module returns an fx.Error option.
-	newHTTPServer := func() fx.Option {
-		port := os.Getenv("PORT")
-		if port == "" {
-			return fx.Error(errors.New("$PORT is not set"))
-		}
-		return fx.Provide(&http.Server{
-			Addr: fmt.Sprintf("127.0.0.1:%s", port),
-		})
+func TestWatcherModules(t *testing.T) {
+	tests := []struct {
+		name   string
+		module fx.Option
+	}{
+		{"Results", ResultModule},
+		{"Annotated", AnnotateModule},
+		{"FileWatcher", FileWatcherModule},
 	}
 
-	app := fx.New(
-		fx.NopLogger,
-		newHTTPServer(),
-		fx.Invoke(func(s *http.Server) error { return s.ListenAndServe() }),
-	)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var out struct {
+				fx.In
 
-	fmt.Println(app.Err())
+				Watchers []Watcher `group:"watchers"`
+			}
+			app := fxtest.New(t,
+				tt.module,
+				fx.Populate(&out),
+			)
+			app.RequireStart().RequireStop()
 
-	// Output:
-	// $PORT is not set
+			assert.Len(t, out.Watchers, 1)
+		})
+	}
 }

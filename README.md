@@ -23,7 +23,7 @@ go get go.uber.org/fx@v1
 
 ## Getting started
 
-To get started with Fx, [start here](docs/get-started/README.md).
+To get started with Fx, [start here](https://uber-go.github.io/fx/get-started/).
 
 ## Stability
 

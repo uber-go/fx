@@ -1,4 +1,4 @@
-// Copyright (c) 2020-2021 Uber Technologies, Inc.
+// Copyright (c) 2022 Uber Technologies, Inc.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -205,7 +205,8 @@ func TestNewApp(t *testing.T) {
 				func(b struct {
 					In
 					Foos []int `group:"foo"`
-				}) {
+				},
+				) {
 					assert.Len(t, b.Foos, 1)
 				},
 			),
@@ -381,7 +382,6 @@ func TestNewApp(t *testing.T) {
 			[]string{"Provided", "Provided", "Provided", "Provided", "Decorated", "Decorated", "LoggerInitialized", "Started"},
 			spy.EventTypes())
 	})
-
 }
 
 func TestWithLoggerErrorUseDefault(t *testing.T) {
@@ -793,13 +793,13 @@ func TestAppRunTimeout(t *testing.T) {
 	t.Parallel()
 
 	// Fails with an error immediately.
-	failure := func(context.Context) error {
+	failure := func() error {
 		return errors.New("great sadness")
 	}
 
 	// Builds a hook that takes much longer than the application timeout.
-	takeVeryLong := func(clock *clock.Mock) func(ctx context.Context) error {
-		return func(ctx context.Context) error {
+	takeVeryLong := func(clock *clock.Mock) func() error {
+		return func() error {
 			// We'll exceed the start and stop timeouts,
 			// and then some.
 			for i := 0; i < 3; i++ {
@@ -825,7 +825,7 @@ func TestAppRunTimeout(t *testing.T) {
 			desc: "OnStart timeout",
 			buildHooks: func(clock *clock.Mock) []Hook {
 				return []Hook{
-					{OnStart: takeVeryLong(clock)},
+					StartHook(takeVeryLong(clock)),
 				}
 			},
 			wantEventType: &fxevent.Started{},
@@ -837,8 +837,8 @@ func TestAppRunTimeout(t *testing.T) {
 				return []Hook{
 					// The hooks are separate because
 					// OnStop will not be run if that hook failed.
-					{OnStop: takeVeryLong(clock)},
-					{OnStart: failure},
+					StartHook(takeVeryLong(clock)),
+					StopHook(failure),
 				}
 			},
 			wantEventType: &fxevent.Started{},
@@ -848,7 +848,7 @@ func TestAppRunTimeout(t *testing.T) {
 			desc: "OnStop timeout",
 			buildHooks: func(clock *clock.Mock) []Hook {
 				return []Hook{
-					{OnStop: takeVeryLong(clock)},
+					StopHook(takeVeryLong(clock)),
 				}
 			},
 			wantEventType: &fxevent.Stopped{},
@@ -1428,6 +1428,275 @@ func TestValidateApp(t *testing.T) {
 	})
 }
 
+func TestHookConstructors(t *testing.T) {
+	t.Run("all", func(t *testing.T) {
+		var (
+			calls = map[string]int{
+				"start func":         0,
+				"start func err":     0,
+				"start ctx func":     0,
+				"start ctx func err": 0,
+				"stop func":          0,
+				"stop func err":      0,
+				"stop ctx func":      0,
+				"stop ctx func err":  0,
+			}
+			nilFunc             func()
+			nilErrorFunc        func() error
+			nilContextFunc      func(context.Context)
+			nilContextErrorFunc func(context.Context) error
+		)
+
+		fxtest.New(
+			t,
+			Invoke(func(lc Lifecycle) {
+				// Nil functions
+				lc.Append(StartStopHook(nilFunc, nilErrorFunc))
+				lc.Append(StartStopHook(nilContextFunc, nilContextErrorFunc))
+
+				// Start hooks
+				lc.Append(StartHook(func() {
+					calls["start func"]++
+				}))
+				lc.Append(StartHook(func() error {
+					calls["start func err"]++
+					return nil
+				}))
+				lc.Append(StartHook(func(context.Context) {
+					calls["start ctx func"]++
+				}))
+				lc.Append(StartHook(func(context.Context) error {
+					calls["start ctx func err"]++
+					return nil
+				}))
+
+				// Stop hooks
+				lc.Append(StopHook(func() {
+					calls["stop func"]++
+				}))
+				lc.Append(StopHook(func() error {
+					calls["stop func err"]++
+					return nil
+				}))
+				lc.Append(StopHook(func(context.Context) {
+					calls["stop ctx func"]++
+				}))
+				lc.Append(StopHook(func(context.Context) error {
+					calls["stop ctx func err"]++
+					return nil
+				}))
+
+				// StartStop hooks
+				lc.Append(StartStopHook(
+					func() {
+						calls["start func"]++
+					},
+					func() error {
+						calls["stop func err"]++
+						return nil
+					},
+				))
+				lc.Append(StartStopHook(
+					func() error {
+						calls["start func err"]++
+						return nil
+					},
+					func(context.Context) {
+						calls["stop ctx func"]++
+					},
+				))
+				lc.Append(StartStopHook(
+					func(context.Context) {
+						calls["start ctx func"]++
+					},
+					func(context.Context) error {
+						calls["stop ctx func err"]++
+						return nil
+					},
+				))
+				lc.Append(StartStopHook(
+					func(context.Context) error {
+						calls["start ctx func err"]++
+						return nil
+					},
+					func() {
+						calls["stop func"]++
+					},
+				))
+			}),
+		).RequireStart().RequireStop()
+
+		for name, count := range calls {
+			require.Equalf(t, 2, count, "bad call count: %s (%d)", name, count)
+		}
+	})
+
+	t.Run("start errors", func(t *testing.T) {
+		wantErr := errors.New("oh no")
+
+		// Verify that wrapped `func() error` funcs produce the expected error.
+		err := New(Invoke(func(lc Lifecycle) {
+			lc.Append(StartHook(func() error {
+				return wantErr
+			}))
+		})).Start(context.Background())
+		require.ErrorContains(t, err, wantErr.Error())
+
+		// Verify that wrapped `func(context.Context) error` funcs produce the
+		// expected error.
+		err = New(Invoke(func(lc Lifecycle) {
+			lc.Append(StartHook(func(ctx context.Context) error {
+				return wantErr
+			}))
+		})).Start(context.Background())
+		require.ErrorContains(t, err, wantErr.Error())
+	})
+
+	t.Run("start deadline", func(t *testing.T) {
+		wantCtx, cancel := context.WithTimeout(context.Background(), 123*time.Second)
+		defer cancel()
+
+		// Verify that `func(context.Context)` funcs receive the expected
+		// deadline.
+		app := New(Invoke(func(lc Lifecycle) {
+			lc.Append(StartHook(func(ctx context.Context) {
+				var (
+					want, wantOK = wantCtx.Deadline()
+					give, giveOK = ctx.Deadline()
+				)
+
+				require.Equal(t, wantOK, giveOK)
+				require.True(t, want.Equal(give))
+			}))
+		}))
+		require.NoError(t, app.Start(wantCtx))
+		require.NoError(t, app.Stop(wantCtx))
+
+		// Verify that `func(context.Context) error` funcs receive the expected
+		// deadline.
+		app = New(Invoke(func(lc Lifecycle) {
+			lc.Append(StartHook(func(ctx context.Context) error {
+				var (
+					want, wantOK = wantCtx.Deadline()
+					give, giveOK = ctx.Deadline()
+				)
+
+				require.Equal(t, wantOK, giveOK)
+				require.True(t, want.Equal(give))
+
+				return nil
+			}))
+		}))
+		require.NoError(t, app.Start(wantCtx))
+		require.NoError(t, app.Stop(wantCtx))
+	})
+
+	t.Run("stop errors", func(t *testing.T) {
+		var (
+			ctx     = context.Background()
+			wantErr = errors.New("oh no")
+		)
+
+		// Verify that wrapped `func() error` funcs produce the expected error.
+		app := New(Invoke(func(lc Lifecycle) {
+			lc.Append(StopHook(func() error {
+				return wantErr
+			}))
+		}))
+		require.NoError(t, app.Start(ctx))
+		require.ErrorContains(t, app.Stop(ctx), wantErr.Error())
+
+		// Verify that wrapped `func(context.Context) error` funcs produce the
+		// expected error.
+		app = New(Invoke(func(lc Lifecycle) {
+			lc.Append(StopHook(func(ctx context.Context) error {
+				return wantErr
+			}))
+		}))
+		require.NoError(t, app.Start(ctx))
+		require.ErrorContains(t, app.Stop(ctx), wantErr.Error())
+	})
+
+	t.Run("stop deadline", func(t *testing.T) {
+		wantCtx, cancel := context.WithTimeout(
+			context.Background(),
+			123*time.Second,
+		)
+		defer cancel()
+
+		// Verify that `func(context.Context)` funcs receive the expected
+		// deadline.
+		app := New(Invoke(func(lc Lifecycle) {
+			lc.Append(StopHook(func(ctx context.Context) {
+				var (
+					want, wantOK = wantCtx.Deadline()
+					give, giveOK = ctx.Deadline()
+				)
+
+				require.Equal(t, wantOK, giveOK)
+				require.True(t, want.Equal(give))
+			}))
+		}))
+		require.NoError(t, app.Start(wantCtx))
+		require.NoError(t, app.Stop(wantCtx))
+
+		// Verify that `func(context.Context) error` funcs receive the expected
+		// deadline.
+		app = New(Invoke(func(lc Lifecycle) {
+			lc.Append(StopHook(func(ctx context.Context) error {
+				var (
+					want, wantOK = wantCtx.Deadline()
+					give, giveOK = ctx.Deadline()
+				)
+
+				require.Equal(t, wantOK, giveOK)
+				require.True(t, want.Equal(give))
+
+				return nil
+			}))
+		}))
+		require.NoError(t, app.Start(wantCtx))
+		require.NoError(t, app.Stop(wantCtx))
+	})
+
+	t.Run("typed", func(t *testing.T) {
+		type (
+			funcType       func()
+			funcErrType    func() error
+			ctxFuncType    func(context.Context)
+			ctxFuncErrType func(context.Context) error
+		)
+
+		var (
+			calls  int
+			myFunc = funcType(func() {
+				calls++
+			})
+			myFuncErr = funcErrType(func() error {
+				calls++
+				return nil
+			})
+			myCtxFunc = ctxFuncType(func(context.Context) {
+				calls++
+			})
+			myCtxFuncErr = ctxFuncErrType(func(context.Context) error {
+				calls++
+				return nil
+			})
+		)
+
+		// Ensure that user function types that are assignable to supported
+		// base function types are converted as expected.
+		require.NotPanics(t, func() {
+			fxtest.New(t, Invoke(func(lc Lifecycle) {
+				lc.Append(StartStopHook(myFunc, myFuncErr))
+				lc.Append(StartStopHook(myCtxFunc, myCtxFuncErr))
+			})).RequireStart().RequireStop()
+		})
+		require.Equal(t, 4, calls)
+	})
+}
+
 func TestDone(t *testing.T) {
 	t.Parallel()
 
@@ -1661,7 +1930,6 @@ func TestErrorHook(t *testing.T) {
 		assert.Contains(t, graphStr, `"fx_test.B" [color=red];`)
 		assert.Contains(t, graphStr, `"fx_test.A" [color=orange];`)
 	})
-
 }
 
 func TestOptionString(t *testing.T) {

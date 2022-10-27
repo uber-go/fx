@@ -36,9 +36,11 @@ Let's fix that.
        fx.Invoke(func(*http.Server) {}),
    ```
 
-2. Next, add a function that builds a `*http.ServeMux`
-   to route requests to this handler.
-   The new function will accept the `*EchoHandler` as an argument.
+2. Next, write a function that builds an `*http.ServeMux`.
+   The `*http.ServeMux` will route requests received by the server to different
+   handlers.
+   To begin with, it will route requests sent to `/echo` to `*EchoHandler`,
+   so its constructor should accept `*EchoHandler` as an argument.
 
    ```go mdox-exec='region ex/get-started/03-echo-handler/main.go serve-mux'
    // NewServeMux builds a ServeMux that will route requests

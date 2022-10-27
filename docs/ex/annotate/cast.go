@@ -1,4 +1,4 @@
-// Copyright (c) 2019 Uber Technologies, Inc.
+// Copyright (c) 2022 Uber Technologies, Inc.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -18,39 +18,54 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package fx_test
+package annotate
 
 import (
-	"errors"
-	"fmt"
 	"net/http"
-	"os"
 
 	"go.uber.org/fx"
+	"go.uber.org/fx/docs/ex/annotate/github"
 )
 
-func ExampleError() {
-	// A module that provides a HTTP server depends on
-	// the $PORT environment variable. If the variable
-	// is unset, the module returns an fx.Error option.
-	newHTTPServer := func() fx.Option {
-		port := os.Getenv("PORT")
-		if port == "" {
-			return fx.Error(errors.New("$PORT is not set"))
-		}
-		return fx.Provide(&http.Server{
-			Addr: fmt.Sprintf("127.0.0.1:%s", port),
-		})
-	}
+// HTTPClient matches the http.Client interface.
+// region interface
+type HTTPClient interface {
+	Do(*http.Request) (*http.Response, error)
+}
 
-	app := fx.New(
-		fx.NopLogger,
-		newHTTPServer(),
-		fx.Invoke(func(s *http.Server) error { return s.ListenAndServe() }),
+// This is a compile-time check that verifies
+// that our interface matches the API of http.Client.
+var _ HTTPClient = (*http.Client)(nil)
+
+// endregion interface
+
+// Config specifies the configuration of a client.
+type Config struct{}
+
+// NewHTTPClient builds a new HTTP client.
+// region constructor
+func NewHTTPClient(Config) (*http.Client, error) {
+	// endregion constructor
+	return http.DefaultClient, nil
+}
+
+// NewGitHubClient builds a new GitHub client.
+// region iface-consumer
+func NewGitHubClient(client HTTPClient) *github.Client {
+	// endregion iface-consumer
+	return new(github.Client)
+}
+
+func options() fx.Option {
+	return fx.Options(
+		// region provides
+		fx.Provide(
+			fx.Annotate(
+				NewHTTPClient,
+				fx.As(new(HTTPClient)),
+			),
+			NewGitHubClient,
+		),
+		// endregion provides
 	)
-
-	fmt.Println(app.Err())
-
-	// Output:
-	// $PORT is not set
 }
