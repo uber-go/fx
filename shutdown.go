@@ -169,7 +169,7 @@ type errOnUnsentSignal struct {
 
 func (err *errOnUnsentSignal) Error() string {
 	return fmt.Sprintf(
-		"failed to send %v signal to %v out of %v channels",
+		"send %v signal: %v/%v channels are blocked",
 		err.Signal,
 		err.Unsent,
 		err.Channels,
