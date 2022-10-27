@@ -400,7 +400,9 @@ func New(opts ...Option) *App {
 		clock:        fxclock.System,
 		startTimeout: DefaultTimeout,
 		stopTimeout:  DefaultTimeout,
+		stopch:       make(chan struct{}),
 	}
+
 	app.root = &module{
 		app: app,
 		// We start with a logger that writes to stderr. One of the
@@ -415,11 +417,7 @@ func New(opts ...Option) *App {
 		// user gave us. For the last case, however, we need to fall
 		// back to what was provided to fx.Logger if fx.WithLogger
 		// fails.
-		log:          logger,
-		clock:        fxclock.System,
-		startTimeout: DefaultTimeout,
-		stopTimeout:  DefaultTimeout,
-		stopch:       make(chan struct{}),
+		log: logger,
 	}
 	app.modules = append(app.modules, app.root)
 
@@ -569,7 +567,7 @@ func (app *App) run(done <-chan ShutdownSignal) (exitCode int) {
 	}
 
 	sig := <-done
-	app.log.LogEvent(&fxevent.Stopping{Signal: sig.Signal})
+	app.log().LogEvent(&fxevent.Stopping{Signal: sig.Signal})
 
 	stopCtx, cancel := app.clock.WithTimeout(context.Background(), app.StopTimeout())
 	defer cancel()
@@ -621,7 +619,7 @@ var (
 func (app *App) Start(ctx context.Context) (err error) {
 	defer func() {
 		app.runStart.Do(func() {
-			app.log.LogEvent(&fxevent.Started{Err: err})
+			app.log().LogEvent(&fxevent.Started{Err: err})
 		})
 	}()
 
@@ -667,7 +665,7 @@ func (app *App) Stop(ctx context.Context) (err error) {
 	defer func() {
 		// Protect the Stop hooks from being called multiple times.
 		app.runStop.Do(func() {
-			app.log.LogEvent(&fxevent.Stopped{Err: err})
+			app.log().LogEvent(&fxevent.Stopped{Err: err})
 			close(app.stopch)
 		})
 	}()
