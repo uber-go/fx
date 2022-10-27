@@ -1,4 +1,4 @@
-// Copyright (c) 2019 Uber Technologies, Inc.
+// Copyright (c) 2022 Uber Technologies, Inc.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -18,39 +18,32 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package fx_test
+//go:build ignore
+// +build ignore
+
+package annotate
 
 import (
-	"errors"
-	"fmt"
 	"net/http"
-	"os"
 
 	"go.uber.org/fx"
+	"go.uber.org/fx/docs/ex/annotate/github"
 )
 
-func ExampleError() {
-	// A module that provides a HTTP server depends on
-	// the $PORT environment variable. If the variable
-	// is unset, the module returns an fx.Error option.
-	newHTTPServer := func() fx.Option {
-		port := os.Getenv("PORT")
-		if port == "" {
-			return fx.Error(errors.New("$PORT is not set"))
-		}
-		return fx.Provide(&http.Server{
-			Addr: fmt.Sprintf("127.0.0.1:%s", port),
-		})
-	}
+// NewGitHubClient builds a new GitHub client.
+// region struct-consumer
+func NewGitHubClient(client *http.Client) *github.Client {
+	// endregion struct-consumer
+	return new(github.Client)
+}
 
-	app := fx.New(
-		fx.NopLogger,
-		newHTTPServer(),
-		fx.Invoke(func(s *http.Server) error { return s.ListenAndServe() }),
+func options() fx.Option {
+	return fx.Options(
+		// region provides
+		fx.Provide(
+			NewHTTPClient,
+			NewGitHubClient,
+		),
+		// endregion provides
 	)
-
-	fmt.Println(app.Err())
-
-	// Output:
-	// $PORT is not set
 }

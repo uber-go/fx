@@ -69,6 +69,11 @@ To use result objects in Fx, take the following steps:
 TODO: cover various tags supported on a result object.
 -->
 
+Once you have a result object on a function,
+you can use it to access other advanced features of Fx:
+
+- [Feeding value groups with result objects](value-groups/feed.md#with-result-objects)
+
 ## Adding new results
 
 You can add new values to an existing result object

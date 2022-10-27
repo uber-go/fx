@@ -66,6 +66,11 @@ To use parameter objects in Fx, take the following steps:
      }, nil
    ```
 
+Once you have a parameter object on a function,
+you can use it to access other advanced features of Fx:
+
+- [Consuming value groups with parameter objects](value-groups/consume.md#with-parameter-objects)
+
 <!--
 TODO: cover various tags supported on a parameter object.
 -->

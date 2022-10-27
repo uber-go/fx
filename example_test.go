@@ -122,7 +122,7 @@ func NewMux(lc fx.Lifecycle, logger *log.Logger) *http.ServeMux {
 	// until all handlers are registered.
 	mux := http.NewServeMux()
 	server := &http.Server{
-		Addr:    ":8080",
+		Addr:    "127.0.0.1:8080",
 		Handler: mux,
 	}
 	// If NewMux is called, we know that another function is using the mux. In
