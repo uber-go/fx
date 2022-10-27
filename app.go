@@ -275,7 +275,9 @@ type App struct {
 	err       error
 	clock     fxclock.Clock
 	lifecycle *lifecycleWrapper
-	stopch    chan struct{} // closed when Stop is called
+
+	stopch     chan struct{} // closed when Stop is called
+	stopChLock sync.RWMutex  // mutex for init and closing of stopch
 
 	container *dig.Container
 	root      *module
@@ -400,7 +402,6 @@ func New(opts ...Option) *App {
 		clock:        fxclock.System,
 		startTimeout: DefaultTimeout,
 		stopTimeout:  DefaultTimeout,
-		stopch:       make(chan struct{}),
 	}
 
 	app.root = &module{
@@ -563,6 +564,7 @@ func (app *App) run(done <-chan ShutdownSignal) (exitCode int) {
 	defer cancel()
 
 	if err := app.Start(startCtx); err != nil {
+		app.closeStopChannel()
 		return 1
 	}
 
@@ -628,6 +630,8 @@ func (app *App) Start(ctx context.Context) (err error) {
 		return app.err
 	}
 
+	app.initStopChannel()
+
 	return withTimeout(ctx, &withTimeoutParams{
 		hook:      _onStartHook,
 		callback:  app.start,
@@ -653,6 +657,30 @@ func (app *App) start(ctx context.Context) error {
 	return nil
 }
 
+func (app *App) initStopChannel() {
+	app.stopChLock.Lock()
+	defer app.stopChLock.Unlock()
+	if app.stopch == nil {
+		app.stopch = make(chan struct{})
+	}
+}
+
+func (app *App) stopChannel() chan struct{} {
+	app.stopChLock.RLock()
+	defer app.stopChLock.RUnlock()
+	ch := app.stopch
+	return ch
+}
+
+func (app *App) closeStopChannel() {
+	app.stopChLock.Lock()
+	defer app.stopChLock.Unlock()
+	if app.stopch != nil {
+		close(app.stopch)
+		app.stopch = nil
+	}
+}
+
 // Stop gracefully stops the application. It executes any registered OnStop
 // hooks in reverse order, so that each constructor's stop hooks are called
 // before its dependencies' stop hooks.
@@ -666,7 +694,7 @@ func (app *App) Stop(ctx context.Context) (err error) {
 		// Protect the Stop hooks from being called multiple times.
 		app.runStop.Do(func() {
 			app.log().LogEvent(&fxevent.Stopped{Err: err})
-			close(app.stopch)
+			app.closeStopChannel()
 		})
 	}()
 
@@ -724,10 +752,14 @@ func (app *App) appendSignalReceiver(r signalReceiver) {
 		sigch := make(chan os.Signal, 1)
 		signal.Notify(sigch, os.Interrupt, _sigINT, _sigTERM)
 		go func() {
-			select {
-			case sig := <-sigch:
-				app.broadcastSignal(sig, 1)
-			case <-app.stopch:
+			// if the stop channel is nil; that means that the app was never started
+			// thus, do not broadcast any signals
+			if stopch := app.stopChannel(); stopch != nil {
+				select {
+				case sig := <-sigch:
+					app.broadcastSignal(sig, 1)
+				case <-stopch:
+				}
 			}
 		}()
 	})
