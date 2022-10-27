@@ -75,10 +75,17 @@ func (l *ZapLogger) LogEvent(event Event) {
 			)
 		}
 	case *Supplied:
-		l.Logger.Info("supplied",
-			zap.String("type", e.TypeName),
-			moduleField(e.ModuleName),
-			zap.Error(e.Err))
+		if e.Err != nil {
+			l.Logger.Error("error encountered while applying options",
+				zap.String("type", e.TypeName),
+				moduleField(e.ModuleName),
+				zap.Error(e.Err))
+		} else {
+			l.Logger.Info("supplied",
+				zap.String("type", e.TypeName),
+				moduleField(e.ModuleName),
+			)
+		}
 	case *Provided:
 		for _, rtype := range e.OutputTypeNames {
 			l.Logger.Info("provided",
