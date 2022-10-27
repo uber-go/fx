@@ -137,7 +137,7 @@ func TestZapLogger(t *testing.T) {
 		{
 			name:        "SuppliedError",
 			give:        &Supplied{TypeName: "*bytes.Buffer", Err: someError},
-			wantMessage: "supplied",
+			wantMessage: "error encountered while applying options",
 			wantFields: map[string]interface{}{
 				"type":  "*bytes.Buffer",
 				"error": "some error",
