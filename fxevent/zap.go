@@ -34,25 +34,26 @@ import (
 // In other words, this is set to max(ErrorLevel, ErrorLevel)
 type ZapLogger struct {
 	Logger     *zap.Logger
-	Level      zapcore.Level
+	LogLevel   zapcore.Level
 	ErrorLevel zapcore.Level
 }
 
 var _ Logger = (*ZapLogger)(nil)
 
 func (l *ZapLogger) logEvent(msg string, fields ...zap.Field) {
-	l.log(msg, l.Level, fields...)
+	l.log(msg, l.LogLevel, fields...)
 }
 
 func (l *ZapLogger) logError(msg string, fields ...zap.Field) {
 	if l.ErrorLevel < zapcore.ErrorLevel {
 		l.log(msg, zapcore.ErrorLevel, fields...)
+	} else {
+		l.log(msg, l.ErrorLevel, fields...)
 	}
-	l.log(msg, l.ErrorLevel, fields...)
 }
 
 func (l *ZapLogger) log(msg string, logLevel zapcore.Level, fields ...zap.Field) {
-	switch l.Level {
+	switch logLevel {
 	case zapcore.DebugLevel:
 		l.Logger.Debug(msg, fields...)
 	case zapcore.InfoLevel:
@@ -82,7 +83,7 @@ func (l *ZapLogger) LogEvent(event Event) {
 		)
 	case *OnStartExecuted:
 		if e.Err != nil {
-			l.Logger.Error("OnStart hook failed",
+			l.logError("OnStart hook failed",
 				zap.String("callee", e.FunctionName),
 				zap.String("caller", e.CallerName),
 				zap.Error(e.Err),
@@ -101,7 +102,7 @@ func (l *ZapLogger) LogEvent(event Event) {
 		)
 	case *OnStopExecuted:
 		if e.Err != nil {
-			l.Logger.Error("OnStop hook failed",
+			l.logError("OnStop hook failed",
 				zap.String("callee", e.FunctionName),
 				zap.String("caller", e.CallerName),
 				zap.Error(e.Err),
@@ -115,7 +116,7 @@ func (l *ZapLogger) LogEvent(event Event) {
 		}
 	case *Supplied:
 		if e.Err != nil {
-			l.Logger.Error("error encountered while applying options",
+			l.logError("error encountered while applying options",
 				zap.String("type", e.TypeName),
 				moduleField(e.ModuleName),
 				zap.Error(e.Err))
@@ -134,7 +135,7 @@ func (l *ZapLogger) LogEvent(event Event) {
 			)
 		}
 		if e.Err != nil {
-			l.Logger.Error("error encountered while applying options",
+			l.logError("error encountered while applying options",
 				moduleField(e.ModuleName),
 				zap.Error(e.Err))
 		}
@@ -146,7 +147,7 @@ func (l *ZapLogger) LogEvent(event Event) {
 			)
 		}
 		if e.Err != nil {
-			l.Logger.Error("error encountered while replacing",
+			l.logError("error encountered while replacing",
 				moduleField(e.ModuleName),
 				zap.Error(e.Err))
 		}
@@ -159,7 +160,7 @@ func (l *ZapLogger) LogEvent(event Event) {
 			)
 		}
 		if e.Err != nil {
-			l.Logger.Error("error encountered while applying options",
+			l.logError("error encountered while applying options",
 				moduleField(e.ModuleName),
 				zap.Error(e.Err))
 		}
@@ -171,7 +172,7 @@ func (l *ZapLogger) LogEvent(event Event) {
 		)
 	case *Invoked:
 		if e.Err != nil {
-			l.Logger.Error("invoke failed",
+			l.logError("invoke failed",
 				zap.Error(e.Err),
 				zap.String("stack", e.Trace),
 				zap.String("function", e.FunctionName),
@@ -183,23 +184,23 @@ func (l *ZapLogger) LogEvent(event Event) {
 			zap.String("signal", strings.ToUpper(e.Signal.String())))
 	case *Stopped:
 		if e.Err != nil {
-			l.Logger.Error("stop failed", zap.Error(e.Err))
+			l.logError("stop failed", zap.Error(e.Err))
 		}
 	case *RollingBack:
-		l.Logger.Error("start failed, rolling back", zap.Error(e.StartErr))
+		l.logError("start failed, rolling back", zap.Error(e.StartErr))
 	case *RolledBack:
 		if e.Err != nil {
-			l.Logger.Error("rollback failed", zap.Error(e.Err))
+			l.logError("rollback failed", zap.Error(e.Err))
 		}
 	case *Started:
 		if e.Err != nil {
-			l.Logger.Error("start failed", zap.Error(e.Err))
+			l.logError("start failed", zap.Error(e.Err))
 		} else {
 			l.logEvent("started")
 		}
 	case *LoggerInitialized:
 		if e.Err != nil {
-			l.Logger.Error("custom logger initialization failed", zap.Error(e.Err))
+			l.logError("custom logger initialization failed", zap.Error(e.Err))
 		} else {
 			l.logEvent("initialized custom fxevent.Logger", zap.String("function", e.ConstructorName))
 		}

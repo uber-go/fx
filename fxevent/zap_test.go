@@ -254,7 +254,7 @@ func TestZapLogger(t *testing.T) {
 			},
 		},
 		{
-			name:        "RollingBack",
+			name:        "RollingBack/Error",
 			give:        &RollingBack{StartErr: someError},
 			wantMessage: "start failed, rolling back",
 			wantFields: map[string]interface{}{
@@ -319,15 +319,40 @@ func TestZapLogger(t *testing.T) {
 				t.Parallel()
 
 				core, observedLogs := observer.New(zap.InfoLevel)
-				(&ZapLogger{Logger: zap.New(core), Level: zapcore.DebugLevel}).LogEvent(tt.give)
+				(&ZapLogger{Logger: zap.New(core), LogLevel: zapcore.DebugLevel, ErrorLevel: zapcore.ErrorLevel}).LogEvent(tt.give)
 
+				logs := observedLogs.TakeAll()
 				// logs are not visible unless they are errors
 				if strings.HasSuffix(tt.name, "/Error") {
-					logs := observedLogs.TakeAll()
 					require.Len(t, logs, 1)
 					got := logs[0]
 					assert.Equal(t, tt.wantMessage, got.Message)
 					assert.Equal(t, tt.wantFields, got.ContextMap())
+				} else {
+					require.Len(t, logs, 0)
+				}
+			})
+		}
+	})
+
+	t.Run("error logs appear at error with lower config", func(t *testing.T) {
+		for _, tt := range tests {
+			tt := tt
+			t.Run(tt.name, func(t *testing.T) {
+				t.Parallel()
+
+				core, observedLogs := observer.New(zap.InfoLevel) // only receive error level or higher
+				(&ZapLogger{Logger: zap.New(core), ErrorLevel: zapcore.DebugLevel}).LogEvent(tt.give)
+
+				// error logs should still be visible to the logger even though they were set to be at DebugLevel
+				logs := observedLogs.TakeAll()
+				if strings.HasSuffix(tt.name, "/Error") {
+					require.Len(t, logs, 1)
+					got := logs[0]
+					assert.Equal(t, tt.wantMessage, got.Message)
+					assert.Equal(t, tt.wantFields, got.ContextMap())
+				} else {
+					require.Len(t, logs, 0)
 				}
 			})
 		}
