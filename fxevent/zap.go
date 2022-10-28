@@ -31,7 +31,7 @@ import (
 type ZapLogger struct {
 	Logger *zap.Logger
 
-	logLevel   *zapcore.Level
+	logLevel   zapcore.Level // default: zapcore.InfoLevel
 	errorLevel *zapcore.Level
 }
 
@@ -44,23 +44,19 @@ func (l *ZapLogger) UseErrorLevel(level zapcore.Level) {
 
 // UseLogLevel sets the level of non-error logs emitted by Fx to level.
 func (l *ZapLogger) UseLogLevel(level zapcore.Level) {
-	l.logLevel = &level
+	l.logLevel = level
 }
 
 func (l *ZapLogger) logEvent(msg string, fields ...zap.Field) {
-	if l.logLevel == nil {
-		l.Logger.Log(zapcore.InfoLevel, msg, fields...)
-	} else {
-		l.Logger.Log(*l.logLevel, msg, fields...)
-	}
+	l.Logger.Log(l.logLevel, msg, fields...)
 }
 
 func (l *ZapLogger) logError(msg string, fields ...zap.Field) {
-	if l.errorLevel == nil {
-		l.Logger.Log(zapcore.ErrorLevel, msg, fields...)
-	} else {
-		l.Logger.Log(*l.errorLevel, msg, fields...)
+	lvl := zapcore.ErrorLevel
+	if l.errorLevel != nil {
+		lvl = *l.errorLevel
 	}
+	l.Logger.Log(lvl, msg, fields...)
 }
 
 // LogEvent logs the given event to the provided Zap logger.
