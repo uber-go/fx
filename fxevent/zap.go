@@ -28,27 +28,38 @@ import (
 )
 
 // ZapLogger is an Fx event logger that logs events to Zap.
-// Use the Level field to set the level of logs.
-// Use the ErrorLevel field to set the level of error logs. If this is set
-// to a level lower than zapcore.ErrorLevel, it will default to zapcore.ErrorLevel.
-// In other words, this is set to max(ErrorLevel, ErrorLevel)
 type ZapLogger struct {
-	Logger     *zap.Logger
-	LogLevel   zapcore.Level
-	ErrorLevel zapcore.Level
+	Logger *zap.Logger
+
+	logLevel   *zapcore.Level
+	errorLevel *zapcore.Level
 }
 
 var _ Logger = (*ZapLogger)(nil)
 
+// UseErrorLevel sets the level of error logs emitted by Fx to level.
+func (l *ZapLogger) UseErrorLevel(level zapcore.Level) {
+	l.errorLevel = &level
+}
+
+// UseLogLevel sets the level of non-error logs emitted by Fx to level.
+func (l *ZapLogger) UseLogLevel(level zapcore.Level) {
+	l.logLevel = &level
+}
+
 func (l *ZapLogger) logEvent(msg string, fields ...zap.Field) {
-	l.log(msg, l.LogLevel, fields...)
+	if l.logLevel == nil {
+		l.log(msg, zapcore.InfoLevel, fields...)
+	} else {
+		l.log(msg, *l.logLevel, fields...)
+	}
 }
 
 func (l *ZapLogger) logError(msg string, fields ...zap.Field) {
-	if l.ErrorLevel < zapcore.ErrorLevel {
+	if l.errorLevel == nil {
 		l.log(msg, zapcore.ErrorLevel, fields...)
 	} else {
-		l.log(msg, l.ErrorLevel, fields...)
+		l.log(msg, *l.errorLevel, fields...)
 	}
 }
 
