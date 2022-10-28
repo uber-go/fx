@@ -417,7 +417,7 @@ func (rt resultTagsAnnotation) results(ann *annotated) (
 				continue
 			}
 			if isOut(r.Type()) {
-				tIdx += 1
+				tIdx++
 				if tIdx < len(outTypes) {
 					newResult := reflect.New(outTypes[tIdx]).Elem()
 					for j := 0; j < outTypes[tIdx].NumField(); j++ {
@@ -784,18 +784,18 @@ func makeHookScopeCtor(paramTypes []reflect.Type, resultTypes []reflect.Type, ar
 				for j := 1; j < paramTypes[paramIdx].NumField(); j++ {
 					if len(skippedParams[paramIdx]) > 0 && skippedParams[paramIdx][skippedIdx] == j {
 						// skip
-						skippedIdx += 1
+						skippedIdx++
 						continue
 					}
 					v.Field(fieldIdx).Set(args[i].Field(j))
-					fieldIdx += 1
+					fieldIdx++
 				}
 			} else {
 				if len(skippedParams[paramIdx]) > 0 && skippedParams[paramIdx][0] == paramIdx {
 					continue
 				}
 				v.Field(fieldIdx).Set(args[i])
-				fieldIdx += 1
+				fieldIdx++
 			}
 		}
 		results[nOut-1] = v
@@ -1354,7 +1354,7 @@ func (ann *annotated) postbuild() {
 	if len(ann.As) > 0 {
 		numRes := len(ann.As)
 		if hasError {
-			numRes += 1
+			numRes++
 		}
 		newResultTypes := resultTypes[len(resultTypes)-numRes:]
 		origFn := reflect.ValueOf(ann.Target)

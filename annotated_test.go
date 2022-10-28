@@ -1685,7 +1685,7 @@ func TestHookAnnotationFailures(t *testing.T) {
 		},
 		{
 			name:        "with variactic hook",
-			errContains: "must not accept variatic",
+			errContains: "must not accept variadic",
 			annotation: fx.Annotate(
 				func() A { return nil },
 				fx.OnStart(func(context.Context, ...A) error {
