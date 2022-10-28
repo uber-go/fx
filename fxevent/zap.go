@@ -49,39 +49,22 @@ func (l *ZapLogger) UseLogLevel(level zapcore.Level) {
 
 func (l *ZapLogger) logEvent(msg string, fields ...zap.Field) {
 	if l.logLevel == nil {
-		l.log(msg, zapcore.InfoLevel, fields...)
+		l.Logger.Log(zapcore.InfoLevel, msg, fields...)
 	} else {
-		l.log(msg, *l.logLevel, fields...)
+		l.Logger.Log(*l.logLevel, msg, fields...)
 	}
 }
 
 func (l *ZapLogger) logError(msg string, fields ...zap.Field) {
 	if l.errorLevel == nil {
-		l.log(msg, zapcore.ErrorLevel, fields...)
+		l.Logger.Log(zapcore.ErrorLevel, msg, fields...)
 	} else {
-		l.log(msg, *l.errorLevel, fields...)
+		l.Logger.Log(*l.errorLevel, msg, fields...)
 	}
 }
 
 func (l *ZapLogger) log(msg string, logLevel zapcore.Level, fields ...zap.Field) {
-	switch logLevel {
-	case zapcore.DebugLevel:
-		l.Logger.Debug(msg, fields...)
-	case zapcore.InfoLevel:
-		l.Logger.Debug(msg, fields...)
-	case zapcore.WarnLevel:
-		l.Logger.Warn(msg, fields...)
-	case zapcore.ErrorLevel:
-		l.Logger.Error(msg, fields...)
-	case zapcore.DPanicLevel:
-		l.Logger.DPanic(msg, fields...)
-	case zapcore.PanicLevel:
-		l.Logger.Panic(msg, fields...)
-	case zapcore.FatalLevel:
-		l.Logger.Fatal(msg, fields...)
-	default:
-		// ignore invalid logger levels.
-	}
+	l.Logger.Log(logLevel, msg, fields...)
 }
 
 // LogEvent logs the given event to the provided Zap logger.
