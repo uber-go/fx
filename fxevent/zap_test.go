@@ -387,11 +387,12 @@ func TestZapLogger(t *testing.T) {
 			zapcore.WarnLevel,
 			zapcore.DPanicLevel,
 			zapcore.PanicLevel,
+			zapcore.FatalLevel,
 		}
 
 		for _, level := range levels {
 			core, observedLogs := observer.New(level)
-			logger := &ZapLogger{Logger: zap.New(core)}
+			logger := &ZapLogger{Logger: zap.New(core, zap.WithFatalHook(zapcore.WriteThenPanic))}
 			logger.UseErrorLevel(level)
 			func() {
 				defer func() {
@@ -407,5 +408,4 @@ func TestZapLogger(t *testing.T) {
 			require.Len(t, logs, 1)
 		}
 	})
-
 }

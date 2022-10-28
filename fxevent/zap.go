@@ -63,10 +63,6 @@ func (l *ZapLogger) logError(msg string, fields ...zap.Field) {
 	}
 }
 
-func (l *ZapLogger) log(msg string, logLevel zapcore.Level, fields ...zap.Field) {
-	l.Logger.Log(logLevel, msg, fields...)
-}
-
 // LogEvent logs the given event to the provided Zap logger.
 func (l *ZapLogger) LogEvent(event Event) {
 	switch e := event.(type) {
