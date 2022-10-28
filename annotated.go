@@ -463,7 +463,6 @@ const (
 type lifecycleHookAnnotation struct {
 	Type   _lifecycleHookAnnotationType
 	Target interface{}
-	scope  *dig.Scope
 }
 
 var _ Annotation = (*lifecycleHookAnnotation)(nil)
