@@ -420,7 +420,7 @@ func (rt resultTagsAnnotation) results(ann *annotated) (
 				tIdx++
 				if tIdx < len(outTypes) {
 					newResult := reflect.New(outTypes[tIdx]).Elem()
-					for j := 0; j < outTypes[tIdx].NumField(); j++ {
+					for j := 1; j < outTypes[tIdx].NumField(); j++ {
 						newResult.Field(j).Set(r.Field(j))
 					}
 					outResults = append(outResults, newResult)
@@ -665,18 +665,19 @@ func (la *lifecycleHookAnnotation) buildHookInstaller(ann *annotated) (
 	installerType := reflect.FuncOf(append(resultTypes, paramTypes...), []reflect.Type{_typeOfError}, false)
 	hookInstaller = reflect.MakeFunc(installerType, func(args []reflect.Value) (results []reflect.Value) {
 		results = []reflect.Value{_nilError}
+		var scope *dig.Scope
 		switch la.Type {
 		case _onStartHookType:
-			la.scope = ann.container.Scope("onStartHookScope")
+			scope = ann.container.Scope("onStartHookScope")
 		case _onStopHookType:
-			la.scope = ann.container.Scope("onStopHookScope")
+			scope = ann.container.Scope("onStopHookScope")
 		}
 		ctor := makeHookScopeCtor(paramTypes, resultTypes, args)
-		if err := la.scope.Provide(ctor); err != nil {
+		if err := scope.Provide(ctor); err != nil {
 			results[0] = reflect.ValueOf(err)
 			return
 		}
-		if err := la.scope.Invoke(invokeFn.Interface()); err != nil {
+		if err := scope.Invoke(invokeFn.Interface()); err != nil {
 			results[0] = reflect.ValueOf(err)
 			return
 		}
