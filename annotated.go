@@ -520,7 +520,7 @@ func (la *lifecycleHookAnnotation) apply(ann *annotated) error {
 
 	if ft.IsVariadic() {
 		return fmt.Errorf(
-			"hooks must not accept variatic parameters, got %v (%T)",
+			"hooks must not accept variadic parameters, got %v (%T)",
 			la.Target,
 			la.Target,
 		)
@@ -530,7 +530,7 @@ func (la *lifecycleHookAnnotation) apply(ann *annotated) error {
 	return nil
 }
 
-// build implements Annotation
+// build builds and returns a constructor after applying a lifecycle hook annotation.
 func (la *lifecycleHookAnnotation) build(ann *annotated) (interface{}, error) {
 	resultTypes, hasError := ann.currentResultTypes()
 	if !hasError {
@@ -690,6 +690,10 @@ var (
 	_groupTag = "group"
 )
 
+// makeHookScopeCtor makes a constructor that provides all possible parameters
+// that the lifecycle hook being appended can depend on. It also deduplicates
+// duplicate param and result types, which is possible when using fx.Decorate,
+// and uses values from results for providing the deduplicated types.
 func makeHookScopeCtor(paramTypes []reflect.Type, resultTypes []reflect.Type, args []reflect.Value) interface{} {
 	type key struct {
 		t     reflect.Type
@@ -869,11 +873,13 @@ func (la *lifecycleHookAnnotation) buildHook(fn func(context.Context) error) (ho
 // Lifecycle OnStart (see Lifecycle type documentation) hooks without building a
 // function that takes a dependency on the Lifecycle type.
 //
-//	fx.Annotate(
-//	  NewServer,
-//	  fx.OnStart(func(ctx context.Context, server Server) error {
-//	      return server.Listen(ctx)
-//	  }),
+//	fx.Provide(
+//		fx.Annotate(
+//			NewServer,
+//			fx.OnStart(func(ctx context.Context, server Server) error {
+//				return server.Listen(ctx)
+//			}),
+//		)
 //	)
 //
 // Which is functionally the same as:
@@ -886,12 +892,40 @@ func (la *lifecycleHookAnnotation) buildHook(fn func(context.Context) error) (ho
 //			    return server.Listen(ctx)
 //		      },
 //	     })
+//		 return server
 //	   }
 //	 )
 //
+// It is also possible to use OnStart annotation with other parameter and result
+// annotations, provided that the parameter of the function passed to OnStart
+// matches annotated parameters and results
+//
+// For example, the following is possible:
+//
+//	fx.Provide(
+//		fx.Annotate(
+//			func (a A) B {...},
+//			fx.ParamTags(`name:"A"`),
+//			fx.ResultTags(`name:"B"`),
+//			fx.OnStart(func (p ParamStruct) {...}),
+//		),
+//	)
+//
+// As long as ParamStruct looks like the following and has no other dependencies
+// besides Context or Lifecycle:
+//
+//	type ParamStruct struct {
+//		fx.In
+//		FieldA A `name:"A"`
+//		FieldB B `name:"B"`
+//	}
+//
 // Only one OnStart annotation may be applied to a given function at a time,
 // however functions may be annotated with other types of lifecylce Hooks, such
-// as OnStop.
+// as OnStop. The hook function passed into OnStart cannot take any arguments
+// outside of the annotated constructor's existing dependencies or results, except
+// for a context.Context, which is injected by Lifecycle, or Lifecycle itself, which
+// is automatically added by the annotation to append the hook function.
 func OnStart(onStart interface{}) Annotation {
 	return &lifecycleHookAnnotation{
 		Type:   _onStartHookType,
@@ -904,11 +938,13 @@ func OnStart(onStart interface{}) Annotation {
 // Lifecycle OnStop (see Lifecycle type documentation) hooks without building a
 // function that takes a dependency on the Lifecycle type.
 //
-//	fx.Annotate(
-//	  NewServer,
-//	  fx.OnStop(func(ctx context.Context, server Server) error {
-//	      return server.Shutdown(ctx)
-//	  }),
+//	fx.Provide(
+//		fx.Annotate(
+//			NewServer,
+//			fx.OnStop(func(ctx context.Context, server Server) error {
+//				return server.Shutdown(ctx)
+//			}),
+//		)
 //	)
 //
 // Which is functionally the same as:
@@ -917,16 +953,44 @@ func OnStart(onStart interface{}) Annotation {
 //	   func(lifecycle fx.Lifecycle, p Params) Server {
 //	     server := NewServer(p)
 //	     lifecycle.Append(fx.Hook{
-//		      OnStart: func(ctx context.Context) error {
+//		      OnStop: func(ctx context.Context) error {
 //			    return server.Shutdown(ctx)
 //		      },
 //	     })
+//		 return server
 //	   }
 //	 )
 //
+// It is also possible to use OnStop annotation with other parameter and result
+// annotations, provided that the parameter of the function passed to OnStop
+// matches annotated parameters and results
+//
+// For example, the following is possible:
+//
+//	fx.Provide(
+//		fx.Annotate(
+//			func (a A) B {...},
+//			fx.ParamTags(`name:"A"`),
+//			fx.ResultTags(`name:"B"`),
+//			fx.OnStop(func (p ParamStruct) {...}),
+//		),
+//	)
+//
+// As long as ParamStruct looks like the following and has no other dependencies
+// besides Context or Lifecycle:
+//
+//	type ParamStruct struct {
+//		fx.In
+//		FieldA A `name:"A"`
+//		FieldB B `name:"B"`
+//	}
+//
 // Only one OnStop annotation may be applied to a given function at a time,
 // however functions may be annotated with other types of lifecylce Hooks, such
-// as OnStart.
+// as OnStart. The hook function passed into OnStart cannot take any arguments
+// outside of the annotated constructor's existing dependencies or results, except
+// for a context.Context, which is injected by Lifecycle, or Lifecycle itself, which
+// is automatically added by the annotation to append the hook function.
 func OnStop(onStop interface{}) Annotation {
 	return &lifecycleHookAnnotation{
 		Type:   _onStopHookType,
