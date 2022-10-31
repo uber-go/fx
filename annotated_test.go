@@ -1593,11 +1593,11 @@ func TestHookAnnotations(t *testing.T) {
 
 func TestHookAnnotationFailures(t *testing.T) {
 	t.Parallel()
-	// validateApp := func(t *testing.T, opts ...fx.Option) error {
-	// 	return fx.ValidateApp(
-	// 		append(opts, fx.Logger(fxtest.NewTestPrinter(t)))...,
-	// 	)
-	// }
+	validateApp := func(t *testing.T, opts ...fx.Option) error {
+		return fx.ValidateApp(
+			append(opts, fx.Logger(fxtest.NewTestPrinter(t)))...,
+		)
+	}
 
 	type (
 		A interface{}
@@ -1613,7 +1613,8 @@ func TestHookAnnotationFailures(t *testing.T) {
 	}{
 		{
 			name:        "with unprovided dependency",
-			errContains: "missing type: fx_test.B",
+			errContains: "Error invoking hook installer",
+			useNew:      true,
 			annotation: fx.Annotate(
 				func() A { return nil },
 				fx.OnStart(func(context.Context, B) error {
@@ -1703,7 +1704,8 @@ func TestHookAnnotationFailures(t *testing.T) {
 		},
 		{
 			name:        "cannot pull in any extra dependency other than params or results of the annotated function",
-			errContains: "missing type: fx_test.B",
+			errContains: "Error invoking hook installer",
+			useNew:      true,
 			annotation: fx.Annotate(
 				func(s string) A { return nil },
 				fx.OnStart(func(b B) error { return nil }),
@@ -1728,12 +1730,12 @@ func TestHookAnnotationFailures(t *testing.T) {
 				opts = fx.Options(opts, tt.extraOpts)
 			}
 
-			// if !tt.useNew {
-			// 	err := validateApp(t, opts)
-			// 	require.Error(t, err)
-			// 	require.Contains(t, err.Error(), tt.errContains)
-			// 	return
-			// }
+			if !tt.useNew {
+				err := validateApp(t, opts)
+				require.Error(t, err)
+				require.Contains(t, err.Error(), tt.errContains)
+				return
+			}
 
 			app := NewForTest(t, opts)
 			err := app.Start(context.Background())

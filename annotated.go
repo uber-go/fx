@@ -673,11 +673,11 @@ func (la *lifecycleHookAnnotation) buildHookInstaller(ann *annotated) (
 		}
 		ctor := makeHookScopeCtor(paramTypes, resultTypes, args)
 		if err := scope.Provide(ctor); err != nil {
-			results[0] = reflect.ValueOf(err)
+			results[0] = reflect.ValueOf(fmt.Errorf("Error providing possible parameters for hook installer: %w", err))
 			return
 		}
 		if err := scope.Invoke(invokeFn.Interface()); err != nil {
-			results[0] = reflect.ValueOf(err)
+			results[0] = reflect.ValueOf(fmt.Errorf("Error invoking hook installer: %w", err))
 			return
 		}
 		return
