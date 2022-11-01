@@ -29,11 +29,11 @@ import (
 func assertUnsentSignalError(
 	t *testing.T,
 	err error,
-	expected unsentSignalError,
+	expected *unsentSignalError,
 ) {
 	t.Helper()
 
-	var actual unsentSignalError
+	actual := new(unsentSignalError)
 
 	assert.Error(t, err)
 	assert.ErrorContains(t, err, "channels are blocked")
@@ -60,7 +60,7 @@ func TestSignal(t *testing.T) {
 
 	err = recv.broadcast(expected)
 
-	assertUnsentSignalError(t, err, unsentSignalError{
+	assertUnsentSignalError(t, err, &unsentSignalError{
 		Signal:   expected,
 		Channels: 2,
 		Unsent:   2,

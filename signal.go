@@ -38,17 +38,14 @@ func (sig Signal) String() string {
 }
 
 type signalReceivers struct {
-	last     *Signal
-	lastLock sync.RWMutex
-	dones    []chan os.Signal
-	doneLock sync.RWMutex
+	m     sync.Mutex
+	last  *Signal
+	dones []chan os.Signal
 }
 
 func (recv *signalReceivers) done() chan os.Signal {
-	recv.doneLock.Lock()
-	defer recv.doneLock.Unlock()
-	recv.lastLock.RLock()
-	defer recv.lastLock.RUnlock()
+	recv.m.Lock()
+	defer recv.m.Unlock()
 
 	ch := make(chan os.Signal, 1)
 
@@ -64,9 +61,6 @@ func (recv *signalReceivers) done() chan os.Signal {
 }
 
 func (recv *signalReceivers) broadcastDone(signal Signal) (receivers, unsent int) {
-	recv.doneLock.RLock()
-	defer recv.doneLock.RUnlock()
-
 	receivers = len(recv.dones)
 
 	for _, reader := range recv.dones {
@@ -86,7 +80,7 @@ type unsentSignalError struct {
 	Channels int
 }
 
-func (err unsentSignalError) Error() string {
+func (err *unsentSignalError) Error() string {
 	return fmt.Sprintf(
 		"send %v signal: %v/%v channels are blocked",
 		err.Signal,
@@ -95,20 +89,20 @@ func (err unsentSignalError) Error() string {
 	)
 }
 
-func (recv *signalReceivers) broadcast(signal Signal) (err error) {
-	recv.lastLock.Lock()
+func (recv *signalReceivers) broadcast(signal Signal) error {
+	recv.m.Lock()
+	defer recv.m.Unlock()
 	recv.last = &signal
-	recv.lastLock.Unlock()
 
 	channels, unsent := recv.broadcastDone(signal)
 
 	if unsent != 0 {
-		err = unsentSignalError{
+		return &unsentSignalError{
 			Signal:   signal,
 			Channels: channels,
 			Unsent:   unsent,
 		}
 	}
 
-	return
+	return nil
 }
