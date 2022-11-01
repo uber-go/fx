@@ -44,7 +44,7 @@ func assertUnsentSignalError(
 
 func TestSignal(t *testing.T) {
 	t.Parallel()
-	recv := new(signalReceivers)
+	recv := newSignalReceivers()
 	a := recv.Done()
 	_ = recv.Done() // we never listen on this
 

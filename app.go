@@ -390,6 +390,7 @@ func New(opts ...Option) *App {
 		clock:        fxclock.System,
 		startTimeout: DefaultTimeout,
 		stopTimeout:  DefaultTimeout,
+		receivers:    newSignalReceivers(),
 	}
 	app.root = &module{
 		app: app,

@@ -37,13 +37,18 @@ func (sig ShutdownSignal) String() string {
 	return fmt.Sprintf("%v", sig.Signal)
 }
 
-type signalReceivers struct {
-	m    sync.Mutex
-	last *ShutdownSignal
-	done []chan os.Signal
+func newSignalReceivers() signalReceivers {
+	return signalReceivers{notify: signal.Notify}
 }
 
-func (recv *signalReceivers) Done() chan os.Signal {
+type signalReceivers struct {
+	m      sync.Mutex
+	last   *ShutdownSignal
+	done   []chan os.Signal
+	notify func(c chan<- os.Signal, sig ...os.Signal)
+}
+
+func (recv *signalReceivers) Done() <-chan os.Signal {
 	recv.m.Lock()
 	defer recv.m.Unlock()
 
@@ -57,7 +62,7 @@ func (recv *signalReceivers) Done() chan os.Signal {
 		ch <- recv.last.Signal
 	}
 
-	signal.Notify(ch, os.Interrupt, _sigINT, _sigTERM)
+	recv.notify(ch, os.Interrupt, _sigINT, _sigTERM)
 	recv.done = append(recv.done, ch)
 	return ch
 }
