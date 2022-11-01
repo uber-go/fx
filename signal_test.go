@@ -35,7 +35,6 @@ func assertUnsentSignalError(
 
 	actual := new(unsentSignalError)
 
-	assert.Error(t, err)
 	assert.ErrorContains(t, err, "channels are blocked")
 	assert.ErrorAs(t, err, &actual, "is unsentSignalError")
 	assert.Equal(t, expected, actual)
