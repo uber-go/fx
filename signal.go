@@ -12,7 +12,7 @@
 //
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 // IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// FITNESS FOR A PARTICULAR PURPSignalE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
 // AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
@@ -29,17 +29,17 @@ import (
 
 // ShutdownSignal is a signal that caused the application to exit.
 type ShutdownSignal struct {
-	OS os.Signal
+	Signal os.Signal
 }
 
 // String will render a Signal type as a string suitable for printing.
 func (sig ShutdownSignal) String() string {
-	return fmt.Sprintf("%v", sig.OS)
+	return fmt.Sprintf("%v", sig.Signal)
 }
 
 type signalReceivers struct {
-	m     sync.Mutex
-	last  *ShutdownSignal
+	m    sync.Mutex
+	last *ShutdownSignal
 	done []chan os.Signal
 }
 
@@ -52,7 +52,7 @@ func (recv *signalReceivers) Done() chan os.Signal {
 	// if we had received a signal prior to the call of done, send it's
 	// os.Signal to the new channel.
 	if recv.last != nil {
-		ch <- recv.last.OS
+		ch <- recv.last.Signal
 	}
 
 	signal.Notify(ch, os.Interrupt, _sigINT, _sigTERM)
@@ -86,7 +86,7 @@ func (recv *signalReceivers) broadcastDone(signal ShutdownSignal) (int, int) {
 
 	for _, reader := range recv.done {
 		select {
-		case reader <- signal.OS:
+		case reader <- signal.Signal:
 		default:
 			unsent++
 		}

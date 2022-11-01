@@ -12,7 +12,7 @@
 //
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 // IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// FITNESS FOR A PARTICULAR PURPSignalE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
 // AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
@@ -49,7 +49,7 @@ func TestSignal(t *testing.T) {
 
 
 	expected := ShutdownSignal{
-		OS: syscall.SIGTERM,
+		Signal: syscall.SIGTERM,
 	}
 
 	err := recv.Broadcast(expected)
@@ -65,7 +65,7 @@ func TestSignal(t *testing.T) {
 	})
 
 	actual := <-a
-	assert.Equal(t, expected.OS, actual)
+	assert.Equal(t, expected.Signal, actual)
 
-	assert.Equal(t, expected.OS, <-recv.Done(), "expect cached signal")
+	assert.Equal(t, expected.Signal, <-recv.Done(), "expect cached signal")
 }
