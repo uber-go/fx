@@ -47,8 +47,6 @@ func TestSignal(t *testing.T) {
 	a := recv.Done()
 	b := recv.Done()
 
-	assert.NotNil(t, a)
-	assert.NotNil(t, b)
 
 	expected := ShutdownSignal{
 		OS: syscall.SIGTERM,
