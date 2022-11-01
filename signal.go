@@ -89,7 +89,7 @@ func (err *unsentSignalError) Error() string {
 	)
 }
 
-func (recv *signalReceivers) broadcast(signal ShutdownSignal) error {
+func (recv *signalReceivers) Broadcast(signal ShutdownSignal) error {
 	recv.m.Lock()
 	defer recv.m.Unlock()
 	recv.last = &signal

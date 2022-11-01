@@ -54,11 +54,11 @@ func TestSignal(t *testing.T) {
 		OS: syscall.SIGTERM,
 	}
 
-	err := recv.broadcast(expected)
+	err := recv.Broadcast(expected)
 
 	assert.NoError(t, err, "first broadcast should succeed")
 
-	err = recv.broadcast(expected)
+	err = recv.Broadcast(expected)
 
 	assertUnsentSignalError(t, err, &unsentSignalError{
 		Signal:   expected,

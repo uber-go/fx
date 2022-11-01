@@ -44,7 +44,7 @@ type shutdowner struct {
 // In practice this means Shutdowner.Shutdown should not be called from an
 // fx.Invoke, but from a fx.Lifecycle.OnStart hook.
 func (s *shutdowner) Shutdown(opts ...ShutdownOption) error {
-	return s.app.receivers.broadcast(ShutdownSignal{OS: _sigTERM})
+	return s.app.receivers.Broadcast(ShutdownSignal{OS: _sigTERM})
 }
 
 func (app *App) shutdowner() Shutdowner {
