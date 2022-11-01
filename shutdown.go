@@ -20,11 +20,6 @@
 
 package fx
 
-import (
-	"fmt"
-	"os"
-)
-
 // Shutdowner provides a method that can manually trigger the shutdown of the
 // application by sending a signal to all open Done channels. Shutdowner works
 // on applications using Run as well as Start, Done, and Stop. The Shutdowner is
@@ -49,35 +44,9 @@ type shutdowner struct {
 // In practice this means Shutdowner.Shutdown should not be called from an
 // fx.Invoke, but from a fx.Lifecycle.OnStart hook.
 func (s *shutdowner) Shutdown(opts ...ShutdownOption) error {
-	return s.app.broadcastSignal(_sigTERM)
+	return s.app.receivers.broadcast(Signal{OS: _sigTERM})
 }
 
 func (app *App) shutdowner() Shutdowner {
 	return &shutdowner{app: app}
-}
-
-func (app *App) broadcastSignal(signal os.Signal) error {
-	app.donesMu.Lock()
-	defer app.donesMu.Unlock()
-
-	app.shutdownSig = signal
-
-	var unsent int
-	for _, done := range app.dones {
-		select {
-		case done <- signal:
-		default:
-			// shutdown called when done channel has already received a
-			// termination signal that has not been cleared
-			unsent++
-		}
-	}
-
-	if unsent != 0 {
-		return fmt.Errorf("failed to send %v signal to %v out of %v channels",
-			signal, unsent, len(app.dones),
-		)
-	}
-
-	return nil
 }
