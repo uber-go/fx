@@ -76,9 +76,9 @@ func (recv *signalReceivers) Broadcast(signal ShutdownSignal) error {
 
 	if unsent != 0 {
 		return &unsentSignalError{
-			Signal:   signal,
-			Channels: channels,
-			Unsent:   unsent,
+			Signal: signal,
+			Total:  channels,
+			Unsent: unsent,
 		}
 	}
 
@@ -100,9 +100,9 @@ func (recv *signalReceivers) broadcastDone(signal ShutdownSignal) (int, int) {
 }
 
 type unsentSignalError struct {
-	Signal   ShutdownSignal
-	Unsent   int
-	Channels int
+	Signal ShutdownSignal
+	Unsent int
+	Total  int
 }
 
 func (err *unsentSignalError) Error() string {
@@ -110,6 +110,6 @@ func (err *unsentSignalError) Error() string {
 		"send %v signal: %v/%v channels are blocked",
 		err.Signal,
 		err.Unsent,
-		err.Channels,
+		err.Total,
 	)
 }
