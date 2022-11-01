@@ -78,8 +78,11 @@ func (recv *signalReceivers) Broadcast(signal ShutdownSignal) error {
 	return nil
 }
 
-func (recv *signalReceivers) broadcastDone(signal ShutdownSignal) (receivers, unsent int) {
-	receivers = len(recv.dones)
+func (recv *signalReceivers) broadcastDone(signal ShutdownSignal) (int, int) {
+	var (
+		receivers int = len(recv.dones)
+		unsent    int
+	)
 
 	for _, reader := range recv.dones {
 		select {
@@ -89,7 +92,7 @@ func (recv *signalReceivers) broadcastDone(signal ShutdownSignal) (receivers, un
 		}
 	}
 
-	return
+	return receivers, unsent
 }
 
 type unsentSignalError struct {
