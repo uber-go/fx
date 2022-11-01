@@ -22,6 +22,7 @@ package fx
 
 import (
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"syscall"
 	"testing"
 )
@@ -51,13 +52,9 @@ func TestSignal(t *testing.T) {
 		Signal: syscall.SIGTERM,
 	}
 
-	err := recv.Broadcast(expected)
+	require.NoError(t, recv.Broadcast(expected), "first broadcast should succeed")
 
-	assert.NoError(t, err, "first broadcast should succeed")
-
-	err = recv.Broadcast(expected)
-
-	assertUnsentSignalError(t, err, &unsentSignalError{
+	assertUnsentSignalError(t, recv.Broadcast(expected), &unsentSignalError{
 		Signal:   expected,
 		Channels: 2,
 		Unsent:   2,
