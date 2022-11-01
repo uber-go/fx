@@ -27,7 +27,7 @@ import (
 	"sync"
 )
 
-// ShutdownSignal represents a operating system process signal.
+// ShutdownSignal is a signal that caused the application to exit.
 type ShutdownSignal struct {
 	OS os.Signal
 }
