@@ -45,8 +45,7 @@ func TestSignal(t *testing.T) {
 	t.Parallel()
 	recv := new(signalReceivers)
 	a := recv.Done()
-	b := recv.Done()
-
+	recv.Done()
 
 	expected := ShutdownSignal{
 		Signal: syscall.SIGTERM,

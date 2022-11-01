@@ -49,8 +49,10 @@ func (recv *signalReceivers) Done() chan os.Signal {
 
 	ch := make(chan os.Signal, 1)
 
-	// if we had received a signal prior to the call of done, send it's
+	// If we had received a signal prior to the call of done, send it's
 	// os.Signal to the new channel.
+	// However we still want to have the operating system notify signals to this
+	// channel should the application receive another.
 	if recv.last != nil {
 		ch <- recv.last.Signal
 	}
