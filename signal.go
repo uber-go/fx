@@ -60,6 +60,24 @@ func (recv *signalReceivers) Done() chan os.Signal {
 	return ch
 }
 
+func (recv *signalReceivers) Broadcast(signal ShutdownSignal) error {
+	recv.m.Lock()
+	defer recv.m.Unlock()
+	recv.last = &signal
+
+	channels, unsent := recv.broadcastDone(signal)
+
+	if unsent != 0 {
+		return &unsentSignalError{
+			Signal:   signal,
+			Channels: channels,
+			Unsent:   unsent,
+		}
+	}
+
+	return nil
+}
+
 func (recv *signalReceivers) broadcastDone(signal ShutdownSignal) (receivers, unsent int) {
 	receivers = len(recv.dones)
 
@@ -87,22 +105,4 @@ func (err *unsentSignalError) Error() string {
 		err.Unsent,
 		err.Channels,
 	)
-}
-
-func (recv *signalReceivers) Broadcast(signal ShutdownSignal) error {
-	recv.m.Lock()
-	defer recv.m.Unlock()
-	recv.last = &signal
-
-	channels, unsent := recv.broadcastDone(signal)
-
-	if unsent != 0 {
-		return &unsentSignalError{
-			Signal:   signal,
-			Channels: channels,
-			Unsent:   unsent,
-		}
-	}
-
-	return nil
 }
