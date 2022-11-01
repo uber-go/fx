@@ -40,7 +40,7 @@ func (sig ShutdownSignal) String() string {
 type signalReceivers struct {
 	m     sync.Mutex
 	last  *ShutdownSignal
-	dones []chan os.Signal
+	done []chan os.Signal
 }
 
 func (recv *signalReceivers) Done() chan os.Signal {
@@ -56,7 +56,7 @@ func (recv *signalReceivers) Done() chan os.Signal {
 	}
 
 	signal.Notify(ch, os.Interrupt, _sigINT, _sigTERM)
-	recv.dones = append(recv.dones, ch)
+	recv.done = append(recv.done, ch)
 	return ch
 }
 
@@ -80,11 +80,11 @@ func (recv *signalReceivers) Broadcast(signal ShutdownSignal) error {
 
 func (recv *signalReceivers) broadcastDone(signal ShutdownSignal) (int, int) {
 	var (
-		receivers int = len(recv.dones)
+		receivers int = len(recv.done)
 		unsent    int
 	)
 
-	for _, reader := range recv.dones {
+	for _, reader := range recv.done {
 		select {
 		case reader <- signal.OS:
 		default:
