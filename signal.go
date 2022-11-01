@@ -27,41 +27,59 @@ import (
 	"sync"
 )
 
+// A signal represents a operating system process signal and a proposed exit
+// code.
 type Signal struct {
 	OS   os.Signal
 	Code int
 }
 
+// String will render a Signal in the form of "%v (with exit code %v)"
 func (sig Signal) String() string {
 	return fmt.Sprintf("%v (with exit code %v)", sig.OS, sig.Code)
 }
 
 type signalReceivers struct {
-	last       *Signal
-	lastLock   sync.RWMutex
-	done       []chan<- os.Signal
-	doneLock   sync.RWMutex
-	signal     []chan<- Signal
-	signalLock sync.RWMutex
+	last     *Signal
+	lastLock sync.RWMutex
+	dones    []chan os.Signal
+	doneLock sync.RWMutex
 }
 
-func (recv *signalReceivers) Done() chan<- os.Signal {
+func (recv *signalReceivers) done() chan os.Signal {
 	recv.doneLock.Lock()
 	defer recv.doneLock.Unlock()
 	recv.lastLock.RLock()
 	defer recv.lastLock.RUnlock()
 
-	ch := make(chan<- os.Signal, 1)
+	ch := make(chan os.Signal, 1)
 
-	// if we had received a signal prior to the call of Done, send it's os.Signal
-	// to the new channel.
+	// if we had received a signal prior to the call of done, send it's
+	// os.Signal to the new channel.
 	if recv.last != nil {
 		ch <- recv.last.OS
 	}
 
 	signal.Notify(ch, os.Interrupt, _sigINT, _sigTERM)
-	recv.done = append(recv.done, ch)
+	recv.dones = append(recv.dones, ch)
 	return ch
+}
+
+func (recv signalReceivers) broadcastDone(signal Signal) (receivers, unsent int) {
+	recv.doneLock.RLock()
+	defer recv.doneLock.RUnlock()
+
+	receivers = len(recv.dones)
+
+	for _, reader := range recv.dones {
+		select {
+		case reader <- signal.OS:
+		default:
+			unsent++
+		}
+	}
+
+	return
 }
 
 type unsentSignalError struct {
@@ -79,35 +97,15 @@ func (err unsentSignalError) Error() string {
 	)
 }
 
-func (recv signalReceivers) broadcastDone(signal Signal) (total, unsent int) {
-	recv.doneLock.RLock()
-	defer recv.doneLock.RUnlock()
-
-	total = len(recv.done)
-
-	for _, reader := range recv.done {
-		select {
-		case reader <- signal.OS:
-		default:
-			unsent++
-		}
-	}
-
-	return
-}
-
-func (recv *signalReceivers) Broadcast(signal Signal) (err error) {
+func (recv *signalReceivers) broadcast(signal Signal) (err error) {
 	recv.lastLock.Lock()
 	recv.last = &signal
 	recv.lastLock.Unlock()
 
-	dones, doneUnsent := recv.broadcastDone(signal)
-
-	unsent := doneUnsent
-	channels := dones
+	channels, unsent := recv.broadcastDone(signal)
 
 	if unsent != 0 {
-		err = &unsentSignalError{
+		err = unsentSignalError{
 			Signal:   signal,
 			Channels: channels,
 			Unsent:   unsent,
