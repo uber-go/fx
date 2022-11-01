@@ -55,9 +55,9 @@ func TestSignal(t *testing.T) {
 	require.NoError(t, recv.Broadcast(expected), "first broadcast should succeed")
 
 	assertUnsentSignalError(t, recv.Broadcast(expected), &unsentSignalError{
-		Signal:   expected,
-		Channels: 2,
-		Unsent:   2,
+		Signal: expected,
+		Total:  2,
+		Unsent: 2,
 	})
 
 	assert.Equal(t, expected.Signal, <-a)
