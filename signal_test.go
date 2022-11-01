@@ -46,7 +46,7 @@ func TestSignal(t *testing.T) {
 	t.Parallel()
 	recv := new(signalReceivers)
 	a := recv.Done()
-	recv.Done()
+	_ = recv.Done() // we never listen on this
 
 	expected := ShutdownSignal{
 		Signal: syscall.SIGTERM,
@@ -60,8 +60,6 @@ func TestSignal(t *testing.T) {
 		Unsent:   2,
 	})
 
-	actual := <-a
-	assert.Equal(t, expected.Signal, actual)
-
+	assert.Equal(t, expected.Signal, <-a)
 	assert.Equal(t, expected.Signal, <-recv.Done(), "expect cached signal")
 }
