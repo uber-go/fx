@@ -27,19 +27,19 @@ import (
 	"sync"
 )
 
-// Signal represents a operating system process signal.
-type Signal struct {
+// ShutdownSignal represents a operating system process signal.
+type ShutdownSignal struct {
 	OS os.Signal
 }
 
 // String will render a Signal type as a string suitable for printing.
-func (sig Signal) String() string {
+func (sig ShutdownSignal) String() string {
 	return fmt.Sprintf("%v", sig.OS)
 }
 
 type signalReceivers struct {
 	m     sync.Mutex
-	last  *Signal
+	last  *ShutdownSignal
 	dones []chan os.Signal
 }
 
@@ -60,7 +60,7 @@ func (recv *signalReceivers) done() chan os.Signal {
 	return ch
 }
 
-func (recv *signalReceivers) broadcastDone(signal Signal) (receivers, unsent int) {
+func (recv *signalReceivers) broadcastDone(signal ShutdownSignal) (receivers, unsent int) {
 	receivers = len(recv.dones)
 
 	for _, reader := range recv.dones {
@@ -75,7 +75,7 @@ func (recv *signalReceivers) broadcastDone(signal Signal) (receivers, unsent int
 }
 
 type unsentSignalError struct {
-	Signal   Signal
+	Signal   ShutdownSignal
 	Unsent   int
 	Channels int
 }
@@ -89,7 +89,7 @@ func (err *unsentSignalError) Error() string {
 	)
 }
 
-func (recv *signalReceivers) broadcast(signal Signal) error {
+func (recv *signalReceivers) broadcast(signal ShutdownSignal) error {
 	recv.m.Lock()
 	defer recv.m.Unlock()
 	recv.last = &signal

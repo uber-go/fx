@@ -50,7 +50,7 @@ func TestSignal(t *testing.T) {
 	assert.NotNil(t, a)
 	assert.NotNil(t, b)
 
-	expected := Signal{
+	expected := ShutdownSignal{
 		OS: syscall.SIGTERM,
 	}
 
