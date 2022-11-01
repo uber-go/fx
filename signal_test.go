@@ -51,8 +51,7 @@ func TestSignal(t *testing.T) {
 	assert.NotNil(t, b)
 
 	expected := Signal{
-		OS:   syscall.SIGUSR1,
-		Code: 42,
+		OS: syscall.SIGUSR1,
 	}
 
 	err := recv.broadcast(expected)

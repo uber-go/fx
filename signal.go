@@ -27,16 +27,14 @@ import (
 	"sync"
 )
 
-// A signal represents a operating system process signal and a proposed exit
-// code.
+// Signal represents a operating system process signal.
 type Signal struct {
-	OS   os.Signal
-	Code int
+	OS os.Signal
 }
 
-// String will render a Signal in the form of "%v (with exit code %v)"
+// String will render a Signal type as a string suitable for printing.
 func (sig Signal) String() string {
-	return fmt.Sprintf("%v (with exit code %v)", sig.OS, sig.Code)
+	return fmt.Sprintf("%v", sig.OS)
 }
 
 type signalReceivers struct {
@@ -65,7 +63,7 @@ func (recv *signalReceivers) done() chan os.Signal {
 	return ch
 }
 
-func (recv signalReceivers) broadcastDone(signal Signal) (receivers, unsent int) {
+func (recv *signalReceivers) broadcastDone(signal Signal) (receivers, unsent int) {
 	recv.doneLock.RLock()
 	defer recv.doneLock.RUnlock()
 
