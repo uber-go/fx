@@ -44,8 +44,8 @@ func assertUnsentSignalError(
 func TestSignal(t *testing.T) {
 	t.Parallel()
 	recv := new(signalReceivers)
-	a := recv.done()
-	b := recv.done()
+	a := recv.Done()
+	b := recv.Done()
 
 	assert.NotNil(t, a)
 	assert.NotNil(t, b)
@@ -69,5 +69,5 @@ func TestSignal(t *testing.T) {
 	actual := <-a
 	assert.Equal(t, expected.OS, actual)
 
-	assert.Equal(t, expected.OS, <-recv.done(), "expect cached signal")
+	assert.Equal(t, expected.OS, <-recv.Done(), "expect cached signal")
 }

@@ -43,7 +43,7 @@ type signalReceivers struct {
 	dones []chan os.Signal
 }
 
-func (recv *signalReceivers) done() chan os.Signal {
+func (recv *signalReceivers) Done() chan os.Signal {
 	recv.m.Lock()
 	defer recv.m.Unlock()
 

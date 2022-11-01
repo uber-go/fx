@@ -663,7 +663,7 @@ func (app *App) Stop(ctx context.Context) (err error) {
 // Alternatively, a signal can be broadcast to all done channels manually by
 // using the Shutdown functionality (see the Shutdowner documentation for details).
 func (app *App) Done() <-chan os.Signal {
-	return app.receivers.done()
+	return app.receivers.Done()
 }
 
 // StartTimeout returns the configured startup timeout. Apps default to using
