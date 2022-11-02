@@ -32,7 +32,7 @@ type ShutdownSignal struct {
 	Signal os.Signal
 }
 
-// String will render a Signal type as a string suitable for printing.
+// String will render a ShutdownSignal type as a string suitable for printing.
 func (sig ShutdownSignal) String() string {
 	return fmt.Sprintf("%v", sig.Signal)
 }
