@@ -999,13 +999,6 @@ func isIn(t reflect.Type) bool {
 		dig.IsIn(reflect.New(t).Elem().Interface()))
 }
 
-func checkIfResultTagged(results []reflect.Type) (reflect.Type, bool) {
-	if len(results) > 0 {
-		return results[0], isOut(results[0])
-	}
-	return nil, false
-}
-
 var _ Annotation = (*asAnnotation)(nil)
 
 // As is an Annotation that annotates the result of a function (i.e. a
@@ -1158,9 +1151,9 @@ func (at *asAnnotation) results(ann *annotated) (
 
 func extractResultFields(types []reflect.Type) ([]reflect.StructField, func(int, []reflect.Value) reflect.Value) {
 	var resultFields []reflect.StructField
-	if taggedResType, resultTagged := checkIfResultTagged(types); resultTagged {
-		for i := 1; i < taggedResType.NumField(); i++ {
-			resultFields = append(resultFields, taggedResType.Field(i))
+	if len(types) > 0 && isOut(types[0]) {
+		for i := 1; i < types[0].NumField(); i++ {
+			resultFields = append(resultFields, types[0].Field(i))
 		}
 		return resultFields, func(idx int, results []reflect.Value) reflect.Value {
 			return results[0].Field(idx)
