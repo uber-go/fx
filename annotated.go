@@ -950,7 +950,7 @@ func OnStart(onStart interface{}) Annotation {
 //
 // It is also possible to use OnStop annotation with other parameter and result
 // annotations, provided that the parameter of the function passed to OnStop
-// matches annotated parameters and results
+// matches annotated parameters and results.
 //
 // For example, the following is possible:
 //
