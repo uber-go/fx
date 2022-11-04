@@ -35,7 +35,7 @@ import (
 // This operates by re-running the test executable to run only the current
 // test, and hijacking that test execution to run the main function.
 //
-//	cmd := MainCmd(t, func() { fmt.Println("hello") })
+//	cmd := Command(t, func() { fmt.Println("hello") })
 //	got, err := cmd.Output()
 //	...
 //	fmt.Println(string(got) == "hello\n") // true
