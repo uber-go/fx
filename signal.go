@@ -21,6 +21,8 @@
 package fx
 
 import (
+	"context"
+	"errors"
 	"fmt"
 	"os"
 	"os/signal"
@@ -42,10 +44,71 @@ func newSignalReceivers() signalReceivers {
 }
 
 type signalReceivers struct {
-	m      sync.Mutex
-	last   *ShutdownSignal
-	done   []chan os.Signal
-	notify func(c chan<- os.Signal, sig ...os.Signal)
+	m           sync.Mutex
+	relayCloser func(context.Context) error
+	last        *ShutdownSignal
+	done        []chan os.Signal
+	notify      func(c chan<- os.Signal, sig ...os.Signal)
+}
+
+func (recv *signalReceivers) StartSignalRelayer() error {
+	recv.m.Lock()
+	defer recv.m.Unlock()
+
+	if recv.relayCloser != nil {
+		return errors.New("signal relay is still running")
+	}
+
+	waitForClose, closeRelayer := context.WithCancel(context.Background())
+	relayHasStopped, signalRelayIsStopped := context.WithCancel(context.Background())
+
+	recv.relayCloser = func(ctx context.Context) error {
+		closeRelayer()
+		select {
+		case <-ctx.Done():
+			return fmt.Errorf(
+				"waiting for signal relay to close: %w",
+				ctx.Err(),
+			)
+		case <-relayHasStopped.Done():
+			return nil
+		}
+	}
+
+	go func() {
+		ch := make(chan os.Signal, 1)
+		signal.Notify(ch, recv.signalsToRelay()...)
+		defer signalRelayIsStopped()
+		select {
+		case <-waitForClose.Done():
+			return
+		case signal := <-ch:
+			recv.Broadcast(ShutdownSignal{
+				Signal: signal,
+			})
+			recv.m.Lock()
+			defer recv.m.Unlock()
+			recv.relayCloser = nil
+			return
+		}
+	}()
+
+	return nil
+}
+
+func (recv *signalReceivers) StopSignalRelayer(ctx context.Context) error {
+	recv.m.Lock()
+	defer recv.m.Lock()
+
+	if recv.relayCloser == nil {
+		return errors.New("signal relayer is not started")
+	}
+
+	return recv.relayCloser(ctx)
+}
+
+func (recv *signalReceivers) signalsToRelay() []os.Signal {
+	return []os.Signal{os.Interrupt, _sigINT, _sigTERM}
 }
 
 func (recv *signalReceivers) Done() <-chan os.Signal {
@@ -70,6 +133,7 @@ func (recv *signalReceivers) Done() <-chan os.Signal {
 func (recv *signalReceivers) Broadcast(signal ShutdownSignal) error {
 	recv.m.Lock()
 	defer recv.m.Unlock()
+
 	recv.last = &signal
 
 	channels, unsent := recv.broadcastDone(signal)
