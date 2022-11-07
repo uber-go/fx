@@ -51,7 +51,7 @@ type signalReceivers struct {
 	notify      func(c chan<- os.Signal, sig ...os.Signal)
 }
 
-func (recv *signalReceivers) StartSignalRelayer() error {
+func (recv *signalReceivers) StartSignalRelayer(ctx context.Context) error {
 	recv.m.Lock()
 	defer recv.m.Unlock()
 
@@ -62,33 +62,37 @@ func (recv *signalReceivers) StartSignalRelayer() error {
 	waitForClose, closeRelayer := context.WithCancel(context.Background())
 	relayHasStopped, signalRelayIsStopped := context.WithCancel(context.Background())
 
-	recv.relayCloser = func(ctx context.Context) error {
+	recv.relayCloser = func(closeCtx context.Context) error {
 		closeRelayer()
 		select {
-		case <-ctx.Done():
+		case <-closeCtx.Done():
 			return fmt.Errorf(
 				"waiting for signal relay to close: %w",
-				ctx.Err(),
+				closeCtx.Err(),
 			)
 		case <-relayHasStopped.Done():
 			return nil
 		}
 	}
 
+	ch := make(chan os.Signal, 1)
+	recv.notify(ch, recv.signalsToRelay()...)
+
 	go func() {
-		ch := make(chan os.Signal, 1)
-		signal.Notify(ch, recv.signalsToRelay()...)
 		defer signalRelayIsStopped()
 		select {
+		case <-ctx.Done():
+			return // app context is closed
 		case <-waitForClose.Done():
 			return
 		case signal := <-ch:
 			recv.Broadcast(ShutdownSignal{
 				Signal: signal,
 			})
+			// the relay is shutting down, cleanup it's closer func
 			recv.m.Lock()
-			defer recv.m.Unlock()
 			recv.relayCloser = nil
+			recv.m.Unlock()
 			return
 		}
 	}()
@@ -97,14 +101,18 @@ func (recv *signalReceivers) StartSignalRelayer() error {
 }
 
 func (recv *signalReceivers) StopSignalRelayer(ctx context.Context) error {
-	recv.m.Lock()
-	defer recv.m.Lock()
+	var closer func(context.Context) error
 
+	// lock and acquire the closer function, unlock before calling
+	// the closer to avoid any lock contention
+	recv.m.Lock()
 	if recv.relayCloser == nil {
 		return errors.New("signal relayer is not started")
 	}
+	closer = recv.relayCloser
+	recv.m.Unlock()
 
-	return recv.relayCloser(ctx)
+	return closer(ctx)
 }
 
 func (recv *signalReceivers) signalsToRelay() []os.Signal {
