@@ -69,7 +69,7 @@ func TestSignal(t *testing.T) {
 		assert.Equal(t, expected.Signal, <-recv.Done(), "expect cached signal")
 	})
 
-	t.Run("signal relay", func(t *testing.T) {
+	t.Run("signal notify relayer", func(t *testing.T) {
 		t.Parallel()
 		t.Run("stop and stop", func(t *testing.T) {
 			t.Parallel()
@@ -91,7 +91,7 @@ func TestSignal(t *testing.T) {
 				require.NoError(t, recv.StopSignalRelayer(ctx))
 			})
 		})
-		t.Run("os.Signal", func(t *testing.T) {
+		t.Run("relay done", func(t *testing.T) {
 			recv := newSignalReceivers()
 			expected := ShutdownSignal{
 				Signal: syscall.SIGTERM,
