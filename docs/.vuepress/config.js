@@ -23,7 +23,21 @@ module.exports = {
   head: [
     ['meta', { name: 'theme-color', content: '#3eaf7c' }],
     ['meta', { name: 'apple-mobile-web-app-capable', content: 'yes' }],
-    ['meta', { name: 'apple-mobile-web-app-status-bar-style', content: 'black' }]
+    ['meta', { name: 'apple-mobile-web-app-status-bar-style', content: 'black' }],
+    ['script',
+      {
+        async: true,
+        src: 'https://www.googletagmanager.com/gtag/js?id=G-4YWLTPJ46M'
+      }
+    ],
+    ['script', {},
+      [
+        "window.dataLayer = window.dataLayer || [];\n"+
+        "function gtag(){dataLayer.push(arguments);}\n"+
+        "gtag('js', new Date());\n"+
+        "gtag('config', 'G-4YWLTPJ46M');"
+      ]
+    ]
   ],
 
   /**
