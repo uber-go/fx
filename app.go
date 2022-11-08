@@ -640,6 +640,10 @@ func (app *App) start(ctx context.Context) error {
 		return err
 	}
 
+	if err := app.withRollback(ctx, app.receivers.StartSignalRelayer); err != nil {
+		return err
+	}
+
 	return nil
 }
 
