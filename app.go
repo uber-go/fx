@@ -619,9 +619,8 @@ func (app *App) Start(ctx context.Context) (err error) {
 	})
 }
 
-func (app *App) start(ctx context.Context) error {
-	if err := app.lifecycle.Start(ctx); err != nil {
-		// Start failed, rolling back.
+func (app *App) withRollback(ctx context.Context, f func(ctx context.Context) error) error {
+	if err := f(ctx); err != nil {
 		app.log().LogEvent(&fxevent.RollingBack{StartErr: err})
 
 		stopErr := app.lifecycle.Stop(ctx)
@@ -633,6 +632,14 @@ func (app *App) start(ctx context.Context) error {
 
 		return err
 	}
+
+	return nil
+}
+func (app *App) start(ctx context.Context) error {
+	if err := app.withRollback(ctx, app.lifecycle.Start); err != nil {
+		return err
+	}
+
 	return nil
 }
 
