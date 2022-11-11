@@ -25,7 +25,6 @@ import (
 	"os"
 	"syscall"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -71,51 +70,44 @@ func TestSignal(t *testing.T) {
 
 	t.Run("signal notify relayer", func(t *testing.T) {
 		t.Parallel()
-		t.Run("stop and stop", func(t *testing.T) {
+		t.Run("start and stop", func(t *testing.T) {
 			t.Parallel()
-			t.Run("timeout on stop", func(t *testing.T) {
+			t.Run("timeout", func(t *testing.T) {
 				recv := newSignalReceivers()
-				ctx, cancel := context.WithTimeout(context.Background(), time.Duration(0))
-				recv.StartSignalRelayer(ctx)
+				ctx, cancel := context.WithCancel(context.Background())
 				defer cancel()
-				require.Error(t, recv.StopSignalRelayer(ctx))
+				recv.Start(ctx)
+				timeoutCtx, _ := context.WithTimeout(context.Background(), 0)
+				err := recv.Stop(timeoutCtx)
+				require.ErrorIs(t, err, context.DeadlineExceeded)
 			})
-			t.Run("stop with no error", func(t *testing.T) {
+			t.Run("no error", func(t *testing.T) {
 				recv := newSignalReceivers()
-				ctx, cancel := context.WithTimeout( // arbitrary timeout
-					context.Background(),
-					time.Millisecond*10,
-				)
+				ctx, cancel := context.WithCancel(context.Background())
 				defer cancel()
-				recv.StartSignalRelayer(ctx)
-				require.NoError(t, recv.StopSignalRelayer(ctx))
+				recv.Start(ctx)
+				require.NoError(t, recv.Stop(ctx))
 			})
-		})
-		t.Run("relay done", func(t *testing.T) {
-			recv := newSignalReceivers()
-			expected := ShutdownSignal{
-				Signal: syscall.SIGTERM,
-			}
-			recv.notify = func(stub chan<- os.Signal, _ ...os.Signal) {
-				select {
-				case stub <- expected.Signal:
-					// non-blocking write
-				default:
+			t.Run("notify", func(t *testing.T) {
+				stub := make(chan os.Signal)
+				recv := newSignalReceivers()
+				recv.notify = func(ch chan<- os.Signal, _ ...os.Signal) {
+					go func() {
+						for sig := range stub {
+							ch <- sig
+						}
+					}()
 				}
-			}
-			done := recv.Done()
-			ctx, cancel := context.WithTimeout( // timeout for close test
-				context.Background(),
-				time.Millisecond*10,
-			)
-			defer cancel()
-			require.Equal(t, <-done, expected.Signal)
-			recv.StartSignalRelayer(ctx) // calls stub function
-			require.NoError(t,
-				recv.StopSignalRelayer(ctx),
-				"stopping signal relayer error",
-			)
+				ctx, cancel := context.WithCancel(context.Background())
+				defer cancel()
+				require.NoError(t, recv.Start(ctx))
+				stub <- syscall.SIGTERM
+				stub <- syscall.SIGTERM
+				require.Equal(t, syscall.SIGTERM, <-recv.Done())
+				require.Equal(t, syscall.SIGTERM, <-recv.Done())
+				require.NoError(t, recv.Stop(ctx))
+				close(stub)
+			})
 		})
-
 	})
 }

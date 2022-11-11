@@ -40,86 +40,99 @@ func (sig ShutdownSignal) String() string {
 }
 
 func newSignalReceivers() signalReceivers {
-	return signalReceivers{notify: signal.Notify}
+	return signalReceivers{
+		notify:  signal.Notify,
+		signals: make(chan os.Signal, 1),
+	}
 }
 
 type signalReceivers struct {
-	m           sync.Mutex
-	relayCloser func(context.Context) error
-	last        *ShutdownSignal
-	done        []chan os.Signal
-	notify      func(c chan<- os.Signal, sig ...os.Signal)
+	m        sync.Mutex
+	signals  chan os.Signal
+	shutdown chan struct{}
+	finished chan struct{}
+	notify   func(c chan<- os.Signal, sig ...os.Signal)
+
+	last *ShutdownSignal
+	done []chan os.Signal
 }
 
-func (recv *signalReceivers) StartSignalRelayer(ctx context.Context) error {
+func (recv *signalReceivers) relayer(ctx context.Context) {
+	println("relay started")
+	defer println("relay stopped")
+	defer func() {
+		println("sending stopped signal")
+		select {
+		case recv.finished <- struct{}{}:
+		default:
+		}
+	}()
+
+	select {
+	case <-recv.shutdown:
+		println("got shutdown")
+		return
+	case <-ctx.Done():
+		println("got ctx done")
+		return
+	case signal := <-recv.signals:
+		println("got signal")
+		recv.Broadcast(ShutdownSignal{
+			Signal: signal,
+		})
+	}
+}
+
+func (recv *signalReceivers) running() bool {
+	return recv.shutdown != nil && recv.finished != nil
+}
+
+func (recv *signalReceivers) Start(ctx context.Context) error {
 	recv.m.Lock()
 	defer recv.m.Unlock()
 
-	if recv.relayCloser != nil {
-		return errors.New("signal relay is still running")
+	if recv.running() {
+		return errors.New("already started") // TODO: better error
 	}
 
-	waitForClose, closeRelayer := context.WithCancel(context.Background())
-	relayHasStopped, signalRelayIsStopped := context.WithCancel(context.Background())
-
-	recv.relayCloser = func(closeCtx context.Context) error {
-		closeRelayer()
-		select {
-		case <-closeCtx.Done():
-			return fmt.Errorf(
-				"waiting for signal relay to close: %w",
-				closeCtx.Err(),
-			)
-		case <-relayHasStopped.Done():
-			return nil
-		}
-	}
-
-	ch := make(chan os.Signal, 1)
-	recv.notify(ch, recv.signalsToRelay()...)
-
-	go func() {
-		defer signalRelayIsStopped()
-		select {
-		case <-ctx.Done():
-			return // app context is closed
-		case <-waitForClose.Done():
-			return
-		case signal := <-ch:
-			recv.Broadcast(ShutdownSignal{
-				Signal: signal,
-			})
-			// the relay is shutting down, cleanup it's closer func
-			recv.m.Lock()
-			recv.relayCloser = nil
-			recv.m.Unlock()
-			return
-		}
-	}()
+	recv.last = nil
+	recv.finished = make(chan struct{}, 1)
+	recv.shutdown = make(chan struct{}, 1)
+	recv.notify(recv.signals, os.Interrupt, _sigINT, _sigTERM)
+	go recv.relayer(ctx)
 
 	return nil
 }
 
-func (recv *signalReceivers) StopSignalRelayer(ctx context.Context) error {
-	var closer func(context.Context) error
-
-	// lock and acquire the closer function, unlock before calling
-	// the closer to avoid any lock contention
+func (recv *signalReceivers) Stop(ctx context.Context) error {
 	recv.m.Lock()
-	if recv.relayCloser == nil {
-		return errors.New("signal relayer is not started")
+	defer recv.m.Unlock()
+
+	if !recv.running() {
+		return errors.New("not running") // TODO: better error
 	}
-	closer = recv.relayCloser
-	recv.m.Unlock()
 
-	return closer(ctx)
+	println("sending shutdown")
+	recv.shutdown <- struct{}{}
+
+	for {
+		select {
+		case <-ctx.Done():
+			fmt.Println("got timeout?")
+			return ctx.Err()
+		case <-recv.finished:
+			fmt.Println("relayer has finished")
+			close(recv.shutdown)
+			close(recv.finished)
+			recv.shutdown = nil
+			recv.finished = nil
+			return nil
+		}
+
+	}
 }
 
-func (recv *signalReceivers) signalsToRelay() []os.Signal {
-	return []os.Signal{os.Interrupt, _sigINT, _sigTERM}
-}
-
-func (recv *signalReceivers) Done() <-chan os.Signal {
+func (recv *signalReceivers) Done() chan os.Signal {
 	recv.m.Lock()
 	defer recv.m.Unlock()
 
@@ -133,7 +146,6 @@ func (recv *signalReceivers) Done() <-chan os.Signal {
 		ch <- recv.last.Signal
 	}
 
-	recv.notify(ch, os.Interrupt, _sigINT, _sigTERM)
 	recv.done = append(recv.done, ch)
 	return ch
 }
