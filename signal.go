@@ -58,10 +58,7 @@ type signalReceivers struct {
 }
 
 func (recv *signalReceivers) relayer(ctx context.Context) {
-	println("relay started")
-	defer println("relay stopped")
 	defer func() {
-		println("sending stopped signal")
 		select {
 		case recv.finished <- struct{}{}:
 		default:
@@ -70,13 +67,10 @@ func (recv *signalReceivers) relayer(ctx context.Context) {
 
 	select {
 	case <-recv.shutdown:
-		println("got shutdown")
 		return
 	case <-ctx.Done():
-		println("got ctx done")
 		return
 	case signal := <-recv.signals:
-		println("got signal")
 		recv.Broadcast(ShutdownSignal{
 			Signal: signal,
 		})
@@ -112,16 +106,13 @@ func (recv *signalReceivers) Stop(ctx context.Context) error {
 		return errors.New("not running") // TODO: better error
 	}
 
-	println("sending shutdown")
 	recv.shutdown <- struct{}{}
 
 	for {
 		select {
 		case <-ctx.Done():
-			fmt.Println("got timeout?")
 			return ctx.Err()
 		case <-recv.finished:
-			fmt.Println("relayer has finished")
 			close(recv.shutdown)
 			close(recv.finished)
 			recv.shutdown = nil
