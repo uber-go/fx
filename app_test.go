@@ -1085,7 +1085,9 @@ func TestAppStart(t *testing.T) {
 			Provide(failStart),
 			Invoke(func(struct{}) {}),
 		)
-		err := app.Start(context.Background())
+		ctx, cancel := context.WithCancel(context.Background())
+		defer cancel()
+		err := app.Start(ctx)
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "OnStart fail")
 
@@ -1121,7 +1123,9 @@ func TestAppStart(t *testing.T) {
 			Provide(fail),
 			Invoke(func(struct{}) {}),
 		)
-		err := app.Start(context.Background())
+		ctx, cancel := context.WithCancel(context.Background())
+		defer cancel()
+		err := app.Start(ctx)
 		require.Error(t, err)
 		assert.Equal(t, []error{errStart2, errStop1}, multierr.Errors(err))
 
@@ -1278,7 +1282,9 @@ func TestAppStart(t *testing.T) {
 		app := fxtest.New(t,
 			Invoke(addHook),
 		)
-		err := app.Start(context.Background()).Error()
+		ctx, cancel := context.WithCancel(context.Background())
+		defer cancel()
+		err := app.Start(ctx).Error()
 		assert.Contains(t, err, "OnStart hook added by go.uber.org/fx_test.TestAppStart.func10.1 failed: goroutine exited without returning")
 	})
 }
@@ -1534,12 +1540,14 @@ func TestHookConstructors(t *testing.T) {
 	t.Run("start errors", func(t *testing.T) {
 		wantErr := errors.New("oh no")
 
+		ctx, cancel := context.WithCancel(context.Background())
+		defer cancel()
 		// Verify that wrapped `func() error` funcs produce the expected error.
 		err := New(Invoke(func(lc Lifecycle) {
 			lc.Append(StartHook(func() error {
 				return wantErr
 			}))
-		})).Start(context.Background())
+		})).Start(ctx)
 		require.ErrorContains(t, err, wantErr.Error())
 
 		// Verify that wrapped `func(context.Context) error` funcs produce the
@@ -1548,7 +1556,7 @@ func TestHookConstructors(t *testing.T) {
 			lc.Append(StartHook(func(ctx context.Context) error {
 				return wantErr
 			}))
-		})).Start(context.Background())
+		})).Start(ctx)
 		require.ErrorContains(t, err, wantErr.Error())
 	})
 

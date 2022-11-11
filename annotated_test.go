@@ -1038,7 +1038,8 @@ func assertApp(
 	invoked *bool,
 ) {
 	t.Helper()
-	ctx := context.Background()
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 	assert.False(t, *started)
 	require.NoError(t, app.Start(ctx))
 	assert.True(t, *started)
@@ -1449,7 +1450,9 @@ func TestHookAnnotationFailures(t *testing.T) {
 			}
 
 			app := NewForTest(t, opts)
-			err := app.Start(context.Background())
+			ctx, cancel := context.WithCancel(context.Background())
+			defer cancel()
+			err := app.Start(ctx)
 			require.Error(t, err)
 			require.Contains(t, err.Error(), tt.errContains)
 		})
