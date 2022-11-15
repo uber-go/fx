@@ -28,7 +28,12 @@ import (
 	"sync"
 )
 
-// ShutdownSignal is a signal that caused the application to exit.
+// ShutdownSignal represents a signal to be written to Wait or Done.
+// Should a user call the Shutdown method via the Shutdowner interface with
+// a provided ExitCode, that exit code will be populated in the ExitCode field.
+//
+// Should the application receive an operating system signal via signal.Notify,
+// the Signal field will be populated with the received Signal.
 type ShutdownSignal struct {
 	Signal   os.Signal
 	ExitCode int

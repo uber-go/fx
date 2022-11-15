@@ -619,6 +619,8 @@ func (app *App) Start(ctx context.Context) (err error) {
 	})
 }
 
+// withRollback will execute an anonymous function with a given context.
+// if the anon func returns an error, rollback methods will be called and related events emitted
 func (app *App) withRollback(
 	ctx context.Context,
 	f func(context.Context) error,
@@ -679,12 +681,26 @@ func (app *App) Stop(ctx context.Context) (err error) {
 // development, users can send the application SIGTERM by pressing Ctrl-C in
 // the same terminal as the running process.
 //
+// Note: The channel Done returns will not receive a signal unless the application
+// as been started via Start or Run.
+//
 // Alternatively, a signal can be broadcast to all done channels manually by
 // using the Shutdown functionality (see the Shutdowner documentation for details).
 func (app *App) Done() <-chan os.Signal {
 	return app.receivers.Done()
 }
 
+// Wait returns a channel of ShutdownSignal to block on after starting the
+// application and functions largely the same as Done, however with a minor
+// difference. Should an ExitCode be provided as a ShutdownOption to
+// the Shutdowner Shutdown method, the exit code will be available as part
+// of the ShutdownSignal struct.
+//
+// Note: The channel Done returns will not receive a signal unless the application
+// as been started via Start or Run.
+//
+// Should a SIGTERM, or SIGINT be received via signal.Notify, the given
+// signal will be populated in the ShutdownSignal struct.
 func (app *App) Wait() <-chan ShutdownSignal {
 	return app.receivers.Wait()
 }
