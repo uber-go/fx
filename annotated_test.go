@@ -104,9 +104,10 @@ func TestAnnotatedAs(t *testing.T) {
 	}
 
 	tests := []struct {
-		desc    string
-		provide fx.Option
-		invoke  interface{}
+		desc     string
+		provide  fx.Option
+		invoke   interface{}
+		startApp bool
 	}{
 		{
 			desc: "provide a good stringer",
@@ -329,7 +330,7 @@ func TestAnnotatedAs(t *testing.T) {
 			provide: fx.Provide(
 				fx.Annotate(func() (*asStringer, *bytes.Buffer) {
 					return &asStringer{name: "stringer"},
-						bytes.NewBuffer(make([]byte, 1))
+						bytes.NewBuffer([]byte{})
 				},
 					// lifecycle hook added is able to receive results as annotated
 					fx.OnStart(func(s fmt.Stringer, ms myStringer, buf *bytes.Buffer, w io.Writer) {
@@ -339,6 +340,9 @@ func TestAnnotatedAs(t *testing.T) {
 						assert.NoError(t, err)
 						_, err = buf.Write([]byte("."))
 						assert.NoError(t, err)
+					}),
+					fx.OnStop(func(buf *bytes.Buffer) {
+						assert.Equal(t, "....", buf.String(), "buffer should contain bytes written in Invoke func and OnStart hook")
 					}),
 					// annotate just myStringer here
 					fx.As(new(myStringer)),
@@ -353,6 +357,7 @@ func TestAnnotatedAs(t *testing.T) {
 				_, err = buf.Write([]byte("."))
 				assert.NoError(t, err)
 			},
+			startApp: true,
 		},
 	}
 
@@ -369,6 +374,11 @@ func TestAnnotatedAs(t *testing.T) {
 				fx.Invoke(tt.invoke),
 			)
 			require.NoError(t, app.Err())
+			if tt.startApp {
+				ctx := context.Background()
+				require.NoError(t, app.Start(ctx))
+				require.NoError(t, app.Stop(ctx))
+			}
 		})
 	}
 }
@@ -394,13 +404,13 @@ func TestAnnotatedAsFailures(t *testing.T) {
 			desc:          "provide when an illegal type As",
 			provide:       fx.Provide(fx.Annotate(newAsStringer, fx.As(new(io.Writer)))),
 			invoke:        func() {},
-			errorContains: "does not implement",
+			errorContains: "asStringer does not implement io.Writer",
 		},
 		{
 			desc:          "provide when an illegal type As with result tag",
 			provide:       fx.Provide(fx.Annotate(newAsStringer, fx.ResultTags(`name:"stringer"`), fx.As(new(io.Writer)))),
 			invoke:        func() {},
-			errorContains: "does not implement",
+			errorContains: "asStringer does not implement io.Writer",
 		},
 		{
 			desc:          "error is propagated without result tag",

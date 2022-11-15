@@ -527,6 +527,8 @@ func (la *lifecycleHookAnnotation) build(ann *annotated) (interface{}, error) {
 	origFn := reflect.ValueOf(ann.Target)
 	newFnType := reflect.FuncOf(paramTypes, resultTypes, false)
 	newFn := reflect.MakeFunc(newFnType, func(args []reflect.Value) []reflect.Value {
+		// copy the original arguments before remapping the parameters
+		// so that we can apply them to the hookInstaller.
 		origArgs := make([]reflect.Value, len(args))
 		copy(origArgs, args)
 		args = remapParams(args)
@@ -1309,9 +1311,10 @@ func (ann *annotated) cleanUpAsResults() {
 	ann.Target = newFn.Interface()
 }
 
-// checks whether the target function is either
-// returning an fx.Out struct or an taking in a
-// fx.In struct as a parameter.
+// checks and returns a non-nil error if the target function:
+// - returns an fx.Out struct as a result.
+// - takes in an fx.In struct as a parameter.
+// - has an error result not as the last result.
 func (ann *annotated) typeCheckOrigFn() error {
 	ft := reflect.TypeOf(ann.Target)
 	numOut := ft.NumOut()
