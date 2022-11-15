@@ -20,6 +20,13 @@
 
 package fx
 
+import (
+	"context"
+	"time"
+)
+
+const _receiverShutdownTimeout = 10 * time.Millisecond
+
 // Shutdowner provides a method that can manually trigger the shutdown of the
 // application by sending a signal to all open Done channels. Shutdowner works
 // on applications using Run as well as Start, Done, and Stop. The Shutdowner is
@@ -44,6 +51,13 @@ type shutdowner struct {
 // In practice this means Shutdowner.Shutdown should not be called from an
 // fx.Invoke, but from a fx.Lifecycle.OnStart hook.
 func (s *shutdowner) Shutdown(opts ...ShutdownOption) error {
+	ctx, cancel := context.WithTimeout(
+		context.Background(),
+		_receiverShutdownTimeout,
+	)
+	defer cancel()
+	defer s.app.receivers.Stop(ctx)
+
 	return s.app.receivers.Broadcast(ShutdownSignal{Signal: _sigTERM})
 }
 

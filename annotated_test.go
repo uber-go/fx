@@ -1485,7 +1485,8 @@ func assertApp(
 	invoked *bool,
 ) {
 	t.Helper()
-	ctx := context.Background()
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 	assert.False(t, *started)
 	require.NoError(t, app.Start(ctx))
 	assert.True(t, *started)
@@ -1518,6 +1519,7 @@ func TestHookAnnotations(t *testing.T) {
 		t.Parallel()
 
 		var started bool
+		var stopped bool
 		var invoked bool
 		hook := fx.Annotate(
 			func() {
@@ -1527,10 +1529,14 @@ func TestHookAnnotations(t *testing.T) {
 				started = true
 				return nil
 			}),
+			fx.OnStop(func(context.Context) error {
+				stopped = true
+				return nil
+			}),
 		)
 		app := fxtest.New(t, fx.Invoke(hook))
 
-		assertApp(t, app, &started, nil, &invoked)
+		assertApp(t, app, &started, &stopped, &invoked)
 	})
 
 	t.Run("depend on result interface of target", func(t *testing.T) {

@@ -22,7 +22,6 @@ package fx
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"os"
 	"os/signal"
@@ -85,8 +84,9 @@ func (recv *signalReceivers) Start(ctx context.Context) error {
 	recv.m.Lock()
 	defer recv.m.Unlock()
 
+	// if the relayer is already running; return nil
 	if recv.running() {
-		return errors.New("already started") // TODO: better error
+		return nil
 	}
 
 	recv.last = nil
@@ -102,8 +102,9 @@ func (recv *signalReceivers) Stop(ctx context.Context) error {
 	recv.m.Lock()
 	defer recv.m.Unlock()
 
+	// if the relayer is not running; return nil error
 	if !recv.running() {
-		return errors.New("not running") // TODO: better error
+		return nil
 	}
 
 	recv.shutdown <- struct{}{}

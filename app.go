@@ -640,7 +640,13 @@ func (app *App) withRollback(
 }
 
 func (app *App) start(ctx context.Context) error {
-	return app.withRollback(ctx, app.lifecycle.Start)
+	return app.withRollback(ctx, func(ctx context.Context) error {
+		if err := app.lifecycle.Start(ctx); err != nil {
+			return err
+		}
+		app.receivers.Start(ctx)
+		return nil
+	})
 }
 
 // Stop gracefully stops the application. It executes any registered OnStop
@@ -655,9 +661,14 @@ func (app *App) Stop(ctx context.Context) (err error) {
 		app.log().LogEvent(&fxevent.Stopped{Err: err})
 	}()
 
+	cb := func(ctx context.Context) error {
+		defer app.receivers.Stop(ctx)
+		return app.lifecycle.Stop(ctx)
+	}
+
 	return withTimeout(ctx, &withTimeoutParams{
 		hook:      _onStopHook,
-		callback:  app.lifecycle.Stop,
+		callback:  cb,
 		lifecycle: app.lifecycle,
 		log:       app.log(),
 	})
