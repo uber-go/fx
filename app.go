@@ -685,6 +685,10 @@ func (app *App) Done() <-chan os.Signal {
 	return app.receivers.Done()
 }
 
+func (app *App) Wait() <-chan ShutdownSignal {
+	return app.receivers.Wait()
+}
+
 // StartTimeout returns the configured startup timeout. Apps default to using
 // DefaultTimeout, but users can configure this behavior using the
 // StartTimeout option.

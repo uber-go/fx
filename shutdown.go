@@ -41,8 +41,21 @@ type ShutdownOption interface {
 	apply(*shutdowner)
 }
 
+type exitCodeOption int
+
+func (code exitCodeOption) apply(s *shutdowner) {
+	s.exitCode = int(code)
+}
+
+var _ ShutdownOption = exitCodeOption(0)
+
+func ExitCode(code int) ShutdownOption {
+	return exitCodeOption(code)
+}
+
 type shutdowner struct {
-	app *App
+	app      *App
+	exitCode int
 }
 
 // Shutdown broadcasts a signal to all of the application's Done channels
@@ -51,6 +64,11 @@ type shutdowner struct {
 // In practice this means Shutdowner.Shutdown should not be called from an
 // fx.Invoke, but from a fx.Lifecycle.OnStart hook.
 func (s *shutdowner) Shutdown(opts ...ShutdownOption) error {
+
+	for _, opt := range opts {
+		opt.apply(s)
+	}
+
 	ctx, cancel := context.WithTimeout(
 		context.Background(),
 		_receiverShutdownTimeout,
@@ -58,7 +76,10 @@ func (s *shutdowner) Shutdown(opts ...ShutdownOption) error {
 	defer cancel()
 	defer s.app.receivers.Stop(ctx)
 
-	return s.app.receivers.Broadcast(ShutdownSignal{Signal: _sigTERM})
+	return s.app.receivers.Broadcast(ShutdownSignal{
+		Signal:   _sigTERM,
+		ExitCode: s.exitCode,
+	})
 }
 
 func (app *App) shutdowner() Shutdowner {

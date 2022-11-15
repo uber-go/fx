@@ -30,8 +30,8 @@ import (
 
 // ShutdownSignal is a signal that caused the application to exit.
 type ShutdownSignal struct {
-	Signal os.Signal
-	Code   int
+	Signal   os.Signal
+	ExitCode int
 }
 
 // String will render a ShutdownSignal type as a string suitable for printing.
