@@ -76,7 +76,7 @@ func TestSignal(t *testing.T) {
 				recv := newSignalReceivers()
 				ctx, cancel := context.WithCancel(context.Background())
 				defer cancel()
-				recv.Start(ctx)
+				require.NoError(t, recv.Start(ctx))
 				timeoutCtx, _ := context.WithTimeout(context.Background(), 0)
 				err := recv.Stop(timeoutCtx)
 				require.ErrorIs(t, err, context.DeadlineExceeded)
@@ -85,7 +85,8 @@ func TestSignal(t *testing.T) {
 				recv := newSignalReceivers()
 				ctx, cancel := context.WithCancel(context.Background())
 				defer cancel()
-				recv.Start(ctx)
+				require.NoError(t, recv.Start(ctx))
+				require.NoError(t, recv.Start(ctx), "should ignore double start")
 				require.NoError(t, recv.Stop(ctx))
 			})
 			t.Run("notify", func(t *testing.T) {

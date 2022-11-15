@@ -61,12 +61,14 @@ func TestShutdown(t *testing.T) {
 		)
 
 		done := app.Done()
+		wait := app.Wait()
 		defer app.RequireStart().RequireStop()
 		assert.NoError(t, s.Shutdown(), "error returned from first shutdown call")
 
-		assert.EqualError(t, s.Shutdown(), "send terminated signal: 1/1 channels are blocked",
+		assert.EqualError(t, s.Shutdown(), "send terminated signal: 2/2 channels are blocked",
 			"unexpected error returned when shutdown is called with a blocked channel")
 		assert.NotNil(t, <-done, "done channel did not receive signal")
+		assert.NotNil(t, <-wait, "done channel did not receive signal")
 	})
 
 	t.Run("shutdown app before calling Done()", func(t *testing.T) {
