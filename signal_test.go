@@ -105,6 +105,8 @@ func TestSignal(t *testing.T) {
 				stub <- syscall.SIGTERM
 				require.Equal(t, syscall.SIGTERM, <-recv.Done())
 				require.Equal(t, syscall.SIGTERM, <-recv.Done())
+				sig := <-recv.Wait()
+				require.Equal(t, syscall.SIGTERM, sig.Signal)
 				require.NoError(t, recv.Stop(ctx))
 				close(stub)
 			})

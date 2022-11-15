@@ -31,6 +31,7 @@ import (
 // ShutdownSignal is a signal that caused the application to exit.
 type ShutdownSignal struct {
 	Signal os.Signal
+	Code   int
 }
 
 // String will render a ShutdownSignal type as a string suitable for printing.
@@ -54,6 +55,7 @@ type signalReceivers struct {
 
 	last *ShutdownSignal
 	done []chan os.Signal
+	wait []chan ShutdownSignal
 }
 
 func (recv *signalReceivers) relayer(ctx context.Context) {
@@ -142,13 +144,31 @@ func (recv *signalReceivers) Done() chan os.Signal {
 	return ch
 }
 
+func (recv *signalReceivers) Wait() chan ShutdownSignal {
+	recv.m.Lock()
+	defer recv.m.Unlock()
+
+	ch := make(chan ShutdownSignal, 1)
+
+	if recv.last != nil {
+		ch <- *recv.last
+	}
+
+	recv.wait = append(recv.wait, ch)
+	return ch
+}
+
 func (recv *signalReceivers) Broadcast(signal ShutdownSignal) error {
 	recv.m.Lock()
 	defer recv.m.Unlock()
 
 	recv.last = &signal
 
-	channels, unsent := recv.broadcastDone(signal)
+	channels, unsent := recv.broadcast(
+		signal,
+		recv.broadcastDone,
+		recv.broadcastWait,
+	)
 
 	if unsent != 0 {
 		return &unsentSignalError{
@@ -159,6 +179,21 @@ func (recv *signalReceivers) Broadcast(signal ShutdownSignal) error {
 	}
 
 	return nil
+}
+
+func (recv *signalReceivers) broadcast(
+	signal ShutdownSignal,
+	anchors ...func(ShutdownSignal) (int, int),
+) (int, int) {
+	var channels, unsent int
+
+	for _, anchor := range anchors {
+		c, u := anchor(signal)
+		channels += c
+		unsent += u
+	}
+
+	return channels, unsent
 }
 
 func (recv *signalReceivers) broadcastDone(signal ShutdownSignal) (int, int) {
@@ -173,6 +208,20 @@ func (recv *signalReceivers) broadcastDone(signal ShutdownSignal) (int, int) {
 	}
 
 	return len(recv.done), unsent
+}
+
+func (recv *signalReceivers) broadcastWait(signal ShutdownSignal) (int, int) {
+	var unsent int
+
+	for _, reader := range recv.wait {
+		select {
+		case reader <- signal:
+		default:
+			unsent++
+		}
+	}
+
+	return len(recv.wait), unsent
 }
 
 type unsentSignalError struct {
