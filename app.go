@@ -26,11 +26,9 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"os/signal"
 	"reflect"
 	"sort"
 	"strings"
-	"sync"
 	"time"
 
 	"go.uber.org/dig"
@@ -286,10 +284,9 @@ type App struct {
 	// Decides how we react to errors when building the graph.
 	errorHooks []ErrorHandler
 	validate   bool
+
 	// Used to signal shutdowns.
-	donesMu     sync.Mutex // guards dones and shutdownSig
-	dones       []chan os.Signal
-	shutdownSig os.Signal
+	receivers signalReceivers
 
 	osExit func(code int) // os.Exit override; used for testing only
 }
@@ -393,6 +390,7 @@ func New(opts ...Option) *App {
 		clock:        fxclock.System,
 		startTimeout: DefaultTimeout,
 		stopTimeout:  DefaultTimeout,
+		receivers:    newSignalReceivers(),
 	}
 	app.root = &module{
 		app: app,
@@ -666,21 +664,7 @@ func (app *App) Stop(ctx context.Context) (err error) {
 // Alternatively, a signal can be broadcast to all done channels manually by
 // using the Shutdown functionality (see the Shutdowner documentation for details).
 func (app *App) Done() <-chan os.Signal {
-	c := make(chan os.Signal, 1)
-
-	app.donesMu.Lock()
-	defer app.donesMu.Unlock()
-	// If shutdown signal has been received already
-	// send it and return. If not, wait for user to send a termination
-	// signal.
-	if app.shutdownSig != nil {
-		c <- app.shutdownSig
-		return c
-	}
-
-	signal.Notify(c, os.Interrupt, _sigINT, _sigTERM)
-	app.dones = append(app.dones, c)
-	return c
+	return app.receivers.Done()
 }
 
 // StartTimeout returns the configured startup timeout. Apps default to using

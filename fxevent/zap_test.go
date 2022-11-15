@@ -24,12 +24,14 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
 )
 
@@ -70,7 +72,7 @@ func TestZapLogger(t *testing.T) {
 		},
 		{
 
-			name: "OnStopExecutedError",
+			name: "OnStopExecuted/Error",
 			give: &OnStopExecuted{
 				FunctionName: "hook.onStart1",
 				CallerName:   "bytes.NewBuffer",
@@ -99,7 +101,7 @@ func TestZapLogger(t *testing.T) {
 		},
 		{
 
-			name: "OnStartExecutedError",
+			name: "OnStartExecuted/Error",
 			give: &OnStartExecuted{
 				FunctionName: "hook.onStart1",
 				CallerName:   "bytes.NewBuffer",
@@ -135,9 +137,9 @@ func TestZapLogger(t *testing.T) {
 			},
 		},
 		{
-			name:        "SuppliedError",
+			name:        "Supplied/Error",
 			give:        &Supplied{TypeName: "*bytes.Buffer", Err: someError},
-			wantMessage: "supplied",
+			wantMessage: "error encountered while applying options",
 			wantFields: map[string]interface{}{
 				"type":  "*bytes.Buffer",
 				"error": "some error",
@@ -158,7 +160,7 @@ func TestZapLogger(t *testing.T) {
 			},
 		},
 		{
-			name:        "Provide with Error",
+			name:        "Provide/Error",
 			give:        &Provided{Err: someError},
 			wantMessage: "error encountered while applying options",
 			wantFields: map[string]interface{}{
@@ -201,7 +203,7 @@ func TestZapLogger(t *testing.T) {
 			},
 		},
 		{
-			name:        "Decorate with Error",
+			name:        "Decorate/Error",
 			give:        &Decorated{Err: someError},
 			wantMessage: "error encountered while applying options",
 			wantFields: map[string]interface{}{
@@ -228,7 +230,7 @@ func TestZapLogger(t *testing.T) {
 			},
 		},
 		{
-			name:        "StartError",
+			name:        "Start/Error",
 			give:        &Started{Err: someError},
 			wantMessage: "start failed",
 			wantFields: map[string]interface{}{
@@ -244,7 +246,7 @@ func TestZapLogger(t *testing.T) {
 			},
 		},
 		{
-			name:        "Stopped",
+			name:        "Stopped/Error",
 			give:        &Stopped{Err: someError},
 			wantMessage: "stop failed",
 			wantFields: map[string]interface{}{
@@ -252,7 +254,7 @@ func TestZapLogger(t *testing.T) {
 			},
 		},
 		{
-			name:        "RollingBack",
+			name:        "RollingBack/Error",
 			give:        &RollingBack{StartErr: someError},
 			wantMessage: "start failed, rolling back",
 			wantFields: map[string]interface{}{
@@ -260,7 +262,7 @@ func TestZapLogger(t *testing.T) {
 			},
 		},
 		{
-			name:        "RolledBackError",
+			name:        "RolledBack/Error",
 			give:        &RolledBack{Err: someError},
 			wantMessage: "rollback failed",
 			wantFields: map[string]interface{}{
@@ -274,7 +276,7 @@ func TestZapLogger(t *testing.T) {
 			wantFields:  map[string]interface{}{},
 		},
 		{
-			name:        "LoggerInitialized Error",
+			name:        "LoggerInitialized/Error",
 			give:        &LoggerInitialized{Err: someError},
 			wantMessage: "custom logger initialization failed",
 			wantFields: map[string]interface{}{
@@ -291,20 +293,119 @@ func TestZapLogger(t *testing.T) {
 		},
 	}
 
-	for _, tt := range tests {
-		tt := tt
-		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
+	t.Run("debug observer, log at default (info)", func(t *testing.T) {
+		for _, tt := range tests {
+			tt := tt
+			t.Run(tt.name, func(t *testing.T) {
+				t.Parallel()
 
-			core, observedLogs := observer.New(zap.DebugLevel)
-			(&ZapLogger{Logger: zap.New(core)}).LogEvent(tt.give)
+				core, observedLogs := observer.New(zap.DebugLevel)
+				(&ZapLogger{Logger: zap.New(core)}).LogEvent(tt.give)
 
+				logs := observedLogs.TakeAll()
+				require.Len(t, logs, 1)
+				got := logs[0]
+
+				assert.Equal(t, tt.wantMessage, got.Message)
+				assert.Equal(t, tt.wantFields, got.ContextMap())
+			})
+		}
+	})
+
+	t.Run("info observer, log at debug", func(t *testing.T) {
+		for _, tt := range tests {
+			tt := tt
+			t.Run(tt.name, func(t *testing.T) {
+				t.Parallel()
+
+				core, observedLogs := observer.New(zap.InfoLevel)
+				l := &ZapLogger{Logger: zap.New(core)}
+				l.UseLogLevel(zapcore.DebugLevel)
+				l.LogEvent(tt.give)
+
+				logs := observedLogs.TakeAll()
+				// logs are not visible unless they are errors
+				if strings.HasSuffix(tt.name, "/Error") {
+					require.Len(t, logs, 1)
+					got := logs[0]
+					assert.Equal(t, tt.wantMessage, got.Message)
+					assert.Equal(t, tt.wantFields, got.ContextMap())
+				} else {
+					require.Len(t, logs, 0)
+				}
+			})
+		}
+	})
+
+	t.Run("info observer, log/error at debug", func(t *testing.T) {
+		for _, tt := range tests {
+			tt := tt
+			t.Run(tt.name, func(t *testing.T) {
+				t.Parallel()
+
+				core, observedLogs := observer.New(zap.InfoLevel)
+				l := &ZapLogger{Logger: zap.New(core)}
+				l.UseLogLevel(zapcore.DebugLevel)
+				l.UseErrorLevel(zapcore.DebugLevel)
+				l.LogEvent(tt.give)
+
+				logs := observedLogs.TakeAll()
+				require.Len(t, logs, 0, "no logs should be visible")
+			})
+		}
+	})
+
+	t.Run("test setting log levels", func(t *testing.T) {
+		levels := []zapcore.Level{
+			zapcore.DebugLevel,
+			zapcore.WarnLevel,
+			zapcore.DPanicLevel,
+			zapcore.PanicLevel,
+		}
+
+		for _, level := range levels {
+			core, observedLogs := observer.New(level)
+			logger := &ZapLogger{Logger: zap.New(core)}
+			logger.UseLogLevel(level)
+			func() {
+				defer func() {
+					recover()
+				}()
+				logger.LogEvent(&OnStartExecuting{
+					FunctionName: "hook.onStart",
+					CallerName:   "bytes.NewBuffer",
+				})
+			}()
 			logs := observedLogs.TakeAll()
 			require.Len(t, logs, 1)
-			got := logs[0]
+		}
+	})
 
-			assert.Equal(t, tt.wantMessage, got.Message)
-			assert.Equal(t, tt.wantFields, got.ContextMap())
-		})
-	}
+	t.Run("test setting error log levels", func(t *testing.T) {
+		levels := []zapcore.Level{
+			zapcore.DebugLevel,
+			zapcore.WarnLevel,
+			zapcore.DPanicLevel,
+			zapcore.PanicLevel,
+			zapcore.FatalLevel,
+		}
+
+		for _, level := range levels {
+			core, observedLogs := observer.New(level)
+			logger := &ZapLogger{Logger: zap.New(core, zap.WithFatalHook(zapcore.WriteThenPanic))}
+			logger.UseErrorLevel(level)
+			func() {
+				defer func() {
+					recover()
+				}()
+				logger.LogEvent(&OnStopExecuted{
+					FunctionName: "hook.onStart1",
+					CallerName:   "bytes.NewBuffer",
+					Err:          fmt.Errorf("some error"),
+				})
+			}()
+			logs := observedLogs.TakeAll()
+			require.Len(t, logs, 1)
+		}
+	})
 }
