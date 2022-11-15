@@ -696,7 +696,7 @@ func (app *App) Done() <-chan os.Signal {
 // the Shutdowner Shutdown method, the exit code will be available as part
 // of the ShutdownSignal struct.
 //
-// Note: The channel Done returns will not receive a signal unless the application
+// Note: The channel Wait returns will not receive a signal unless the application
 // as been started via Start or Run.
 //
 // Should a SIGTERM, or SIGINT be received via signal.Notify, the given
