@@ -237,6 +237,28 @@ func TestAnnotatedFrom(t *testing.T) {
 				assert.Equal(t, s.String(), "another stringer and a good stringer")
 			},
 		},
+		{
+			desc: "use nil to placeholder",
+			provide: fx.Provide(
+				newFromStringer,
+				func() anotherStringer {
+					return anotherStringer{
+						"another stringer",
+					}
+				},
+				fx.Annotate(
+					func(fromStringer2 *fromStringer, myStringer1 myStringer) fmt.Stringer {
+						return &fromStringer{
+							name: myStringer1.String() + " and " + fromStringer2.String(),
+						}
+					},
+					fx.From(nil, new(anotherStringer)),
+				),
+			),
+			invoke: func(s fmt.Stringer) {
+				assert.Equal(t, s.String(), "another stringer and a good stringer")
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -282,7 +304,9 @@ func TestAnnotatedFromFailures(t *testing.T) {
 					fx.From(new(*fromStringer)),
 				),
 			),
-			invoke:        func() {},
+			invoke: func(stringer fmt.Stringer) {
+				fmt.Println(stringer.String())
+			},
 			errorContains: "does not implement",
 		},
 		{
@@ -331,7 +355,7 @@ func TestAnnotatedFromFailures(t *testing.T) {
 					fx.From("foo"),
 				),
 			),
-			errorContains: "argument must either be a pointer to a struct or a pointer to a struct pointer: got string",
+			errorContains: "argument must either be nil or a pointer",
 		},
 		{
 			desc: "multiple from annotations",

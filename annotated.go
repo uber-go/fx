@@ -1182,10 +1182,41 @@ type fromAnnotation struct {
 
 var _ Annotation = fromAnnotation{}
 
-// From is an Annotation that annotates the parameters for a function (i.e. a
-// constructor) that accepts interfaces. Very much the opposite of fx.As(...).
+// From is an Annotation that annotates some parameter for a function (i.e. a
+// constructor) that accept interface from other provided type. Very much the opposite of fx.As(...).
+//
+// For example,
+//
+//	type Runner interface { Run() }
+//	func NewFooRunner() *FooRunner // implements Runner
+//	func NewRunnerWrap(r Runner) *RunnerWrap
+//
+//	fx.Provide(
+//	  fx.Annotate(
+//	    NewRunnerWrap,
+//	    fx.From(new(*FooRunner)),
+//	  ),
+//	)
+//
+// Is equivalent to,
+//
+//	fx.Provide(func(r *FooRunner) *RunnerWrap {
+//	  // need *FooRunner instead of Runner
+//	  return NewRunnerWrap(r)
+//	})
+//
+// If you don't care about certain parameters, you can use nil as a placeholder.
+//
+//	func NewRunnerWrap(o *Object, r Runner) *BarRunner // implements Runner
+//
+//	fx.Provide(
+//	  fx.Annotate(
+//	    NewRunnerWrap,
+//	    fx.From(nil, new(*FooRunner)),
+//	  ),
+//	)
 func From(interfaces ...interface{}) Annotation {
-	return fromAnnotation{interfaces}
+	return fromAnnotation{targets: interfaces}
 }
 
 func (fr fromAnnotation) apply(ann *annotated) error {
@@ -1195,13 +1226,15 @@ func (fr fromAnnotation) apply(ann *annotated) error {
 	types := make([]reflect.Type, len(fr.targets))
 	for i, typ := range fr.targets {
 		t := reflect.TypeOf(typ)
-		if t.Kind() != reflect.Ptr || t.Elem().Kind() != reflect.Ptr && t.Elem().Kind() != reflect.Struct || t.Elem().Kind() == reflect.Ptr && t.Elem().Elem().Kind() != reflect.Struct {
-			return fmt.Errorf("fx.From: argument must either be a pointer to a struct or a pointer to a struct pointer: got %v", t)
+		if t != nil && t.Kind() != reflect.Ptr {
+			return fmt.Errorf("fx.From: argument must either be nil or a pointer to a type implements some interface: got %v", t)
 		}
-		t = t.Elem()
+		if t != nil {
+			t = t.Elem()
+		}
 		types[i] = t
 	}
-	ann.From = append(ann.From, types)
+	ann.From = types
 	return nil
 }
 
@@ -1211,7 +1244,7 @@ type annotated struct {
 	ParamTags   []string
 	ResultTags  []string
 	As          [][]reflect.Type
-	From        [][]reflect.Type
+	From        []reflect.Type
 	FuncPtr     uintptr
 	Hooks       []*lifecycleHookAnnotation
 	// container is used to build private scopes for lifecycle hook functions
@@ -1233,7 +1266,7 @@ func (ann annotated) String() string {
 		fmt.Fprintf(&sb, ", fx.As(%v)", as)
 	}
 	if from := ann.From; len(from) > 0 {
-		fmt.Fprintf(&sb, ", fx.As(%v)", from)
+		fmt.Fprintf(&sb, ", fx.From(%v)", from)
 	}
 	return sb.String()
 }
