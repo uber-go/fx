@@ -104,9 +104,10 @@ func TestAnnotatedAs(t *testing.T) {
 	}
 
 	tests := []struct {
-		desc    string
-		provide fx.Option
-		invoke  interface{}
+		desc     string
+		provide  fx.Option
+		invoke   interface{}
+		startApp bool
 	}{
 		{
 			desc: "provide a good stringer",
@@ -170,6 +171,32 @@ func TestAnnotatedAs(t *testing.T) {
 			},
 		},
 		{
+			desc: "provide as with result annotation with error",
+			provide: fx.Provide(
+				fx.Annotate(func() (*asStringer, error) {
+					return &asStringer{name: "stringer"}, nil
+				},
+					fx.ResultTags(`name:"goodStringer"`),
+					fx.As(new(fmt.Stringer))),
+			),
+			invoke: func(i in) {
+				assert.Equal(t, "stringer", i.S.String())
+			},
+		},
+		{
+			desc: "provide as with result annotation in different order with error",
+			provide: fx.Provide(
+				fx.Annotate(func() (*asStringer, error) {
+					return &asStringer{name: "stringer"}, nil
+				},
+					fx.As(new(fmt.Stringer)),
+					fx.ResultTags(`name:"goodStringer"`)),
+			),
+			invoke: func(i in) {
+				assert.Equal(t, "stringer", i.S.String())
+			},
+		},
+		{
 			desc: "provide multiple constructors annotated As",
 			provide: fx.Provide(
 				fx.Annotate(func() *asStringer {
@@ -209,16 +236,22 @@ func TestAnnotatedAs(t *testing.T) {
 		{
 			desc: "annotate as many interfaces",
 			provide: fx.Provide(
-				fx.Annotate(func() *asStringer {
-					return &asStringer{name: "stringer"}
+				fx.Annotate(func() (*asStringer, error) {
+					return &asStringer{name: "stringer"}, nil
 				},
 					fx.As(new(fmt.Stringer)),
-					fx.As(new(myStringer))),
+					fx.As(new(myStringer)),
+					fx.ResultTags(`name:"stringer"`)),
 			),
-			invoke: func(s fmt.Stringer, ms myStringer) {
-				assert.Equal(t, "stringer", s.String())
-				assert.Equal(t, "stringer", ms.String())
-			},
+			invoke: fx.Annotate(
+				func(
+					S fmt.Stringer,
+					MS myStringer,
+				) {
+					assert.Equal(t, "stringer", S.String())
+					assert.Equal(t, "stringer", MS.String())
+				}, fx.ParamTags(`name:"stringer"`, `name:"stringer"`),
+			),
 		},
 		{
 			desc: "annotate as many interfaces with both-annotated return values",
@@ -292,6 +325,40 @@ func TestAnnotatedAs(t *testing.T) {
 			invoke: func(r io.Reader) {
 			},
 		},
+		{
+			desc: "results annotated as are provided to hooks as annotated types",
+			provide: fx.Provide(
+				fx.Annotate(func() (*asStringer, *bytes.Buffer) {
+					return &asStringer{name: "stringer"},
+						bytes.NewBuffer([]byte{})
+				},
+					// lifecycle hook added is able to receive results as annotated
+					fx.OnStart(func(s fmt.Stringer, ms myStringer, buf *bytes.Buffer, w io.Writer) {
+						assert.Equal(t, "stringer", s.String())
+						assert.Equal(t, "stringer", ms.String())
+						_, err := w.Write([]byte("."))
+						assert.NoError(t, err)
+						_, err = buf.Write([]byte("."))
+						assert.NoError(t, err)
+					}),
+					fx.OnStop(func(buf *bytes.Buffer) {
+						assert.Equal(t, "....", buf.String(), "buffer should contain bytes written in Invoke func and OnStart hook")
+					}),
+					// annotate just myStringer here
+					fx.As(new(myStringer)),
+					// annotate both in here
+					fx.As(new(fmt.Stringer), new(io.Writer))),
+			),
+			invoke: func(s fmt.Stringer, ms myStringer, buf *bytes.Buffer, w io.Writer) {
+				assert.Equal(t, "stringer", s.String())
+				assert.Equal(t, "stringer", ms.String())
+				_, err := w.Write([]byte("."))
+				assert.NoError(t, err)
+				_, err = buf.Write([]byte("."))
+				assert.NoError(t, err)
+			},
+			startApp: true,
+		},
 	}
 
 	for _, tt := range tests {
@@ -307,6 +374,11 @@ func TestAnnotatedAs(t *testing.T) {
 				fx.Invoke(tt.invoke),
 			)
 			require.NoError(t, app.Err())
+			if tt.startApp {
+				ctx := context.Background()
+				require.NoError(t, app.Start(ctx))
+				require.NoError(t, app.Stop(ctx))
+			}
 		})
 	}
 }
@@ -316,6 +388,10 @@ func TestAnnotatedAsFailures(t *testing.T) {
 
 	newAsStringer := func() *asStringer {
 		return &asStringer{name: "stringer"}
+	}
+
+	newAsStringerWithErr := func() (*asStringer, error) {
+		return nil, errors.New("great sadness")
 	}
 
 	tests := []struct {
@@ -328,7 +404,25 @@ func TestAnnotatedAsFailures(t *testing.T) {
 			desc:          "provide when an illegal type As",
 			provide:       fx.Provide(fx.Annotate(newAsStringer, fx.As(new(io.Writer)))),
 			invoke:        func() {},
-			errorContains: "does not implement",
+			errorContains: "asStringer does not implement io.Writer",
+		},
+		{
+			desc:          "provide when an illegal type As with result tag",
+			provide:       fx.Provide(fx.Annotate(newAsStringer, fx.ResultTags(`name:"stringer"`), fx.As(new(io.Writer)))),
+			invoke:        func() {},
+			errorContains: "asStringer does not implement io.Writer",
+		},
+		{
+			desc:          "error is propagated without result tag",
+			provide:       fx.Provide(fx.Annotate(newAsStringerWithErr, fx.As(new(fmt.Stringer)))),
+			invoke:        func(_ fmt.Stringer) {},
+			errorContains: "great sadness",
+		},
+		{
+			desc:          "error is propagated with result tag",
+			provide:       fx.Provide(fx.Annotate(newAsStringerWithErr, fx.ResultTags(`name:"stringer"`), fx.As(new(fmt.Stringer)))),
+			invoke:        fx.Annotate(func(_ fmt.Stringer) {}, fx.ParamTags(`name:"stringer"`)),
+			errorContains: "great sadness",
 		},
 		{
 			desc:    "don't provide original type using As",
@@ -540,6 +634,20 @@ func TestAnnotate(t *testing.T) {
 		total := append(sa, b.a)
 		return &sliceA{total}
 	}
+
+	t.Run("Provide with empty param+result tags", func(t *testing.T) {
+		t.Parallel()
+
+		app := fxtest.New(t,
+			fx.Provide(
+				newA,
+				fx.Annotate(newB, fx.ParamTags(), fx.ResultTags()),
+			),
+			fx.Invoke(newC),
+		)
+		defer app.RequireStart().RequireStop()
+		require.NoError(t, app.Err())
+	})
 
 	t.Run("Provide with optional", func(t *testing.T) {
 		t.Parallel()
@@ -842,7 +950,7 @@ func TestAnnotate(t *testing.T) {
 		err := app.Err()
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "already provided")
-		assert.Contains(t, err.Error(), "\"go.uber.org/fx_test\".TestAnnotate.func1")
+		assert.Contains(t, err.Error(), "go.uber.org/fx_test.TestAnnotate.func")
 	})
 
 	t.Run("specify more ParamTags than Params", func(t *testing.T) {
@@ -1057,6 +1165,16 @@ func assertApp(
 func TestHookAnnotations(t *testing.T) {
 	t.Parallel()
 
+	type a struct{}
+	type b struct{ a *a }
+	type c struct{ b *b }
+	newB := func(a *a) *b {
+		return &b{a}
+	}
+	newC := func(b *b) *c {
+		return &c{b}
+	}
+
 	t.Run("with hook on invoke", func(t *testing.T) {
 		t.Parallel()
 
@@ -1150,7 +1268,7 @@ func TestHookAnnotations(t *testing.T) {
 		var value int
 
 		hook := fx.Annotate(
-			func() (A, error) { return nil, nil },
+			func(b B, c C) (A, error) { return nil, nil },
 			fx.OnStart(func(_ context.Context, b B, c C) error {
 				b1, _ := b.(int)
 				c1, _ := c.(int)
@@ -1187,7 +1305,7 @@ func TestHookAnnotations(t *testing.T) {
 
 		ctor := fx.Provide(
 			fx.Annotate(
-				func() A {
+				func(s fmt.Stringer) A {
 					return buf
 				},
 				fx.OnStart(func(_ context.Context, a A, s fmt.Stringer) error {
@@ -1262,6 +1380,57 @@ func TestHookAnnotations(t *testing.T) {
 		require.Equal(t, "decorated", buf.String())
 	})
 
+	t.Run("with Decorate and tags", func(t *testing.T) {
+		t.Parallel()
+
+		type A interface {
+			WriteString(string) (int, error)
+		}
+
+		buf := bytes.NewBuffer(nil)
+		ctor := fx.Provide(
+			fx.Annotate(
+				func() A { return buf },
+				fx.ResultTags(`name:"name"`),
+			),
+		)
+
+		var called bool
+
+		type hookParam struct {
+			fx.In
+			A A `name:"name"`
+		}
+
+		hook := fx.Annotate(
+			func(in A) A {
+				in.WriteString("decorated")
+				return in
+			},
+			fx.ParamTags(`name:"name"`),
+			fx.ResultTags(`name:"name"`),
+			fx.OnStart(func(_ context.Context, _ hookParam) error {
+				called = assert.Equal(t, "decorated", buf.String())
+				return nil
+			}),
+		)
+
+		decorated := fx.Decorate(hook)
+
+		opts := fx.Options(
+			ctor,
+			decorated,
+			fx.Invoke(fx.Annotate(func(A) {}, fx.ParamTags(`name:"name"`))),
+		)
+
+		app := fxtest.New(t, opts)
+		ctx := context.Background()
+		require.NoError(t, app.Start(ctx))
+		require.NoError(t, app.Stop(ctx))
+		require.True(t, called)
+		require.Equal(t, "decorated", buf.String())
+	})
+
 	t.Run("with Supply and Decorate", func(t *testing.T) {
 		t.Parallel()
 
@@ -1270,7 +1439,7 @@ func TestHookAnnotations(t *testing.T) {
 		ch := make(chan string, 3)
 
 		hook := fx.Annotate(
-			func() A { return nil },
+			func(s fmt.Stringer) A { return nil },
 			fx.OnStart(func(_ context.Context, s fmt.Stringer) error {
 				ch <- "constructor"
 				require.Equal(t, "supply", s.String())
@@ -1319,6 +1488,117 @@ func TestHookAnnotations(t *testing.T) {
 		require.Equal(t, "constructor", <-ch)
 		require.Equal(t, "decorated", <-ch)
 	})
+
+	t.Run("Annotated params work with lifecycle hook annotations", func(t *testing.T) {
+		t.Parallel()
+
+		type paramStruct struct {
+			fx.In
+			A *a `name:"a" optional:"true"`
+			B *b `name:"b"`
+		}
+
+		app := fxtest.New(t,
+			fx.Provide(
+				fx.Annotate(newB, fx.ParamTags(`optional:"true"`)),
+				fx.Annotate(func(a *a, b *b) interface{} { return nil },
+					fx.ParamTags(`name:"a" optional:"true"`, `name:"b"`),
+					fx.ResultTags(`name:"nil"`),
+					fx.OnStart(func(_ paramStruct) error {
+						return nil
+					}),
+					fx.OnStop(func(_ paramStruct) error {
+						return nil
+					}),
+				),
+			),
+			fx.Invoke(newC),
+		)
+		defer app.RequireStart().RequireStop()
+		require.NoError(t, app.Err())
+	})
+
+	t.Run("provide with annotated results and lifecycle hook appended", func(t *testing.T) {
+		t.Parallel()
+
+		type firstAHookParam struct {
+			fx.In
+			Ctx context.Context
+			A   *a `name:"firstA"`
+		}
+		type secondAHookParam struct {
+			fx.In
+			A   *a `name:"secondA"`
+			Ctx context.Context
+		}
+		type thirdAHookParam struct {
+			fx.In
+			Ctx context.Context
+			A   *a `name:"thirdA"`
+		}
+
+		app := fxtest.New(t,
+			fx.Provide(
+				fx.Annotate(func() *a {
+					return &a{}
+				}, fx.ResultTags(`name:"firstA"`),
+					fx.OnStart(func(param firstAHookParam) error {
+						require.NotNil(t, param.Ctx, "context should be given")
+						return nil
+					})),
+				fx.Annotate(func() *a {
+					return &a{}
+				}, fx.ResultTags(`name:"secondA"`),
+					fx.OnStart(func(param secondAHookParam) error {
+						require.NotNil(t, param.Ctx, "context not correctly injected")
+						return nil
+					})),
+				fx.Annotate(func() *a {
+					return &a{}
+				}, fx.ResultTags(`name:"thirdA"`),
+					fx.OnStart(func(param thirdAHookParam) error {
+						require.NotNil(t, param.Ctx, "context not correctly injected")
+						return nil
+					})),
+				fx.Annotate(func(a1 *a, a2 *a, a3 *a) *b {
+					return &b{a1}
+				}, fx.ParamTags(
+					`name:"firstA"`,
+					`name:"secondA"`,
+					`name:"thirdA"`,
+				)),
+			),
+			fx.Invoke(newC),
+		)
+
+		require.NoError(t, app.Err())
+		defer app.RequireStart().RequireStop()
+	})
+
+	t.Run("provide with optional params and lifecycle hook", func(t *testing.T) {
+		type taggedHookParam struct {
+			fx.In
+			Ctx context.Context
+			A   *a `optional:"true"`
+		}
+		t.Parallel()
+		app := fxtest.New(t,
+			fx.Provide(
+				fx.Annotate(
+					newB,
+					fx.ParamTags(`optional:"true"`),
+					fx.OnStart(func(tp taggedHookParam, B *b) {
+						fmt.Println(tp.A)
+						require.NotNil(t, tp.Ctx, "context not correctly injected")
+					}),
+				),
+			),
+			fx.Invoke(newC),
+		)
+
+		require.NoError(t, app.Err())
+		defer app.RequireStart().RequireStop()
+	})
 }
 
 func TestHookAnnotationFailures(t *testing.T) {
@@ -1337,12 +1617,14 @@ func TestHookAnnotationFailures(t *testing.T) {
 	table := []struct {
 		name        string
 		annotation  interface{}
+		extraOpts   fx.Option
 		useNew      bool
 		errContains string
 	}{
 		{
 			name:        "with unprovided dependency",
-			errContains: "missing type: fx_test.B",
+			errContains: "error invoking hook installer",
+			useNew:      true,
 			annotation: fx.Annotate(
 				func() A { return nil },
 				fx.OnStart(func(context.Context, B) error {
@@ -1414,7 +1696,7 @@ func TestHookAnnotationFailures(t *testing.T) {
 		},
 		{
 			name:        "with variactic hook",
-			errContains: "must not accept variatic",
+			errContains: "must not accept variadic",
 			annotation: fx.Annotate(
 				func() A { return nil },
 				fx.OnStart(func(context.Context, ...A) error {
@@ -1430,6 +1712,19 @@ func TestHookAnnotationFailures(t *testing.T) {
 				fx.OnStop(nil),
 			),
 		},
+		{
+			name:        "cannot pull in any extra dependency other than params or results of the annotated function",
+			errContains: "error invoking hook installer",
+			useNew:      true,
+			annotation: fx.Annotate(
+				func(s string) A { return nil },
+				fx.OnStart(func(b B) error { return nil }),
+			),
+			extraOpts: fx.Options(
+				fx.Provide(func() string { return "test" }),
+				fx.Provide(func() B { return nil }),
+			),
+		},
 	}
 
 	for _, tt := range table {
@@ -1440,6 +1735,10 @@ func TestHookAnnotationFailures(t *testing.T) {
 				fx.Provide(tt.annotation),
 				fx.Invoke(func(A) {}),
 			)
+
+			if tt.extraOpts != nil {
+				opts = fx.Options(opts, tt.extraOpts)
+			}
 
 			if !tt.useNew {
 				err := validateApp(t, opts)
@@ -1466,7 +1765,7 @@ func TestHookAnnotationFunctionFlexibility(t *testing.T) {
 		{
 			name: "without error return",
 			annotation: fx.Annotate(
-				func() A { return nil },
+				func(called *atomic.Bool) A { return nil },
 				fx.OnStart(func(_ context.Context, called *atomic.Bool) {
 					called.Store(true)
 				}),
@@ -1475,7 +1774,7 @@ func TestHookAnnotationFunctionFlexibility(t *testing.T) {
 		{
 			name: "without context param",
 			annotation: fx.Annotate(
-				func() A { return nil },
+				func(called *atomic.Bool) A { return nil },
 				fx.OnStart(func(called *atomic.Bool) error {
 					called.Store(true)
 					return nil
@@ -1485,7 +1784,7 @@ func TestHookAnnotationFunctionFlexibility(t *testing.T) {
 		{
 			name: "without context param or error return",
 			annotation: fx.Annotate(
-				func() A { return nil },
+				func(called *atomic.Bool) A { return nil },
 				fx.OnStart(func(called *atomic.Bool) {
 					called.Store(true)
 				}),
@@ -1494,7 +1793,7 @@ func TestHookAnnotationFunctionFlexibility(t *testing.T) {
 		{
 			name: "with context param and error return",
 			annotation: fx.Annotate(
-				func() A { return nil },
+				func(called *atomic.Bool) A { return nil },
 				fx.OnStart(func(_ context.Context, called *atomic.Bool) error {
 					called.Store(true)
 					return nil
