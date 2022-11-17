@@ -22,6 +22,7 @@ package fx_test
 
 import (
 	"context"
+	"fmt"
 	"sync"
 	"testing"
 
@@ -91,6 +92,7 @@ func TestShutdown(t *testing.T) {
 	})
 
 	t.Run("with exit code", func(t *testing.T) {
+		t.Parallel()
 		var s fx.Shutdowner
 		app := fxtest.New(
 			t,
@@ -102,6 +104,28 @@ func TestShutdown(t *testing.T) {
 		wait := <-app.Wait()
 		defer app.Stop(context.Background())
 		require.Equal(t, 2, wait.ExitCode)
+	})
+
+	t.Run("with exit code and multiple Wait", func(t *testing.T) {
+		t.Parallel()
+		var s fx.Shutdowner
+		app := fxtest.New(
+			t,
+			fx.Populate(&s),
+		)
+
+		require.NoError(t, app.Start(context.Background()), "error starting app")
+		defer require.NoError(t, app.Stop(context.Background()))
+
+		for i := 0; i < 10; i++ {
+			t.Run(fmt.Sprintf("Wait %v", i), func(t *testing.T) {
+				t.Parallel()
+				wait := <-app.Wait()
+				require.Equal(t, 2, wait.ExitCode)
+			})
+		}
+
+		assert.NoError(t, s.Shutdown(fx.ExitCode(2)))
 	})
 }
 
