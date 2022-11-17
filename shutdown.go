@@ -49,8 +49,8 @@ func (code exitCodeOption) apply(s *shutdowner) {
 
 var _ ShutdownOption = exitCodeOption(0)
 
-// ExitCode is an option that may be passed to the Shutdown method of the
-// Shutdowner interface.
+// ExitCode is a [ShutdownOption] that may be passed to the Shutdown method of the
+// [Shutdowner] interface.
 // The given integer exit code will be broadcast to any receiver waiting
 // on a ShutdownSignal from the Wait method.
 func ExitCode(code int) ShutdownOption {
