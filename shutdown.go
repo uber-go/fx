@@ -25,8 +25,6 @@ import (
 	"time"
 )
 
-const _receiverShutdownTimeout = 10 * time.Millisecond
-
 // Shutdowner provides a method that can manually trigger the shutdown of the
 // application by sending a signal to all open Done channels. Shutdowner works
 // on applications using Run as well as Start, Done, and Stop. The Shutdowner is
@@ -57,9 +55,26 @@ func ExitCode(code int) ShutdownOption {
 	return exitCodeOption(code)
 }
 
+type shutdownTimeoutOption time.Duration
+
+func (to shutdownTimeoutOption) apply(s *shutdowner) {
+	s.shutdownTimeout = time.Duration(to)
+}
+
+var _ ShutdownOption = shutdownTimeoutOption(0)
+
+// ShutdownTimeout is a [ShutdownOption] that allows users to specify a timeout
+// for a given call to Shutdown method of the [Shutdowner] interface. As the
+// Shutdown method will block while waiting for a signal receiver relay
+// go-routine to stop.
+func ShutdownTimeout(timeout time.Duration) ShutdownOption {
+	return shutdownTimeoutOption(timeout)
+}
+
 type shutdowner struct {
-	app      *App
-	exitCode int
+	app             *App
+	exitCode        int
+	shutdownTimeout time.Duration
 }
 
 // Shutdown broadcasts a signal to all of the application's Done channels
@@ -72,11 +87,17 @@ func (s *shutdowner) Shutdown(opts ...ShutdownOption) error {
 		opt.apply(s)
 	}
 
-	ctx, cancel := context.WithTimeout(
-		context.Background(),
-		_receiverShutdownTimeout,
-	)
-	defer cancel()
+	ctx := context.Background()
+
+	if s.shutdownTimeout != time.Duration(0) {
+		c, cancel := context.WithTimeout(
+			context.Background(),
+			s.shutdownTimeout,
+		)
+		defer cancel()
+		ctx = c
+	}
+
 	defer s.app.receivers.Stop(ctx)
 
 	return s.app.receivers.Broadcast(ShutdownSignal{

@@ -25,6 +25,7 @@ import (
 	"fmt"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -125,7 +126,7 @@ func TestShutdown(t *testing.T) {
 			})
 		}
 
-		assert.NoError(t, s.Shutdown(fx.ExitCode(2)))
+		assert.NoError(t, s.Shutdown(fx.ExitCode(2), fx.ShutdownTimeout(time.Second)))
 	})
 }
 
