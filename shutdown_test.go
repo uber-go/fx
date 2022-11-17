@@ -68,7 +68,7 @@ func TestShutdown(t *testing.T) {
 		assert.EqualError(t, s.Shutdown(), "send terminated signal: 2/2 channels are blocked",
 			"unexpected error returned when shutdown is called with a blocked channel")
 		assert.NotNil(t, <-done, "done channel did not receive signal")
-		assert.NotNil(t, <-wait, "done channel did not receive signal")
+		assert.NotNil(t, <-wait, "wait channel did not receive signal")
 	})
 
 	t.Run("shutdown app before calling Done()", func(t *testing.T) {
