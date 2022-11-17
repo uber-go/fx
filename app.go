@@ -690,9 +690,9 @@ func (app *App) Done() <-chan os.Signal {
 	return app.receivers.Done()
 }
 
-// Wait returns a channel of ShutdownSignal to block on after starting the
-// application and functions largely the same as Done, however with a minor
-// difference. Should an ExitCode be provided as a ShutdownOption to
+// Wait returns a channel of [ShutdownSignal] to block on after starting the
+// application and function, similar to [App.Done], but with a minor difference.
+// Should an ExitCode be provided as a [ShutdownOption] to
 // the Shutdowner Shutdown method, the exit code will be available as part
 // of the ShutdownSignal struct.
 //
