@@ -84,22 +84,15 @@ func (recv *signalReceivers) running() bool {
 	return recv.shutdown != nil && recv.finished != nil
 }
 
-func (recv *signalReceivers) Start(ctx context.Context) error {
+func (recv *signalReceivers) Start(ctx context.Context) {
 	recv.m.Lock()
 	defer recv.m.Unlock()
-
-	// if the relayer is already running; return nil
-	if recv.running() {
-		return nil
-	}
 
 	recv.last = nil
 	recv.finished = make(chan struct{}, 1)
 	recv.shutdown = make(chan struct{}, 1)
 	recv.notify(recv.signals, os.Interrupt, _sigINT, _sigTERM)
 	go recv.relayer(ctx)
-
-	return nil
 }
 
 func (recv *signalReceivers) Stop(ctx context.Context) error {

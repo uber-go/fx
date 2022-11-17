@@ -76,7 +76,7 @@ func TestSignal(t *testing.T) {
 				recv := newSignalReceivers()
 				ctx, cancel := context.WithCancel(context.Background())
 				defer cancel()
-				require.NoError(t, recv.Start(ctx))
+				recv.Start(ctx)
 				timeoutCtx, cancel := context.WithTimeout(context.Background(), 0)
 				defer cancel()
 				err := recv.Stop(timeoutCtx)
@@ -86,8 +86,8 @@ func TestSignal(t *testing.T) {
 				recv := newSignalReceivers()
 				ctx, cancel := context.WithCancel(context.Background())
 				defer cancel()
-				require.NoError(t, recv.Start(ctx))
-				require.NoError(t, recv.Start(ctx), "should ignore double start")
+				recv.Start(ctx)
+				recv.Start(ctx) // should be a no-op if already running
 				require.NoError(t, recv.Stop(ctx))
 			})
 			t.Run("notify", func(t *testing.T) {
@@ -102,7 +102,7 @@ func TestSignal(t *testing.T) {
 				}
 				ctx, cancel := context.WithCancel(context.Background())
 				defer cancel()
-				require.NoError(t, recv.Start(ctx))
+				recv.Start(ctx)
 				stub <- syscall.SIGTERM
 				stub <- syscall.SIGTERM
 				require.Equal(t, syscall.SIGTERM, <-recv.Done())
