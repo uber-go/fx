@@ -366,7 +366,7 @@ func TestAnnotatedFromFailures(t *testing.T) {
 					fx.From(new(asStringer)),
 				),
 			),
-			errorContains: "fx.From does not support multiple annotations",
+			errorContains: "cannot apply more than one line of From",
 		},
 	}
 
