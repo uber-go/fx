@@ -699,7 +699,7 @@ func (app *App) Done() <-chan os.Signal {
 // Note: The channel Wait returns will not receive a signal unless the application
 // as been started via Start or Run.
 //
-// Should a SIGTERM, or SIGINT be received via signal.Notify, the given
+// Should the app receive a SIGTERM or SIGINT, the given
 // signal will be populated in the ShutdownSignal struct.
 func (app *App) Wait() <-chan ShutdownSignal {
 	return app.receivers.Wait()
