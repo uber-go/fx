@@ -65,10 +65,7 @@ type signalReceivers struct {
 
 func (recv *signalReceivers) relayer(ctx context.Context) {
 	defer func() {
-		select {
-		case recv.finished <- struct{}{}:
-		default:
-		}
+	recv.finished <- struct{}{}
 	}()
 
 	select {
