@@ -259,6 +259,40 @@ func TestAnnotatedFrom(t *testing.T) {
 				assert.Equal(t, s.String(), "another stringer and a good stringer")
 			},
 		},
+		{
+			desc: "Provide with empty From type",
+			provide: fx.Provide(
+				newFromStringer,
+				fx.Annotate(
+					func(myStringer *fromStringer) fmt.Stringer {
+						return &fromStringer{
+							name: myStringer.String(),
+						}
+					},
+					fx.From(),
+				),
+			),
+			invoke: func(s fmt.Stringer) {
+				assert.Equal(t, s.String(), "a good stringer")
+			},
+		},
+		{
+			desc: "Provide with variadic function",
+			provide: fx.Provide(
+				newFromStringer,
+				fx.Annotate(
+					func(myStringer myStringer, x ...int) fmt.Stringer {
+						return &fromStringer{
+							name: myStringer.String(),
+						}
+					},
+					fx.From(new(*fromStringer)),
+				),
+			),
+			invoke: func(s fmt.Stringer) {
+				assert.Equal(t, s.String(), "a good stringer")
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -299,6 +333,21 @@ func TestAnnotatedFromFailures(t *testing.T) {
 			provide: fx.Provide(
 				fx.Annotate(
 					func(writer io.Writer) fmt.Stringer {
+						return &fromStringer{}
+					},
+					fx.From(new(*fromStringer)),
+				),
+			),
+			invoke: func(stringer fmt.Stringer) {
+				fmt.Println(stringer.String())
+			},
+			errorContains: "does not implement",
+		},
+		{
+			desc: "provide with variadic function and an illegal type From",
+			provide: fx.Provide(
+				fx.Annotate(
+					func(writer io.Writer, x ...int) fmt.Stringer {
 						return &fromStringer{}
 					},
 					fx.From(new(*fromStringer)),
