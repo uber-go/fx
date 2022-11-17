@@ -52,20 +52,36 @@ func newSignalReceivers() signalReceivers {
 }
 
 type signalReceivers struct {
-	m        sync.Mutex
-	signals  chan os.Signal
-	shutdown chan struct{}
-	finished chan struct{}
-	notify   func(c chan<- os.Signal, sig ...os.Signal)
+	// this mutex protects writes and reads of this struct to prevent
+	// race conditions in a parallel execution pattern
+	m sync.Mutex
 
+	// our os.Signal channel we relay from
+	signals chan os.Signal
+	// when written to, will instruct the signal relayer to shutdown
+	shutdown chan struct{}
+	// is written to when signal relay has finished shutting down
+	finished chan struct{}
+
+	// this stub allows us to unit test signal relay functionality
+	notify func(c chan<- os.Signal, sig ...os.Signal)
+
+	// last will contain a pointer to the last ShutdownSignal received, or
+	// nil if none, if a new channel is created by Wait or Done, this last
+	// signal will be immediately written to, this allows Wait or Done state
+	// to be read after application stop
 	last *ShutdownSignal
+
+	// contains channels created by Done
 	done []chan os.Signal
+
+	// contains channels created by Wait
 	wait []chan ShutdownSignal
 }
 
 func (recv *signalReceivers) relayer(ctx context.Context) {
 	defer func() {
-	recv.finished <- struct{}{}
+		recv.finished <- struct{}{}
 	}()
 
 	select {
