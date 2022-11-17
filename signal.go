@@ -114,8 +114,6 @@ func (recv *signalReceivers) Start(ctx context.Context) {
 	recv.shutdown = make(chan struct{}, 1)
 	recv.notify(recv.signals, os.Interrupt, _sigINT, _sigTERM)
 	go recv.relayer(ctx)
-
-	return
 }
 
 func (recv *signalReceivers) Stop(ctx context.Context) error {
