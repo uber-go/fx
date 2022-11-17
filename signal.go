@@ -88,11 +88,18 @@ func (recv *signalReceivers) Start(ctx context.Context) {
 	recv.m.Lock()
 	defer recv.m.Unlock()
 
+	// if the receiver has already been started; don't start it again
+	if recv.running() {
+		return
+	}
+
 	recv.last = nil
 	recv.finished = make(chan struct{}, 1)
 	recv.shutdown = make(chan struct{}, 1)
 	recv.notify(recv.signals, os.Interrupt, _sigINT, _sigTERM)
 	go recv.relayer(ctx)
+
+	return
 }
 
 func (recv *signalReceivers) Stop(ctx context.Context) error {
