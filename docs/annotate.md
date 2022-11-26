@@ -25,7 +25,7 @@ A function that:
 **Steps**
 
 1. Given a function that you're passing to
-   `fx.Provide`, `fx.Invoke`, or `fx.Deocrate`,
+   `fx.Provide`, `fx.Invoke`, or `fx.Decorate`,
 
    ```go mdox-exec='region ex/annotate/sample.go before'
        fx.Provide(
