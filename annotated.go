@@ -1183,8 +1183,9 @@ type fromAnnotation struct {
 
 var _ Annotation = (*fromAnnotation)(nil)
 
-// From is an Annotation that annotates some parameter for a function (i.e. a
-// constructor) that accept interface from other provided type. Very much the opposite of fx.As(...).
+// From is an Annotation that annotates the parameter(s) for a function (i.e. a
+// constructor) to be accepted from other provided types. It is very much the
+// opposite of fx.As(...).
 //
 // For example,
 //
@@ -1205,17 +1206,6 @@ var _ Annotation = (*fromAnnotation)(nil)
 //	  // need *FooRunner instead of Runner
 //	  return NewRunnerWrap(r)
 //	})
-//
-// If you don't care about certain parameters, you can use nil as a placeholder.
-//
-//	func NewRunnerWrap(o *Object, r Runner) *BarRunner // implements Runner
-//
-//	fx.Provide(
-//	  fx.Annotate(
-//	    NewRunnerWrap,
-//	    fx.From(nil, new(*FooRunner)),
-//	  ),
-//	)
 func From(interfaces ...interface{}) Annotation {
 	return &fromAnnotation{targets: interfaces}
 }
@@ -1227,13 +1217,10 @@ func (fr *fromAnnotation) apply(ann *annotated) error {
 	fr.types = make([]reflect.Type, len(fr.targets))
 	for i, typ := range fr.targets {
 		t := reflect.TypeOf(typ)
-		if t != nil && t.Kind() != reflect.Ptr {
-			return fmt.Errorf("fx.From: argument must either be nil or a pointer to a type implements some interface: got %v", t)
+		if t == nil || t.Kind() != reflect.Ptr {
+			return fmt.Errorf("fx.From: argument must be a pointer to a type that implements some interface: got %v", t)
 		}
-		if t != nil {
-			t = t.Elem()
-		}
-		fr.types[i] = t
+		fr.types[i] = t.Elem()
 	}
 	ann.From = fr.types
 	return nil
@@ -1294,12 +1281,11 @@ func (fr *fromAnnotation) parameters(ann *annotated) (
 				Tag:  origField.Tag,
 			}
 			if i-1 < len(fr.types) {
-				if t := fr.types[i-1]; t != nil {
-					if !t.Implements(field.Type) {
-						return nil, nil, fmt.Errorf("invalid fx.From: %v does not implement %v", t, field.Type)
-					}
-					field.Type = t
+				t := fr.types[i-1]
+				if !t.Implements(field.Type) {
+					return nil, nil, fmt.Errorf("invalid fx.From: %v does not implement %v", t, field.Type)
 				}
+				field.Type = t
 			}
 
 			inFields = append(inFields, field)
@@ -1322,12 +1308,11 @@ func (fr *fromAnnotation) parameters(ann *annotated) (
 			Type: t,
 		}
 		if i < len(fr.types) {
-			if t := fr.types[i]; t != nil {
-				if !t.Implements(field.Type) {
-					return nil, nil, fmt.Errorf("invalid fx.From: %v does not implement %v", t, field.Type)
-				}
-				field.Type = t
+			t := fr.types[i]
+			if !t.Implements(field.Type) {
+				return nil, nil, fmt.Errorf("invalid fx.From: %v does not implement %v", t, field.Type)
 			}
+			field.Type = t
 		}
 
 		inFields = append(inFields, field)

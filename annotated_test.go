@@ -238,28 +238,6 @@ func TestAnnotatedFrom(t *testing.T) {
 			},
 		},
 		{
-			desc: "use nil to placeholder",
-			provide: fx.Provide(
-				newFromStringer,
-				func() anotherStringer {
-					return anotherStringer{
-						"another stringer",
-					}
-				},
-				fx.Annotate(
-					func(fromStringer2 *fromStringer, myStringer1 myStringer) fmt.Stringer {
-						return &fromStringer{
-							name: myStringer1.String() + " and " + fromStringer2.String(),
-						}
-					},
-					fx.From(nil, new(anotherStringer)),
-				),
-			),
-			invoke: func(s fmt.Stringer) {
-				assert.Equal(t, s.String(), "another stringer and a good stringer")
-			},
-		},
-		{
 			desc: "Provide with empty From type",
 			provide: fx.Provide(
 				newFromStringer,
@@ -341,7 +319,7 @@ func TestAnnotatedFromFailures(t *testing.T) {
 			invoke: func(stringer fmt.Stringer) {
 				fmt.Println(stringer.String())
 			},
-			errorContains: "does not implement",
+			errorContains: "*fx_test.fromStringer does not implement io.Writer",
 		},
 		{
 			desc: "provide with variadic function and an illegal type From",
@@ -356,7 +334,7 @@ func TestAnnotatedFromFailures(t *testing.T) {
 			invoke: func(stringer fmt.Stringer) {
 				fmt.Println(stringer.String())
 			},
-			errorContains: "does not implement",
+			errorContains: "*fx_test.fromStringer does not implement io.Writer",
 		},
 		{
 			desc: "don't provide original type using From",
@@ -404,7 +382,7 @@ func TestAnnotatedFromFailures(t *testing.T) {
 					fx.From("foo"),
 				),
 			),
-			errorContains: "argument must either be nil or a pointer",
+			errorContains: "argument must be a pointer",
 		},
 		{
 			desc: "multiple from annotations",
