@@ -1206,6 +1206,27 @@ var _ Annotation = (*fromAnnotation)(nil)
 //	  // need *FooRunner instead of Runner
 //	  return NewRunnerWrap(r)
 //	})
+//
+// When multiple values are returned by the annotated function, each type
+// gets mapped to corresponding positional parameter of the annotated function
+//
+// For example,
+//
+//	func NewBarRunner() *BarRunner // implements Runner
+//	func NewRunnerWraps(r1 Runner, r2 Runner) *RunnerWraps
+//
+//	fx.Provide(
+//	  fx.Annotate(
+//	    NewRunnerWraps,
+//	    fx.From(new(*FooRunner), new(*BarRunner)),
+//	  ),
+//	)
+//
+// Is equivalent to,
+//
+//	fx.Provide(func(r1 *FooRunner, r2 *BarRunner) *RunnerWraps {
+//	  return NewRunnerWraps(r1, r2)
+//	})
 func From(interfaces ...interface{}) Annotation {
 	return &fromAnnotation{targets: interfaces}
 }
@@ -1214,8 +1235,12 @@ func (fr *fromAnnotation) apply(ann *annotated) error {
 	if len(ann.From) > 0 {
 		return errors.New("cannot apply more than one line of From")
 	}
+	ft := reflect.TypeOf(ann.Target)
 	fr.types = make([]reflect.Type, len(fr.targets))
 	for i, typ := range fr.targets {
+		if ft.IsVariadic() && i == ft.NumIn()-1 {
+			return errors.New("fx.From: cannot annotate a variadic argument")
+		}
 		t := reflect.TypeOf(typ)
 		if t == nil || t.Kind() != reflect.Ptr {
 			return fmt.Errorf("fx.From: argument must be a pointer to a type that implements some interface: got %v", t)
@@ -1268,8 +1293,10 @@ func (fr *fromAnnotation) parameters(ann *annotated) (
 	// Turn parameters into an fx.In struct.
 	inFields := []reflect.StructField{_inAnnotationField}
 
-	// there was a variadic argument, so it was pre-transformed
-	// or ParamTags transformed
+	// The following situations may occur:
+	// 1. there was a variadic argument, so it was pre-transformed.
+	// 2. another parameter annotation was transformed (ex: ParamTags).
+	// so need to visit fields of the fx.In struct.
 	if len(types) > 0 && isIn(types[0]) {
 		paramType := types[0]
 

@@ -207,8 +207,8 @@ func TestAnnotatedFrom(t *testing.T) {
 							name: myStringer.String(),
 						}
 					},
-					fx.From(new(*fromStringer)),
 					fx.ParamTags(`name:"struct1"`),
+					fx.From(new(*fromStringer)),
 				),
 			),
 			invoke: func(s fmt.Stringer) {
@@ -394,6 +394,16 @@ func TestAnnotatedFromFailures(t *testing.T) {
 				),
 			),
 			errorContains: "cannot apply more than one line of From",
+		},
+		{
+			desc: "variadic argument",
+			provide: fx.Provide(
+				fx.Annotate(
+					func(ss ...myStringer) {},
+					fx.From(new(asStringer)),
+				),
+			),
+			errorContains: "cannot annotate a variadic argument",
 		},
 	}
 
