@@ -1183,7 +1183,7 @@ type fromAnnotation struct {
 
 var _ Annotation = (*fromAnnotation)(nil)
 
-// From is an Annotation that annotates the parameter(s) for a function (i.e. a
+// From is an [Annotation] that annotates the parameter(s) for a function (i.e. a
 // constructor) to be accepted from other provided types. It is analogous to the
 // [As] for parameter types to the constructor.
 //
