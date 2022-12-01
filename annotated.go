@@ -1207,8 +1207,8 @@ var _ Annotation = (*fromAnnotation)(nil)
 //	  return NewRunnerWrap(r)
 //	})
 //
-// When multiple values are returned by the annotated function, each type
-// gets mapped to corresponding positional parameter of the annotated function
+// When the annotated function takes in multiple parameters, each type gets
+// mapped to corresponding positional parameter of the annotated function
 //
 // For example,
 //
