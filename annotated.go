@@ -1176,12 +1176,193 @@ func extractResultFields(types []reflect.Type) ([]reflect.StructField, func(int,
 	}
 }
 
+type fromAnnotation struct {
+	targets []interface{}
+	types   []reflect.Type
+}
+
+var _ Annotation = (*fromAnnotation)(nil)
+
+// From is an [Annotation] that annotates the parameter(s) for a function (i.e. a
+// constructor) to be accepted from other provided types. It is analogous to the
+// [As] for parameter types to the constructor.
+//
+// For example,
+//
+//	type Runner interface { Run() }
+//	func NewFooRunner() *FooRunner // implements Runner
+//	func NewRunnerWrap(r Runner) *RunnerWrap
+//
+//	fx.Provide(
+//	  fx.Annotate(
+//	    NewRunnerWrap,
+//	    fx.From(new(*FooRunner)),
+//	  ),
+//	)
+//
+// Is equivalent to,
+//
+//	fx.Provide(func(r *FooRunner) *RunnerWrap {
+//	  // need *FooRunner instead of Runner
+//	  return NewRunnerWrap(r)
+//	})
+//
+// When the annotated function takes in multiple parameters, each type gets
+// mapped to corresponding positional parameter of the annotated function
+//
+// For example,
+//
+//	func NewBarRunner() *BarRunner // implements Runner
+//	func NewRunnerWraps(r1 Runner, r2 Runner) *RunnerWraps
+//
+//	fx.Provide(
+//	  fx.Annotate(
+//	    NewRunnerWraps,
+//	    fx.From(new(*FooRunner), new(*BarRunner)),
+//	  ),
+//	)
+//
+// Is equivalent to,
+//
+//	fx.Provide(func(r1 *FooRunner, r2 *BarRunner) *RunnerWraps {
+//	  return NewRunnerWraps(r1, r2)
+//	})
+func From(interfaces ...interface{}) Annotation {
+	return &fromAnnotation{targets: interfaces}
+}
+
+func (fr *fromAnnotation) apply(ann *annotated) error {
+	if len(ann.From) > 0 {
+		return errors.New("cannot apply more than one line of From")
+	}
+	ft := reflect.TypeOf(ann.Target)
+	fr.types = make([]reflect.Type, len(fr.targets))
+	for i, typ := range fr.targets {
+		if ft.IsVariadic() && i == ft.NumIn()-1 {
+			return errors.New("fx.From: cannot annotate a variadic argument")
+		}
+		t := reflect.TypeOf(typ)
+		if t == nil || t.Kind() != reflect.Ptr {
+			return fmt.Errorf("fx.From: argument must be a pointer to a type that implements some interface: got %v", t)
+		}
+		fr.types[i] = t.Elem()
+	}
+	ann.From = fr.types
+	return nil
+}
+
+// build builds and returns a constructor after applying a From annotation
+func (fr *fromAnnotation) build(ann *annotated) (interface{}, error) {
+	paramTypes, remap, err := fr.parameters(ann)
+	if err != nil {
+		return nil, err
+	}
+	resultTypes, _ := ann.currentResultTypes()
+
+	origFn := reflect.ValueOf(ann.Target)
+	newFnType := reflect.FuncOf(paramTypes, resultTypes, false)
+	newFn := reflect.MakeFunc(newFnType, func(args []reflect.Value) []reflect.Value {
+		args = remap(args)
+		return origFn.Call(args)
+	})
+	return newFn.Interface(), nil
+}
+
+// parameters returns the type for the parameters of the annotated function,
+// and a function that maps the arguments of the annotated function
+// back to the arguments of the target function.
+func (fr *fromAnnotation) parameters(ann *annotated) (
+	types []reflect.Type,
+	remap func([]reflect.Value) []reflect.Value,
+	err error,
+) {
+	ft := reflect.TypeOf(ann.Target)
+	types = make([]reflect.Type, ft.NumIn())
+	for i := 0; i < ft.NumIn(); i++ {
+		types[i] = ft.In(i)
+	}
+
+	// No parameter annotations. Return the original types
+	// and an identity function.
+	if len(fr.targets) == 0 {
+		return types, func(args []reflect.Value) []reflect.Value {
+			return args
+		}, nil
+	}
+
+	// Turn parameters into an fx.In struct.
+	inFields := []reflect.StructField{_inAnnotationField}
+
+	// The following situations may occur:
+	// 1. there was a variadic argument, so it was pre-transformed.
+	// 2. another parameter annotation was transformed (ex: ParamTags).
+	// so need to visit fields of the fx.In struct.
+	if len(types) > 0 && isIn(types[0]) {
+		paramType := types[0]
+
+		for i := 1; i < paramType.NumField(); i++ {
+			origField := paramType.Field(i)
+			field := reflect.StructField{
+				Name: origField.Name,
+				Type: origField.Type,
+				Tag:  origField.Tag,
+			}
+			if i-1 < len(fr.types) {
+				t := fr.types[i-1]
+				if !t.Implements(field.Type) {
+					return nil, nil, fmt.Errorf("invalid fx.From: %v does not implement %v", t, field.Type)
+				}
+				field.Type = t
+			}
+
+			inFields = append(inFields, field)
+		}
+
+		types = []reflect.Type{reflect.StructOf(inFields)}
+		return types, func(args []reflect.Value) []reflect.Value {
+			param := args[0]
+			args[0] = reflect.New(paramType).Elem()
+			for i := 1; i < paramType.NumField(); i++ {
+				args[0].Field(i).Set(param.Field(i))
+			}
+			return args
+		}, nil
+	}
+
+	for i, t := range types {
+		field := reflect.StructField{
+			Name: fmt.Sprintf("Field%d", i),
+			Type: t,
+		}
+		if i < len(fr.types) {
+			t := fr.types[i]
+			if !t.Implements(field.Type) {
+				return nil, nil, fmt.Errorf("invalid fx.From: %v does not implement %v", t, field.Type)
+			}
+			field.Type = t
+		}
+
+		inFields = append(inFields, field)
+	}
+
+	types = []reflect.Type{reflect.StructOf(inFields)}
+	return types, func(args []reflect.Value) []reflect.Value {
+		params := args[0]
+		args = args[:0]
+		for i := 0; i < ft.NumIn(); i++ {
+			args = append(args, params.Field(i+1))
+		}
+		return args
+	}, nil
+}
+
 type annotated struct {
 	Target      interface{}
 	Annotations []Annotation
 	ParamTags   []string
 	ResultTags  []string
 	As          [][]reflect.Type
+	From        []reflect.Type
 	FuncPtr     uintptr
 	Hooks       []*lifecycleHookAnnotation
 	// container is used to build private scopes for lifecycle hook functions
@@ -1201,6 +1382,9 @@ func (ann annotated) String() string {
 	}
 	if as := ann.As; len(as) > 0 {
 		fmt.Fprintf(&sb, ", fx.As(%v)", as)
+	}
+	if from := ann.From; len(from) > 0 {
+		fmt.Fprintf(&sb, ", fx.From(%v)", from)
 	}
 	return sb.String()
 }
