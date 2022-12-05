@@ -71,6 +71,19 @@ func TestLifecycleStart(t *testing.T) {
 		assert.NoError(t, l.Start(context.Background()))
 		assert.Equal(t, 2, count)
 	})
+	t.Run("StartTwiceErrors", func(t *testing.T) {
+		t.Parallel()
+
+		l := New(testLogger(t), fxclock.System)
+
+		assert.NoError(t, l.Start(context.Background()))
+		err := l.Start(context.Background())
+		if assert.Error(t, err) {
+			assert.ErrorContains(t, err, "attempted to start lifecycle when already running")
+		}
+		l.Stop(context.Background())
+		assert.NoError(t, l.Start(context.Background()))
+	})
 	t.Run("ErrHaltsChainAndRollsBack", func(t *testing.T) {
 		t.Parallel()
 

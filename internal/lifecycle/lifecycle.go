@@ -129,6 +129,7 @@ type Lifecycle struct {
 	logger       fxevent.Logger
 	hooks        []Hook
 	numStarted   int
+	running      bool
 	startRecords HookRecords
 	stopRecords  HookRecords
 	runningHook  Hook
@@ -157,6 +158,12 @@ func (l *Lifecycle) Start(ctx context.Context) error {
 	}
 
 	l.mu.Lock()
+	if l.running {
+		l.mu.Unlock()
+		return errors.New("attempted to start lifecycle when already running")
+	}
+	l.running = true
+
 	l.startRecords = make(HookRecords, 0, len(l.hooks))
 	l.mu.Unlock()
 
@@ -220,6 +227,12 @@ func (l *Lifecycle) Stop(ctx context.Context) error {
 	if ctx == nil {
 		return errors.New("called OnStop with nil context")
 	}
+
+	defer func() {
+		l.mu.Lock()
+		l.running = false
+		l.mu.Unlock()
+	}()
 
 	l.mu.Lock()
 	l.stopRecords = make(HookRecords, 0, l.numStarted)
