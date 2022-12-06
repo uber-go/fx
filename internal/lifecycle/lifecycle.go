@@ -162,6 +162,7 @@ func (l *Lifecycle) Start(ctx context.Context) error {
 		l.mu.Unlock()
 		return errors.New("attempted to start lifecycle when already running")
 	}
+	l.numStarted = 0
 	l.running = true
 
 	l.startRecords = make(HookRecords, 0, len(l.hooks))
