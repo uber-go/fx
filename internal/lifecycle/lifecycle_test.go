@@ -71,6 +71,7 @@ func TestLifecycleStart(t *testing.T) {
 		assert.NoError(t, l.Start(context.Background()))
 		assert.Equal(t, 2, count)
 	})
+
 	t.Run("ErrHaltsChainAndRollsBack", func(t *testing.T) {
 		t.Parallel()
 
@@ -143,6 +144,18 @@ func TestLifecycleStart(t *testing.T) {
 		// stop hooks.
 		require.NoError(t, l.Stop(ctx))
 	})
+
+	t.Run("StartWhileStartedErrors", func(t *testing.T) {
+		t.Parallel()
+
+		l := New(testLogger(t), fxclock.System)
+		assert.NoError(t, l.Start(context.Background()))
+		err := l.Start(context.Background())
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "attempted to start lifecycle when in state: started")
+		assert.NoError(t, l.Stop(context.Background()))
+		assert.NoError(t, l.Start(context.Background()))
+	})
 }
 
 func TestLifecycleStop(t *testing.T) {
@@ -152,6 +165,7 @@ func TestLifecycleStop(t *testing.T) {
 		t.Parallel()
 
 		l := New(testLogger(t), fxclock.System)
+		l.Start(context.Background())
 		assert.Nil(t, l.Stop(context.Background()), "no lifecycle hooks should have resulted in stop returning nil")
 	})
 
@@ -317,6 +331,16 @@ func TestLifecycleStop(t *testing.T) {
 		assert.Contains(t, err.Error(), "called OnStop with nil context")
 
 	})
+
+	t.Run("StopWhileStoppedErrors", func(t *testing.T) {
+		t.Parallel()
+
+		l := New(testLogger(t), fxclock.System)
+		err := l.Stop(context.Background())
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "attempted to stop lifecycle when in state: stopped")
+	})
+
 }
 
 func TestHookRecordsFormat(t *testing.T) {

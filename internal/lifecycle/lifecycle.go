@@ -123,10 +123,38 @@ type Hook struct {
 	callerFrame fxreflect.Frame
 }
 
+type appState int
+
+const (
+	stopped appState = iota
+	starting
+	incompleteStart
+	started
+	stopping
+)
+
+func (as appState) String() string {
+	switch as {
+	case stopped:
+		return "stopped"
+	case starting:
+		return "starting"
+	case incompleteStart:
+		return "incompleteStart"
+	case started:
+		return "started"
+	case stopping:
+		return "stopping"
+	default:
+		return "invalidState"
+	}
+}
+
 // Lifecycle coordinates application lifecycle hooks.
 type Lifecycle struct {
 	clock        fxclock.Clock
 	logger       fxevent.Logger
+	state        appState
 	hooks        []Hook
 	numStarted   int
 	startRecords HookRecords
@@ -157,8 +185,22 @@ func (l *Lifecycle) Start(ctx context.Context) error {
 	}
 
 	l.mu.Lock()
+	if l.state != stopped {
+		defer l.mu.Unlock()
+		return fmt.Errorf("attempted to start lifecycle when in state: %v", l.state)
+	}
+	l.numStarted = 0
+	l.state = starting
+
 	l.startRecords = make(HookRecords, 0, len(l.hooks))
 	l.mu.Unlock()
+
+	var returnState appState = incompleteStart
+	defer func() {
+		l.mu.Lock()
+		l.state = returnState
+		l.mu.Unlock()
+	}()
 
 	for _, hook := range l.hooks {
 		// if ctx has cancelled, bail out of the loop.
@@ -187,6 +229,7 @@ func (l *Lifecycle) Start(ctx context.Context) error {
 		l.numStarted++
 	}
 
+	returnState = started
 	return nil
 }
 
@@ -220,6 +263,20 @@ func (l *Lifecycle) Stop(ctx context.Context) error {
 	if ctx == nil {
 		return errors.New("called OnStop with nil context")
 	}
+
+	l.mu.Lock()
+	if l.state != started && l.state != incompleteStart {
+		defer l.mu.Unlock()
+		return fmt.Errorf("attempted to stop lifecycle when in state: %v", l.state)
+	}
+	l.state = stopping
+	l.mu.Unlock()
+
+	defer func() {
+		l.mu.Lock()
+		l.state = stopped
+		l.mu.Unlock()
+	}()
 
 	l.mu.Lock()
 	l.stopRecords = make(HookRecords, 0, l.numStarted)
