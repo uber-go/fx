@@ -1282,7 +1282,7 @@ func TestAppStart(t *testing.T) {
 		assert.Contains(t, err, "OnStart hook added by go.uber.org/fx_test.TestAppStart.func10.1 failed: goroutine exited without returning")
 	})
 
-	t.Run("StartTwiceWithHooks", func(t *testing.T) {
+	t.Run("StartTwiceWithHooksErrors", func(t *testing.T) {
 		t.Parallel()
 
 		app := fxtest.New(t,
@@ -1296,7 +1296,7 @@ func TestAppStart(t *testing.T) {
 		assert.NoError(t, app.Start(context.Background()))
 		err := app.Start(context.Background())
 		if assert.Error(t, err) {
-			assert.ErrorContains(t, err, "attempted to start lifecycle when already running")
+			assert.ErrorContains(t, err, "attempted to start lifecycle when in state: started")
 		}
 		app.Stop(context.Background())
 		assert.NoError(t, app.Start(context.Background()))

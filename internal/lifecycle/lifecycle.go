@@ -126,12 +126,29 @@ type Hook struct {
 type appState int
 
 const (
-	notRunning appState = iota
+	stopped appState = iota
 	starting
 	incompleteStart
 	started
 	stopping
 )
+
+func (as appState) String() string {
+	switch as {
+	case stopped:
+		return "stopped"
+	case starting:
+		return "starting"
+	case incompleteStart:
+		return "incompleteStart"
+	case started:
+		return "started"
+	case stopping:
+		return "stopping"
+	default:
+		return "invalidState"
+	}
+}
 
 // Lifecycle coordinates application lifecycle hooks.
 type Lifecycle struct {
@@ -168,9 +185,9 @@ func (l *Lifecycle) Start(ctx context.Context) error {
 	}
 
 	l.mu.Lock()
-	if l.state != notRunning {
-		l.mu.Unlock()
-		return errors.New("attempted to start lifecycle when already running")
+	if l.state != stopped {
+		defer l.mu.Unlock()
+		return fmt.Errorf("attempted to start lifecycle when in state: %v", l.state)
 	}
 	l.numStarted = 0
 	l.state = starting
@@ -249,15 +266,15 @@ func (l *Lifecycle) Stop(ctx context.Context) error {
 
 	l.mu.Lock()
 	if l.state != started && l.state != incompleteStart {
-		l.mu.Unlock()
-		return errors.New("attempted to stop lifecycle when not running")
+		defer l.mu.Unlock()
+		return fmt.Errorf("attempted to stop lifecycle when in state: %v", l.state)
 	}
 	l.state = stopping
 	l.mu.Unlock()
 
 	defer func() {
 		l.mu.Lock()
-		l.state = notRunning
+		l.state = stopped
 		l.mu.Unlock()
 	}()
 

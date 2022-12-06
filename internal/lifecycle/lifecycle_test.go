@@ -144,18 +144,6 @@ func TestLifecycleStart(t *testing.T) {
 		// stop hooks.
 		require.NoError(t, l.Stop(ctx))
 	})
-
-	t.Run("StartTwiceErrors", func(t *testing.T) {
-		t.Parallel()
-
-		l := New(testLogger(t), fxclock.System)
-		assert.NoError(t, l.Start(context.Background()))
-		err := l.Start(context.Background())
-		require.Error(t, err)
-		assert.Contains(t, err.Error(), "attempted to start lifecycle when already running")
-		assert.NoError(t, l.Stop(context.Background()))
-		assert.NoError(t, l.Start(context.Background()))
-	})
 }
 
 func TestLifecycleStop(t *testing.T) {
@@ -331,25 +319,85 @@ func TestLifecycleStop(t *testing.T) {
 		assert.Contains(t, err.Error(), "called OnStop with nil context")
 
 	})
+}
 
-	t.Run("stop fails without start", func(t *testing.T) {
+func TestLifecycleStates(t *testing.T) {
+	t.Parallel()
+
+	t.Run("StartOrStopWhileStartingErrors", func(t *testing.T) {
 		t.Parallel()
 
 		l := New(testLogger(t), fxclock.System)
-		err := l.Stop(context.Background())
+		inHook := make(chan struct{})
+		testDone := make(chan struct{})
+		l.Append(Hook{
+			OnStart: func(context.Context) error {
+				inHook <- struct{}{}
+				<-testDone
+				return nil
+			},
+			OnStop: nil,
+		})
+		go l.Start(context.Background())
+		<-inHook
+
+		err := l.Start(context.Background())
 		require.Error(t, err)
-		assert.Contains(t, err.Error(), "attempted to stop lifecycle when not running")
+		assert.Contains(t, err.Error(), "attempted to start lifecycle when in state: starting")
+		err = l.Stop(context.Background())
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "attempted to stop lifecycle when in state: starting")
+
+		testDone <- struct{}{}
 	})
 
-	t.Run("stop twice fails", func(t *testing.T) {
+	t.Run("StartWhileStartedErrors", func(t *testing.T) {
 		t.Parallel()
 
 		l := New(testLogger(t), fxclock.System)
 		assert.NoError(t, l.Start(context.Background()))
+		err := l.Start(context.Background())
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "attempted to start lifecycle when in state: started")
 		assert.NoError(t, l.Stop(context.Background()))
+		assert.NoError(t, l.Start(context.Background()))
+	})
+
+	t.Run("StopOrStopWhileStoppingErrors", func(t *testing.T) {
+		t.Parallel()
+
+		l := New(testLogger(t), fxclock.System)
+		inHook := make(chan struct{})
+		testDone := make(chan struct{})
+		l.Append(Hook{
+			OnStart: nil,
+			OnStop: func(context.Context) error {
+				inHook <- struct{}{}
+				<-testDone
+				return nil
+			},
+		})
+		l.Start(context.Background())
+		go l.Stop(context.Background())
+		<-inHook
+
+		err := l.Start(context.Background())
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "attempted to start lifecycle when in state: stopping")
+		err = l.Stop(context.Background())
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "attempted to stop lifecycle when in state: stopping")
+
+		testDone <- struct{}{}
+	})
+
+	t.Run("StopWhileStoppedErrors", func(t *testing.T) {
+		t.Parallel()
+
+		l := New(testLogger(t), fxclock.System)
 		err := l.Stop(context.Background())
 		require.Error(t, err)
-		assert.Contains(t, err.Error(), "attempted to stop lifecycle when not running")
+		assert.Contains(t, err.Error(), "attempted to stop lifecycle when in state: stopped")
 	})
 }
 
