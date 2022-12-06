@@ -71,7 +71,7 @@ func TestLifecycleStart(t *testing.T) {
 		assert.NoError(t, l.Start(context.Background()))
 		assert.Equal(t, 2, count)
 	})
-	
+
 	t.Run("ErrHaltsChainAndRollsBack", func(t *testing.T) {
 		t.Parallel()
 
@@ -150,11 +150,9 @@ func TestLifecycleStart(t *testing.T) {
 
 		l := New(testLogger(t), fxclock.System)
 		assert.NoError(t, l.Start(context.Background()))
-	
 		err := l.Start(context.Background())
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "attempted to start lifecycle when already running")
-	
 		assert.NoError(t, l.Stop(context.Background()))
 		assert.NoError(t, l.Start(context.Background()))
 	})
@@ -340,7 +338,7 @@ func TestLifecycleStop(t *testing.T) {
 		l := New(testLogger(t), fxclock.System)
 		err := l.Stop(context.Background())
 		require.Error(t, err)
-		assert.Contains(t, err.Error(), "attempted to stop lifecycle when not running") 
+		assert.Contains(t, err.Error(), "attempted to stop lifecycle when not running")
 	})
 
 	t.Run("stop twice fails", func(t *testing.T) {

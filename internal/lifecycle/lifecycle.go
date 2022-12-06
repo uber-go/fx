@@ -200,7 +200,7 @@ func (l *Lifecycle) Start(ctx context.Context) error {
 			if err != nil {
 				return err
 			}
-			
+
 			l.mu.Lock()
 			l.startRecords = append(l.startRecords, HookRecord{
 				CallerFrame: hook.callerFrame,
@@ -248,7 +248,7 @@ func (l *Lifecycle) Stop(ctx context.Context) error {
 	}
 
 	l.mu.Lock()
- 	if l.state != started && l.state != incompleteStart {
+	if l.state != started && l.state != incompleteStart {
 		l.mu.Unlock()
 		return errors.New("attempted to stop lifecycle when not running")
 	}
@@ -257,7 +257,7 @@ func (l *Lifecycle) Stop(ctx context.Context) error {
 
 	defer func() {
 		l.mu.Lock()
-		l.state = notRunning 
+		l.state = notRunning
 		l.mu.Unlock()
 	}()
 
