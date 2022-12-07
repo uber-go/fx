@@ -96,6 +96,8 @@ func (recv *signalReceivers) relayer(ctx context.Context) {
 	}
 }
 
+// running returns true if the the signal relay go-routine is running.
+// this method must be invoked under locked mutex to avoid race condition.
 func (recv *signalReceivers) running() bool {
 	return recv.shutdown != nil && recv.finished != nil
 }
