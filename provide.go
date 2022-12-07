@@ -73,12 +73,17 @@ type provideOption struct {
 
 func (o provideOption) apply(mod *module) {
 	private := false
-	// Check if the last option was a private provide
-	if po, ok := o.Targets[len(o.Targets)-1].(*privateProvideOption); ok {
-		private = po.private
+
+	var targets []interface{}
+	for _, target := range o.Targets {
+		if _, ok := target.(privateProvideOption); ok {
+			private = true
+			continue
+		}
+		targets = append(targets, target)
 	}
 
-	for _, target := range o.Targets {
+	for _, target := range targets {
 		mod.provides = append(mod.provides, provide{
 			Target:  target,
 			Stack:   o.Stack,
@@ -87,15 +92,23 @@ func (o provideOption) apply(mod *module) {
 	}
 }
 
-type privateProvideOption struct {
-	private bool
-}
+type privateProvideOption struct{}
 
-// Private ...
-func Private(isPrivate bool) interface{} {
-	return &privateProvideOption{
-		private: isPrivate,
-	}
+// Private returns an option that can be passed as an argument to [Provide]
+// to restrict access to the constructors being provided. Specifically,
+// corresponding constructors can only be used within the current module
+// or modules the current module contains. Other modules that contain this
+// module won't be able to use the constructor.
+//
+// For example, the following would fail because the app doesn't have access
+// to the inner-module's constructor.
+//
+//	fx.New(
+//		Module("SubModule", Provide(func() int { return 0 }, Private())),
+//		Invoke(func(a int) {}),
+//	)
+func Private() privateProvideOption {
+	return privateProvideOption{}
 }
 
 func (o provideOption) String() string {

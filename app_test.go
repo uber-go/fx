@@ -384,6 +384,86 @@ func TestNewApp(t *testing.T) {
 	})
 }
 
+func TestPrivateProvide(t *testing.T) {
+	t.Parallel()
+
+	t.Run("ChildCanUsePrivateOrNonPrivateFromParent", func(t *testing.T) {
+		app := fxtest.New(t,
+			Module("Child", Invoke(func(a int, b string) {})),
+			Provide(func() int { return 0 }, Private()),
+			Provide(func() string { return "" }),
+		)
+		app.RequireStart().RequireStop()
+	})
+
+	t.Run("ParentCantUsePrivateFromChild", func(t *testing.T) {
+		app := New(
+			Module("Child", Provide(func() int { return 0 }, Private())),
+			Invoke(func(a int) {}),
+		)
+		err := app.Err()
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "missing dependencies for function")
+		assert.Contains(t, err.Error(), "missing type: int")
+	})
+
+	t.Run("ParentCanUseNonPrivateFromChild", func(t *testing.T) {
+		app := fxtest.New(t,
+			Module("Child", Provide(func() int { return 0 })),
+			Invoke(func(a int) {}),
+		)
+		app.RequireStart().RequireStop()
+	})
+
+	t.Run("SiblingsCantProvideSameNonPrivateType", func(t *testing.T) {
+		app := New(
+			Module("ChildA", Provide(func() int { return 0 })),
+			Module("ChildB", Provide(func() int { return 1 })),
+		)
+		err := app.Err()
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "cannot provide int from [0]: already provided")
+	})
+
+	t.Run("SiblingsCanProvideSamePrivateType", func(t *testing.T) {
+		app := fxtest.New(t,
+			Module("ChildA",
+				Provide(func() string { return "A" }, Private()),
+				Invoke(func(s string) {
+					assert.Equal(t, "A", s)
+				}),
+			),
+			Module("ChildB",
+				Provide(func() string { return "B" }, Private()),
+				Invoke(func(s string) {
+					assert.Equal(t, "B", s)
+				}),
+			),
+		)
+		app.RequireStart().RequireStop()
+	})
+
+	t.Run("ChildPrefersPrivateProvidedType", func(t *testing.T) {
+		app := fxtest.New(t,
+			Provide(func() string { return "B" }),
+			Module("ChildA",
+				Provide(func() string { return "A" }, Private()),
+				Invoke(func(s string) {
+					assert.Equal(t, "A", s)
+				}),
+			),
+		)
+		app.RequireStart().RequireStop()
+	})
+
+	t.Run("CanPutPrivateAnywhere", func(t *testing.T) {
+		app := fxtest.New(t,
+			Provide(Private(), func() string { return "A" }),
+		)
+		app.RequireStart().RequireStop()
+	})
+}
+
 func TestWithLoggerErrorUseDefault(t *testing.T) {
 	// This test cannot be run in paralllel with the others because
 	// it hijacks stderr.
