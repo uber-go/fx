@@ -1285,6 +1285,9 @@ func TestAppStart(t *testing.T) {
 	t.Run("StartTwiceWithHooksErrors", func(t *testing.T) {
 		t.Parallel()
 
+		ctx, cancel := context.WithCancel(context.Background())
+		defer cancel()
+
 		app := fxtest.New(t,
 			Invoke(func(lc Lifecycle) {
 				lc.Append(Hook{
@@ -1293,13 +1296,13 @@ func TestAppStart(t *testing.T) {
 				})
 			}),
 		)
-		assert.NoError(t, app.Start(context.Background()))
-		err := app.Start(context.Background())
+		assert.NoError(t, app.Start(ctx))
+		err := app.Start(ctx)
 		if assert.Error(t, err) {
 			assert.ErrorContains(t, err, "attempted to start lifecycle when in state: started")
 		}
-		app.Stop(context.Background())
-		assert.NoError(t, app.Start(context.Background()))
+		app.Stop(ctx)
+		assert.NoError(t, app.Start(ctx))
 	})
 }
 
