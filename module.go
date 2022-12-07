@@ -170,6 +170,7 @@ func (m *module) provide(p provide) {
 			ModuleName:      m.name,
 			OutputTypeNames: outputNames,
 			Err:             m.app.err,
+			Private:         p.Private,
 		}
 	}
 	m.log.LogEvent(ev)

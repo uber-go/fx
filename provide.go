@@ -101,11 +101,11 @@ type privateProvideOption struct{}
 // module won't be able to use the constructor.
 //
 // For example, the following would fail because the app doesn't have access
-// to the inner-module's constructor.
+// to the inner module's constructor.
 //
 //	fx.New(
-//		Module("SubModule", Provide(func() int { return 0 }, Private())),
-//		Invoke(func(a int) {}),
+//		fx.Module("SubModule", fx.Provide(func() int { return 0 }, fx.Private())),
+//		fx.Invoke(func(a int) {}),
 //	)
 func Private() privateProvideOption {
 	return privateProvideOption{}

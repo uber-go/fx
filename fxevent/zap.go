@@ -118,6 +118,7 @@ func (l *ZapLogger) LogEvent(event Event) {
 				zap.String("constructor", e.ConstructorName),
 				moduleField(e.ModuleName),
 				zap.String("type", rtype),
+				zap.Bool("private", e.Private),
 			)
 		}
 		if e.Err != nil {
