@@ -456,11 +456,15 @@ func TestPrivateProvide(t *testing.T) {
 		app.RequireStart().RequireStop()
 	})
 
-	t.Run("CanPutPrivateAnywhere", func(t *testing.T) {
-		app := fxtest.New(t,
-			Provide(Private(), func() string { return "A" }),
+	t.Run("ParentCantUsePrivateFromChildPrivateBeforeFunc", func(t *testing.T) {
+		app := New(
+			Module("Child", Provide(Private(), func() int { return 0 })),
+			Invoke(func(a int) {}),
 		)
-		app.RequireStart().RequireStop()
+		err := app.Err()
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "missing dependencies for function")
+		assert.Contains(t, err.Error(), "missing type: int")
 	})
 }
 
