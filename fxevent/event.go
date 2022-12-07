@@ -134,7 +134,7 @@ type Provided struct {
 	Err error
 
 	// Private denotes whether the provided constructor was flagged provided
-	// alongside a [Private].
+	// alongside a call to [Private].
 	Private bool
 }
 
