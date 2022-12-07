@@ -1519,9 +1519,9 @@ func TestHookAnnotations(t *testing.T) {
 		t.Parallel()
 
 		var (
-		    started bool
-		    stopped bool
-		    invoked bool
+			started bool
+			stopped bool
+			invoked bool
 		)
 		hook := fx.Annotate(
 			func() {
