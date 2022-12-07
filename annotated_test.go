@@ -1518,9 +1518,11 @@ func TestHookAnnotations(t *testing.T) {
 	t.Run("with hook on invoke", func(t *testing.T) {
 		t.Parallel()
 
-		var started bool
-		var stopped bool
-		var invoked bool
+		var (
+		    started bool
+		    stopped bool
+		    invoked bool
+		)
 		hook := fx.Annotate(
 			func() {
 				invoked = true
