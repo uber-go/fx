@@ -66,7 +66,7 @@ var _ ShutdownOption = shutdownTimeoutOption(0)
 // ShutdownTimeout is a [ShutdownOption] that allows users to specify a timeout
 // for a given call to Shutdown method of the [Shutdowner] interface. As the
 // Shutdown method will block while waiting for a signal receiver relay
-// go-routine to stop.
+// goroutine to stop.
 func ShutdownTimeout(timeout time.Duration) ShutdownOption {
 	return shutdownTimeoutOption(timeout)
 }
