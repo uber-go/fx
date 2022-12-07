@@ -21,10 +21,13 @@
 package fx
 
 import (
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
+	"context"
+	"os"
 	"syscall"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func assertUnsentSignalError(
@@ -44,22 +47,71 @@ func assertUnsentSignalError(
 
 func TestSignal(t *testing.T) {
 	t.Parallel()
-	recv := newSignalReceivers()
-	a := recv.Done()
-	_ = recv.Done() // we never listen on this
+	t.Run("Done", func(t *testing.T) {
+		recv := newSignalReceivers()
+		a := recv.Done()
+		_ = recv.Done() // we never listen on this
 
-	expected := ShutdownSignal{
-		Signal: syscall.SIGTERM,
-	}
+		expected := ShutdownSignal{
+			Signal: syscall.SIGTERM,
+		}
 
-	require.NoError(t, recv.Broadcast(expected), "first broadcast should succeed")
+		require.NoError(t, recv.Broadcast(expected), "first broadcast should succeed")
 
-	assertUnsentSignalError(t, recv.Broadcast(expected), &unsentSignalError{
-		Signal: expected,
-		Total:  2,
-		Unsent: 2,
+		assertUnsentSignalError(t, recv.Broadcast(expected), &unsentSignalError{
+			Signal: expected,
+			Total:  2,
+			Unsent: 2,
+		})
+
+		assert.Equal(t, expected.Signal, <-a)
+		assert.Equal(t, expected.Signal, <-recv.Done(), "expect cached signal")
 	})
 
-	assert.Equal(t, expected.Signal, <-a)
-	assert.Equal(t, expected.Signal, <-recv.Done(), "expect cached signal")
+	t.Run("signal notify relayer", func(t *testing.T) {
+		t.Parallel()
+		t.Run("start and stop", func(t *testing.T) {
+			t.Parallel()
+			t.Run("timeout", func(t *testing.T) {
+				recv := newSignalReceivers()
+				ctx, cancel := context.WithCancel(context.Background())
+				defer cancel()
+				recv.Start(ctx)
+				timeoutCtx, cancel := context.WithTimeout(context.Background(), 0)
+				defer cancel()
+				err := recv.Stop(timeoutCtx)
+				require.ErrorIs(t, err, context.DeadlineExceeded)
+			})
+			t.Run("no error", func(t *testing.T) {
+				recv := newSignalReceivers()
+				ctx, cancel := context.WithCancel(context.Background())
+				defer cancel()
+				recv.Start(ctx)
+				recv.Start(ctx) // should be a no-op if already running
+				require.NoError(t, recv.Stop(ctx))
+			})
+			t.Run("notify", func(t *testing.T) {
+				stub := make(chan os.Signal)
+				recv := newSignalReceivers()
+				recv.notify = func(ch chan<- os.Signal, _ ...os.Signal) {
+					go func() {
+						for sig := range stub {
+							ch <- sig
+						}
+					}()
+				}
+				ctx, cancel := context.WithCancel(context.Background())
+				defer cancel()
+				recv.Start(ctx)
+				stub <- syscall.SIGTERM
+				stub <- syscall.SIGTERM
+				require.Equal(t, syscall.SIGTERM, <-recv.Done())
+				require.Equal(t, syscall.SIGTERM, <-recv.Done())
+				sig := <-recv.Wait()
+				require.Equal(t, syscall.SIGTERM, sig.Signal)
+				require.NoError(t, recv.Stop(ctx))
+				close(stub)
+			})
+		})
+	})
 }

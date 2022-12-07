@@ -22,8 +22,10 @@ package fx_test
 
 import (
 	"context"
+	"fmt"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -61,12 +63,14 @@ func TestShutdown(t *testing.T) {
 		)
 
 		done := app.Done()
+		wait := app.Wait()
 		defer app.RequireStart().RequireStop()
 		assert.NoError(t, s.Shutdown(), "error returned from first shutdown call")
 
-		assert.EqualError(t, s.Shutdown(), "send terminated signal: 1/1 channels are blocked",
+		assert.EqualError(t, s.Shutdown(), "send terminated signal: 2/2 channels are blocked",
 			"unexpected error returned when shutdown is called with a blocked channel")
 		assert.NotNil(t, <-done, "done channel did not receive signal")
+		assert.NotNil(t, <-wait, "wait channel did not receive signal")
 	})
 
 	t.Run("shutdown app before calling Done()", func(t *testing.T) {
@@ -86,6 +90,43 @@ func TestShutdown(t *testing.T) {
 		// doesn't work as expected.
 		assert.NotNil(t, <-done1, "done channel 1 did not receive signal")
 		assert.NotNil(t, <-done2, "done channel 2 did not receive signal")
+	})
+
+	t.Run("with exit code", func(t *testing.T) {
+		t.Parallel()
+		var s fx.Shutdowner
+		app := fxtest.New(
+			t,
+			fx.Populate(&s),
+		)
+
+		require.NoError(t, app.Start(context.Background()), "error starting app")
+		assert.NoError(t, s.Shutdown(fx.ExitCode(2)), "error in app shutdown")
+		wait := <-app.Wait()
+		defer app.Stop(context.Background())
+		require.Equal(t, 2, wait.ExitCode)
+	})
+
+	t.Run("with exit code and multiple Wait", func(t *testing.T) {
+		t.Parallel()
+		var s fx.Shutdowner
+		app := fxtest.New(
+			t,
+			fx.Populate(&s),
+		)
+
+		require.NoError(t, app.Start(context.Background()), "error starting app")
+		defer require.NoError(t, app.Stop(context.Background()))
+
+		for i := 0; i < 10; i++ {
+			t.Run(fmt.Sprintf("Wait %v", i), func(t *testing.T) {
+				t.Parallel()
+				wait := <-app.Wait()
+				require.Equal(t, 2, wait.ExitCode)
+			})
+		}
+
+		assert.NoError(t, s.Shutdown(fx.ExitCode(2), fx.ShutdownTimeout(time.Second)))
 	})
 }
 

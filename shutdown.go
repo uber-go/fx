@@ -20,6 +20,11 @@
 
 package fx
 
+import (
+	"context"
+	"time"
+)
+
 // Shutdowner provides a method that can manually trigger the shutdown of the
 // application by sending a signal to all open Done channels. Shutdowner works
 // on applications using Run as well as Start, Done, and Stop. The Shutdowner is
@@ -34,8 +39,42 @@ type ShutdownOption interface {
 	apply(*shutdowner)
 }
 
+type exitCodeOption int
+
+func (code exitCodeOption) apply(s *shutdowner) {
+	s.exitCode = int(code)
+}
+
+var _ ShutdownOption = exitCodeOption(0)
+
+// ExitCode is a [ShutdownOption] that may be passed to the Shutdown method of the
+// [Shutdowner] interface.
+// The given integer exit code will be broadcasted to any receiver waiting
+// on a [ShutdownSignal] from the [Wait] method.
+func ExitCode(code int) ShutdownOption {
+	return exitCodeOption(code)
+}
+
+type shutdownTimeoutOption time.Duration
+
+func (to shutdownTimeoutOption) apply(s *shutdowner) {
+	s.shutdownTimeout = time.Duration(to)
+}
+
+var _ ShutdownOption = shutdownTimeoutOption(0)
+
+// ShutdownTimeout is a [ShutdownOption] that allows users to specify a timeout
+// for a given call to Shutdown method of the [Shutdowner] interface. As the
+// Shutdown method will block while waiting for a signal receiver relay
+// goroutine to stop.
+func ShutdownTimeout(timeout time.Duration) ShutdownOption {
+	return shutdownTimeoutOption(timeout)
+}
+
 type shutdowner struct {
-	app *App
+	app             *App
+	exitCode        int
+	shutdownTimeout time.Duration
 }
 
 // Shutdown broadcasts a signal to all of the application's Done channels
@@ -44,7 +83,27 @@ type shutdowner struct {
 // In practice this means Shutdowner.Shutdown should not be called from an
 // fx.Invoke, but from a fx.Lifecycle.OnStart hook.
 func (s *shutdowner) Shutdown(opts ...ShutdownOption) error {
-	return s.app.receivers.Broadcast(ShutdownSignal{Signal: _sigTERM})
+	for _, opt := range opts {
+		opt.apply(s)
+	}
+
+	ctx := context.Background()
+
+	if s.shutdownTimeout != time.Duration(0) {
+		c, cancel := context.WithTimeout(
+			context.Background(),
+			s.shutdownTimeout,
+		)
+		defer cancel()
+		ctx = c
+	}
+
+	defer s.app.receivers.Stop(ctx)
+
+	return s.app.receivers.Broadcast(ShutdownSignal{
+		Signal:   _sigTERM,
+		ExitCode: s.exitCode,
+	})
 }
 
 func (app *App) shutdowner() Shutdowner {
