@@ -23,6 +23,8 @@ package fx
 import (
 	"context"
 	"time"
+
+	"go.uber.org/multierr"
 )
 
 // Shutdowner provides a method that can manually trigger the shutdown of the
@@ -34,18 +36,18 @@ type Shutdowner interface {
 }
 
 // ShutdownOption provides a way to configure properties of the shutdown
-// process. Currently, no options have been implemented.
+// process.
 type ShutdownOption interface {
 	apply(*shutdowner)
 }
 
 type exitCodeOption int
 
+var _ ShutdownOption = exitCodeOption(0)
+
 func (code exitCodeOption) apply(s *shutdowner) {
 	s.exitCode = int(code)
 }
-
-var _ ShutdownOption = exitCodeOption(0)
 
 // ExitCode is a [ShutdownOption] that may be passed to the Shutdown method of the
 // [Shutdowner] interface.
@@ -69,6 +71,41 @@ var _ ShutdownOption = shutdownTimeoutOption(0)
 // goroutine to stop.
 func ShutdownTimeout(timeout time.Duration) ShutdownOption {
 	return shutdownTimeoutOption(timeout)
+}
+
+type shutdownErrorOption []error
+
+func (errs shutdownErrorOption) apply(s *shutdowner) {
+	s.app.err = multierr.Append(s.app.err, multierr.Combine(errs...))
+}
+
+var _ ShutdownOption = shutdownErrorOption([]error{})
+
+// ShutdownError registers any number of errors with the application shutdown.
+// If more than one error is given, the errors are combined into a
+// single error. Similar to invocations, errors are applied in order.
+//
+// You can use these errors, for example, to decide what to do after the app shutdown.
+//
+//	customErr := errors.New("something went wrong")
+//	app := fx.New(
+//		...
+//		fx.Provide(func(s fx.Shutdowner, a A) B {
+//			s.Shutdown(fx.ShutdownError(customErr))
+//	    }),
+//	    ...
+//	)
+//	err := app.Start(context.Background())
+//	if err != nil {
+//		panic(err)
+//	}
+//	defer app.Stop(context.Background())
+//
+//	if err := app.Err(); errors.Is(err, customErr) {
+//	   // custom logic here
+//	}
+func ShutdownError(errs ...error) ShutdownOption {
+	return shutdownErrorOption(errs)
 }
 
 type shutdowner struct {

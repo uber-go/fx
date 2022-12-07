@@ -22,6 +22,7 @@ package fx_test
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sync"
 	"testing"
@@ -127,6 +128,28 @@ func TestShutdown(t *testing.T) {
 		}
 
 		assert.NoError(t, s.Shutdown(fx.ExitCode(2), fx.ShutdownTimeout(time.Second)))
+	})
+
+	t.Run("with shutdown error", func(t *testing.T) {
+		t.Parallel()
+
+		var s fx.Shutdowner
+		app := fxtest.New(
+			t,
+			fx.Populate(&s),
+		)
+
+		done := app.Done()
+		wait := app.Wait()
+		defer app.RequireStart().RequireStop()
+
+		var expectedError = errors.New("shutdown error")
+
+		assert.NoError(t, s.Shutdown(fx.ShutdownError(expectedError)), "error in app shutdown")
+		assert.NotNil(t, <-done, "done channel did not receive signal")
+		assert.NotNil(t, <-wait, "wait channel did not receive signal")
+		assert.ErrorIs(t, app.Err(), expectedError,
+			"unexpected error, expected: %q, got: %q", expectedError, app.Err())
 	})
 }
 
