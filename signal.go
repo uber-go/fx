@@ -127,18 +127,15 @@ func (recv *signalReceivers) Stop(ctx context.Context) error {
 
 	recv.shutdown <- struct{}{}
 
-	for {
-		select {
-		case <-ctx.Done():
-			return ctx.Err()
-		case <-recv.finished:
-			close(recv.shutdown)
-			close(recv.finished)
-			recv.shutdown = nil
-			recv.finished = nil
-			return nil
-		}
-
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	case <-recv.finished:
+		close(recv.shutdown)
+		close(recv.finished)
+		recv.shutdown = nil
+		recv.finished = nil
+		return nil
 	}
 }
 
