@@ -169,6 +169,10 @@ import (
 //	    }),
 //	  ),
 //	)
+//
+// These rules apply regardless of whether or not the decorated type is
+// originally private. However, decorators will not decorate private types
+// from deeper-scoped provided functions.
 func Decorate(decorators ...interface{}) Option {
 	return decorateOption{
 		Targets: decorators,

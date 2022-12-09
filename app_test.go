@@ -388,17 +388,21 @@ func TestPrivateProvide(t *testing.T) {
 	t.Parallel()
 
 	t.Run("ChildCanUsePrivateOrNonPrivateFromParent", func(t *testing.T) {
+		t.Parallel()
+
 		app := fxtest.New(t,
 			Module("Child", Invoke(func(a int, b string) {})),
-			Provide(func() int { return 0 }, Private()),
+			Provide(func() int { return 0 }, Private),
 			Provide(func() string { return "" }),
 		)
 		app.RequireStart().RequireStop()
 	})
 
 	t.Run("ParentCantUsePrivateFromChild", func(t *testing.T) {
+		t.Parallel()
+
 		app := New(
-			Module("Child", Provide(func() int { return 0 }, Private())),
+			Module("Child", Provide(func() int { return 0 }, Private)),
 			Invoke(func(a int) {}),
 		)
 		err := app.Err()
@@ -408,6 +412,8 @@ func TestPrivateProvide(t *testing.T) {
 	})
 
 	t.Run("ParentCanUseNonPrivateFromChild", func(t *testing.T) {
+		t.Parallel()
+
 		app := fxtest.New(t,
 			Module("Child", Provide(func() int { return 0 })),
 			Invoke(func(a int) {}),
@@ -416,6 +422,8 @@ func TestPrivateProvide(t *testing.T) {
 	})
 
 	t.Run("SiblingsCantProvideSameNonPrivateType", func(t *testing.T) {
+		t.Parallel()
+
 		app := New(
 			Module("ChildA", Provide(func() int { return 0 })),
 			Module("ChildB", Provide(func() int { return 1 })),
@@ -426,15 +434,17 @@ func TestPrivateProvide(t *testing.T) {
 	})
 
 	t.Run("SiblingsCanProvideSamePrivateType", func(t *testing.T) {
+		t.Parallel()
+
 		app := fxtest.New(t,
 			Module("ChildA",
-				Provide(func() string { return "A" }, Private()),
+				Provide(func() string { return "A" }, Private),
 				Invoke(func(s string) {
 					assert.Equal(t, "A", s)
 				}),
 			),
 			Module("ChildB",
-				Provide(func() string { return "B" }, Private()),
+				Provide(func() string { return "B" }, Private),
 				Invoke(func(s string) {
 					assert.Equal(t, "B", s)
 				}),
@@ -444,10 +454,15 @@ func TestPrivateProvide(t *testing.T) {
 	})
 
 	t.Run("ChildPrefersPrivateProvidedType", func(t *testing.T) {
+		t.Parallel()
+
 		app := fxtest.New(t,
 			Provide(func() string { return "B" }),
+			Invoke(func(s string) {
+				assert.Equal(t, "B", s)
+			}),
 			Module("ChildA",
-				Provide(func() string { return "A" }, Private()),
+				Provide(func() string { return "A" }, Private),
 				Invoke(func(s string) {
 					assert.Equal(t, "A", s)
 				}),
@@ -457,8 +472,99 @@ func TestPrivateProvide(t *testing.T) {
 	})
 
 	t.Run("ParentCantUsePrivateFromChildPrivateBeforeFunc", func(t *testing.T) {
+		t.Parallel()
+
 		app := New(
-			Module("Child", Provide(Private(), func() int { return 0 })),
+			Module("Child", Provide(Private, func() int { return 0 })),
+			Invoke(func(a int) {}),
+		)
+		err := app.Err()
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "missing dependencies for function")
+		assert.Contains(t, err.Error(), "missing type: int")
+	})
+
+	// Parent Provide | Child Provide | Parent Will Use | Child Will Use
+	// No             | No            | Error - no prov | Error - no prov
+	// No             | Privately     | Error - no prov | Child's
+	// No             | Publically    | Child's         | Child's
+	// Yes            | No            | Parent's        | Parent's
+	// Yes            | Privately     | Parent's        | Child's
+	// Yes            | Publically    | Error - 2x prov | Error - 2x prov
+
+	// Having types be private does not affect decorator behavior
+	// Decorators continue to apply only to that modules. In other words,
+	// decorators were always private to begin with.
+}
+
+func TestPrivateProvideWithDecorators(t *testing.T) {
+	t.Parallel()
+
+	t.Run("DecoratedPublicTypeNotDecoratedForParent", func(t *testing.T) {
+		t.Parallel()
+
+		app := fxtest.New(t,
+			Module("Child",
+				Provide(func() int { return 0 }),
+				Decorate(func(a int) int { return a + 2 }),
+				Invoke(func(a int) { assert.Equal(t, 2, a) }),
+			),
+			Invoke(func(a int) { assert.Equal(t, 0, a) }),
+		)
+		app.RequireStart().RequireStop()
+	})
+
+	t.Run("DecoratedPrivateTypeNotAvailableForParent", func(t *testing.T) {
+		t.Parallel()
+
+		app := New(
+			Module("Child",
+				Provide(func() int { return 0 }, Private),
+				Decorate(func(a int) int { return a + 2 }),
+				Invoke(func(a int) { assert.Equal(t, 2, a) }),
+			),
+			Invoke(func(a int) {}),
+		)
+		err := app.Err()
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "missing dependencies for function")
+		assert.Contains(t, err.Error(), "missing type: int")
+	})
+
+	t.Run("DecoratedTypeDecoratedForChildRegardlessOfPrivate", func(t *testing.T) {
+		t.Parallel()
+
+		opts := []interface{}{func() int { return 0 }}
+		runApp := func(provideOpts []interface{}) {
+			app := fxtest.New(t,
+				Provide(provideOpts...),
+				Decorate(func(a int) int { return a - 5 }),
+				Invoke(func(a int) {
+					assert.Equal(t, -5, a)
+				}),
+				Module("Child",
+					Decorate(func(a int) int { return a + 10 }),
+					Invoke(func(a int) {
+						assert.Equal(t, 5, a)
+					}),
+				),
+			)
+			app.RequireStart().RequireStop()
+		}
+
+		t.Run("Public", func(t *testing.T) { runApp(opts) })
+		opts = append(opts, Private)
+		t.Run("Private", func(t *testing.T) { runApp(opts) })
+	})
+
+	t.Run("CannotDecoratePrivateChildType", func(t *testing.T) {
+		t.Parallel()
+
+		app := New(
+			Module("Child",
+				Provide(func() int { return 0 }, Private),
+			),
+			Decorate(func(a int) int { return a + 5 }),
 			Invoke(func(a int) {}),
 		)
 		err := app.Err()
