@@ -158,7 +158,6 @@ func TestZapLogger(t *testing.T) {
 				"constructor": "bytes.NewBuffer()",
 				"type":        "*bytes.Buffer",
 				"module":      "myModule",
-				"private":     false,
 			},
 		},
 		{

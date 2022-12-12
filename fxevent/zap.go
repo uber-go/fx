@@ -118,7 +118,7 @@ func (l *ZapLogger) LogEvent(event Event) {
 				zap.String("constructor", e.ConstructorName),
 				moduleField(e.ModuleName),
 				zap.String("type", rtype),
-				zap.Bool("private", e.Private),
+				trueBool("private", e.Private),
 			)
 		}
 		if e.Err != nil {
@@ -199,4 +199,11 @@ func moduleField(name string) zap.Field {
 		return zap.Skip()
 	}
 	return zap.String("module", name)
+}
+
+func trueBool(name string, b bool) zap.Field {
+	if b {
+		return zap.Bool(name, true)
+	}
+	return zap.Skip()
 }

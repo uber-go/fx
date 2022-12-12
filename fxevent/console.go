@@ -68,15 +68,15 @@ func (l *ConsoleLogger) LogEvent(event Event) {
 			l.logf("SUPPLY\t%v", e.TypeName)
 		}
 	case *Provided:
-		privateSuffix := ""
+		var privatePrefix string
 		if e.Private {
-			privateSuffix = " (private)"
-		}
+			privatePrefix = "PRIVATE "
+		}	
 		for _, rtype := range e.OutputTypeNames {
 			if e.ModuleName != "" {
-				l.logf("PROVIDE\t%v <= %v from module %q%v", rtype, e.ConstructorName, e.ModuleName, privateSuffix)
+				l.logf("%vPROVIDE\t%v <= %v from module %q", privatePrefix, rtype, e.ConstructorName, e.ModuleName)
 			} else {
-				l.logf("PROVIDE\t%v <= %v%v", rtype, e.ConstructorName, privateSuffix)
+				l.logf("%vPROVIDE\t%v <= %v", privatePrefix, rtype, e.ConstructorName)
 			}
 		}
 		if e.Err != nil {
