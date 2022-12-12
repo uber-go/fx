@@ -33,3 +33,8 @@ No breaking changes will be made to exported APIs before `v2.0.0`.
 
 This project follows the [Go Release Policy](https://golang.org/doc/devel/release.html#policy). Each major
 version of Go is supported until there are two newer major releases.
+
+## Stargazers over time
+
+[![Stargazers over time](https://starchart.cc/uber-go/fx.svg)](https://starchart.cc/uber-go/fx)
+
