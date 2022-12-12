@@ -22,10 +22,10 @@ To write an Fx module:
 
    ```go mdox-exec='region ex/modules/module.go provide'
    var Module = fx.Module("server",
-   	fx.Provide(
-   		New,
-   		parseConfig,
-   	),
+     fx.Provide(
+       New,
+       parseConfig,
+     ),
    )
    ```
 
@@ -34,11 +34,11 @@ To write an Fx module:
 
    ```go mdox-exec='region ex/modules/module.go invoke'
    var Module = fx.Module("server",
-   	fx.Provide(
-   		New,
-   		parseConfig,
-   	),
-   	fx.Invoke(startServer),
+     fx.Provide(
+       New,
+       parseConfig,
+     ),
+     fx.Invoke(startServer),
    )
    ```
 
@@ -47,12 +47,13 @@ To write an Fx module:
 
    ```go mdox-exec='region ex/modules/module.go decorate'
    var Module = fx.Module("server",
-   	fx.Provide(
-   		New,
-   		parseConfig,
-   	),
-   	fx.Invoke(startServer),
-   	fx.Decorate(wrapLogger),
+     fx.Provide(
+       New,
+       parseConfig,
+     ),
+     fx.Invoke(startServer),
+     fx.Decorate(wrapLogger),
+
    )
    ```
 

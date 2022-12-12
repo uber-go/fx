@@ -28,11 +28,11 @@ but you should be able to use any logging system.
 
    ```go mdox-exec='region ex/get-started/04-logger/main.go echo-init'
    type EchoHandler struct {
-   	log *zap.Logger
+     log *zap.Logger
    }
 
    func NewEchoHandler(log *zap.Logger) *EchoHandler {
-   	return &EchoHandler{log: log}
+     return &EchoHandler{log: log}
    }
    ```
 
@@ -41,9 +41,9 @@ but you should be able to use any logging system.
 
    ```go mdox-exec='region ex/get-started/04-logger/main.go echo-serve'
    func (h *EchoHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-   	if _, err := io.Copy(w, r.Body); err != nil {
-   		h.log.Warn("Failed to handle request", zap.Error(err))
-   	}
+     if _, err := io.Copy(w, r.Body); err != nil {
+       h.log.Warn("Failed to handle request", zap.Error(err))
+     }
    }
    ```
 

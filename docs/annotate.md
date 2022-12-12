@@ -95,7 +95,7 @@ into an interface consumed by another function.
 
    ```go mdox-exec='region ex/annotate/cast.go interface'
    type HTTPClient interface {
-   	Do(*http.Request) (*http.Response, error)
+     Do(*http.Request) (*http.Response, error)
    }
 
    // This is a compile-time check that verifies
