@@ -71,7 +71,7 @@ func (l *ConsoleLogger) LogEvent(event Event) {
 		var privatePrefix string
 		if e.Private {
 			privatePrefix = "PRIVATE "
-		}	
+		}
 		for _, rtype := range e.OutputTypeNames {
 			if e.ModuleName != "" {
 				l.logf("%vPROVIDE\t%v <= %v from module %q", privatePrefix, rtype, e.ConstructorName, e.ModuleName)

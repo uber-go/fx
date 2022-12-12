@@ -443,7 +443,7 @@ func TestPrivateProvideWithDecorators(t *testing.T) {
 		t.Parallel()
 
 		runApp := func(private bool) {
-			provideOpts := []interface{}{ func() int { return 0 } }
+			provideOpts := []interface{}{func() int { return 0 }}
 			if private {
 				provideOpts = append(provideOpts, Private)
 			}
@@ -462,7 +462,7 @@ func TestPrivateProvideWithDecorators(t *testing.T) {
 				assert.Contains(t, err.Error(), "missing type: int")
 			} else {
 				require.NoError(t, err)
-			}	
+			}
 		}
 
 		t.Run("Public", func(t *testing.T) { runApp(false) })
@@ -473,7 +473,7 @@ func TestPrivateProvideWithDecorators(t *testing.T) {
 		t.Parallel()
 
 		runApp := func(private bool) {
-			provideOpts := []interface{}{ func() int { return 0 }}
+			provideOpts := []interface{}{func() int { return 0 }}
 			if private {
 				provideOpts = append(provideOpts, Private)
 			}
