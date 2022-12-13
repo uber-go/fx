@@ -35,14 +35,16 @@ var Module = fx.Module("server",
 	// endregion start
 	fx.Provide(
 		New,
-		parseConfig,
 		// endregion provide
 		// endregion invoke
 		// endregion decorate
+	),
+	fx.Provide(
 		fx.Private,
-	// region provide
-	// region invoke
-	// region decorate
+		// region provide
+		// region invoke
+		// region decorate
+		parseConfig,
 	),
 	// endregion provide
 	fx.Invoke(startServer),

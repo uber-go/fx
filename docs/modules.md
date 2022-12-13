@@ -64,8 +64,10 @@ To write an Fx module:
    var Module = fx.Module("server",
    	fx.Provide(
    		New,
-   		parseConfig,
+   	),
+   	fx.Provide(
    		fx.Private,
+   		parseConfig,
    	),
    	fx.Invoke(startServer),
    	fx.Decorate(wrapLogger),
