@@ -30,11 +30,19 @@ import (
 // region provide
 // region invoke
 // region decorate
+// region private
 var Module = fx.Module("server",
 	// endregion start
 	fx.Provide(
 		New,
 		parseConfig,
+		// endregion provide
+		// endregion invoke
+		// endregion decorate
+		fx.Private,
+	// region provide
+	// region invoke
+	// region decorate
 	),
 	// endregion provide
 	fx.Invoke(startServer),
@@ -48,6 +56,7 @@ var Module = fx.Module("server",
 // endregion invoke
 // endregion provide
 // endregion decorate
+// endregion private
 
 // Config is the configuration of the server.
 // region config
