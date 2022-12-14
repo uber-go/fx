@@ -56,9 +56,9 @@ To write an Fx module:
    )
    ```
 
-5. Lastly, if you want to keep a constructor hidden to your
-   module (and modules your module includes), you can add an
-   `fx.Private` when providing.
+5. Lastly, if you want to keep a constructor's outputs contained
+   to your module (and modules your module includes), you can
+   add an `fx.Private` when providing.
 
    ```go mdox-exec='region ex/modules/module.go private'
    var Module = fx.Module("server",
@@ -73,6 +73,10 @@ To write an Fx module:
    	fx.Decorate(wrapLogger),
    )
    ```
+
+   In this case, `parseConfig` is now private to the "server" module.
+   No modules that contain "server" will be able to use the resulting
+   `Config` type because it can only be seen by the "server" module.
 
 That's all there's to writing modules.
 The rest of this section covers standards and conventions

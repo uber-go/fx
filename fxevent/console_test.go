@@ -171,7 +171,7 @@ func TestConsoleLogger(t *testing.T) {
 				OutputTypeNames: []string{"*bytes.Buffer"},
 				Private:         true,
 			},
-			want: "[Fx] PRIVATE PROVIDE	*bytes.Buffer <= bytes.NewBuffer()\n",
+			want: "[Fx] PROVIDE (PRIVATE)	*bytes.Buffer <= bytes.NewBuffer()\n",
 		},
 		{
 			name: "Provided with module",
@@ -191,7 +191,7 @@ func TestConsoleLogger(t *testing.T) {
 				OutputTypeNames: []string{"*bytes.Buffer"},
 				Private:         true,
 			},
-			want: "[Fx] PRIVATE PROVIDE	*bytes.Buffer <= bytes.NewBuffer() from module \"myModule\"\n",
+			want: "[Fx] PROVIDE (PRIVATE)	*bytes.Buffer <= bytes.NewBuffer() from module \"myModule\"\n",
 		},
 		{
 			name: "Replaced",

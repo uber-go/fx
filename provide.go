@@ -76,7 +76,7 @@ type provideOption struct {
 func (o provideOption) apply(mod *module) {
 	var private bool
 
-	var targets []interface{}
+	targets := make([]interface{}, 0, len(o.Targets))
 	for _, target := range o.Targets {
 		if _, ok := target.(privateOption); ok {
 			private = true
