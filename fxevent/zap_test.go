@@ -151,12 +151,29 @@ func TestZapLogger(t *testing.T) {
 				ConstructorName: "bytes.NewBuffer()",
 				ModuleName:      "myModule",
 				OutputTypeNames: []string{"*bytes.Buffer"},
+				Private:         false,
 			},
 			wantMessage: "provided",
 			wantFields: map[string]interface{}{
 				"constructor": "bytes.NewBuffer()",
 				"type":        "*bytes.Buffer",
 				"module":      "myModule",
+			},
+		},
+		{
+			name: "PrivateProvide",
+			give: &Provided{
+				ConstructorName: "bytes.NewBuffer()",
+				ModuleName:      "myModule",
+				OutputTypeNames: []string{"*bytes.Buffer"},
+				Private:         true,
+			},
+			wantMessage: "provided",
+			wantFields: map[string]interface{}{
+				"constructor": "bytes.NewBuffer()",
+				"type":        "*bytes.Buffer",
+				"module":      "myModule",
+				"private":     true,
 			},
 		},
 		{

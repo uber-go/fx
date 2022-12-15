@@ -42,7 +42,7 @@ To write an Fx module:
    )
    ```
 
-4. Lastly, if your module needs to decorate its dependencies
+4. If your module needs to decorate its dependencies
    before consuming them, add an `fx.Decorate` call for it.
 
    ```go mdox-exec='region ex/modules/module.go decorate'
@@ -56,6 +56,28 @@ To write an Fx module:
 
    )
    ```
+
+5. Lastly, if you want to keep a constructor's outputs contained
+   to your module (and modules your module includes), you can
+   add an `fx.Private` when providing.
+
+   ```go mdox-exec='region ex/modules/module.go private'
+   var Module = fx.Module("server",
+   	fx.Provide(
+   		New,
+   	),
+   	fx.Provide(
+   		fx.Private,
+   		parseConfig,
+   	),
+   	fx.Invoke(startServer),
+   	fx.Decorate(wrapLogger),
+   )
+   ```
+
+   In this case, `parseConfig` is now private to the "server" module.
+   No modules that contain "server" will be able to use the resulting
+   `Config` type because it can only be seen by the "server" module.
 
 That's all there's to writing modules.
 The rest of this section covers standards and conventions

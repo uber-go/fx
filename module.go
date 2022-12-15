@@ -147,7 +147,7 @@ func (m *module) provide(p provide) {
 	}
 
 	var info dig.ProvideInfo
-	if err := runProvide(m.scope, p, dig.FillProvideInfo(&info), dig.Export(true)); err != nil {
+	if err := runProvide(m.scope, p, dig.FillProvideInfo(&info), dig.Export(!p.Private)); err != nil {
 		m.app.err = err
 	}
 	var ev fxevent.Event
@@ -170,6 +170,7 @@ func (m *module) provide(p provide) {
 			ModuleName:      m.name,
 			OutputTypeNames: outputNames,
 			Err:             m.app.err,
+			Private:         p.Private,
 		}
 	}
 	m.log.LogEvent(ev)
