@@ -622,9 +622,13 @@ func (app *App) Start(ctx context.Context) (err error) {
 	})
 }
 
-func (app *App) start(ctx context.Context) error {
-	if err := app.lifecycle.Start(ctx); err != nil {
-		// Start failed, rolling back.
+// withRollback will execute an anonymous function with a given context.
+// if the anon func returns an error, rollback methods will be called and related events emitted
+func (app *App) withRollback(
+	ctx context.Context,
+	f func(context.Context) error,
+) error {
+	if err := f(ctx); err != nil {
 		app.log().LogEvent(&fxevent.RollingBack{StartErr: err})
 
 		stopErr := app.lifecycle.Stop(ctx)
@@ -636,7 +640,18 @@ func (app *App) start(ctx context.Context) error {
 
 		return err
 	}
+
 	return nil
+}
+
+func (app *App) start(ctx context.Context) error {
+	return app.withRollback(ctx, func(ctx context.Context) error {
+		if err := app.lifecycle.Start(ctx); err != nil {
+			return err
+		}
+		app.receivers.Start(ctx)
+		return nil
+	})
 }
 
 // Stop gracefully stops the application. It executes any registered OnStop
@@ -651,9 +666,14 @@ func (app *App) Stop(ctx context.Context) (err error) {
 		app.log().LogEvent(&fxevent.Stopped{Err: err})
 	}()
 
+	cb := func(ctx context.Context) error {
+		defer app.receivers.Stop(ctx)
+		return app.lifecycle.Stop(ctx)
+	}
+
 	return withTimeout(ctx, &withTimeoutParams{
 		hook:      _onStopHook,
-		callback:  app.lifecycle.Stop,
+		callback:  cb,
 		lifecycle: app.lifecycle,
 		log:       app.log(),
 	})
@@ -666,8 +686,23 @@ func (app *App) Stop(ctx context.Context) (err error) {
 //
 // Alternatively, a signal can be broadcast to all done channels manually by
 // using the Shutdown functionality (see the Shutdowner documentation for details).
+//
+// Note: The channel Done returns will not receive a signal unless the application
+// as been started via Start or Run.
 func (app *App) Done() <-chan os.Signal {
 	return app.receivers.Done()
+}
+
+// Wait returns a channel of [ShutdownSignal] to block on after starting the
+// application and function, similar to [App.Done], but with a minor difference.
+// Should an ExitCode be provided as a [ShutdownOption] to
+// the Shutdowner Shutdown method, the exit code will be available as part
+// of the ShutdownSignal struct.
+//
+// Should the app receive a SIGTERM or SIGINT, the given
+// signal will be populated in the ShutdownSignal struct.
+func (app *App) Wait() <-chan ShutdownSignal {
+	return app.receivers.Wait()
 }
 
 // StartTimeout returns the configured startup timeout. Apps default to using

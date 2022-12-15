@@ -13,11 +13,11 @@ Let's do that.
 
    ```go mdox-exec='region ex/get-started/07-many-handlers/main.go mux'
    func NewServeMux(routes []Route) *http.ServeMux {
-   	mux := http.NewServeMux()
-   	for _, route := range routes {
-   		mux.Handle(route.Pattern(), route)
-   	}
-   	return mux
+     mux := http.NewServeMux()
+     for _, route := range routes {
+       mux.Handle(route.Pattern(), route)
+     }
+     return mux
    }
    ```
 
@@ -40,11 +40,11 @@ Let's do that.
    // AsRoute annotates the given constructor to state that
    // it provides a route to the "routes" group.
    func AsRoute(f any) any {
-   	return fx.Annotate(
-   		f,
-   		fx.As(new(Route)),
-   		fx.ResultTags(`group:"routes"`),
-   	)
+     return fx.Annotate(
+       f,
+       fx.As(new(Route)),
+       fx.ResultTags(`group:"routes"`),
+     )
    }
    ```
 

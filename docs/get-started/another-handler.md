@@ -9,12 +9,12 @@ Let's add another.
    // HelloHandler is an HTTP handler that
    // prints a greeting to the user.
    type HelloHandler struct {
-   	log *zap.Logger
+     log *zap.Logger
    }
 
    // NewHelloHandler builds a new HelloHandler.
    func NewHelloHandler(log *zap.Logger) *HelloHandler {
-   	return &HelloHandler{log: log}
+     return &HelloHandler{log: log}
    }
    ```
 
@@ -22,22 +22,22 @@ Let's add another.
 
    ```go mdox-exec='region ex/get-started/06-another-handler/main.go hello-methods'
    func (*HelloHandler) Pattern() string {
-   	return "/hello"
+     return "/hello"
    }
 
    func (h *HelloHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-   	body, err := io.ReadAll(r.Body)
-   	if err != nil {
-   		h.log.Error("Failed to read request", zap.Error(err))
-   		http.Error(w, "Internal server error", http.StatusInternalServerError)
-   		return
-   	}
+     body, err := io.ReadAll(r.Body)
+     if err != nil {
+       h.log.Error("Failed to read request", zap.Error(err))
+       http.Error(w, "Internal server error", http.StatusInternalServerError)
+       return
+     }
 
-   	if _, err := fmt.Fprintf(w, "Hello, %s\n", body); err != nil {
-   		h.log.Error("Failed to write response", zap.Error(err))
-   		http.Error(w, "Internal server error", http.StatusInternalServerError)
-   		return
-   	}
+     if _, err := fmt.Fprintf(w, "Hello, %s\n", body); err != nil {
+       h.log.Error("Failed to write response", zap.Error(err))
+       http.Error(w, "Internal server error", http.StatusInternalServerError)
+       return
+     }
    }
    ```
 
@@ -103,10 +103,10 @@ Let's add another.
    // NewServeMux builds a ServeMux that will route requests
    // to the given routes.
    func NewServeMux(route1, route2 Route) *http.ServeMux {
-   	mux := http.NewServeMux()
-   	mux.Handle(route1.Pattern(), route1)
-   	mux.Handle(route2.Pattern(), route2)
-   	return mux
+     mux := http.NewServeMux()
+     mux.Handle(route1.Pattern(), route1)
+     mux.Handle(route2.Pattern(), route2)
+     return mux
    }
    ```
 

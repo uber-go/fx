@@ -20,17 +20,17 @@ to tag the result of a function and feed it into a value group.
 
    ```go mdox-exec='region ex/value-groups/feed/result.go result-init new-init'
    type Result struct {
-   	fx.Out
+     fx.Out
 
-   	// ...
+     // ...
    }
 
    func New( /* ... */ ) (Result, error) {
-   	// ...
-   	return Result{
-   		// ...
-   		Watcher: watcher,
-   	}, nil
+     // ...
+     return Result{
+       // ...
+       Watcher: watcher,
+     }, nil
    }
    ```
 
@@ -48,10 +48,10 @@ to tag the result of a function and feed it into a value group.
 
    ```go mdox-exec='region ex/value-groups/feed/result.go result-tagged'
    type Result struct {
-   	fx.Out
+     fx.Out
 
-   	// ...
-   	Watcher Watcher `group:"watchers"`
+     // ...
+     Watcher Watcher `group:"watchers"`
    }
    ```
 
@@ -60,15 +60,15 @@ to tag the result of a function and feed it into a value group.
 
    ```go mdox-exec='region ex/value-groups/feed/result.go new-watcher'
    func New( /* ... */ ) (Result, error) {
-   	// ...
-   	watcher := &watcher{
-   		// ...
-   	}
+     // ...
+     watcher := &watcher{
+       // ...
+     }
 
-   	return Result{
-   		// ...
-   		Watcher: watcher,
-   	}, nil
+     return Result{
+       // ...
+       Watcher: watcher,
+     }, nil
    }
    ```
 

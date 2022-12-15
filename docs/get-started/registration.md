@@ -16,10 +16,10 @@ Let's try to fix this.
    // Route is an http.Handler that knows the mux pattern
    // under which it will be registered.
    type Route interface {
-   	http.Handler
+     http.Handler
 
-   	// Pattern reports the path at which this is registered.
-   	Pattern() string
+     // Pattern reports the path at which this is registered.
+     Pattern() string
    }
    ```
 
@@ -27,7 +27,7 @@ Let's try to fix this.
 
    ```go mdox-exec='region ex/get-started/05-registration/main.go echo-pattern'
    func (*EchoHandler) Pattern() string {
-   	return "/echo"
+     return "/echo"
    }
    ```
 
@@ -52,9 +52,9 @@ Let's try to fix this.
    // NewServeMux builds a ServeMux that will route requests
    // to the given Route.
    func NewServeMux(route Route) *http.ServeMux {
-   	mux := http.NewServeMux()
-   	mux.Handle(route.Pattern(), route)
-   	return mux
+     mux := http.NewServeMux()
+     mux.Handle(route.Pattern(), route)
+     return mux
    }
    ```
 

@@ -43,10 +43,10 @@ to tag a slice parameter of a function as a value group.
 
    ```go mdox-exec='region ex/value-groups/consume/param.go param-tagged'
    type Params struct {
-   	fx.In
+     fx.In
 
-   	// ...
-   	Watchers []Watcher `group:"watchers"`
+     // ...
+     Watchers []Watcher `group:"watchers"`
    }
    ```
 
@@ -123,7 +123,7 @@ that accepts variadic arguments instead of a slice.
 
 ```go mdox-exec='region ex/value-groups/consume/annotate.go new-variadic'
 func EmitterFrom(watchers ...Watcher) (*Emitter, error) {
-	return &Emitter{ws: watchers}, nil
+  return &Emitter{ws: watchers}, nil
 }
 ```
 
