@@ -53,7 +53,6 @@ To write an Fx module:
      ),
      fx.Invoke(startServer),
      fx.Decorate(wrapLogger),
-
    )
    ```
 
@@ -63,15 +62,15 @@ To write an Fx module:
 
    ```go mdox-exec='region ex/modules/module.go private'
    var Module = fx.Module("server",
-   	fx.Provide(
-   		New,
-   	),
-   	fx.Provide(
-   		fx.Private,
-   		parseConfig,
-   	),
-   	fx.Invoke(startServer),
-   	fx.Decorate(wrapLogger),
+     fx.Provide(
+       New,
+     ),
+     fx.Provide(
+       fx.Private,
+       parseConfig,
+     ),
+     fx.Invoke(startServer),
+     fx.Decorate(wrapLogger),
    )
    ```
 
