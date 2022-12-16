@@ -1052,6 +1052,28 @@ func TestAppRunTimeout(t *testing.T) {
 	}
 }
 
+func TestVeryShortTimeout(t *testing.T) {
+	type A struct{}
+	spy := new(fxlog.Spy)
+	app := New(
+		WithLogger(func() fxevent.Logger { return spy }),
+		Provide(func() *A {
+			// this will timeout
+			time.Sleep(time.Millisecond)
+			return &A{}
+		}),
+		Invoke(func(*A) {}),
+	)
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Nanosecond)
+	err := app.Start(ctx)
+	require.Error(t, err)
+	// The error message should never be in the format "added by" followed by an empty string.
+	assert.NotContains(t, err.Error(), "OnStart hook added by  failed")
+	assert.Contains(t, err.Error(), "context deadline exceeded")
+	cancel()
+}
+
 func TestAppStart(t *testing.T) {
 	t.Parallel()
 

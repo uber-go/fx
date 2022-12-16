@@ -788,6 +788,11 @@ func withTimeout(ctx context.Context, param *withTimeoutParams) error {
 			caller,
 			err,
 			r)
+	} else if caller == "" {
+		return fmt.Errorf("%v hook failed: %w",
+			param.hook,
+			err)
+
 	}
 	return fmt.Errorf("%v hook added by %v failed: %w",
 		param.hook,
