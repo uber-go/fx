@@ -922,7 +922,7 @@ func TestTimeoutOptions(t *testing.T) {
 func TestRecoverFromPanicsOption(t *testing.T) {
 	t.Parallel()
 
-	t.Run("CanNotGiveToModule", func(t *testing.T) {
+	t.Run("CannotGiveToModule", func(t *testing.T) {
 		t.Parallel()
 		mod := Module("MyModule", RecoverFromPanics())
 		err := New(mod).Err()
