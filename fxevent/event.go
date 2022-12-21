@@ -132,6 +132,9 @@ type Provided struct {
 
 	// Err is non-nil if we failed to provide this constructor.
 	Err error
+
+	// Private denotes whether the provided constructor is a [Private] constructor.
+	Private bool
 }
 
 // Replaced is emitted when a value replaces a type in Fx.

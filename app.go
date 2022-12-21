@@ -326,6 +326,9 @@ type provide struct {
 	// IsSupply is true when the Target constructor was emitted by fx.Supply.
 	IsSupply   bool
 	SupplyType reflect.Type // set only if IsSupply
+
+	// Set if the type should be provided at private scope.
+	Private bool
 }
 
 // invoke is a single invocation request to Fx.
