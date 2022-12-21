@@ -172,7 +172,7 @@ func RecoverFromPanics() Option {
 	return recoverFromPanicsOption{}
 }
 
-type recoverFromPanicsOption struct {}
+type recoverFromPanicsOption struct{}
 
 func (o recoverFromPanicsOption) apply(m *module) {
 	if m.parent != nil {

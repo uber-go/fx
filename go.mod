@@ -6,7 +6,7 @@ require (
 	github.com/benbjohnson/clock v1.3.0
 	github.com/stretchr/testify v1.8.0
 	go.uber.org/atomic v1.7.0
-	go.uber.org/dig v1.15.1-0.20221213190814-6ef87c8bcb68
+	go.uber.org/dig v1.15.0
 	go.uber.org/goleak v1.1.11
 	go.uber.org/multierr v1.6.0
 	go.uber.org/zap v1.23.0
@@ -18,3 +18,5 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
+
+replace go.uber.org/dig => github.com/uber-go/dig v1.15.1-0.20221213190814-6ef87c8bcb68

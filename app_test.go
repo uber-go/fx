@@ -928,8 +928,8 @@ func TestRecoverFromPanicsOption(t *testing.T) {
 		err := New(mod).Err()
 		require.Error(t, err)
 		require.Contains(t, err.Error(),
-			"fx.RecoverFromPanics Option should be passed to top-level App, " +
-			"not to fx.Module")
+			"fx.RecoverFromPanics Option should be passed to top-level App, "+
+				"not to fx.Module")
 	})
 
 	run := func(withOption bool) {
@@ -947,7 +947,7 @@ func TestRecoverFromPanicsOption(t *testing.T) {
 			assert.Contains(t, err.Error(),
 				`panic: "terrible sorrow" in func: "go.uber.org/fx_test".TestRecoverFromPanicsOption.`)
 		} else {
-			assert.Panics(t, func() { New(opts...) }, 
+			assert.Panics(t, func() { New(opts...) },
 				"expected panic without RecoverFromPanics() option")
 		}
 	}
