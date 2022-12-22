@@ -165,8 +165,8 @@ func (t stopTimeoutOption) String() string {
 	return fmt.Sprintf("fx.StopTimeout(%v)", time.Duration(t))
 }
 
-// RecoverFromPanics causes panics that occur in provided, decorated, and
-// invoked functions to be recovered from and wrapped in an dig.PanicError.
+// RecoverFromPanics causes panics that occur in functions given to [Provide],
+// [Decorate], and [Invoke] to be recovered from.
 // This error can be retrieved as any other error, by using (*App).Err().
 func RecoverFromPanics() Option {
 	return recoverFromPanicsOption{}
