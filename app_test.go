@@ -400,7 +400,7 @@ func TestPrivateProvide(t *testing.T) {
 	t.Run("CantUsePrivateFromSubModule", func(t *testing.T) {
 		t.Parallel()
 
-		app := New(
+		app := NewForTest(t,
 			Module("SubModule", Provide(func() int { return 0 }, Private)),
 			Invoke(func(a int) {}),
 		)
@@ -446,7 +446,7 @@ func TestPrivateProvideWithDecorators(t *testing.T) {
 			if private {
 				provideOpts = append(provideOpts, Private)
 			}
-			app := New(
+			app := NewForTest(t,
 				Module("SubModule",
 					Provide(provideOpts...),
 					Decorate(func(a int) int { return a + 2 }),
@@ -499,7 +499,7 @@ func TestPrivateProvideWithDecorators(t *testing.T) {
 	t.Run("CannotDecoratePrivateChildType", func(t *testing.T) {
 		t.Parallel()
 
-		app := New(
+		app := NewForTest(t,
 			Module("Child",
 				Provide(func() int { return 0 }, Private),
 			),
