@@ -165,6 +165,28 @@ func (t stopTimeoutOption) String() string {
 	return fmt.Sprintf("fx.StopTimeout(%v)", time.Duration(t))
 }
 
+// RecoverFromPanics causes panics that occur in functions given to [Provide],
+// [Decorate], and [Invoke] to be recovered from.
+// This error can be retrieved as any other error, by using (*App).Err().
+func RecoverFromPanics() Option {
+	return recoverFromPanicsOption{}
+}
+
+type recoverFromPanicsOption struct{}
+
+func (o recoverFromPanicsOption) apply(m *module) {
+	if m.parent != nil {
+		m.app.err = fmt.Errorf("fx.RecoverFromPanics Option should be passed to top-level " +
+			"App, not to fx.Module")
+	} else {
+		m.app.recoverFromPanics = true
+	}
+}
+
+func (o recoverFromPanicsOption) String() string {
+	return "fx.RecoverFromPanics()"
+}
+
 // WithLogger specifies how Fx should build an fxevent.Logger to log its events
 // to. The argument must be a constructor with one of the following return
 // types.
@@ -284,6 +306,8 @@ type App struct {
 	// Decides how we react to errors when building the graph.
 	errorHooks []ErrorHandler
 	validate   bool
+	// Whether to recover from panics in Dig container
+	recoverFromPanics bool
 
 	// Used to signal shutdowns.
 	receivers signalReceivers
@@ -430,10 +454,16 @@ func New(opts ...Option) *App {
 		lifecycle.New(appLogger{app}, app.clock),
 	}
 
-	app.container = dig.New(
+	containerOptions := []dig.Option{
 		dig.DeferAcyclicVerification(),
 		dig.DryRun(app.validate),
-	)
+	}
+
+	if app.recoverFromPanics {
+		containerOptions = append(containerOptions, dig.RecoverFromPanics())
+	}
+
+	app.container = dig.New(containerOptions...)
 
 	for _, m := range app.modules {
 		m.build(app, app.container)
