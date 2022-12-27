@@ -53,6 +53,7 @@ To write an Fx module:
      ),
      fx.Invoke(startServer),
      fx.Decorate(wrapLogger),
+
    )
    ```
 
@@ -71,6 +72,7 @@ To write an Fx module:
      ),
      fx.Invoke(startServer),
      fx.Decorate(wrapLogger),
+
    )
    ```
 

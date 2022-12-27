@@ -145,15 +145,3 @@ func (l *lifecycleWrapper) Append(h Hook) {
 		OnStopName:  h.onStopName,
 	})
 }
-
-func (l *lifecycleWrapper) startHookRecords() lifecycle.HookRecords {
-	return l.StartHookRecords()
-}
-
-func (l *lifecycleWrapper) stopHookRecords() lifecycle.HookRecords {
-	return l.StopHookRecords()
-}
-
-func (l *lifecycleWrapper) runningHookCaller() string {
-	return l.RunningHookCaller()
-}
