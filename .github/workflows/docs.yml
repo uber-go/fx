@@ -2,11 +2,20 @@ name: GitHub Pages
 
 on:
   push:
-    branches: [master]
+    tags: ['v*']
 
   # This lets us publish the workflow
   # manually from the GitHub Actions UI.
+  #
+  # It expects a single input:
+  # the Git ref we want to build and publish the docs for.
   workflow_dispatch:
+    inputs:
+      head:
+        description: "Git commitish to check out."
+        required: true
+        type: string
+
 
 # Run at most one publish job at a time,
 # cancelling others if a new one starts.
@@ -19,8 +28,18 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout
+      # We have two checkout steps running based on
+      # whether the workflow was manually trigerred.
+      # If manually trigerred, we use the provided ref,
+      # otherwise we use the default ref.
+      - name: Checkout (on release)
+        if:  github.event_name != 'workflow_dispatch'
         uses: actions/checkout@v3
+      - name: Checkout (manual)
+        if:  github.event_name == 'workflow_dispatch'
+        uses: actions/checkout@v3
+        with:
+          ref: ${{ inputs.head }}
 
       - name: Set up Node
         uses: actions/setup-node@v3
