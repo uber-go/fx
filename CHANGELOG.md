@@ -10,8 +10,31 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
-## Unreleased
-- No changes yet.
+## [1.19.0](https://github.com/uber-go/fx/compare/v1.18.2...v1.19.0) - 2023-01-03
+### Added
+- `fx.RecoverFromPanics` Option which allows Fx to recover from user-provided constructors
+  and invoked functions.
+- `fx.Private` that allows the constructor to limit the scope of its outputs to the wrapping
+  `fx.Module`.
+- `ExitCode` ShutdownOption which allows setting custom exit code at the end of app
+  lifecycle.
+- `Wait` which returns a channel that can be used for waiting on application shutdown.
+- fxevent/ZapLogger now exposes `UseLogLevel` and `UseErrorLevel` methods to set
+  the level of the Zap logs produced by it.
+- Add lifecycle hook-convertible methods: `StartHook`, `StopHook`, `StartStopHook`
+  that can be used with more function signatures.
+
+### Changed
+- `fx.WithLogger` can now be passed at `fx.Module` level, setting custom logger at
+  `Module` scope instead of the whole `App`.
+
+### Fixed
+- `fx.OnStart` and `fx.OnStop` Annotations now work with annotated types that was
+  provided by the annotated constructor.
+- fxevent/ZapLogger: Errors from `fx.Supply` are now logged at `Error` level, not
+  `Info`.
+- A race condition in lifecycle Start/Stop methods.
+- Typos in docs.
 
 ## [1.18.2](https://github.com/uber-go/fx/compare/v1.18.1...v1.18.2) - 2022-09-28
 
