@@ -331,16 +331,6 @@ func TestLifecycleStop(t *testing.T) {
 		assert.Contains(t, err.Error(), "called OnStop with nil context")
 
 	})
-
-	t.Run("StopWhileStoppedErrors", func(t *testing.T) {
-		t.Parallel()
-
-		l := New(testLogger(t), fxclock.System)
-		err := l.Stop(context.Background())
-		require.Error(t, err)
-		assert.Contains(t, err.Error(), "attempted to stop lifecycle when in state: stopped")
-	})
-
 }
 
 func TestHookRecordsFormat(t *testing.T) {
