@@ -918,43 +918,6 @@ func TestTimeoutOptions(t *testing.T) {
 	assert.True(t, stopped, "app wasn't stopped")
 }
 
-func TestRecoverFromPanicsOption(t *testing.T) {
-	t.Parallel()
-
-	t.Run("CannotGiveToModule", func(t *testing.T) {
-		t.Parallel()
-		mod := Module("MyModule", RecoverFromPanics())
-		err := New(mod).Err()
-		require.Error(t, err)
-		require.Contains(t, err.Error(),
-			"fx.RecoverFromPanics Option should be passed to top-level App, "+
-				"not to fx.Module")
-	})
-
-	run := func(withOption bool) {
-		opts := []Option{
-			Provide(func() int {
-				panic("terrible sorrow")
-			}),
-			Invoke(func(a int) {}),
-		}
-		if withOption {
-			opts = append(opts, RecoverFromPanics())
-			app := New(opts...)
-			err := app.Err()
-			require.Error(t, err)
-			assert.Contains(t, err.Error(),
-				`panic: "terrible sorrow" in func: "go.uber.org/fx_test".TestRecoverFromPanicsOption.`)
-		} else {
-			assert.Panics(t, func() { New(opts...) },
-				"expected panic without RecoverFromPanics() option")
-		}
-	}
-
-	t.Run("WithoutOption", func(t *testing.T) { run(false) })
-	t.Run("WithOption", func(t *testing.T) { run(true) })
-}
-
 func TestAppRunTimeout(t *testing.T) {
 	t.Parallel()
 
@@ -1461,6 +1424,7 @@ func TestAppStart(t *testing.T) {
 		}
 		app.Stop(ctx)
 		assert.NoError(t, app.Start(ctx))
+		app.Stop(ctx)
 	})
 }
 

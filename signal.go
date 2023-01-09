@@ -87,8 +87,6 @@ func (recv *signalReceivers) relayer(ctx context.Context) {
 	select {
 	case <-recv.shutdown:
 		return
-	case <-ctx.Done():
-		return
 	case signal := <-recv.signals:
 		recv.Broadcast(ShutdownSignal{
 			Signal: signal,
