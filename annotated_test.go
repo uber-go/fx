@@ -1500,6 +1500,8 @@ func assertApp(
 		require.NoError(t, app.Stop(ctx))
 		assert.True(t, *stopped)
 	}
+
+	defer app.Stop(ctx)
 }
 
 func TestHookAnnotations(t *testing.T) {
