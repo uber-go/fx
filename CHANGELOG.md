@@ -13,6 +13,14 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ## Unreleased
 - No changes yet.
 
+## [1.19.1](https://github.com/uber-go/fx/compare/v1.18.0...v1.19.1) - 2023-01-10
+### Changed
+- Calling `fx.Stop()` after the `App` has already stopped no longer errors out.
+
+### Fixed
+- Addressed a regression in 1.19.0 release which caused apps to ignore OS signals
+  after running for startTimeout duration.
+
 ## [1.19.0](https://github.com/uber-go/fx/compare/v1.18.2...v1.19.0) - 2023-01-03
 ### Added
 - `fx.RecoverFromPanics` Option which allows Fx to recover from user-provided constructors

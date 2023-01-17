@@ -267,7 +267,7 @@ func (l *Lifecycle) Stop(ctx context.Context) error {
 	l.mu.Lock()
 	if l.state != started && l.state != incompleteStart {
 		defer l.mu.Unlock()
-		return fmt.Errorf("attempted to stop lifecycle when in state: %v", l.state)
+		return nil
 	}
 	l.state = stopping
 	l.mu.Unlock()
