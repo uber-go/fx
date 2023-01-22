@@ -911,8 +911,8 @@ func (la *lifecycleHookAnnotation) buildHook(fn func(context.Context) error) (ho
 //	}
 //
 // Only one OnStart annotation may be applied to a given function at a time,
-// however functions may be annotated with other types of lifecylce Hooks, such
-// as OnStart. The hook function passed into OnStart cannot take any arguments
+// however functions may be annotated with other types of lifecycle Hooks, such
+// as OnStop. The hook function passed into OnStart cannot take any arguments
 // outside of the annotated constructor's existing dependencies or results, except
 // a context.Context.
 func OnStart(onStart interface{}) Annotation {
@@ -975,8 +975,8 @@ func OnStart(onStart interface{}) Annotation {
 //	}
 //
 // Only one OnStop annotation may be applied to a given function at a time,
-// however functions may be annotated with other types of lifecylce Hooks, such
-// as OnStop. The hook function passed into OnStop cannot take any arguments
+// however functions may be annotated with other types of lifecycle Hooks, such
+// as OnStart. The hook function passed into OnStop cannot take any arguments
 // outside of the annotated constructor's existing dependencies or results, except
 // a context.Context.
 func OnStop(onStop interface{}) Annotation {

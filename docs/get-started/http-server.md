@@ -119,6 +119,12 @@ and it will stop running when the application receives a stop signal.
 We used `fx.Invoke` to request that the HTTP server is always instantiated,
 even if none of the other components in the application reference it directly.
 
+
+**Related Resources**
+
+* [Application lifecycle](/lifecycle.md) further explains what Fx lifecycles are,
+  and how to use them.
+
 <!-- 
 TODO: when the docs exist
 
@@ -126,6 +132,5 @@ TODO: when the docs exist
 
 * TODO: link to fx.Provide
 * TODO: link to fx.Invoke
-* TODO: link to Fx application lifecycle
 
 -->
