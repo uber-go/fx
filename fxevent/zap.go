@@ -110,6 +110,7 @@ func (l *ZapLogger) LogEvent(event Event) {
 			l.logEvent("supplied",
 				zap.String("type", e.TypeName),
 				moduleField(e.ModuleName),
+				maybeBool("private", e.Private),
 			)
 		}
 	case *Provided:

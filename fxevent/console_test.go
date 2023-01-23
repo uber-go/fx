@@ -137,13 +137,31 @@ func TestConsoleLogger(t *testing.T) {
 		},
 		{
 			name: "Supplied",
-			give: &Supplied{TypeName: "*bytes.Buffer"},
+			give: &Supplied{TypeName: "*bytes.Buffer", Private: false},
 			want: "[Fx] SUPPLY	*bytes.Buffer\n",
 		},
 		{
 			name: "Supplied with module",
-			give: &Supplied{TypeName: "*bytes.Buffer", ModuleName: "myModule"},
+			give: &Supplied{
+				TypeName:   "*bytes.Buffer",
+				ModuleName: "myModule",
+				Private:    false,
+			},
 			want: "[Fx] SUPPLY	*bytes.Buffer from module \"myModule\"\n",
+		},
+		{
+			name: "Supplied privately",
+			give: &Supplied{TypeName: "*bytes.Buffer", Private: true},
+			want: "[Fx] SUPPLY (PRIVATE)	*bytes.Buffer\n",
+		},
+		{
+			name: "Supplied with module privately",
+			give: &Supplied{
+				TypeName:   "*bytes.Buffer",
+				ModuleName: "myModule",
+				Private:    true,
+			},
+			want: "[Fx] SUPPLY (PRIVATE)	*bytes.Buffer from module \"myModule\"\n",
 		},
 		{
 			name: "SuppliedError",

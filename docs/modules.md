@@ -80,6 +80,9 @@ To write an Fx module:
    No modules that contain "server" will be able to use the resulting
    `Config` type because it can only be seen by the "server" module.
 
+   You can also pass `fx.Private` to a module to mark all
+   provided and supplied contents of that module as private.
+
 That's all there's to writing modules.
 The rest of this section covers standards and conventions
 we've established for writing Fx modules at Uber.

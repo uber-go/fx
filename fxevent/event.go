@@ -114,6 +114,9 @@ type Supplied struct {
 
 	// Err is non-nil if we failed to supply the value.
 	Err error
+
+	// Private denotes whether the supplied value is [Private] or not
+	Private bool
 }
 
 // Provided is emitted when a constructor is provided to Fx.

@@ -117,6 +117,7 @@ func (o supplyOption) apply(m *module) {
 			Stack:      o.Stack,
 			IsSupply:   true,
 			SupplyType: o.Types[i],
+			Private:    m.private,
 		})
 	}
 }

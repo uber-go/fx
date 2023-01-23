@@ -69,10 +69,22 @@ func (o moduleOption) apply(mod *module) {
 	// 2. Apply child Options on the new module.
 	// 3. Append it to the parent module.
 	newModule := &module{
-		name:   o.name,
-		parent: mod,
-		app:    mod.app,
+		name:    o.name,
+		parent:  mod,
+		app:     mod.app,
+		private: mod.private,
 	}
+
+	// Look for private option first, if not set through parent
+	if !newModule.private {
+		for _, opt := range o.options {
+			if _, ok := opt.(privateOption); ok {
+				newModule.private = true
+				break
+			}
+		}
+	}
+
 	for _, opt := range o.options {
 		opt.apply(newModule)
 	}
@@ -83,6 +95,7 @@ type module struct {
 	parent         *module
 	name           string
 	scope          scope
+	private        bool
 	provides       []provide
 	invokes        []invoke
 	decorators     []decorator
@@ -157,6 +170,7 @@ func (m *module) provide(p provide) {
 			TypeName:   p.SupplyType.String(),
 			ModuleName: m.name,
 			Err:        m.app.err,
+			Private:    p.Private,
 		}
 
 	default:

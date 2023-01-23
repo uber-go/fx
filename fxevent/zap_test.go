@@ -129,11 +129,26 @@ func TestZapLogger(t *testing.T) {
 			},
 		},
 		{
-			name:        "Supplied",
-			give:        &Supplied{TypeName: "*bytes.Buffer"},
+			name: "Supplied",
+			give: &Supplied{
+				TypeName: "*bytes.Buffer",
+				Private:  false,
+			},
 			wantMessage: "supplied",
 			wantFields: map[string]interface{}{
 				"type": "*bytes.Buffer",
+			},
+		},
+		{
+			name: "PrivateSupply",
+			give: &Supplied{
+				TypeName: "*bytes.Buffer",
+				Private:  true,
+			},
+			wantMessage: "supplied",
+			wantFields: map[string]interface{}{
+				"type":    "*bytes.Buffer",
+				"private": true,
 			},
 		},
 		{

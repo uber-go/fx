@@ -74,7 +74,7 @@ type provideOption struct {
 }
 
 func (o provideOption) apply(mod *module) {
-	var private bool
+	private := mod.private
 
 	targets := make([]interface{}, 0, len(o.Targets))
 	for _, target := range o.Targets {
@@ -93,23 +93,6 @@ func (o provideOption) apply(mod *module) {
 		})
 	}
 }
-
-type privateOption struct{}
-
-// Private is an option that can be passed as an argument to [Provide] to
-// restrict access to the constructors being provided. Specifically,
-// corresponding constructors can only be used within the current module
-// or modules the current module contains. Other modules that contain this
-// module won't be able to use the constructor.
-//
-// For example, the following would fail because the app doesn't have access
-// to the inner module's constructor.
-//
-//	fx.New(
-//		fx.Module("SubModule", fx.Provide(func() int { return 0 }, fx.Private)),
-//		fx.Invoke(func(a int) {}),
-//	)
-var Private = privateOption{}
 
 func (o provideOption) String() string {
 	items := make([]string, len(o.Targets))

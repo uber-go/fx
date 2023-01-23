@@ -437,6 +437,13 @@ func New(opts ...Option) *App {
 	app.modules = append(app.modules, app.root)
 
 	for _, opt := range opts {
+		if _, ok := opt.(privateOption); ok {
+			app.root.private = true
+			break
+		}
+	}
+
+	for _, opt := range opts {
 		opt.apply(app.root)
 	}
 

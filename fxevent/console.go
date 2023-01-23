@@ -60,12 +60,16 @@ func (l *ConsoleLogger) LogEvent(event Event) {
 			l.logf("HOOK OnStop\t\t%s called by %s ran successfully in %s", e.FunctionName, e.CallerName, e.Runtime)
 		}
 	case *Supplied:
+		var privateStr string
+		if e.Private {
+			privateStr = " (PRIVATE)"
+		}
 		if e.Err != nil {
 			l.logf("ERROR\tFailed to supply %v: %+v", e.TypeName, e.Err)
 		} else if e.ModuleName != "" {
-			l.logf("SUPPLY\t%v from module %q", e.TypeName, e.ModuleName)
+			l.logf("SUPPLY%v\t%v from module %q", privateStr, e.TypeName, e.ModuleName)
 		} else {
-			l.logf("SUPPLY\t%v", e.TypeName)
+			l.logf("SUPPLY%v\t%v", privateStr, e.TypeName)
 		}
 	case *Provided:
 		var privateStr string
