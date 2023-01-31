@@ -654,6 +654,18 @@ type errHandlerFunc func(error)
 
 func (f errHandlerFunc) HandleError(err error) { f(err) }
 
+type customError struct {
+	err error
+}
+
+func (e *customError) Error() string {
+	return fmt.Sprintf("custom error: %v", e.err)
+}
+
+func (e *customError) Unwrap() error {
+	return e.err
+}
+
 func TestInvokes(t *testing.T) {
 	t.Parallel()
 
@@ -673,16 +685,18 @@ func TestInvokes(t *testing.T) {
 	t.Run("Failure event", func(t *testing.T) {
 		t.Parallel()
 
+		wantErr := errors.New("great sadness")
 		app, spy := NewSpied(
 			Invoke(func() error {
-				return errors.New("great sadness")
+				return wantErr
 			}),
 		)
 		require.Error(t, app.Err())
 
 		invoked := spy.Events().SelectByTypeName("Invoked")
 		require.Len(t, invoked, 1)
-		assert.Error(t, invoked[0].(*fxevent.Invoked).Err)
+		require.Error(t, invoked[0].(*fxevent.Invoked).Err)
+		require.ErrorIs(t, invoked[0].(*fxevent.Invoked).Err, wantErr)
 	})
 
 	t.Run("ErrorsAreNotOverriden", func(t *testing.T) {
@@ -716,6 +730,23 @@ func TestInvokes(t *testing.T) {
 		)
 		assert.Equal(t, 1, count)
 	})
+
+	t.Run("ErrorsAreWrapped", func(t *testing.T) {
+		t.Parallel()
+		wantErr := errors.New("err")
+
+		app := NewForTest(t,
+			Invoke(func() error {
+				return &customError{err: wantErr}
+			}),
+		)
+
+		err := app.Err()
+		require.Error(t, err)
+		assert.ErrorIs(t, err, wantErr)
+		var ce *customError
+		assert.ErrorAs(t, err, &ce)
+	})
 }
 
 func TestError(t *testing.T) {
@@ -738,12 +769,15 @@ func TestError(t *testing.T) {
 	t.Run("SingleErrorOption", func(t *testing.T) {
 		t.Parallel()
 
+		wantErr := errors.New("module failure")
 		app := NewForTest(t,
-			Error(errors.New("module failure")),
+			Error(wantErr),
 			Invoke(func() { t.Errorf("Invoke should not be called") }),
 		)
 		err := app.Err()
+		require.Error(t, err)
 		assert.EqualError(t, err, "module failure")
+		assert.ErrorIs(t, err, wantErr)
 	})
 
 	t.Run("MultipleErrorOption", func(t *testing.T) {
@@ -751,6 +785,8 @@ func TestError(t *testing.T) {
 
 		type A struct{}
 
+		errA := errors.New("module A failure")
+		errB := errors.New("module B failure")
 		app := NewForTest(t,
 			Provide(func() A {
 				t.Errorf("Provide should not be called")
@@ -759,14 +795,14 @@ func TestError(t *testing.T) {
 			),
 			Invoke(func(A) { t.Errorf("Invoke should not be called") }),
 			Error(
-				errors.New("module A failure"),
-				errors.New("module B failure"),
+				errA,
+				errB,
 			),
 		)
 		err := app.Err()
 		require.Error(t, err)
-		assert.Contains(t, err.Error(), "module A failure")
-		assert.Contains(t, err.Error(), "module B failure")
+		assert.ErrorIs(t, err, errA)
+		assert.ErrorIs(t, err, errB)
 		assert.NotContains(t, err.Error(), "not in the container")
 	})
 
@@ -1759,7 +1795,7 @@ func TestHookConstructors(t *testing.T) {
 			}))
 		}))
 		require.NoError(t, app.Start(ctx))
-		require.ErrorContains(t, app.Stop(ctx), wantErr.Error())
+		require.ErrorIs(t, app.Stop(ctx), wantErr)
 	})
 
 	t.Run("stop deadline", func(t *testing.T) {

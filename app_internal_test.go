@@ -21,6 +21,7 @@
 package fx
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"sync"
@@ -104,4 +105,14 @@ func (o withClockOption) apply(m *module) {
 
 func (o withClockOption) String() string {
 	return fmt.Sprintf("WithClock(%v)", o.clock)
+}
+
+func TestAnnotationError(t *testing.T) {
+	wantErr := errors.New("want error")
+	err := &annotationError{
+		err: wantErr,
+	}
+	require.Error(t, err)
+	assert.ErrorIs(t, err, wantErr)
+	assert.Contains(t, err.Error(), wantErr.Error())
 }

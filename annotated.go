@@ -134,6 +134,11 @@ func (e *annotationError) Error() string {
 	return e.err.Error()
 }
 
+// Unwrap the wrapped error.
+func (e *annotationError) Unwrap() error {
+	return e.err
+}
+
 type paramTagsAnnotation struct {
 	tags []string
 }
