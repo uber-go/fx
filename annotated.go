@@ -131,7 +131,12 @@ type annotationError struct {
 }
 
 func (e *annotationError) Error() string {
-	return e.err.Error()
+	return fmt.Sprintf("%+v", e.err)
+}
+
+// Unwrap the wrapped error.
+func (e *annotationError) Unwrap() error {
+	return e.err
 }
 
 type paramTagsAnnotation struct {
