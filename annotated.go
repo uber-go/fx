@@ -131,7 +131,7 @@ type annotationError struct {
 }
 
 func (e *annotationError) Error() string {
-	return fmt.Sprintf("%+v", e.err)
+	return e.err.Error()
 }
 
 // Unwrap the wrapped error.
