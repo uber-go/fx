@@ -29,8 +29,8 @@ jobs:
 
     steps:
       # We have two checkout steps running based on
-      # whether the workflow was manually trigerred.
-      # If manually trigerred, we use the provided ref,
+      # whether the workflow was manually triggered.
+      # If manually triggered, we use the provided ref,
       # otherwise we use the default ref.
       - name: Checkout (on release)
         if:  github.event_name != 'workflow_dispatch'

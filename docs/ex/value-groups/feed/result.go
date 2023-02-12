@@ -34,7 +34,7 @@ type Watcher interface{}
 
 type watcher struct{}
 
-// Result is the resul of an operation.
+// Result is the result of an operation.
 // region result-tagged
 // region result-init
 type Result struct {
