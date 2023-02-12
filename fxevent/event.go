@@ -48,7 +48,7 @@ func (*RolledBack) event()        {}
 func (*Started) event()           {}
 func (*LoggerInitialized) event() {}
 
-// OnStartExecuting is emitted before an OnStart hook is exeucted.
+// OnStartExecuting is emitted before an OnStart hook is executed.
 type OnStartExecuting struct {
 	// FunctionName is the name of the function that will be executed.
 	FunctionName string
@@ -78,7 +78,7 @@ type OnStartExecuted struct {
 	Err error
 }
 
-// OnStopExecuting is emitted before an OnStop hook is exeucted.
+// OnStopExecuting is emitted before an OnStop hook is executed.
 type OnStopExecuting struct {
 	// FunctionName is the name of the function that will be executed.
 	FunctionName string
