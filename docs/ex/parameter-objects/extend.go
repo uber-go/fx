@@ -27,7 +27,7 @@ import (
 	"go.uber.org/zap"
 )
 
-// Params defines the paramters of new.
+// Params defines the parameters of new.
 // region start
 // region full
 type Params struct {

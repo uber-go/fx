@@ -559,7 +559,7 @@ var (
 )
 
 // buildHookInstaller returns a function that appends a hook to Lifecycle when called,
-// along with the new paramter types and a function that maps arguments to the annotated constructor
+// along with the new parameter types and a function that maps arguments to the annotated constructor
 func (la *lifecycleHookAnnotation) buildHookInstaller(ann *annotated) (
 	hookInstaller reflect.Value,
 	paramTypes []reflect.Type,
@@ -807,7 +807,7 @@ func injectLifecycle(paramTypes []reflect.Type) ([]reflect.Type, func([]reflect.
 			return args
 		}
 	}
-	// If params are tagged or there's an untagged variadic arguement,
+	// If params are tagged or there's an untagged variadic argument,
 	// add a Lifecycle field to the param struct
 	if len(paramTypes) > 0 && isIn(paramTypes[0]) {
 		taggedParam := paramTypes[0]
