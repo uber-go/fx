@@ -14,20 +14,20 @@ jobs:
     strategy:
       matrix:
         os: ["ubuntu-latest", "windows-latest"]
-        go: ["1.18.x", "1.19.x"]
+        go: ["1.19.x", "1.20.x"]
         include:
-        - go: 1.19.x
+        - go: 1.20.x
           os: "ubuntu-latest"
           latest: true
 
     steps:
     - name: Setup Go
-      uses: actions/setup-go@v2
+      uses: actions/setup-go@v3
       with:
         go-version: ${{ matrix.go }}
 
     - name: Checkout code
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
 
     - name: Load cached dependencies
       uses: actions/cache@v1
@@ -52,4 +52,4 @@ jobs:
       if: matrix.latest
 
     - name: Upload coverage to codecov.io
-      uses: codecov/codecov-action@v1
+      uses: codecov/codecov-action@v3
