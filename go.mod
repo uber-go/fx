@@ -1,6 +1,6 @@
 module go.uber.org/fx
 
-go 1.18
+go 1.19
 
 require (
 	github.com/benbjohnson/clock v1.3.0
@@ -10,7 +10,7 @@ require (
 	go.uber.org/goleak v1.1.11
 	go.uber.org/multierr v1.6.0
 	go.uber.org/zap v1.23.0
-	golang.org/x/sys v0.0.0-20210903071746-97244b99971b
+	golang.org/x/sys v0.0.0-20220412211240-33da011f77ad
 )
 
 require (
