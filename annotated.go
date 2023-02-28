@@ -144,6 +144,75 @@ type paramTagsAnnotation struct {
 }
 
 var _ Annotation = paramTagsAnnotation{}
+var (
+	errTagSyntaxSpace            = errors.New(`multiple tags are not separated by space`)
+	errTagKeySyntax              = errors.New("tag key is invalid, Use group, name or optional as tag keys")
+	errTagValueSyntaxQuote       = errors.New(`tag value should start with double quote. i.e. key:"value" `)
+	errTagValueSyntaxEndingQuote = errors.New(`tag value should end in double quote. i.e. key:"value" `)
+)
+
+// Collections of key value pairs within a tag should be separated by a space.
+// Eg: `group:"some" optional:"true"`.
+func verifyTagsSpaceSeparated(tagIdx int, tag string) error {
+	if tagIdx > 0 && tag != "" && tag[0] != ' ' {
+		return errTagSyntaxSpace
+	}
+	return nil
+}
+
+// verify tag values are delimited with double quotes.
+func verifyValueQuote(value string) (string, error) {
+	// starting quote should be a double quote
+	if value[0] != '"' {
+		return "", errTagValueSyntaxQuote
+	}
+	// validate tag value is within quotes
+	i := 1
+	for i < len(value) && value[i] != '"' {
+		if value[i] == '\\' {
+			i++
+		}
+		i++
+	}
+	if i >= len(value) {
+		return "", errTagValueSyntaxEndingQuote
+	}
+	return value[i+1:], nil
+
+}
+
+// Check whether the tag follows valid struct.
+// format and returns an error if it's invalid. (i.e. not following
+// tag:"value" space-separated list )
+// Currently dig accepts only 'name', 'group', 'optional' as valid tag keys.
+func verifyAnnotateTag(tag string) error {
+	tagIdx := 0
+	validKeys := map[string]struct{}{"group": {}, "optional": {}, "name": {}}
+	for ; tag != ""; tagIdx++ {
+		if err := verifyTagsSpaceSeparated(tagIdx, tag); err != nil {
+			return err
+		}
+		i := 0
+		if strings.TrimSpace(tag) == "" {
+			return nil
+		}
+		// parsing the key i.e. till reaching colon :
+		for i < len(tag) && tag[i] != ':' {
+			i++
+		}
+		key := strings.TrimSpace(tag[:i])
+		if _, ok := validKeys[key]; !ok {
+			return errTagKeySyntax
+		}
+		value, err := verifyValueQuote(tag[i+1:])
+		if err != nil {
+			return err
+		}
+		tag = value
+	}
+	return nil
+
+}
 
 // Given func(T1, T2, T3, ..., TN), this generates a type roughly
 // equivalent to,
@@ -159,10 +228,18 @@ var _ Annotation = paramTagsAnnotation{}
 //
 // If there has already been a ParamTag that was applied, this
 // will return an error.
+//
+// If the tag is invalid and has mismatched quotation for example,
+// (`tag_name:"tag_value') , this will return an error.
 
 func (pt paramTagsAnnotation) apply(ann *annotated) error {
 	if len(ann.ParamTags) > 0 {
 		return errors.New("cannot apply more than one line of ParamTags")
+	}
+	for _, tag := range pt.tags {
+		if err := verifyAnnotateTag(tag); err != nil {
+			return err
+		}
 	}
 	ann.ParamTags = pt.tags
 	return nil
@@ -285,9 +362,17 @@ var _ Annotation = resultTagsAnnotation{}
 //
 // If there has already been a ResultTag that was applied, this
 // will return an error.
+//
+// If the tag is invalid and has mismatched quotation for example,
+// (`tag_name:"tag_value') , this will return an error.
 func (rt resultTagsAnnotation) apply(ann *annotated) error {
 	if len(ann.ResultTags) > 0 {
 		return errors.New("cannot apply more than one line of ResultTags")
+	}
+	for _, tag := range rt.tags {
+		if err := verifyAnnotateTag(tag); err != nil {
+			return err
+		}
 	}
 	ann.ResultTags = rt.tags
 	return nil
