@@ -19,8 +19,10 @@ without manually wrapping the function to use
 
 A function that:
 
-- does not accept a [parameter object](parameter-objects.md)
-- does not return a [result object](result-objects.md)
+- does not accept a [parameter object](parameter-objects.md), when 
+  annotating with `fx.ParamTags`.
+- does not return a [result object](result-objects.md) when annotating
+  with `fx.ResultTags`.
 
 **Steps**
 
