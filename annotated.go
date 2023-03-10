@@ -261,6 +261,9 @@ func (pt paramTagsAnnotation) parameters(ann *annotated) (
 // ParamTags is an Annotation that annotates the parameter(s) of a function.
 // When multiple tags are specified, each tag is mapped to the corresponding
 // positional parameter.
+//
+// ParamTags cannot be used in a function that takes an fx.In struct as a
+// parameter.
 func ParamTags(tags ...string) Annotation {
 	return paramTagsAnnotation{tags}
 }
@@ -435,6 +438,8 @@ func (rt resultTagsAnnotation) results(ann *annotated) (
 // ResultTags is an Annotation that annotates the result(s) of a function.
 // When multiple tags are specified, each tag is mapped to the corresponding
 // positional result.
+//
+// ResultTags cannot be used on a function that returns an fx.Out struct.
 func ResultTags(tags ...string) Annotation {
 	return resultTagsAnnotation{tags}
 }
@@ -1518,8 +1523,8 @@ func (ann *annotated) typeCheckOrigFn() error {
 		if ot.Kind() != reflect.Struct {
 			continue
 		}
-		if dig.IsOut(reflect.New(ft.Out(i)).Elem().Interface()) {
-			return errors.New("fx.Out structs cannot be annotated")
+		if len(ann.ResultTags) > 0 && dig.IsOut(reflect.New(ft.Out(i)).Elem().Interface()) {
+			return errors.New("fx.Out structs cannot be annotated with fx.ResultTags")
 		}
 	}
 
@@ -1528,8 +1533,8 @@ func (ann *annotated) typeCheckOrigFn() error {
 		if it.Kind() != reflect.Struct {
 			continue
 		}
-		if dig.IsIn(reflect.New(ft.In(i)).Elem().Interface()) {
-			return errors.New("fx.In structs cannot be annotated")
+		if len(ann.ParamTags) > 0 && dig.IsIn(reflect.New(ft.In(i)).Elem().Interface()) {
+			return errors.New("fx.In structs cannot be annotated with fx.ParamTags")
 		}
 	}
 	return nil
@@ -1591,9 +1596,6 @@ func (ann *annotated) currentParamTypes() []reflect.Type {
 //	fx.Provide(func(p params) result {
 //	   return result{GW: NewGateway(p.RO, p.RW)}
 //	})
-//
-// Annotate cannot be used on functions that takes in or returns
-// [In] or [Out] structs.
 //
 // Using the same annotation multiple times is invalid.
 // For example, the following will fail with an error:

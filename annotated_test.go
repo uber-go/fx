@@ -26,6 +26,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -1471,6 +1472,54 @@ func TestAnnotate(t *testing.T) {
 		assert.NotContains(t, err.Error(), "invalid annotation function func(fx_test.A) string")
 		assert.Contains(t, err.Error(), "invalid annotation function func(fx_test.B) string")
 		assert.Contains(t, err.Error(), "fx.In structs cannot be annotated")
+	})
+
+	t.Run("annotate fx.In with fx.ResultTags", func(t *testing.T) {
+		t.Parallel()
+
+		type A struct {
+			fx.In
+
+			I int
+		}
+
+		app := NewForTest(t,
+			fx.Provide(
+				fx.Annotate(func(a A) string { return "ok" + strconv.Itoa(a.I) }, fx.ResultTags(`name:"val"`)),
+				func() int {
+					return 1
+				},
+			),
+			fx.Invoke(
+				fx.Annotate(func(s string) {
+					assert.Equal(t, "ok1", s)
+				}, fx.ParamTags(`name:"val"`)),
+			),
+		)
+		err := app.Err()
+		require.NoError(t, err)
+	})
+
+	t.Run("annotate fx.Out with fx.ParamTags", func(t *testing.T) {
+		t.Parallel()
+
+		type A struct {
+			fx.Out
+
+			S string
+		}
+
+		app := NewForTest(t,
+			fx.Provide(
+				fx.Annotate(func() int { return 1 }, fx.ResultTags(`name:"val"`)),
+				fx.Annotate(func(i int) A { return A{S: strconv.Itoa(i)} }, fx.ParamTags(`name:"val"`)),
+			),
+			fx.Invoke(func(s string) {
+				assert.Equal(t, "1", s)
+			}),
+		)
+		err := app.Err()
+		require.NoError(t, err)
 	})
 }
 
