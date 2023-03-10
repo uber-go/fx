@@ -1523,6 +1523,131 @@ func TestAnnotate(t *testing.T) {
 	})
 }
 
+func TestAnnotateApplyFail(t *testing.T) {
+	type a struct{}
+	type b struct{ a *a }
+	newA := func() *a { return &a{} }
+	newB := func(a *a) *b {
+		return &b{a}
+	}
+
+	var (
+		errTagSyntaxSpace            = `multiple tags are not separated by space`
+		errTagKeySyntax              = "tag key is invalid, Use group, name or optional as tag keys"
+		errTagValueSyntaxQuote       = `tag value should start with double quote. i.e. key:"value" `
+		errTagValueSyntaxEndingQuote = `tag value should end in double quote. i.e. key:"value" `
+	)
+	tests := []struct {
+		give                 string
+		wantErr              string
+		giveAnnotationParam  fx.Annotation
+		giveAnnotationResult fx.Annotation
+	}{
+		{
+			give:                 "Tags value invalid ending quote",
+			wantErr:              errTagValueSyntaxEndingQuote,
+			giveAnnotationParam:  fx.ParamTags(`name:"something'`),
+			giveAnnotationResult: fx.ResultTags(`name:"something'`),
+		},
+		{
+			give:                 "Tags value wrong starting quote",
+			wantErr:              errTagValueSyntaxQuote,
+			giveAnnotationParam:  fx.ParamTags(`name:"something" optional:'true"`),
+			giveAnnotationResult: fx.ResultTags(`name:"something" optional:'true"`),
+		},
+		{
+			give:                 "Tags multiple tags not separated by space",
+			wantErr:              errTagSyntaxSpace,
+			giveAnnotationParam:  fx.ParamTags(`name:"something"group:"something"`),
+			giveAnnotationResult: fx.ResultTags(`name:"something"group:"something"`),
+		},
+		{
+			give:                 "Tags key not equal to group, name or optional",
+			wantErr:              errTagKeySyntax,
+			giveAnnotationParam:  fx.ParamTags(`name1:"something"`),
+			giveAnnotationResult: fx.ResultTags(`name1:"something"`),
+		},
+		{
+			give:                 "Tags key empty",
+			wantErr:              errTagKeySyntax,
+			giveAnnotationParam:  fx.ParamTags(`:"something"`),
+			giveAnnotationResult: fx.ResultTags(`:"something"`),
+		},
+	}
+	for _, tt := range tests {
+		t.Run("Param "+tt.give, func(t *testing.T) {
+			app := NewForTest(t,
+				fx.Provide(
+					fx.Annotate(
+						newA,
+						tt.giveAnnotationParam,
+					),
+				),
+				fx.Invoke(newB),
+			)
+			assert.ErrorContains(t, app.Err(), tt.wantErr)
+		})
+		t.Run("Result "+tt.give, func(t *testing.T) {
+			app := NewForTest(t,
+				fx.Provide(
+					fx.Annotate(
+						newA,
+						tt.giveAnnotationResult,
+					),
+				),
+				fx.Invoke(newB),
+			)
+			assert.ErrorContains(t, app.Err(), tt.wantErr)
+		})
+	}
+}
+
+func TestAnnotateApplySuccess(t *testing.T) {
+	type a struct{}
+	type b struct{ a *a }
+	newA := func() *a { return &a{} }
+	newB := func(a *a) *b {
+		return &b{a}
+	}
+
+	tests := []struct {
+		give                 string
+		giveAnnotationParam  fx.Annotation
+		giveAnnotationResult fx.Annotation
+	}{
+		{
+			give:                 "ParamTags Tag Empty",
+			giveAnnotationParam:  fx.ParamTags(`  `),
+			giveAnnotationResult: fx.ResultTags(`  `),
+		},
+		{
+			give:                 "ParamTags Tag Empty with extra spaces",
+			giveAnnotationParam:  fx.ParamTags(`name:"versionNum"`, `  `),
+			giveAnnotationResult: fx.ResultTags(`   `, `group:"versionNum"`),
+		},
+		{
+			give:                 "ParamTags Tag with \\ ",
+			giveAnnotationParam:  fx.ParamTags(`name:"version\\Num"`, `  `),
+			giveAnnotationResult: fx.ResultTags(``, `group:"version\\Num"`),
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.give, func(t *testing.T) {
+			app := NewForTest(t,
+				fx.Provide(
+					fx.Annotate(
+						newA,
+						tt.giveAnnotationParam,
+						tt.giveAnnotationResult,
+					),
+				),
+				fx.Invoke(newB),
+			)
+			require.NoError(t, app.Err())
+		})
+	}
+
+}
 func assertApp(
 	t *testing.T,
 	app interface {
