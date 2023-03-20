@@ -15,3 +15,5 @@ jobs:
         with:
           api-key: ${{ secrets.FOSSA_API_KEY }}
 
+permissions:
+  contents: read
