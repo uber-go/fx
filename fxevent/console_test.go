@@ -241,6 +241,32 @@ func TestConsoleLogger(t *testing.T) {
 			want: "[Fx] Error after options were applied: rich error\n",
 		},
 		{
+			name: "Run",
+			give: &Run{Name: "bytes.NewBuffer()", Kind: "constructor"},
+			want: "[Fx] RUN\tconstructor: bytes.NewBuffer()\n",
+		},
+		{
+			name: "Run with module",
+			give: &Run{
+				Name:       "bytes.NewBuffer()", 
+				Kind:       "constructor",
+				ModuleName: "myModule",
+			},
+			want: "[Fx] RUN\tconstructor: bytes.NewBuffer() from module \"myModule\"\n",
+		},
+		{
+			name: "RunError",
+			give: &Run{
+				Name: "bytes.NewBuffer()",
+				Kind: "constructor",
+				Err:  errors.New("terrible constructor error"),
+			},
+			want: joinLines(
+				"[Fx] RUN\tconstructor: bytes.NewBuffer()",
+				"[Fx] Error returned: terrible constructor error",
+			),
+		},
+		{
 			name: "Invoking",
 			give: &Invoking{FunctionName: "bytes.NewBuffer()"},
 			want: "[Fx] INVOKE		bytes.NewBuffer()\n",

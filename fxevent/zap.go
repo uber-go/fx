@@ -151,6 +151,21 @@ func (l *ZapLogger) LogEvent(event Event) {
 				moduleField(e.ModuleName),
 				zap.Error(e.Err))
 		}
+	case *Run:
+		if e.Err != nil {
+			l.logError("error returned",
+				zap.String("name", e.Name),
+				zap.String("kind", e.Kind),
+				moduleField(e.ModuleName),
+				zap.Error(e.Err),
+			)
+		} else {
+			l.logEvent("run",
+				zap.String("name", e.Name),
+				zap.String("kind", e.Kind),
+				moduleField(e.ModuleName),
+			)
+		}
 	case *Invoking:
 		// Do not log stack as it will make logs hard to read.
 		l.logEvent("invoking",

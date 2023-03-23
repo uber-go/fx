@@ -228,6 +228,43 @@ func TestZapLogger(t *testing.T) {
 			},
 		},
 		{
+			name: "Run",
+			give: &Run{Name: "bytes.NewBuffer()", Kind: "constructor"},
+			wantMessage: "run",
+			wantFields: map[string]interface{}{
+				"name": "bytes.NewBuffer()",
+				"kind": "constructor",
+			},
+		},
+		{
+			name: "Run with module",
+			give: &Run{
+				Name:       "bytes.NewBuffer()", 
+				Kind:       "constructor",
+				ModuleName: "myModule",
+			},
+			wantMessage: "run",
+			wantFields: map[string]interface{}{
+				"name":   "bytes.NewBuffer()",
+				"kind":   "constructor",
+				"module": "myModule",
+			},
+		},
+		{
+			name: "Run/Error",
+			give: &Run{
+				Name: "bytes.NewBuffer()",
+				Kind: "constructor",
+				Err:  someError,
+			},
+			wantMessage: "error returned",
+			wantFields: map[string]interface{}{
+				"name":  "bytes.NewBuffer()",
+				"kind":  "constructor",
+				"error": "some error",
+			},
+		},
+		{
 			name:        "Invoking/Success",
 			give:        &Invoking{ModuleName: "myModule", FunctionName: "bytes.NewBuffer()"},
 			wantMessage: "invoking",

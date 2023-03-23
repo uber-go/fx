@@ -482,7 +482,7 @@ func New(opts ...Option) *App {
 
 	// Run decorators before executing any Invokes -- including the one
 	// inside constructCustomLogger.
-	app.err = multierr.Append(app.err, app.root.decorate())
+	app.err = multierr.Append(app.err, app.root.decorateAll())
 
 	// If you are thinking about returning here after provides: do not (just yet)!
 	// If a custom logger was being used, we're still buffering messages.

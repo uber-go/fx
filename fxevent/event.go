@@ -39,6 +39,7 @@ func (*Supplied) event()          {}
 func (*Provided) event()          {}
 func (*Replaced) event()          {}
 func (*Decorated) event()         {}
+func (*Run) event()               {}
 func (*Invoking) event()          {}
 func (*Invoked) event()           {}
 func (*Stopping) event()          {}
@@ -163,6 +164,21 @@ type Decorated struct {
 	OutputTypeNames []string
 
 	// Err is non-nil if we failed to run this decorator.
+	Err error
+}
+
+// Run is emitted after a constructor, decorator, or supply stub is run in Fx.
+type Run struct {
+	// Name is the name of the function that was run.
+	Name string
+
+	// Kind is either "constructor", "decorator", or "supply stub"
+	Kind string
+
+	// ModuleName is the name of the module in which the function belongs.
+	ModuleName string
+
+	// Err is non-nil if the function returned an error
 	Err error
 }
 

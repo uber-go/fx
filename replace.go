@@ -103,11 +103,12 @@ type replaceOption struct {
 }
 
 func (o replaceOption) apply(m *module) {
-	for _, target := range o.Targets {
+	for i, target := range o.Targets {
 		m.decorators = append(m.decorators, decorator{
-			Target:    target,
-			Stack:     o.Stack,
-			IsReplace: true,
+			Target:      target,
+			Stack:       o.Stack,
+			IsReplace:   true,
+			ReplaceType: o.Types[i],
 		})
 	}
 }

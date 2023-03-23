@@ -357,7 +357,7 @@ func TestNewApp(t *testing.T) {
 		defer app.RequireStart().RequireStop()
 
 		require.Equal(t,
-			[]string{"Provided", "Provided", "Provided", "Provided", "Decorated", "LoggerInitialized", "Invoking", "Invoked", "Started"},
+			[]string{"Provided", "Provided", "Provided", "Provided", "Decorated", "LoggerInitialized", "Invoking", "Run", "Run", "Invoked", "Started"},
 			spy.EventTypes())
 	})
 
@@ -573,7 +573,7 @@ func TestWithLogger(t *testing.T) {
 		)
 
 		assert.Equal(t, []string{
-			"Supplied", "Provided", "Provided", "Provided", "LoggerInitialized",
+			"Supplied", "Provided", "Provided", "Provided", "Run", "LoggerInitialized",
 		}, spy.EventTypes())
 
 		spy.Reset()
@@ -603,7 +603,7 @@ func TestWithLogger(t *testing.T) {
 			"must provide constructor function, got  (type *bytes.Buffer)",
 		)
 
-		assert.Equal(t, []string{"Supplied", "Provided", "LoggerInitialized"}, spy.EventTypes())
+		assert.Equal(t, []string{"Supplied", "Provided", "Run", "LoggerInitialized"}, spy.EventTypes())
 	})
 
 	t.Run("logger failed to build", func(t *testing.T) {
@@ -1250,6 +1250,8 @@ func TestAppStart(t *testing.T) {
 			"Provided", "Provided", "Provided", "Provided",
 			"LoggerInitialized",
 			"Invoking",
+			"Run",
+			"Run",
 			"Invoked",
 			"OnStartExecuting", "OnStartExecuted",
 			"RollingBack",
@@ -1286,6 +1288,8 @@ func TestAppStart(t *testing.T) {
 			"Provided", "Provided", "Provided", "Provided",
 			"LoggerInitialized",
 			"Invoking",
+			"Run",
+			"Run",
 			"Invoked",
 			"OnStartExecuting", "OnStartExecuted",
 			"OnStartExecuting", "OnStartExecuted",
@@ -1978,6 +1982,7 @@ func TestCustomLoggerWithLifecycle(t *testing.T) {
 		"Provided",
 		"Provided",
 		"Provided",
+		"Run",
 		"LoggerInitialized",
 		"OnStartExecuting", "OnStartExecuted",
 		"Started",
