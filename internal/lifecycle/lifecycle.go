@@ -265,7 +265,7 @@ func (l *Lifecycle) Stop(ctx context.Context) error {
 	}
 
 	l.mu.Lock()
-	if l.state != started && l.state != incompleteStart {
+	if l.state != started && l.state != incompleteStart && l.state != starting {
 		defer l.mu.Unlock()
 		return nil
 	}
