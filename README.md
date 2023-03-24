@@ -27,7 +27,7 @@ To get started with Fx, [start here](https://uber-go.github.io/fx/get-started/).
 
 ## Stability
 
-This library is `v1` and follows [SemVer](http://semver.org/) strictly.
+This library is `v1` and follows [SemVer](https://semver.org/) strictly.
 
 No breaking changes will be made to exported APIs before `v2.0.0`.
 

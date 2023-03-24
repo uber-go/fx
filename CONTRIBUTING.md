@@ -104,7 +104,7 @@ Once your changes are approved, one of the project maintainers will merge them.
 The review process will go more smoothly if you:
 
 - add tests for new functionality
-- write a [good commit message](http://tbaggery.com/2008/04/19/a-note-about-git-commit-messages.html)
+- write a [good commit message](https://tbaggery.com/2008/04/19/a-note-about-git-commit-messages.html)
 - maintain backward compatibility
 - follow our [style guide](https://github.com/uber-go/guide/blob/master/style.md)
 

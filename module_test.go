@@ -518,8 +518,8 @@ func TestModuleFailures(t *testing.T) {
 		app := NewForTest(t,
 			fx.Module("module",
 				fx.Provide(fx.Annotate(newA,
-					fx.ParamTags(`"name:"A1"`),
-					fx.ParamTags(`"name:"A2"`),
+					fx.ParamTags(`name:"A1"`),
+					fx.ParamTags(`name:"A2"`),
 				)),
 			),
 		)

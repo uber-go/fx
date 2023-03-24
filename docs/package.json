@@ -19,5 +19,9 @@
     "vuepress": "^1.5.3",
     "vuepress-plugin-fulltext-search": "^2.2.1",
     "vuepress-plugin-mermaidjs": "1.9.1"
+  },
+  "dependencies": {
+    "cacheable-request": "10.2.7",
+    "got": "^10.3.0"
   }
 }
