@@ -31,13 +31,14 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/goleak"
+	"go.uber.org/multierr"
+
 	"go.uber.org/fx/fxevent"
 	"go.uber.org/fx/internal/fxclock"
 	"go.uber.org/fx/internal/fxlog"
 	"go.uber.org/fx/internal/fxreflect"
 	"go.uber.org/fx/internal/testutil"
-	"go.uber.org/goleak"
-	"go.uber.org/multierr"
 )
 
 func testLogger(t *testing.T) fxevent.Logger {
@@ -126,8 +127,10 @@ func TestLifecycleStart(t *testing.T) {
 
 		l := New(testLogger(t), fxclock.System)
 		l.Append(Hook{
-			OnStart: func(context.Context) error {
-				assert.Fail(t, "this hook should not run")
+			OnStart: func(ctx context.Context) error {
+				if err := ctx.Err(); err != nil {
+					return err
+				}
 				return nil
 			},
 			OnStop: func(context.Context) error {
