@@ -1229,6 +1229,60 @@ func TestAppStart(t *testing.T) {
 		assert.NotContains(t, err.Error(), "timed out while executing hook OnStart")
 	})
 
+	t.Run("race test", func(t *testing.T) {
+		t.Parallel()
+
+		var (
+			firstStart  bool
+			secondStart bool
+
+			firstStop  bool
+			secondStop bool
+		)
+		app := New(
+			Invoke(func(lc Lifecycle) {
+				lc.Append(Hook{
+					OnStart: func(context.Context) error {
+						firstStart = true
+						time.Sleep(10 * time.Millisecond)
+						return nil
+					},
+					OnStop: func(context.Context) error {
+						if firstStop {
+							assert.Fail(t, "expected each hook to run exactly once only")
+						}
+						firstStop = true
+						time.Sleep(100 * time.Millisecond)
+						return nil
+					},
+				})
+				lc.Append(Hook{
+					OnStart: func(context.Context) error {
+						secondStart = true
+						time.Sleep(100 * time.Millisecond)
+						return nil
+					},
+					OnStop: func(context.Context) error {
+						secondStop = true
+						time.Sleep(10 * time.Millisecond)
+						return nil
+					},
+				})
+			}),
+		)
+		startCtx, cancelStart := context.WithTimeout(context.Background(), 100*time.Millisecond)
+		defer cancelStart()
+		err := app.Start(startCtx)
+		require.Error(t, err)
+		assert.ErrorContains(t, err, "context deadline exceeded")
+		require.NoError(t, app.Stop(context.Background()))
+
+		assert.True(t, firstStart)
+		assert.True(t, secondStart) // this should eventually run.
+		assert.True(t, firstStop)   // this should eventually run.
+		assert.False(t, secondStop) // this shouldn't be run since context timed out before second start hook finished running.
+	})
+
 	t.Run("CtxTimeoutDuringStartStillRunsStopHooks", func(t *testing.T) {
 		t.Parallel()
 
