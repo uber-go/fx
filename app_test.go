@@ -1229,6 +1229,45 @@ func TestAppStart(t *testing.T) {
 		assert.NotContains(t, err.Error(), "timed out while executing hook OnStart")
 	})
 
+	t.Run("CtxTimeoutDuringStartStillRunsStopHooks", func(t *testing.T) {
+		t.Parallel()
+
+		var ran bool
+		mockClock := clock.NewMock()
+		app := New(
+			WithClock(mockClock),
+			Invoke(func(lc Lifecycle) {
+				lc.Append(Hook{
+					OnStart: func(ctx context.Context) error {
+						return nil
+					},
+					OnStop: func(ctx context.Context) error {
+						ran = true
+						return nil
+					},
+				})
+				lc.Append(Hook{
+					OnStart: func(ctx context.Context) error {
+						mockClock.Add(5 * time.Second)
+						return ctx.Err()
+					},
+					OnStop: func(ctx context.Context) error {
+						assert.Fail(t, "This Stop hook should not be called")
+						return nil
+					},
+				})
+			}),
+		)
+
+		startCtx, cancelStart := mockClock.WithTimeout(context.Background(), time.Second)
+		defer cancelStart()
+		err := app.Start(startCtx)
+		require.Error(t, err)
+		assert.ErrorContains(t, err, "context deadline exceeded")
+		require.NoError(t, app.Stop(context.Background()))
+		assert.True(t, ran, "Stop hook for the Start hook that finished running should have been called")
+	})
+
 	t.Run("Rollback", func(t *testing.T) {
 		t.Parallel()
 
