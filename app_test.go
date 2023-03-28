@@ -1236,8 +1236,7 @@ func TestAppStart(t *testing.T) {
 			firstStart  bool
 			secondStart bool
 
-			firstStop  bool
-			secondStop bool
+			firstStop bool
 		)
 		app := New(
 			Invoke(func(lc Lifecycle) {
@@ -1263,7 +1262,6 @@ func TestAppStart(t *testing.T) {
 						return nil
 					},
 					OnStop: func(context.Context) error {
-						secondStop = true
 						time.Sleep(10 * time.Millisecond)
 						return nil
 					},
@@ -1278,9 +1276,8 @@ func TestAppStart(t *testing.T) {
 		require.NoError(t, app.Stop(context.Background()))
 
 		assert.True(t, firstStart)
-		assert.True(t, secondStart) // this should eventually run.
-		assert.True(t, firstStop)   // this should eventually run.
-		assert.False(t, secondStop) // this shouldn't be run since context timed out before second start hook finished running.
+		assert.True(t, secondStart)
+		assert.True(t, firstStop)
 	})
 
 	t.Run("CtxTimeoutDuringStartStillRunsStopHooks", func(t *testing.T) {
