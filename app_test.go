@@ -1255,7 +1255,6 @@ func TestAppStart(t *testing.T) {
 				})
 				lc.Append(Hook{
 					OnStart: func(context.Context) error {
-						time.Sleep(time.Millisecond * 100)
 						close(secondStart)
 						<-firstStop
 						return nil
