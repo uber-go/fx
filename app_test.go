@@ -1236,17 +1236,7 @@ func TestAppStart(t *testing.T) {
 		firstStop   := make(chan struct{})
 		startReturn := make(chan struct{})
 
-		// Step 1: Start is called
-		// - start hook 1 finishes
-		// - start hook 2 begins
-		// Step 2: Stop is called
-		// - stop hook 1 begins
-		// - start hook 2 finishes
-		// - stop hook 1 finishes
-		// Step 3: If the race still exists, stop hook 1 will then run again
-
 		var stop1Run bool
-
 		app := New(
 			Invoke(func(lc Lifecycle) {
 				lc.Append(Hook{
