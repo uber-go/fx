@@ -1233,7 +1233,7 @@ func TestAppStart(t *testing.T) {
 		t.Parallel()
 
 		secondStart := make(chan struct{})
-		firstStop   := make(chan struct{})
+		firstStop := make(chan struct{})
 		startReturn := make(chan struct{})
 
 		var stop1Run bool
@@ -1256,13 +1256,12 @@ func TestAppStart(t *testing.T) {
 				lc.Append(Hook{
 					OnStart: func(context.Context) error {
 						time.Sleep(time.Millisecond * 100)
-						fmt.Println("closing secondStart")
 						close(secondStart)
 						<-firstStop
 						return nil
 					},
 					OnStop: func(context.Context) error {
-						assert.Fail(t, "Stop should be called before " +
+						assert.Fail(t, "Stop should be called before "+
 							"start hook 2 finishes")
 						return nil
 					},
