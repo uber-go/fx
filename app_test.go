@@ -1232,9 +1232,9 @@ func TestAppStart(t *testing.T) {
 	t.Run("race test", func(t *testing.T) {
 		t.Parallel()
 
-		secondStart := make(chan struct{})
-		firstStop := make(chan struct{})
-		startReturn := make(chan struct{})
+		secondStart := make(chan struct{}, 1)
+		firstStop := make(chan struct{}, 1)
+		startReturn := make(chan struct{}, 1)
 
 		var stop1Run bool
 		app := New(
