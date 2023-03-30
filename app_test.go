@@ -1260,8 +1260,8 @@ func TestAppStart(t *testing.T) {
 						return nil
 					},
 					OnStop: func(context.Context) error {
-						assert.Fail(t, "Stop should be called before "+
-							"start hook 2 finishes")
+						assert.Fail(t, "Stop hook 2 should not be called "+
+							"if start hook 2 does not finish")
 						return nil
 					},
 				})
