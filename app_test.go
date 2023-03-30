@@ -1232,52 +1232,50 @@ func TestAppStart(t *testing.T) {
 	t.Run("race test", func(t *testing.T) {
 		t.Parallel()
 
-		var (
-			firstStart  bool
-			secondStart bool
+		secondStart := make(chan struct{}, 1)
+		firstStop := make(chan struct{}, 1)
+		startReturn := make(chan struct{}, 1)
 
-			firstStop bool
-		)
+		var stop1Run bool
 		app := New(
 			Invoke(func(lc Lifecycle) {
 				lc.Append(Hook{
 					OnStart: func(context.Context) error {
-						firstStart = true
-						time.Sleep(10 * time.Millisecond)
 						return nil
 					},
 					OnStop: func(context.Context) error {
-						if firstStop {
-							assert.Fail(t, "expected each hook to run exactly once only")
+						if stop1Run {
+							require.Fail(t, "Hooks should only run once")
 						}
-						firstStop = true
-						time.Sleep(100 * time.Millisecond)
+						stop1Run = true
+						close(firstStop)
+						<-startReturn
 						return nil
 					},
 				})
 				lc.Append(Hook{
 					OnStart: func(context.Context) error {
-						secondStart = true
-						time.Sleep(100 * time.Millisecond)
+						close(secondStart)
+						<-firstStop
 						return nil
 					},
 					OnStop: func(context.Context) error {
-						time.Sleep(10 * time.Millisecond)
+						assert.Fail(t, "Stop hook 2 should not be called "+
+							"if start hook 2 does not finish")
 						return nil
 					},
 				})
 			}),
 		)
-		startCtx, cancelStart := context.WithTimeout(context.Background(), 100*time.Millisecond)
-		defer cancelStart()
-		err := app.Start(startCtx)
-		require.Error(t, err)
-		assert.ErrorContains(t, err, "context deadline exceeded")
-		require.NoError(t, app.Stop(context.Background()))
 
-		assert.True(t, firstStart)
-		assert.True(t, secondStart)
-		assert.True(t, firstStop)
+		go func() {
+			app.Start(context.Background())
+			close(startReturn)
+		}()
+
+		<-secondStart
+		app.Stop(context.Background())
+		assert.True(t, stop1Run)
 	})
 
 	t.Run("CtxTimeoutDuringStartStillRunsStopHooks", func(t *testing.T) {
