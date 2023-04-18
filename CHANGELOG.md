@@ -10,10 +10,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## Unreleased
-- No changes yet.
+## [1.19.3](https://github.com/uber-go/fx/compare/v1.19.2...v1.19.3) - 2023-04-17
 
-## [1.19.1](https://github.com/uber-go/fx/compare/v1.18.0...v1.19.1) - 2023-01-10
+### Changed
+- Fixed several typos in docs
+- WASM build support
+
+## [1.19.2](https://github.com/uber-go/fx/compare/v1.19.1...v1.19.2) - 2023-02-21
+
+### Changed
+- Update Dig dependency to v1.16.1.
+
+## [1.19.1](https://github.com/uber-go/fx/compare/v1.19.0...v1.19.1) - 2023-01-10
 
 ### Changed
 - Calling `fx.Stop()` after the `App` has already stopped no longer errors out.
