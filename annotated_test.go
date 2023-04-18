@@ -1448,7 +1448,7 @@ func TestAnnotate(t *testing.T) {
 
 		err := app.Err()
 		require.Error(t, err)
-		assert.Contains(t, err.Error(), "fx.Out structs cannot be annotated with either of fx.ResultTags, fx.As or fx.From")
+		assert.Contains(t, err.Error(), "fx.Out structs cannot be annotated with either of fx.ResultTags or fx.As")
 	})
 
 	t.Run("annotate a fx.Out with As", func(t *testing.T) {
@@ -1478,7 +1478,7 @@ func TestAnnotate(t *testing.T) {
 
 		err := app.Err()
 		require.Error(t, err)
-		assert.Contains(t, err.Error(), "fx.Out structs cannot be annotated with either of fx.ResultTags, fx.As or fx.From")
+		assert.Contains(t, err.Error(), "fx.Out structs cannot be annotated with either of fx.ResultTags or fx.As")
 	})
 
 	t.Run("annotate a fx.In with ParamTags", func(t *testing.T) {
@@ -1501,7 +1501,7 @@ func TestAnnotate(t *testing.T) {
 		require.Error(t, err)
 		assert.NotContains(t, err.Error(), "invalid annotation function func(fx_test.A) string")
 		assert.Contains(t, err.Error(), "invalid annotation function func(fx_test.B) string")
-		assert.Contains(t, err.Error(), "fx.In structs cannot be annotated with either of fx.ParamTags, fx.As or fx.From")
+		assert.Contains(t, err.Error(), "fx.In structs cannot be annotated with either of fx.ParamTags or fx.From")
 	})
 
 	t.Run("annotate a fx.In with From", func(t *testing.T) {
@@ -1526,7 +1526,7 @@ func TestAnnotate(t *testing.T) {
 		err := app.Err()
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "invalid annotation function func(fx_test.Param) string")
-		assert.Contains(t, err.Error(), "fx.In structs cannot be annotated with either of fx.ParamTags, fx.As or fx.From")
+		assert.Contains(t, err.Error(), "fx.In structs cannot be annotated with either of fx.ParamTags or fx.From")
 	})
 
 	t.Run("annotate fx.In with fx.ResultTags", func(t *testing.T) {

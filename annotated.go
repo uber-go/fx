@@ -1137,9 +1137,8 @@ var _ Annotation = (*asAnnotation)(nil)
 //	  w, r := a()
 //	  return w, r
 //	}
-// 
-// As annotation cannot be used in a function that takes an fx.In struct as a
-// parameter or returns an fx.Out struct as a return type.
+//
+// As annotation cannot be used in a function that returns an fx.Out struct as a return type.
 func As(interfaces ...interface{}) Annotation {
 	return &asAnnotation{targets: interfaces}
 }
@@ -1327,7 +1326,7 @@ var _ Annotation = (*fromAnnotation)(nil)
 //	})
 //
 // From annotation cannot be used in a function that takes an fx.In struct as a
-// parameter or returns an fx.Out struct as a return type.
+// parameter.
 func From(interfaces ...interface{}) Annotation {
 	return &fromAnnotation{targets: interfaces}
 }
@@ -1597,8 +1596,8 @@ func (ann *annotated) cleanUpAsResults() {
 }
 
 // checks and returns a non-nil error if the target function:
-// - returns an fx.Out struct as a result and has either of ResultTags, As or From annotation
-// - takes in an fx.In struct as a parameter and has either of ParamTags, As or From annotation
+// - returns an fx.Out struct as a result and has either of ResultTags or As annotation
+// - takes in an fx.In struct as a parameter and has either of ParamTags or From annotation
 // - has an error result not as the last result.
 func (ann *annotated) typeCheckOrigFn() error {
 	ft := reflect.TypeOf(ann.Target)
@@ -1617,12 +1616,10 @@ func (ann *annotated) typeCheckOrigFn() error {
 		if !dig.IsOut(reflect.New(ft.Out(i)).Elem().Interface()) {
 			continue
 		}
-		if len(ann.ResultTags) > 0 || len(ann.As) > 0 || len(ann.From) > 0 {
-			return errors.New("fx.Out structs cannot be annotated with either of fx.ResultTags, fx.As or fx.From")
+		if len(ann.ResultTags) > 0 || len(ann.As) > 0 {
+			return errors.New("fx.Out structs cannot be annotated with either of fx.ResultTags or fx.As")
 		}
-		
 	}
-
 	for i := 0; i < ft.NumIn(); i++ {
 		it := ft.In(i)
 		if it.Kind() != reflect.Struct {
@@ -1631,8 +1628,8 @@ func (ann *annotated) typeCheckOrigFn() error {
 		if !dig.IsIn(reflect.New(ft.In(i)).Elem().Interface()) {
 			continue
 		}
-		if len(ann.ParamTags) > 0 || len(ann.As) > 0 || len(ann.From) > 0 {
-			return errors.New("fx.In structs cannot be annotated with either of fx.ParamTags, fx.As or fx.From")
+		if len(ann.ParamTags) > 0 || len(ann.From) > 0 {
+			return errors.New("fx.In structs cannot be annotated with either of fx.ParamTags or fx.From")
 		}
 	}
 	return nil
