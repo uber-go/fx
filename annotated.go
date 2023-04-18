@@ -1597,7 +1597,7 @@ func (ann *annotated) cleanUpAsResults() {
 
 // checks and returns a non-nil error if the target function:
 // - returns an fx.Out struct as a result and has either a ResultTags or an As annotation
-// - takes in an fx.In struct as a parameter and has either of ParamTags or From annotation
+// - takes in an fx.In struct as a parameter and has either a ParamTags or a From annotation
 // - has an error result not as the last result.
 func (ann *annotated) typeCheckOrigFn() error {
 	ft := reflect.TypeOf(ann.Target)

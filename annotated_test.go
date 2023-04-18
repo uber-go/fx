@@ -1501,7 +1501,7 @@ func TestAnnotate(t *testing.T) {
 		require.Error(t, err)
 		assert.NotContains(t, err.Error(), "invalid annotation function func(fx_test.A) string")
 		assert.Contains(t, err.Error(), "invalid annotation function func(fx_test.B) string")
-		assert.Contains(t, err.Error(), "fx.In structs cannot be annotated with either of fx.ParamTags or fx.From")
+		assert.Contains(t, err.Error(), "fx.In structs cannot be annotated with fx.ParamTags or fx.From")
 	})
 
 	t.Run("annotate a fx.In with From", func(t *testing.T) {
