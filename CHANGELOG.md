@@ -13,8 +13,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.19.3](https://github.com/uber-go/fx/compare/v1.19.2...v1.19.3) - 2023-04-17
 
 ### Changed
-- Fixed several typos in docs
-- WASM build support
+- Fixed several typos in docs.
+- WASM build support.
+- Annotating In and Out structs with From/As annotations generated invalid results.
+  The annotation check now blocks this.
 
 ## [1.19.2](https://github.com/uber-go/fx/compare/v1.19.1...v1.19.2) - 2023-02-21
 
