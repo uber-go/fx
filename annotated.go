@@ -1138,7 +1138,7 @@ var _ Annotation = (*asAnnotation)(nil)
 //	  return w, r
 //	}
 //
-// As annotation cannot be used in a function that returns an fx.Out struct as a return type.
+// As annotation cannot be used in a function that returns an [Out] struct as a return type.
 func As(interfaces ...interface{}) Annotation {
 	return &asAnnotation{targets: interfaces}
 }
@@ -1325,7 +1325,7 @@ var _ Annotation = (*fromAnnotation)(nil)
 //	  return NewRunnerWraps(r1, r2)
 //	})
 //
-// From annotation cannot be used in a function that takes an fx.In struct as a
+// From annotation cannot be used in a function that takes an [In] struct as a
 // parameter.
 func From(interfaces ...interface{}) Annotation {
 	return &fromAnnotation{targets: interfaces}
@@ -1596,7 +1596,7 @@ func (ann *annotated) cleanUpAsResults() {
 }
 
 // checks and returns a non-nil error if the target function:
-// - returns an fx.Out struct as a result and has either of ResultTags or As annotation
+// - returns an fx.Out struct as a result and has either a ResultTags or an As annotation
 // - takes in an fx.In struct as a parameter and has either of ParamTags or From annotation
 // - has an error result not as the last result.
 func (ann *annotated) typeCheckOrigFn() error {
@@ -1617,7 +1617,7 @@ func (ann *annotated) typeCheckOrigFn() error {
 			continue
 		}
 		if len(ann.ResultTags) > 0 || len(ann.As) > 0 {
-			return errors.New("fx.Out structs cannot be annotated with either of fx.ResultTags or fx.As")
+			return errors.New("fx.Out structs cannot be annotated with fx.ResultTags or fx.As")
 		}
 	}
 	for i := 0; i < ft.NumIn(); i++ {
@@ -1629,7 +1629,7 @@ func (ann *annotated) typeCheckOrigFn() error {
 			continue
 		}
 		if len(ann.ParamTags) > 0 || len(ann.From) > 0 {
-			return errors.New("fx.In structs cannot be annotated with either of fx.ParamTags or fx.From")
+			return errors.New("fx.In structs cannot be annotated with fx.ParamTags or fx.From")
 		}
 	}
 	return nil

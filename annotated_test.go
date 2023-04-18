@@ -1457,7 +1457,7 @@ func TestAnnotate(t *testing.T) {
 		type I interface{}
 
 		type B struct {
-			// implents I
+			// implements I
 		}
 
 		type Res struct {
@@ -1526,7 +1526,7 @@ func TestAnnotate(t *testing.T) {
 		err := app.Err()
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "invalid annotation function func(fx_test.Param) string")
-		assert.Contains(t, err.Error(), "fx.In structs cannot be annotated with either of fx.ParamTags or fx.From")
+		assert.Contains(t, err.Error(), "fx.In structs cannot be annotated with fx.ParamTags or fx.From")
 	})
 
 	t.Run("annotate fx.In with fx.ResultTags", func(t *testing.T) {
