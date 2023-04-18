@@ -1478,7 +1478,7 @@ func TestAnnotate(t *testing.T) {
 
 		err := app.Err()
 		require.Error(t, err)
-		assert.Contains(t, err.Error(), "fx.Out structs cannot be annotated with either of fx.ResultTags or fx.As")
+		assert.Contains(t, err.Error(), "fx.Out structs cannot be annotated with fx.ResultTags or fx.As")
 	})
 
 	t.Run("annotate a fx.In with ParamTags", func(t *testing.T) {
