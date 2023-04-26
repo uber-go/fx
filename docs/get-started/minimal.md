@@ -42,7 +42,7 @@ This application won't do anything yet except print a bunch of logs.
 
 **What did we just do?**
 
-We build an empty Fx application by calling `fx.New` with no arguments.
+We built an empty Fx application by calling `fx.New` with no arguments.
 Applications will normally pass arguments to `fx.New` to set up their
 components.
 
