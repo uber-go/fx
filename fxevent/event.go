@@ -123,6 +123,9 @@ type Provided struct {
 	// Fx.
 	ConstructorName string
 
+	// StackTrace is the stack trace of where the constructor was provided to Fx.
+	StackTrace string
+
 	// OutputTypeNames is a list of names of types that are produced by
 	// this constructor.
 	OutputTypeNames []string
@@ -156,6 +159,9 @@ type Decorated struct {
 	// provided to Fx.
 	DecoratorName string
 
+	// StackTrace is the stack trace of where the decorate was given to Fx.
+	StackTrace string
+
 	// ModuleName is the name of the module in which the value was added to.
 	ModuleName string
 
@@ -171,9 +177,6 @@ type Decorated struct {
 type Run struct {
 	// Name is the name of the function that was run.
 	Name string
-
-	// Trace is the stack trace of whether the function was given to Fx
-	StackTrace string
 
 	// Kind is either "constructor", "decorator", or "supply stub"
 	Kind string

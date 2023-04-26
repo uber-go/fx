@@ -159,7 +159,6 @@ func (m *module) provide(p provide) {
 		dig.WithCallback(func(ci dig.CallbackInfo) {
 			m.log.LogEvent(&fxevent.Run{
 				Name:       funcName,
-				StackTrace: p.Stack.String(),
 				Kind:       "constructor",
 				ModuleName: m.name,
 				Err:        ci.Error,
@@ -177,6 +176,7 @@ func (m *module) provide(p provide) {
 
 	m.log.LogEvent(&fxevent.Provided{
 		ConstructorName: funcName,
+		StackTrace:      p.Stack.String(),
 		ModuleName:      m.name,
 		OutputTypeNames: outputNames,
 		Err:             m.app.err,
@@ -195,7 +195,6 @@ func (m *module) supply(p provide) {
 		dig.WithCallback(func(ci dig.CallbackInfo) {
 			m.log.LogEvent(&fxevent.Run{
 				Name:       fmt.Sprintf("stub(%v)", typeName),
-				StackTrace: p.Stack.String(),
 				Kind:       "supply",
 				ModuleName: m.name,
 			})
@@ -317,7 +316,6 @@ func (m *module) decorate(d decorator) (err error) {
 		dig.WithCallback(func(ci dig.CallbackInfo) {
 			m.log.LogEvent(&fxevent.Run{
 				Name:       funcName,
-				StackTrace: d.Stack.String(),
 				Kind:       "decorator",
 				ModuleName: m.name,
 				Err:        ci.Error,
@@ -333,6 +331,7 @@ func (m *module) decorate(d decorator) (err error) {
 
 	m.log.LogEvent(&fxevent.Decorated{
 		DecoratorName:   funcName,
+		StackTrace:      d.Stack.String(),
 		ModuleName:      m.name,
 		OutputTypeNames: outputNames,
 		Err:             err,
@@ -351,7 +350,6 @@ func (m *module) replace(d decorator) error {
 		dig.WithCallback(func(ci dig.CallbackInfo) {
 			m.log.LogEvent(&fxevent.Run{
 				Name:       fmt.Sprintf("stub(%v)", typeName),
-				StackTrace: d.Stack.String(),
 				Kind:       "replace",
 				ModuleName: m.name,
 				Err:        ci.Error,
