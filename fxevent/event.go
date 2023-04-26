@@ -172,6 +172,9 @@ type Run struct {
 	// Name is the name of the function that was run.
 	Name string
 
+	// Trace is the stack trace of whether the function was given to Fx
+	StackTrace string
+
 	// Kind is either "constructor", "decorator", or "supply stub"
 	Kind string
 
