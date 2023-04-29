@@ -109,7 +109,6 @@ func (recv *signalReceivers) Start(ctx context.Context) {
 		return
 	}
 
-	recv.last = nil
 	recv.finished = make(chan struct{}, 1)
 	recv.shutdown = make(chan struct{}, 1)
 	recv.notify(recv.signals, os.Interrupt, _sigINT, _sigTERM)
@@ -135,6 +134,7 @@ func (recv *signalReceivers) Stop(ctx context.Context) error {
 		close(recv.finished)
 		recv.shutdown = nil
 		recv.finished = nil
+		recv.last = nil
 		return nil
 	}
 }

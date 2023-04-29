@@ -151,6 +151,23 @@ func TestShutdown(t *testing.T) {
 			// success
 		}
 	})
+
+	t.Run("many times", func(t *testing.T) {
+		t.Parallel()
+
+		var shutdowner fx.Shutdowner
+		app := fxtest.New(
+			t,
+			fx.Populate(&shutdowner),
+		)
+
+		for i := 0; i < 10; i++ {
+			app.RequireStart()
+			shutdowner.Shutdown(fx.ExitCode(i))
+			assert.Equal(t, i, (<-app.Wait()).ExitCode, "run %d", i)
+			app.RequireStop()
+		}
+	})
 }
 
 func TestDataRace(t *testing.T) {
