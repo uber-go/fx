@@ -128,6 +128,29 @@ func TestShutdown(t *testing.T) {
 
 		assert.NoError(t, s.Shutdown(fx.ExitCode(2), fx.ShutdownTimeout(time.Second)))
 	})
+
+	t.Run("from invoke", func(t *testing.T) {
+		t.Parallel()
+
+		app := fxtest.New(
+			t,
+			fx.Invoke(func(s fx.Shutdowner) {
+				s.Shutdown()
+			}),
+		)
+
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+		defer cancel()
+
+		require.NoError(t, app.Start(ctx), "error starting app")
+		defer app.Stop(ctx)
+		select {
+		case <-ctx.Done():
+			assert.Fail(t, "app did not shutdown in time")
+		case <-app.Wait():
+			// success
+		}
+	})
 }
 
 func TestDataRace(t *testing.T) {
