@@ -1,5 +1,6 @@
 ignore:
   - "docs/ex/**/*.go"
+  - "internal/e2e/**/*.go"
 
 coverage:
   range: 80..100
