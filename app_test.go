@@ -654,6 +654,153 @@ type errHandlerFunc func(error)
 
 func (f errHandlerFunc) HandleError(err error) { f(err) }
 
+func TestRunEventEmission(t *testing.T) {
+	t.Parallel()
+
+	for _, tt := range []struct {
+		desc          string
+		giveOpts      []Option
+		wantRunEvents []fxevent.Run
+		wantErr       string
+	}{
+		{
+			desc: "Simple Provide And Decorate",
+			giveOpts: []Option{
+				Provide(func() int { return 5 }),
+				Decorate(func(int) int { return 6 }),
+				Invoke(func(int) {}),
+			},
+			wantRunEvents: []fxevent.Run{
+				{
+					Name: "go.uber.org/fx_test.TestRunEventEmission.func1()",
+					Kind: "constructor",
+				},
+				{
+					Name: "go.uber.org/fx_test.TestRunEventEmission.func2()",
+					Kind: "decorator",
+				},
+			},
+		},
+		{
+			desc: "Supply and Decorator Error",
+			giveOpts: []Option{
+				Supply(5),
+				Decorate(func(int) (int, error) {
+					return 0, errors.New("humongous despair")
+				}),
+				Invoke(func(int) {}),
+			},
+			wantRunEvents: []fxevent.Run{
+				{
+					Name: "stub(int)",
+					Kind: "supply",
+				},
+				{
+					Name: "go.uber.org/fx_test.TestRunEventEmission.func4()",
+					Kind: "decorator",
+				},
+			},
+			wantErr: "humongous despair",
+		},
+		{
+			desc: "Replace",
+			giveOpts: []Option{
+				Provide(func() int { return 5 }),
+				Replace(6),
+				Invoke(func(int) {}),
+			},
+			wantRunEvents: []fxevent.Run{
+				{
+					Name: "stub(int)",
+					Kind: "replace",
+				},
+			},
+		},
+		{
+			desc: "Provide Error",
+			giveOpts: []Option{
+				Provide(func() (int, error) {
+					return 0, errors.New("terrible sadness")
+				}),
+				Invoke(func(int) {}),
+			},
+			wantRunEvents: []fxevent.Run{
+				{
+					Name: "go.uber.org/fx_test.TestRunEventEmission.func8()",
+					Kind: "constructor",
+				},
+			},
+			wantErr: "terrible sadness",
+		},
+		{
+			desc: "Provide Panic",
+			giveOpts: []Option{
+				Provide(func() int {
+					panic("bad provide")
+				}),
+				RecoverFromPanics(),
+				Invoke(func(int) {}),
+			},
+			wantRunEvents: []fxevent.Run{
+				{
+					Name: "go.uber.org/fx_test.TestRunEventEmission.func10()",
+					Kind: "constructor",
+				},
+			},
+			wantErr: `panic: "bad provide"`,
+		},
+		{
+			desc: "Decorate Panic",
+			giveOpts: []Option{
+				Supply(5),
+				Decorate(func(int) int {
+					panic("bad decorate")
+				}),
+				RecoverFromPanics(),
+				Invoke(func(int) {}),
+			},
+			wantRunEvents: []fxevent.Run{
+				{
+					Name: "stub(int)",
+					Kind: "supply",
+				},
+				{
+					Name: "go.uber.org/fx_test.TestRunEventEmission.func12()",
+					Kind: "decorator",
+				},
+			},
+			wantErr: `panic: "bad decorate"`,
+		},
+	} {
+		tt := tt
+		t.Run(tt.desc, func(t *testing.T) {
+			t.Parallel()
+
+			app, spy := NewSpied(tt.giveOpts...)
+			if tt.wantErr != "" {
+				assert.ErrorContains(t, app.Err(), tt.wantErr)
+			} else {
+				assert.NoError(t, app.Err())
+			}
+
+			gotEvents := spy.Events().SelectByTypeName("Run")
+			require.Len(t, gotEvents, len(tt.wantRunEvents))
+			for i, event := range gotEvents {
+				rEvent, ok := event.(*fxevent.Run)
+				require.True(t, ok)
+
+				assert.Equal(t, tt.wantRunEvents[i].Name, rEvent.Name)
+				assert.Equal(t, tt.wantRunEvents[i].Kind, rEvent.Kind)
+				if tt.wantErr != "" && i == len(gotEvents)-1 {
+					assert.ErrorContains(t, rEvent.Err, tt.wantErr)
+				} else {
+					assert.NoError(t, rEvent.Err)
+				}
+			}
+		})
+	}
+}
+
 type customError struct {
 	err error
 }
