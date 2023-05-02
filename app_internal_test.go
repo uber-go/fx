@@ -23,7 +23,6 @@ package fx
 import (
 	"errors"
 	"fmt"
-	"os"
 	"sync"
 	"testing"
 
@@ -42,7 +41,7 @@ func TestAppRun(t *testing.T) {
 	app := New(
 		WithLogger(func() fxevent.Logger { return spy }),
 	)
-	done := make(chan os.Signal)
+	done := make(chan ShutdownSignal)
 
 	var wg sync.WaitGroup
 	wg.Add(1)
@@ -51,7 +50,7 @@ func TestAppRun(t *testing.T) {
 		app.run(done)
 	}()
 
-	done <- _sigINT
+	done <- ShutdownSignal{Signal: _sigINT}
 	wg.Wait()
 
 	assert.Equal(t, []string{
