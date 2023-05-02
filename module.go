@@ -156,7 +156,7 @@ func (m *module) provide(p provide) {
 	opts := []dig.ProvideOption{
 		dig.FillProvideInfo(&info),
 		dig.Export(!p.Private),
-		dig.WithCallback(func(ci dig.CallbackInfo) {
+		dig.WithProviderCallback(func(ci dig.CallbackInfo) {
 			m.log.LogEvent(&fxevent.Run{
 				Name:       funcName,
 				Kind:       "constructor",
@@ -192,7 +192,7 @@ func (m *module) supply(p provide) {
 	typeName := p.SupplyType.String()
 	opts := []dig.ProvideOption{
 		dig.Export(!p.Private),
-		dig.WithCallback(func(ci dig.CallbackInfo) {
+		dig.WithProviderCallback(func(ci dig.CallbackInfo) {
 			m.log.LogEvent(&fxevent.Run{
 				Name:       fmt.Sprintf("stub(%v)", typeName),
 				Kind:       "supply",
@@ -207,6 +207,7 @@ func (m *module) supply(p provide) {
 
 	m.log.LogEvent(&fxevent.Supplied{
 		TypeName:   typeName,
+		StackTrace: p.Stack.String(),
 		ModuleName: m.name,
 		Err:        m.app.err,
 	})
@@ -313,7 +314,7 @@ func (m *module) decorate(d decorator) (err error) {
 	var info dig.DecorateInfo
 	opts := []dig.DecorateOption{
 		dig.FillDecorateInfo(&info),
-		dig.WithCallback(func(ci dig.CallbackInfo) {
+		dig.WithDecoratorCallback(func(ci dig.CallbackInfo) {
 			m.log.LogEvent(&fxevent.Run{
 				Name:       funcName,
 				Kind:       "decorator",
@@ -347,7 +348,7 @@ func (m *module) replace(d decorator) error {
 
 	typeName := d.ReplaceType.String()
 	opts := []dig.DecorateOption{
-		dig.WithCallback(func(ci dig.CallbackInfo) {
+		dig.WithDecoratorCallback(func(ci dig.CallbackInfo) {
 			m.log.LogEvent(&fxevent.Run{
 				Name:       fmt.Sprintf("stub(%v)", typeName),
 				Kind:       "replace",
@@ -360,6 +361,7 @@ func (m *module) replace(d decorator) error {
 	err := runDecorator(m.scope, d, opts...)
 	m.log.LogEvent(&fxevent.Replaced{
 		ModuleName:      m.name,
+		StackTrace:      d.Stack.String(),
 		OutputTypeNames: []string{typeName},
 		Err:             err,
 	})

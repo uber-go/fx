@@ -209,7 +209,7 @@ type decorator struct {
 
 	// Whether this decorator was specified via fx.Replace
 	IsReplace   bool
-	ReplaceType reflect.Type // set only if IsSupply
+	ReplaceType reflect.Type // set only if IsReplace
 }
 
 func runDecorator(c container, d decorator, opts ...dig.DecorateOption) (err error) {
