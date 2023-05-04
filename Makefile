@@ -9,7 +9,7 @@ GO_FILES = $(shell \
 	find . '(' -path '*/.*' -o -path './vendor' -o -path '*/testdata/*' ')' -prune \
 	-o -name '*.go' -print | cut -b3-)
 
-MODULES = . ./tools ./docs
+MODULES = . ./tools ./docs ./internal/e2e
 
 # 'make cover' should not run on docs by default.
 # We run that separately explicitly on a specific platform.
