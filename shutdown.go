@@ -21,7 +21,6 @@
 package fx
 
 import (
-	"context"
 	"time"
 )
 
@@ -57,9 +56,7 @@ func ExitCode(code int) ShutdownOption {
 
 type shutdownTimeoutOption time.Duration
 
-func (to shutdownTimeoutOption) apply(s *shutdowner) {
-	s.shutdownTimeout = time.Duration(to)
-}
+func (shutdownTimeoutOption) apply(*shutdowner) {}
 
 var _ ShutdownOption = shutdownTimeoutOption(0)
 
@@ -67,14 +64,15 @@ var _ ShutdownOption = shutdownTimeoutOption(0)
 // for a given call to Shutdown method of the [Shutdowner] interface. As the
 // Shutdown method will block while waiting for a signal receiver relay
 // goroutine to stop.
+//
+// Deprecated: This option has no effect. Shutdown is not a blocking operation.
 func ShutdownTimeout(timeout time.Duration) ShutdownOption {
 	return shutdownTimeoutOption(timeout)
 }
 
 type shutdowner struct {
-	app             *App
-	exitCode        int
-	shutdownTimeout time.Duration
+	app      *App
+	exitCode int
 }
 
 // Shutdown broadcasts a signal to all of the application's Done channels
@@ -86,19 +84,6 @@ func (s *shutdowner) Shutdown(opts ...ShutdownOption) error {
 	for _, opt := range opts {
 		opt.apply(s)
 	}
-
-	ctx := context.Background()
-
-	if s.shutdownTimeout != time.Duration(0) {
-		c, cancel := context.WithTimeout(
-			context.Background(),
-			s.shutdownTimeout,
-		)
-		defer cancel()
-		ctx = c
-	}
-
-	defer s.app.receivers.Stop(ctx)
 
 	return s.app.receivers.Broadcast(ShutdownSignal{
 		Signal:   _sigTERM,
