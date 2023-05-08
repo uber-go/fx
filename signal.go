@@ -139,7 +139,7 @@ func (recv *signalReceivers) Stop(ctx context.Context) error {
 	}
 }
 
-func (recv *signalReceivers) Done() chan os.Signal {
+func (recv *signalReceivers) Done() <-chan os.Signal {
 	recv.m.Lock()
 	defer recv.m.Unlock()
 
@@ -157,7 +157,7 @@ func (recv *signalReceivers) Done() chan os.Signal {
 	return ch
 }
 
-func (recv *signalReceivers) Wait() chan ShutdownSignal {
+func (recv *signalReceivers) Wait() <-chan ShutdownSignal {
 	recv.m.Lock()
 	defer recv.m.Unlock()
 
