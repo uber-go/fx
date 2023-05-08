@@ -47,7 +47,7 @@ func TestAppRun(t *testing.T) {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		app.run(done)
+		app.run(func() <-chan ShutdownSignal { return done })
 	}()
 
 	done <- ShutdownSignal{Signal: _sigINT}
