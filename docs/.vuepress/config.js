@@ -126,5 +126,6 @@ module.exports = {
     '@vuepress/plugin-medium-zoom',
     'fulltext-search',
     'vuepress-plugin-mermaidjs',
+    'vuepress-plugin-code-copy',
   ]
 }

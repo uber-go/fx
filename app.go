@@ -574,12 +574,12 @@ func (app *App) Run() {
 	// Historically, we do not os.Exit(0) even though most applications
 	// cede control to Fx with they call app.Run. To avoid a breaking
 	// change, never os.Exit for success.
-	if code := app.run(app.Wait()); code != 0 {
+	if code := app.run(app.Wait); code != 0 {
 		app.exit(code)
 	}
 }
 
-func (app *App) run(done <-chan ShutdownSignal) (exitCode int) {
+func (app *App) run(done func() <-chan ShutdownSignal) (exitCode int) {
 	startCtx, cancel := app.clock.WithTimeout(context.Background(), app.StartTimeout())
 	defer cancel()
 
@@ -587,7 +587,7 @@ func (app *App) run(done <-chan ShutdownSignal) (exitCode int) {
 		return 1
 	}
 
-	sig := <-done
+	sig := <-done()
 	app.log().LogEvent(&fxevent.Stopping{Signal: sig.Signal})
 	exitCode = sig.ExitCode
 

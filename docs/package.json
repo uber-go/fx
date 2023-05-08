@@ -22,6 +22,7 @@
   },
   "dependencies": {
     "cacheable-request": "10.2.7",
-    "got": "^10.3.0"
+    "got": "^10.3.0",
+    "vuepress-plugin-code-copy": "^1.0.6"
   }
 }
