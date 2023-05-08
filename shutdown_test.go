@@ -138,7 +138,7 @@ func TestDataRace(t *testing.T) {
 		t,
 		fx.Populate(&s),
 	)
-	require.NoError(t, app.Start(context.Background()), "error starting app")
+	defer app.RequireStart().RequireStop()
 
 	const N = 50
 	ready := make(chan struct{}) // used to orchestrate goroutines for Done() and ShutdownOption()
