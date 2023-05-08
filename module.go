@@ -185,10 +185,6 @@ func (m *module) provide(p provide) {
 }
 
 func (m *module) supply(p provide) {
-	if !p.IsSupply {
-		return
-	}
-
 	typeName := p.SupplyType.String()
 	opts := []dig.ProvideOption{
 		dig.Export(!p.Private),
@@ -342,10 +338,6 @@ func (m *module) decorate(d decorator) (err error) {
 }
 
 func (m *module) replace(d decorator) error {
-	if !d.IsReplace {
-		return nil
-	}
-
 	typeName := d.ReplaceType.String()
 	opts := []dig.DecorateOption{
 		dig.WithDecoratorCallback(func(ci dig.CallbackInfo) {
