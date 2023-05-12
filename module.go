@@ -176,7 +176,7 @@ func (m *module) provide(p provide) {
 
 	m.log.LogEvent(&fxevent.Provided{
 		ConstructorName: funcName,
-		StackTrace:      p.Stack.String(),
+		StackTrace:      p.Stack.Strings(),
 		ModuleName:      m.name,
 		OutputTypeNames: outputNames,
 		Err:             m.app.err,
@@ -203,7 +203,7 @@ func (m *module) supply(p provide) {
 
 	m.log.LogEvent(&fxevent.Supplied{
 		TypeName:   typeName,
-		StackTrace: p.Stack.String(),
+		StackTrace: p.Stack.Strings(),
 		ModuleName: m.name,
 		Err:        m.app.err,
 	})
@@ -328,7 +328,7 @@ func (m *module) decorate(d decorator) (err error) {
 
 	m.log.LogEvent(&fxevent.Decorated{
 		DecoratorName:   funcName,
-		StackTrace:      d.Stack.String(),
+		StackTrace:      d.Stack.Strings(),
 		ModuleName:      m.name,
 		OutputTypeNames: outputNames,
 		Err:             err,
@@ -353,7 +353,7 @@ func (m *module) replace(d decorator) error {
 	err := runDecorator(m.scope, d, opts...)
 	m.log.LogEvent(&fxevent.Replaced{
 		ModuleName:      m.name,
-		StackTrace:      d.Stack.String(),
+		StackTrace:      d.Stack.Strings(),
 		OutputTypeNames: []string{typeName},
 		Err:             err,
 	})

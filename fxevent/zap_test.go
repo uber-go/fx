@@ -132,25 +132,25 @@ func TestZapLogger(t *testing.T) {
 			name: "Supplied",
 			give: &Supplied{
 				TypeName:   "*bytes.Buffer",
-				StackTrace: "main.main; runtime.main",
+				StackTrace: []string{"main.main", "runtime.main"},
 			},
 			wantMessage: "supplied",
 			wantFields: map[string]interface{}{
 				"type":       "*bytes.Buffer",
-				"stacktrace": "main.main; runtime.main",
+				"stacktrace": []interface{}{"main.main", "runtime.main"},
 			},
 		},
 		{
 			name: "Supplied/Error",
 			give: &Supplied{
 				TypeName:   "*bytes.Buffer",
-				StackTrace: "main.main; runtime.main",
+				StackTrace: []string{"main.main", "runtime.main"},
 				Err:        someError,
 			},
 			wantMessage: "error encountered while applying options",
 			wantFields: map[string]interface{}{
 				"type":       "*bytes.Buffer",
-				"stacktrace": "main.main; runtime.main",
+				"stacktrace": []interface{}{"main.main", "runtime.main"},
 				"error":      "some error",
 			},
 		},
@@ -158,7 +158,7 @@ func TestZapLogger(t *testing.T) {
 			name: "Provide",
 			give: &Provided{
 				ConstructorName: "bytes.NewBuffer()",
-				StackTrace:      "main.main; runtime.main",
+				StackTrace:      []string{"main.main", "runtime.main"},
 				ModuleName:      "myModule",
 				OutputTypeNames: []string{"*bytes.Buffer"},
 				Private:         false,
@@ -166,7 +166,7 @@ func TestZapLogger(t *testing.T) {
 			wantMessage: "provided",
 			wantFields: map[string]interface{}{
 				"constructor": "bytes.NewBuffer()",
-				"stacktrace":  "main.main; runtime.main",
+				"stacktrace":  []interface{}{"main.main", "runtime.main"},
 				"type":        "*bytes.Buffer",
 				"module":      "myModule",
 			},
@@ -175,7 +175,7 @@ func TestZapLogger(t *testing.T) {
 			name: "PrivateProvide",
 			give: &Provided{
 				ConstructorName: "bytes.NewBuffer()",
-				StackTrace:      "main.main; runtime.main",
+				StackTrace:      []string{"main.main", "runtime.main"},
 				ModuleName:      "myModule",
 				OutputTypeNames: []string{"*bytes.Buffer"},
 				Private:         true,
@@ -183,7 +183,7 @@ func TestZapLogger(t *testing.T) {
 			wantMessage: "provided",
 			wantFields: map[string]interface{}{
 				"constructor": "bytes.NewBuffer()",
-				"stacktrace":  "main.main; runtime.main",
+				"stacktrace":  []interface{}{"main.main", "runtime.main"},
 				"type":        "*bytes.Buffer",
 				"module":      "myModule",
 				"private":     true,
@@ -192,12 +192,12 @@ func TestZapLogger(t *testing.T) {
 		{
 			name: "Provide/Error",
 			give: &Provided{
-				StackTrace: "main.main; runtime.main",
+				StackTrace: []string{"main.main", "runtime.main"},
 				Err:        someError,
 			},
 			wantMessage: "error encountered while applying options",
 			wantFields: map[string]interface{}{
-				"stacktrace": "main.main; runtime.main",
+				"stacktrace": []interface{}{"main.main", "runtime.main"},
 				"error":      "some error",
 			},
 		},
@@ -205,26 +205,26 @@ func TestZapLogger(t *testing.T) {
 			name: "Replace",
 			give: &Replaced{
 				ModuleName:      "myModule",
-				StackTrace:      "main.main; runtime.main",
+				StackTrace:      []string{"main.main", "runtime.main"},
 				OutputTypeNames: []string{"*bytes.Buffer"},
 			},
 			wantMessage: "replaced",
 			wantFields: map[string]interface{}{
 				"type":       "*bytes.Buffer",
-				"stacktrace": "main.main; runtime.main",
+				"stacktrace": []interface{}{"main.main", "runtime.main"},
 				"module":     "myModule",
 			},
 		},
 		{
 			name: "Replace/Error",
 			give: &Replaced{
-				StackTrace: "main.main; runtime.main",
+				StackTrace: []string{"main.main", "runtime.main"},
 				Err:        someError,
 			},
 
 			wantMessage: "error encountered while replacing",
 			wantFields: map[string]interface{}{
-				"stacktrace": "main.main; runtime.main",
+				"stacktrace": []interface{}{"main.main", "runtime.main"},
 				"error":      "some error",
 			},
 		},
@@ -232,14 +232,14 @@ func TestZapLogger(t *testing.T) {
 			name: "Decorate",
 			give: &Decorated{
 				DecoratorName:   "bytes.NewBuffer()",
-				StackTrace:      "main.main; runtime.main",
+				StackTrace:      []string{"main.main", "runtime.main"},
 				ModuleName:      "myModule",
 				OutputTypeNames: []string{"*bytes.Buffer"},
 			},
 			wantMessage: "decorated",
 			wantFields: map[string]interface{}{
 				"decorator":  "bytes.NewBuffer()",
-				"stacktrace": "main.main; runtime.main",
+				"stacktrace": []interface{}{"main.main", "runtime.main"},
 				"type":       "*bytes.Buffer",
 				"module":     "myModule",
 			},
@@ -247,12 +247,12 @@ func TestZapLogger(t *testing.T) {
 		{
 			name: "Decorate/Error",
 			give: &Decorated{
-				StackTrace: "main.main; runtime.main",
+				StackTrace: []string{"main.main", "runtime.main"},
 				Err:        someError,
 			},
 			wantMessage: "error encountered while applying options",
 			wantFields: map[string]interface{}{
-				"stacktrace": "main.main; runtime.main",
+				"stacktrace": []interface{}{"main.main", "runtime.main"},
 				"error":      "some error",
 			},
 		},

@@ -88,11 +88,15 @@ type Stack []Frame
 // Returns a single-line, semi-colon representation of a Stack. For a
 // multi-line representation, use %+v.
 func (fs Stack) String() string {
+	return strings.Join(fs.Strings(), "; ")
+}
+
+func (fs Stack) Strings() []string {
 	items := make([]string, len(fs))
 	for i, f := range fs {
 		items[i] = f.String()
 	}
-	return strings.Join(items, "; ")
+	return items
 }
 
 // Format implements fmt.Formatter to handle "%+v".

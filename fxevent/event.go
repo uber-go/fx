@@ -111,7 +111,7 @@ type Supplied struct {
 	TypeName string
 
 	// StackTrace is the stack trace of the call to Supply.
-	StackTrace string
+	StackTrace []string
 
 	// ModuleName is the name of the module in which the value was added to.
 	ModuleName string
@@ -127,7 +127,7 @@ type Provided struct {
 	ConstructorName string
 
 	// StackTrace is the stack trace of where the constructor was provided to Fx.
-	StackTrace string
+	StackTrace []string
 
 	// OutputTypeNames is a list of names of types that are produced by
 	// this constructor.
@@ -150,7 +150,7 @@ type Replaced struct {
 	OutputTypeNames []string
 
 	// StackTrace is the stack trace of the call to Replace.
-	StackTrace string
+	StackTrace []string
 
 	// ModuleName is the name of the module in which the value was added to.
 	ModuleName string
@@ -166,7 +166,7 @@ type Decorated struct {
 	DecoratorName string
 
 	// StackTrace is the stack trace of where the decorator was given to Fx.
-	StackTrace string
+	StackTrace []string
 
 	// ModuleName is the name of the module in which the value was added to.
 	ModuleName string
