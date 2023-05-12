@@ -85,12 +85,17 @@ const _defaultCallersDepth = 8
 //		bar/baz/qux.go:12
 type Stack []Frame
 
-// Returns a single-line, semi-colon representation of a Stack. For a
-// multi-line representation, use %+v.
+// String returns a single-line, semi-colon representation of a Stack.
+// For a list of strings where each represents one frame, use Strings.
+// For a cleaner multi-line representation, use %+v.
 func (fs Stack) String() string {
 	return strings.Join(fs.Strings(), "; ")
 }
 
+// Strings returns a list of strings, each representing a frame in the stack.
+// Each line will be in the form,
+//
+//	foo/bar.Baz() (path/to/foo.go:42)
 func (fs Stack) Strings() []string {
 	items := make([]string, len(fs))
 	for i, f := range fs {
