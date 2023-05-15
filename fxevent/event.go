@@ -185,7 +185,7 @@ type Run struct {
 	Name string
 
 	// Kind indicates which Fx option was used to pass along the function.
-	// It is either "constructor", "decorator", "supply", or "replace".
+	// It is either "provide", "decorate", "supply", or "replace".
 	Kind string
 
 	// ModuleName is the name of the module in which the function belongs.

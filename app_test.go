@@ -673,11 +673,11 @@ func TestRunEventEmission(t *testing.T) {
 			wantRunEvents: []fxevent.Run{
 				{
 					Name: "go.uber.org/fx_test.TestRunEventEmission.func1()",
-					Kind: "constructor",
+					Kind: "provide",
 				},
 				{
 					Name: "go.uber.org/fx_test.TestRunEventEmission.func2()",
-					Kind: "decorator",
+					Kind: "decorate",
 				},
 			},
 		},
@@ -697,7 +697,7 @@ func TestRunEventEmission(t *testing.T) {
 				},
 				{
 					Name: "go.uber.org/fx_test.TestRunEventEmission.func4()",
-					Kind: "decorator",
+					Kind: "decorate",
 				},
 			},
 			wantErr: "humongous despair",
@@ -727,7 +727,7 @@ func TestRunEventEmission(t *testing.T) {
 			wantRunEvents: []fxevent.Run{
 				{
 					Name: "go.uber.org/fx_test.TestRunEventEmission.func8()",
-					Kind: "constructor",
+					Kind: "provide",
 				},
 			},
 			wantErr: "terrible sadness",
@@ -744,7 +744,7 @@ func TestRunEventEmission(t *testing.T) {
 			wantRunEvents: []fxevent.Run{
 				{
 					Name: "go.uber.org/fx_test.TestRunEventEmission.func10()",
-					Kind: "constructor",
+					Kind: "provide",
 				},
 			},
 			wantErr: `panic: "bad provide"`,
@@ -766,7 +766,7 @@ func TestRunEventEmission(t *testing.T) {
 				},
 				{
 					Name: "go.uber.org/fx_test.TestRunEventEmission.func12()",
-					Kind: "decorator",
+					Kind: "decorate",
 				},
 			},
 			wantErr: `panic: "bad decorate"`,

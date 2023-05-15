@@ -159,7 +159,7 @@ func (m *module) provide(p provide) {
 		dig.WithProviderCallback(func(ci dig.CallbackInfo) {
 			m.log.LogEvent(&fxevent.Run{
 				Name:       funcName,
-				Kind:       "constructor",
+				Kind:       "provide",
 				ModuleName: m.name,
 				Err:        ci.Error,
 			})
@@ -313,7 +313,7 @@ func (m *module) decorate(d decorator) (err error) {
 		dig.WithDecoratorCallback(func(ci dig.CallbackInfo) {
 			m.log.LogEvent(&fxevent.Run{
 				Name:       funcName,
-				Kind:       "decorator",
+				Kind:       "decorate",
 				ModuleName: m.name,
 				Err:        ci.Error,
 			})
