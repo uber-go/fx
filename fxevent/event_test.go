@@ -39,6 +39,7 @@ func TestForCoverage(t *testing.T) {
 		&Provided{},
 		&Replaced{},
 		&Decorated{},
+		&Run{},
 		&Invoking{},
 		&Invoked{},
 		&Stopping{},

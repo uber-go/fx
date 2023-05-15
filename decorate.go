@@ -22,6 +22,7 @@ package fx
 
 import (
 	"fmt"
+	"reflect"
 	"strings"
 
 	"go.uber.org/dig"
@@ -207,7 +208,8 @@ type decorator struct {
 	Stack fxreflect.Stack
 
 	// Whether this decorator was specified via fx.Replace
-	IsReplace bool
+	IsReplace   bool
+	ReplaceType reflect.Type // set only if IsReplace
 }
 
 func runDecorator(c container, d decorator, opts ...dig.DecorateOption) (err error) {

@@ -257,4 +257,15 @@ path/to/another/module.AnotherFunction()
 `, fmt.Sprintf("%+v", stack))
 	})
 
+	t.Run("strings", func(t *testing.T) {
+		t.Parallel()
+
+		assert.Equal(t,
+			[]string{
+				"path/to/module.SomeFunction() (path/to/file.go:42)",
+				"path/to/another/module.AnotherFunction() (path/to/another/file.go:12)",
+			},
+			stack.Strings(),
+		)
+	})
 }

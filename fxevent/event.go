@@ -39,6 +39,7 @@ func (*Supplied) event()          {}
 func (*Provided) event()          {}
 func (*Replaced) event()          {}
 func (*Decorated) event()         {}
+func (*Run) event()               {}
 func (*Invoking) event()          {}
 func (*Invoked) event()           {}
 func (*Stopping) event()          {}
@@ -109,6 +110,9 @@ type Supplied struct {
 	// TypeName is the name of the type of value that was added.
 	TypeName string
 
+	// StackTrace is the stack trace of the call to Supply.
+	StackTrace []string
+
 	// ModuleName is the name of the module in which the value was added to.
 	ModuleName string
 
@@ -121,6 +125,9 @@ type Provided struct {
 	// ConstructorName is the name of the constructor that was provided to
 	// Fx.
 	ConstructorName string
+
+	// StackTrace is the stack trace of where the constructor was provided to Fx.
+	StackTrace []string
 
 	// OutputTypeNames is a list of names of types that are produced by
 	// this constructor.
@@ -142,6 +149,9 @@ type Replaced struct {
 	// OutputTypeNames is a list of names of types that were replaced.
 	OutputTypeNames []string
 
+	// StackTrace is the stack trace of the call to Replace.
+	StackTrace []string
+
 	// ModuleName is the name of the module in which the value was added to.
 	ModuleName string
 
@@ -155,6 +165,9 @@ type Decorated struct {
 	// provided to Fx.
 	DecoratorName string
 
+	// StackTrace is the stack trace of where the decorator was given to Fx.
+	StackTrace []string
+
 	// ModuleName is the name of the module in which the value was added to.
 	ModuleName string
 
@@ -163,6 +176,23 @@ type Decorated struct {
 	OutputTypeNames []string
 
 	// Err is non-nil if we failed to run this decorator.
+	Err error
+}
+
+// Run is emitted after a constructor, decorator, or supply/replace stub is run by Fx.
+type Run struct {
+	// Name is the name of the function that was run.
+	Name string
+
+	// Kind indicates which Fx option was used to pass along the function.
+	// It is either "provide", "decorate", "supply", or "replace".
+	Kind string
+
+	// ModuleName is the name of the module in which the function belongs.
+	ModuleName string
+
+	// Err is non-nil if the function returned an error.
+	// If fx.RecoverFromPanics is used, this will include panics.
 	Err error
 }
 

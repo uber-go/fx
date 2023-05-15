@@ -137,12 +137,19 @@ func TestConsoleLogger(t *testing.T) {
 		},
 		{
 			name: "Supplied",
-			give: &Supplied{TypeName: "*bytes.Buffer"},
+			give: &Supplied{
+				TypeName:   "*bytes.Buffer",
+				StackTrace: []string{"main.main", "runtime.main"},
+			},
 			want: "[Fx] SUPPLY	*bytes.Buffer\n",
 		},
 		{
 			name: "Supplied with module",
-			give: &Supplied{TypeName: "*bytes.Buffer", ModuleName: "myModule"},
+			give: &Supplied{
+				TypeName:   "*bytes.Buffer",
+				ModuleName: "myModule",
+				StackTrace: []string{"main.main", "runtime.main"},
+			},
 			want: "[Fx] SUPPLY	*bytes.Buffer from module \"myModule\"\n",
 		},
 		{
@@ -161,6 +168,7 @@ func TestConsoleLogger(t *testing.T) {
 				ConstructorName: "bytes.NewBuffer()",
 				OutputTypeNames: []string{"*bytes.Buffer"},
 				Private:         false,
+				StackTrace:      []string{"main.main", "runtime.main"},
 			},
 			want: "[Fx] PROVIDE	*bytes.Buffer <= bytes.NewBuffer()\n",
 		},
@@ -170,6 +178,7 @@ func TestConsoleLogger(t *testing.T) {
 				ConstructorName: "bytes.NewBuffer()",
 				OutputTypeNames: []string{"*bytes.Buffer"},
 				Private:         true,
+				StackTrace:      []string{"main.main", "runtime.main"},
 			},
 			want: "[Fx] PROVIDE (PRIVATE)	*bytes.Buffer <= bytes.NewBuffer()\n",
 		},
@@ -180,6 +189,7 @@ func TestConsoleLogger(t *testing.T) {
 				ModuleName:      "myModule",
 				OutputTypeNames: []string{"*bytes.Buffer"},
 				Private:         false,
+				StackTrace:      []string{"main.main", "runtime.main"},
 			},
 			want: "[Fx] PROVIDE	*bytes.Buffer <= bytes.NewBuffer() from module \"myModule\"\n",
 		},
@@ -190,6 +200,7 @@ func TestConsoleLogger(t *testing.T) {
 				ModuleName:      "myModule",
 				OutputTypeNames: []string{"*bytes.Buffer"},
 				Private:         true,
+				StackTrace:      []string{"main.main", "runtime.main"},
 			},
 			want: "[Fx] PROVIDE (PRIVATE)	*bytes.Buffer <= bytes.NewBuffer() from module \"myModule\"\n",
 		},
@@ -197,6 +208,7 @@ func TestConsoleLogger(t *testing.T) {
 			name: "Replaced",
 			give: &Replaced{
 				OutputTypeNames: []string{"*bytes.Buffer"},
+				StackTrace:      []string{"main.main", "runtime.main"},
 			},
 			want: "[Fx] REPLACE	*bytes.Buffer\n",
 		},
@@ -205,6 +217,7 @@ func TestConsoleLogger(t *testing.T) {
 			give: &Replaced{
 				ModuleName:      "myModule",
 				OutputTypeNames: []string{"*bytes.Buffer"},
+				StackTrace:      []string{"main.main", "runtime.main"},
 			},
 			want: "[Fx] REPLACE	*bytes.Buffer from module \"myModule\"\n",
 		},
@@ -218,6 +231,7 @@ func TestConsoleLogger(t *testing.T) {
 			give: &Decorated{
 				DecoratorName:   "bytes.NewBuffer()",
 				OutputTypeNames: []string{"*bytes.Buffer"},
+				StackTrace:      []string{"main.main", "runtime.main"},
 			},
 			want: "[Fx] DECORATE	*bytes.Buffer <= bytes.NewBuffer()\n",
 		},
@@ -227,6 +241,7 @@ func TestConsoleLogger(t *testing.T) {
 				DecoratorName:   "bytes.NewBuffer()",
 				ModuleName:      "myModule",
 				OutputTypeNames: []string{"*bytes.Buffer"},
+				StackTrace:      []string{"main.main", "runtime.main"},
 			},
 			want: "[Fx] DECORATE	*bytes.Buffer <= bytes.NewBuffer() from module \"myModule\"\n",
 		},
@@ -239,6 +254,32 @@ func TestConsoleLogger(t *testing.T) {
 			name: "DecorateError/rich error",
 			give: &Decorated{Err: &richError{}},
 			want: "[Fx] Error after options were applied: rich error\n",
+		},
+		{
+			name: "Run",
+			give: &Run{Name: "bytes.NewBuffer()", Kind: "constructor"},
+			want: "[Fx] RUN\tconstructor: bytes.NewBuffer()\n",
+		},
+		{
+			name: "Run with module",
+			give: &Run{
+				Name:       "bytes.NewBuffer()",
+				Kind:       "constructor",
+				ModuleName: "myModule",
+			},
+			want: "[Fx] RUN\tconstructor: bytes.NewBuffer() from module \"myModule\"\n",
+		},
+		{
+			name: "RunError",
+			give: &Run{
+				Name: "bytes.NewBuffer()",
+				Kind: "constructor",
+				Err:  errors.New("terrible constructor error"),
+			},
+			want: joinLines(
+				"[Fx] RUN\tconstructor: bytes.NewBuffer()",
+				"[Fx] Error returned: terrible constructor error",
+			),
 		},
 		{
 			name: "Invoking",

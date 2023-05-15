@@ -82,7 +82,6 @@ func (l *ConsoleLogger) LogEvent(event Event) {
 		if e.Err != nil {
 			l.logf("Error after options were applied: %+v", e.Err)
 		}
-
 	case *Replaced:
 		for _, rtype := range e.OutputTypeNames {
 			if e.ModuleName != "" {
@@ -105,6 +104,16 @@ func (l *ConsoleLogger) LogEvent(event Event) {
 		if e.Err != nil {
 			l.logf("Error after options were applied: %+v", e.Err)
 		}
+	case *Run:
+		var moduleStr string
+		if e.ModuleName != "" {
+			moduleStr = fmt.Sprintf(" from module %q", e.ModuleName)
+		}
+		l.logf("RUN\t%v: %v%v", e.Kind, e.Name, moduleStr)
+		if e.Err != nil {
+			l.logf("Error returned: %+v", e.Err)
+		}
+
 	case *Invoking:
 		if e.ModuleName != "" {
 			l.logf("INVOKE\t\t%s from module %q", e.FunctionName, e.ModuleName)

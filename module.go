@@ -146,34 +146,67 @@ func (m *module) provide(p provide) {
 		return
 	}
 
+	if p.IsSupply {
+		m.supply(p)
+		return
+	}
+
+	funcName := fxreflect.FuncName(p.Target)
 	var info dig.ProvideInfo
-	if err := runProvide(m.scope, p, dig.FillProvideInfo(&info), dig.Export(!p.Private)); err != nil {
+	opts := []dig.ProvideOption{
+		dig.FillProvideInfo(&info),
+		dig.Export(!p.Private),
+		dig.WithProviderCallback(func(ci dig.CallbackInfo) {
+			m.log.LogEvent(&fxevent.Run{
+				Name:       funcName,
+				Kind:       "provide",
+				ModuleName: m.name,
+				Err:        ci.Error,
+			})
+		}),
+	}
+
+	if err := runProvide(m.scope, p, opts...); err != nil {
 		m.app.err = err
 	}
-	var ev fxevent.Event
-	switch {
-	case p.IsSupply:
-		ev = &fxevent.Supplied{
-			TypeName:   p.SupplyType.String(),
-			ModuleName: m.name,
-			Err:        m.app.err,
-		}
-
-	default:
-		outputNames := make([]string, len(info.Outputs))
-		for i, o := range info.Outputs {
-			outputNames[i] = o.String()
-		}
-
-		ev = &fxevent.Provided{
-			ConstructorName: fxreflect.FuncName(p.Target),
-			ModuleName:      m.name,
-			OutputTypeNames: outputNames,
-			Err:             m.app.err,
-			Private:         p.Private,
-		}
+	outputNames := make([]string, len(info.Outputs))
+	for i, o := range info.Outputs {
+		outputNames[i] = o.String()
 	}
-	m.log.LogEvent(ev)
+
+	m.log.LogEvent(&fxevent.Provided{
+		ConstructorName: funcName,
+		StackTrace:      p.Stack.Strings(),
+		ModuleName:      m.name,
+		OutputTypeNames: outputNames,
+		Err:             m.app.err,
+		Private:         p.Private,
+	})
+}
+
+func (m *module) supply(p provide) {
+	typeName := p.SupplyType.String()
+	opts := []dig.ProvideOption{
+		dig.Export(!p.Private),
+		dig.WithProviderCallback(func(ci dig.CallbackInfo) {
+			m.log.LogEvent(&fxevent.Run{
+				Name:       fmt.Sprintf("stub(%v)", typeName),
+				Kind:       "supply",
+				ModuleName: m.name,
+			})
+		}),
+	}
+
+	if err := runProvide(m.scope, p, opts...); err != nil {
+		m.app.err = err
+	}
+
+	m.log.LogEvent(&fxevent.Supplied{
+		TypeName:   typeName,
+		StackTrace: p.Stack.Strings(),
+		ModuleName: m.name,
+		Err:        m.app.err,
+	})
 }
 
 // Constructs custom loggers for all modules in the tree
@@ -253,38 +286,76 @@ func (m *module) executeInvoke(i invoke) (err error) {
 	return err
 }
 
-func (m *module) decorate() (err error) {
-	for _, decorator := range m.decorators {
-		var info dig.DecorateInfo
-		err := runDecorator(m.scope, decorator, dig.FillDecorateInfo(&info))
-		outputNames := make([]string, len(info.Outputs))
-		for i, o := range info.Outputs {
-			outputNames[i] = o.String()
-		}
-
-		if decorator.IsReplace {
-			m.log.LogEvent(&fxevent.Replaced{
-				ModuleName:      m.name,
-				OutputTypeNames: outputNames,
-				Err:             err,
-			})
-		} else {
-
-			m.log.LogEvent(&fxevent.Decorated{
-				DecoratorName:   fxreflect.FuncName(decorator.Target),
-				ModuleName:      m.name,
-				OutputTypeNames: outputNames,
-				Err:             err,
-			})
-		}
-		if err != nil {
+func (m *module) decorateAll() error {
+	for _, d := range m.decorators {
+		if err := m.decorate(d); err != nil {
 			return err
 		}
 	}
+
 	for _, m := range m.modules {
-		if err := m.decorate(); err != nil {
+		if err := m.decorateAll(); err != nil {
 			return err
 		}
 	}
 	return nil
+}
+
+func (m *module) decorate(d decorator) (err error) {
+	if d.IsReplace {
+		return m.replace(d)
+	}
+
+	funcName := fxreflect.FuncName(d.Target)
+	var info dig.DecorateInfo
+	opts := []dig.DecorateOption{
+		dig.FillDecorateInfo(&info),
+		dig.WithDecoratorCallback(func(ci dig.CallbackInfo) {
+			m.log.LogEvent(&fxevent.Run{
+				Name:       funcName,
+				Kind:       "decorate",
+				ModuleName: m.name,
+				Err:        ci.Error,
+			})
+		}),
+	}
+
+	err = runDecorator(m.scope, d, opts...)
+	outputNames := make([]string, len(info.Outputs))
+	for i, o := range info.Outputs {
+		outputNames[i] = o.String()
+	}
+
+	m.log.LogEvent(&fxevent.Decorated{
+		DecoratorName:   funcName,
+		StackTrace:      d.Stack.Strings(),
+		ModuleName:      m.name,
+		OutputTypeNames: outputNames,
+		Err:             err,
+	})
+
+	return err
+}
+
+func (m *module) replace(d decorator) error {
+	typeName := d.ReplaceType.String()
+	opts := []dig.DecorateOption{
+		dig.WithDecoratorCallback(func(ci dig.CallbackInfo) {
+			m.log.LogEvent(&fxevent.Run{
+				Name:       fmt.Sprintf("stub(%v)", typeName),
+				Kind:       "replace",
+				ModuleName: m.name,
+				Err:        ci.Error,
+			})
+		}),
+	}
+
+	err := runDecorator(m.scope, d, opts...)
+	m.log.LogEvent(&fxevent.Replaced{
+		ModuleName:      m.name,
+		StackTrace:      d.Stack.Strings(),
+		OutputTypeNames: []string{typeName},
+		Err:             err,
+	})
+	return err
 }

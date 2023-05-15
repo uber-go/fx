@@ -262,15 +262,15 @@ func TestModuleSuccess(t *testing.T) {
 				giveWithLogger: fx.NopLogger,
 				wantEvents: []string{
 					"Supplied", "Provided", "Provided", "Provided",
-					"LoggerInitialized", "Invoking", "Invoked",
+					"Run", "LoggerInitialized", "Invoking", "Invoked",
 				},
 			},
 			{
 				desc:           "Not using a custom logger for module defaults to app logger",
 				giveWithLogger: fx.Options(),
 				wantEvents: []string{
-					"Supplied", "Provided", "Provided", "Provided", "Provided",
-					"LoggerInitialized", "Invoking", "Invoked", "Invoking", "Invoked",
+					"Supplied", "Provided", "Provided", "Provided", "Provided", "Run",
+					"LoggerInitialized", "Invoking", "Run", "Invoked", "Invoking", "Invoked",
 				},
 			},
 		}
@@ -353,8 +353,8 @@ func TestModuleSuccess(t *testing.T) {
 		)
 
 		assert.Equal(t, []string{
-			"Provided", "Supplied", "Replaced",
-			"LoggerInitialized", "Invoking", "Invoked",
+			"Provided", "Supplied", "Replaced", "Run", "Run",
+			"LoggerInitialized", "Invoking", "Run", "Invoked",
 		}, moduleSpy.EventTypes())
 
 		assert.Equal(t, []string{
@@ -413,9 +413,9 @@ func TestModuleSuccess(t *testing.T) {
 		)
 
 		assert.Equal(t, []string{
-			"Supplied", "Provided", "Replaced", "LoggerInitialized",
+			"Supplied", "Provided", "Replaced", "Run", "Run", "LoggerInitialized",
 			//Invoke logged twice, once from child and another from grandchild
-			"Invoking", "Invoked", "Invoking", "Invoked",
+			"Invoking", "Run", "Invoked", "Invoking", "Invoked",
 		}, childSpy.EventTypes(), "events from grandchild also logged in child logger")
 
 		assert.Equal(t, []string{
@@ -649,7 +649,7 @@ func TestModuleFailures(t *testing.T) {
 					"must provide constructor function, got  (type *bytes.Buffer)",
 				},
 				wantEvents: []string{
-					"Supplied", "Provided", "LoggerInitialized",
+					"Supplied", "Provided", "Run", "LoggerInitialized",
 				},
 			},
 			{
@@ -660,7 +660,7 @@ func TestModuleFailures(t *testing.T) {
 				giveAppOpts:     spyAsLogger,
 				wantErrContains: []string{"error building logger"},
 				wantEvents: []string{
-					"Supplied", "Provided", "Provided", "Provided",
+					"Supplied", "Provided", "Provided", "Provided", "Run",
 					"LoggerInitialized", "Provided", "LoggerInitialized",
 				},
 			},
@@ -678,8 +678,8 @@ func TestModuleFailures(t *testing.T) {
 				giveAppOpts:     spyAsLogger,
 				wantErrContains: []string{"error building logger dependency"},
 				wantEvents: []string{
-					"Supplied", "Provided", "Provided", "Provided",
-					"LoggerInitialized", "Provided", "Provided", "LoggerInitialized",
+					"Supplied", "Provided", "Provided", "Provided", "Run",
+					"LoggerInitialized", "Provided", "Provided", "Run", "LoggerInitialized",
 				},
 			},
 			{
@@ -690,7 +690,7 @@ func TestModuleFailures(t *testing.T) {
 					"fx.WithLogger", "from:", "Failed",
 				},
 				wantEvents: []string{
-					"Supplied", "Provided", "Provided", "Provided",
+					"Supplied", "Provided", "Provided", "Provided", "Run",
 					"LoggerInitialized", "Provided", "LoggerInitialized",
 				},
 			},

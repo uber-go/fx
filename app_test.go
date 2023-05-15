@@ -357,7 +357,7 @@ func TestNewApp(t *testing.T) {
 		defer app.RequireStart().RequireStop()
 
 		require.Equal(t,
-			[]string{"Provided", "Provided", "Provided", "Provided", "Decorated", "LoggerInitialized", "Invoking", "Invoked", "Started"},
+			[]string{"Provided", "Provided", "Provided", "Provided", "Decorated", "LoggerInitialized", "Invoking", "Run", "Run", "Invoked", "Started"},
 			spy.EventTypes())
 	})
 
@@ -573,7 +573,7 @@ func TestWithLogger(t *testing.T) {
 		)
 
 		assert.Equal(t, []string{
-			"Supplied", "Provided", "Provided", "Provided", "LoggerInitialized",
+			"Supplied", "Provided", "Provided", "Provided", "Run", "LoggerInitialized",
 		}, spy.EventTypes())
 
 		spy.Reset()
@@ -603,7 +603,7 @@ func TestWithLogger(t *testing.T) {
 			"must provide constructor function, got  (type *bytes.Buffer)",
 		)
 
-		assert.Equal(t, []string{"Supplied", "Provided", "LoggerInitialized"}, spy.EventTypes())
+		assert.Equal(t, []string{"Supplied", "Provided", "Run", "LoggerInitialized"}, spy.EventTypes())
 	})
 
 	t.Run("logger failed to build", func(t *testing.T) {
@@ -653,6 +653,153 @@ func TestWithLogger(t *testing.T) {
 type errHandlerFunc func(error)
 
 func (f errHandlerFunc) HandleError(err error) { f(err) }
+
+func TestRunEventEmission(t *testing.T) {
+	t.Parallel()
+
+	for _, tt := range []struct {
+		desc          string
+		giveOpts      []Option
+		wantRunEvents []fxevent.Run
+		wantErr       string
+	}{
+		{
+			desc: "Simple Provide And Decorate",
+			giveOpts: []Option{
+				Provide(func() int { return 5 }),
+				Decorate(func(int) int { return 6 }),
+				Invoke(func(int) {}),
+			},
+			wantRunEvents: []fxevent.Run{
+				{
+					Name: "go.uber.org/fx_test.TestRunEventEmission.func1()",
+					Kind: "provide",
+				},
+				{
+					Name: "go.uber.org/fx_test.TestRunEventEmission.func2()",
+					Kind: "decorate",
+				},
+			},
+		},
+		{
+			desc: "Supply and Decorator Error",
+			giveOpts: []Option{
+				Supply(5),
+				Decorate(func(int) (int, error) {
+					return 0, errors.New("humongous despair")
+				}),
+				Invoke(func(int) {}),
+			},
+			wantRunEvents: []fxevent.Run{
+				{
+					Name: "stub(int)",
+					Kind: "supply",
+				},
+				{
+					Name: "go.uber.org/fx_test.TestRunEventEmission.func4()",
+					Kind: "decorate",
+				},
+			},
+			wantErr: "humongous despair",
+		},
+		{
+			desc: "Replace",
+			giveOpts: []Option{
+				Provide(func() int { return 5 }),
+				Replace(6),
+				Invoke(func(int) {}),
+			},
+			wantRunEvents: []fxevent.Run{
+				{
+					Name: "stub(int)",
+					Kind: "replace",
+				},
+			},
+		},
+		{
+			desc: "Provide Error",
+			giveOpts: []Option{
+				Provide(func() (int, error) {
+					return 0, errors.New("terrible sadness")
+				}),
+				Invoke(func(int) {}),
+			},
+			wantRunEvents: []fxevent.Run{
+				{
+					Name: "go.uber.org/fx_test.TestRunEventEmission.func8()",
+					Kind: "provide",
+				},
+			},
+			wantErr: "terrible sadness",
+		},
+		{
+			desc: "Provide Panic",
+			giveOpts: []Option{
+				Provide(func() int {
+					panic("bad provide")
+				}),
+				RecoverFromPanics(),
+				Invoke(func(int) {}),
+			},
+			wantRunEvents: []fxevent.Run{
+				{
+					Name: "go.uber.org/fx_test.TestRunEventEmission.func10()",
+					Kind: "provide",
+				},
+			},
+			wantErr: `panic: "bad provide"`,
+		},
+		{
+			desc: "Decorate Panic",
+			giveOpts: []Option{
+				Supply(5),
+				Decorate(func(int) int {
+					panic("bad decorate")
+				}),
+				RecoverFromPanics(),
+				Invoke(func(int) {}),
+			},
+			wantRunEvents: []fxevent.Run{
+				{
+					Name: "stub(int)",
+					Kind: "supply",
+				},
+				{
+					Name: "go.uber.org/fx_test.TestRunEventEmission.func12()",
+					Kind: "decorate",
+				},
+			},
+			wantErr: `panic: "bad decorate"`,
+		},
+	} {
+		tt := tt
+		t.Run(tt.desc, func(t *testing.T) {
+			t.Parallel()
+
+			app, spy := NewSpied(tt.giveOpts...)
+			if tt.wantErr != "" {
+				assert.ErrorContains(t, app.Err(), tt.wantErr)
+			} else {
+				assert.NoError(t, app.Err())
+			}
+
+			gotEvents := spy.Events().SelectByTypeName("Run")
+			require.Len(t, gotEvents, len(tt.wantRunEvents))
+			for i, event := range gotEvents {
+				rEvent, ok := event.(*fxevent.Run)
+				require.True(t, ok)
+
+				assert.Equal(t, tt.wantRunEvents[i].Name, rEvent.Name)
+				assert.Equal(t, tt.wantRunEvents[i].Kind, rEvent.Kind)
+				if tt.wantErr != "" && i == len(gotEvents)-1 {
+					assert.ErrorContains(t, rEvent.Err, tt.wantErr)
+				} else {
+					assert.NoError(t, rEvent.Err)
+				}
+			}
+		})
+	}
+}
 
 type customError struct {
 	err error
@@ -1338,6 +1485,8 @@ func TestAppStart(t *testing.T) {
 			"Provided", "Provided", "Provided", "Provided",
 			"LoggerInitialized",
 			"Invoking",
+			"Run",
+			"Run",
 			"Invoked",
 			"OnStartExecuting", "OnStartExecuted",
 			"RollingBack",
@@ -1374,6 +1523,8 @@ func TestAppStart(t *testing.T) {
 			"Provided", "Provided", "Provided", "Provided",
 			"LoggerInitialized",
 			"Invoking",
+			"Run",
+			"Run",
 			"Invoked",
 			"OnStartExecuting", "OnStartExecuted",
 			"OnStartExecuting", "OnStartExecuted",
@@ -2066,6 +2217,7 @@ func TestCustomLoggerWithLifecycle(t *testing.T) {
 		"Provided",
 		"Provided",
 		"Provided",
+		"Run",
 		"LoggerInitialized",
 		"OnStartExecuting", "OnStartExecuted",
 		"Started",
