@@ -158,6 +158,42 @@ func TestPopulate(t *testing.T) {
 		assert.False(t, targets.V1 == targets.V2, "fields should be different")
 	})
 
+	t.Run("annotated populate", func(t *testing.T) {
+		t.Parallel()
+
+		type result struct {
+			Out
+
+			V1 *t1 `name:"n1"`
+			V2 *t1 `name:"n2"`
+		}
+		var v1, v2 *t1
+		app := fxtest.New(t,
+			Provide(func() result {
+				return result{
+					V1: &t1{},
+					V2: &t1{},
+				}
+			}),
+			Populate(
+				Annotate(
+					&v1,
+					ParamTags(`name:"n1"`),
+				),
+				Annotate(
+					&v2,
+					ParamTags(`name:"n2"`),
+				),
+			),
+		)
+		app.RequireStart().RequireStop()
+
+		require.NotNil(t, v1, "did not populate argument 1")
+		require.NotNil(t, v2, "did not populate argument 2")
+		// Cannot use assert.Equal here as we want to compare pointers.
+		assert.False(t, v1 == v2, "values should be different")
+	})
+
 	t.Run("populate group", func(t *testing.T) {
 		t.Parallel()
 
