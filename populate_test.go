@@ -27,8 +27,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-
-	"go.uber.org/fx"
 	. "go.uber.org/fx"
 	"go.uber.org/fx/fxtest"
 )
@@ -200,11 +198,11 @@ func TestPopulate(t *testing.T) {
 		var v1, v2 *t1
 		app := fxtest.New(t,
 			Provide(
-				fx.Annotate(
+				Annotate(
 					func() (*t1, *t1) {
 						return &t1{}, &t1{}
 					},
-					fx.ResultTags(`name:"n1"`, `name:"n2"`),
+					ResultTags(`name:"n1"`, `name:"n2"`),
 				),
 			),
 			Populate(
