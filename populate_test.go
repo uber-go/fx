@@ -28,6 +28,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"go.uber.org/fx"
 	. "go.uber.org/fx"
 	"go.uber.org/fx/fxtest"
 )
@@ -175,6 +176,37 @@ func TestPopulate(t *testing.T) {
 					V2: &t1{},
 				}
 			}),
+			Populate(
+				Annotate(
+					&v1,
+					ParamTags(`name:"n1"`),
+				),
+				Annotate(
+					&v2,
+					ParamTags(`name:"n2"`),
+				),
+			),
+		)
+		app.RequireStart().RequireStop()
+
+		require.NotNil(t, v1, "did not populate argument 1")
+		require.NotNil(t, v2, "did not populate argument 2")
+		// Cannot use assert.Equal here as we want to compare pointers.
+		assert.False(t, v1 == v2, "values should be different")
+	})
+
+	t.Run("annotated populate with annotated provide", func(t *testing.T) {
+		t.Parallel()
+		var v1, v2 *t1
+		app := fxtest.New(t,
+			Provide(
+				fx.Annotate(
+					func() (*t1, *t1) {
+						return &t1{}, &t1{}
+					},
+					fx.ResultTags(`name:"n1"`, `name:"n2"`),
+				),
+			),
 			Populate(
 				Annotate(
 					&v1,
