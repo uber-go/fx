@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - No changes yet.
 
 ## [1.19.3](https://github.com/uber-go/fx/compare/v1.19.2...v1.19.3) - 2023-04-17
+
 ### Changed
 - Fixed several typos in docs.
 - WASM build support.

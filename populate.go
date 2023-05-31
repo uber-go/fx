@@ -30,22 +30,69 @@ import (
 // values that must be populated. Pointers to structs that embed In are
 // supported, which can be used to populate multiple values in a struct.
 //
+// Annotating each pointer with ParamTags is also supported as a shorthand
+// to passing a pointer to a struct that embeds In with field tags. For example:
+//
+//	 var a A
+//	 var b B
+//	 fx.Populate(
+//		fx.Annotate(
+//				&a,
+//				fx.ParamTags(`name:"A"`)
+//	 	),
+//		fx.Annotate(
+//				&b,
+//				fx.ParamTags(`name:"B"`)
+//	 	)
+//	 )
+//
+// Code above is equivalent to the following:
+//
+//	type Target struct {
+//		fx.In
+//
+//		a A `name:"A"`
+//		b B `name:"B"`
+//	}
+//	var target Target
+//	...
+//	fx.Populate(&target)
+//
 // This is most helpful in unit tests: it lets tests leverage Fx's automatic
 // constructor wiring to build a few structs, but then extract those structs
 // for further testing.
 func Populate(targets ...interface{}) Option {
 	// Validate all targets are non-nil pointers.
-	targetTypes := make([]reflect.Type, len(targets))
+	fields := make([]reflect.StructField, len(targets)+1)
+	fields[0] = reflect.StructField{
+		Name:      "In",
+		Type:      reflect.TypeOf(In{}),
+		Anonymous: true,
+	}
 	for i, t := range targets {
 		if t == nil {
 			return Error(fmt.Errorf("failed to Populate: target %v is nil", i+1))
 		}
-		rt := reflect.TypeOf(t)
+		var (
+			rt  reflect.Type
+			tag reflect.StructTag
+		)
+		switch t := t.(type) {
+		case annotated:
+			rt = reflect.TypeOf(t.Target)
+			tag = reflect.StructTag(t.ParamTags[0])
+			targets[i] = t.Target
+		default:
+			rt = reflect.TypeOf(t)
+		}
 		if rt.Kind() != reflect.Ptr {
 			return Error(fmt.Errorf("failed to Populate: target %v is not a pointer type, got %T", i+1, t))
 		}
-
-		targetTypes[i] = reflect.TypeOf(t).Elem()
+		fields[i+1] = reflect.StructField{
+			Name: fmt.Sprintf("Field%d", i),
+			Type: rt.Elem(),
+			Tag:  tag,
+		}
 	}
 
 	// Build a function that looks like:
@@ -56,10 +103,11 @@ func Populate(targets ...interface{}) Option {
 	//   [...]
 	// }
 	//
-	fnType := reflect.FuncOf(targetTypes, nil, false /* variadic */)
+	fnType := reflect.FuncOf([]reflect.Type{reflect.StructOf(fields)}, nil, false /* variadic */)
 	fn := reflect.MakeFunc(fnType, func(args []reflect.Value) []reflect.Value {
-		for i, arg := range args {
-			reflect.ValueOf(targets[i]).Elem().Set(arg)
+		arg := args[0]
+		for i, target := range targets {
+			reflect.ValueOf(target).Elem().Set(arg.Field(i + 1))
 		}
 		return nil
 	})
