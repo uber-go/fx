@@ -10,8 +10,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## Unreleased
-- No changes yet.
+## [1.20.0](https://github.com/uber-go/fx/compare/v1.19.3...v1.20.0) - 2023-06-12
+
+### Added
+- A new event `fxevent.Run` is now emitted when Fx runs a constructor, decorator,
+  or supply/replace stub.
+
+### Changed
+- `fx.Populate` now works with `fx.Annotate`.
+- Upgrade Dig dependency to v1.17.0.
 
 ## [1.19.3](https://github.com/uber-go/fx/compare/v1.19.2...v1.19.3) - 2023-04-17
 
