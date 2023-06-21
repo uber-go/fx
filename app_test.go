@@ -1,4 +1,4 @@
-// Copyright (c) 2022 Uber Technologies, Inc.
+// Copyright (c) 2023 Uber Technologies, Inc.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -29,7 +29,9 @@ import (
 	"log"
 	"os"
 	"reflect"
+	"regexp"
 	"runtime"
+	"strings"
 	"testing"
 	"time"
 
@@ -650,9 +652,114 @@ func TestWithLogger(t *testing.T) {
 	})
 }
 
-type errHandlerFunc func(error)
+func getInt() int { return 0 }
 
-func (f errHandlerFunc) HandleError(err error) { f(err) }
+func decorateInt(i int) int { return i }
+
+var moduleA = Module(
+	"ModuleA",
+	Provide(getInt),
+	Decorate(decorateInt),
+	Supply(int64(14)),
+	Replace("foo"),
+)
+
+func getModuleB() Option {
+	return Module(
+		"ModuleB",
+		moduleA,
+	)
+}
+
+func TestModuleTrace(t *testing.T) {
+	t.Parallel()
+
+	moduleC := Module(
+		"ModuleC",
+		getModuleB(),
+	)
+
+	app, spy := NewSpied(moduleC)
+	require.NoError(t, app.Err())
+
+	wantTrace, err := regexp.Compile(
+		// Provide/decorate itself, initialized via init.
+		"^go.uber.org/fx_test.init \\(.*fx/app_test.go:.*\\)\n" +
+			// ModuleA initialized via init.
+			"go.uber.org/fx_test.init \\(.*fx/app_test.go:.*\\) \\(ModuleA\\)\n" +
+			// ModuleB from getModuleB.
+			"go.uber.org/fx_test.getModuleB \\(.*fx/app_test.go:.*\\) \\(ModuleB\\)\n" +
+			// ModuleC above.
+			"go.uber.org/fx_test.TestModuleTrace \\(.*fx/app_test.go:.*\\) \\(ModuleC\\)\n" +
+			// Top-level app & corresponding module created by NewSpied.
+			"go.uber.org/fx_test.NewSpied \\(.*fx/app_test.go:.*\\)$",
+	)
+	require.NoError(t, err, "test regexp compilation error")
+
+	for _, tt := range []struct {
+		desc     string
+		getTrace func(t *testing.T) []string
+	}{
+		{
+			desc: "Provide",
+			getTrace: func(t *testing.T) []string {
+				t.Helper()
+				var event *fxevent.Provided
+				for _, e := range spy.Events().SelectByTypeName("Provided") {
+					pe, ok := e.(*fxevent.Provided)
+					if !ok {
+						continue
+					}
+
+					if strings.HasSuffix(pe.ConstructorName, "getInt()") {
+						event = pe
+						break
+					}
+				}
+				require.NotNil(t, event, "could not find provide event for getInt()")
+				return event.ModuleTrace
+			},
+		},
+		{
+			desc: "Decorate",
+			getTrace: func(t *testing.T) []string {
+				t.Helper()
+				events := spy.Events().SelectByTypeName("Decorated")
+				require.Len(t, events, 1)
+				event, ok := events[0].(*fxevent.Decorated)
+				require.True(t, ok)
+				return event.ModuleTrace
+			},
+		},
+		{
+			desc: "Supply",
+			getTrace: func(t *testing.T) []string {
+				t.Helper()
+				events := spy.Events().SelectByTypeName("Supplied")
+				require.Len(t, events, 1)
+				event, ok := events[0].(*fxevent.Supplied)
+				require.True(t, ok)
+				return event.ModuleTrace
+			},
+		},
+		{
+			desc: "Replaced",
+			getTrace: func(t *testing.T) []string {
+				t.Helper()
+				events := spy.Events().SelectByTypeName("Replaced")
+				require.Len(t, events, 1)
+				event, ok := events[0].(*fxevent.Replaced)
+				require.True(t, ok)
+				return event.ModuleTrace
+			},
+		},
+	} {
+		t.Run(tt.desc, func(t *testing.T) {
+			gotTrace := strings.Join(tt.getTrace(t), "\n")
+			assert.Regexp(t, wantTrace, gotTrace)
+		})
+	}
+}
 
 func TestRunEventEmission(t *testing.T) {
 	t.Parallel()
@@ -812,6 +919,10 @@ func (e *customError) Error() string {
 func (e *customError) Unwrap() error {
 	return e.err
 }
+
+type errHandlerFunc func(error)
+
+func (f errHandlerFunc) HandleError(err error) { f(err) }
 
 func TestInvokes(t *testing.T) {
 	t.Parallel()
