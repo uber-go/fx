@@ -1,6 +1,6 @@
 module go.uber.org/fx/tools
 
-go 1.19
+go 1.20
 
 require (
 	github.com/bwplotka/mdox v0.9.0
