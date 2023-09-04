@@ -34,10 +34,10 @@ jobs:
       # otherwise we use the default ref.
       - name: Checkout (on release)
         if:  github.event_name != 'workflow_dispatch'
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: Checkout (manual)
         if:  github.event_name == 'workflow_dispatch'
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           ref: ${{ inputs.head }}
 
