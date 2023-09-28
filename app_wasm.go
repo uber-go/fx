@@ -18,8 +18,8 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-//go:build js && wasm
-// +build js,wasm
+//go:build (js && wasm) || (wasip1 && wasm)
+// +build js,wasm wasip1,wasm
 
 package fx
 
