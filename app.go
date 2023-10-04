@@ -432,8 +432,8 @@ func New(opts ...Option) *App {
 		// user gave us. For the last case, however, we need to fall
 		// back to what was provided to fx.Logger if fx.WithLogger
 		// fails.
-		log:      logger,
-		location: fxreflect.CallerStack(1, 0)[0],
+		log:   logger,
+		trace: []string{fxreflect.CallerStack(1, 2)[0].String()},
 	}
 	app.modules = append(app.modules, app.root)
 

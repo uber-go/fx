@@ -46,7 +46,7 @@ type container interface {
 func Module(name string, opts ...Option) Option {
 	mo := moduleOption{
 		name:     name,
-		location: fxreflect.CallerStack(1, 0)[0],
+		location: fxreflect.CallerStack(1, 2)[0],
 		options:  opts,
 	}
 	return mo
@@ -70,11 +70,14 @@ func (o moduleOption) apply(mod *module) {
 	// module.
 	// 2. Apply child Options on the new module.
 	// 3. Append it to the parent module.
+
+	// Create trace as parent's trace with this module's location pre-pended.
+	trace := append([]string{fmt.Sprintf("%v (%v)", o.location, o.name)}, mod.trace...)
 	newModule := &module{
-		name:     o.name,
-		parent:   mod,
-		location: o.location,
-		app:      mod.app,
+		name:   o.name,
+		parent: mod,
+		trace:  trace,
+		app:    mod.app,
 	}
 	for _, opt := range o.options {
 		opt.apply(newModule)
@@ -85,7 +88,7 @@ func (o moduleOption) apply(mod *module) {
 type module struct {
 	parent         *module
 	name           string
-	location       fxreflect.Frame
+	trace          []string
 	scope          scope
 	provides       []provide
 	invokes        []invoke
@@ -135,21 +138,6 @@ func (m *module) build(app *App, root *dig.Container) {
 	}
 }
 
-// getLocations returns an array of locations for this module
-// and each of its parents, ordered from descendent to ancestor,
-// with module names pre-pended for modules that have them.
-func (m *module) getLocations() []string {
-	var locations []string
-	if m.parent != nil {
-		locations = m.parent.getLocations()
-	}
-	location := m.location.String()
-	if m.name != "" {
-		location += fmt.Sprintf(" (%v)", m.name)
-	}
-	return append([]string{location}, locations...)
-}
-
 func (m *module) provideAll() {
 	for _, p := range m.provides {
 		m.provide(p)
@@ -196,7 +184,7 @@ func (m *module) provide(p provide) {
 	m.log.LogEvent(&fxevent.Provided{
 		ConstructorName: funcName,
 		StackTrace:      p.Stack.Strings(),
-		ModuleTrace:     append([]string{p.Stack[0].String()}, m.getLocations()...),
+		ModuleTrace:     append([]string{p.Stack[0].String()}, m.trace...),
 		ModuleName:      m.name,
 		OutputTypeNames: outputNames,
 		Err:             m.app.err,
@@ -224,7 +212,7 @@ func (m *module) supply(p provide) {
 	m.log.LogEvent(&fxevent.Supplied{
 		TypeName:    typeName,
 		StackTrace:  p.Stack.Strings(),
-		ModuleTrace: append([]string{p.Stack[0].String()}, m.getLocations()...),
+		ModuleTrace: append([]string{p.Stack[0].String()}, m.trace...),
 		ModuleName:  m.name,
 		Err:         m.app.err,
 	})
@@ -350,7 +338,7 @@ func (m *module) decorate(d decorator) (err error) {
 	m.log.LogEvent(&fxevent.Decorated{
 		DecoratorName:   funcName,
 		StackTrace:      d.Stack.Strings(),
-		ModuleTrace:     append([]string{d.Stack[0].String()}, m.getLocations()...),
+		ModuleTrace:     append([]string{d.Stack[0].String()}, m.trace...),
 		ModuleName:      m.name,
 		OutputTypeNames: outputNames,
 		Err:             err,
@@ -376,7 +364,7 @@ func (m *module) replace(d decorator) error {
 	m.log.LogEvent(&fxevent.Replaced{
 		ModuleName:      m.name,
 		StackTrace:      d.Stack.Strings(),
-		ModuleTrace:     append([]string{d.Stack[0].String()}, m.getLocations()...),
+		ModuleTrace:     append([]string{d.Stack[0].String()}, m.trace...),
 		OutputTypeNames: []string{typeName},
 		Err:             err,
 	})
