@@ -131,27 +131,31 @@ func TestZapLogger(t *testing.T) {
 		{
 			name: "Supplied",
 			give: &Supplied{
-				TypeName:   "*bytes.Buffer",
-				StackTrace: []string{"main.main", "runtime.main"},
+				TypeName:    "*bytes.Buffer",
+				StackTrace:  []string{"main.main", "runtime.main"},
+				ModuleTrace: []string{"main.main"},
 			},
 			wantMessage: "supplied",
 			wantFields: map[string]interface{}{
-				"type":       "*bytes.Buffer",
-				"stacktrace": []interface{}{"main.main", "runtime.main"},
+				"type":        "*bytes.Buffer",
+				"stacktrace":  []interface{}{"main.main", "runtime.main"},
+				"moduletrace": []interface{}{"main.main"},
 			},
 		},
 		{
 			name: "Supplied/Error",
 			give: &Supplied{
-				TypeName:   "*bytes.Buffer",
-				StackTrace: []string{"main.main", "runtime.main"},
-				Err:        someError,
+				TypeName:    "*bytes.Buffer",
+				StackTrace:  []string{"main.main", "runtime.main"},
+				ModuleTrace: []string{"main.main"},
+				Err:         someError,
 			},
 			wantMessage: "error encountered while applying options",
 			wantFields: map[string]interface{}{
-				"type":       "*bytes.Buffer",
-				"stacktrace": []interface{}{"main.main", "runtime.main"},
-				"error":      "some error",
+				"type":        "*bytes.Buffer",
+				"stacktrace":  []interface{}{"main.main", "runtime.main"},
+				"moduletrace": []interface{}{"main.main"},
+				"error":       "some error",
 			},
 		},
 		{
@@ -159,6 +163,7 @@ func TestZapLogger(t *testing.T) {
 			give: &Provided{
 				ConstructorName: "bytes.NewBuffer()",
 				StackTrace:      []string{"main.main", "runtime.main"},
+				ModuleTrace:     []string{"main.main"},
 				ModuleName:      "myModule",
 				OutputTypeNames: []string{"*bytes.Buffer"},
 				Private:         false,
@@ -167,6 +172,7 @@ func TestZapLogger(t *testing.T) {
 			wantFields: map[string]interface{}{
 				"constructor": "bytes.NewBuffer()",
 				"stacktrace":  []interface{}{"main.main", "runtime.main"},
+				"moduletrace": []interface{}{"main.main"},
 				"type":        "*bytes.Buffer",
 				"module":      "myModule",
 			},
@@ -176,6 +182,7 @@ func TestZapLogger(t *testing.T) {
 			give: &Provided{
 				ConstructorName: "bytes.NewBuffer()",
 				StackTrace:      []string{"main.main", "runtime.main"},
+				ModuleTrace:     []string{"main.main"},
 				ModuleName:      "myModule",
 				OutputTypeNames: []string{"*bytes.Buffer"},
 				Private:         true,
@@ -184,6 +191,7 @@ func TestZapLogger(t *testing.T) {
 			wantFields: map[string]interface{}{
 				"constructor": "bytes.NewBuffer()",
 				"stacktrace":  []interface{}{"main.main", "runtime.main"},
+				"moduletrace": []interface{}{"main.main"},
 				"type":        "*bytes.Buffer",
 				"module":      "myModule",
 				"private":     true,
@@ -192,13 +200,15 @@ func TestZapLogger(t *testing.T) {
 		{
 			name: "Provide/Error",
 			give: &Provided{
-				StackTrace: []string{"main.main", "runtime.main"},
-				Err:        someError,
+				StackTrace:  []string{"main.main", "runtime.main"},
+				ModuleTrace: []string{"main.main"},
+				Err:         someError,
 			},
 			wantMessage: "error encountered while applying options",
 			wantFields: map[string]interface{}{
-				"stacktrace": []interface{}{"main.main", "runtime.main"},
-				"error":      "some error",
+				"stacktrace":  []interface{}{"main.main", "runtime.main"},
+				"moduletrace": []interface{}{"main.main"},
+				"error":       "some error",
 			},
 		},
 		{
@@ -206,26 +216,30 @@ func TestZapLogger(t *testing.T) {
 			give: &Replaced{
 				ModuleName:      "myModule",
 				StackTrace:      []string{"main.main", "runtime.main"},
+				ModuleTrace:     []string{"main.main"},
 				OutputTypeNames: []string{"*bytes.Buffer"},
 			},
 			wantMessage: "replaced",
 			wantFields: map[string]interface{}{
-				"type":       "*bytes.Buffer",
-				"stacktrace": []interface{}{"main.main", "runtime.main"},
-				"module":     "myModule",
+				"type":        "*bytes.Buffer",
+				"stacktrace":  []interface{}{"main.main", "runtime.main"},
+				"moduletrace": []interface{}{"main.main"},
+				"module":      "myModule",
 			},
 		},
 		{
 			name: "Replace/Error",
 			give: &Replaced{
-				StackTrace: []string{"main.main", "runtime.main"},
-				Err:        someError,
+				StackTrace:  []string{"main.main", "runtime.main"},
+				ModuleTrace: []string{"main.main"},
+				Err:         someError,
 			},
 
 			wantMessage: "error encountered while replacing",
 			wantFields: map[string]interface{}{
-				"stacktrace": []interface{}{"main.main", "runtime.main"},
-				"error":      "some error",
+				"stacktrace":  []interface{}{"main.main", "runtime.main"},
+				"moduletrace": []interface{}{"main.main"},
+				"error":       "some error",
 			},
 		},
 		{
@@ -233,27 +247,31 @@ func TestZapLogger(t *testing.T) {
 			give: &Decorated{
 				DecoratorName:   "bytes.NewBuffer()",
 				StackTrace:      []string{"main.main", "runtime.main"},
+				ModuleTrace:     []string{"main.main"},
 				ModuleName:      "myModule",
 				OutputTypeNames: []string{"*bytes.Buffer"},
 			},
 			wantMessage: "decorated",
 			wantFields: map[string]interface{}{
-				"decorator":  "bytes.NewBuffer()",
-				"stacktrace": []interface{}{"main.main", "runtime.main"},
-				"type":       "*bytes.Buffer",
-				"module":     "myModule",
+				"decorator":   "bytes.NewBuffer()",
+				"stacktrace":  []interface{}{"main.main", "runtime.main"},
+				"moduletrace": []interface{}{"main.main"},
+				"type":        "*bytes.Buffer",
+				"module":      "myModule",
 			},
 		},
 		{
 			name: "Decorate/Error",
 			give: &Decorated{
-				StackTrace: []string{"main.main", "runtime.main"},
-				Err:        someError,
+				StackTrace:  []string{"main.main", "runtime.main"},
+				ModuleTrace: []string{"main.main"},
+				Err:         someError,
 			},
 			wantMessage: "error encountered while applying options",
 			wantFields: map[string]interface{}{
-				"stacktrace": []interface{}{"main.main", "runtime.main"},
-				"error":      "some error",
+				"stacktrace":  []interface{}{"main.main", "runtime.main"},
+				"moduletrace": []interface{}{"main.main"},
+				"error":       "some error",
 			},
 		},
 		{

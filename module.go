@@ -45,15 +45,17 @@ type container interface {
 // place. For more information, see [Decorate], [Replace], or [Invoke].
 func Module(name string, opts ...Option) Option {
 	mo := moduleOption{
-		name:    name,
-		options: opts,
+		name:     name,
+		location: fxreflect.CallerStack(1, 2)[0],
+		options:  opts,
 	}
 	return mo
 }
 
 type moduleOption struct {
-	name    string
-	options []Option
+	name     string
+	location fxreflect.Frame
+	options  []Option
 }
 
 func (o moduleOption) String() string {
@@ -68,9 +70,13 @@ func (o moduleOption) apply(mod *module) {
 	// module.
 	// 2. Apply child Options on the new module.
 	// 3. Append it to the parent module.
+
+	// Create trace as parent's trace with this module's location pre-pended.
+	trace := append([]string{fmt.Sprintf("%v (%v)", o.location, o.name)}, mod.trace...)
 	newModule := &module{
 		name:   o.name,
 		parent: mod,
+		trace:  trace,
 		app:    mod.app,
 	}
 	for _, opt := range o.options {
@@ -82,6 +88,7 @@ func (o moduleOption) apply(mod *module) {
 type module struct {
 	parent         *module
 	name           string
+	trace          []string
 	scope          scope
 	provides       []provide
 	invokes        []invoke
@@ -177,6 +184,7 @@ func (m *module) provide(p provide) {
 	m.log.LogEvent(&fxevent.Provided{
 		ConstructorName: funcName,
 		StackTrace:      p.Stack.Strings(),
+		ModuleTrace:     append([]string{p.Stack[0].String()}, m.trace...),
 		ModuleName:      m.name,
 		OutputTypeNames: outputNames,
 		Err:             m.app.err,
@@ -202,10 +210,11 @@ func (m *module) supply(p provide) {
 	}
 
 	m.log.LogEvent(&fxevent.Supplied{
-		TypeName:   typeName,
-		StackTrace: p.Stack.Strings(),
-		ModuleName: m.name,
-		Err:        m.app.err,
+		TypeName:    typeName,
+		StackTrace:  p.Stack.Strings(),
+		ModuleTrace: append([]string{p.Stack[0].String()}, m.trace...),
+		ModuleName:  m.name,
+		Err:         m.app.err,
 	})
 }
 
@@ -329,6 +338,7 @@ func (m *module) decorate(d decorator) (err error) {
 	m.log.LogEvent(&fxevent.Decorated{
 		DecoratorName:   funcName,
 		StackTrace:      d.Stack.Strings(),
+		ModuleTrace:     append([]string{d.Stack[0].String()}, m.trace...),
 		ModuleName:      m.name,
 		OutputTypeNames: outputNames,
 		Err:             err,
@@ -354,6 +364,7 @@ func (m *module) replace(d decorator) error {
 	m.log.LogEvent(&fxevent.Replaced{
 		ModuleName:      m.name,
 		StackTrace:      d.Stack.Strings(),
+		ModuleTrace:     append([]string{d.Stack[0].String()}, m.trace...),
 		OutputTypeNames: []string{typeName},
 		Err:             err,
 	})
