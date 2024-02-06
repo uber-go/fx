@@ -234,12 +234,12 @@ func TestModuleSuccess(t *testing.T) {
 			}),
 			fx.Invoke(func(p *person) {
 				assert.Equal(t, 2, p.age)
-				p.age += 1
+				p.age++
 			}),
 			fx.Module("module",
 				fx.Invoke(func(p *person) {
 					assert.Equal(t, 1, p.age)
-					p.age += 1
+					p.age++
 				}),
 			),
 			fx.Invoke(func(p *person) {
