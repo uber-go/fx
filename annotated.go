@@ -117,8 +117,8 @@ type Annotation interface {
 }
 
 var (
-	_typeOfError reflect.Type = reflect.TypeOf((*error)(nil)).Elem()
-	_nilError                 = reflect.Zero(_typeOfError)
+	_typeOfError = reflect.TypeOf((*error)(nil)).Elem()
+	_nilError    = reflect.Zero(_typeOfError)
 )
 
 // annotationError is a wrapper for an error that was encountered while
@@ -642,8 +642,8 @@ func (la *lifecycleHookAnnotation) build(ann *annotated) (interface{}, error) {
 }
 
 var (
-	_typeOfLifecycle reflect.Type = reflect.TypeOf((*Lifecycle)(nil)).Elem()
-	_typeOfContext   reflect.Type = reflect.TypeOf((*context.Context)(nil)).Elem()
+	_typeOfLifecycle = reflect.TypeOf((*Lifecycle)(nil)).Elem()
+	_typeOfContext   = reflect.TypeOf((*context.Context)(nil)).Elem()
 )
 
 // buildHookInstaller returns a function that appends a hook to Lifecycle when called,
