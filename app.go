@@ -547,8 +547,11 @@ func (err errorWithGraph) Error() string {
 
 // VisualizeError returns the visualization of the error if available.
 func VisualizeError(err error) (string, error) {
-	if e, ok := err.(errWithGraph); ok && e.Graph() != "" {
-		return string(e.Graph()), nil
+	var erg errWithGraph
+	if errors.As(err, &erg) {
+		if g := erg.Graph(); g != "" {
+			return string(g), nil
+		}
 	}
 	return "", errors.New("unable to visualize error")
 }
