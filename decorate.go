@@ -123,6 +123,11 @@ import (
 //	  return r
 //	}),
 //
+// Decorators can not add new values to the graph,
+// only modify or replace existing ones.
+// Types returned by a decorator that are not already in the graph
+// will be ignored.
+//
 // # Decorator scope
 //
 // Modifications made to the Fx graph with fx.Decorate are scoped to the
