@@ -414,7 +414,7 @@ func TestModuleSuccess(t *testing.T) {
 
 		assert.Equal(t, []string{
 			"Supplied", "Provided", "Replaced", "Run", "Run", "LoggerInitialized",
-			//Invoke logged twice, once from child and another from grandchild
+			// Invoke logged twice, once from child and another from grandchild
 			"Invoking", "Run", "Invoked", "Invoking", "Invoked",
 		}, childSpy.EventTypes(), "events from grandchild also logged in child logger")
 

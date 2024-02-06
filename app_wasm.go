@@ -25,5 +25,7 @@ package fx
 
 import "syscall"
 
-const _sigINT = syscall.SIGINT
-const _sigTERM = syscall.SIGTERM
+const (
+	_sigINT  = syscall.SIGINT
+	_sigTERM = syscall.SIGTERM
+)

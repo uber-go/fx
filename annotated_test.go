@@ -1701,8 +1701,8 @@ func TestAnnotateApplySuccess(t *testing.T) {
 			require.NoError(t, app.Err())
 		})
 	}
-
 }
+
 func assertApp(
 	t *testing.T,
 	app interface {

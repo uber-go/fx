@@ -71,7 +71,6 @@ func TestZapLogger(t *testing.T) {
 			},
 		},
 		{
-
 			name: "OnStopExecuted/Error",
 			give: &OnStopExecuted{
 				FunctionName: "hook.onStart1",
@@ -100,7 +99,6 @@ func TestZapLogger(t *testing.T) {
 			},
 		},
 		{
-
 			name: "OnStartExecuted/Error",
 			give: &OnStartExecuted{
 				FunctionName: "hook.onStart1",

@@ -178,7 +178,6 @@ func verifyValueQuote(value string) (string, error) {
 		return "", errTagValueSyntaxEndingQuote
 	}
 	return value[i+1:], nil
-
 }
 
 // Check whether the tag follows valid struct.
@@ -211,7 +210,6 @@ func verifyAnnotateTag(tag string) error {
 		tag = value
 	}
 	return nil
-
 }
 
 // Given func(T1, T2, T3, ..., TN), this generates a type roughly

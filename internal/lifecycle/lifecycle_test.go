@@ -329,7 +329,6 @@ func TestLifecycleStop(t *testing.T) {
 		err = l.Stop(nil)
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "called OnStop with nil context")
-
 	})
 }
 
