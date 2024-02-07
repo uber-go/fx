@@ -234,12 +234,12 @@ func TestModuleSuccess(t *testing.T) {
 			}),
 			fx.Invoke(func(p *person) {
 				assert.Equal(t, 2, p.age)
-				p.age += 1
+				p.age++
 			}),
 			fx.Module("module",
 				fx.Invoke(func(p *person) {
 					assert.Equal(t, 1, p.age)
-					p.age += 1
+					p.age++
 				}),
 			),
 			fx.Invoke(func(p *person) {
@@ -414,7 +414,7 @@ func TestModuleSuccess(t *testing.T) {
 
 		assert.Equal(t, []string{
 			"Supplied", "Provided", "Replaced", "Run", "Run", "LoggerInitialized",
-			//Invoke logged twice, once from child and another from grandchild
+			// Invoke logged twice, once from child and another from grandchild
 			"Invoking", "Run", "Invoked", "Invoking", "Invoked",
 		}, childSpy.EventTypes(), "events from grandchild also logged in child logger")
 

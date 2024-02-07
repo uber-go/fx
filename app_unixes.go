@@ -25,5 +25,7 @@ package fx
 
 import "golang.org/x/sys/unix"
 
-const _sigINT = unix.SIGINT
-const _sigTERM = unix.SIGTERM
+const (
+	_sigINT  = unix.SIGINT
+	_sigTERM = unix.SIGTERM
+)

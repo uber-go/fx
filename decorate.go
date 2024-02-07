@@ -221,7 +221,7 @@ func runDecorator(c container, d decorator, opts ...dig.DecorateOption) (err err
 	decorator := d.Target
 	defer func() {
 		if err != nil {
-			err = fmt.Errorf("fx.Decorate(%v) from:\n%+vFailed: %v", decorator, d.Stack, err)
+			err = fmt.Errorf("fx.Decorate(%v) from:\n%+vFailed: %w", decorator, d.Stack, err)
 		}
 	}()
 

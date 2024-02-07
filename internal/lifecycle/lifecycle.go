@@ -195,7 +195,7 @@ func (l *Lifecycle) Start(ctx context.Context) error {
 	l.startRecords = make(HookRecords, 0, len(l.hooks))
 	l.mu.Unlock()
 
-	var returnState appState = incompleteStart
+	returnState := incompleteStart
 	defer func() {
 		l.mu.Lock()
 		l.state = returnState

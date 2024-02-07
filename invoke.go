@@ -89,6 +89,7 @@ func (o invokeOption) String() string {
 	}
 	return fmt.Sprintf("fx.Invoke(%s)", strings.Join(items, ", "))
 }
+
 func runInvoke(c container, i invoke) error {
 	fn := i.Target
 	switch fn := fn.(type) {

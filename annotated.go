@@ -117,8 +117,8 @@ type Annotation interface {
 }
 
 var (
-	_typeOfError reflect.Type = reflect.TypeOf((*error)(nil)).Elem()
-	_nilError                 = reflect.Zero(_typeOfError)
+	_typeOfError = reflect.TypeOf((*error)(nil)).Elem()
+	_nilError    = reflect.Zero(_typeOfError)
 )
 
 // annotationError is a wrapper for an error that was encountered while
@@ -178,7 +178,6 @@ func verifyValueQuote(value string) (string, error) {
 		return "", errTagValueSyntaxEndingQuote
 	}
 	return value[i+1:], nil
-
 }
 
 // Check whether the tag follows valid struct.
@@ -211,7 +210,6 @@ func verifyAnnotateTag(tag string) error {
 		tag = value
 	}
 	return nil
-
 }
 
 // Given func(T1, T2, T3, ..., TN), this generates a type roughly
@@ -644,8 +642,8 @@ func (la *lifecycleHookAnnotation) build(ann *annotated) (interface{}, error) {
 }
 
 var (
-	_typeOfLifecycle reflect.Type = reflect.TypeOf((*Lifecycle)(nil)).Elem()
-	_typeOfContext   reflect.Type = reflect.TypeOf((*context.Context)(nil)).Elem()
+	_typeOfLifecycle = reflect.TypeOf((*Lifecycle)(nil)).Elem()
+	_typeOfContext   = reflect.TypeOf((*context.Context)(nil)).Elem()
 )
 
 // buildHookInstaller returns a function that appends a hook to Lifecycle when called,

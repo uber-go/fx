@@ -1,4 +1,4 @@
-// Copyright (c) 2021 Uber Technologies, Inc.
+// Copyright (c) 2024 Uber Technologies, Inc.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -18,20 +18,6 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-// fxlint is a linter that verifies correct usage of Fx.
-//
-// Currently, the following passes are provided:
-//
-// - allfxevents: Verifies that all Fx events are handled by an fxevent.Logger.
-package main
-
-import (
-	"go.uber.org/fx/tools/analysis/passes/allfxevents"
-	"golang.org/x/tools/go/analysis/multichecker"
-)
-
-func main() {
-	multichecker.Main(
-		allfxevents.Analyzer,
-	)
-}
+// Package fxtest provides utilities for testing Fx modules,
+// and code that directly uses Fx.
+package fxtest

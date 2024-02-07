@@ -320,16 +320,13 @@ func TestLifecycleStop(t *testing.T) {
 				return nil
 			},
 		})
-		//lint:ignore SA1012 this test specifically tests for the lint failure
-		err := l.Start(nil)
+		err := l.Start(nil) //nolint:staticcheck // SA1012 this test specifically tests for the lint failure
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "called OnStart with nil context")
 
-		//lint:ignore SA1012 this test specifically tests for the lint failure
-		err = l.Stop(nil)
+		err = l.Stop(nil) //nolint:staticcheck // SA1012 this test specifically tests for the lint failure
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "called OnStop with nil context")
-
 	})
 }
 
