@@ -22,6 +22,7 @@ package fx_test
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"net"
 	"net/http"
@@ -88,7 +89,18 @@ func NewHandler(logger *log.Logger) (http.Handler, error) {
 	}), nil
 }
 
-// NewMux constructs an HTTP mux. Like NewHandler, it depends on *log.Logger.
+// NewListener constructs a TCP listener that an HTTP server handle connections on.
+// It returns a net.Listener and net.Addr type.
+func NewListener() (net.Listener, net.Addr, error) {
+	ln, err := net.Listen("tcp", "127.0.0.1:0") // listen on random port
+	if err != nil {
+		return nil, nil, err
+	}
+	return ln, ln.Addr(), nil
+}
+
+// NewMux constructs an HTTP mux. Like NewHandler, it depends on *log.Logger
+// and net.Listener.
 // However, it also depends on the Fx-specific Lifecycle interface.
 //
 // A Lifecycle is available in every Fx application. It lets objects hook into
@@ -116,13 +128,13 @@ func NewHandler(logger *log.Logger) (http.Handler, error) {
 // constructors are called lazily, we know that NewMux won't be called unless
 // some other function wants to register a handler. This makes it easy to use
 // Fx's Lifecycle to start an HTTP server only if we have handlers registered.
-func NewMux(lc fx.Lifecycle, logger *log.Logger) *http.ServeMux {
+func NewMux(lc fx.Lifecycle, logger *log.Logger, ln net.Listener) *http.ServeMux {
 	logger.Print("Executing NewMux.")
 	// First, we construct the mux and server. We don't want to start the server
 	// until all handlers are registered.
 	mux := http.NewServeMux()
 	server := &http.Server{
-		Addr:    "127.0.0.1:8080",
+		Addr:    ln.Addr().String(),
 		Handler: mux,
 	}
 	// If NewMux is called, we know that another function is using the mux. In
@@ -146,10 +158,6 @@ func NewMux(lc fx.Lifecycle, logger *log.Logger) *http.ServeMux {
 		// passed via Go's usual context.Context.
 		OnStart: func(context.Context) error {
 			logger.Print("Starting HTTP server.")
-			ln, err := net.Listen("tcp", server.Addr)
-			if err != nil {
-				return err
-			}
 			go server.Serve(ln)
 			return nil
 		},
@@ -182,6 +190,8 @@ func Register(mux *http.ServeMux, h http.Handler) {
 }
 
 func Example() {
+	var addr net.Addr
+
 	app := fx.New(
 		// Provide all the constructors we need, which teaches Fx how we'd like to
 		// construct the *log.Logger, http.Handler, and *http.ServeMux types.
@@ -189,6 +199,7 @@ func Example() {
 		// much on its own.
 		fx.Provide(
 			NewLogger,
+			NewListener,
 			NewHandler,
 			NewMux,
 		),
@@ -199,6 +210,10 @@ func Example() {
 		// NewMux, we also register Lifecycle hooks to start and stop an HTTP
 		// server.
 		fx.Invoke(Register),
+
+		// Populate allows us to extract the net.Addr that is created by
+		// the NewListener constructor and use it for a client.
+		fx.Populate(&addr),
 
 		// This is optional. With this, you can control where Fx logs
 		// its events. In this case, we're using a NopLogger to keep
@@ -222,7 +237,7 @@ func Example() {
 
 	// Normally, we'd block here with <-app.Done(). Instead, we'll make an HTTP
 	// request to demonstrate that our server is running.
-	if _, err := http.Get("http://localhost:8080/"); err != nil {
+	if _, err := http.Get(fmt.Sprintf("http://%v", addr.String())); err != nil {
 		log.Fatal(err)
 	}
 
