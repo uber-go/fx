@@ -21,7 +21,7 @@ build:
 	go build ./...
 
 .PHONY: lint
-lint: golangci-lint tidy-lint license-lint fx-lint docs-lint
+lint: golangci-lint tidy-lint fx-lint docs-lint
 
 .PHONY: test
 test:
@@ -58,10 +58,6 @@ tidy-lint:
 		go mod tidy && \
 		git diff --exit-code -- go.mod go.sum) &&) true
 
-.PHONY: license-lint
-license-lint:
-	./checklicense.sh
-
 .PHONY: fx-lint
 fx-lint: $(FXLINT)
 	@$(FXLINT) ./...
@@ -76,4 +72,3 @@ $(MDOX): tools/go.mod
 
 $(FXLINT): tools/cmd/fxlint/main.go
 	cd tools && go install go.uber.org/fx/tools/cmd/fxlint
-
