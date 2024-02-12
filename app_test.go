@@ -53,7 +53,7 @@ func NewForTest(tb testing.TB, opts ...Option) *App {
 		// Provide both: Logger and WithLogger so that if the test
 		// WithLogger fails, we don't pollute stderr.
 		Logger(fxtest.NewTestPrinter(tb)),
-		WithLogger(func() fxevent.Logger { return fxtest.NewTestLogger(tb) }),
+		fxtest.WithTestLogger(tb),
 	}
 	opts = append(testOpts, opts...)
 
@@ -73,7 +73,7 @@ func validateTestApp(tb testing.TB, opts ...Option) error {
 		// Provide both: Logger and WithLogger so that if the test
 		// WithLogger fails, we don't pollute stderr.
 		Logger(fxtest.NewTestPrinter(tb)),
-		WithLogger(func() fxevent.Logger { return fxtest.NewTestLogger(tb) }),
+		fxtest.WithTestLogger(tb),
 	}
 	opts = append(testOpts, opts...)
 

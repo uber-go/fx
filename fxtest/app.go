@@ -24,7 +24,6 @@ import (
 	"context"
 
 	"go.uber.org/fx"
-	"go.uber.org/fx/fxevent"
 )
 
 // App is a wrapper around fx.App that provides some testing helpers. By
@@ -38,7 +37,7 @@ type App struct {
 // New creates a new test application.
 func New(tb TB, opts ...fx.Option) *App {
 	allOpts := make([]fx.Option, 0, len(opts)+1)
-	allOpts = append(allOpts, fx.WithLogger(func() fxevent.Logger { return NewTestLogger(tb) }))
+	allOpts = append(allOpts, WithTestLogger(tb))
 	allOpts = append(allOpts, opts...)
 
 	app := fx.New(allOpts...)
