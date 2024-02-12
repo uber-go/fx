@@ -101,6 +101,7 @@ module.exports = {
       {
         title: 'Concepts',
         children: [
+          'container.md',
           'lifecycle.md',
           'modules.md',
         ],
