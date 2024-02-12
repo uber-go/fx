@@ -54,7 +54,7 @@ Fx provides two ways to provide values to the container:
   This says that Fx should use the provided `*Config` as-is.
 
   **Important**: `fx.Supply` is only for non-interface values.
-  See [When to use fx.Supply](#when-to-use-fx-supply) for more details.
+  See *When to use fx.Supply* for more details.
 
 Values provided to the container are available to all other constructors.
 In the example above, the `*Config` would become available to the `*Logger` constructor,
@@ -77,7 +77,7 @@ However, even then, `fx.Supply` comes with a caveat:
 it can only be used for non-interface values.
 
 <details>
-  <summary>Why can't I use fx.Supply for interface values?</summary>
+  <summary>Why can&#39;t I use fx.Supply for interface values?</summary>
 
 This is a technical limitation imposed by the fact that `fx.Supply` has to rely
 on runtime reflection to determine the type of the value.
