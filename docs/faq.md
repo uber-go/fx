@@ -4,24 +4,44 @@ This page contains answers to common questions and issues with using Fx.
 
 ## Does the order of `fx.Option`s matter?
 
-No, the order in which you provide various Fx options
+No, the order in which you provide Fx options
 to `fx.Options`, `fx.New`, `fx.Module`, and others does not matter.
 
-Ordering is determined by dependencies,
-and dependencies are determined by function parameters and return types.
+Ordering of options relative to each other is as follows:
 
-If `ParseConfig` returns a `*Config`,
-and `NewLogger` accepts a `*Config` parameter,
-then `ParseConfig` will always run before `NewLogger`.
+* Adding values:
+  Operations like `fx.Provide` and `fx.Supply` are run in dependency order.
+  Dependencies are determined by the function parameters and results.
 
-The following are all equivalent:
+  ```go
+  // The following are all equivalent:
+  fx.Options(fx.Provide(ParseConfig, NewLogger))
+  fx.Options(fx.Provide(NewLogger, ParseConfig))
+  fx.Options(fx.Provide(ParseConfig), fx.Provide(NewLogger))
+  fx.Options(fx.Provide(NewLogger), fx.Provide(ParseConfig))
+  ```
 
-```go
-fx.Options(fx.Provide(ParseConfig, NewLogger))
-fx.Options(fx.Provide(NewLogger, ParseConfig))
-fx.Options(fx.Provide(ParseConfig), fx.Provide(NewLogger))
-fx.Options(fx.Provide(NewLogger), fx.Provide(ParseConfig))
-```
+* Consuming values:
+  Operations like `fx.Invoke` and `fx.Populate` are run
+  after their dependencies have been satisfied.
+  However, there's no guarantee about their ordering
+  relative to other consuming operations.
+
+  ```go
+  // There is no guarantee about the order
+  // in which these two functions are called:
+  fx.Invoke(a, b)
+  fx.Invoke(b, a)
+  ```
+
+* Replacing values:
+  Operations like `fx.Decorate` and `fx.Replace` are run
+  after the Provide operations that they depend on,
+  but before the Invoke operations that consume those values.
+
+  Ordering of decorations relative to each other
+  is determined by `fx.Module` hierarchies:
+  decorations in a parent module are applied after those of a child module.
 
 ## Why does `fx.Supply` not accept interfaces?
 
