@@ -167,5 +167,17 @@ func TestMock_ManySleepers(t *testing.T) {
 
 	clock.AwaitScheduled(N)
 	clock.Add(1 * time.Millisecond)
-	wg.Wait()
+
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		wg.Wait()
+	}()
+
+	select {
+	case <-done:
+		// ok
+	case <-time.After(10 * time.Millisecond):
+		t.Fatal("expected all sleepers to be done")
+	}
 }
