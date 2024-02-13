@@ -161,9 +161,8 @@ func (c *deadlineCtx) Value(key any) any                       { return c.inner.
 
 func (c *deadlineCtx) Err() error {
 	c.mu.Lock()
-	err := c.err
-	c.mu.Unlock()
-	return err
+	defer c.mu.Unlock()
+	return c.err
 }
 
 func (c *deadlineCtx) cancel(err error) {
