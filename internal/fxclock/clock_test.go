@@ -50,7 +50,21 @@ func testClock(t *testing.T, clock Clock, advance func(d time.Duration)) {
 
 	t.Run("Sleep", func(t *testing.T) {
 		start := clock.Now()
-		go advance(1 * time.Millisecond)
+
+		go func() {
+			// For the mock clock, there's a chance that advance will be
+			// too fast and the Sleep will block forever, waiting for
+			// another advance. The mock clock provides
+			// AwaitScheduled to help with this.
+			//
+			// Since that function is not available on the system clock,
+			// we'll use upcasting to check for it.
+			if awaiter, ok := clock.(interface{ AwaitScheduled(int) }); ok {
+				awaiter.AwaitScheduled(1)
+			}
+
+			advance(1 * time.Millisecond)
+		}()
 		clock.Sleep(1 * time.Millisecond)
 
 		assert.NotZero(t, clock.Since(start), "time must have advanced")
