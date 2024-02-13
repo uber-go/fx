@@ -126,7 +126,7 @@ func TestMock_Sleep(t *testing.T) {
 	// scheduled event.
 	clock.AwaitScheduled(1)
 
-	// Adbance only one millisecond, the Sleep should not return.
+	// Advance only one millisecond, the Sleep should not return.
 	clock.Add(1 * time.Millisecond)
 	select {
 	case <-ch:
