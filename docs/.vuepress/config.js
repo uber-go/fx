@@ -106,6 +106,7 @@ module.exports = {
           'modules.md',
         ],
       },
+      ['faq.md', 'FAQ'],
       {
         title: 'Community',
         children: [
