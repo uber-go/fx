@@ -185,7 +185,7 @@ func (c *Mock) runAt(t time.Time, fn func()) {
 	c.waiterAdded.Broadcast()
 }
 
-// AwaitScheduled blocks until there are are at least N
+// AwaitScheduled blocks until there are at least N
 // operations scheduled for the future.
 func (c *Mock) AwaitScheduled(n int) {
 	c.mu.Lock()
