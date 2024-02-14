@@ -191,6 +191,13 @@ func (c *Mock) AwaitScheduled(n int) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
+	// Note: waiterAdded is associated with c.mu,
+	// the same lock we're holding here.
+	//
+	// When we call Wait(), it'll release the lock
+	// and block until signaled by runAt,
+	// at which point it'll reacquire the lock
+	// (waiting until runAt has released it).
 	for len(c.waiters) < n {
 		c.waiterAdded.Wait()
 	}
