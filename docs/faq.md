@@ -23,15 +23,24 @@ Ordering of options relative to each other is as follows:
 
 * Consuming values:
   Operations like `fx.Invoke` and `fx.Populate` are run
-  after their dependencies have been satisfied.
-  However, there's no guarantee about their ordering
-  relative to other consuming operations.
+  after their dependencies have been satisfied: after `fx.Provide`s.
+
+  Relative to each other, invokes are run in the order they were specified.
 
   ```go
-  // There is no guarantee about the order
-  // in which these two functions are called:
   fx.Invoke(a, b)
-  fx.Invoke(b, a)
+  // a() is run before b()
+  ```
+
+  `fx.Module` hierarchies affect invocation order:
+  invocations in a parent module are run after those of a child module.
+
+  ```go
+  fx.Options(
+    fx.Invoke(a),
+    fx.Module("child", fx.Invoke(b)),
+  ),
+  // b() is run before a()
   ```
 
 * Replacing values:
