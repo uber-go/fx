@@ -40,13 +40,19 @@ import (
 )
 
 // DefaultTimeout is the default timeout for starting or stopping an
-// application. It can be configured with the StartTimeout and StopTimeout
+// application. It can be configured with the [StartTimeout] and [StopTimeout]
 // options.
 const DefaultTimeout = 15 * time.Second
 
-// An Option configures an App using the functional options paradigm
-// popularized by Rob Pike. If you're unfamiliar with this style, see
-// https://commandcenter.blogspot.com/2014/01/self-referential-functions-and-design.html.
+// An Option specifies the behavior of the application.
+// This is the primary means by which you interface with Fx.
+//
+// Zero or more options are specified at startup with [New].
+// Options cannot be changed once an application has been initialized.
+// Options may be grouped into a single option using the [Options] function.
+// A group of options providing a logical unit of functionality
+// may use [Module] to name that functionality
+// and scope certain operations to within that module.
 type Option interface {
 	fmt.Stringer
 
@@ -73,37 +79,17 @@ func (errs errorOption) String() string {
 	return fmt.Sprintf("fx.Error(%v)", multierr.Combine(errs...))
 }
 
-// Options converts a collection of Options into a single Option. This allows
-// packages to bundle sophisticated functionality into easy-to-use Fx modules.
-// For example, a logging package might export a simple option like this:
+// Options bundles a group of options together into a single option.
 //
-//	package logging
+// Use Options to group together options that don't belong in a [Module].
 //
-//	var Module = fx.Provide(func() *log.Logger {
-//	  return log.New(os.Stdout, "", 0)
-//	})
-//
-// A shared all-in-one microservice package could then use Options to bundle
-// logging with similar metrics, tracing, and gRPC modules:
-//
-//	package server
-//
-//	var Module = fx.Options(
-//	  logging.Module,
-//	  metrics.Module,
-//	  tracing.Module,
-//	  grpc.Module,
+//	var loggingAndMetrics = fx.Options(
+//		logging.Module,
+//		metrics.Module,
+//		fx.Invoke(func(logger *log.Logger) {
+//			app.globalLogger = logger
+//		}),
 //	)
-//
-// Since this all-in-one module has a minimal API surface, it's easy to add
-// new functionality to it without breaking existing users. Individual
-// applications can take advantage of all this functionality with only one
-// line of code:
-//
-//	app := fx.New(server.Module)
-//
-// Use this pattern sparingly, since it limits the user's ability to customize
-// their application.
 func Options(opts ...Option) Option {
 	return optionGroup(opts)
 }
@@ -125,6 +111,10 @@ func (og optionGroup) String() string {
 }
 
 // StartTimeout changes the application's start timeout.
+// This controls the total time that all OnStart hooks have to complete.
+// If the timeout is exceeded, the application will fail to start.
+//
+// Defaults to [DefaultTimeout].
 func StartTimeout(v time.Duration) Option {
 	return startTimeoutOption(v)
 }
@@ -145,6 +135,10 @@ func (t startTimeoutOption) String() string {
 }
 
 // StopTimeout changes the application's stop timeout.
+// This controls the total time that all OnStop hooks have to complete.
+// If the timeout is exceeded, the application will exit early.
+//
+// Defaults to [DefaultTimeout].
 func StopTimeout(v time.Duration) Option {
 	return stopTimeoutOption(v)
 }
@@ -186,18 +180,27 @@ func (o recoverFromPanicsOption) String() string {
 	return "fx.RecoverFromPanics()"
 }
 
-// WithLogger specifies how Fx should build an fxevent.Logger to log its events
-// to. The argument must be a constructor with one of the following return
-// types.
+// WithLogger specifies the logger used by Fx to log its own events
+// (e.g. a constructor was provided, a function was invoked, etc.).
+//
+// The argument to this is a constructor with one of the following return
+// types:
 //
 //	fxevent.Logger
 //	(fxevent.Logger, error)
 //
+// The constructor may depend on any other types provided to the application.
 // For example,
 //
 //	WithLogger(func(logger *zap.Logger) fxevent.Logger {
 //	  return &fxevent.ZapLogger{Logger: logger}
 //	})
+//
+// If specified, Fx will construct the logger and log all its events to the
+// specified logger.
+//
+// If Fx fails to build the logger, it will fall back to
+// [fxevent.ConsoleLogger] configured to write to stderr.
 func WithLogger(constructor interface{}) Option {
 	return withLoggerOption{
 		constructor: constructor,
@@ -224,14 +227,15 @@ func (l withLoggerOption) String() string {
 // Printer is the interface required by Fx's logging backend. It's implemented
 // by most loggers, including the one bundled with the standard library.
 //
-// Note, this will be deprecate with next release and you will need to implement
-// fxevent.Logger interface instead.
+// Note, this will be deprecate in a future release.
+// Prefer to use [fxevent.Logger] instead.
 type Printer interface {
 	Printf(string, ...interface{})
 }
 
 // Logger redirects the application's log output to the provided printer.
-// Deprecated: use WithLogger instead.
+//
+// Prefer to use [WithLogger] instead.
 func Logger(p Printer) Option {
 	return loggerOption{p}
 }
@@ -252,8 +256,11 @@ func (l loggerOption) String() string {
 	return fmt.Sprintf("fx.Logger(%v)", l.p)
 }
 
-// NopLogger disables the application's log output. Note that this makes some
-// failures difficult to debug, since no errors are printed to console.
+// NopLogger disables the application's log output.
+//
+// Note that this makes some failures difficult to debug,
+// since no errors are printed to console.
+// Prefer to log to an in-memory buffer instead.
 var NopLogger = WithLogger(func() fxevent.Logger { return fxevent.NopLogger })
 
 // An App is a modular application built around dependency injection. Most
@@ -261,11 +268,11 @@ var NopLogger = WithLogger(func() fxevent.Logger { return fxevent.NopLogger })
 // convenience method. In more unusual cases, users may need to use the Err,
 // Start, Done, and Stop methods by hand instead of relying on Run.
 //
-// New creates and initializes an App. All applications begin with a
+// [New] creates and initializes an App. All applications begin with a
 // constructor for the Lifecycle type already registered.
 //
 // In addition to that built-in functionality, users typically pass a handful
-// of Provide options and one or more Invoke options. The Provide options
+// of [Provide] options and one or more [Invoke] options. The Provide options
 // teach the application how to instantiate a variety of types, and the Invoke
 // options describe how to initialize the application.
 //
@@ -286,7 +293,7 @@ var NopLogger = WithLogger(func() fxevent.Logger { return fxevent.NopLogger })
 //
 // At this point, the application has successfully started up. If started via
 // Run, it will continue operating until it receives a shutdown signal from
-// Done (see the Done documentation for details); if started explicitly via
+// Done (see the [App.Done] documentation for details); if started explicitly via
 // Start, it will operate until the user calls Stop. On shutdown, OnStop hooks
 // execute one at a time, in reverse order, and must all complete within a
 // configurable deadline (again, 15 seconds by default).
@@ -340,6 +347,10 @@ type invoke struct {
 }
 
 // ErrorHandler handles Fx application startup errors.
+// Register these with [ErrorHook].
+// If specified, and the application fails to start up,
+// the failure will still cause a crash,
+// but you'll have a chance to log the error or take some other action.
 type ErrorHandler interface {
 	HandleError(error)
 }
@@ -407,7 +418,7 @@ func ValidateApp(opts ...Option) error {
 }
 
 // New creates and initializes an App, immediately executing any functions
-// registered via Invoke options. See the documentation of the App struct for
+// registered via [Invoke] options. See the documentation of the App struct for
 // details on the application's initialization, startup, and shutdown logic.
 func New(opts ...Option) *App {
 	logger := fxlog.DefaultLogger(os.Stderr)
@@ -526,6 +537,8 @@ func (app *App) log() fxevent.Logger {
 // initialization. On failure to build the dependency graph, it is attached
 // to the error and if possible, colorized to highlight the root cause of the
 // failure.
+//
+// Note that DotGraph does not yet recognize [Decorate] and [Replace].
 type DotGraph string
 
 type errWithGraph interface {
@@ -546,6 +559,8 @@ func (err errorWithGraph) Error() string {
 }
 
 // VisualizeError returns the visualization of the error if available.
+//
+// Note that VisualizeError does not yet recognize [Decorate] and [Replace].
 func VisualizeError(err error) (string, error) {
 	var erg errWithGraph
 	if errors.As(err, &erg) {
@@ -566,12 +581,15 @@ func (app *App) exit(code int) {
 }
 
 // Run starts the application, blocks on the signals channel, and then
-// gracefully shuts the application down. It uses DefaultTimeout to set a
+// gracefully shuts the application down. It uses [DefaultTimeout] to set a
 // deadline for application startup and shutdown, unless the user has
-// configured different timeouts with the StartTimeout or StopTimeout options.
+// configured different timeouts with the [StartTimeout] or [StopTimeout] options.
 // It's designed to make typical applications simple to run.
+// The minimal Fx application looks like this:
 //
-// However, all of Run's functionality is implemented in terms of the exported
+//	fx.New().Run()
+//
+// All of Run's functionality is implemented in terms of the exported
 // Start, Done, and Stop methods. Applications with more specialized needs
 // can use those methods directly instead of relying on Run.
 func (app *App) Run() {
@@ -719,36 +737,31 @@ func (app *App) Stop(ctx context.Context) (err error) {
 // the same terminal as the running process.
 //
 // Alternatively, a signal can be broadcast to all done channels manually by
-// using the Shutdown functionality (see the Shutdowner documentation for details).
-//
-// Note: The channel Done returns will not receive a signal unless the application
-// as been started via Start or Run.
+// using the Shutdown functionality (see the [Shutdowner] documentation for details).
 func (app *App) Done() <-chan os.Signal {
 	return app.receivers.Done()
 }
 
 // Wait returns a channel of [ShutdownSignal] to block on after starting the
-// application and function, similar to [App.Done], but with a minor difference.
-// Should an ExitCode be provided as a [ShutdownOption] to
-// the Shutdowner Shutdown method, the exit code will be available as part
-// of the ShutdownSignal struct.
-//
-// Should the app receive a SIGTERM or SIGINT, the given
-// signal will be populated in the ShutdownSignal struct.
+// application and function, similar to [App.Done], but with a minor difference:
+// if the app was shut down via [Shutdowner.Shutdown],
+// the exit code (if provied via [ExitCode]) will be available
+// in the [ShutdownSignal] struct.
+// Otherwise, the signal that was received will be set.
 func (app *App) Wait() <-chan ShutdownSignal {
 	return app.receivers.Wait()
 }
 
-// StartTimeout returns the configured startup timeout. Apps default to using
-// DefaultTimeout, but users can configure this behavior using the
-// StartTimeout option.
+// StartTimeout returns the configured startup timeout.
+// This defaults to [DefaultTimeout], and can be changed with the
+// [StartTimeout] option.
 func (app *App) StartTimeout() time.Duration {
 	return app.startTimeout
 }
 
-// StopTimeout returns the configured shutdown timeout. Apps default to using
-// DefaultTimeout, but users can configure this behavior using the StopTimeout
-// option.
+// StopTimeout returns the configured shutdown timeout.
+// This defaults to [DefaultTimeout], and can be changed with the
+// [StopTimeout] option.
 func (app *App) StopTimeout() time.Duration {
 	return app.stopTimeout
 }

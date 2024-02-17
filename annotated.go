@@ -56,8 +56,10 @@ import (
 //	})
 //
 // Annotated cannot be used with constructors which produce fx.Out objects.
+// When used with [Supply], Target is a value instead of a constructor.
 //
-// When used with fx.Supply, the target is a value rather than a constructor function.
+// This type represents a less powerful version of the [Annotate] construct;
+// prefer [Annotate] where possible.
 type Annotated struct {
 	// If specified, this will be used as the name for all non-error values returned
 	// by the constructor. For more information on named values, see the documentation
@@ -109,8 +111,9 @@ var (
 	}
 )
 
-// Annotation can be passed to Annotate(f interface{}, anns ...Annotation)
-// for annotating the parameter and result types of a function.
+// Annotation decorates a target for [Annotate].
+// It can be used to set up additional options for a constructor,
+// or with [Supply], for a value.
 type Annotation interface {
 	apply(*annotated) error
 	build(*annotated) (interface{}, error)
@@ -334,8 +337,15 @@ func (pt paramTagsAnnotation) parameters(ann *annotated) (
 }
 
 // ParamTags is an Annotation that annotates the parameter(s) of a function.
+//
 // When multiple tags are specified, each tag is mapped to the corresponding
 // positional parameter.
+// For example, the following will refer to a named database connection,
+// and the default, unnamed logger:
+//
+//	fx.Annotate(func(log *log.Logger, conn *sql.DB) *Handler {
+//		// ...
+//	}, fx.ParamTags("", `name:"ro"`))
 //
 // ParamTags cannot be used in a function that takes an fx.In struct as a
 // parameter.
@@ -521,6 +531,12 @@ func (rt resultTagsAnnotation) results(ann *annotated) (
 // ResultTags is an Annotation that annotates the result(s) of a function.
 // When multiple tags are specified, each tag is mapped to the corresponding
 // positional result.
+//
+// For example, the following will produce a named database connection.
+//
+//	fx.Annotate(func() (*sql.DB, error) {
+//		// ...
+//	}, fx.ResultTags(`name:"ro"`))
 //
 // ResultTags cannot be used on a function that returns an fx.Out struct.
 func ResultTags(tags ...string) Annotation {
@@ -1702,9 +1718,6 @@ func (ann *annotated) currentParamTypes() []reflect.Type {
 //	  )
 //	)
 //
-// is considered an invalid usage and will not apply any of the
-// Annotations to NewGateway.
-//
 // If more tags are given than the number of parameters/results, only
 // the ones up to the number of parameters/results will be applied.
 //
@@ -1732,7 +1745,7 @@ func (ann *annotated) currentParamTypes() []reflect.Type {
 //
 // If we provide the above to the application,
 // any constructor in the Fx application can inject its HTTP handlers
-// by using fx.Annotate, fx.Annotated, or fx.Out.
+// by using [Annotate], [Annotated], or [Out].
 //
 //	fx.Annotate(
 //	  func(..) http.Handler { ... },
