@@ -111,7 +111,7 @@ func (og optionGroup) String() string {
 }
 
 // StartTimeout changes the application's start timeout.
-// This controls the total time that all OnStart hooks have to complete.
+// This controls the total time that all [OnStart] hooks have to complete.
 // If the timeout is exceeded, the application will fail to start.
 //
 // Defaults to [DefaultTimeout].
@@ -135,7 +135,7 @@ func (t startTimeoutOption) String() string {
 }
 
 // StopTimeout changes the application's stop timeout.
-// This controls the total time that all OnStop hooks have to complete.
+// This controls the total time that all [OnStop] hooks have to complete.
 // If the timeout is exceeded, the application will exit early.
 //
 // Defaults to [DefaultTimeout].
@@ -180,7 +180,7 @@ func (o recoverFromPanicsOption) String() string {
 	return "fx.RecoverFromPanics()"
 }
 
-// WithLogger specifies the logger used by Fx to log its own events
+// WithLogger specifies the [fxevent.Logger] used by Fx to log its own events
 // (e.g. a constructor was provided, a function was invoked, etc.).
 //
 // The argument to this is a constructor with one of the following return
@@ -199,7 +199,7 @@ func (o recoverFromPanicsOption) String() string {
 // If specified, Fx will construct the logger and log all its events to the
 // specified logger.
 //
-// If Fx fails to build the logger, it will fall back to
+// If Fx fails to build the logger, or no logger is specified, it will fall back to
 // [fxevent.ConsoleLogger] configured to write to stderr.
 func WithLogger(constructor interface{}) Option {
 	return withLoggerOption{
@@ -227,7 +227,7 @@ func (l withLoggerOption) String() string {
 // Printer is the interface required by Fx's logging backend. It's implemented
 // by most loggers, including the one bundled with the standard library.
 //
-// Note, this will be deprecate in a future release.
+// Note, this will be deprecated in a future release.
 // Prefer to use [fxevent.Logger] instead.
 type Printer interface {
 	Printf(string, ...interface{})
