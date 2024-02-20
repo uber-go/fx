@@ -21,7 +21,9 @@
 package fx_test
 
 import (
+	"bytes"
 	"errors"
+	"io"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -108,6 +110,25 @@ func TestSupply(t *testing.T) {
 		require.Same(t, firstIn, out.First)
 		require.Same(t, secondIn, out.Second)
 		require.Same(t, thirdIn, out.Third)
+	})
+
+	t.Run("AnnotateIsSupported", func(t *testing.T) {
+		t.Parallel()
+
+		var out struct {
+			fx.In
+
+			Got io.Writer
+		}
+
+		var give bytes.Buffer
+		app := fxtest.New(t,
+			fx.Supply(fx.Annotate(&give, fx.As(new(io.Writer)))),
+			fx.Populate(&out),
+		)
+		defer app.RequireStart().RequireStop()
+
+		require.Same(t, &give, out.Got)
 	})
 
 	t.Run("InvalidArgumentIsSupplied", func(t *testing.T) {
