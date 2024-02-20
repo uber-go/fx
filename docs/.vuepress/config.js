@@ -77,6 +77,14 @@ module.exports = {
       },
       'intro.md',
       {
+        title: 'Concepts',
+        children: [
+          'container.md',
+          ['lifecycle.md', 'Lifecycle'],
+          'modules.md',
+        ],
+      },
+      {
         title: 'Features',
         children: [
           'parameter-objects.md',
@@ -98,14 +106,7 @@ module.exports = {
           },
         ],
       },
-      {
-        title: 'Concepts',
-        children: [
-          'container.md',
-          'lifecycle.md',
-          'modules.md',
-        ],
-      },
+      ['faq.md', 'FAQ'],
       {
         title: 'Community',
         children: [

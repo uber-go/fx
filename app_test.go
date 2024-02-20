@@ -35,13 +35,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/benbjohnson/clock"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	. "go.uber.org/fx"
 	"go.uber.org/fx/fxevent"
 	"go.uber.org/fx/fxtest"
+	"go.uber.org/fx/internal/fxclock"
 	"go.uber.org/fx/internal/fxlog"
 	"go.uber.org/goleak"
 	"go.uber.org/multierr"
@@ -1221,7 +1221,7 @@ func TestAppRunTimeout(t *testing.T) {
 	}
 
 	// Builds a hook that takes much longer than the application timeout.
-	takeVeryLong := func(clock *clock.Mock) func() error {
+	takeVeryLong := func(clock *fxclock.Mock) func() error {
 		return func() error {
 			// We'll exceed the start and stop timeouts,
 			// and then some.
@@ -1237,7 +1237,7 @@ func TestAppRunTimeout(t *testing.T) {
 		desc string
 
 		// buildHook builds and returns the hooks for this test case.
-		buildHooks func(*clock.Mock) []Hook
+		buildHooks func(*fxclock.Mock) []Hook
 
 		// Type of the fxevent we want.
 		// Does not reflect the exact value.
@@ -1246,7 +1246,7 @@ func TestAppRunTimeout(t *testing.T) {
 		{
 			// Timeout starting an application.
 			desc: "OnStart timeout",
-			buildHooks: func(clock *clock.Mock) []Hook {
+			buildHooks: func(clock *fxclock.Mock) []Hook {
 				return []Hook{
 					StartHook(takeVeryLong(clock)),
 				}
@@ -1256,7 +1256,7 @@ func TestAppRunTimeout(t *testing.T) {
 		{
 			// Timeout during a rollback because start failed.
 			desc: "rollback timeout",
-			buildHooks: func(clock *clock.Mock) []Hook {
+			buildHooks: func(clock *fxclock.Mock) []Hook {
 				return []Hook{
 					// The hooks are separate because
 					// OnStop will not be run if that hook failed.
@@ -1269,7 +1269,7 @@ func TestAppRunTimeout(t *testing.T) {
 		{
 			// Timeout during a stop.
 			desc: "OnStop timeout",
-			buildHooks: func(clock *clock.Mock) []Hook {
+			buildHooks: func(clock *fxclock.Mock) []Hook {
 				return []Hook{
 					StopHook(takeVeryLong(clock)),
 				}
@@ -1283,7 +1283,7 @@ func TestAppRunTimeout(t *testing.T) {
 		t.Run(tt.desc, func(t *testing.T) {
 			t.Parallel()
 
-			mockClock := clock.NewMock()
+			mockClock := fxclock.NewMock()
 
 			var (
 				exitCode int
@@ -1351,7 +1351,7 @@ func TestAppStart(t *testing.T) {
 	t.Run("Timeout", func(t *testing.T) {
 		t.Parallel()
 
-		mockClock := clock.NewMock()
+		mockClock := fxclock.NewMock()
 
 		type A struct{}
 		blocker := func(lc Lifecycle) *A {
@@ -1388,7 +1388,7 @@ func TestAppStart(t *testing.T) {
 	t.Run("TimeoutWithFinishedHooks", func(t *testing.T) {
 		t.Parallel()
 
-		mockClock := clock.NewMock()
+		mockClock := fxclock.NewMock()
 
 		type A struct{}
 		type B struct{ A *A }
@@ -1540,7 +1540,7 @@ func TestAppStart(t *testing.T) {
 		t.Parallel()
 
 		var ran bool
-		mockClock := clock.NewMock()
+		mockClock := fxclock.NewMock()
 		app := New(
 			WithClock(mockClock),
 			Invoke(func(lc Lifecycle) {
@@ -1820,7 +1820,7 @@ func TestAppStop(t *testing.T) {
 	t.Run("Timeout", func(t *testing.T) {
 		t.Parallel()
 
-		mockClock := clock.NewMock()
+		mockClock := fxclock.NewMock()
 
 		block := func(ctx context.Context) error {
 			mockClock.Add(5 * time.Second)

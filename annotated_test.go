@@ -28,11 +28,11 @@ import (
 	"io"
 	"strconv"
 	"strings"
+	"sync/atomic"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.uber.org/atomic"
 	"go.uber.org/fx"
 	"go.uber.org/fx/fxevent"
 	"go.uber.org/fx/fxtest"
@@ -2384,10 +2384,10 @@ func TestHookAnnotationFunctionFlexibility(t *testing.T) {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			var (
-				called = atomic.NewBool(false)
+				called atomic.Bool
 				opts   = fx.Options(
 					fx.Provide(tt.annotation),
-					fx.Supply(called),
+					fx.Supply(&called),
 					fx.Invoke(func(A) {}),
 				)
 			)
