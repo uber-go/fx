@@ -41,8 +41,40 @@ type container interface {
 }
 
 // Module is a named group of zero or more fx.Options.
-// A Module creates a scope in which certain operations are taken
-// place. For more information, see [Decorate], [Replace], or [Invoke].
+//
+// A Module scopes the effect of certain operations to within the module.
+// For more information, see [Decorate], [Replace], or [Invoke].
+//
+// Module allows packages to bundle sophisticated functionality into easy-to-use
+// logical units.
+// For example, a logging package might export a simple option like this:
+//
+//	package logging
+//
+//	var Module = fx.Module("logging",
+//		fx.Provide(func() *log.Logger {
+//			return log.New(os.Stdout, "", 0)
+//		}),
+//		// ...
+//	)
+//
+// A shared all-in-one microservice package could use Module to bundle
+// all required components of a microservice:
+//
+//	package server
+//
+//	var Module = fx.Module("server",
+//		logging.Module,
+//		metrics.Module,
+//		tracing.Module,
+//		rpc.Module,
+//	)
+//
+// When new global functionality is added to the service ecosystem,
+// it can be added to the shared module with minimal churn for users.
+//
+// Use the all-in-one pattern sparingly.
+// It limits the flexibility available to the application.
 func Module(name string, opts ...Option) Option {
 	mo := moduleOption{
 		name:     name,

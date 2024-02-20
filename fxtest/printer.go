@@ -32,6 +32,14 @@ func NewTestLogger(t TB) fxevent.Logger {
 	return fxlog.DefaultLogger(testutil.WriteSyncer{T: t})
 }
 
+// WithTestLogger returns an fx.Option that uses the provided TB
+// as the destination for Fx's log output.
+func WithTestLogger(t TB) fx.Option {
+	return fx.WithLogger(func() fxevent.Logger {
+		return NewTestLogger(t)
+	})
+}
+
 type testPrinter struct {
 	TB
 }
