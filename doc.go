@@ -73,8 +73,8 @@
 //		// ...
 //	}
 //
-// Though it's rarely a good idea, constructors can receive any combination of
-// parameter structs and parameters.
+// Though it's rarelly necessary to mix the two, constructors can receive any
+// combination of parameter structs and parameters.
 //
 //	func NewHandler(p HandlerParams, l *log.Logger) *Handler {
 //		// ...
