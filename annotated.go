@@ -111,7 +111,7 @@ var (
 	}
 )
 
-// Annotation decorates a target for [Annotate].
+// Annotation specifies how to wrap a target for [Annotate].
 // It can be used to set up additional options for a constructor,
 // or with [Supply], for a value.
 type Annotation interface {
