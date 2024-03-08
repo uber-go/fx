@@ -6,3 +6,5 @@ validators:
   # use the GitHub API.
   - regex: '(^http[s]?:\/\/)(www\.)?(github\.com\/)uber-go\/fx(\/pull\/|\/issues\/)'
     type: 'githubPullsIssues'
+  - regex: '^http[s]://github.com/uber-go/fx/compare/[^/]*$'
+    type: 'ignore'
