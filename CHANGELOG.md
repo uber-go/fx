@@ -19,7 +19,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - Upgrade Dig dependency to v1.17.1
-- Update and clarify a lot of the API documentation
 
 ## [1.20.1](https://github.com/uber-go/fx/compare/v1.20.0...v1.20.1) - 2023-10-17
 
