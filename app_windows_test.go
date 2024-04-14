@@ -27,7 +27,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"syscall"
@@ -84,9 +83,9 @@ func TestWindowsCtrlCHandler(t *testing.T) {
 		"SIGINT child process")
 
 	// Drain stdout and stderr, and wait for the process to exit.
-	output, err := ioutil.ReadAll(stdout)
+	output, err := io.ReadAll(stdout)
 	require.NoError(t, err)
-	_, err = io.Copy(ioutil.Discard, stderr)
+	_, err = io.Copy(io.Discard, stderr)
 	require.NoError(t, err)
 	require.NoError(t, cmd.Wait())
 
