@@ -79,7 +79,7 @@ type signalReceivers struct {
 	wait []chan ShutdownSignal
 }
 
-func (recv *signalReceivers) relayer(ctx context.Context) {
+func (recv *signalReceivers) relayer() {
 	defer func() {
 		recv.finished <- struct{}{}
 	}()
@@ -112,7 +112,7 @@ func (recv *signalReceivers) Start(ctx context.Context) {
 	recv.finished = make(chan struct{}, 1)
 	recv.shutdown = make(chan struct{}, 1)
 	recv.notify(recv.signals, os.Interrupt, _sigINT, _sigTERM)
-	go recv.relayer(ctx)
+	go recv.relayer()
 }
 
 func (recv *signalReceivers) Stop(ctx context.Context) error {
