@@ -261,7 +261,7 @@ func TestModuleSuccess(t *testing.T) {
 				desc:           "custom logger for module",
 				giveWithLogger: fx.NopLogger,
 				wantEvents: []string{
-					"Supplied", "Provided", "Provided", "Provided",
+					"Provided", "Provided", "Provided", "Supplied",
 					"Run", "LoggerInitialized", "Invoking", "Invoked",
 				},
 			},
@@ -269,7 +269,7 @@ func TestModuleSuccess(t *testing.T) {
 				desc:           "Not using a custom logger for module defaults to app logger",
 				giveWithLogger: fx.Options(),
 				wantEvents: []string{
-					"Supplied", "Provided", "Provided", "Provided", "Provided", "Run",
+					"Provided", "Provided", "Provided", "Supplied", "Provided", "Run",
 					"LoggerInitialized", "Invoking", "Run", "Invoked", "Invoking", "Invoked",
 				},
 			},
@@ -660,7 +660,7 @@ func TestModuleFailures(t *testing.T) {
 				giveAppOpts:     spyAsLogger,
 				wantErrContains: []string{"error building logger"},
 				wantEvents: []string{
-					"Supplied", "Provided", "Provided", "Provided", "Run",
+					"Provided", "Provided", "Provided", "Supplied", "Run",
 					"LoggerInitialized", "Provided", "LoggerInitialized",
 				},
 			},
@@ -678,7 +678,7 @@ func TestModuleFailures(t *testing.T) {
 				giveAppOpts:     spyAsLogger,
 				wantErrContains: []string{"error building logger dependency"},
 				wantEvents: []string{
-					"Supplied", "Provided", "Provided", "Provided", "Run",
+					"Provided", "Provided", "Provided", "Supplied", "Run",
 					"LoggerInitialized", "Provided", "Provided", "Run", "LoggerInitialized",
 				},
 			},
@@ -690,7 +690,7 @@ func TestModuleFailures(t *testing.T) {
 					"fx.WithLogger", "from:", "Failed",
 				},
 				wantEvents: []string{
-					"Supplied", "Provided", "Provided", "Provided", "Run",
+					"Provided", "Provided", "Provided", "Supplied", "Run",
 					"LoggerInitialized", "Provided", "LoggerInitialized",
 				},
 			},

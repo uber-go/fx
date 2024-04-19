@@ -480,10 +480,9 @@ func New(opts ...Option) *App {
 		m.build(app, app.container)
 	}
 
-	for _, m := range app.modules {
-		m.provideAll()
-	}
-
+	// Provide Fx types first to increase the chance a custom logger
+	// can be successfully built in the face of unrelated DI failure.
+	// E.g., for a custom logger that relies on the Lifecycle type.
 	frames := fxreflect.CallerStack(0, 0) // include New in the stack for default Provides
 	app.root.provide(provide{
 		Target: func() Lifecycle { return app.lifecycle },
@@ -491,6 +490,10 @@ func New(opts ...Option) *App {
 	})
 	app.root.provide(provide{Target: app.shutdowner, Stack: frames})
 	app.root.provide(provide{Target: app.dotGraph, Stack: frames})
+
+	for _, m := range app.modules {
+		m.provideAll()
+	}
 
 	// Run decorators before executing any Invokes -- including the one
 	// inside constructCustomLogger.

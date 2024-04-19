@@ -113,7 +113,13 @@ func TestNewApp(t *testing.T) {
 			[]string{"Provided", "Provided", "Provided", "Provided", "LoggerInitialized", "Started"},
 			spy.EventTypes())
 
-		assert.Contains(t, spy.Events()[0].(*fxevent.Provided).OutputTypeNames, "struct {}")
+		// Fx types get provided first to increase chance of
+		// successful custom logger build.
+		assert.Contains(t, spy.Events()[0].(*fxevent.Provided).OutputTypeNames, "fx.Lifecycle")
+		assert.Contains(t, spy.Events()[1].(*fxevent.Provided).OutputTypeNames, "fx.Shutdowner")
+		assert.Contains(t, spy.Events()[2].(*fxevent.Provided).OutputTypeNames, "fx.DotGraph")
+		// Our type should be index 3.
+		assert.Contains(t, spy.Events()[3].(*fxevent.Provided).OutputTypeNames, "struct {}")
 	})
 
 	t.Run("CircularGraphReturnsError", func(t *testing.T) {
@@ -575,7 +581,7 @@ func TestWithLogger(t *testing.T) {
 		)
 
 		assert.Equal(t, []string{
-			"Supplied", "Provided", "Provided", "Provided", "Run", "LoggerInitialized",
+			"Provided", "Provided", "Provided", "Supplied", "Run", "LoggerInitialized",
 		}, spy.EventTypes())
 
 		spy.Reset()
@@ -605,7 +611,7 @@ func TestWithLogger(t *testing.T) {
 			"must provide constructor function, got  (type *bytes.Buffer)",
 		)
 
-		assert.Equal(t, []string{"Supplied", "Provided", "Run", "LoggerInitialized"}, spy.EventTypes())
+		assert.Equal(t, []string{"Provided", "Provided", "Provided", "Supplied", "Provided", "Run", "LoggerInitialized"}, spy.EventTypes())
 	})
 
 	t.Run("logger failed to build", func(t *testing.T) {
@@ -1166,8 +1172,9 @@ func TestOptions(t *testing.T) {
 			Provide(&bytes.Buffer{}), // error, not a constructor
 			WithLogger(func() fxevent.Logger { return spy }),
 		)
-		require.Equal(t, []string{"Provided", "LoggerInitialized"}, spy.EventTypes())
-		assert.Contains(t, spy.Events()[0].(*fxevent.Provided).Err.Error(), "must provide constructor function")
+		require.Equal(t, []string{"Provided", "Provided", "Provided", "Provided", "LoggerInitialized"}, spy.EventTypes())
+		// First 3 provides are Fx types (Lifecycle, Shutdowner, DotGraph).
+		assert.Contains(t, spy.Events()[3].(*fxevent.Provided).Err.Error(), "must provide constructor function")
 	})
 }
 
