@@ -480,7 +480,7 @@ func New(opts ...Option) *App {
 		m.build(app, app.container)
 	}
 
-	// Provide Fx types first to increase the change a custom logger
+	// Provide Fx types first to increase the chance a custom logger
 	// can be successfully built in the face of unrelated DI failure.
 	// E.g., for a custom logger that relies on the Lifecycle type.
 	frames := fxreflect.CallerStack(0, 0) // include New in the stack for default Provides

@@ -113,7 +113,7 @@ func TestNewApp(t *testing.T) {
 			[]string{"Provided", "Provided", "Provided", "Provided", "LoggerInitialized", "Started"},
 			spy.EventTypes())
 
-		// Fx types get provided first to increase change of
+		// Fx types get provided first to increase chance of
 		// successful custom logger build.
 		assert.Contains(t, spy.Events()[0].(*fxevent.Provided).OutputTypeNames, "fx.Lifecycle")
 		assert.Contains(t, spy.Events()[1].(*fxevent.Provided).OutputTypeNames, "fx.Shutdowner")
