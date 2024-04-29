@@ -1,4 +1,4 @@
-// Copyright (c) 2023 Uber Technologies, Inc.
+// Copyright (c) 2024 Uber Technologies, Inc.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -18,33 +18,24 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-//go:build (go1.21 && !go1.22)
-// +build go1.21,!go1.22
+//go:build !go1.22
+// +build !go1.22
 
-package fxreflect
+package fx_test
 
 import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
+
+	. "go.uber.org/fx"
 )
 
-func TestDeepStack(t *testing.T) {
-	t.Run("nest", func(t *testing.T) {
-		// Introduce a few frames.
-		frames := func() []Frame {
-			return func() []Frame {
-				return CallerStack(0, 0)
-			}()
-		}()
+func TestNopLoggerOptionString(t *testing.T) {
+	t.Parallel()
 
-		require.True(t, len(frames) > 3, "expected at least three frames")
-		for i, name := range []string{"func1.TestDeepStack.func1.1.func2", "func1.1", "func1"} {
-			f := frames[i]
-			assert.Equal(t, "go.uber.org/fx/internal/fxreflect.TestDeepStack."+name, f.Function)
-			assert.Contains(t, f.File, "internal/fxreflect/stack_121_test.go")
-			assert.NotZero(t, f.Line)
-		}
-	})
+	assert.Equal(t,
+		"fx.WithLogger(go.uber.org/fx.glob..func1())",
+		NopLogger.String(),
+	)
 }

@@ -18,8 +18,8 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-//go:build (go1.21 && !go1.22)
-// +build go1.21,!go1.22
+//go:build go1.22
+// +build go1.22
 
 package fxreflect
 
@@ -40,10 +40,10 @@ func TestDeepStack(t *testing.T) {
 		}()
 
 		require.True(t, len(frames) > 3, "expected at least three frames")
-		for i, name := range []string{"func1.TestDeepStack.func1.1.func2", "func1.1", "func1"} {
+		for i, name := range []string{"func1.TestDeepStack.func1.1.2", "func1.1", "func1"} {
 			f := frames[i]
 			assert.Equal(t, "go.uber.org/fx/internal/fxreflect.TestDeepStack."+name, f.Function)
-			assert.Contains(t, f.File, "internal/fxreflect/stack_121_test.go")
+			assert.Contains(t, f.File, "internal/fxreflect/stack_122_test.go")
 			assert.NotZero(t, f.Line)
 		}
 	})
