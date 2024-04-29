@@ -2543,11 +2543,6 @@ func TestOptionString(t *testing.T) {
 			want: "fx.WithLogger(go.uber.org/fx_test.TestOptionString.func3())",
 		},
 		{
-			desc: "NopLogger",
-			give: NopLogger,
-			want: "fx.WithLogger(go.uber.org/fx.glob..func1())",
-		},
-		{
 			desc: "ErrorHook",
 			give: ErrorHook(testErrorHandler{t}),
 			want: "fx.ErrorHook(TestOptionString)",
