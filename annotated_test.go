@@ -433,6 +433,12 @@ func TestAnnotatedAs(t *testing.T) {
 
 		S fmt.Stringer `name:"goodStringer"`
 	}
+	type inSelf struct {
+		fx.In
+
+		S1 fmt.Stringer `name:"goodStringer"`
+		S2 *asStringer `name:"goodStringer"`
+	}
 	type myStringer interface {
 		String() string
 	}
@@ -698,6 +704,78 @@ func TestAnnotatedAs(t *testing.T) {
 				assert.NoError(t, err)
 			},
 			startApp: true,
+		},
+		{
+			desc: "self w other As annotations",
+			provide: fx.Provide(
+				fx.Annotate(
+					func() *asStringer {
+						return &asStringer{name: "stringer"}
+					},
+					fx.As(fx.Self()),
+					fx.As(new(fmt.Stringer)),
+				),
+			),
+			invoke: func(s fmt.Stringer, as *asStringer) {
+				assert.Equal(t, "stringer", s.String())
+				assert.Equal(t, "stringer", as.String())
+			},
+		},
+		{
+			desc: "self as one As target",
+			provide: fx.Provide(
+				fx.Annotate(
+					func() (*asStringer, *bytes.Buffer) {
+						s := &asStringer{name: "stringer"}
+						b := &bytes.Buffer{}
+						return s, b
+					},
+					fx.As(fx.Self(), new(io.Writer)),
+				),
+			),
+			invoke: func(s *asStringer, w io.Writer) {
+				assert.Equal(t, "stringer", s.String())
+				_, err := w.Write([]byte("."))
+				assert.NoError(t, err)
+			},
+		},
+		{
+			desc: "self with lifecycle hook",
+			provide: fx.Provide(
+				fx.Annotate(
+					func() *asStringer {
+						return &asStringer{name: "stringer"}
+					},
+					fx.As(fx.Self()),
+					fx.As(new(fmt.Stringer)),
+					fx.OnStart(func(s fmt.Stringer, as *asStringer) {
+						assert.Equal(t, "stringer", s.String())
+						assert.Equal(t, "stringer", as.String())
+					}),
+				),
+			),
+			invoke: func(s fmt.Stringer, as *asStringer) {
+				assert.Equal(t, "stringer", s.String())
+				assert.Equal(t, "stringer", as.String())
+			},
+			startApp: true,
+		},
+		{
+			desc: "self with result tags",
+			provide: fx.Provide(
+				fx.Annotate(
+					func() *asStringer {
+						return &asStringer{name: "stringer"}
+					},
+					fx.As(fx.Self()),
+					fx.As(new(fmt.Stringer)),
+					fx.ResultTags(`name:"goodStringer"`),
+				),
+			),
+			invoke: func(i inSelf) {
+				assert.Equal(t, "stringer", i.S1.String())
+				assert.Equal(t, "stringer", i.S2.String())
+			},
 		},
 	}
 
