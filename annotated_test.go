@@ -740,6 +740,28 @@ func TestAnnotatedAs(t *testing.T) {
 			},
 		},
 		{
+			desc: "two as, two self, four types",
+			provide: fx.Provide(
+				fx.Annotate(
+					func() (*asStringer, *bytes.Buffer) {
+						s := &asStringer{name: "stringer"}
+						b := &bytes.Buffer{}
+						return s, b
+					},
+					fx.As(fx.Self(), new(io.Writer)),
+					fx.As(new(fmt.Stringer)),
+				),
+			),
+			invoke: func(s1 *asStringer, s2 fmt.Stringer, b *bytes.Buffer, w io.Writer) {
+				assert.Equal(t, "stringer", s1.String())
+				assert.Equal(t, "stringer", s2.String())
+				_, err := w.Write([]byte("."))
+				assert.NoError(t, err)
+				_, err = b.Write([]byte("."))
+				assert.NoError(t, err)
+			},
+		},
+		{
 			desc: "self with lifecycle hook",
 			provide: fx.Provide(
 				fx.Annotate(

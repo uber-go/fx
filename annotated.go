@@ -1527,7 +1527,6 @@ type annotated struct {
 	ParamTags   []string
 	ResultTags  []string
 	As          [][]asType
-	AsSelf      bool
 	From        []reflect.Type
 	FuncPtr     uintptr
 	Hooks       []*lifecycleHookAnnotation
