@@ -23,7 +23,6 @@ package fx
 import (
 	"context"
 	"os"
-	"sync/atomic"
 	"syscall"
 	"testing"
 
@@ -101,9 +100,9 @@ func TestSignal(t *testing.T) {
 						}
 					}()
 				}
-				var stopCalledTimes atomic.Uint32
+				var stopCalledTimes int
 				recv.stopNotify = func(ch chan<- os.Signal) {
-					stopCalledTimes.Add(1)
+					stopCalledTimes++
 				}
 				ctx, cancel := context.WithCancel(context.Background())
 				defer cancel()
@@ -115,7 +114,7 @@ func TestSignal(t *testing.T) {
 				sig := <-recv.Wait()
 				require.Equal(t, syscall.SIGTERM, sig.Signal)
 				require.NoError(t, recv.Stop(ctx))
-				require.Equal(t, uint32(1), stopCalledTimes.Load())
+				require.Equal(t, 1, stopCalledTimes)
 				close(stub)
 			})
 		})
