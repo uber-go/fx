@@ -1177,33 +1177,33 @@ func As(interfaces ...interface{}) Annotation {
 //
 //	fx.Provide(
 //	  fx.Annotate(
-//          bytes.NewBuffer, 
-//          fx.As(new(io.Writer)),
-//          fx.As(fx.Self()),
-//        )
+//	    bytes.NewBuffer,
+//	    fx.As(new(io.Writer)),
+//	    fx.As(fx.Self()),
+//	  )
 //	)
 //
 // Is equivalent to,
 //
-//      fx.Provide(
-//        bytes.NewBuffer,
-//        func(b *bytes.Buffer) io.Writer { 
-//          return b
-//        },
-//      )
+//	fx.Provide(
+//	  bytes.NewBuffer,
+//	  func(b *bytes.Buffer) io.Writer {
+//	    return b
+//	  },
+//	)
 //
 // in that it provides the same *bytes.Buffer instance
 // as both a *bytes.Buffer and an io.Writer.
 func Self() any {
-	return &_self{}
+	return &self{}
 }
 
-type _self struct{}
+type self struct{}
 
 func (at *asAnnotation) apply(ann *annotated) error {
 	at.types = make([]asType, len(at.targets))
 	for i, typ := range at.targets {
-		if _, ok := typ.(*_self); ok {
+		if _, ok := typ.(*self); ok {
 			at.types[i] = asType{self: true}
 			continue
 		}

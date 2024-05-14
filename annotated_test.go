@@ -437,7 +437,7 @@ func TestAnnotatedAs(t *testing.T) {
 		fx.In
 
 		S1 fmt.Stringer `name:"goodStringer"`
-		S2 *asStringer `name:"goodStringer"`
+		S2 *asStringer  `name:"goodStringer"`
 	}
 	type myStringer interface {
 		String() string
