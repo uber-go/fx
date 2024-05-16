@@ -100,6 +100,10 @@ func TestSignal(t *testing.T) {
 						}
 					}()
 				}
+				var stopCalledTimes int
+				recv.stopNotify = func(ch chan<- os.Signal) {
+					stopCalledTimes++
+				}
 				ctx, cancel := context.WithCancel(context.Background())
 				defer cancel()
 				recv.Start(ctx)
@@ -110,6 +114,7 @@ func TestSignal(t *testing.T) {
 				sig := <-recv.Wait()
 				require.Equal(t, syscall.SIGTERM, sig.Signal)
 				require.NoError(t, recv.Stop(ctx))
+				require.Equal(t, 1, stopCalledTimes)
 				close(stub)
 			})
 		})
