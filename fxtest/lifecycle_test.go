@@ -26,6 +26,7 @@ import (
 	"errors"
 	"fmt"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -114,6 +115,108 @@ func TestLifecycle(t *testing.T) {
 
 		lc.RequireStop()
 		assert.Equal(t, 0, spy.failures, "Expected lifecycle to stop.")
+	})
+}
+
+func TestEnforceTimeout(t *testing.T) {
+	// These tests directly call Start and Stop
+	// rather than RequireStart and RequireStop
+	// because EnforceTimeout does not apply to those.
+
+	t.Run("StartHookTimeout", func(t *testing.T) {
+		t.Parallel()
+
+		wait := make(chan struct{}, 1)
+		defer close(wait)
+
+		spy := newTB()
+		lc := NewLifecycle(spy, EnforceTimeout(true))
+		lc.Append(fx.Hook{
+			OnStart: func(context.Context) error {
+				<-wait
+				return nil
+			},
+			OnStop: func(context.Context) error {
+				return nil
+			},
+		})
+
+		ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
+		defer cancel()
+		assert.ErrorIs(t, lc.Start(ctx), context.DeadlineExceeded)
+	})
+
+	t.Run("StopHookTimeout", func(t *testing.T) {
+		t.Parallel()
+
+		wait := make(chan struct{}, 1)
+		defer close(wait)
+
+		spy := newTB()
+		lc := NewLifecycle(spy, EnforceTimeout(true))
+		lc.Append(fx.Hook{
+			OnStart: func(context.Context) error {
+				return nil
+			},
+			OnStop: func(context.Context) error {
+				<-wait
+				return nil
+			},
+		})
+
+		require.NoError(t, lc.Start(context.Background()))
+		ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
+		defer cancel()
+		assert.ErrorIs(t, lc.Stop(ctx), context.DeadlineExceeded)
+	})
+
+	t.Run("NoTimeout", func(t *testing.T) {
+		t.Parallel()
+
+		var (
+			started bool
+			stopped bool
+		)
+
+		spy := newTB()
+		lc := NewLifecycle(spy, EnforceTimeout(true))
+		lc.Append(fx.Hook{
+			OnStart: func(context.Context) error {
+				started = true
+				return nil
+			},
+			OnStop: func(context.Context) error {
+				stopped = true
+				return nil
+			},
+		})
+
+		ctx, cancel := context.WithTimeout(context.Background(), time.Hour)
+		defer cancel()
+		require.NoError(t, lc.Start(ctx))
+		require.NoError(t, lc.Stop(ctx))
+		assert.Zero(t, spy.failures)
+		assert.True(t, started)
+		assert.True(t, stopped)
+	})
+
+	t.Run("OtherError", func(t *testing.T) {
+		t.Parallel()
+
+		spy := newTB()
+		lc := NewLifecycle(spy, EnforceTimeout(true))
+		lc.Append(fx.Hook{
+			OnStart: func(context.Context) error {
+				return errors.New("NOT a context-related error")
+			},
+			OnStop: func(context.Context) error {
+				return nil
+			},
+		})
+
+		ctx, cancel := context.WithTimeout(context.Background(), time.Hour)
+		defer cancel()
+		assert.ErrorContains(t, lc.Start(ctx), "NOT a context-related error")
 	})
 }
 
