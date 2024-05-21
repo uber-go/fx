@@ -1164,6 +1164,9 @@ var _ Annotation = (*asAnnotation)(nil)
 //	  return w, r
 //	}
 //
+// As entirely replaces the default return types of a function. In order
+// to maintain the original return types when using As, see [Self].
+//
 // As annotation cannot be used in a function that returns an [Out] struct as a return type.
 func As(interfaces ...interface{}) Annotation {
 	return &asAnnotation{targets: interfaces}
