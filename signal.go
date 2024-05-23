@@ -26,6 +26,7 @@ import (
 	"os"
 	"os/signal"
 	"sync"
+	"time"
 )
 
 // ShutdownSignal represents a signal to be written to Wait or Done.
@@ -79,6 +80,9 @@ type signalReceivers struct {
 
 	// contains channels created by Wait
 	wait []chan ShutdownSignal
+
+	// time to wait before relaying the signals.
+	delaySignal time.Duration
 }
 
 func (recv *signalReceivers) relayer() {
@@ -90,6 +94,7 @@ func (recv *signalReceivers) relayer() {
 	case <-recv.shutdown:
 		return
 	case signal := <-recv.signals:
+		time.Sleep(recv.delaySignal)
 		recv.Broadcast(ShutdownSignal{
 			Signal: signal,
 		})

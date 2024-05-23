@@ -25,6 +25,7 @@ import (
 	"os"
 	"syscall"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -115,6 +116,33 @@ func TestSignal(t *testing.T) {
 				require.Equal(t, syscall.SIGTERM, sig.Signal)
 				require.NoError(t, recv.Stop(ctx))
 				require.Equal(t, 1, stopCalledTimes)
+				close(stub)
+			})
+			t.Run("notify with delay", func(t *testing.T) {
+				stub := make(chan os.Signal)
+				recv := newSignalReceivers()
+				delay := time.Second
+				recv.delaySignal = delay
+				recv.notify = func(ch chan<- os.Signal, _ ...os.Signal) {
+					go func() {
+						for sig := range stub {
+							ch <- sig
+						}
+					}()
+				}
+				var timeCalled time.Time
+				recv.stopNotify = func(ch chan<- os.Signal) {
+					timeCalled = time.Now()
+				}
+				ctx, cancel := context.WithCancel(context.Background())
+				defer cancel()
+				timeStart := time.Now()
+				recv.Start(ctx)
+				stub <- syscall.SIGTERM
+				sig := <-recv.Wait()
+				require.Equal(t, syscall.SIGTERM, sig.Signal)
+				require.NoError(t, recv.Stop(ctx))
+				require.True(t, timeCalled.Sub(timeStart) > delay)
 				close(stub)
 			})
 		})

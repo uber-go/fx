@@ -158,6 +158,27 @@ func (t stopTimeoutOption) String() string {
 	return fmt.Sprintf("fx.StopTimeout(%v)", time.Duration(t))
 }
 
+// StopDelay adds a delay between the receipt of a system shutdown signal
+// and its propagation to the [OnStop] hooks.
+func StopDelay(v time.Duration) Option {
+	return stopDelayOption(v)
+}
+
+type stopDelayOption time.Duration
+
+func (t stopDelayOption) apply(m *module) {
+	if m.parent != nil {
+		m.app.err = fmt.Errorf("fx.StopDelay Option should be passed to top-level App, " +
+			"not to fx.Module")
+	} else {
+		m.app.receivers.delaySignal = time.Duration(t)
+	}
+}
+
+func (t stopDelayOption) String() string {
+	return fmt.Sprintf("fx.StopDelay(%v)", time.Duration(t))
+}
+
 // RecoverFromPanics causes panics that occur in functions given to [Provide],
 // [Decorate], and [Invoke] to be recovered from.
 // This error can be retrieved as any other error, by using (*App).Err().

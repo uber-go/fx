@@ -596,6 +596,10 @@ func TestModuleFailures(t *testing.T) {
 				desc: "Logger Option",
 				opt:  fx.Logger(log.New(&bytes.Buffer{}, "", 0)),
 			},
+			{
+				desc: "StopDelay Option",
+				opt:  fx.StopDelay(time.Second),
+			},
 		}
 
 		for _, tt := range tests {
