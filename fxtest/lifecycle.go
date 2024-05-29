@@ -127,7 +127,12 @@ func (l *Lifecycle) withTimeout(ctx context.Context, fn func(context.Context) er
 		return fn(ctx)
 	}
 
-	c := make(chan error, 1)
+	// Cancel on timeout in case function only respects
+	// cancellation and not deadline exceeded.
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
+	c := make(chan error, 1) // buffered to avoid goroutine leak
 	go func() {
 		c <- fn(ctx)
 	}()
