@@ -126,8 +126,8 @@ func TestEnforceTimeout(t *testing.T) {
 	t.Run("StartHookTimeout", func(t *testing.T) {
 		t.Parallel()
 
-		wait := make(chan struct{}, 1)
-		defer close(wait)
+		wait := make(chan struct{})
+		defer close(wait) // force timeout by blocking OnStart until end of test
 
 		spy := newTB()
 		lc := NewLifecycle(spy, EnforceTimeout(true))
@@ -136,28 +136,23 @@ func TestEnforceTimeout(t *testing.T) {
 				<-wait
 				return nil
 			},
-			OnStop: func(context.Context) error {
-				return nil
-			},
 		})
 
-		ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Millisecond)
 		defer cancel()
 		assert.ErrorIs(t, lc.Start(ctx), context.DeadlineExceeded)
+		assert.Zero(t, spy.failures)
 	})
 
 	t.Run("StopHookTimeout", func(t *testing.T) {
 		t.Parallel()
 
-		wait := make(chan struct{}, 1)
-		defer close(wait)
+		wait := make(chan struct{})
+		defer close(wait) // force timeout by blocking OnStop until end of test
 
 		spy := newTB()
 		lc := NewLifecycle(spy, EnforceTimeout(true))
 		lc.Append(fx.Hook{
-			OnStart: func(context.Context) error {
-				return nil
-			},
 			OnStop: func(context.Context) error {
 				<-wait
 				return nil
@@ -165,9 +160,10 @@ func TestEnforceTimeout(t *testing.T) {
 		})
 
 		require.NoError(t, lc.Start(context.Background()))
-		ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Millisecond)
 		defer cancel()
 		assert.ErrorIs(t, lc.Stop(ctx), context.DeadlineExceeded)
+		assert.Zero(t, spy.failures)
 	})
 
 	t.Run("NoTimeout", func(t *testing.T) {
@@ -195,9 +191,9 @@ func TestEnforceTimeout(t *testing.T) {
 		defer cancel()
 		require.NoError(t, lc.Start(ctx))
 		require.NoError(t, lc.Stop(ctx))
-		assert.Zero(t, spy.failures)
 		assert.True(t, started)
 		assert.True(t, stopped)
+		assert.Zero(t, spy.failures)
 	})
 
 	t.Run("OtherError", func(t *testing.T) {
@@ -209,14 +205,12 @@ func TestEnforceTimeout(t *testing.T) {
 			OnStart: func(context.Context) error {
 				return errors.New("NOT a context-related error")
 			},
-			OnStop: func(context.Context) error {
-				return nil
-			},
 		})
 
 		ctx, cancel := context.WithTimeout(context.Background(), time.Hour)
 		defer cancel()
 		assert.ErrorContains(t, lc.Start(ctx), "NOT a context-related error")
+		assert.Zero(t, spy.failures)
 	})
 }
 
