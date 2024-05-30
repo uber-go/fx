@@ -56,6 +56,8 @@ import (
 //
 // Supply panics if a value (or annotation target) is an untyped nil or an error.
 //
+// [Private] can be used to restrict access to supplied values.
+//
 // # Supply Caveats
 //
 // As mentioned above, Supply uses the most specific type of the provided
@@ -78,29 +80,36 @@ import (
 //		fx.Annotate(handler, fx.As(new(http.Handler))),
 //	)
 func Supply(values ...interface{}) Option {
-	constructors := make([]interface{}, len(values)) // one function per value
-	types := make([]reflect.Type, len(values))
-	for i, value := range values {
+	constructors := make([]interface{}, 0, len(values))
+	types := make([]reflect.Type, 0, len(values))
+	var private bool
+	for _, value := range values {
+		var (
+			typ  reflect.Type
+			ctor any
+		)
 		switch value := value.(type) {
+		case privateOption:
+			private = true
+			continue
 		case annotated:
-			var typ reflect.Type
 			value.Target, typ = newSupplyConstructor(value.Target)
-			constructors[i] = value
-			types[i] = typ
+			ctor = value
 		case Annotated:
-			var typ reflect.Type
 			value.Target, typ = newSupplyConstructor(value.Target)
-			constructors[i] = value
-			types[i] = typ
+			ctor = value
 		default:
-			constructors[i], types[i] = newSupplyConstructor(value)
+			ctor, typ = newSupplyConstructor(value)
 		}
+		constructors = append(constructors, ctor)
+		types = append(types, typ)
 	}
 
 	return supplyOption{
 		Targets: constructors,
 		Types:   types,
 		Stack:   fxreflect.CallerStack(1, 0),
+		Private: private,
 	}
 }
 
@@ -108,6 +117,7 @@ type supplyOption struct {
 	Targets []interface{}
 	Types   []reflect.Type // type of value produced by constructor[i]
 	Stack   fxreflect.Stack
+	Private bool
 }
 
 func (o supplyOption) apply(m *module) {
@@ -117,6 +127,7 @@ func (o supplyOption) apply(m *module) {
 			Stack:      o.Stack,
 			IsSupply:   true,
 			SupplyType: o.Types[i],
+			Private:    o.Private,
 		})
 	}
 }

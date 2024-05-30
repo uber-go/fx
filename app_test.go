@@ -391,134 +391,227 @@ func TestNewApp(t *testing.T) {
 	})
 }
 
-func TestPrivateProvide(t *testing.T) {
+// TestPrivate tests Private when used with both fx.Provide and fx.Supply.
+func TestPrivate(t *testing.T) {
 	t.Parallel()
 
-	t.Run("CanUsePrivateAndNonPrivateFromOuterModule", func(t *testing.T) {
-		t.Parallel()
+	testCases := []struct {
+		desc string
 
-		app := fxtest.New(t,
-			Module("SubModule", Invoke(func(a int, b string) {})),
-			Provide(func() int { return 0 }, Private),
-			Provide(func() string { return "" }),
-		)
-		app.RequireStart().RequireStop()
-	})
+		// provide is either a Supply or Provide wrapper around the given int
+		// that allows us to generalize these test cases for both APIs.
+		provide func(int, bool) Option
+	}{
+		{
+			desc: "Provide",
+			provide: func(i int, private bool) Option {
+				opts := []any{func() int { return i }}
+				if private {
+					opts = append(opts, Private)
+				}
+				return Provide(opts...)
+			},
+		},
+		{
+			desc: "Supply",
+			provide: func(i int, private bool) Option {
+				opts := []any{i}
+				if private {
+					opts = append(opts, Private)
+				}
+				return Supply(opts...)
+			},
+		},
+	}
 
-	t.Run("CantUsePrivateFromSubModule", func(t *testing.T) {
-		t.Parallel()
+	for _, tt := range testCases {
+		t.Run(tt.desc, func(t *testing.T) {
+			t.Parallel()
 
-		app := NewForTest(t,
-			Module("SubModule", Provide(func() int { return 0 }, Private)),
-			Invoke(func(a int) {}),
-		)
-		err := app.Err()
-		require.Error(t, err)
-		assert.Contains(t, err.Error(), "missing dependencies for function")
-		assert.Contains(t, err.Error(), "missing type: int")
-	})
+			t.Run("CanUsePrivateFromParentModule", func(t *testing.T) {
+				t.Parallel()
 
-	t.Run("DifferentModulesCanProvideSamePrivateType", func(t *testing.T) {
-		t.Parallel()
+				var invoked bool
+				app := fxtest.New(t,
+					Module("SubModule", Invoke(func(a int, b string) {
+						assert.Equal(t, 0, a)
+						invoked = true
+					})),
+					Provide(func() string { return "" }),
+					tt.provide(0, true /* private */),
+				)
+				app.RequireStart().RequireStop()
+				assert.True(t, invoked)
+			})
 
-		app := fxtest.New(t,
-			Module("SubModuleA",
-				Provide(func() int { return 1 }, Private),
-				Invoke(func(s int) {
-					assert.Equal(t, 1, s)
-				}),
-			),
-			Module("SubModuleB",
-				Provide(func() int { return 2 }, Private),
-				Invoke(func(s int) {
-					assert.Equal(t, 2, s)
-				}),
-			),
-			Provide(func() int { return 3 }),
-			Invoke(func(s int) {
-				assert.Equal(t, 3, s)
-			}),
-		)
-		app.RequireStart().RequireStop()
-	})
+			t.Run("CannotUsePrivateFromSubModule", func(t *testing.T) {
+				t.Parallel()
+
+				app := NewForTest(t,
+					Module("SubModule", tt.provide(0, true /* private */)),
+					Invoke(func(a int) {}),
+				)
+				err := app.Err()
+				require.Error(t, err)
+				assert.Contains(t, err.Error(), "missing dependencies for function")
+				assert.Contains(t, err.Error(), "missing type: int")
+			})
+
+			t.Run("MultipleModulesSameType", func(t *testing.T) {
+				t.Parallel()
+
+				var invoked int
+				app := fxtest.New(t,
+					Module("SubModuleA",
+						tt.provide(1, true /* private */),
+						Invoke(func(s int) {
+							assert.Equal(t, 1, s)
+							invoked++
+						}),
+					),
+					Module("SubModuleB",
+						tt.provide(2, true /* private */),
+						Invoke(func(s int) {
+							assert.Equal(t, 2, s)
+							invoked++
+						}),
+					),
+					tt.provide(3, false /* private */),
+					Invoke(func(s int) {
+						assert.Equal(t, 3, s)
+						invoked++
+					}),
+				)
+				app.RequireStart().RequireStop()
+				assert.Equal(t, 3, invoked)
+			})
+		})
+	}
 }
 
 func TestPrivateProvideWithDecorators(t *testing.T) {
 	t.Parallel()
 
-	t.Run("DecoratedPublicOrPrivateTypeInSubModule", func(t *testing.T) {
-		t.Parallel()
+	testCases := []struct {
+		desc string
 
-		runApp := func(private bool) {
-			provideOpts := []interface{}{func() int { return 0 }}
-			if private {
-				provideOpts = append(provideOpts, Private)
-			}
-			app := NewForTest(t,
-				Module("SubModule",
-					Provide(provideOpts...),
-					Decorate(func(a int) int { return a + 2 }),
-					Invoke(func(a int) { assert.Equal(t, 2, a) }),
-				),
-				Invoke(func(a int) { assert.Equal(t, 0, a) }),
-			)
-			err := app.Err()
-			if private {
-				require.Error(t, err)
-				assert.Contains(t, err.Error(), "missing dependencies for function")
-				assert.Contains(t, err.Error(), "missing type: int")
-			} else {
-				require.NoError(t, err)
-			}
-		}
+		// provide is either a Supply or Provide wrapper around the given int
+		// that allows us to generalize these test cases for both APIs.
+		provide func(int) Option
+		private bool
+	}{
+		{
+			desc: "Private/Provide",
+			provide: func(i int) Option {
+				return Provide(
+					func() int { return i },
+					Private,
+				)
+			},
+			private: true,
+		},
+		{
+			desc: "Private/Supply",
+			provide: func(i int) Option {
+				return Supply(i, Private)
+			},
+			private: true,
+		},
+		{
+			desc: "Public/Provide",
+			provide: func(i int) Option {
+				return Provide(func() int { return i })
+			},
+			private: false,
+		},
+		{
+			desc: "Public/Supply",
+			provide: func(i int) Option {
+				return Supply(i)
+			},
+			private: false,
+		},
+	}
 
-		t.Run("Public", func(t *testing.T) { runApp(false) })
-		t.Run("Private", func(t *testing.T) { runApp(true) })
-	})
+	for _, tt := range testCases {
+		t.Run(tt.desc, func(t *testing.T) {
+			t.Parallel()
 
-	t.Run("DecoratedPublicOrPrivateTypeInOuterModule", func(t *testing.T) {
-		t.Parallel()
+			t.Run("DecoratedTypeInSubModule", func(t *testing.T) {
+				t.Parallel()
 
-		runApp := func(private bool) {
-			provideOpts := []interface{}{func() int { return 0 }}
-			if private {
-				provideOpts = append(provideOpts, Private)
-			}
-			app := fxtest.New(t,
-				Provide(provideOpts...),
-				Decorate(func(a int) int { return a - 5 }),
-				Invoke(func(a int) {
-					assert.Equal(t, -5, a)
-				}),
-				Module("Child",
-					Decorate(func(a int) int { return a + 10 }),
+				var invoked bool
+				app := NewForTest(t,
+					Module("SubModule",
+						tt.provide(0),
+						Decorate(func(a int) int { return a + 2 }),
+						Invoke(func(a int) { assert.Equal(t, 2, a) }),
+					),
 					Invoke(func(a int) {
-						assert.Equal(t, 5, a)
+						// Decoration is always "private",
+						// so raw provided value is expected here
+						// when the submodule provides it as public.
+						assert.Equal(t, 0, a)
+						invoked = true
 					}),
-				),
-			)
-			app.RequireStart().RequireStop()
-		}
+				)
+				err := app.Err()
+				if tt.private {
+					require.Error(t, err)
+					assert.Contains(t, err.Error(), "missing dependencies for function")
+					assert.Contains(t, err.Error(), "missing type: int")
+				} else {
+					require.NoError(t, err)
+					assert.True(t, invoked)
+				}
+			})
 
-		t.Run("Public", func(t *testing.T) { runApp(false) })
-		t.Run("Private", func(t *testing.T) { runApp(true) })
-	})
+			t.Run("DecoratedTypeInParentModule", func(t *testing.T) {
+				t.Parallel()
 
-	t.Run("CannotDecoratePrivateChildType", func(t *testing.T) {
-		t.Parallel()
+				var invoked int
+				app := fxtest.New(t,
+					tt.provide(0),
+					Decorate(func(a int) int { return a - 5 }),
+					Invoke(func(a int) {
+						assert.Equal(t, -5, a)
+						invoked++
+					}),
+					Module("Child",
+						Decorate(func(a int) int { return a + 10 }),
+						Invoke(func(a int) {
+							assert.Equal(t, 5, a)
+							invoked++
+						}),
+					),
+				)
+				app.RequireStart().RequireStop()
+				assert.Equal(t, 2, invoked)
+			})
 
-		app := NewForTest(t,
-			Module("Child",
-				Provide(func() int { return 0 }, Private),
-			),
-			Decorate(func(a int) int { return a + 5 }),
-			Invoke(func(a int) {}),
-		)
-		err := app.Err()
-		require.Error(t, err)
-		assert.Contains(t, err.Error(), "missing dependencies for function")
-		assert.Contains(t, err.Error(), "missing type: int")
-	})
+			t.Run("ParentDecorateChildType", func(t *testing.T) {
+				t.Parallel()
+
+				var invoked bool
+				app := NewForTest(t,
+					Module("Child", tt.provide(0)),
+					Decorate(func(a int) int { return a + 5 }),
+					Invoke(func(a int) {
+						invoked = true
+					}),
+				)
+				err := app.Err()
+				if tt.private {
+					require.Error(t, err)
+					assert.Contains(t, err.Error(), "missing dependencies for function")
+					assert.Contains(t, err.Error(), "missing type: int")
+				} else {
+					require.NoError(t, err)
+					assert.True(t, invoked)
+				}
+			})
+		})
+	}
 }
 
 func TestWithLoggerErrorUseDefault(t *testing.T) {
