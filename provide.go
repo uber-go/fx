@@ -96,7 +96,7 @@ func (o provideOption) apply(mod *module) {
 
 type privateOption struct{}
 
-// Private is an option that can be passed as an argument to [Provide] to
+// Private is an option that can be passed as an argument to [Provide] or [Supply] to
 // restrict access to the constructors being provided. Specifically,
 // corresponding constructors can only be used within the current module
 // or modules the current module contains. Other modules that contain this
