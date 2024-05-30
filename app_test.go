@@ -438,7 +438,7 @@ func TestPrivate(t *testing.T) {
 						invoked = true
 					})),
 					Provide(func() string { return "" }),
-					tt.provide(0, true),
+					tt.provide(0, true /* private */),
 				)
 				app.RequireStart().RequireStop()
 				assert.True(t, invoked)
@@ -448,7 +448,7 @@ func TestPrivate(t *testing.T) {
 				t.Parallel()
 
 				app := NewForTest(t,
-					Module("SubModule", tt.provide(0, true)),
+					Module("SubModule", tt.provide(0, true /* private */)),
 					Invoke(func(a int) {}),
 				)
 				err := app.Err()
@@ -463,20 +463,20 @@ func TestPrivate(t *testing.T) {
 				var invoked int
 				app := fxtest.New(t,
 					Module("SubModuleA",
-						tt.provide(1, true),
+						tt.provide(1, true /* private */),
 						Invoke(func(s int) {
 							assert.Equal(t, 1, s)
 							invoked++
 						}),
 					),
 					Module("SubModuleB",
-						tt.provide(2, true),
+						tt.provide(2, true /* private */),
 						Invoke(func(s int) {
 							assert.Equal(t, 2, s)
 							invoked++
 						}),
 					),
-					tt.provide(3, false),
+					tt.provide(3, false /* private */),
 					Invoke(func(s int) {
 						assert.Equal(t, 3, s)
 						invoked++
