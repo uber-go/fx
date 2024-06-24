@@ -136,5 +136,5 @@ func TestStartDoesNotRegisterSignals(t *testing.T) {
 	assert.False(t, calledNotify, "notify should not be called when app starts")
 
 	_ = app.Wait() // User signals intent have fx listen for signals. This should call notify
-	assert.True(t, calledNotify, "notify should not be called when app starts")
+	assert.True(t, calledNotify, "notify should be called after Wait")
 }
