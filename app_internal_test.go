@@ -21,8 +21,10 @@
 package fx
 
 import (
+	"context"
 	"errors"
 	"fmt"
+	"os"
 	"sync"
 	"testing"
 
@@ -114,4 +116,25 @@ func TestAnnotationError(t *testing.T) {
 	require.Error(t, err)
 	assert.ErrorIs(t, err, wantErr)
 	assert.Contains(t, err.Error(), wantErr.Error())
+}
+
+// TestStartDoesNotRegisterSignals verifies that signal.Notify is not called
+// when a user starts an app. signal.Notify should only be called when the
+// .Wait/.Done are called. Note that app.Run calls .Wait() implicitly.
+func TestStartDoesNotRegisterSignals(t *testing.T) {
+	app := New()
+	calledNotify := false
+
+	// Mock notify function to spy when this is called.
+	app.receivers.notify = func(c chan<- os.Signal, sig ...os.Signal) {
+		calledNotify = true
+	}
+	app.receivers.stopNotify = func(c chan<- os.Signal) {}
+
+	app.Start(context.Background())
+	defer app.Stop(context.Background())
+	assert.False(t, calledNotify, "notify should not be called when app starts")
+
+	_ = app.Wait() // User signals intent have fx listen for signals. This should call notify
+	assert.True(t, calledNotify, "notify should not be called when app starts")
 }

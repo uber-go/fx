@@ -102,7 +102,7 @@ func (recv *signalReceivers) running() bool {
 	return recv.shutdown != nil && recv.finished != nil
 }
 
-func (recv *signalReceivers) Start(ctx context.Context) {
+func (recv *signalReceivers) Start() {
 	recv.m.Lock()
 	defer recv.m.Unlock()
 
