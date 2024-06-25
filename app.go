@@ -704,7 +704,6 @@ func (app *App) start(ctx context.Context) error {
 		if err := app.lifecycle.Start(ctx); err != nil {
 			return err
 		}
-		app.receivers.Start(ctx)
 		return nil
 	})
 }
@@ -742,6 +741,7 @@ func (app *App) Stop(ctx context.Context) (err error) {
 // Alternatively, a signal can be broadcast to all done channels manually by
 // using the Shutdown functionality (see the [Shutdowner] documentation for details).
 func (app *App) Done() <-chan os.Signal {
+	app.receivers.Start() // No-op if running
 	return app.receivers.Done()
 }
 
@@ -752,6 +752,7 @@ func (app *App) Done() <-chan os.Signal {
 // in the [ShutdownSignal] struct.
 // Otherwise, the signal that was received will be set.
 func (app *App) Wait() <-chan ShutdownSignal {
+	app.receivers.Start() // No-op if running
 	return app.receivers.Wait()
 }
 

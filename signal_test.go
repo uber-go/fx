@@ -74,9 +74,7 @@ func TestSignal(t *testing.T) {
 			t.Parallel()
 			t.Run("timeout", func(t *testing.T) {
 				recv := newSignalReceivers()
-				ctx, cancel := context.WithCancel(context.Background())
-				defer cancel()
-				recv.Start(ctx)
+				recv.Start()
 				timeoutCtx, cancel := context.WithTimeout(context.Background(), 0)
 				defer cancel()
 				err := recv.Stop(timeoutCtx)
@@ -86,8 +84,8 @@ func TestSignal(t *testing.T) {
 				recv := newSignalReceivers()
 				ctx, cancel := context.WithCancel(context.Background())
 				defer cancel()
-				recv.Start(ctx)
-				recv.Start(ctx) // should be a no-op if already running
+				recv.Start()
+				recv.Start() // should be a no-op if already running
 				require.NoError(t, recv.Stop(ctx))
 			})
 			t.Run("notify", func(t *testing.T) {
@@ -106,7 +104,7 @@ func TestSignal(t *testing.T) {
 				}
 				ctx, cancel := context.WithCancel(context.Background())
 				defer cancel()
-				recv.Start(ctx)
+				recv.Start()
 				stub <- syscall.SIGTERM
 				stub <- syscall.SIGTERM
 				require.Equal(t, syscall.SIGTERM, <-recv.Done())

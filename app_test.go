@@ -2331,13 +2331,47 @@ func TestHookConstructors(t *testing.T) {
 func TestDone(t *testing.T) {
 	t.Parallel()
 
-	done := fxtest.New(t).Done()
+	app := fxtest.New(t)
+	defer app.RequireStop()
+	done := app.Done()
 	require.NotNil(t, done, "Got a nil channel.")
 	select {
 	case sig := <-done:
 		t.Fatalf("Got unexpected signal %v from application's Done channel.", sig)
 	default:
 	}
+}
+
+// TestShutdownThenWait tests that if we call .Shutdown before waiting, the wait
+// will still return the last shutdown signal.
+func TestShutdownThenWait(t *testing.T) {
+	t.Parallel()
+
+	var (
+		s       Shutdowner
+		stopped bool
+	)
+	app := fxtest.New(
+		t,
+		Populate(&s),
+		Invoke(func(lc Lifecycle) {
+			lc.Append(StopHook(func() {
+				stopped = true
+			}))
+		}),
+	).RequireStart()
+	require.NotNil(t, s)
+
+	err := s.Shutdown(ExitCode(1337))
+	assert.NoError(t, err)
+	assert.False(t, stopped)
+
+	shutdownSig := <-app.Wait()
+	assert.Equal(t, 1337, shutdownSig.ExitCode)
+	assert.False(t, stopped)
+
+	app.RequireStop()
+	assert.True(t, stopped)
 }
 
 func TestReplaceLogger(t *testing.T) {
