@@ -2348,20 +2348,30 @@ func TestShutdownThenWait(t *testing.T) {
 	t.Parallel()
 
 	var (
-		s Shutdowner
+		s       Shutdowner
+		stopped bool
 	)
 	app := fxtest.New(
 		t,
 		Populate(&s),
-	)
-	defer app.RequireStop()
-	assert.NotNil(t, s)
+		Invoke(func(lc Lifecycle) {
+			lc.Append(StopHook(func() {
+				stopped = true
+			}))
+		}),
+	).RequireStart()
+	require.NotNil(t, s)
 
 	err := s.Shutdown(ExitCode(1337))
-	require.NoError(t, err)
+	assert.NoError(t, err)
+	assert.False(t, stopped)
 
 	shutdownSig := <-app.Wait()
-	require.Equal(t, 1337, shutdownSig.ExitCode)
+	assert.Equal(t, 1337, shutdownSig.ExitCode)
+	assert.False(t, stopped)
+
+	app.RequireStop()
+	assert.True(t, stopped)
 }
 
 func TestReplaceLogger(t *testing.T) {
