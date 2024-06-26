@@ -25,6 +25,7 @@ import (
 	"os"
 	"syscall"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -56,9 +57,9 @@ func TestSignal(t *testing.T) {
 			Signal: syscall.SIGTERM,
 		}
 
-		require.NoError(t, recv.Broadcast(expected), "first broadcast should succeed")
+		require.NoError(t, recv.b.Broadcast(expected), "first broadcast should succeed")
 
-		assertUnsentSignalError(t, recv.Broadcast(expected), &unsentSignalError{
+		assertUnsentSignalError(t, recv.b.Broadcast(expected), &unsentSignalError{
 			Signal: expected,
 			Total:  2,
 			Unsent: 2,
@@ -116,5 +117,27 @@ func TestSignal(t *testing.T) {
 				close(stub)
 			})
 		})
+	})
+
+	t.Run("stop deadlock", func(t *testing.T) {
+		recv := newSignalReceivers()
+
+		var notify chan<- os.Signal
+		recv.notify = func(ch chan<- os.Signal, _ ...os.Signal) {
+			notify = ch
+		}
+		recv.Start()
+
+		// Artificially create a race where the relayer receives an OS signal
+		// while Stop() holds the lock. If this leads to deadlock,
+		// we will receive a context timeout error.
+		gotErr := make(chan error, 1)
+		notify <- syscall.SIGTERM
+		go func() {
+			stopCtx, cancel := context.WithTimeout(context.Background(), time.Second)
+			defer cancel()
+			gotErr <- recv.Stop(stopCtx)
+		}()
+		assert.NoError(t, <-gotErr)
 	})
 }
