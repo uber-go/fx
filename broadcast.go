@@ -51,7 +51,7 @@ func (b *broadcaster) reset() {
 	b.last = nil
 }
 
-// Wait creates a new channel that will receive signals being broadcast
+// Done creates a new channel that will receive signals being broadcast
 // via the broadcaster.
 //
 // If a signal has been received prior to the call of Done,
