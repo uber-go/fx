@@ -29,7 +29,11 @@ import (
 // broadcaster broadcasts signals to registered signal listeners.
 // All methods on the broadcaster are concurrency-safe.
 type broadcaster struct {
-	// this protects reads/writes to any of the fields in the struct
+	// This lock is used to protect all fields of broadcaster.
+	// 
+	// Methods on broadcaster should protect all concurrent access
+	// by taking this lock when accessing its fields.
+	// Conversely, this lock should NOT be taken outside of broadcaster.
 	m sync.Mutex
 
 	// last will contain a pointer to the last ShutdownSignal received, or
