@@ -30,7 +30,6 @@ import (
 // All methods on the broadcaster are concurrency-safe.
 type broadcaster struct {
 	// This lock is used to protect all fields of broadcaster.
-	// 
 	// Methods on broadcaster should protect all concurrent access
 	// by taking this lock when accessing its fields.
 	// Conversely, this lock should NOT be taken outside of broadcaster.
