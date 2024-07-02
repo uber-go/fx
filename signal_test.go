@@ -25,6 +25,7 @@ import (
 	"os"
 	"syscall"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -56,9 +57,9 @@ func TestSignal(t *testing.T) {
 			Signal: syscall.SIGTERM,
 		}
 
-		require.NoError(t, recv.Broadcast(expected), "first broadcast should succeed")
+		require.NoError(t, recv.b.Broadcast(expected), "first broadcast should succeed")
 
-		assertUnsentSignalError(t, recv.Broadcast(expected), &unsentSignalError{
+		assertUnsentSignalError(t, recv.b.Broadcast(expected), &unsentSignalError{
 			Signal: expected,
 			Total:  2,
 			Unsent: 2,
@@ -74,9 +75,7 @@ func TestSignal(t *testing.T) {
 			t.Parallel()
 			t.Run("timeout", func(t *testing.T) {
 				recv := newSignalReceivers()
-				ctx, cancel := context.WithCancel(context.Background())
-				defer cancel()
-				recv.Start(ctx)
+				recv.Start()
 				timeoutCtx, cancel := context.WithTimeout(context.Background(), 0)
 				defer cancel()
 				err := recv.Stop(timeoutCtx)
@@ -86,8 +85,8 @@ func TestSignal(t *testing.T) {
 				recv := newSignalReceivers()
 				ctx, cancel := context.WithCancel(context.Background())
 				defer cancel()
-				recv.Start(ctx)
-				recv.Start(ctx) // should be a no-op if already running
+				recv.Start()
+				recv.Start() // should be a no-op if already running
 				require.NoError(t, recv.Stop(ctx))
 			})
 			t.Run("notify", func(t *testing.T) {
@@ -106,7 +105,7 @@ func TestSignal(t *testing.T) {
 				}
 				ctx, cancel := context.WithCancel(context.Background())
 				defer cancel()
-				recv.Start(ctx)
+				recv.Start()
 				stub <- syscall.SIGTERM
 				stub <- syscall.SIGTERM
 				require.Equal(t, syscall.SIGTERM, <-recv.Done())
@@ -118,5 +117,27 @@ func TestSignal(t *testing.T) {
 				close(stub)
 			})
 		})
+	})
+
+	t.Run("stop deadlock", func(t *testing.T) {
+		recv := newSignalReceivers()
+
+		var notify chan<- os.Signal
+		recv.notify = func(ch chan<- os.Signal, _ ...os.Signal) {
+			notify = ch
+		}
+		recv.Start()
+
+		// Artificially create a race where the relayer receives an OS signal
+		// while Stop() holds the lock. If this leads to deadlock,
+		// we will receive a context timeout error.
+		gotErr := make(chan error, 1)
+		notify <- syscall.SIGTERM
+		go func() {
+			stopCtx, cancel := context.WithTimeout(context.Background(), time.Second)
+			defer cancel()
+			gotErr <- recv.Stop(stopCtx)
+		}()
+		assert.NoError(t, <-gotErr)
 	})
 }
