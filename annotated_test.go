@@ -1431,7 +1431,7 @@ func TestAnnotate(t *testing.T) {
 	t.Run("specify two ResultTags", func(t *testing.T) {
 		t.Parallel()
 
-		app := NewForTest(t,
+		app := fxtest.New(t,
 			fx.Provide(
 				// This should just leave newA as it is.
 				fx.Annotate(
@@ -1440,12 +1440,62 @@ func TestAnnotate(t *testing.T) {
 					fx.ResultTags(`name:"AA"`),
 				),
 			),
-			fx.Invoke(newB),
+			fx.Invoke(
+				fx.Annotate(func(a, aa *a) (*b, *b) {
+					return newB(a), newB(aa)
+				}, fx.ParamTags(`name:"A"`, `name:"AA"`))),
 		)
 
 		err := app.Err()
-		require.Error(t, err)
-		assert.Contains(t, err.Error(), "encountered error while applying annotation using fx.Annotate to go.uber.org/fx_test.TestAnnotate.func1(): cannot apply more than one line of ResultTags")
+		require.NoError(t, err)
+		defer app.RequireStart().RequireStop()
+	})
+
+	t.Run("specify two ResultTags containing multiple tags", func(t *testing.T) {
+		t.Parallel()
+
+		app := fxtest.New(t,
+			fx.Provide(
+				fx.Annotate(
+					func() (*a, *b) {
+						return newA(), newB(&a{})
+					},
+					fx.ResultTags(`name:"A"`, `name:"B"`),
+					fx.ResultTags(`name:"AA"`, `name:"BB"`),
+				),
+			),
+			fx.Invoke(
+				fx.Annotate(func(a, aa *a, b, bb *b) (*b, *b, *c, *c) {
+					return newB(a), newB(aa), newC(b), newC(b)
+				}, fx.ParamTags(`name:"A"`, `name:"AA"`, `name:"B"`, `name:"BB"`))),
+		)
+
+		err := app.Err()
+		require.NoError(t, err)
+		defer app.RequireStart().RequireStop()
+	})
+
+	t.Run("specify Three ResultTags", func(t *testing.T) {
+		t.Parallel()
+
+		app := fxtest.New(t,
+			fx.Provide(
+				fx.Annotate(
+					newA,
+					fx.ResultTags(`name:"A"`),
+					fx.ResultTags(`name:"AA"`),
+					fx.ResultTags(`name:"AAA"`),
+				),
+			),
+			fx.Invoke(
+				fx.Annotate(func(a, aa, aaa *a) (*b, *b, *b) {
+					return newB(a), newB(aa), newB(aaa)
+				}, fx.ParamTags(`name:"A"`, `name:"AA"`, `name:"AAA"`))),
+		)
+
+		err := app.Err()
+		require.NoError(t, err)
+		defer app.RequireStart().RequireStop()
 	})
 
 	t.Run("annotate with a non-nil error", func(t *testing.T) {
