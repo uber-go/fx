@@ -23,6 +23,10 @@ concurrency:
   group: "pages"
   cancel-in-progress: true
 
+
+env:
+  UV_VERSION: 0.3.3
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -41,16 +45,9 @@ jobs:
         with:
           ref: ${{ inputs.head }}
 
-      - name: Set up Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: '16'
-          cache: 'yarn'
-          cache-dependency-path: docs/yarn.lock
-
-      - name: Install dependencies
-        run: yarn install
-        working-directory: docs
+      - name: Install uv
+        run: |
+          curl -LsSf "https://astral.sh/uv/${UV_VERSION}/install.sh" | sh
 
       - name: Build
         run: make docs
@@ -58,7 +55,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: docs/dist/
+          path: docs/_site
 
   deploy:
     needs: build  # run only after a successful build
@@ -69,7 +66,7 @@ jobs:
 
     environment:
       name: github-pages
-      url: ${{ steps.deployment.output.pages_url }}
+      url: ${{ steps.deployment.outputs.page_url }}
 
     runs-on: ubuntu-latest
     steps:

@@ -36,7 +36,7 @@ func main() {
 		fx.WithLogger(func(log *zap.Logger) fxevent.Logger {
 			return &fxevent.ZapLogger{Logger: log}
 		}),
-		// region provides
+		// --8<-- [start:provides]
 		fx.Provide(
 			NewHTTPServer,
 			NewServeMux,
@@ -46,12 +46,12 @@ func main() {
 			),
 			zap.NewExample,
 		),
-		// endregion provides
+		// --8<-- [end:provides]
 		fx.Invoke(func(*http.Server) {}),
 	).Run()
 }
 
-// region route
+// --8<-- [start:route]
 
 // Route is an http.Handler that knows the mux pattern
 // under which it will be registered.
@@ -62,9 +62,9 @@ type Route interface {
 	Pattern() string
 }
 
-// endregion route
+// --8<-- [end:route]
 
-// region mux
+// --8<-- [start:mux]
 
 // NewServeMux builds a ServeMux that will route requests
 // to the given Route.
@@ -74,7 +74,7 @@ func NewServeMux(route Route) *http.ServeMux {
 	return mux
 }
 
-// endregion mux
+// --8<-- [end:mux]
 
 // EchoHandler is an http.Handler that copies its request body
 // back to the response.
@@ -89,12 +89,12 @@ func NewEchoHandler(log *zap.Logger) *EchoHandler {
 
 // Pattern reports the pattern under which
 // this handler should be registered.
-// region echo-pattern
+// --8<-- [start:echo-pattern]
 func (*EchoHandler) Pattern() string {
 	return "/echo"
 }
 
-// endregion echo-pattern
+// --8<-- [end:echo-pattern]
 
 // ServeHTTP handles an HTTP request to the /echo endpoint.
 func (h *EchoHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {

@@ -24,40 +24,40 @@ import "go.uber.org/fx"
 
 // PlainModule is an unannotated NewEmitter.
 var PlainModule = fx.Options(
-	// region provide-init
+	// --8<-- [start:provide-init]
 	fx.Provide(
 		NewEmitter,
 	),
-	// endregion provide-init
+	// --8<-- [end:provide-init]
 )
 
 // AnnotateModule is the module defined in this file.
 var AnnotateModule = fx.Options(
-	// region provide-wrap
+	// --8<-- [start:provide-wrap-1]
 	fx.Provide(
-		// region provide-annotate
+		// --8<-- [start:provide-annotate]
 		fx.Annotate(
 			NewEmitter,
-			// endregion provide-wrap
+			// --8<-- [end:provide-wrap-1]
 			fx.ParamTags(`group:"watchers"`),
-			// region provide-wrap
+			// --8<-- [start:provide-wrap-2]
 		),
-		// endregion provide-annotate
+		// --8<-- [end:provide-annotate]
 	),
-	// endregion provide-wrap
+	// --8<-- [end:provide-wrap-2]
 )
 
 // Emitter emits events
 type Emitter struct{ ws []Watcher }
 
 // NewEmitter builds an emitter.
-// region new-init
-// region new-consume
+// --8<-- [start:new-init]
+// --8<-- [start:new-consume]
 func NewEmitter(watchers []Watcher) (*Emitter, error) {
-	// endregion new-init
+	// --8<-- [end:new-init]
 	for _, w := range watchers {
 		// ...
-		// endregion new-consume
+		// --8<-- [end:new-consume]
 		_ = w // unused
 	}
 	return &Emitter{ws: watchers}, nil
@@ -66,18 +66,18 @@ func NewEmitter(watchers []Watcher) (*Emitter, error) {
 // EmitterFromModule is a module that holds EmitterFrom.
 var EmitterFromModule = fx.Options(
 	fx.Provide(
-		// region annotate-variadic
+		// --8<-- [start:annotate-variadic]
 		fx.Annotate(
 			EmitterFrom,
 			fx.ParamTags(`group:"watchers"`),
 		),
-		// endregion annotate-variadic
+		// --8<-- [end:annotate-variadic]
 	),
 )
 
 // EmitterFrom builds an Emitter from the list of watchers.
-// region new-variadic
+// --8<-- [start:new-variadic]
 func EmitterFrom(watchers ...Watcher) (*Emitter, error) {
-	// region new-variadic
+	// --8<-- [start:new-variadic]
 	return &Emitter{ws: watchers}, nil
 }

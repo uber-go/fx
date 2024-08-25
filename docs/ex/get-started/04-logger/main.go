@@ -31,21 +31,21 @@ import (
 	"go.uber.org/zap"
 )
 
-// region fx-logger
+// --8<-- [start:fx-logger]
 func main() {
 	fx.New(
 		fx.WithLogger(func(log *zap.Logger) fxevent.Logger {
 			return &fxevent.ZapLogger{Logger: log}
 		}),
-		// endregion fx-logger
-		// region provides
+		// --8<-- [end:fx-logger]
+		// --8<-- [start:provides]
 		fx.Provide(
 			NewHTTPServer,
 			NewServeMux,
 			NewEchoHandler,
 			zap.NewExample,
 		),
-		// endregion provides
+		// --8<-- [end:provides]
 		fx.Invoke(func(*http.Server) {}),
 	).Run()
 }
@@ -60,34 +60,34 @@ func NewServeMux(echo *EchoHandler) *http.ServeMux {
 
 // EchoHandler is an http.Handler that copies its request body
 // back to the response.
-// region echo-init
+// --8<-- [start:echo-init]
 type EchoHandler struct {
 	log *zap.Logger
 }
 
-// endregion echo-init
+// --8<-- [end:echo-init]
 
 // NewEchoHandler builds a new EchoHandler.
-// region echo-init
+// --8<-- [start:echo-init]
 func NewEchoHandler(log *zap.Logger) *EchoHandler {
 	return &EchoHandler{log: log}
 }
 
-// endregion echo-init
+// --8<-- [end:echo-init]
 
 // ServeHTTP handles an HTTP request to the /echo endpoint.
-// region echo-serve
+// --8<-- [start:echo-serve]
 func (h *EchoHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if _, err := io.Copy(w, r.Body); err != nil {
 		h.log.Warn("Failed to handle request", zap.Error(err))
 	}
 }
 
-// endregion echo-serve
+// --8<-- [end:echo-serve]
 
 // NewHTTPServer builds an HTTP server that will begin serving requests
 // when the Fx application starts.
-// region http-server
+// --8<-- [start:http-server]
 func NewHTTPServer(lc fx.Lifecycle, mux *http.ServeMux, log *zap.Logger) *http.Server {
 	srv := &http.Server{Addr: ":8080", Handler: mux}
 	lc.Append(fx.Hook{
@@ -98,7 +98,7 @@ func NewHTTPServer(lc fx.Lifecycle, mux *http.ServeMux, log *zap.Logger) *http.S
 			}
 			log.Info("Starting HTTP server", zap.String("addr", srv.Addr))
 			go srv.Serve(ln)
-			// endregion http-server
+			// --8<-- [end:http-server]
 			return nil
 		},
 		OnStop: func(ctx context.Context) error {

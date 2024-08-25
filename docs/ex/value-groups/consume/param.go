@@ -27,25 +27,25 @@ type Watcher interface{}
 
 // ParamsModule is the module defined in this file.
 var ParamsModule = fx.Options(
-	// region provide
+	// --8<-- [start:provide]
 	fx.Provide(New),
-	// endregion provide
+	// --8<-- [end:provide]
 )
 
 // Params is a parameter object.
-// region param-tagged
-// region param-init
+// --8<-- [start:param-tagged]
+// --8<-- [start:param-init-1]
 type Params struct {
 	fx.In
 
 	// ...
-	// endregion param-init
+	// --8<-- [end:param-init-1]
 	Watchers []Watcher `group:"watchers"`
-	// region param-init
+	// --8<-- [start:param-init-2]
 }
 
-// endregion param-init
-// endregion param-tagged
+// --8<-- [end:param-init-2]
+// --8<-- [end:param-tagged]
 
 // Result is a list of watchers.
 type Result struct {
@@ -55,14 +55,14 @@ type Result struct {
 }
 
 // New consumes a value group.
-// region new-init
-// region new-consume
+// --8<-- [start:new-init]
+// --8<-- [start:new-consume]
 func New(p Params) (Result, error) {
 	// ...
-	// endregion new-init
+	// --8<-- [end:new-init]
 	for _, w := range p.Watchers {
 		// ...
-		// endregion new-consume
+		// --8<-- [end:new-consume]
 		_ = w // unused
 	}
 	return Result{

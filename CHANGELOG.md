@@ -1,6 +1,6 @@
 ---
-sidebarDepth: 0
-search: false
+search:
+  exclude: true
 ---
 
 # Changelog

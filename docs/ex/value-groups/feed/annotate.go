@@ -24,23 +24,23 @@ import "go.uber.org/fx"
 
 // AnnotateModule is the module defined in this file.
 var AnnotateModule = fx.Options(
-	// region provide-init
+	// --8<-- [start:provide-init]
 	fx.Provide(
 		NewWatcher,
 	),
-	// endregion provide-init
-	// region provide-wrap
+	// --8<-- [end:provide-init]
+	// --8<-- [start:provide-wrap-1]
 	fx.Provide(
-		// region provide-annotate
+		// --8<-- [start:provide-annotate]
 		fx.Annotate(
 			NewWatcher,
-			// endregion provide-wrap
+			// --8<-- [end:provide-wrap-1]
 			fx.ResultTags(`group:"watchers"`),
-			// region provide-wrap
+			// --8<-- [start:provide-wrap-2]
 		),
-		// endregion provide-annotate
+		// --8<-- [end:provide-annotate]
 	),
-	// endregion provide-wrap
+	// --8<-- [end:provide-wrap-2]
 )
 
 // FileWatcher watches files.
@@ -49,30 +49,30 @@ type FileWatcher struct{}
 // FileWatcherModule provides a FileWatcher as a Watcher.
 var FileWatcherModule = fx.Options(
 	fx.Provide(
-		// region annotate-fw
+		// --8<-- [start:annotate-fw]
 		fx.Annotate(
 			NewFileWatcher,
 			fx.As(new(Watcher)),
 			fx.ResultTags(`group:"watchers"`),
 		),
-		// endregion annotate-fw
+		// --8<-- [end:annotate-fw]
 	),
 )
 
 // NewFileWatcher builds a new file watcher.
-// region new-fw-init
+// --8<-- [start:new-fw-init]
 func NewFileWatcher( /* ... */ ) (*FileWatcher, error) {
-	// endregion new-fw-init
+	// --8<-- [end:new-fw-init]
 	return &FileWatcher{
 		// ...
 	}, nil
 }
 
 // NewWatcher builds a watcher.
-// region new-init
+// --8<-- [start:new-init]
 func NewWatcher( /* ... */ ) (Watcher, error) {
 	// ...
-	// endregion new-init
+	// --8<-- [end:new-init]
 
 	return &FileWatcher{
 		// ...

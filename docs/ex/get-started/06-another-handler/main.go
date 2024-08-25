@@ -37,32 +37,32 @@ func main() {
 		fx.WithLogger(func(log *zap.Logger) fxevent.Logger {
 			return &fxevent.ZapLogger{Logger: log}
 		}),
-		// region mux-provide
+		// --8<-- [start:mux-provide]
 		fx.Provide(
 			NewHTTPServer,
 			fx.Annotate(
 				NewServeMux,
 				fx.ParamTags(`name:"echo"`, `name:"hello"`),
 			),
-			// endregion mux-provide
-			// region hello-provide-partial
-			// region route-provides
+			// --8<-- [end:mux-provide]
+			// --8<-- [start:hello-provide-partial]
+			// --8<-- [start:route-provides]
 			fx.Annotate(
 				NewEchoHandler,
 				fx.As(new(Route)),
-				// endregion hello-provide-partial
+				// --8<-- [end:hello-provide-partial]
 				fx.ResultTags(`name:"echo"`),
-			// region hello-provide-partial
+			// --8<-- [start:hello-provide-partial]
 			),
 			fx.Annotate(
 				NewHelloHandler,
 				fx.As(new(Route)),
-				// endregion hello-provide-partial
+				// --8<-- [end:hello-provide-partial]
 				fx.ResultTags(`name:"hello"`),
-				// region hello-provide-partial
+				// --8<-- [start:hello-provide-partial]
 			),
-			// endregion hello-provide-partial
-			// endregion route-provides
+			// --8<-- [end:hello-provide-partial]
+			// --8<-- [end:route-provides]
 			zap.NewExample,
 		),
 		fx.Invoke(func(*http.Server) {}),
@@ -78,7 +78,7 @@ type Route interface {
 	Pattern() string
 }
 
-// region mux
+// --8<-- [start:mux]
 
 // NewServeMux builds a ServeMux that will route requests
 // to the given routes.
@@ -89,9 +89,9 @@ func NewServeMux(route1, route2 Route) *http.ServeMux {
 	return mux
 }
 
-// endregion mux
+// --8<-- [end:mux]
 
-// region hello-init
+// --8<-- [start:hello-init]
 
 // HelloHandler is an HTTP handler that
 // prints a greeting to the user.
@@ -104,19 +104,19 @@ func NewHelloHandler(log *zap.Logger) *HelloHandler {
 	return &HelloHandler{log: log}
 }
 
-// endregion hello-init
+// --8<-- [end:hello-init]
 
 // Pattern reports the pattern under which
 // this handler should be registered.
-// region hello-methods
+// --8<-- [start:hello-methods]
 func (*HelloHandler) Pattern() string {
 	return "/hello"
 }
 
-// endregion hello-methods
+// --8<-- [end:hello-methods]
 
 // ServeHTTP handles an HTTP request to the /hello endpoint.
-// region hello-methods
+// --8<-- [start:hello-methods]
 func (h *HelloHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
@@ -132,7 +132,7 @@ func (h *HelloHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// endregion hello-methods
+// --8<-- [end:hello-methods]
 
 // EchoHandler is an http.Handler that copies its request body
 // back to the response.

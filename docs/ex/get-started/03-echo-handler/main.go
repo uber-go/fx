@@ -33,22 +33,22 @@ import (
 
 func main() {
 	fx.New(
-		// region provides
-		// region provide-handler
+		// --8<-- [start:provides]
+		// --8<-- [start:provide-handler]
 		fx.Provide(
 			NewHTTPServer,
-			// endregion provide-handler
+			// --8<-- [end:provide-handler]
 			NewServeMux,
-			// region provide-handler
+			// --8<-- [start:provide-handler]
 			NewEchoHandler,
 		),
-		// endregion provides
+		// --8<-- [end:provides]
 		fx.Invoke(func(*http.Server) {}),
-		// endregion provide-handler
+		// --8<-- [end:provide-handler]
 	).Run()
 }
 
-// region serve-mux
+// --8<-- [start:serve-mux]
 
 // NewServeMux builds a ServeMux that will route requests
 // to the given EchoHandler.
@@ -58,9 +58,9 @@ func NewServeMux(echo *EchoHandler) *http.ServeMux {
 	return mux
 }
 
-// endregion serve-mux
+// --8<-- [end:serve-mux]
 
-// region echo-handler
+// --8<-- [start:echo-handler]
 
 // EchoHandler is an http.Handler that copies its request body
 // back to the response.
@@ -78,15 +78,15 @@ func (*EchoHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// endregion echo-handler
+// --8<-- [end:echo-handler]
 
 // NewHTTPServer builds an HTTP server that will begin serving requests
 // when the Fx application starts.
-// region connect-mux
+// --8<-- [start:connect-mux]
 func NewHTTPServer(lc fx.Lifecycle, mux *http.ServeMux) *http.Server {
 	srv := &http.Server{Addr: ":8080", Handler: mux}
 	lc.Append(fx.Hook{
-		// endregion connect-mux
+		// --8<-- [end:connect-mux]
 		OnStart: func(ctx context.Context) error {
 			ln, err := net.Listen("tcp", srv.Addr)
 			if err != nil {
