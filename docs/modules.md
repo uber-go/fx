@@ -133,7 +133,9 @@ var Module = fx.Module("server",
   ),
 )
 
-type Config struct {
+type Params struct {
+  fx.In
+
   Addr string `yaml:"addr"`
 }
 
@@ -142,7 +144,7 @@ func New(p Params) (Result, error) {
 
 In this example, we don't export `parseConfig`,
 because it's a trivial `yaml.Decode` that we don't need to expose,
-but we still export `Config` so users can decode it themselves.
+but we still export `Params` so users can decode it themselves.
 
 **Rationale**:
 It should be possible to use your Fx module without using Fx itself.
