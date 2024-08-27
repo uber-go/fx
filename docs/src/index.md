@@ -11,7 +11,7 @@ Fx is **a dependency injection system for Go**.
     By using Fx-managed singletons,
     you can eliminate global state from your application.
     With Fx, you don't have to rely on `init()` functions for setup,
-    instead relying on Fx's to manage the lifecycle of your application.
+    instead relying on Fx to manage the lifecycle of your application.
 
 - **Reduce boilerplate**
 
