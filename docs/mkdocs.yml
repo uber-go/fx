@@ -87,6 +87,7 @@ plugins:
   # Redirect old links to new ones.
   - redirects:
       redirect_maps:
+        intro.md: index.md
         value-groups.md: value-groups/index.md
 
 
@@ -121,6 +122,15 @@ markdown_extensions:
         kwds:
           case: lower
 
+  # :foo-bar: emoji syntax.
+  #
+  # See https://squidfunk.github.io/mkdocs-material/reference/icons-emojis/
+  # to search through available emojis.
+  # The emojis are rendered into inline svgs at build time.
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+
   # GitHub-style task lists.
   - pymdownx.tasklist:
       custom_checkbox: true  # recommended
@@ -141,7 +151,6 @@ nav:
     - get-started/another-handler.md
     - get-started/many-handlers.md
     - get-started/conclusion.md
-  - intro.md
   - Concepts:
     - Container: container.md
     - Lifecycle: lifecycle.md
