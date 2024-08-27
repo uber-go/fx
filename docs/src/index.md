@@ -18,7 +18,7 @@ Fx is **a dependency injection system for Go**.
     ---
 
     Fx reduces the amount of code copy-pasted across your services.
-    It lets you define shared application setup and in a single place,
+    It lets you define shared application setup in a single place,
     and then reuse it across all your services.
 
 - **Automatic plumbing**
