@@ -2397,6 +2397,15 @@ func TestNopLogger(t *testing.T) {
 	app.RequireStart().RequireStop()
 }
 
+func TestNopLoggerOptionString(t *testing.T) {
+	t.Parallel()
+
+	assert.Equal(t,
+		"fx.WithLogger(go.uber.org/fx.init.func1())",
+		NopLogger.String(),
+	)
+}
+
 func TestCustomLoggerWithPrinter(t *testing.T) {
 	t.Parallel()
 
