@@ -26,25 +26,25 @@ import (
 
 func howToAnnotate() (before, after fx.Option) {
 	before = fx.Options(
-		// region before
+		// --8<-- [start:before]
 		fx.Provide(
 			NewHTTPClient,
 		),
-		// endregion before
+		// --8<-- [end:before]
 	)
 	after = fx.Options(
-		// region wrap
-		// region annotate
+		// --8<-- [start:wrap-1]
+		// --8<-- [start:annotate]
 		fx.Provide(
 			fx.Annotate(
 				NewHTTPClient,
-				// endregion wrap
+				// --8<-- [end:wrap-1]
 				fx.ResultTags(`name:"client"`),
-				// region wrap
+				// --8<-- [start:wrap-2]
 			),
 		),
-		// endregion annotate
-		// endregion wrap
+		// --8<-- [end:annotate]
+		// --8<-- [end:wrap-2]
 	)
 	return before, after
 }

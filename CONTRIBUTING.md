@@ -1,6 +1,6 @@
 ---
-sidebarDepth: 2
-search: false
+search:
+  exclude: true
 ---
 
 # Contributing
@@ -12,12 +12,13 @@ please [open an issue](https://github.com/uber-go/fx/issues/new)
 describing your proposal.
 Discussing API changes ahead of time makes pull request review much smoother.
 
-::: tip
-You'll need to sign [Uber's CLA](https://cla-assistant.io/uber-go/fx)
-before we can accept any of your contributions.
-If necessary, a bot will remind
-you to accept the CLA when you open your pull request.
-:::
+!!! tip
+
+    You'll need to sign [Uber's CLA](https://cla-assistant.io/uber-go/fx)
+    before we can accept any of your contributions.
+    If necessary, a bot will remind
+    you to accept the CLA when you open your pull request.
+
 
 ## Contribute code
 
@@ -25,76 +26,72 @@ Set up your local development environment to contribute to Fx.
 
 1. [Fork](https://github.com/uber-go/fx/fork), then clone the repository.
 
-   <code-group>
-   <code-block title="Git">
-   ```bash
-   git clone https://github.com/your_github_username/fx.git
-   cd fx
-   git remote add upstream https://github.com/uber-go/fx.git
-   git fetch upstream
-   ```
-   </code-block>
+    === "Git"
 
-   <code-block title="GitHub CLI">
-   ```bash
-   gh repo fork --clone uber-go/fx
-   ```
-   </code-block>
-   </code-group>
+        ```bash
+        git clone https://github.com/your_github_username/fx.git
+        cd fx
+        git remote add upstream https://github.com/uber-go/fx.git
+        git fetch upstream
+        ```
+
+    === "GitHub CLI"
+
+        ```bash
+        gh repo fork --clone uber-go/fx
+        ```
 
 2. Install Fx's dependencies:
 
-   ```bash
-   go mod download
-   ```
+     ```bash
+     go mod download
+     ```
 
 3. Verify that tests and other checks pass locally.
 
-   ```bash
-   make lint
-   make test
-   ```
+     ```bash
+     make lint
+     make test
+     ```
 
-   Note that for `make lint` to work,
-   you must be using the latest stable version of Go.
-   If you're on an older version, you can still contribute your change,
-   but we may discover style violations when you open the pull request.
+     Note that for `make lint` to work,
+     you must be using the latest stable version of Go.
+     If you're on an older version, you can still contribute your change,
+     but we may discover style violations when you open the pull request.
 
 Next, make your changes.
 
 1. Create a new feature branch.
 
-   ```bash
-   git checkout master
-   git pull
-   git checkout -b cool_new_feature
-   ```
+     ```bash
+     git checkout master
+     git pull
+     git checkout -b cool_new_feature
+     ```
 
 2. Make your changes, and verify that all tests and lints still pass.
 
-   ```bash
-   $EDITOR app.go
-   make lint
-   make test
-   ```
+     ```bash
+     $EDITOR app.go
+     make lint
+     make test
+     ```
 
 3. When you're satisfied with the change,
    push it to your fork and make a pull request.
 
-   <code-group>
-   <code-block title="Git">
-   ```bash
-   git push origin cool_new_feature
-   # Open a PR at https://github.com/uber-go/fx/compare
-   ```
-   </code-block>
+    === "Git"
 
-   <code-block title="GitHub CLI">
-   ```bash
-   gh pr create
-   ```
-   </code-block>
-   </code-group>
+        ```bash
+        git push origin cool_new_feature
+        # Open a PR at https://github.com/uber-go/fx/compare
+        ```
+
+    === "GitHub CLI"
+
+        ```bash
+        gh pr create
+        ```
 
 At this point, you're waiting on us to review your changes.
 We *try* to respond to issues and pull requests within a few business days,
@@ -115,18 +112,14 @@ To contribute documentation to Fx,
 1. Set up your local development environment
    as you would to [contribute code](#contribute-code).
 
-2. Install the documentation website dependencies.
-
-   ```bash
-   cd docs
-   yarn install
-   ```
+2. [Install uv](https://docs.astral.sh/uv/getting-started/installation/).
+   We use this to manage our Python dependencies.
 
 3. Run the development server.
 
-   ```bash
-   yarn dev
-   ```
+     ```bash
+     make serve
+     ```
 
 4. Make your changes.
 
@@ -208,84 +201,54 @@ Markdown will reflow this into a "normal" pargraph when rendering.
 
 All code samples in documentation must be buildable and testable.
 
-To aid in this, we have two tools:
+To make this possible, we put code samples in the "ex/" directory,
+and use the [PyMdown Snippets extension](https://facelessuser.github.io/pymdown-extensions/extensions/snippets/)
+to include them in the documentation.
 
-- [mdox](https://github.com/bwplotka/mdox/)
-- the `region` shell script
+To include code snippets in your documentation,
+take the following steps:
 
-#### mdox
+1. Add source code under the `ex/` directory.
+   Usually, the file will be placed in a directory
+   with a name matching the documentation file
+   that will include the snippet.
 
-mdox is a Markdown file formatter that includes support for
-running a command and using its output as part of a code block.
-To use this, declare a regular code block and tag it with `mdoc-exec`.
+     For example,
+     for src/annotation.md, examples will reside in ex/annotation/.
 
-```markdown
-```go mdox-exec='cat foo.go'
-// ...
-```
+2. Inside the source file, name regions of code with comments in the forms:
 
-The contents of the code block will be replaced
-with the output of the command when you run `make fmt`
-in the docs directory.
-`make check` will ensure that the contents are up-to-date.
+     ```
+     // --8<-- [start:name]
+     ...
+     // --8<-- [end:name]
+     ```
 
-The command runs with the working directory set to docs/.
-Store code samples in ex/ and reference them directly.
+     Where `name` is the name of the snippet.
+     For example:
 
-#### region
+     ```go
+     // --8<-- [start:New]
+     func New() *http.Server {
+         // ...
+     }
+     // --8<-- [end:New]
+     ```
 
-The `region` shell script is a command intended to be used with `mdox-exec`.
+3. Include the snippet in a code block with the following syntax:
 
-```plain mdox-exec='region' mdox-expect-exit-code='1'
-USAGE: region FILE REGION1 REGION2 ...
+    ```markdown
+    ```go
+    ;--8<-- "path/to/file.go:name"
+    ```
 
-Extracts text from FILE marked by "// region" blocks.
-```
+    Where `path/to/file.go` is the path to the file containing the snippet
+    relative to the `ex/` directory,
+    and `name` is the name of the snippet.
 
-For example, given the file:
+    You can include multiple snippets from the same file like so:
 
-```
-foo
-// region myregion
-bar
-// endregion myregion
-baz
-```
-
-Running `region $FILE myregion` will print:
-
-```
-bar
-```
-
-The same region name may be used multiple times
-to pull different snippets from the same file.
-For example, given the file:
-
-```go
-// region provide-foo
-func main() {
-	fx.New(
-		fx.Provide(
-			NewFoo,
-			// endregion provide-foo
-			NewBar,
-		// region provide-foo
-		),
-	).Run()
-}
-
-// endregion provide-foo
-```
-
-`region $FILE provide-foo` will print,
-
-```go
-func main() {
-	fx.New(
-		fx.Provide(
-			NewFoo,
-		),
-	).Run()
-}
-```
+    ```
+    ;--8<-- "path/to/file.go:snippet1"
+    ;--8<-- "path/to/file.go:snippet2"
+    ```

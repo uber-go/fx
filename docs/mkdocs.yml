@@ -1,0 +1,171 @@
+site_name: Fx
+site_url: https://uber-go.github.io/fx
+site_description: >-
+  A dependency injection system for Go.
+
+repo_url: https://github.com/uber-go/fx
+repo_name: uber-go/fx
+edit_uri: edit/master/docs/src/
+
+# .md files reside inside the src directory.
+docs_dir: src
+
+# The generated site will be placed in the _site directory.
+# This is the default for GitHub Pages' upload-artifact action.
+site_dir: _site
+
+extra:
+  analytics:
+    provider: google
+    property: G-4YWLTPJ46M
+
+# Treat all warnings as errors.
+strict: true
+
+# By default, mkdocs will turn "foo/bar.md" into "foo/bar/index.html",
+# linking to it as "foo/bar/".
+# This does not match what we were using previously (foo/bar.html).
+# So we'll disable this behavior.
+use_directory_urls: false
+
+validation:
+  # Warn about Markdown files not listed in the nav.
+  omitted_files: warn
+
+  # If a link is /foo/bar.md,
+  # turn it into relative to the src/ directory.
+  absolute_links: relative_to_docs
+
+  # Warn about broken internal links to pages or anchors.
+  unrecognized_links: warn
+  anchors: warn
+
+theme:
+  name: material
+
+  # Support dark and light mode.
+  palette:
+    - scheme: default
+      toggle:
+        icon: material/toggle-switch
+        name: Switch to dark mode
+    - scheme: slate
+      toggle:
+        icon: material/toggle-switch-off-outline
+        name: Switch to light mode
+
+  features:
+    - content.action.edit  # show an 'edit this page' button
+    - content.code.copy    # show 'copy' button on code blocks
+    - content.tooltips     # render alt text as tooltips
+    - header.autohide      # hide header on scroll
+    - navigation.footer    # show next/prev page footer
+    - navigation.indexes   # allow foo/index.md to be home for foo/
+    - navigation.instant   # use SPA-style navigation
+    - navigation.instant.progress
+                           # show loading progress for instant nav
+    - search.suggest       # show search suggestions
+    - toc.follow           # highlight current section in TOC
+    - toc.integrate        # merge TOC into nav sidebar
+
+plugins:
+  # Downloads third-party assets at build time and bundles them with the site.
+  # This avoids calling out to third-party servers when the site is viewed.
+  # We'll do this only if the build is for 'master'
+  - privacy:
+      enabled: !ENV [MASTER_BUILD, false]
+
+  # Enable search
+  - search
+
+  # Show Created/Modified dates
+  - git-revision-date-localized:
+      enabled: !ENV [CI, false]
+      enable_creation_date: true
+      fallback_to_build_date: true
+
+  # Redirect old links to new ones.
+  - redirects:
+      redirect_maps:
+        value-groups.md: value-groups/index.md
+
+
+markdown_extensions:
+  - admonition        # admonitions (info/warning/error/etc.)
+  - attr_list         # custom HTML attributes for Markdown elements
+  - def_list          # definition lists
+  - md_in_html        # HTML blocks tagged with Markdown contents
+  - pymdownx.details  # collapsible blocks
+
+  # snippets enables including code snippets from other files
+  # with the "--8<--" syntax.
+  #
+  # It will search for snippets in the provided base paths.
+  # We put code samples in the "ex/" directory, so that's one of the base paths.
+  - pymdownx.snippets:
+      base_path: [ex]
+
+  # Syntax-highlighting of code fences (```),
+  # plus custom fences for Mermaid diagrams.
+  - pymdownx.superfences:
+      # Mermaid diagram support.
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+
+  # Tabbed content blocks, e.g. "Language A" vs "Language B".
+  - pymdownx.tabbed:
+      alternate_style: true  # recommended
+      slugify: !!python/object/apply:pymdownx.slugs.slugify
+        kwds:
+          case: lower
+
+  # GitHub-style task lists.
+  - pymdownx.tasklist:
+      custom_checkbox: true  # recommended
+
+  # Generate a TOC for all pages with a permalink for all headers.
+  - toc:
+      permalink: true
+
+nav:
+  - Home: index.md
+  - Get started:
+    - get-started/index.md
+    - get-started/minimal.md
+    - get-started/http-server.md
+    - get-started/echo-handler.md
+    - get-started/logger.md
+    - get-started/registration.md
+    - get-started/another-handler.md
+    - get-started/many-handlers.md
+    - get-started/conclusion.md
+  - intro.md
+  - Concepts:
+    - Container: container.md
+    - Lifecycle: lifecycle.md
+    - Modules: modules.md
+  - Features:
+    - Parameter Objects: parameter-objects.md
+    - Result Objects: result-objects.md
+    - Annotations: annotate.md
+    - Value groups:
+      - value-groups/index.md
+      - value-groups/feed.md
+      - value-groups/consume.md
+  - FAQ: faq.md
+  - Community:
+    - Contributing: contributing.md
+  - Release notes: changelog.md
+  - API Reference: https://pkg.go.dev/go.uber.org/fx
+
+# Pages that are not listed in the nav must be listed here.
+# not_in_nav: |
+#   get-started/*.md
+
+
+# Also watch ex/ for changes
+# as that's where we store snippets.
+watch:
+  - ex

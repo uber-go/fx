@@ -18,7 +18,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-// region main
+// --8<-- [start:main]
 
 package main
 
@@ -28,4 +28,4 @@ func main() {
 	fx.New().Run()
 }
 
-// endregion main
+// --8<-- [end:main]

@@ -40,31 +40,31 @@ type ClientConfig struct {
 }
 
 // ClientParams defines the parameters necessary to build a client.
-// region empty
-// region fxin
-// region fields
+// --8<-- [start:empty-1]
+// --8<-- [start:fxin]
+// --8<-- [start:fields]
 type ClientParams struct {
-	// endregion empty
+	// --8<-- [end:empty-1]
 	fx.In
-	// endregion fxin
+	// --8<-- [end:fxin]
 
 	Config     ClientConfig
 	HTTPClient *http.Client
-	// region empty
+	// --8<-- [start:empty-2]
 }
 
-// endregion fields
-// endregion empty
+// --8<-- [end:fields]
+// --8<-- [end:empty-2]
 
 // NewClient builds a new client.
-// region takeparam
-// region consume
+// --8<-- [start:takeparam]
+// --8<-- [start:consume]
 func NewClient(p ClientParams) (*Client, error) {
-	// endregion takeparam
+	// --8<-- [end:takeparam]
 	return &Client{
 		url:  p.Config.URL,
 		http: p.HTTPClient,
 		// ...
 	}, nil
-	// endregion consume
+	// --8<-- [end:consume]
 }
