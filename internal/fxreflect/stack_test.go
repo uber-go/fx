@@ -65,6 +65,25 @@ func TestStack(t *testing.T) {
 	})
 }
 
+func TestDeepStack(t *testing.T) {
+	t.Run("nest", func(t *testing.T) {
+		// Introduce a few frames.
+		frames := func() []Frame {
+			return func() []Frame {
+				return CallerStack(0, 0)
+			}()
+		}()
+
+		require.True(t, len(frames) > 3, "expected at least three frames")
+		for i, name := range []string{"func1.TestDeepStack.func1.1.2", "func1.1", "func1"} {
+			f := frames[i]
+			assert.Equal(t, "go.uber.org/fx/internal/fxreflect.TestDeepStack."+name, f.Function)
+			assert.Contains(t, f.File, "internal/fxreflect/stack_test.go")
+			assert.NotZero(t, f.Line)
+		}
+	})
+}
+
 func TestStackCallerName(t *testing.T) {
 	t.Parallel()
 
