@@ -60,20 +60,20 @@ func NewServeMux(echo *EchoHandler) *http.ServeMux {
 
 // EchoHandler is an http.Handler that copies its request body
 // back to the response.
-// --8<-- [start:echo-init]
+// --8<-- [start:echo-init-1]
 type EchoHandler struct {
 	log *zap.Logger
 }
 
-// --8<-- [end:echo-init]
+// --8<-- [end:echo-init-1]
 
 // NewEchoHandler builds a new EchoHandler.
-// --8<-- [start:echo-init]
+// --8<-- [start:echo-init-2]
 func NewEchoHandler(log *zap.Logger) *EchoHandler {
 	return &EchoHandler{log: log}
 }
 
-// --8<-- [end:echo-init]
+// --8<-- [end:echo-init-2]
 
 // ServeHTTP handles an HTTP request to the /echo endpoint.
 // --8<-- [start:echo-serve]

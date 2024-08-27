@@ -45,23 +45,23 @@ func main() {
 				fx.ParamTags(`name:"echo"`, `name:"hello"`),
 			),
 			// --8<-- [end:mux-provide]
-			// --8<-- [start:hello-provide-partial]
+			// --8<-- [start:hello-provide-partial-1]
 			// --8<-- [start:route-provides]
 			fx.Annotate(
 				NewEchoHandler,
 				fx.As(new(Route)),
-				// --8<-- [end:hello-provide-partial]
+				// --8<-- [end:hello-provide-partial-1]
 				fx.ResultTags(`name:"echo"`),
-			// --8<-- [start:hello-provide-partial]
+			// --8<-- [start:hello-provide-partial-2]
 			),
 			fx.Annotate(
 				NewHelloHandler,
 				fx.As(new(Route)),
-				// --8<-- [end:hello-provide-partial]
+				// --8<-- [end:hello-provide-partial-2]
 				fx.ResultTags(`name:"hello"`),
-				// --8<-- [start:hello-provide-partial]
+				// --8<-- [start:hello-provide-partial-3]
 			),
-			// --8<-- [end:hello-provide-partial]
+			// --8<-- [end:hello-provide-partial-3]
 			// --8<-- [end:route-provides]
 			zap.NewExample,
 		),
@@ -108,15 +108,15 @@ func NewHelloHandler(log *zap.Logger) *HelloHandler {
 
 // Pattern reports the pattern under which
 // this handler should be registered.
-// --8<-- [start:hello-methods]
+// --8<-- [start:hello-methods-1]
 func (*HelloHandler) Pattern() string {
 	return "/hello"
 }
 
-// --8<-- [end:hello-methods]
+// --8<-- [end:hello-methods-1]
 
 // ServeHTTP handles an HTTP request to the /hello endpoint.
-// --8<-- [start:hello-methods]
+// --8<-- [start:hello-methods-2]
 func (h *HelloHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
@@ -132,7 +132,7 @@ func (h *HelloHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// --8<-- [end:hello-methods]
+// --8<-- [end:hello-methods-2]
 
 // EchoHandler is an http.Handler that copies its request body
 // back to the response.

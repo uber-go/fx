@@ -7,7 +7,8 @@ Let's add an HTTP server to it.
 1. Write a function to build your HTTP server.
 
      ```go
-     --8<-- "get-started/02-http-server/main.go:partial"
+     --8<-- "get-started/02-http-server/main.go:partial-1"
+     --8<-- "get-started/02-http-server/main.go:partial-2"
      ```
 
      This isn't enough, though--we need to tell Fx how to start the HTTP server.
@@ -23,7 +24,8 @@ Let's add an HTTP server to it.
 3. Provide this to your Fx application above with `fx.Provide`.
 
      ```go
-     --8<-- "get-started/02-http-server/main.go:provide-server"
+     --8<-- "get-started/02-http-server/main.go:provide-server-1"
+     --8<-- "get-started/02-http-server/main.go:provide-server-2"
      ```
 
 4. Run the application.

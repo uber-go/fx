@@ -78,6 +78,6 @@ var EmitterFromModule = fx.Options(
 // EmitterFrom builds an Emitter from the list of watchers.
 // --8<-- [start:new-variadic]
 func EmitterFrom(watchers ...Watcher) (*Emitter, error) {
-	// --8<-- [start:new-variadic]
+	// --8<-- [end:new-variadic]
 	return &Emitter{ws: watchers}, nil
 }

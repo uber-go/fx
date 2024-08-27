@@ -12,7 +12,8 @@ Let's add another.
 2. Implement the `Route` interface for this handler.
 
      ```go
-     --8<-- "get-started/06-another-handler/main.go:hello-methods"
+     --8<-- "get-started/06-another-handler/main.go:hello-methods-1"
+     --8<-- "get-started/06-another-handler/main.go:hello-methods-2"
      ```
 
      The handler reads its request body,
@@ -21,7 +22,9 @@ Let's add another.
 3. Provide this to the application as a `Route` next to `NewEchoHandler`.
 
      ```go
-     --8<-- "get-started/06-another-handler/main.go:hello-provide-partial"
+     --8<-- "get-started/06-another-handler/main.go:hello-provide-partial-1"
+     --8<-- "get-started/06-another-handler/main.go:hello-provide-partial-2"
+     --8<-- "get-started/06-another-handler/main.go:hello-provide-partial-3"
      ```
 
 4. Run the application--the service will fail to start.

@@ -22,7 +22,8 @@ but you should be able to use any logging system.
    and in `NewEchoHandler` add a new logger argument to set this field.
 
      ```go
-     --8<-- "get-started/04-logger/main.go:echo-init"
+     --8<-- "get-started/04-logger/main.go:echo-init-1"
+     --8<-- "get-started/04-logger/main.go:echo-init-2"
      ```
 
 3. In the `EchoHandler.ServeHTTP` method,

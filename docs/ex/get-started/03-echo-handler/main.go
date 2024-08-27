@@ -34,17 +34,17 @@ import (
 func main() {
 	fx.New(
 		// --8<-- [start:provides]
-		// --8<-- [start:provide-handler]
+		// --8<-- [start:provide-handler-1]
 		fx.Provide(
 			NewHTTPServer,
-			// --8<-- [end:provide-handler]
+			// --8<-- [end:provide-handler-1]
 			NewServeMux,
-			// --8<-- [start:provide-handler]
+			// --8<-- [start:provide-handler-2]
 			NewEchoHandler,
 		),
 		// --8<-- [end:provides]
 		fx.Invoke(func(*http.Server) {}),
-		// --8<-- [end:provide-handler]
+		// --8<-- [end:provide-handler-2]
 	).Run()
 }
 

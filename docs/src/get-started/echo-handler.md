@@ -15,7 +15,8 @@ Let's fix that.
      Provide this to the application.
 
      ```go
-     --8<-- "get-started/03-echo-handler/main.go:provide-handler"
+     --8<-- "get-started/03-echo-handler/main.go:provide-handler-1"
+     --8<-- "get-started/03-echo-handler/main.go:provide-handler-2"
      ```
 
 2. Next, write a function that builds an `*http.ServeMux`.

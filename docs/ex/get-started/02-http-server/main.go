@@ -29,28 +29,28 @@ import (
 	"go.uber.org/fx"
 )
 
-// --8<-- [start:provide-server]
+// --8<-- [start:provide-server-1]
 func main() {
 	// --8<-- [start:app]
 	fx.New(
 		fx.Provide(NewHTTPServer),
-		// --8<-- [end:provide-server]
+		// --8<-- [end:provide-server-1]
 		fx.Invoke(func(*http.Server) {}),
-	// --8<-- [start:provide-server]
+	// --8<-- [start:provide-server-2]
 	).Run()
 	// --8<-- [end:app]
 }
 
-// --8<-- [end:provide-server]
+// --8<-- [end:provide-server-2]
 
-// --8<-- [start:partial]
+// --8<-- [start:partial-1]
 
 // NewHTTPServer builds an HTTP server that will begin serving requests
 // when the Fx application starts.
 // --8<-- [start:full]
 func NewHTTPServer(lc fx.Lifecycle) *http.Server {
 	srv := &http.Server{Addr: ":8080"}
-	// --8<-- [end:partial]
+	// --8<-- [end:partial-1]
 	lc.Append(fx.Hook{
 		OnStart: func(ctx context.Context) error {
 			ln, err := net.Listen("tcp", srv.Addr)
@@ -65,9 +65,9 @@ func NewHTTPServer(lc fx.Lifecycle) *http.Server {
 			return srv.Shutdown(ctx)
 		},
 	})
-	// --8<-- [start:partial]
+	// --8<-- [start:partial-2]
 	return srv
 }
 
-// --8<-- [end:partial]
-// --8<-- [start:full]
+// --8<-- [end:partial-2]
+// --8<-- [end:full]
