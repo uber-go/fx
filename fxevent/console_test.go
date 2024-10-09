@@ -267,27 +267,29 @@ func TestConsoleLogger(t *testing.T) {
 		},
 		{
 			name: "Run",
-			give: &Run{Name: "bytes.NewBuffer()", Kind: "constructor"},
-			want: "[Fx] RUN\tconstructor: bytes.NewBuffer()\n",
+			give: &Run{Name: "bytes.NewBuffer()", Kind: "constructor", Runtime: 10 * time.Nanosecond},
+			want: "[Fx] RUN\tconstructor: bytes.NewBuffer() in 10ns\n",
 		},
 		{
 			name: "Run with module",
 			give: &Run{
 				Name:       "bytes.NewBuffer()",
 				Kind:       "constructor",
+				Runtime:    50 * time.Millisecond,
 				ModuleName: "myModule",
 			},
-			want: "[Fx] RUN\tconstructor: bytes.NewBuffer() from module \"myModule\"\n",
+			want: "[Fx] RUN\tconstructor: bytes.NewBuffer() in 50ms from module \"myModule\"\n",
 		},
 		{
 			name: "RunError",
 			give: &Run{
-				Name: "bytes.NewBuffer()",
-				Kind: "constructor",
-				Err:  errors.New("terrible constructor error"),
+				Name:    "bytes.NewBuffer()",
+				Kind:    "constructor",
+				Runtime: 5 * time.Second,
+				Err:     errors.New("terrible constructor error"),
 			},
 			want: joinLines(
-				"[Fx] RUN\tconstructor: bytes.NewBuffer()",
+				"[Fx] RUN\tconstructor: bytes.NewBuffer() in 5s",
 				"[Fx] Error returned: terrible constructor error",
 			),
 		},

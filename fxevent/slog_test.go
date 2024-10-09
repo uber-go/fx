@@ -342,11 +342,12 @@ func TestSlogLogger(t *testing.T) {
 		},
 		{
 			name:        "Run",
-			give:        &Run{Name: "bytes.NewBuffer()", Kind: "constructor"},
+			give:        &Run{Name: "bytes.NewBuffer()", Kind: "constructor", Runtime: 3 * time.Millisecond},
 			wantMessage: "run",
 			wantFields: map[string]interface{}{
-				"name": "bytes.NewBuffer()",
-				"kind": "constructor",
+				"name":    "bytes.NewBuffer()",
+				"kind":    "constructor",
+				"runtime": "3ms",
 			},
 		},
 		{
@@ -355,12 +356,14 @@ func TestSlogLogger(t *testing.T) {
 				Name:       "bytes.NewBuffer()",
 				Kind:       "constructor",
 				ModuleName: "myModule",
+				Runtime:    3 * time.Millisecond,
 			},
 			wantMessage: "run",
 			wantFields: map[string]interface{}{
-				"name":   "bytes.NewBuffer()",
-				"kind":   "constructor",
-				"module": "myModule",
+				"name":    "bytes.NewBuffer()",
+				"kind":    "constructor",
+				"module":  "myModule",
+				"runtime": "3ms",
 			},
 		},
 		{

@@ -179,6 +179,7 @@ func (l *ZapLogger) LogEvent(event Event) {
 			l.logEvent("run",
 				zap.String("name", e.Name),
 				zap.String("kind", e.Kind),
+				zap.String("runtime", e.Runtime.String()),
 				moduleField(e.ModuleName),
 			)
 		}
