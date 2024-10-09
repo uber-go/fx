@@ -200,6 +200,7 @@ func (m *module) provide(p provide) {
 				Name:       funcName,
 				Kind:       "provide",
 				ModuleName: m.name,
+				Runtime:    ci.Runtime,
 				Err:        ci.Error,
 			})
 		}),
@@ -232,6 +233,7 @@ func (m *module) supply(p provide) {
 			m.log.LogEvent(&fxevent.Run{
 				Name:       fmt.Sprintf("stub(%v)", typeName),
 				Kind:       "supply",
+				Runtime:    ci.Runtime,
 				ModuleName: m.name,
 			})
 		}),
@@ -356,6 +358,7 @@ func (m *module) decorate(d decorator) (err error) {
 				Name:       funcName,
 				Kind:       "decorate",
 				ModuleName: m.name,
+				Runtime:    ci.Runtime,
 				Err:        ci.Error,
 			})
 		}),
@@ -387,6 +390,7 @@ func (m *module) replace(d decorator) error {
 				Name:       fmt.Sprintf("stub(%v)", typeName),
 				Kind:       "replace",
 				ModuleName: m.name,
+				Runtime:    ci.Runtime,
 				Err:        ci.Error,
 			})
 		}),

@@ -204,6 +204,7 @@ func (l *SlogLogger) LogEvent(event Event) {
 			l.logEvent("run",
 				slog.String("name", e.Name),
 				slog.String("kind", e.Kind),
+				slog.String("runtime", e.Runtime.String()),
 				slogMaybeModuleField(e.ModuleName),
 			)
 		}

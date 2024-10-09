@@ -203,6 +203,9 @@ type Run struct {
 	// ModuleName is the name of the module in which the function belongs.
 	ModuleName string
 
+	// Runtime specifies how long it took to run this function.
+	Runtime time.Duration
+
 	// Err is non-nil if the function returned an error.
 	// If fx.RecoverFromPanics is used, this will include panics.
 	Err error
