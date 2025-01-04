@@ -595,6 +595,14 @@ func (app *App) exit(code int) {
 // All of Run's functionality is implemented in terms of the exported
 // Start, Done, and Stop methods. Applications with more specialized needs
 // can use those methods directly instead of relying on Run.
+//
+// After the application has started,
+// it can be shut down by sending a signal or calling [Shutdowner.Shutdown].
+// On successful shutdown, whether initiated by a signal or by the user,
+// Run will return to the caller, allowing it to exit cleanly.
+// Run will exit with a non-zero status code
+// if startup or shutdown operations fail,
+// or if the [Shutdowner] supplied a non-zero exit code.
 func (app *App) Run() {
 	// Historically, we do not os.Exit(0) even though most applications
 	// cede control to Fx with they call app.Run. To avoid a breaking
