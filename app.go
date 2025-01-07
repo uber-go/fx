@@ -504,6 +504,23 @@ func New(opts ...Option) *App {
 		return app
 	}
 
+	// At this point, we can run the fx.Evaluates (if any).
+	// As long as there's at least one evaluate per iteration,
+	// we'll have to keep unwinding.
+	//
+	// Keep evaluating until there are no more evaluates to run.
+	for app.root.evaluateAll() > 0 {
+		// TODO: is communicating the number of evalutes the best way?
+		if app.err != nil {
+			return app
+		}
+
+		// TODO: fx.Module inside evaluates needs to build subscopes.
+		app.root.provideAll()
+		app.err = multierr.Append(app.err, app.root.decorateAll())
+		// TODO: fx.WithLogger allowed inside an evaluate?
+	}
+
 	if err := app.root.invokeAll(); err != nil {
 		app.err = err
 
