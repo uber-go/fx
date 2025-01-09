@@ -304,7 +304,6 @@ type App struct {
 
 	container *dig.Container
 	root      *module
-	modules   []*module
 
 	// Timeouts used
 	startTimeout time.Duration
@@ -446,7 +445,6 @@ func New(opts ...Option) *App {
 		log:   logger,
 		trace: []string{fxreflect.CallerStack(1, 2)[0].String()},
 	}
-	app.modules = append(app.modules, app.root)
 
 	for _, opt := range opts {
 		opt.apply(app.root)
@@ -475,10 +473,7 @@ func New(opts ...Option) *App {
 	}
 
 	app.container = dig.New(containerOptions...)
-
-	for _, m := range app.modules {
-		m.build(app, app.container)
-	}
+	app.root.build(app, app.container)
 
 	// Provide Fx types first to increase the chance a custom logger
 	// can be successfully built in the face of unrelated DI failure.
@@ -490,13 +485,10 @@ func New(opts ...Option) *App {
 	})
 	app.root.provide(provide{Target: app.shutdowner, Stack: frames})
 	app.root.provide(provide{Target: app.dotGraph, Stack: frames})
+	app.root.provideAll()
 
-	for _, m := range app.modules {
-		m.provideAll()
-	}
-
-	// Run decorators before executing any Invokes -- including the one
-	// inside constructCustomLogger.
+	// Run decorators before executing any Invokes
+	// (including the ones inside installAllEventLoggers).
 	app.err = multierr.Append(app.err, app.root.decorateAll())
 
 	// If you are thinking about returning here after provides: do not (just yet)!
@@ -504,9 +496,7 @@ func New(opts ...Option) *App {
 	// We'll want to flush them to the logger.
 
 	// custom app logger will be initialized by the root module.
-	for _, m := range app.modules {
-		m.constructAllCustomLoggers()
-	}
+	app.root.installAllEventLoggers()
 
 	// This error might have come from the provide loop above. We've
 	// already flushed to the custom logger, so we can return.
@@ -514,7 +504,7 @@ func New(opts ...Option) *App {
 		return app
 	}
 
-	if err := app.root.executeInvokes(); err != nil {
+	if err := app.root.invokeAll(); err != nil {
 		app.err = err
 
 		if dig.CanVisualizeError(err) {
