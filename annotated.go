@@ -28,6 +28,7 @@ import (
 	"strings"
 
 	"go.uber.org/dig"
+
 	"go.uber.org/fx/internal/fxreflect"
 )
 
@@ -1145,6 +1146,19 @@ var _ Annotation = (*asAnnotation)(nil)
 // constructor does NOT provide both bytes.Buffer and io.Writer type; it just
 // provides io.Writer type.
 //
+// Example for function-types:
+//
+// type domainHandler func(ctx context.Context) error
+//
+// func anyHandlerProvider() func(ctx context.Context) error {
+//     ...
+// }
+//
+// fx.Provider(
+//   anyHandlerProvider(),
+//   fx.As(new(domainHandler)),
+// )
+//
 // When multiple values are returned by the annotated function, each type
 // gets mapped to corresponding positional result of the annotated function.
 //
@@ -1211,8 +1225,8 @@ func (at *asAnnotation) apply(ann *annotated) error {
 			continue
 		}
 		t := reflect.TypeOf(typ)
-		if t.Kind() != reflect.Ptr || t.Elem().Kind() != reflect.Interface {
-			return fmt.Errorf("fx.As: argument must be a pointer to an interface: got %v", t)
+		if t.Kind() != reflect.Ptr || !(t.Elem().Kind() == reflect.Interface || t.Elem().Kind() == reflect.Func) {
+			return fmt.Errorf("fx.As: argument must be a pointer to an interface or function: got %v", t)
 		}
 		t = t.Elem()
 		at.types[i] = asType{typ: t}
@@ -1265,8 +1279,11 @@ func (at *asAnnotation) results(ann *annotated) (
 			continue
 		}
 
-		if !t.Implements(at.types[i].typ) {
-			return nil, nil, fmt.Errorf("invalid fx.As: %v does not implement %v", t, at.types[i])
+		if !((at.types[i].typ.Kind() == reflect.Interface && t.Implements(at.types[i].typ)) ||
+			t.ConvertibleTo(at.types[i].typ)) {
+			return nil,
+				nil,
+				fmt.Errorf("invalid fx.As: %v does not implement or is not convertible to %v", t, at.types[i])
 		}
 		field.Type = at.types[i].typ
 		fields = append(fields, field)
@@ -1300,7 +1317,11 @@ func (at *asAnnotation) results(ann *annotated) (
 
 		newOutResult := reflect.New(resType).Elem()
 		for i := 1; i < resType.NumField(); i++ {
-			newOutResult.Field(i).Set(getResult(i, results))
+			if newOutResult.Field(i).Kind() == reflect.Func {
+				newOutResult.Field(i).Set(getResult(i, results).Convert(newOutResult.Field(i).Type()))
+			} else {
+				newOutResult.Field(i).Set(getResult(i, results))
+			}
 		}
 		outResults = append(outResults, newOutResult)
 

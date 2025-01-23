@@ -33,6 +33,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
 	"go.uber.org/fx"
 	"go.uber.org/fx/fxevent"
 	"go.uber.org/fx/fxtest"
@@ -442,6 +443,8 @@ func TestAnnotatedAs(t *testing.T) {
 	type myStringer interface {
 		String() string
 	}
+	type myProvideFunc func() string
+	type myInvokeFunc func() string
 
 	newAsStringer := func() *asStringer {
 		return &asStringer{
@@ -475,6 +478,32 @@ func TestAnnotatedAs(t *testing.T) {
 			),
 			invoke: func(s fmt.Stringer) {
 				assert.Equal(t, s.String(), "another stringer")
+			},
+		},
+		{
+			desc: "value type convertible to target type",
+			provide: fx.Provide(
+				fx.Annotate(func() myProvideFunc {
+					return func() string {
+						return "provide func example"
+					}
+				}, fx.As(new(myInvokeFunc))),
+			),
+			invoke: func(h myInvokeFunc) {
+				assert.Equal(t, "provide func example", h())
+			},
+		},
+		{
+			desc: "anonymous value type convertible to target type",
+			provide: fx.Provide(
+				fx.Annotate(func() func() string {
+					return func() string {
+						return "anonymous func example"
+					}
+				}, fx.As(new(myInvokeFunc))),
+			),
+			invoke: func(h myInvokeFunc) {
+				assert.Equal(t, "anonymous func example", h())
 			},
 		},
 		{
@@ -1806,9 +1835,9 @@ func TestAnnotateApplySuccess(t *testing.T) {
 func assertApp(
 	t *testing.T,
 	app interface {
-		Start(context.Context) error
-		Stop(context.Context) error
-	},
+	Start(context.Context) error
+	Stop(context.Context) error
+},
 	started *bool,
 	stopped *bool,
 	invoked *bool,
