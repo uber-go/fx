@@ -96,4 +96,76 @@ func TestApp(t *testing.T) {
 		assert.Equal(t, 1, spy.failures, "Expected Stop to fail.")
 		assert.Contains(t, spy.errors.String(), "didn't stop cleanly", "Expected to write errors to TB.")
 	})
+
+	t.Run("RunFailures", func(t *testing.T) {
+		t.Parallel()
+
+		t.Run("RunFailure during Start", func(t *testing.T) {
+			t.Parallel()
+			spy := newTB()
+
+			New(
+				spy,
+				fx.Invoke(func(lc fx.Lifecycle, s fx.Shutdowner) {
+					lc.Append(fx.Hook{
+						OnStart: func(context.Context) error {
+							go s.Shutdown()
+							return errors.New("fail")
+						},
+						OnStop: func(context.Context) error {
+							return nil
+						},
+					})
+				}),
+			).RequireRun()
+
+			assert.Equal(t, 1, spy.failures, "Expected RequireRun to fail.")
+			assert.Contains(t, spy.errors.String(), "didn't start cleanly", "Expected to write errors to TB.")
+		})
+		t.Run("RunFailure during Stop", func(t *testing.T) {
+			t.Parallel()
+			spy := newTB()
+
+			New(
+				spy,
+				fx.Invoke(func(lc fx.Lifecycle, s fx.Shutdowner) {
+					lc.Append(fx.Hook{
+						OnStart: func(context.Context) error {
+							go s.Shutdown()
+							return nil
+						},
+						OnStop: func(context.Context) error {
+							return errors.New("fail")
+						},
+					})
+				}),
+			).RequireRun()
+
+			assert.Equal(t, 1, spy.failures, "Expected RequireRun to fail.")
+			assert.Contains(t, spy.errors.String(), "didn't stop cleanly", "Expected to write errors to TB.")
+		})
+		t.Run("RunFailure via exit code", func(t *testing.T) {
+			t.Parallel()
+			spy := newTB()
+
+			New(
+				spy,
+				fx.Invoke(func(lc fx.Lifecycle, s fx.Shutdowner) {
+					lc.Append(fx.Hook{
+						OnStart: func(context.Context) error {
+							go s.Shutdown(fx.ExitCode(42))
+							return nil
+						},
+						OnStop: func(context.Context) error {
+							return nil
+						},
+					})
+				}),
+			).RequireRun()
+
+			assert.Equal(t, 1, spy.failures, "Expected RequireRun to fail.")
+			assert.Contains(t, spy.errors.String(), "application exited with code 42", "Expected to write errors to TB.")
+		})
+
+	})
 }
