@@ -253,11 +253,11 @@ func (m *module) supply(p provide) {
 }
 
 // Constructs custom loggers for all modules in the tree
-func (m *module) constructAllCustomLoggers() {
+func (m *module) installAllEventLoggers() {
 	if m.logConstructor != nil {
 		if buffer, ok := m.log.(*logBuffer); ok {
 			// default to parent's logger if custom logger constructor fails
-			if err := m.constructCustomLogger(buffer); err != nil {
+			if err := m.installEventLogger(buffer); err != nil {
 				m.app.err = multierr.Append(m.app.err, err)
 				m.log = m.fallbackLogger
 				buffer.Connect(m.log)
@@ -269,12 +269,11 @@ func (m *module) constructAllCustomLoggers() {
 	}
 
 	for _, mod := range m.modules {
-		mod.constructAllCustomLoggers()
+		mod.installAllEventLoggers()
 	}
 }
 
-// Mirroring the behavior of app.constructCustomLogger
-func (m *module) constructCustomLogger(buffer *logBuffer) (err error) {
+func (m *module) installEventLogger(buffer *logBuffer) (err error) {
 	p := m.logConstructor
 	fname := fxreflect.FuncName(p.Target)
 	defer func() {
@@ -297,15 +296,15 @@ func (m *module) constructCustomLogger(buffer *logBuffer) (err error) {
 	})
 }
 
-func (m *module) executeInvokes() error {
+func (m *module) invokeAll() error {
 	for _, m := range m.modules {
-		if err := m.executeInvokes(); err != nil {
+		if err := m.invokeAll(); err != nil {
 			return err
 		}
 	}
 
 	for _, invoke := range m.invokes {
-		if err := m.executeInvoke(invoke); err != nil {
+		if err := m.invoke(invoke); err != nil {
 			return err
 		}
 	}
@@ -313,7 +312,7 @@ func (m *module) executeInvokes() error {
 	return nil
 }
 
-func (m *module) executeInvoke(i invoke) (err error) {
+func (m *module) invoke(i invoke) (err error) {
 	fnName := fxreflect.FuncName(i.Target)
 	m.log.LogEvent(&fxevent.Invoking{
 		FunctionName: fnName,

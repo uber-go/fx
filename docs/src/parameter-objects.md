@@ -1,6 +1,6 @@
 # Parameter Objects
 
-A parameter object is an objects with the sole purpose of carrying parameters
+A parameter object is an object with the sole purpose of carrying parameters
 for a specific function or method.
 
 The object is typically defined exclusively for that function,
