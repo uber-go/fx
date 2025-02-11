@@ -26,30 +26,30 @@ import "go.uber.org/fx"
 type Client struct{}
 
 // ClientResult holds the result of NewClient.
-// region empty
-// region fxout
-// region fields
+// --8<-- [start:empty-1]
+// --8<-- [start:fxout]
+// --8<-- [start:fields]
 type ClientResult struct {
-	// endregion empty
+	// --8<-- [end:empty-1]
 	fx.Out
-	// endregion fxout
+	// --8<-- [end:fxout]
 
 	Client *Client
-	// region empty
+	// --8<-- [start:empty-2]
 }
 
-// endregion empty
-// endregion fields
+// --8<-- [end:empty-2]
+// --8<-- [end:fields]
 
 // NewClient builds a new Client.
-// region returnresult
-// region produce
+// --8<-- [start:returnresult]
+// --8<-- [start:produce]
 func NewClient() (ClientResult, error) {
-	// endregion returnresult
+	// --8<-- [end:returnresult]
 	client := &Client{
 		// ...
 	}
 	return ClientResult{Client: client}, nil
 }
 
-// endregion produce
+// --8<-- [end:produce]

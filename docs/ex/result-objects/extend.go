@@ -26,35 +26,35 @@ import "go.uber.org/fx"
 type Inspector struct{}
 
 // Result is the result of this module.
-// region full
-// region start
+// --8<-- [start:full]
+// --8<-- [start:start-1]
 type Result struct {
 	fx.Out
 
 	Client *Client
-	// endregion start
+	// --8<-- [end:start-1]
 	Inspector *Inspector
-	// region start
+	// --8<-- [start:start-2]
 }
 
-// endregion start
-// endregion full
+// --8<-- [end:start-2]
+// --8<-- [end:full]
 
 // New builds a result.
-// region start
+// --8<-- [start:start-3]
 func New() (Result, error) {
 	client := &Client{
 		// ...
 	}
-	// region produce
+	// --8<-- [start:produce]
 	return Result{
 		Client: client,
-		// endregion start
+		// --8<-- [end:start-3]
 		Inspector: &Inspector{
 			// ...
 		},
-		// region start
+		// --8<-- [start:start-4]
 	}, nil
-	// endregion start
-	// endregion produce
+	// --8<-- [end:start-4]
+	// --8<-- [end:produce]
 }

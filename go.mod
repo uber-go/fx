@@ -1,10 +1,10 @@
 module go.uber.org/fx
 
-go 1.20
+go 1.22
 
 require (
 	github.com/stretchr/testify v1.8.1
-	go.uber.org/dig v1.17.1
+	go.uber.org/dig v1.18.0
 	go.uber.org/goleak v1.2.0
 	go.uber.org/multierr v1.10.0
 	go.uber.org/zap v1.26.0

@@ -26,54 +26,45 @@ import (
 )
 
 // Module is an example of an Fx module's skeleton.
-// region start
-// region provide
-// region invoke
-// region decorate
-// region private
+// --8<-- [start:start]
 var Module = fx.Module("server",
-	// endregion start
+	// --8<-- [end:start]
+	// --8<-- [start:provide]
 	fx.Provide(
 		New,
-		// endregion provide
-		// endregion invoke
-		// endregion decorate
 	),
+	// --8<-- [end:provide]
+	// --8<-- [start:privateProvide]
 	fx.Provide(
 		fx.Private,
-		// region provide
-		// region invoke
-		// region decorate
 		parseConfig,
 	),
-	// endregion provide
+	// --8<-- [end:privateProvide]
+	// --8<-- [start:invoke]
 	fx.Invoke(startServer),
-	// endregion invoke
+	// --8<-- [end:invoke]
+	// --8<-- [start:decorate]
 	fx.Decorate(wrapLogger),
-
-// region provide
-// region invoke
+	// --8<-- [end:decorate]
+// --8<-- [start:endProvide]
 )
 
-// endregion invoke
-// endregion provide
-// endregion decorate
-// endregion private
+// --8<-- [end:endProvide]
 
 // Config is the configuration of the server.
-// region config
+// --8<-- [start:config]
 type Config struct {
 	Addr string `yaml:"addr"`
 }
 
-// endregion config
+// --8<-- [end:config]
 
 func parseConfig() (Config, error) {
 	return Config{}, nil
 }
 
 // Params defines the parameters of the module.
-// region params
+// --8<-- [start:params]
 type Params struct {
 	fx.In
 
@@ -81,22 +72,22 @@ type Params struct {
 	Config Config
 }
 
-// endregion params
+// --8<-- [end:params]
 
 // Result defines the results of the module.
-// region result
+// --8<-- [start:result]
 type Result struct {
 	fx.Out
 
 	Server *Server
 }
 
-// endregion result
+// --8<-- [end:result]
 
 // New builds a new server.
-// region new
+// --8<-- [start:new]
 func New(p Params) (Result, error) {
-	// endregion new
+	// --8<-- [end:new]
 	return Result{
 		Server: &Server{},
 	}, nil

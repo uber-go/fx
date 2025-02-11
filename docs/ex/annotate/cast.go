@@ -28,7 +28,7 @@ import (
 )
 
 // HTTPClient matches the http.Client interface.
-// region interface
+// --8<-- [start:interface]
 type HTTPClient interface {
 	Do(*http.Request) (*http.Response, error)
 }
@@ -37,28 +37,28 @@ type HTTPClient interface {
 // that our interface matches the API of http.Client.
 var _ HTTPClient = (*http.Client)(nil)
 
-// endregion interface
+// --8<-- [end:interface]
 
 // Config specifies the configuration of a client.
 type Config struct{}
 
 // NewHTTPClient builds a new HTTP client.
-// region constructor
+// --8<-- [start:constructor]
 func NewHTTPClient(Config) (*http.Client, error) {
-	// endregion constructor
+	// --8<-- [end:constructor]
 	return http.DefaultClient, nil
 }
 
 // NewGitHubClient builds a new GitHub client.
-// region iface-consumer
+// --8<-- [start:iface-consumer]
 func NewGitHubClient(client HTTPClient) *github.Client {
-	// endregion iface-consumer
+	// --8<-- [end:iface-consumer]
 	return new(github.Client)
 }
 
 func options() fx.Option {
 	return fx.Options(
-		// region provides
+		// --8<-- [start:provides]
 		fx.Provide(
 			fx.Annotate(
 				NewHTTPClient,
@@ -66,6 +66,6 @@ func options() fx.Option {
 			),
 			NewGitHubClient,
 		),
-		// endregion provides
+		// --8<-- [end:provides]
 	)
 }

@@ -53,7 +53,7 @@ type Hook struct {
 // StartHook returns a new Hook with start as its [Hook.OnStart] function,
 // wrapping its signature as needed. For example, given the following function:
 //
-//	func myhook() {
+//	func myfunc() {
 //	  fmt.Println("hook called")
 //	}
 //
@@ -86,7 +86,7 @@ func StartHook[T HookFunc](start T) Hook {
 // StopHook returns a new Hook with stop as its [Hook.OnStop] function,
 // wrapping its signature as needed. For example, given the following function:
 //
-//	func myhook() {
+//	func myfunc() {
 //	  fmt.Println("hook called")
 //	}
 //

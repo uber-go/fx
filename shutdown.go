@@ -83,7 +83,7 @@ func (s *shutdowner) Shutdown(opts ...ShutdownOption) error {
 		opt.apply(s)
 	}
 
-	return s.app.receivers.Broadcast(ShutdownSignal{
+	return s.app.receivers.b.Broadcast(ShutdownSignal{
 		Signal:   _sigTERM,
 		ExitCode: s.exitCode,
 	})

@@ -24,9 +24,9 @@ import "go.uber.org/fx"
 
 // ResultModule is the module defined in this file.
 var ResultModule = fx.Options(
-	// region provide
+	// --8<-- [start:provide]
 	fx.Provide(New),
-	// endregion provide
+	// --8<-- [end:provide]
 )
 
 // Watcher watches for events.
@@ -35,36 +35,36 @@ type Watcher interface{}
 type watcher struct{}
 
 // Result is the result of an operation.
-// region result-tagged
-// region result-init
+// --8<-- [start:result-tagged]
+// --8<-- [start:result-init-1]
 type Result struct {
 	fx.Out
 
 	// ...
-	// endregion result-init
+	// --8<-- [end:result-init-1]
 	Watcher Watcher `group:"watchers"`
-	// region result-init
+	// --8<-- [start:result-init-2]
 }
 
-// endregion result-init
-// endregion result-tagged
+// --8<-- [end:result-init-2]
+// --8<-- [end:result-tagged]
 
 // New produces a result object.
-// region new-init
-// region new-watcher
+// --8<-- [start:new-init-1]
+// --8<-- [start:new-watcher]
 func New( /* ... */ ) (Result, error) {
 	// ...
-	// endregion new-init
+	// --8<-- [end:new-init-1]
 	watcher := &watcher{
 		// ...
 	}
 
-	// region new-init
+	// --8<-- [start:new-init-2]
 	return Result{
 		// ...
 		Watcher: watcher,
 	}, nil
 }
 
-// endregion new-watcher
-// endregion new-init
+// --8<-- [end:new-watcher]
+// --8<-- [end:new-init-2]

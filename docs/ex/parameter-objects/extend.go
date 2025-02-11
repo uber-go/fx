@@ -28,32 +28,32 @@ import (
 )
 
 // Params defines the parameters of new.
-// region start
-// region full
+// --8<-- [start:start-1]
+// --8<-- [start:full]
 type Params struct {
 	fx.In
 
 	Config     ClientConfig
 	HTTPClient *http.Client
-	// endregion start
+	// --8<-- [end:start-1]
 	Logger *zap.Logger `optional:"true"`
-	// region start
+	// --8<-- [start:start-2]
 }
 
-// endregion start
-// endregion full
+// --8<-- [end:start-2]
+// --8<-- [end:full]
 
 // New builds a new Client.
-// region start
-// region consume
+// --8<-- [start:start-3]
+// --8<-- [start:consume]
 func New(p Params) (*Client, error) {
-	// endregion start
+	// --8<-- [end:start-3]
 	log := p.Logger
 	if log == nil {
 		log = zap.NewNop()
 	}
 	// ...
-	// endregion consume
+	// --8<-- [end:consume]
 
 	return &Client{log: log}, nil
 }

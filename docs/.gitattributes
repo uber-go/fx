@@ -1,0 +1,2 @@
+# Mark the uv.lock as generated so it is collapsed in review by default.
+uv.lock linguist-generated

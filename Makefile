@@ -5,7 +5,6 @@ export GOBIN ?= $(PROJECT_ROOT)/bin
 export PATH := $(GOBIN):$(PATH)
 
 FXLINT = $(GOBIN)/fxlint
-MDOX = $(GOBIN)/mdox
 
 MODULES = . ./tools ./docs ./internal/e2e
 
@@ -21,7 +20,7 @@ build:
 	go build ./...
 
 .PHONY: lint
-lint: golangci-lint tidy-lint fx-lint docs-lint
+lint: golangci-lint tidy-lint fx-lint
 
 .PHONY: test
 test:
@@ -41,7 +40,7 @@ tidy:
 
 .PHONY: docs
 docs:
-	cd docs && yarn build
+	cd docs && make build
 
 .PHONY: golangci-lint
 golangci-lint:
@@ -61,14 +60,6 @@ tidy-lint:
 .PHONY: fx-lint
 fx-lint: $(FXLINT)
 	@$(FXLINT) ./...
-
-.PHONY: docs-lint
-docs-lint: $(MDOX)
-	@echo "Checking documentation"
-	@make -C docs check
-
-$(MDOX): tools/go.mod
-	cd tools && go install github.com/bwplotka/mdox
 
 $(FXLINT): tools/cmd/fxlint/main.go
 	cd tools && go install go.uber.org/fx/tools/cmd/fxlint

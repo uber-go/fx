@@ -274,11 +274,12 @@ func TestZapLogger(t *testing.T) {
 		},
 		{
 			name:        "Run",
-			give:        &Run{Name: "bytes.NewBuffer()", Kind: "constructor"},
+			give:        &Run{Name: "bytes.NewBuffer()", Kind: "constructor", Runtime: time.Second},
 			wantMessage: "run",
 			wantFields: map[string]interface{}{
-				"name": "bytes.NewBuffer()",
-				"kind": "constructor",
+				"name":    "bytes.NewBuffer()",
+				"kind":    "constructor",
+				"runtime": "1s",
 			},
 		},
 		{
@@ -287,12 +288,14 @@ func TestZapLogger(t *testing.T) {
 				Name:       "bytes.NewBuffer()",
 				Kind:       "constructor",
 				ModuleName: "myModule",
+				Runtime:    time.Millisecond,
 			},
 			wantMessage: "run",
 			wantFields: map[string]interface{}{
-				"name":   "bytes.NewBuffer()",
-				"kind":   "constructor",
-				"module": "myModule",
+				"name":    "bytes.NewBuffer()",
+				"kind":    "constructor",
+				"module":  "myModule",
+				"runtime": "1ms",
 			},
 		},
 		{

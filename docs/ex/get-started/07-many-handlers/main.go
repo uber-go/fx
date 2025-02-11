@@ -37,27 +37,27 @@ func main() {
 		fx.WithLogger(func(log *zap.Logger) fxevent.Logger {
 			return &fxevent.ZapLogger{Logger: log}
 		}),
-		// region mux-provide
-		// region route-provides
+		// --8<-- [start:mux-provide]
+		// --8<-- [start:route-provides-1]
 		fx.Provide(
-			// endregion route-provides
+			// --8<-- [end:route-provides-1]
 			NewHTTPServer,
 			fx.Annotate(
 				NewServeMux,
 				fx.ParamTags(`group:"routes"`),
 			),
-			// endregion mux-provide
-			// region route-provides
+			// --8<-- [end:mux-provide]
+			// --8<-- [start:route-provides-2]
 			AsRoute(NewEchoHandler),
 			AsRoute(NewHelloHandler),
 			zap.NewExample,
 		),
-		// endregion route-provides
+		// --8<-- [end:route-provides-2]
 		fx.Invoke(func(*http.Server) {}),
 	).Run()
 }
 
-// region AsRoute
+// --8<-- [start:AsRoute]
 
 // AsRoute annotates the given constructor to state that
 // it provides a route to the "routes" group.
@@ -69,7 +69,7 @@ func AsRoute(f any) any {
 	)
 }
 
-// endregion AsRoute
+// --8<-- [end:AsRoute]
 
 // Route is an http.Handler that knows the mux pattern
 // under which it will be registered.
@@ -82,7 +82,7 @@ type Route interface {
 
 // NewServeMux builds a ServeMux that will route requests
 // to the given routes.
-// region mux
+// --8<-- [start:mux]
 func NewServeMux(routes []Route) *http.ServeMux {
 	mux := http.NewServeMux()
 	for _, route := range routes {
@@ -91,7 +91,7 @@ func NewServeMux(routes []Route) *http.ServeMux {
 	return mux
 }
 
-// endregion mux
+// --8<-- [end:mux]
 
 // HelloHandler is an HTTP handler that
 // prints a greeting to the user.

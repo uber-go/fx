@@ -1,6 +1,6 @@
 ---
-sidebarDepth: 0
-search: false
+search:
+  exclude: true
 ---
 
 # Changelog
@@ -12,6 +12,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 - No changes yet.
+
+## [1.23.0](https://github.com/uber-go/fx/compare/v1.22.2...v1.22.3) - 2024-10-11
+
+### Added
+- Added `Runtime` to `fxevent.Run` event, which stores the runtime of
+  a constructor or a decorator that's run, including functions created
+  by `fx.Supply` and `fx.Replace`.
+
+### Changed
+- Overhauled the documentation website. (https://uber-go.github.io/fx/)
+
+## [1.22.2](https://github.com/uber-go/fx/compare/v1.22.1...v1.22.2) - 2024-08-07
+
+### Fixed
+- A deadlock with the relayer in signal receivers.
+
+### Changed
+- Upgrade Dig dependency to v1.18.0
+
+## [1.22.1](https://github.com/uber-go/fx/compare/v1.22.0...v1.22.1) - 2024-06-25
+
+### Fixed
+- Fx apps will only listen to signals when `.Run()`, `.Wait()`, or `.Done()`
+  are called, fixing a regression introduced in v1.19.0.
 
 ## [1.22.0](https://github.com/uber-go/fx/compare/v1.21.1...v1.22.0) - 2024-05-30
 

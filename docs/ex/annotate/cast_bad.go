@@ -31,19 +31,19 @@ import (
 )
 
 // NewGitHubClient builds a new GitHub client.
-// region struct-consumer
+// --8<-- [start:struct-consumer]
 func NewGitHubClient(client *http.Client) *github.Client {
-	// endregion struct-consumer
+	// --8<-- [end:struct-consumer]
 	return new(github.Client)
 }
 
 func options() fx.Option {
 	return fx.Options(
-		// region provides
+		// --8<-- [start:provides]
 		fx.Provide(
 			NewHTTPClient,
 			NewGitHubClient,
 		),
-		// endregion provides
+		// --8<-- [end:provides]
 	)
 }

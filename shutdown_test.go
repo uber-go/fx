@@ -116,6 +116,7 @@ func TestShutdown(t *testing.T) {
 		)
 
 		require.NoError(t, app.Start(context.Background()), "error starting app")
+		t.Cleanup(func() { app.Stop(context.Background()) }) // in t.Cleanup so this happens after all subtests return (not just this function)
 		defer require.NoError(t, app.Stop(context.Background()))
 
 		for i := 0; i < 10; i++ {
