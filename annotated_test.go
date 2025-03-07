@@ -446,6 +446,8 @@ func TestAnnotatedAs(t *testing.T) {
 	type myProvideFunc func() string
 	type myInvokeFunc func() string
 
+	type myStringType string
+
 	newAsStringer := func() *asStringer {
 		return &asStringer{
 			name: "a good stringer",
@@ -481,7 +483,7 @@ func TestAnnotatedAs(t *testing.T) {
 			},
 		},
 		{
-			desc: "value type convertible to target type",
+			desc: "function value convertible to target type",
 			provide: fx.Provide(
 				fx.Annotate(func() myProvideFunc {
 					return func() string {
@@ -494,7 +496,7 @@ func TestAnnotatedAs(t *testing.T) {
 			},
 		},
 		{
-			desc: "anonymous value type convertible to target type",
+			desc: "anonymous function value convertible to target type",
 			provide: fx.Provide(
 				fx.Annotate(func() func() string {
 					return func() string {
@@ -504,6 +506,17 @@ func TestAnnotatedAs(t *testing.T) {
 			),
 			invoke: func(h myInvokeFunc) {
 				assert.Equal(t, "anonymous func example", h())
+			},
+		},
+		{
+			desc: "value type convertible to target type",
+			provide: fx.Provide(
+				fx.Annotate(func() string {
+					return "provide convertible type"
+				}, fx.As(new(myStringType))),
+			),
+			invoke: func(h myStringType) {
+				assert.Equal(t, myStringType("provide convertible type"), h)
 			},
 		},
 		{
@@ -863,6 +876,18 @@ func TestAnnotatedAsFailures(t *testing.T) {
 		return nil, errors.New("great sadness")
 	}
 
+	type myProvideFunc func() string
+
+	exampleProvideFunc := func() myProvideFunc {
+		return func() string {
+			return "i'm string"
+		}
+	}
+
+	type myIntType int
+
+	type myInvokeFunc func() int
+
 	tests := []struct {
 		desc          string
 		provide       fx.Option
@@ -874,6 +899,18 @@ func TestAnnotatedAsFailures(t *testing.T) {
 			provide:       fx.Provide(fx.Annotate(newAsStringer, fx.As(new(io.Writer)))),
 			invoke:        func() {},
 			errorContains: "asStringer does not implement io.Writer",
+		},
+		{
+			desc:          "provide when an inconvertible function value As",
+			provide:       fx.Provide(fx.Annotate(exampleProvideFunc, fx.As(new(myInvokeFunc)))),
+			invoke:        func() {},
+			errorContains: "fx_test.myProvideFunc cannot be converted to fx_test.myInvokeFunc",
+		},
+		{
+			desc:          "provide when an inconvertible type As",
+			provide:       fx.Provide(fx.Annotate(exampleProvideFunc(), fx.As(new(myIntType)))),
+			invoke:        func() {},
+			errorContains: "string cannot be converted to fx_test.myIntType",
 		},
 		{
 			desc:          "provide when an illegal type As with result tag",
@@ -919,7 +956,7 @@ func TestAnnotatedAsFailures(t *testing.T) {
 					fx.As("foo"),
 				),
 			),
-			errorContains: "argument must be a pointer to an interface: got string",
+			errorContains: "argument must be a pointer to an interface or convertible type: got string",
 		},
 	}
 
