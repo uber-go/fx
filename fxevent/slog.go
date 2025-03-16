@@ -268,7 +268,7 @@ func slogMaybeBool(name string, b bool) slog.Attr {
 }
 
 func slogErr(err error) slog.Attr {
-	return slog.String("error", err.Error())
+	return slog.Any("error", err)
 }
 
 func slogStrings(key string, str []string) slog.Attr {
