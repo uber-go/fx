@@ -16,3 +16,6 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
+
+// TODO: remove, points to before-callback branch
+replace go.uber.org/dig => github.com/Groxx/dig v1.18.2-0.20250324200048-72ef97acadd5
