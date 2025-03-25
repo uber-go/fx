@@ -631,7 +631,11 @@ func (la *lifecycleHookAnnotation) build(ann *annotated) (interface{}, error) {
 		resultTypes = append(resultTypes, _typeOfError)
 	}
 
-	hookInstaller, paramTypes, remapParams := la.buildHookInstaller(ann)
+	hookInstaller, paramTypes, remapParams, err := la.buildHookInstaller(ann)
+
+	if err != nil {
+		return nil, err
+	}
 
 	origFn := reflect.ValueOf(ann.Target)
 	newFnType := reflect.FuncOf(paramTypes, resultTypes, false)
@@ -668,6 +672,7 @@ func (la *lifecycleHookAnnotation) buildHookInstaller(ann *annotated) (
 	hookInstaller reflect.Value,
 	paramTypes []reflect.Type,
 	remapParams func([]reflect.Value) []reflect.Value, // function to remap parameters to function being annotated
+	err error,
 ) {
 	paramTypes = ann.currentParamTypes()
 	paramTypes, remapParams = injectLifecycle(paramTypes)
@@ -693,6 +698,27 @@ func (la *lifecycleHookAnnotation) buildHookInstaller(ann *annotated) (
 			ctxPos = i
 			continue
 		}
+
+		switch la.Type {
+		case _onStartHookType:
+			notIn := true
+			for _, param := range paramTypes {
+				if param == t {
+					notIn = false
+					break
+				}
+			}
+			for _, result := range resultTypes {
+				if result == t {
+					notIn = false
+					break
+				}
+			}
+			if notIn {
+				return reflect.Value{}, nil, nil, fmt.Errorf("the OnStart hook function cannot take any arguments outside of the annotated constructor's parameters's existing dependencies or results, except a context.Context")
+			}
+		}
+
 		if !isIn(t) {
 			invokeParamTypes = append(invokeParamTypes, origHookFnT.In(i))
 			continue
@@ -787,7 +813,7 @@ func (la *lifecycleHookAnnotation) buildHookInstaller(ann *annotated) (
 		}
 		return results
 	})
-	return hookInstaller, paramTypes, remapParams
+	return hookInstaller, paramTypes, remapParams, nil
 }
 
 var (
