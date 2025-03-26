@@ -666,6 +666,74 @@ var (
 	_typeOfContext   = reflect.TypeOf((*context.Context)(nil)).Elem()
 )
 
+// validateHookDeps validates the dependencies of a hook function and returns true if the dependencies are valid.
+func validateHookDeps(hookFnT reflect.Type, paramTypes []reflect.Type, resultTypes []reflect.Type) (valid bool) {
+	type key struct {
+		t     reflect.Type
+		name  string
+		group string
+	}
+	valid = true
+	seen := make(map[key]struct{})
+
+	for _, t := range paramTypes {
+		if isIn(t) {
+			for i := 1; i < t.NumField(); i++ {
+				field := t.Field(i)
+				seen[key{
+					t:     field.Type,
+					name:  field.Tag.Get("name"),
+					group: field.Tag.Get("group"),
+				}] = struct{}{}
+				fmt.Printf("seen %v\n", field.Name)
+			}
+			continue
+		}
+		seen[key{t: t}] = struct{}{}
+	}
+	for _, t := range resultTypes {
+		if isOut(t) {
+			for i := 1; i < t.NumField(); i++ {
+				field := t.Field(i)
+				seen[key{
+					t:     field.Type,
+					name:  field.Tag.Get("name"),
+					group: field.Tag.Get("group"),
+				}] = struct{}{}
+				fmt.Printf("seen %v\n", field.Name)
+			}
+			continue
+		}
+		seen[key{t: t}] = struct{}{}
+	}
+	for i := 0; i < hookFnT.NumIn(); i++ {
+		t := hookFnT.In(i)
+		if t == _typeOfContext {
+			continue
+		}
+		if !isIn(t) {
+			k := key{t: t}
+			if _, ok := seen[k]; !ok {
+				valid = false
+				return
+			}
+		} else {
+			for j := 1; j < t.NumField(); j++ {
+				field := t.Field(j)
+				if field.Type == _typeOfContext {
+					continue
+				}
+				k := key{t: field.Type, name: field.Tag.Get("name"), group: field.Tag.Get("group")}
+				if _, ok := seen[k]; !ok {
+					valid = false
+					return
+				}
+			}
+		}
+	}
+	return
+}
+
 // buildHookInstaller returns a function that appends a hook to Lifecycle when called,
 // along with the new parameter types and a function that maps arguments to the annotated constructor
 func (la *lifecycleHookAnnotation) buildHookInstaller(ann *annotated) (
@@ -692,31 +760,17 @@ func (la *lifecycleHookAnnotation) buildHookInstaller(ann *annotated) (
 	invokeParamTypes := []reflect.Type{
 		_typeOfLifecycle,
 	}
+	if valid := validateHookDeps(origHookFnT, paramTypes, resultTypes); !valid {
+		return reflect.Value{},
+			nil,
+			nil,
+			fmt.Errorf("the %s hook function cannot take any arguments outside of the annotated constructor's parameters's existing dependencies or results, except a context.Context", la.String())
+	}
 	for i := 0; i < origHookFnT.NumIn(); i++ {
 		t := origHookFnT.In(i)
 		if t == _typeOfContext && ctxPos < 0 {
 			ctxPos = i
 			continue
-		}
-
-		switch la.Type {
-		case _onStartHookType:
-			notIn := true
-			for _, param := range paramTypes {
-				if param == t {
-					notIn = false
-					break
-				}
-			}
-			for _, result := range resultTypes {
-				if result == t {
-					notIn = false
-					break
-				}
-			}
-			if notIn {
-				return reflect.Value{}, nil, nil, fmt.Errorf("the OnStart hook function cannot take any arguments outside of the annotated constructor's parameters's existing dependencies or results, except a context.Context")
-			}
 		}
 
 		if !isIn(t) {
