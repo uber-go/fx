@@ -685,7 +685,6 @@ func validateHookDeps(hookFnT reflect.Type, paramTypes []reflect.Type, resultTyp
 					name:  field.Tag.Get("name"),
 					group: field.Tag.Get("group"),
 				}] = struct{}{}
-				fmt.Printf("seen %v\n", field.Name)
 			}
 			continue
 		}
@@ -700,7 +699,6 @@ func validateHookDeps(hookFnT reflect.Type, paramTypes []reflect.Type, resultTyp
 					name:  field.Tag.Get("name"),
 					group: field.Tag.Get("group"),
 				}] = struct{}{}
-				fmt.Printf("seen %v\n", field.Name)
 			}
 			continue
 		}
