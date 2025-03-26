@@ -2301,7 +2301,7 @@ func TestHookAnnotationFailures(t *testing.T) {
 	}{
 		{
 			name:        "with unprovided dependency",
-			errContains: "error invoking hook installer",
+			errContains: "hook function cannot take any arguments outside",
 			useNew:      true,
 			annotation: fx.Annotate(
 				func() A { return nil },
@@ -2392,7 +2392,7 @@ func TestHookAnnotationFailures(t *testing.T) {
 		},
 		{
 			name:        "cannot pull in any extra dependency other than params or results of the annotated function",
-			errContains: "error invoking hook installer",
+			errContains: "hook function cannot take any arguments outside",
 			useNew:      true,
 			annotation: fx.Annotate(
 				func(s string) A { return nil },
