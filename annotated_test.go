@@ -2292,6 +2292,24 @@ func TestHookAnnotationFailures(t *testing.T) {
 		B interface{}
 	)
 
+	type namedAndGroupHookParams struct {
+		fx.In
+		Ctx context.Context
+		A   *A `name:"a" group:"groupA"`
+	}
+
+	type namedHookParam struct {
+		fx.In
+		Ctx context.Context
+		A   *A `name:"a"`
+	}
+
+	type groupedHookParam struct {
+		fx.In
+		Ctx context.Context
+		A   *A `group:"groupA"`
+	}
+
 	table := []struct {
 		name        string
 		annotation  interface{}
@@ -2401,6 +2419,33 @@ func TestHookAnnotationFailures(t *testing.T) {
 			extraOpts: fx.Options(
 				fx.Provide(func() string { return "test" }),
 				fx.Provide(func() B { return nil }),
+			),
+		},
+		{
+			name:        "cannot pull in a dependency when it's not properly named",
+			errContains: "hook function cannot take any arguments outside",
+			useNew:      true,
+			annotation: fx.Annotate(
+				func(s A) A { return nil },
+				fx.OnStart(func(b namedHookParam) error { return nil }),
+			),
+		},
+		{
+			name:        "cannot pull in a dependency when it's not properly grouped",
+			errContains: "hook function cannot take any arguments outside",
+			useNew:      true,
+			annotation: fx.Annotate(
+				func(s A) A { return nil },
+				fx.OnStart(func(b groupedHookParam) error { return nil }),
+			),
+		},
+		{
+			name:        "cannot pull in a dependency when it's not properly named and grouped",
+			errContains: "hook function cannot take any arguments outside",
+			useNew:      true,
+			annotation: fx.Annotate(
+				func(s A) A { return nil },
+				fx.OnStart(func(b namedAndGroupHookParams) error { return nil }),
 			),
 		},
 	}
