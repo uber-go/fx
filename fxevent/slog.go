@@ -192,6 +192,12 @@ func (l *SlogLogger) LogEvent(event Event) {
 				slogMaybeModuleField(e.ModuleName),
 				slogErr(e.Err))
 		}
+	case *BeforeRun:
+		l.logEvent("before run",
+			slog.String("name", e.Name),
+			slog.String("kind", e.Kind),
+			slogMaybeModuleField(e.ModuleName),
+		)
 	case *Run:
 		if e.Err != nil {
 			l.logError("error returned",
