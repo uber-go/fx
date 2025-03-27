@@ -632,7 +632,6 @@ func (la *lifecycleHookAnnotation) build(ann *annotated) (interface{}, error) {
 	}
 
 	hookInstaller, paramTypes, remapParams, err := la.buildHookInstaller(ann)
-
 	if err != nil {
 		return nil, err
 	}
@@ -677,32 +676,32 @@ func validateHookDeps(hookFnT reflect.Type, paramTypes []reflect.Type, resultTyp
 	seen := make(map[key]struct{})
 
 	for _, t := range paramTypes {
-		if isIn(t) {
-			for i := 1; i < t.NumField(); i++ {
-				field := t.Field(i)
-				seen[key{
-					t:     field.Type,
-					name:  field.Tag.Get("name"),
-					group: field.Tag.Get("group"),
-				}] = struct{}{}
-			}
+		if !isIn(t) {
+			seen[key{t: t}] = struct{}{}
 			continue
 		}
-		seen[key{t: t}] = struct{}{}
+		for i := 1; i < t.NumField(); i++ {
+			field := t.Field(i)
+			seen[key{
+				t:     field.Type,
+				name:  field.Tag.Get("name"),
+				group: field.Tag.Get("group"),
+			}] = struct{}{}
+		}
 	}
 	for _, t := range resultTypes {
-		if isOut(t) {
-			for i := 1; i < t.NumField(); i++ {
-				field := t.Field(i)
-				seen[key{
-					t:     field.Type,
-					name:  field.Tag.Get("name"),
-					group: field.Tag.Get("group"),
-				}] = struct{}{}
-			}
+		if !isOut(t) {
+			seen[key{t: t}] = struct{}{}
 			continue
 		}
-		seen[key{t: t}] = struct{}{}
+		for i := 1; i < t.NumField(); i++ {
+			field := t.Field(i)
+			seen[key{
+				t:     field.Type,
+				name:  field.Tag.Get("name"),
+				group: field.Tag.Get("group"),
+			}] = struct{}{}
+		}
 	}
 	for i := 0; i < hookFnT.NumIn(); i++ {
 		t := hookFnT.In(i)
@@ -715,17 +714,17 @@ func validateHookDeps(hookFnT reflect.Type, paramTypes []reflect.Type, resultTyp
 				valid = false
 				return
 			}
-		} else {
-			for j := 1; j < t.NumField(); j++ {
-				field := t.Field(j)
-				if field.Type == _typeOfContext {
-					continue
-				}
-				k := key{t: field.Type, name: field.Tag.Get("name"), group: field.Tag.Get("group")}
-				if _, ok := seen[k]; !ok {
-					valid = false
-					return
-				}
+			continue
+		}
+		for j := 1; j < t.NumField(); j++ {
+			field := t.Field(j)
+			if field.Type == _typeOfContext {
+				continue
+			}
+			k := key{t: field.Type, name: field.Tag.Get("name"), group: field.Tag.Get("group")}
+			if _, ok := seen[k]; !ok {
+				valid = false
+				return
 			}
 		}
 	}
