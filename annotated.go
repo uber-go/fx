@@ -666,13 +666,13 @@ var (
 )
 
 // validateHookDeps validates the dependencies of a hook function and returns true if the dependencies are valid.
-func validateHookDeps(hookFnT reflect.Type, paramTypes []reflect.Type, resultTypes []reflect.Type) (valid bool) {
+func (la *lifecycleHookAnnotation) validateHookDeps(hookFnT reflect.Type, paramTypes []reflect.Type, resultTypes []reflect.Type) (err error) {
 	type key struct {
 		t     reflect.Type
 		name  string
 		group string
 	}
-	valid = true
+	err = nil
 	seen := make(map[key]struct{})
 
 	for _, t := range paramTypes {
@@ -711,7 +711,7 @@ func validateHookDeps(hookFnT reflect.Type, paramTypes []reflect.Type, resultTyp
 		if !isIn(t) {
 			k := key{t: t}
 			if _, ok := seen[k]; !ok {
-				valid = false
+				err = fmt.Errorf("the %s hook function takes in a parameter of \"%s\", but the annotated function does not have parameters or results of that type", la.String(), t.String())
 				return
 			}
 			continue
@@ -721,9 +721,13 @@ func validateHookDeps(hookFnT reflect.Type, paramTypes []reflect.Type, resultTyp
 			if field.Type == _typeOfContext {
 				continue
 			}
-			k := key{t: field.Type, name: field.Tag.Get("name"), group: field.Tag.Get("group")}
+			k := key{
+				t:     field.Type,
+				name:  field.Tag.Get("name"),
+				group: field.Tag.Get("group"),
+			}
 			if _, ok := seen[k]; !ok {
-				valid = false
+				err = fmt.Errorf("the %s hook function takes in a parameter of \"%s\", but the annotated function does not have parameters or results of that type", la.String(), field.Type.String())
 				return
 			}
 		}
@@ -757,11 +761,11 @@ func (la *lifecycleHookAnnotation) buildHookInstaller(ann *annotated) (
 	invokeParamTypes := []reflect.Type{
 		_typeOfLifecycle,
 	}
-	if valid := validateHookDeps(origHookFnT, paramTypes, resultTypes); !valid {
+	if err := la.validateHookDeps(origHookFnT, paramTypes, resultTypes); err != nil {
 		return reflect.Value{},
 			nil,
 			nil,
-			fmt.Errorf("the %s hook function cannot take any arguments outside of the annotated constructor's parameters's existing dependencies or results, except a context.Context", la.String())
+			err
 	}
 	for i := 0; i < origHookFnT.NumIn(); i++ {
 		t := origHookFnT.In(i)

@@ -2319,7 +2319,7 @@ func TestHookAnnotationFailures(t *testing.T) {
 	}{
 		{
 			name:        "with unprovided dependency",
-			errContains: "hook function cannot take any arguments outside",
+			errContains: "hook function takes in a parameter of",
 			useNew:      true,
 			annotation: fx.Annotate(
 				func() A { return nil },
@@ -2410,7 +2410,7 @@ func TestHookAnnotationFailures(t *testing.T) {
 		},
 		{
 			name:        "cannot pull in any extra dependency other than params or results of the annotated function",
-			errContains: "hook function cannot take any arguments outside",
+			errContains: "hook function takes in a parameter of",
 			useNew:      true,
 			annotation: fx.Annotate(
 				func(s string) A { return nil },
@@ -2423,7 +2423,7 @@ func TestHookAnnotationFailures(t *testing.T) {
 		},
 		{
 			name:        "cannot pull in a dependency when it's not properly named",
-			errContains: "hook function cannot take any arguments outside",
+			errContains: "hook function takes in a parameter of",
 			useNew:      true,
 			annotation: fx.Annotate(
 				func(s A) A { return nil },
@@ -2432,7 +2432,7 @@ func TestHookAnnotationFailures(t *testing.T) {
 		},
 		{
 			name:        "cannot pull in a dependency when it's not properly grouped",
-			errContains: "hook function cannot take any arguments outside",
+			errContains: "hook function takes in a parameter of",
 			useNew:      true,
 			annotation: fx.Annotate(
 				func(s A) A { return nil },
@@ -2441,7 +2441,7 @@ func TestHookAnnotationFailures(t *testing.T) {
 		},
 		{
 			name:        "cannot pull in a dependency when it's not properly named and grouped",
-			errContains: "hook function cannot take any arguments outside",
+			errContains: "hook function takes in a parameter of",
 			useNew:      true,
 			annotation: fx.Annotate(
 				func(s A) A { return nil },
