@@ -2410,7 +2410,7 @@ func TestHookAnnotationFailures(t *testing.T) {
 		},
 		{
 			name:        "cannot pull in any extra dependency other than params or results of the annotated function",
-			errContains: "hook function takes in a parameter of",
+			errContains: "hook function takes in a parameter of \"fx_test.B\"",
 			useNew:      true,
 			annotation: fx.Annotate(
 				func(s string) A { return nil },
@@ -2423,7 +2423,7 @@ func TestHookAnnotationFailures(t *testing.T) {
 		},
 		{
 			name:        "cannot pull in a dependency when it's not properly named",
-			errContains: "hook function takes in a parameter of",
+			errContains: "hook function takes in a parameter of \"*fx_test.A `name:\"a\"`\"",
 			useNew:      true,
 			annotation: fx.Annotate(
 				func(s A) A { return nil },
@@ -2432,7 +2432,7 @@ func TestHookAnnotationFailures(t *testing.T) {
 		},
 		{
 			name:        "cannot pull in a dependency when it's not properly grouped",
-			errContains: "hook function takes in a parameter of",
+			errContains: "hook function takes in a parameter of \"*fx_test.A `group:\"groupA\"`",
 			useNew:      true,
 			annotation: fx.Annotate(
 				func(s A) A { return nil },
@@ -2441,7 +2441,7 @@ func TestHookAnnotationFailures(t *testing.T) {
 		},
 		{
 			name:        "cannot pull in a dependency when it's not properly named and grouped",
-			errContains: "hook function takes in a parameter of",
+			errContains: "hook function takes in a parameter of \"*fx_test.A `name:\"a\" group:\"groupA\"`",
 			useNew:      true,
 			annotation: fx.Annotate(
 				func(s A) A { return nil },

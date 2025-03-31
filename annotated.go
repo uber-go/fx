@@ -666,11 +666,25 @@ var (
 )
 
 // validateHookDeps validates the dependencies of a hook function and returns true if the dependencies are valid.
-func (la *lifecycleHookAnnotation) validateHookDeps(hookFnT reflect.Type, paramTypes []reflect.Type, resultTypes []reflect.Type) (err error) {
+func (la *lifecycleHookAnnotation) validateHookDeps(hookParamTypes []reflect.Type, paramTypes []reflect.Type, resultTypes []reflect.Type) (err error) {
 	type key struct {
 		t     reflect.Type
 		name  string
 		group string
+	}
+
+	formatKey := func(k key) string {
+		var tags []string
+		if len(k.name) > 0 {
+			tags = append(tags, fmt.Sprintf("name:\"%s\"", k.name))
+		}
+		if len(k.group) > 0 {
+			tags = append(tags, fmt.Sprintf("group:\"%s\"", k.group))
+		}
+		if len(tags) > 0 {
+			return fmt.Sprintf("%s `%s`", k.t.String(), strings.Join(tags, " "))
+		}
+		return k.t.String()
 	}
 	err = nil
 	seen := make(map[key]struct{})
@@ -703,31 +717,24 @@ func (la *lifecycleHookAnnotation) validateHookDeps(hookFnT reflect.Type, paramT
 			}] = struct{}{}
 		}
 	}
-	for i := 0; i < hookFnT.NumIn(); i++ {
-		t := hookFnT.In(i)
-		if t == _typeOfContext {
-			continue
-		}
+	for _, t := range hookParamTypes {
 		if !isIn(t) {
 			k := key{t: t}
 			if _, ok := seen[k]; !ok {
-				err = fmt.Errorf("the %s hook function takes in a parameter of \"%s\", but the annotated function does not have parameters or results of that type", la.String(), t.String())
+				err = fmt.Errorf("the %s hook function takes in a parameter of \"%s\", but the annotated function does not have parameters or results of that type", la.String(), formatKey(k))
 				return
 			}
 			continue
 		}
-		for j := 1; j < t.NumField(); j++ {
-			field := t.Field(j)
-			if field.Type == _typeOfContext {
-				continue
-			}
+		for i := 1; i < t.NumField(); i++ {
+			field := t.Field(i)
 			k := key{
 				t:     field.Type,
 				name:  field.Tag.Get("name"),
 				group: field.Tag.Get("group"),
 			}
 			if _, ok := seen[k]; !ok {
-				err = fmt.Errorf("the %s hook function takes in a parameter of \"%s\", but the annotated function does not have parameters or results of that type", la.String(), field.Type.String())
+				err = fmt.Errorf("the %s hook function takes in a parameter of \"%s\", but the annotated function does not have parameters or results of that type", la.String(), formatKey(k))
 				return
 			}
 		}
@@ -761,12 +768,6 @@ func (la *lifecycleHookAnnotation) buildHookInstaller(ann *annotated) (
 	invokeParamTypes := []reflect.Type{
 		_typeOfLifecycle,
 	}
-	if err := la.validateHookDeps(origHookFnT, paramTypes, resultTypes); err != nil {
-		return reflect.Value{},
-			nil,
-			nil,
-			err
-	}
 	for i := 0; i < origHookFnT.NumIn(); i++ {
 		t := origHookFnT.In(i)
 		if t == _typeOfContext && ctxPos < 0 {
@@ -790,6 +791,9 @@ func (la *lifecycleHookAnnotation) buildHookInstaller(ann *annotated) (
 		}
 		invokeParamTypes = append(invokeParamTypes, reflect.StructOf(fields))
 
+	}
+	if err = la.validateHookDeps(invokeParamTypes, paramTypes, resultTypes); err != nil {
+		return
 	}
 	invokeFnT := reflect.FuncOf(invokeParamTypes, []reflect.Type{}, false)
 	invokeFn := reflect.MakeFunc(invokeFnT, func(args []reflect.Value) (results []reflect.Value) {
