@@ -673,7 +673,7 @@ func (la *lifecycleHookAnnotation) validateHookDeps(hookParamTypes []reflect.Typ
 		group string
 	}
 
-	formatKey := func(k key) string {
+	formatLog := func(k key) error {
 		var tags []string
 		if len(k.name) > 0 {
 			tags = append(tags, fmt.Sprintf("name:\"%s\"", k.name))
@@ -681,10 +681,13 @@ func (la *lifecycleHookAnnotation) validateHookDeps(hookParamTypes []reflect.Typ
 		if len(k.group) > 0 {
 			tags = append(tags, fmt.Sprintf("group:\"%s\"", k.group))
 		}
+		var formatted string
 		if len(tags) > 0 {
-			return fmt.Sprintf("%s `%s`", k.t.String(), strings.Join(tags, " "))
+			formatted = fmt.Sprintf("%s `%s`", k.t.String(), strings.Join(tags, " "))
+		} else {
+			formatted = k.t.String()
 		}
-		return k.t.String()
+		return fmt.Errorf("the %s hook function takes in a parameter of \"%s\", but the annotated function does not have parameters or results of that type", la.String(), formatted)
 	}
 	err = nil
 	seen := make(map[key]struct{})
@@ -721,7 +724,7 @@ func (la *lifecycleHookAnnotation) validateHookDeps(hookParamTypes []reflect.Typ
 		if !isIn(t) {
 			k := key{t: t}
 			if _, ok := seen[k]; !ok {
-				err = fmt.Errorf("the %s hook function takes in a parameter of \"%s\", but the annotated function does not have parameters or results of that type", la.String(), formatKey(k))
+				err = formatLog(k)
 				return
 			}
 			continue
@@ -734,7 +737,7 @@ func (la *lifecycleHookAnnotation) validateHookDeps(hookParamTypes []reflect.Typ
 				group: field.Tag.Get("group"),
 			}
 			if _, ok := seen[k]; !ok {
-				err = fmt.Errorf("the %s hook function takes in a parameter of \"%s\", but the annotated function does not have parameters or results of that type", la.String(), formatKey(k))
+				err = formatLog(k)
 				return
 			}
 		}
