@@ -365,7 +365,7 @@ func TestNewApp(t *testing.T) {
 		defer app.RequireStart().RequireStop()
 
 		require.Equal(t,
-			[]string{"Provided", "Provided", "Provided", "Provided", "Decorated", "LoggerInitialized", "Invoking", "Run", "Run", "Invoked", "Started"},
+			[]string{"Provided", "Provided", "Provided", "Provided", "Decorated", "LoggerInitialized", "Invoking", "BeforeRun", "Run", "BeforeRun", "Run", "Invoked", "Started"},
 			spy.EventTypes())
 	})
 
@@ -674,7 +674,7 @@ func TestWithLogger(t *testing.T) {
 		)
 
 		assert.Equal(t, []string{
-			"Provided", "Provided", "Provided", "Supplied", "Run", "LoggerInitialized",
+			"Provided", "Provided", "Provided", "Supplied", "BeforeRun", "Run", "LoggerInitialized",
 		}, spy.EventTypes())
 
 		spy.Reset()
@@ -704,7 +704,7 @@ func TestWithLogger(t *testing.T) {
 			"must provide constructor function, got  (type *bytes.Buffer)",
 		)
 
-		assert.Equal(t, []string{"Provided", "Provided", "Provided", "Supplied", "Provided", "Run", "LoggerInitialized"}, spy.EventTypes())
+		assert.Equal(t, []string{"Provided", "Provided", "Provided", "Supplied", "Provided", "BeforeRun", "Run", "LoggerInitialized"}, spy.EventTypes())
 	})
 
 	t.Run("logger failed to build", func(t *testing.T) {
@@ -989,8 +989,18 @@ func TestRunEventEmission(t *testing.T) {
 				assert.NoError(t, app.Err())
 			}
 
+			gotBeforeEvents := spy.Events().SelectByTypeName("BeforeRun")
 			gotEvents := spy.Events().SelectByTypeName("Run")
-			require.Len(t, gotEvents, len(tt.wantRunEvents))
+			require.Len(t, gotBeforeEvents, len(tt.wantRunEvents), "wrong number of before-run events")
+			require.Len(t, gotEvents, len(tt.wantRunEvents), "wrong number of run events")
+			// BeforeRun events are just a reduced-field version of Run events
+			for i, event := range gotBeforeEvents {
+				rEvent, ok := event.(*fxevent.BeforeRun)
+				require.True(t, ok)
+
+				assert.Equal(t, tt.wantRunEvents[i].Name, rEvent.Name)
+				assert.Equal(t, tt.wantRunEvents[i].Kind, rEvent.Kind)
+			}
 			for i, event := range gotEvents {
 				rEvent, ok := event.(*fxevent.Run)
 				require.True(t, ok)
@@ -1627,12 +1637,12 @@ func TestAppStart(t *testing.T) {
 		)
 
 		go func() {
-			app.Start(context.Background())
+			assert.NoError(t, app.Start(context.Background()))
 			close(startReturn)
 		}()
 
 		<-secondStart
-		app.Stop(context.Background())
+		assert.NoError(t, app.Stop(context.Background()))
 		assert.True(t, stop1Run)
 	})
 
@@ -1696,7 +1706,9 @@ func TestAppStart(t *testing.T) {
 			"Provided", "Provided", "Provided", "Provided",
 			"LoggerInitialized",
 			"Invoking",
+			"BeforeRun",
 			"Run",
+			"BeforeRun",
 			"Run",
 			"Invoked",
 			"OnStartExecuting", "OnStartExecuted",
@@ -1734,7 +1746,9 @@ func TestAppStart(t *testing.T) {
 			"Provided", "Provided", "Provided", "Provided",
 			"LoggerInitialized",
 			"Invoking",
+			"BeforeRun",
 			"Run",
+			"BeforeRun",
 			"Run",
 			"Invoked",
 			"OnStartExecuting", "OnStartExecuted",
@@ -2471,6 +2485,7 @@ func TestCustomLoggerWithLifecycle(t *testing.T) {
 		"Provided",
 		"Provided",
 		"Provided",
+		"BeforeRun",
 		"Run",
 		"LoggerInitialized",
 		"OnStartExecuting", "OnStartExecuted",

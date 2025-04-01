@@ -195,6 +195,13 @@ func (m *module) provide(p provide) {
 	opts := []dig.ProvideOption{
 		dig.FillProvideInfo(&info),
 		dig.Export(!p.Private),
+		dig.WithProviderBeforeCallback(func(bci dig.BeforeCallbackInfo) {
+			m.log.LogEvent(&fxevent.BeforeRun{
+				Name:       funcName,
+				Kind:       "provide",
+				ModuleName: m.name,
+			})
+		}),
 		dig.WithProviderCallback(func(ci dig.CallbackInfo) {
 			m.log.LogEvent(&fxevent.Run{
 				Name:       funcName,
@@ -229,6 +236,13 @@ func (m *module) supply(p provide) {
 	typeName := p.SupplyType.String()
 	opts := []dig.ProvideOption{
 		dig.Export(!p.Private),
+		dig.WithProviderBeforeCallback(func(bci dig.BeforeCallbackInfo) {
+			m.log.LogEvent(&fxevent.BeforeRun{
+				Name:       fmt.Sprintf("stub(%v)", typeName),
+				Kind:       "supply",
+				ModuleName: m.name,
+			})
+		}),
 		dig.WithProviderCallback(func(ci dig.CallbackInfo) {
 			m.log.LogEvent(&fxevent.Run{
 				Name:       fmt.Sprintf("stub(%v)", typeName),
@@ -352,6 +366,13 @@ func (m *module) decorate(d decorator) (err error) {
 	var info dig.DecorateInfo
 	opts := []dig.DecorateOption{
 		dig.FillDecorateInfo(&info),
+		dig.WithDecoratorBeforeCallback(func(bci dig.BeforeCallbackInfo) {
+			m.log.LogEvent(&fxevent.BeforeRun{
+				Name:       funcName,
+				Kind:       "decorate",
+				ModuleName: m.name,
+			})
+		}),
 		dig.WithDecoratorCallback(func(ci dig.CallbackInfo) {
 			m.log.LogEvent(&fxevent.Run{
 				Name:       funcName,
@@ -384,6 +405,13 @@ func (m *module) decorate(d decorator) (err error) {
 func (m *module) replace(d decorator) error {
 	typeName := d.ReplaceType.String()
 	opts := []dig.DecorateOption{
+		dig.WithDecoratorBeforeCallback(func(bci dig.BeforeCallbackInfo) {
+			m.log.LogEvent(&fxevent.BeforeRun{
+				Name:       fmt.Sprintf("stub(%v)", typeName),
+				Kind:       "replace",
+				ModuleName: m.name,
+			})
+		}),
 		dig.WithDecoratorCallback(func(ci dig.CallbackInfo) {
 			m.log.LogEvent(&fxevent.Run{
 				Name:       fmt.Sprintf("stub(%v)", typeName),

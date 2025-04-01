@@ -167,6 +167,12 @@ func (l *ZapLogger) LogEvent(event Event) {
 				moduleField(e.ModuleName),
 				zap.Error(e.Err))
 		}
+	case *BeforeRun:
+		l.logEvent("before run",
+			zap.String("name", e.Name),
+			zap.String("kind", e.Kind),
+			moduleField(e.ModuleName),
+		)
 	case *Run:
 		if e.Err != nil {
 			l.logError("error returned",
