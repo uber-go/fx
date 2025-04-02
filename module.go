@@ -125,6 +125,7 @@ type module struct {
 	provides       []provide
 	invokes        []invoke
 	decorators     []decorator
+	evaluates      []evaluate
 	modules        []*module
 	app            *App
 	log            fxevent.Logger
@@ -174,6 +175,7 @@ func (m *module) provideAll() {
 	for _, p := range m.provides {
 		m.provide(p)
 	}
+	m.provides = nil
 
 	for _, m := range m.modules {
 		m.provideAll()
@@ -264,6 +266,7 @@ func (m *module) installAllEventLoggers() {
 			}
 		}
 		m.fallbackLogger = nil
+		m.logConstructor = nil
 	} else if m.parent != nil {
 		m.log = m.parent.log
 	}
@@ -308,6 +311,7 @@ func (m *module) invokeAll() error {
 			return err
 		}
 	}
+	m.invokes = nil
 
 	return nil
 }
@@ -334,6 +338,7 @@ func (m *module) decorateAll() error {
 			return err
 		}
 	}
+	m.decorators = nil
 
 	for _, m := range m.modules {
 		if err := m.decorateAll(); err != nil {
@@ -404,4 +409,25 @@ func (m *module) replace(d decorator) error {
 		Err:             err,
 	})
 	return err
+}
+
+func (m *module) evaluateAll() (count int) {
+	for _, e := range m.evaluates {
+		m.evaluate(e)
+		count++
+	}
+	m.evaluates = nil
+
+	for _, m := range m.modules {
+		count += m.evaluateAll()
+	}
+
+	return count
+}
+
+func (m *module) evaluate(e evaluate) {
+	// TODO: events
+	if err := runEvaluate(m, e); err != nil {
+		m.app.err = err
+	}
 }
