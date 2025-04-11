@@ -28,6 +28,7 @@ import (
 	"strings"
 
 	"go.uber.org/dig"
+
 	"go.uber.org/fx/internal/fxreflect"
 )
 
@@ -1213,7 +1214,7 @@ func isIn(t reflect.Type) bool {
 var _ Annotation = (*asAnnotation)(nil)
 
 // As is an Annotation that annotates the result of a function (i.e. a
-// constructor) to be provided as another interface.
+// constructor) to be provided as another interface or convertible type.
 //
 // For example, the following code specifies that the return type of
 // bytes.NewBuffer (bytes.Buffer) should be provided as io.Writer type:
@@ -1232,6 +1233,28 @@ var _ Annotation = (*asAnnotation)(nil)
 // Note that the bytes.Buffer type is provided as an io.Writer type, so this
 // constructor does NOT provide both bytes.Buffer and io.Writer type; it just
 // provides io.Writer type.
+//
+// Example for function value:
+//
+// type domainHandler func(ctx context.Context) error
+//
+// func anyHandlerProvider() func(ctx context.Context) error {
+//     ...
+// }
+//
+// fx.Provide(
+//   anyHandlerProvider(),
+//   fx.As(new(domainHandler)),
+// )
+//
+// Example for convertible types:
+//
+// type customStringType string
+//
+// fx.Provide(
+//   func() string { return "some string" },
+//   fx.As(new(customStringType)),
+// )
 //
 // When multiple values are returned by the annotated function, each type
 // gets mapped to corresponding positional result of the annotated function.
@@ -1299,8 +1322,8 @@ func (at *asAnnotation) apply(ann *annotated) error {
 			continue
 		}
 		t := reflect.TypeOf(typ)
-		if t.Kind() != reflect.Ptr || t.Elem().Kind() != reflect.Interface {
-			return fmt.Errorf("fx.As: argument must be a pointer to an interface: got %v", t)
+		if t.Kind() != reflect.Ptr {
+			return fmt.Errorf("fx.As: argument must be a pointer to an interface or convertible type: got %v", t)
 		}
 		t = t.Elem()
 		at.types[i] = asType{typ: t}
@@ -1353,8 +1376,12 @@ func (at *asAnnotation) results(ann *annotated) (
 			continue
 		}
 
-		if !t.Implements(at.types[i].typ) {
-			return nil, nil, fmt.Errorf("invalid fx.As: %v does not implement %v", t, at.types[i])
+		if at.types[i].typ.Kind() == reflect.Interface {
+			if !t.Implements(at.types[i].typ) {
+				return nil, nil, fmt.Errorf("invalid fx.As: %v does not implement %v", t, at.types[i])
+			}
+		} else if !t.ConvertibleTo(at.types[i].typ) {
+			return nil, nil, fmt.Errorf("invalid fx.As: %v cannot be converted to %v", t, at.types[i])
 		}
 		field.Type = at.types[i].typ
 		fields = append(fields, field)
@@ -1388,7 +1415,12 @@ func (at *asAnnotation) results(ann *annotated) (
 
 		newOutResult := reflect.New(resType).Elem()
 		for i := 1; i < resType.NumField(); i++ {
-			newOutResult.Field(i).Set(getResult(i, results))
+			resultInstance := getResult(i, results)
+			if newOutResult.Field(i).Kind() == reflect.Interface {
+				newOutResult.Field(i).Set(resultInstance)
+			} else if toType := newOutResult.Field(i).Type(); resultInstance.CanConvert(toType) {
+				newOutResult.Field(i).Set(resultInstance.Convert(toType))
+			}
 		}
 		outResults = append(outResults, newOutResult)
 
