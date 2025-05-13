@@ -17,8 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   decorator, or supply/replace stub.
 
 ### Changed
-
-- Clearer error messages when annotation building fails are now used.
+- Clearer error messages are now used when annotation building fails.
 
 ## [1.23.0](https://github.com/uber-go/fx/compare/v1.22.2...v1.22.3) - 2024-10-11
 
