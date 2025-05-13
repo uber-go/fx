@@ -195,7 +195,7 @@ type Decorated struct {
 // BeforeRun is emitted before a constructor, decorator, or supply/replace stub is run by Fx.
 // When complete, a Run will be emitted.
 type BeforeRun struct {
-	// Name is the name of the function that was run.
+	// Name is the name of the function that will be run.
 	Name string
 
 	// Kind indicates which Fx option was used to pass along the function.
