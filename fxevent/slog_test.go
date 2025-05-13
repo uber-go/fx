@@ -341,6 +341,15 @@ func TestSlogLogger(t *testing.T) {
 			},
 		},
 		{
+			name:        "BeforeRun",
+			give:        &BeforeRun{Name: "bytes.NewBuffer()", Kind: "constructor"},
+			wantMessage: "before run",
+			wantFields: map[string]interface{}{
+				"name":    "bytes.NewBuffer()",
+				"kind":    "constructor",
+			},
+		},
+		{
 			name:        "Run",
 			give:        &Run{Name: "bytes.NewBuffer()", Kind: "constructor", Runtime: 3 * time.Millisecond},
 			wantMessage: "run",
