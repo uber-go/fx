@@ -104,6 +104,12 @@ func (l *ConsoleLogger) LogEvent(event Event) {
 		if e.Err != nil {
 			l.logf("Error after options were applied: %+v", e.Err)
 		}
+	case *BeforeRun:
+		var moduleStr string
+		if e.ModuleName != "" {
+			moduleStr = fmt.Sprintf(" from module %q", e.ModuleName)
+		}
+		l.logf("BEFORE RUN\t%s: %s%s", e.Kind, e.Name, moduleStr)
 	case *Run:
 		var moduleStr string
 		if e.ModuleName != "" {
