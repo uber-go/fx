@@ -74,3 +74,26 @@ func (app *App) RequireStop() {
 		app.tb.FailNow()
 	}
 }
+
+func (app *App) RequireRun() {
+	startCtx, cancelStart := context.WithTimeout(context.Background(), app.StartTimeout())
+	defer cancelStart()
+	if err := app.Start(startCtx); err != nil {
+		app.tb.Errorf("application didn't start cleanly: %v", err)
+		app.tb.FailNow()
+	}
+
+	sig := <-app.Wait()
+
+	stopCtx, cancelStop := context.WithTimeout(context.Background(), app.StopTimeout())
+	defer cancelStop()
+	if err := app.Stop(stopCtx); err != nil {
+		app.tb.Errorf("application didn't stop cleanly: %v", err)
+		app.tb.FailNow()
+	}
+
+	if sig.ExitCode != 0 {
+		app.tb.Errorf("application exited with code %v", sig.ExitCode)
+		app.tb.FailNow()
+	}
+}
