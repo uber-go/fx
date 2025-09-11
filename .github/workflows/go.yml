@@ -19,7 +19,7 @@ jobs:
     strategy:
       matrix:
         os: ["ubuntu-latest", "windows-latest"]
-        go: ["1.23.x", "1.24.x"]
+        go: ["1.24.x", "1.25.x"]
 
     steps:
     - name: Checkout code
@@ -52,7 +52,7 @@ jobs:
     - name: Setup Go
       uses: actions/setup-go@v5
       with:
-        go-version: 1.24.x
+        go-version: 1.25.x
 
     - name: Test
       run: make cover COVER_MODULES=./docs
@@ -68,7 +68,7 @@ jobs:
     - name: Setup Go
       uses: actions/setup-go@v5
       with:
-        go-version: 1.24.x
+        go-version: 1.25.x
         cache: false  # managed by golangci-lint
 
     - uses: golangci/golangci-lint-action@v6
