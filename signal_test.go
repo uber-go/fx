@@ -83,8 +83,7 @@ func TestSignal(t *testing.T) {
 			})
 			t.Run("no error", func(t *testing.T) {
 				recv := newSignalReceivers()
-				ctx, cancel := context.WithCancel(context.Background())
-				defer cancel()
+				ctx := t.Context()
 				recv.Start()
 				recv.Start() // should be a no-op if already running
 				require.NoError(t, recv.Stop(ctx))
@@ -103,8 +102,7 @@ func TestSignal(t *testing.T) {
 				recv.stopNotify = func(ch chan<- os.Signal) {
 					stopCalledTimes++
 				}
-				ctx, cancel := context.WithCancel(context.Background())
-				defer cancel()
+				ctx := t.Context()
 				recv.Start()
 				stub <- syscall.SIGTERM
 				stub <- syscall.SIGTERM

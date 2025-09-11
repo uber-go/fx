@@ -79,7 +79,7 @@ type Annotated struct {
 	Group string
 
 	// Target is the constructor or value being annotated with fx.Annotated.
-	Target interface{}
+	Target any
 }
 
 func (a Annotated) String() string {
@@ -116,7 +116,7 @@ var (
 // or with [Supply], for a value.
 type Annotation interface {
 	apply(*annotated) error
-	build(*annotated) (interface{}, error)
+	build(*annotated) (any, error)
 }
 
 var (
@@ -129,7 +129,7 @@ var (
 // that it encountered as well as the target interface that was attempted
 // to be annotated.
 type annotationError struct {
-	target interface{}
+	target any
 	err    error
 }
 
@@ -247,7 +247,7 @@ func (pt paramTagsAnnotation) apply(ann *annotated) error {
 }
 
 // build builds and returns a constructor after applying a ParamTags annotation
-func (pt paramTagsAnnotation) build(ann *annotated) (interface{}, error) {
+func (pt paramTagsAnnotation) build(ann *annotated) (any, error) {
 	paramTypes, remap := pt.parameters(ann)
 	resultTypes, _ := ann.currentResultTypes()
 
@@ -390,7 +390,7 @@ func (rt resultTagsAnnotation) apply(ann *annotated) error {
 }
 
 // build builds and returns a constructor after applying a ResultTags annotation
-func (rt resultTagsAnnotation) build(ann *annotated) (interface{}, error) {
+func (rt resultTagsAnnotation) build(ann *annotated) (any, error) {
 	paramTypes := ann.currentParamTypes()
 	resultTypes, remapResults := rt.results(ann)
 	origFn := reflect.ValueOf(ann.Target)
@@ -558,7 +558,7 @@ const (
 
 type lifecycleHookAnnotation struct {
 	Type   _lifecycleHookAnnotationType
-	Target interface{}
+	Target any
 }
 
 var _ Annotation = (*lifecycleHookAnnotation)(nil)
@@ -625,7 +625,7 @@ func (la *lifecycleHookAnnotation) apply(ann *annotated) error {
 }
 
 // build builds and returns a constructor after applying a lifecycle hook annotation.
-func (la *lifecycleHookAnnotation) build(ann *annotated) (interface{}, error) {
+func (la *lifecycleHookAnnotation) build(ann *annotated) (any, error) {
 	resultTypes, hasError := ann.currentResultTypes()
 	if !hasError {
 		resultTypes = append(resultTypes, _typeOfError)
@@ -809,7 +809,7 @@ func (la *lifecycleHookAnnotation) buildHookInstaller(ann *annotated) (
 			// parameter is a context, inject the provided context.
 			if ctxStructPos < 0 {
 				offset := 0
-				for i := 0; i < len(hookArgs); i++ {
+				for i := range hookArgs {
 					if i == ctxPos {
 						hookArgs[i] = reflect.ValueOf(ctx)
 						offset = 1
@@ -887,7 +887,7 @@ var (
 // that the lifecycle hook being appended can depend on. It also deduplicates
 // duplicate param and result types, which is possible when using fx.Decorate,
 // and uses values from results for providing the deduplicated types.
-func makeHookScopeCtor(paramTypes []reflect.Type, resultTypes []reflect.Type, args []reflect.Value) interface{} {
+func makeHookScopeCtor(paramTypes []reflect.Type, resultTypes []reflect.Type, args []reflect.Value) any {
 	type key struct {
 		t     reflect.Type
 		name  string
@@ -1112,7 +1112,7 @@ func (la *lifecycleHookAnnotation) buildHook(fn func(context.Context) error) (ho
 // as OnStop. The hook function passed into OnStart cannot take any arguments
 // outside of the annotated constructor's existing dependencies or results, except
 // a context.Context.
-func OnStart(onStart interface{}) Annotation {
+func OnStart(onStart any) Annotation {
 	return &lifecycleHookAnnotation{
 		Type:   _onStartHookType,
 		Target: onStart,
@@ -1176,7 +1176,7 @@ func OnStart(onStart interface{}) Annotation {
 // as OnStart. The hook function passed into OnStop cannot take any arguments
 // outside of the annotated constructor's existing dependencies or results, except
 // a context.Context.
-func OnStop(onStop interface{}) Annotation {
+func OnStop(onStop any) Annotation {
 	return &lifecycleHookAnnotation{
 		Type:   _onStopHookType,
 		Target: onStop,
@@ -1184,7 +1184,7 @@ func OnStop(onStop interface{}) Annotation {
 }
 
 type asAnnotation struct {
-	targets []interface{}
+	targets []any
 	types   []asType
 }
 
@@ -1256,7 +1256,7 @@ var _ Annotation = (*asAnnotation)(nil)
 // to maintain the original return types when using As, see [Self].
 //
 // As annotation cannot be used in a function that returns an [Out] struct as a return type.
-func As(interfaces ...interface{}) Annotation {
+func As(interfaces ...any) Annotation {
 	return &asAnnotation{targets: interfaces}
 }
 
@@ -1311,7 +1311,7 @@ func (at *asAnnotation) apply(ann *annotated) error {
 }
 
 // build implements Annotation
-func (at *asAnnotation) build(ann *annotated) (interface{}, error) {
+func (at *asAnnotation) build(ann *annotated) (any, error) {
 	paramTypes := ann.currentParamTypes()
 
 	resultTypes, remapResults, err := at.results(ann)
@@ -1430,7 +1430,7 @@ func extractResultFields(types []reflect.Type) ([]reflect.StructField, func(int,
 }
 
 type fromAnnotation struct {
-	targets []interface{}
+	targets []any
 	types   []reflect.Type
 }
 
@@ -1483,7 +1483,7 @@ var _ Annotation = (*fromAnnotation)(nil)
 //
 // From annotation cannot be used in a function that takes an [In] struct as a
 // parameter.
-func From(interfaces ...interface{}) Annotation {
+func From(interfaces ...any) Annotation {
 	return &fromAnnotation{targets: interfaces}
 }
 
@@ -1508,7 +1508,7 @@ func (fr *fromAnnotation) apply(ann *annotated) error {
 }
 
 // build builds and returns a constructor after applying a From annotation
-func (fr *fromAnnotation) build(ann *annotated) (interface{}, error) {
+func (fr *fromAnnotation) build(ann *annotated) (any, error) {
 	paramTypes, remap, err := fr.parameters(ann)
 	if err != nil {
 		return nil, err
@@ -1613,7 +1613,7 @@ func (fr *fromAnnotation) parameters(ann *annotated) (
 }
 
 type annotated struct {
-	Target      interface{}
+	Target      any
 	Annotations []Annotation
 	ParamTags   []string
 	ResultTags  []string
@@ -1647,7 +1647,7 @@ func (ann annotated) String() string {
 
 // Build builds and returns a constructor based on fx.In/fx.Out params and
 // results wrapping the original constructor passed to fx.Annotate.
-func (ann *annotated) Build() (interface{}, error) {
+func (ann *annotated) Build() (any, error) {
 	ann.container = dig.New()
 	ft := reflect.TypeOf(ann.Target)
 	if ft.Kind() != reflect.Func {
@@ -1758,7 +1758,7 @@ func (ann *annotated) cleanUpAsResults() {
 func (ann *annotated) typeCheckOrigFn() error {
 	ft := reflect.TypeOf(ann.Target)
 	numOut := ft.NumOut()
-	for i := 0; i < numOut; i++ {
+	for i := range numOut {
 		ot := ft.Out(i)
 		if ot == _typeOfError && i != numOut-1 {
 			return fmt.Errorf(
@@ -1796,7 +1796,7 @@ func (ann *annotated) currentResultTypes() (resultTypes []reflect.Type, hasError
 	numOut := ft.NumOut()
 	resultTypes = make([]reflect.Type, numOut)
 
-	for i := 0; i < numOut; i++ {
+	for i := range numOut {
 		resultTypes[i] = ft.Out(i)
 		if resultTypes[i] == _typeOfError && i == numOut-1 {
 			hasError = true
@@ -1898,7 +1898,7 @@ func (ann *annotated) currentParamTypes() []reflect.Type {
 //	  Target: func(..) http.Handler { ... },
 //	  Group:  "server",
 //	}
-func Annotate(t interface{}, anns ...Annotation) interface{} {
+func Annotate(t any, anns ...Annotation) any {
 	result := annotated{Target: t}
 	for _, ann := range anns {
 		if err := ann.apply(&result); err != nil {

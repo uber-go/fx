@@ -52,7 +52,7 @@ func Caller() string {
 }
 
 // FuncName returns a funcs formatted name
-func FuncName(fn interface{}) string {
+func FuncName(fn any) string {
 	fnV := reflect.ValueOf(fn)
 	if fnV.Kind() != reflect.Func {
 		return fmt.Sprint(fn)

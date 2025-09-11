@@ -40,7 +40,7 @@ type slogObservableEntry struct {
 	record slog.Record
 }
 
-func (s slogObservableEntry) unwrap(attr slog.Attr, out map[string]interface{}) {
+func (s slogObservableEntry) unwrap(attr slog.Attr, out map[string]any) {
 	anyAttr := attr.Value.Any()
 
 	sliceAttr, ok := anyAttr.([]slog.Attr)
@@ -57,8 +57,8 @@ func (s slogObservableEntry) unwrap(attr slog.Attr, out map[string]interface{}) 
 	out[attr.Key] = sliceAttrValues
 }
 
-func (s slogObservableEntry) ContextMap() map[string]interface{} {
-	contextMap := map[string]interface{}{}
+func (s slogObservableEntry) ContextMap() map[string]any {
+	contextMap := map[string]any{}
 
 	s.record.Attrs(func(a slog.Attr) bool {
 		s.unwrap(a, contextMap)
@@ -112,7 +112,7 @@ func TestSlogLogger(t *testing.T) {
 		name        string
 		give        Event
 		wantMessage string
-		wantFields  map[string]interface{}
+		wantFields  map[string]any
 	}{
 		{
 			name: "OnStartExecuting",
@@ -121,7 +121,7 @@ func TestSlogLogger(t *testing.T) {
 				CallerName:   "bytes.NewBuffer",
 			},
 			wantMessage: "OnStart hook executing",
-			wantFields: map[string]interface{}{
+			wantFields: map[string]any{
 				"caller": "bytes.NewBuffer",
 				"callee": "hook.onStart",
 			},
@@ -133,7 +133,7 @@ func TestSlogLogger(t *testing.T) {
 				CallerName:   "bytes.NewBuffer",
 			},
 			wantMessage: "OnStop hook executing",
-			wantFields: map[string]interface{}{
+			wantFields: map[string]any{
 				"caller": "bytes.NewBuffer",
 				"callee": "hook.onStop1",
 			},
@@ -146,7 +146,7 @@ func TestSlogLogger(t *testing.T) {
 				Err:          fmt.Errorf("some error"),
 			},
 			wantMessage: "OnStop hook failed",
-			wantFields: map[string]interface{}{
+			wantFields: map[string]any{
 				"caller": "bytes.NewBuffer",
 				"callee": "hook.onStart1",
 				"error":  "some error",
@@ -160,7 +160,7 @@ func TestSlogLogger(t *testing.T) {
 				Runtime:      time.Millisecond * 3,
 			},
 			wantMessage: "OnStop hook executed",
-			wantFields: map[string]interface{}{
+			wantFields: map[string]any{
 				"caller":  "bytes.NewBuffer",
 				"callee":  "hook.onStart1",
 				"runtime": "3ms",
@@ -174,7 +174,7 @@ func TestSlogLogger(t *testing.T) {
 				Err:          fmt.Errorf("some error"),
 			},
 			wantMessage: "OnStart hook failed",
-			wantFields: map[string]interface{}{
+			wantFields: map[string]any{
 				"caller": "bytes.NewBuffer",
 				"callee": "hook.onStart1",
 				"error":  "some error",
@@ -188,7 +188,7 @@ func TestSlogLogger(t *testing.T) {
 				Runtime:      time.Millisecond * 3,
 			},
 			wantMessage: "OnStart hook executed",
-			wantFields: map[string]interface{}{
+			wantFields: map[string]any{
 				"caller":  "bytes.NewBuffer",
 				"callee":  "hook.onStart1",
 				"runtime": "3ms",
@@ -202,10 +202,10 @@ func TestSlogLogger(t *testing.T) {
 				ModuleTrace: []string{"main.main"},
 			},
 			wantMessage: "supplied",
-			wantFields: map[string]interface{}{
+			wantFields: map[string]any{
 				"type":        "*bytes.Buffer",
-				"stacktrace":  []interface{}{"main.main", "runtime.main"},
-				"moduletrace": []interface{}{"main.main"},
+				"stacktrace":  []any{"main.main", "runtime.main"},
+				"moduletrace": []any{"main.main"},
 			},
 		},
 		{
@@ -217,10 +217,10 @@ func TestSlogLogger(t *testing.T) {
 				Err:         someError,
 			},
 			wantMessage: "error encountered while applying options",
-			wantFields: map[string]interface{}{
+			wantFields: map[string]any{
 				"type":        "*bytes.Buffer",
-				"stacktrace":  []interface{}{"main.main", "runtime.main"},
-				"moduletrace": []interface{}{"main.main"},
+				"stacktrace":  []any{"main.main", "runtime.main"},
+				"moduletrace": []any{"main.main"},
 				"error":       "some error",
 			},
 		},
@@ -235,10 +235,10 @@ func TestSlogLogger(t *testing.T) {
 				Private:         false,
 			},
 			wantMessage: "provided",
-			wantFields: map[string]interface{}{
+			wantFields: map[string]any{
 				"constructor": "bytes.NewBuffer()",
-				"stacktrace":  []interface{}{"main.main", "runtime.main"},
-				"moduletrace": []interface{}{"main.main"},
+				"stacktrace":  []any{"main.main", "runtime.main"},
+				"moduletrace": []any{"main.main"},
 				"type":        "*bytes.Buffer",
 				"module":      "myModule",
 			},
@@ -254,10 +254,10 @@ func TestSlogLogger(t *testing.T) {
 				Private:         true,
 			},
 			wantMessage: "provided",
-			wantFields: map[string]interface{}{
+			wantFields: map[string]any{
 				"constructor": "bytes.NewBuffer()",
-				"stacktrace":  []interface{}{"main.main", "runtime.main"},
-				"moduletrace": []interface{}{"main.main"},
+				"stacktrace":  []any{"main.main", "runtime.main"},
+				"moduletrace": []any{"main.main"},
 				"type":        "*bytes.Buffer",
 				"module":      "myModule",
 				"private":     true,
@@ -271,9 +271,9 @@ func TestSlogLogger(t *testing.T) {
 				Err:         someError,
 			},
 			wantMessage: "error encountered while applying options",
-			wantFields: map[string]interface{}{
-				"stacktrace":  []interface{}{"main.main", "runtime.main"},
-				"moduletrace": []interface{}{"main.main"},
+			wantFields: map[string]any{
+				"stacktrace":  []any{"main.main", "runtime.main"},
+				"moduletrace": []any{"main.main"},
 				"error":       "some error",
 			},
 		},
@@ -286,10 +286,10 @@ func TestSlogLogger(t *testing.T) {
 				OutputTypeNames: []string{"*bytes.Buffer"},
 			},
 			wantMessage: "replaced",
-			wantFields: map[string]interface{}{
+			wantFields: map[string]any{
 				"type":        "*bytes.Buffer",
-				"stacktrace":  []interface{}{"main.main", "runtime.main"},
-				"moduletrace": []interface{}{"main.main"},
+				"stacktrace":  []any{"main.main", "runtime.main"},
+				"moduletrace": []any{"main.main"},
 				"module":      "myModule",
 			},
 		},
@@ -302,9 +302,9 @@ func TestSlogLogger(t *testing.T) {
 			},
 
 			wantMessage: "error encountered while replacing",
-			wantFields: map[string]interface{}{
-				"stacktrace":  []interface{}{"main.main", "runtime.main"},
-				"moduletrace": []interface{}{"main.main"},
+			wantFields: map[string]any{
+				"stacktrace":  []any{"main.main", "runtime.main"},
+				"moduletrace": []any{"main.main"},
 				"error":       "some error",
 			},
 		},
@@ -318,10 +318,10 @@ func TestSlogLogger(t *testing.T) {
 				OutputTypeNames: []string{"*bytes.Buffer"},
 			},
 			wantMessage: "decorated",
-			wantFields: map[string]interface{}{
+			wantFields: map[string]any{
 				"decorator":   "bytes.NewBuffer()",
-				"stacktrace":  []interface{}{"main.main", "runtime.main"},
-				"moduletrace": []interface{}{"main.main"},
+				"stacktrace":  []any{"main.main", "runtime.main"},
+				"moduletrace": []any{"main.main"},
 				"type":        "*bytes.Buffer",
 				"module":      "myModule",
 			},
@@ -334,9 +334,9 @@ func TestSlogLogger(t *testing.T) {
 				Err:         someError,
 			},
 			wantMessage: "error encountered while applying options",
-			wantFields: map[string]interface{}{
-				"stacktrace":  []interface{}{"main.main", "runtime.main"},
-				"moduletrace": []interface{}{"main.main"},
+			wantFields: map[string]any{
+				"stacktrace":  []any{"main.main", "runtime.main"},
+				"moduletrace": []any{"main.main"},
 				"error":       "some error",
 			},
 		},
@@ -344,7 +344,7 @@ func TestSlogLogger(t *testing.T) {
 			name:        "BeforeRun",
 			give:        &BeforeRun{Name: "bytes.NewBuffer()", Kind: "constructor"},
 			wantMessage: "before run",
-			wantFields: map[string]interface{}{
+			wantFields: map[string]any{
 				"name": "bytes.NewBuffer()",
 				"kind": "constructor",
 			},
@@ -353,7 +353,7 @@ func TestSlogLogger(t *testing.T) {
 			name:        "Run",
 			give:        &Run{Name: "bytes.NewBuffer()", Kind: "constructor", Runtime: 3 * time.Millisecond},
 			wantMessage: "run",
-			wantFields: map[string]interface{}{
+			wantFields: map[string]any{
 				"name":    "bytes.NewBuffer()",
 				"kind":    "constructor",
 				"runtime": "3ms",
@@ -368,7 +368,7 @@ func TestSlogLogger(t *testing.T) {
 				Runtime:    3 * time.Millisecond,
 			},
 			wantMessage: "run",
-			wantFields: map[string]interface{}{
+			wantFields: map[string]any{
 				"name":    "bytes.NewBuffer()",
 				"kind":    "constructor",
 				"module":  "myModule",
@@ -383,7 +383,7 @@ func TestSlogLogger(t *testing.T) {
 				Err:  someError,
 			},
 			wantMessage: "error returned",
-			wantFields: map[string]interface{}{
+			wantFields: map[string]any{
 				"name":  "bytes.NewBuffer()",
 				"kind":  "constructor",
 				"error": "some error",
@@ -393,7 +393,7 @@ func TestSlogLogger(t *testing.T) {
 			name:        "Invoking/Success",
 			give:        &Invoking{ModuleName: "myModule", FunctionName: "bytes.NewBuffer()"},
 			wantMessage: "invoking",
-			wantFields: map[string]interface{}{
+			wantFields: map[string]any{
 				"function": "bytes.NewBuffer()",
 				"module":   "myModule",
 			},
@@ -402,7 +402,7 @@ func TestSlogLogger(t *testing.T) {
 			name:        "Invoked/Error",
 			give:        &Invoked{FunctionName: "bytes.NewBuffer()", Err: someError},
 			wantMessage: "invoke failed",
-			wantFields: map[string]interface{}{
+			wantFields: map[string]any{
 				"error":    "some error",
 				"stack":    "",
 				"function": "bytes.NewBuffer()",
@@ -412,7 +412,7 @@ func TestSlogLogger(t *testing.T) {
 			name:        "Start/Error",
 			give:        &Started{Err: someError},
 			wantMessage: "start failed",
-			wantFields: map[string]interface{}{
+			wantFields: map[string]any{
 				"error": "some error",
 			},
 		},
@@ -420,7 +420,7 @@ func TestSlogLogger(t *testing.T) {
 			name:        "Stopping",
 			give:        &Stopping{Signal: os.Interrupt},
 			wantMessage: "received signal",
-			wantFields: map[string]interface{}{
+			wantFields: map[string]any{
 				"signal": "INTERRUPT",
 			},
 		},
@@ -428,7 +428,7 @@ func TestSlogLogger(t *testing.T) {
 			name:        "Stopped/Error",
 			give:        &Stopped{Err: someError},
 			wantMessage: "stop failed",
-			wantFields: map[string]interface{}{
+			wantFields: map[string]any{
 				"error": "some error",
 			},
 		},
@@ -436,7 +436,7 @@ func TestSlogLogger(t *testing.T) {
 			name:        "RollingBack/Error",
 			give:        &RollingBack{StartErr: someError},
 			wantMessage: "start failed, rolling back",
-			wantFields: map[string]interface{}{
+			wantFields: map[string]any{
 				"error": "some error",
 			},
 		},
@@ -444,7 +444,7 @@ func TestSlogLogger(t *testing.T) {
 			name:        "RolledBack/Error",
 			give:        &RolledBack{Err: someError},
 			wantMessage: "rollback failed",
-			wantFields: map[string]interface{}{
+			wantFields: map[string]any{
 				"error": "some error",
 			},
 		},
@@ -452,13 +452,13 @@ func TestSlogLogger(t *testing.T) {
 			name:        "Started",
 			give:        &Started{},
 			wantMessage: "started",
-			wantFields:  map[string]interface{}{},
+			wantFields:  map[string]any{},
 		},
 		{
 			name:        "LoggerInitialized/Error",
 			give:        &LoggerInitialized{Err: someError},
 			wantMessage: "custom logger initialization failed",
-			wantFields: map[string]interface{}{
+			wantFields: map[string]any{
 				"error": "some error",
 			},
 		},
@@ -466,7 +466,7 @@ func TestSlogLogger(t *testing.T) {
 			name:        "LoggerInitialized",
 			give:        &LoggerInitialized{ConstructorName: "bytes.NewBuffer()"},
 			wantMessage: "initialized custom fxevent.Logger",
-			wantFields: map[string]interface{}{
+			wantFields: map[string]any{
 				"function": "bytes.NewBuffer()",
 			},
 		},

@@ -119,7 +119,7 @@ func TestShutdown(t *testing.T) {
 		t.Cleanup(func() { app.Stop(context.Background()) }) // in t.Cleanup so this happens after all subtests return (not just this function)
 		defer require.NoError(t, app.Stop(context.Background()))
 
-		for i := 0; i < 10; i++ {
+		for i := range 10 {
 			t.Run(fmt.Sprintf("Wait %v", i), func(t *testing.T) {
 				t.Parallel()
 				wait := <-app.Wait()
@@ -162,7 +162,7 @@ func TestShutdown(t *testing.T) {
 			fx.Populate(&shutdowner),
 		)
 
-		for i := 0; i < 10; i++ {
+		for i := range 10 {
 			app.RequireStart()
 			shutdowner.Shutdown(fx.ExitCode(i))
 			assert.Equal(t, i, (<-app.Wait()).ExitCode, "run %d", i)
@@ -188,7 +188,7 @@ func TestDataRace(t *testing.T) {
 	// Spawn N goroutines, each of which call app.Done() and assert
 	// the signal received.
 	wg.Add(N)
-	for i := 0; i < N; i++ {
+	for i := range N {
 		i := i
 		go func() {
 			defer wg.Done()

@@ -43,12 +43,12 @@ func (t *tb) FailNow() {
 	t.failures++
 }
 
-func (t *tb) Errorf(format string, args ...interface{}) {
+func (t *tb) Errorf(format string, args ...any) {
 	fmt.Fprintf(t.errors, format, args...)
 	t.errors.WriteRune('\n')
 }
 
-func (t *tb) Logf(format string, args ...interface{}) {
+func (t *tb) Logf(format string, args ...any) {
 	fmt.Fprintf(t.logs, format, args...)
 	t.logs.WriteRune('\n')
 }

@@ -61,7 +61,7 @@ import (
 // possible, and should avoid spawning goroutines. Things like server listen
 // loops, background timer loops, and background processing goroutines should
 // instead be managed using Lifecycle callbacks.
-func Provide(constructors ...interface{}) Option {
+func Provide(constructors ...any) Option {
 	return provideOption{
 		Targets: constructors,
 		Stack:   fxreflect.CallerStack(1, 0),
@@ -69,14 +69,14 @@ func Provide(constructors ...interface{}) Option {
 }
 
 type provideOption struct {
-	Targets []interface{}
+	Targets []any
 	Stack   fxreflect.Stack
 }
 
 func (o provideOption) apply(mod *module) {
 	var private bool
 
-	targets := make([]interface{}, 0, len(o.Targets))
+	targets := make([]any, 0, len(o.Targets))
 	for _, target := range o.Targets {
 		if _, ok := target.(privateOption); ok {
 			private = true

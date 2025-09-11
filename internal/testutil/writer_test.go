@@ -33,7 +33,7 @@ type spy struct{ Logs []string }
 
 func (s *spy) Clear() { s.Logs = nil }
 
-func (s *spy) Logf(msg string, args ...interface{}) {
+func (s *spy) Logf(msg string, args ...any) {
 	s.Logs = append(s.Logs, fmt.Sprintf(msg, args...))
 }
 

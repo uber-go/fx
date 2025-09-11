@@ -45,15 +45,15 @@ type panicT struct {
 
 var _ TB = &panicT{}
 
-func (t *panicT) format(s string, args ...interface{}) string {
+func (t *panicT) format(s string, args ...any) string {
 	return fmt.Sprintf(s, args...)
 }
 
-func (t *panicT) Logf(s string, args ...interface{}) {
+func (t *panicT) Logf(s string, args ...any) {
 	fmt.Fprintln(t.W, t.format(s, args...))
 }
 
-func (t *panicT) Errorf(s string, args ...interface{}) {
+func (t *panicT) Errorf(s string, args ...any) {
 	t.lastErr = t.format(s, args...)
 	fmt.Fprintln(t.W, t.lastErr)
 }

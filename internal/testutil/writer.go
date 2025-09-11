@@ -26,7 +26,7 @@ import (
 
 // TestingT is a subset of the testing.T interface.
 type TestingT interface {
-	Logf(string, ...interface{})
+	Logf(string, ...any)
 }
 
 // WriteSyncer is a zapcore.WriteSyncer that writes to the provided test

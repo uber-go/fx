@@ -110,7 +110,7 @@ func TestAnnotatedFrom(t *testing.T) {
 	tests := []struct {
 		desc    string
 		provide fx.Option
-		invoke  interface{}
+		invoke  any
 	}{
 		{
 			desc: "provide a good stringer",
@@ -275,7 +275,6 @@ func TestAnnotatedFrom(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.desc, func(t *testing.T) {
 			t.Parallel()
 
@@ -304,7 +303,7 @@ func TestAnnotatedFromFailures(t *testing.T) {
 	tests := []struct {
 		desc          string
 		provide       fx.Option
-		invoke        interface{}
+		invoke        any
 		errorContains string
 	}{
 		{
@@ -409,7 +408,6 @@ func TestAnnotatedFromFailures(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.desc, func(t *testing.T) {
 			t.Parallel()
 			app := NewForTest(t,
@@ -452,7 +450,7 @@ func TestAnnotatedAs(t *testing.T) {
 	tests := []struct {
 		desc     string
 		provide  fx.Option
-		invoke   interface{}
+		invoke   any
 		startApp bool
 	}{
 		{
@@ -802,7 +800,6 @@ func TestAnnotatedAs(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.desc, func(t *testing.T) {
 			t.Parallel()
 
@@ -837,7 +834,7 @@ func TestAnnotatedAsFailures(t *testing.T) {
 	tests := []struct {
 		desc          string
 		provide       fx.Option
-		invoke        interface{}
+		invoke        any
 		errorContains string
 	}{
 		{
@@ -895,7 +892,6 @@ func TestAnnotatedAsFailures(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.desc, func(t *testing.T) {
 			t.Parallel()
 			app := NewForTest(t,
@@ -1044,7 +1040,6 @@ func TestAnnotatedString(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.desc, func(t *testing.T) {
 			t.Parallel()
 
@@ -1108,7 +1103,7 @@ func TestAnnotate(t *testing.T) {
 		app := fxtest.New(t,
 			fx.Provide(
 				fx.Annotate(newB, fx.ParamTags(`optional:"true"`)),
-				fx.Annotate(func(a *a, b *b) interface{} { return nil },
+				fx.Annotate(func(a *a, b *b) any { return nil },
 					fx.ParamTags(`name:"a" optional:"true"`, `name:"b"`),
 					fx.ResultTags(`name:"nil"`),
 				),
@@ -1553,7 +1548,7 @@ func TestAnnotate(t *testing.T) {
 	t.Run("annotate a fx.Out with As", func(t *testing.T) {
 		t.Parallel()
 
-		type I interface{}
+		type I any
 
 		type B struct {
 			// implements I
@@ -1606,7 +1601,7 @@ func TestAnnotate(t *testing.T) {
 	t.Run("annotate a fx.In with From", func(t *testing.T) {
 		t.Parallel()
 
-		type I interface{}
+		type I any
 
 		type B struct {
 			// implements I
@@ -1903,7 +1898,7 @@ func TestHookAnnotations(t *testing.T) {
 	t.Run("start and stop without dependencies", func(t *testing.T) {
 		t.Parallel()
 
-		type stub interface{}
+		type stub any
 
 		var (
 			invoked bool
@@ -1937,9 +1932,9 @@ func TestHookAnnotations(t *testing.T) {
 		t.Parallel()
 
 		type (
-			A interface{}
-			B interface{}
-			C interface{}
+			A any
+			B any
+			C any
 		)
 
 		var value int
@@ -2111,7 +2106,7 @@ func TestHookAnnotations(t *testing.T) {
 	t.Run("with Supply and Decorate", func(t *testing.T) {
 		t.Parallel()
 
-		type A interface{}
+		type A any
 
 		ch := make(chan string, 3)
 
@@ -2178,7 +2173,7 @@ func TestHookAnnotations(t *testing.T) {
 		app := fxtest.New(t,
 			fx.Provide(
 				fx.Annotate(newB, fx.ParamTags(`optional:"true"`)),
-				fx.Annotate(func(a *a, b *b) interface{} { return nil },
+				fx.Annotate(func(a *a, b *b) any { return nil },
 					fx.ParamTags(`name:"a" optional:"true"`, `name:"b"`),
 					fx.ResultTags(`name:"nil"`),
 					fx.OnStart(func(_ paramStruct) error {
@@ -2287,8 +2282,8 @@ func TestHookAnnotationFailures(t *testing.T) {
 	}
 
 	type (
-		A interface{}
-		B interface{}
+		A any
+		B any
 	)
 
 	type namedAndGroupHookParams struct {
@@ -2311,7 +2306,7 @@ func TestHookAnnotationFailures(t *testing.T) {
 
 	table := []struct {
 		name        string
-		annotation  interface{}
+		annotation  any
 		extraOpts   fx.Option
 		useNew      bool
 		errContains string
@@ -2450,7 +2445,6 @@ func TestHookAnnotationFailures(t *testing.T) {
 	}
 
 	for _, tt := range table {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			opts := fx.Options(
@@ -2478,11 +2472,11 @@ func TestHookAnnotationFailures(t *testing.T) {
 }
 
 func TestHookAnnotationFunctionFlexibility(t *testing.T) {
-	type A interface{}
+	type A any
 
 	table := []struct {
 		name       string
-		annotation interface{}
+		annotation any
 	}{
 		{
 			name: "without error return",
@@ -2525,7 +2519,6 @@ func TestHookAnnotationFunctionFlexibility(t *testing.T) {
 	}
 
 	for _, tt := range table {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			var (
 				called atomic.Bool

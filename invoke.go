@@ -61,7 +61,7 @@ import (
 // To see an invocation in use, read through the package-level example. For
 // advanced features, including optional parameters and named instances, see
 // the documentation of the In and Out types.
-func Invoke(funcs ...interface{}) Option {
+func Invoke(funcs ...any) Option {
 	return invokeOption{
 		Targets: funcs,
 		Stack:   fxreflect.CallerStack(1, 0),
@@ -69,7 +69,7 @@ func Invoke(funcs ...interface{}) Option {
 }
 
 type invokeOption struct {
-	Targets []interface{}
+	Targets []any
 	Stack   fxreflect.Stack
 }
 

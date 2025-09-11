@@ -201,7 +201,7 @@ func (o recoverFromPanicsOption) String() string {
 //
 // If Fx fails to build the logger, or no logger is specified, it will fall back to
 // [fxevent.ConsoleLogger] configured to write to stderr.
-func WithLogger(constructor interface{}) Option {
+func WithLogger(constructor any) Option {
 	return withLoggerOption{
 		constructor: constructor,
 		Stack:       fxreflect.CallerStack(1, 0),
@@ -209,7 +209,7 @@ func WithLogger(constructor interface{}) Option {
 }
 
 type withLoggerOption struct {
-	constructor interface{}
+	constructor any
 	Stack       fxreflect.Stack
 }
 
@@ -230,7 +230,7 @@ func (l withLoggerOption) String() string {
 // Note, this will be deprecated in a future release.
 // Prefer to use [fxevent.Logger] instead.
 type Printer interface {
-	Printf(string, ...interface{})
+	Printf(string, ...any)
 }
 
 // Logger redirects the application's log output to the provided printer.
@@ -323,7 +323,7 @@ type App struct {
 // provide is a single constructor provided to Fx.
 type provide struct {
 	// Constructor provided to Fx. This may be an fx.Annotated.
-	Target interface{}
+	Target any
 
 	// Stack trace of where this provide was made.
 	Stack fxreflect.Stack
@@ -339,7 +339,7 @@ type provide struct {
 // invoke is a single invocation request to Fx.
 type invoke struct {
 	// Function to invoke.
-	Target interface{}
+	Target any
 
 	// Stack trace of where this invoke was made.
 	Stack fxreflect.Stack
