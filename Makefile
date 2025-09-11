@@ -54,8 +54,7 @@ tidy-lint:
 	@$(foreach mod,$(MODULES), \
 		(cd $(mod) && \
 		echo "[lint] tidy: $(mod)" && \
-		go mod tidy && \
-		git diff --exit-code -- go.mod go.sum) &&) true
+		go mod tidy -diff) &&) true
 
 .PHONY: fx-lint
 fx-lint: $(FXLINT)
