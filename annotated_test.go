@@ -1342,8 +1342,7 @@ func TestAnnotate(t *testing.T) {
 
 		app := NewForTest(t,
 			fx.Provide(
-				//lint:ignore ST1008 we want to test error in the middle.
-				fx.Annotate(func() (*a, error, *a) {
+				fx.Annotate(func() (*a, error, *a) { //nolint:staticcheck // we want to test error in the middle.
 					return &a{}, nil, &a{}
 				}, fx.ResultTags(`name:"firstA"`, ``, `name:"secondA"`)),
 			),

@@ -185,7 +185,7 @@ func TestExtract(t *testing.T) {
 		defer app.RequireStart().RequireStop()
 
 		// Unexported fields are left unchanged.
-		assert.NotEqual(t, "foo", out.type4.foo)
+		assert.NotEqual(t, "foo", out.foo)
 	})
 
 	t.Run("DuplicateFields", func(t *testing.T) {
