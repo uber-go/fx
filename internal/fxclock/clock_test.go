@@ -171,7 +171,7 @@ func TestMock_ManySleepers(t *testing.T) {
 
 	var wg sync.WaitGroup
 	wg.Add(N)
-	for i := 0; i < N; i++ {
+	for range N {
 		go func() {
 			defer wg.Done()
 

@@ -36,7 +36,7 @@ type ConsoleLogger struct {
 
 var _ Logger = (*ConsoleLogger)(nil)
 
-func (l *ConsoleLogger) logf(msg string, args ...interface{}) {
+func (l *ConsoleLogger) logf(msg string, args ...any) {
 	fmt.Fprintf(l.W, "[Fx] "+msg+"\n", args...)
 }
 

@@ -49,6 +49,6 @@ func NewTestPrinter(t TB) fx.Printer {
 	return &testPrinter{t}
 }
 
-func (p *testPrinter) Printf(format string, args ...interface{}) {
+func (p *testPrinter) Printf(format string, args ...any) {
 	p.Logf(format, args...)
 }

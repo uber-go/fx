@@ -34,7 +34,7 @@ var _typeOfIn = reflect.TypeOf(In{})
 // struct. Only exported fields will be filled.
 //
 // Deprecated: Use Populate instead.
-func Extract(target interface{}) Option {
+func Extract(target any) Option {
 	v := reflect.ValueOf(target)
 
 	if t := v.Type(); t.Kind() != reflect.Ptr || t.Elem().Kind() != reflect.Struct {

@@ -175,7 +175,7 @@ import (
 //	    }),
 //	  ),
 //	)
-func Decorate(decorators ...interface{}) Option {
+func Decorate(decorators ...any) Option {
 	return decorateOption{
 		Targets: decorators,
 		Stack:   fxreflect.CallerStack(1, 0),
@@ -183,7 +183,7 @@ func Decorate(decorators ...interface{}) Option {
 }
 
 type decorateOption struct {
-	Targets []interface{}
+	Targets []any
 	Stack   fxreflect.Stack
 }
 
@@ -207,7 +207,7 @@ func (o decorateOption) String() string {
 // decorator is a single decorator used in Fx.
 type decorator struct {
 	// Decorator provided to Fx.
-	Target interface{}
+	Target any
 
 	// Stack trace of where this provide was made.
 	Stack fxreflect.Stack

@@ -315,7 +315,7 @@ func TestDecorateSuccess(t *testing.T) {
 	})
 
 	t.Run("decoration must execute when required by a member of group", func(t *testing.T) {
-		type Drinks interface{}
+		type Drinks any
 		type Coffee struct {
 			Type  string
 			Name  string

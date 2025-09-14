@@ -74,8 +74,8 @@ import (
 //	fx.Replace(
 //		fx.Annotate(os.Stderr, fx.As(new(io.Writer)))
 //	)
-func Replace(values ...interface{}) Option {
-	decorators := make([]interface{}, len(values)) // one function per value
+func Replace(values ...any) Option {
+	decorators := make([]any, len(values)) // one function per value
 	types := make([]reflect.Type, len(values))
 	for i, value := range values {
 		switch value := value.(type) {
@@ -97,7 +97,7 @@ func Replace(values ...interface{}) Option {
 }
 
 type replaceOption struct {
-	Targets []interface{}
+	Targets []any
 	Types   []reflect.Type // type of value produced by constructor[i]
 	Stack   fxreflect.Stack
 }
@@ -122,7 +122,7 @@ func (o replaceOption) String() string {
 }
 
 // Returns a function that takes no parameters, and returns the given value.
-func newReplaceDecorator(value interface{}) (interface{}, reflect.Type) {
+func newReplaceDecorator(value any) (any, reflect.Type) {
 	switch value.(type) {
 	case nil:
 		panic("untyped nil passed to fx.Replace")

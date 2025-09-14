@@ -43,7 +43,7 @@ func TestExtract(t *testing.T) {
 	t.Run("Failures", func(t *testing.T) {
 		t.Parallel()
 
-		tests := []interface{}{
+		tests := []any{
 			3,
 			func() {},
 			struct{}{},
@@ -51,7 +51,6 @@ func TestExtract(t *testing.T) {
 		}
 
 		for _, tt := range tests {
-			tt := tt
 			t.Run(fmt.Sprintf("%T", tt), func(t *testing.T) {
 				t.Parallel()
 
@@ -69,7 +68,7 @@ func TestExtract(t *testing.T) {
 	t.Run("ValidateApp", func(t *testing.T) {
 		t.Parallel()
 
-		tests := []interface{}{
+		tests := []any{
 			3,
 			func() {},
 			struct{}{},
@@ -77,7 +76,6 @@ func TestExtract(t *testing.T) {
 		}
 
 		for _, tt := range tests {
-			tt := tt
 			t.Run(fmt.Sprintf("%T", tt), func(t *testing.T) {
 				t.Parallel()
 

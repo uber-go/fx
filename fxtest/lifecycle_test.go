@@ -254,7 +254,7 @@ func TestLifecycle_OptionalT(t *testing.T) {
 			},
 		})
 
-		var pval interface{}
+		var pval any
 		func() {
 			defer func() { pval = recover() }()
 			lc.RequireStart()
@@ -291,7 +291,7 @@ func TestPanicT(t *testing.T) {
 		t.Run("FailNow", func(t *testing.T) {
 			t.Parallel()
 
-			var pval interface{}
+			var pval any
 			func() {
 				defer func() { pval = recover() }()
 				pt.FailNow()
@@ -308,7 +308,7 @@ func TestPanicT(t *testing.T) {
 		pt := panicT{W: &buff}
 		pt.Logf("hello: %v", "world")
 
-		var pval interface{}
+		var pval any
 		func() {
 			defer func() { pval = recover() }()
 			pt.FailNow()

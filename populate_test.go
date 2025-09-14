@@ -346,48 +346,47 @@ func TestPopulateValidateApp(t *testing.T) {
 
 	tests := []struct {
 		msg     string
-		opts    []interface{}
+		opts    []any
 		wantErr string
 	}{
 		{
 			msg:     "inline value",
-			opts:    []interface{}{t1{}},
+			opts:    []any{t1{}},
 			wantErr: "not a pointer",
 		},
 		{
 			msg:     "container value",
-			opts:    []interface{}{container{}},
+			opts:    []any{container{}},
 			wantErr: "not a pointer",
 		},
 		{
 			msg:     "container pointer without fx.In",
-			opts:    []interface{}{&containerNoIn{}},
+			opts:    []any{&containerNoIn{}},
 			wantErr: "missing type: fx_test.containerNoIn",
 		},
 		{
 			msg:     "function",
-			opts:    []interface{}{fn},
+			opts:    []any{fn},
 			wantErr: "not a pointer",
 		},
 		{
 			msg:     "function pointer",
-			opts:    []interface{}{&fn},
+			opts:    []any{&fn},
 			wantErr: "missing type: func()",
 		},
 		{
 			msg:     "invalid last argument",
-			opts:    []interface{}{&v, t1{}},
+			opts:    []any{&v, t1{}},
 			wantErr: "target 2 is not a pointer type",
 		},
 		{
 			msg:     "nil argument",
-			opts:    []interface{}{&v, nil, &v},
+			opts:    []any{&v, nil, &v},
 			wantErr: "target 2 is nil",
 		},
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.msg, func(t *testing.T) {
 			t.Parallel()
 

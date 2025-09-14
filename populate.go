@@ -61,7 +61,7 @@ import (
 // This is most helpful in unit tests: it lets tests leverage Fx's automatic
 // constructor wiring to build a few structs, but then extract those structs
 // for further testing.
-func Populate(targets ...interface{}) Option {
+func Populate(targets ...any) Option {
 	// Validate all targets are non-nil pointers.
 	fields := make([]reflect.StructField, len(targets)+1)
 	fields[0] = reflect.StructField{

@@ -79,8 +79,8 @@ import (
 //	fx.Supply(
 //		fx.Annotate(handler, fx.As(new(http.Handler))),
 //	)
-func Supply(values ...interface{}) Option {
-	constructors := make([]interface{}, 0, len(values))
+func Supply(values ...any) Option {
+	constructors := make([]any, 0, len(values))
 	types := make([]reflect.Type, 0, len(values))
 	var private bool
 	for _, value := range values {
@@ -114,7 +114,7 @@ func Supply(values ...interface{}) Option {
 }
 
 type supplyOption struct {
-	Targets []interface{}
+	Targets []any
 	Types   []reflect.Type // type of value produced by constructor[i]
 	Stack   fxreflect.Stack
 	Private bool
@@ -141,7 +141,7 @@ func (o supplyOption) String() string {
 }
 
 // Returns a function that takes no parameters, and returns the given value.
-func newSupplyConstructor(value interface{}) (interface{}, reflect.Type) {
+func newSupplyConstructor(value any) (any, reflect.Type) {
 	switch value.(type) {
 	case nil:
 		panic("untyped nil passed to fx.Supply")

@@ -35,9 +35,9 @@ import (
 //
 // This definition corresponds to the dig.Container and dig.Scope.
 type container interface {
-	Invoke(interface{}, ...dig.InvokeOption) error
-	Provide(interface{}, ...dig.ProvideOption) error
-	Decorate(interface{}, ...dig.DecorateOption) error
+	Invoke(any, ...dig.InvokeOption) error
+	Provide(any, ...dig.ProvideOption) error
+	Decorate(any, ...dig.DecorateOption) error
 }
 
 // Module is a named group of zero or more fx.Options.
@@ -136,9 +136,9 @@ type module struct {
 // We can consider moving this into Fx using type constraints after Go 1.20
 // is released and 1.17 is deprecated.
 type scope interface {
-	Decorate(f interface{}, opts ...dig.DecorateOption) error
-	Invoke(f interface{}, opts ...dig.InvokeOption) error
-	Provide(f interface{}, opts ...dig.ProvideOption) error
+	Decorate(f any, opts ...dig.DecorateOption) error
+	Invoke(f any, opts ...dig.InvokeOption) error
+	Provide(f any, opts ...dig.ProvideOption) error
 	Scope(name string, opts ...dig.ScopeOption) *dig.Scope
 	String() string
 }

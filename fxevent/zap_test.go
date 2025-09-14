@@ -44,7 +44,7 @@ func TestZapLogger(t *testing.T) {
 		name        string
 		give        Event
 		wantMessage string
-		wantFields  map[string]interface{}
+		wantFields  map[string]any
 	}{
 		{
 			name: "OnStartExecuting",
@@ -53,7 +53,7 @@ func TestZapLogger(t *testing.T) {
 				CallerName:   "bytes.NewBuffer",
 			},
 			wantMessage: "OnStart hook executing",
-			wantFields: map[string]interface{}{
+			wantFields: map[string]any{
 				"caller": "bytes.NewBuffer",
 				"callee": "hook.onStart",
 			},
@@ -65,7 +65,7 @@ func TestZapLogger(t *testing.T) {
 				CallerName:   "bytes.NewBuffer",
 			},
 			wantMessage: "OnStop hook executing",
-			wantFields: map[string]interface{}{
+			wantFields: map[string]any{
 				"caller": "bytes.NewBuffer",
 				"callee": "hook.onStop1",
 			},
@@ -78,7 +78,7 @@ func TestZapLogger(t *testing.T) {
 				Err:          fmt.Errorf("some error"),
 			},
 			wantMessage: "OnStop hook failed",
-			wantFields: map[string]interface{}{
+			wantFields: map[string]any{
 				"caller": "bytes.NewBuffer",
 				"callee": "hook.onStart1",
 				"error":  "some error",
@@ -92,7 +92,7 @@ func TestZapLogger(t *testing.T) {
 				Runtime:      time.Millisecond * 3,
 			},
 			wantMessage: "OnStop hook executed",
-			wantFields: map[string]interface{}{
+			wantFields: map[string]any{
 				"caller":  "bytes.NewBuffer",
 				"callee":  "hook.onStart1",
 				"runtime": "3ms",
@@ -106,7 +106,7 @@ func TestZapLogger(t *testing.T) {
 				Err:          fmt.Errorf("some error"),
 			},
 			wantMessage: "OnStart hook failed",
-			wantFields: map[string]interface{}{
+			wantFields: map[string]any{
 				"caller": "bytes.NewBuffer",
 				"callee": "hook.onStart1",
 				"error":  "some error",
@@ -120,7 +120,7 @@ func TestZapLogger(t *testing.T) {
 				Runtime:      time.Millisecond * 3,
 			},
 			wantMessage: "OnStart hook executed",
-			wantFields: map[string]interface{}{
+			wantFields: map[string]any{
 				"caller":  "bytes.NewBuffer",
 				"callee":  "hook.onStart1",
 				"runtime": "3ms",
@@ -134,10 +134,10 @@ func TestZapLogger(t *testing.T) {
 				ModuleTrace: []string{"main.main"},
 			},
 			wantMessage: "supplied",
-			wantFields: map[string]interface{}{
+			wantFields: map[string]any{
 				"type":        "*bytes.Buffer",
-				"stacktrace":  []interface{}{"main.main", "runtime.main"},
-				"moduletrace": []interface{}{"main.main"},
+				"stacktrace":  []any{"main.main", "runtime.main"},
+				"moduletrace": []any{"main.main"},
 			},
 		},
 		{
@@ -149,10 +149,10 @@ func TestZapLogger(t *testing.T) {
 				Err:         someError,
 			},
 			wantMessage: "error encountered while applying options",
-			wantFields: map[string]interface{}{
+			wantFields: map[string]any{
 				"type":        "*bytes.Buffer",
-				"stacktrace":  []interface{}{"main.main", "runtime.main"},
-				"moduletrace": []interface{}{"main.main"},
+				"stacktrace":  []any{"main.main", "runtime.main"},
+				"moduletrace": []any{"main.main"},
 				"error":       "some error",
 			},
 		},
@@ -167,10 +167,10 @@ func TestZapLogger(t *testing.T) {
 				Private:         false,
 			},
 			wantMessage: "provided",
-			wantFields: map[string]interface{}{
+			wantFields: map[string]any{
 				"constructor": "bytes.NewBuffer()",
-				"stacktrace":  []interface{}{"main.main", "runtime.main"},
-				"moduletrace": []interface{}{"main.main"},
+				"stacktrace":  []any{"main.main", "runtime.main"},
+				"moduletrace": []any{"main.main"},
 				"type":        "*bytes.Buffer",
 				"module":      "myModule",
 			},
@@ -186,10 +186,10 @@ func TestZapLogger(t *testing.T) {
 				Private:         true,
 			},
 			wantMessage: "provided",
-			wantFields: map[string]interface{}{
+			wantFields: map[string]any{
 				"constructor": "bytes.NewBuffer()",
-				"stacktrace":  []interface{}{"main.main", "runtime.main"},
-				"moduletrace": []interface{}{"main.main"},
+				"stacktrace":  []any{"main.main", "runtime.main"},
+				"moduletrace": []any{"main.main"},
 				"type":        "*bytes.Buffer",
 				"module":      "myModule",
 				"private":     true,
@@ -203,9 +203,9 @@ func TestZapLogger(t *testing.T) {
 				Err:         someError,
 			},
 			wantMessage: "error encountered while applying options",
-			wantFields: map[string]interface{}{
-				"stacktrace":  []interface{}{"main.main", "runtime.main"},
-				"moduletrace": []interface{}{"main.main"},
+			wantFields: map[string]any{
+				"stacktrace":  []any{"main.main", "runtime.main"},
+				"moduletrace": []any{"main.main"},
 				"error":       "some error",
 			},
 		},
@@ -218,10 +218,10 @@ func TestZapLogger(t *testing.T) {
 				OutputTypeNames: []string{"*bytes.Buffer"},
 			},
 			wantMessage: "replaced",
-			wantFields: map[string]interface{}{
+			wantFields: map[string]any{
 				"type":        "*bytes.Buffer",
-				"stacktrace":  []interface{}{"main.main", "runtime.main"},
-				"moduletrace": []interface{}{"main.main"},
+				"stacktrace":  []any{"main.main", "runtime.main"},
+				"moduletrace": []any{"main.main"},
 				"module":      "myModule",
 			},
 		},
@@ -234,9 +234,9 @@ func TestZapLogger(t *testing.T) {
 			},
 
 			wantMessage: "error encountered while replacing",
-			wantFields: map[string]interface{}{
-				"stacktrace":  []interface{}{"main.main", "runtime.main"},
-				"moduletrace": []interface{}{"main.main"},
+			wantFields: map[string]any{
+				"stacktrace":  []any{"main.main", "runtime.main"},
+				"moduletrace": []any{"main.main"},
 				"error":       "some error",
 			},
 		},
@@ -250,10 +250,10 @@ func TestZapLogger(t *testing.T) {
 				OutputTypeNames: []string{"*bytes.Buffer"},
 			},
 			wantMessage: "decorated",
-			wantFields: map[string]interface{}{
+			wantFields: map[string]any{
 				"decorator":   "bytes.NewBuffer()",
-				"stacktrace":  []interface{}{"main.main", "runtime.main"},
-				"moduletrace": []interface{}{"main.main"},
+				"stacktrace":  []any{"main.main", "runtime.main"},
+				"moduletrace": []any{"main.main"},
 				"type":        "*bytes.Buffer",
 				"module":      "myModule",
 			},
@@ -266,9 +266,9 @@ func TestZapLogger(t *testing.T) {
 				Err:         someError,
 			},
 			wantMessage: "error encountered while applying options",
-			wantFields: map[string]interface{}{
-				"stacktrace":  []interface{}{"main.main", "runtime.main"},
-				"moduletrace": []interface{}{"main.main"},
+			wantFields: map[string]any{
+				"stacktrace":  []any{"main.main", "runtime.main"},
+				"moduletrace": []any{"main.main"},
 				"error":       "some error",
 			},
 		},
@@ -276,7 +276,7 @@ func TestZapLogger(t *testing.T) {
 			name:        "Run",
 			give:        &Run{Name: "bytes.NewBuffer()", Kind: "constructor", Runtime: time.Second},
 			wantMessage: "run",
-			wantFields: map[string]interface{}{
+			wantFields: map[string]any{
 				"name":    "bytes.NewBuffer()",
 				"kind":    "constructor",
 				"runtime": "1s",
@@ -291,7 +291,7 @@ func TestZapLogger(t *testing.T) {
 				Runtime:    time.Millisecond,
 			},
 			wantMessage: "run",
-			wantFields: map[string]interface{}{
+			wantFields: map[string]any{
 				"name":    "bytes.NewBuffer()",
 				"kind":    "constructor",
 				"module":  "myModule",
@@ -306,7 +306,7 @@ func TestZapLogger(t *testing.T) {
 				Err:  someError,
 			},
 			wantMessage: "error returned",
-			wantFields: map[string]interface{}{
+			wantFields: map[string]any{
 				"name":  "bytes.NewBuffer()",
 				"kind":  "constructor",
 				"error": "some error",
@@ -316,7 +316,7 @@ func TestZapLogger(t *testing.T) {
 			name:        "Invoking/Success",
 			give:        &Invoking{ModuleName: "myModule", FunctionName: "bytes.NewBuffer()"},
 			wantMessage: "invoking",
-			wantFields: map[string]interface{}{
+			wantFields: map[string]any{
 				"function": "bytes.NewBuffer()",
 				"module":   "myModule",
 			},
@@ -325,7 +325,7 @@ func TestZapLogger(t *testing.T) {
 			name:        "Invoked/Error",
 			give:        &Invoked{FunctionName: "bytes.NewBuffer()", Err: someError},
 			wantMessage: "invoke failed",
-			wantFields: map[string]interface{}{
+			wantFields: map[string]any{
 				"error":    "some error",
 				"stack":    "",
 				"function": "bytes.NewBuffer()",
@@ -335,7 +335,7 @@ func TestZapLogger(t *testing.T) {
 			name:        "Start/Error",
 			give:        &Started{Err: someError},
 			wantMessage: "start failed",
-			wantFields: map[string]interface{}{
+			wantFields: map[string]any{
 				"error": "some error",
 			},
 		},
@@ -343,7 +343,7 @@ func TestZapLogger(t *testing.T) {
 			name:        "Stopping",
 			give:        &Stopping{Signal: os.Interrupt},
 			wantMessage: "received signal",
-			wantFields: map[string]interface{}{
+			wantFields: map[string]any{
 				"signal": "INTERRUPT",
 			},
 		},
@@ -351,7 +351,7 @@ func TestZapLogger(t *testing.T) {
 			name:        "Stopped/Error",
 			give:        &Stopped{Err: someError},
 			wantMessage: "stop failed",
-			wantFields: map[string]interface{}{
+			wantFields: map[string]any{
 				"error": "some error",
 			},
 		},
@@ -359,7 +359,7 @@ func TestZapLogger(t *testing.T) {
 			name:        "RollingBack/Error",
 			give:        &RollingBack{StartErr: someError},
 			wantMessage: "start failed, rolling back",
-			wantFields: map[string]interface{}{
+			wantFields: map[string]any{
 				"error": "some error",
 			},
 		},
@@ -367,7 +367,7 @@ func TestZapLogger(t *testing.T) {
 			name:        "RolledBack/Error",
 			give:        &RolledBack{Err: someError},
 			wantMessage: "rollback failed",
-			wantFields: map[string]interface{}{
+			wantFields: map[string]any{
 				"error": "some error",
 			},
 		},
@@ -375,13 +375,13 @@ func TestZapLogger(t *testing.T) {
 			name:        "Started",
 			give:        &Started{},
 			wantMessage: "started",
-			wantFields:  map[string]interface{}{},
+			wantFields:  map[string]any{},
 		},
 		{
 			name:        "LoggerInitialized/Error",
 			give:        &LoggerInitialized{Err: someError},
 			wantMessage: "custom logger initialization failed",
-			wantFields: map[string]interface{}{
+			wantFields: map[string]any{
 				"error": "some error",
 			},
 		},
@@ -389,7 +389,7 @@ func TestZapLogger(t *testing.T) {
 			name:        "LoggerInitialized",
 			give:        &LoggerInitialized{ConstructorName: "bytes.NewBuffer()"},
 			wantMessage: "initialized custom fxevent.Logger",
-			wantFields: map[string]interface{}{
+			wantFields: map[string]any{
 				"function": "bytes.NewBuffer()",
 			},
 		},
@@ -397,7 +397,6 @@ func TestZapLogger(t *testing.T) {
 
 	t.Run("debug observer, log at default (info)", func(t *testing.T) {
 		for _, tt := range tests {
-			tt := tt
 			t.Run(tt.name, func(t *testing.T) {
 				t.Parallel()
 
@@ -416,7 +415,6 @@ func TestZapLogger(t *testing.T) {
 
 	t.Run("info observer, log at debug", func(t *testing.T) {
 		for _, tt := range tests {
-			tt := tt
 			t.Run(tt.name, func(t *testing.T) {
 				t.Parallel()
 
@@ -441,7 +439,6 @@ func TestZapLogger(t *testing.T) {
 
 	t.Run("info observer, log/error at debug", func(t *testing.T) {
 		for _, tt := range tests {
-			tt := tt
 			t.Run(tt.name, func(t *testing.T) {
 				t.Parallel()
 

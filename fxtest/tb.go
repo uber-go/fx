@@ -23,7 +23,7 @@ package fxtest
 // TB is a subset of the standard library's testing.TB interface. It's
 // satisfied by both *testing.T and *testing.B.
 type TB interface {
-	Logf(string, ...interface{})
-	Errorf(string, ...interface{})
+	Logf(string, ...any)
+	Errorf(string, ...any)
 	FailNow()
 }

@@ -40,7 +40,7 @@ func TestFuncName(t *testing.T) {
 
 	tests := []struct {
 		desc string
-		give interface{}
+		give any
 		want string
 	}{
 		{
@@ -56,7 +56,6 @@ func TestFuncName(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.desc, func(t *testing.T) {
 			t.Parallel()
 
@@ -90,7 +89,6 @@ func TestSanitizeFuncNames(t *testing.T) {
 		},
 	}
 	for _, c := range cases {
-		c := c
 		t.Run(c.name, func(t *testing.T) {
 			t.Parallel()
 

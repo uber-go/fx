@@ -978,7 +978,6 @@ func TestRunEventEmission(t *testing.T) {
 			wantErr: `panic: "bad decorate"`,
 		},
 	} {
-		tt := tt
 		t.Run(tt.desc, func(t *testing.T) {
 			t.Parallel()
 
@@ -1335,7 +1334,7 @@ func TestAppRunTimeout(t *testing.T) {
 		return func() error {
 			// We'll exceed the start and stop timeouts,
 			// and then some.
-			for i := 0; i < 3; i++ {
+			for range 3 {
 				clock.Add(time.Second)
 			}
 
@@ -1389,7 +1388,6 @@ func TestAppRunTimeout(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.desc, func(t *testing.T) {
 			t.Parallel()
 
@@ -1906,8 +1904,7 @@ func TestAppStart(t *testing.T) {
 	t.Run("StartTwiceWithHooksErrors", func(t *testing.T) {
 		t.Parallel()
 
-		ctx, cancel := context.WithCancel(context.Background())
-		defer cancel()
+		ctx := t.Context()
 
 		app := fxtest.New(t,
 			Invoke(func(lc Lifecycle) {
@@ -2721,7 +2718,6 @@ func TestOptionString(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.desc, func(t *testing.T) {
 			t.Parallel()
 
@@ -2738,7 +2734,7 @@ func TestMain(m *testing.M) {
 
 type testLogger struct{ t *testing.T }
 
-func (l testLogger) Printf(s string, args ...interface{}) {
+func (l testLogger) Printf(s string, args ...any) {
 	l.t.Logf(s, args...)
 }
 
