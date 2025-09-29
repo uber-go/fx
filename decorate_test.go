@@ -853,4 +853,87 @@ func TestMapValueGroupsDecoration(t *testing.T) {
 		}
 		assert.ElementsMatch(t, []string{"alpha", "beta", "gamma"}, finalKeys)
 	})
+
+	t.Run("map decoration across modules", func(t *testing.T) {
+		t.Parallel()
+
+		type DecorationInput struct {
+			fx.In
+			Processors map[string]testProcessor `group:"processors"`
+		}
+
+		type DecorationOutput struct {
+			fx.Out
+			Processors map[string]testProcessor `group:"processors"`
+		}
+
+		var outerProcessors map[string]testProcessor
+		var innerProcessors map[string]testProcessor
+
+		app := fxtest.New(t,
+			fx.Provide(
+				fx.Annotate(
+					func() testProcessor { return &testBasicProcessor{name: "auth"} },
+					fx.ResultTags(`name:"auth" group:"processors"`),
+				),
+				fx.Annotate(
+					func() testProcessor { return &testBasicProcessor{name: "billing"} },
+					fx.ResultTags(`name:"billing" group:"processors"`),
+				),
+			),
+			fx.Decorate(func(input DecorationInput) DecorationOutput {
+				enhanced := make(map[string]testProcessor)
+				for name, processor := range input.Processors {
+					enhanced[name] = &testEnhancedProcessor{
+						wrapped: processor,
+						prefix:  "[OUTER]",
+					}
+				}
+				return DecorationOutput{Processors: enhanced}
+			}),
+			fx.Invoke(fx.Annotate(
+				func(processors map[string]testProcessor) {
+					outerProcessors = processors
+				},
+				fx.ParamTags(`group:"processors"`),
+			)),
+			fx.Module("mymodule",
+				fx.Decorate(func(input DecorationInput) DecorationOutput {
+					enhanced := make(map[string]testProcessor)
+					for name, processor := range input.Processors {
+						enhanced[name] = &testEnhancedProcessor{
+							wrapped: processor,
+							prefix:  "[INNER]",
+						}
+					}
+					return DecorationOutput{Processors: enhanced}
+				}),
+				fx.Invoke(fx.Annotate(
+					func(processors map[string]testProcessor) {
+						innerProcessors = processors
+					},
+					fx.ParamTags(`group:"processors"`),
+				)),
+			),
+		)
+		defer app.RequireStart().RequireStop()
+
+		t.Logf("Outer processors:")
+		for name, p := range outerProcessors {
+			t.Logf("  %s: %s", name, p.Process("data"))
+		}
+		t.Logf("Inner processors:")
+		for name, p := range innerProcessors {
+			t.Logf("  %s: %s", name, p.Process("data"))
+		}
+
+		// Test that map decoration chains across modules
+		require.Len(t, outerProcessors, 2)
+		assert.Equal(t, "[OUTER] auth: data", outerProcessors["auth"].Process("data"))
+		assert.Equal(t, "[OUTER] billing: data", outerProcessors["billing"].Process("data"))
+
+		require.Len(t, innerProcessors, 2)
+		assert.Equal(t, "[INNER] [OUTER] auth: data", innerProcessors["auth"].Process("data"))
+		assert.Equal(t, "[INNER] [OUTER] billing: data", innerProcessors["billing"].Process("data"))
+	})
 }
