@@ -21,6 +21,7 @@
 package fx_test
 
 import (
+	"context"
 	"errors"
 	"strings"
 	"testing"
@@ -484,5 +485,372 @@ func TestDecorateFailure(t *testing.T) {
 		err := app.Err()
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "missing dependencies")
+	})
+
+	t.Run("slice decorators are blocked for named value groups", func(t *testing.T) {
+		// This test verifies the key design decision from dig PR #381:
+		// Slice decorators cannot be used with named value groups because
+		// they would break the map functionality
+
+		type Service struct {
+			Name string
+		}
+
+		type DecorationInput struct {
+			fx.In
+			// Try to consume as slice for decoration
+			Services []Service `group:"services"`
+		}
+
+		type DecorationOutput struct {
+			fx.Out
+			// Output as slice - this should break map consumption
+			Services []Service `group:"services"`
+		}
+
+		sliceDecorator := func(input DecorationInput) DecorationOutput {
+			// This slice decorator executes due to current dig limitation
+			// but consumption will fail with proper validation error
+			enhanced := make([]Service, len(input.Services))
+			for i, service := range input.Services {
+				enhanced[i] = Service{Name: "[DECORATED]" + service.Name}
+			}
+			return DecorationOutput{Services: enhanced}
+		}
+
+		app := NewForTest(t,
+			fx.Provide(
+				// Provide with names (making this a named value group)
+				fx.Annotate(
+					func() Service { return Service{Name: "auth"} },
+					fx.ResultTags(`name:"auth" group:"services"`),
+				),
+				fx.Annotate(
+					func() Service { return Service{Name: "billing"} },
+					fx.ResultTags(`name:"billing" group:"services"`),
+				),
+			),
+			// This slice decorator should be blocked for named value groups
+			fx.Decorate(sliceDecorator),
+			// Try to consume as slice - this should trigger the dig validation
+			fx.Invoke(fx.Annotate(
+				func(serviceSlice []Service) {
+					t.Logf("ServiceSlice length: %d", len(serviceSlice))
+				},
+				fx.ParamTags(`group:"services"`),
+			)),
+		)
+
+		// Decoration fails at invoke/start time, not decorate time
+		err := app.Start(context.Background())
+		defer app.Stop(context.Background())
+
+		// Should ALWAYS fail with the specific dig validation error
+		require.Error(t, err, "Slice consumption after slice decoration of named groups should fail")
+
+		// Should get the specific dig error about slice decoration
+		assert.Contains(t, err.Error(), "cannot use slice decoration for value group",
+			"Expected dig slice decoration error, got: %v", err)
+		assert.Contains(t, err.Error(), "group contains named values",
+			"Expected error about named values, got: %v", err)
+		assert.Contains(t, err.Error(), "use map[string]T decorator instead",
+			"Expected suggestion to use map decorator, got: %v", err)
+	})
+
+	t.Run("map decorators work fine with named value groups", func(t *testing.T) {
+		// This test shows the contrast - map decorators work perfectly
+		// with named value groups, unlike slice decorators which break them
+
+		type Service struct {
+			Name string
+		}
+
+		type DecorationInput struct {
+			fx.In
+			// Consume as map for decoration - this works fine
+			Services map[string]Service `group:"services"`
+		}
+
+		type DecorationOutput struct {
+			fx.Out
+			// Output as map - preserves the name-to-value mapping
+			Services map[string]Service `group:"services"`
+		}
+
+		mapDecorator := func(input DecorationInput) DecorationOutput {
+			// This decorator preserves the map structure and names
+			enhanced := make(map[string]Service)
+			for name, service := range input.Services {
+				enhanced[name] = Service{Name: "[MAP_DECORATED]" + service.Name}
+			}
+			return DecorationOutput{Services: enhanced}
+		}
+
+		type FinalParams struct {
+			fx.In
+			// Consume as map after map decoration - this should work perfectly
+			ServiceMap map[string]Service `group:"services"`
+		}
+
+		var params FinalParams
+		app := NewForTest(t,
+			fx.Provide(
+				// Provide with names (making this a named value group)
+				fx.Annotate(
+					func() Service { return Service{Name: "auth"} },
+					fx.ResultTags(`name:"auth" group:"services"`),
+				),
+				fx.Annotate(
+					func() Service { return Service{Name: "billing"} },
+					fx.ResultTags(`name:"billing" group:"services"`),
+				),
+			),
+			// This map decorator should work fine with named value groups
+			fx.Decorate(mapDecorator),
+			fx.Populate(&params),
+		)
+
+		// Should succeed - map decoration preserves map functionality
+		err := app.Start(context.Background())
+		defer app.Stop(context.Background())
+
+		require.NoError(t, err, "Map decoration should work fine with named value groups")
+
+		// Verify the final populated params also work correctly
+		require.Len(t, params.ServiceMap, 2)
+		assert.Equal(t, "[MAP_DECORATED]auth", params.ServiceMap["auth"].Name)
+		assert.Equal(t, "[MAP_DECORATED]billing", params.ServiceMap["billing"].Name)
+	})
+}
+
+// Test processor types for map decoration tests
+type testProcessor interface {
+	Process(input string) string
+	Name() string
+}
+
+type testBasicProcessor struct {
+	name string
+}
+
+func (b *testBasicProcessor) Process(input string) string {
+	return b.name + ": " + input
+}
+
+func (b *testBasicProcessor) Name() string {
+	return b.name
+}
+
+type testEnhancedProcessor struct {
+	wrapped testProcessor
+	prefix  string
+}
+
+func (e *testEnhancedProcessor) Process(input string) string {
+	return e.prefix + " " + e.wrapped.Process(input)
+}
+
+func (e *testEnhancedProcessor) Name() string {
+	return e.wrapped.Name()
+}
+
+// TestMapValueGroupsDecoration tests decoration of map value groups
+func TestMapValueGroupsDecoration(t *testing.T) {
+	t.Parallel()
+
+	t.Run("decorate map value groups", func(t *testing.T) {
+		t.Parallel()
+
+		type DecorationInput struct {
+			fx.In
+			Processors map[string]testProcessor `group:"processors"`
+		}
+
+		type DecorationOutput struct {
+			fx.Out
+			Processors map[string]testProcessor `group:"processors"`
+		}
+
+		decorateProcessors := func(input DecorationInput) DecorationOutput {
+			enhanced := make(map[string]testProcessor)
+			for name, processor := range input.Processors {
+				enhanced[name] = &testEnhancedProcessor{
+					wrapped: processor,
+					prefix:  "[ENHANCED]",
+				}
+			}
+			return DecorationOutput{Processors: enhanced}
+		}
+
+		type FinalParams struct {
+			fx.In
+			Processors map[string]testProcessor `group:"processors"`
+		}
+
+		var params FinalParams
+		app := NewForTest(t,
+			fx.Provide(
+				fx.Annotate(
+					func() testProcessor { return &testBasicProcessor{name: "json"} },
+					fx.ResultTags(`name:"json" group:"processors"`),
+				),
+				fx.Annotate(
+					func() testProcessor { return &testBasicProcessor{name: "xml"} },
+					fx.ResultTags(`name:"xml" group:"processors"`),
+				),
+			),
+			fx.Decorate(decorateProcessors),
+			fx.Populate(&params),
+		)
+
+		err := app.Start(context.Background())
+		defer app.Stop(context.Background())
+		require.NoError(t, err)
+
+		require.Len(t, params.Processors, 2)
+
+		// Test that processors are decorated
+		jsonResult := params.Processors["json"].Process("data")
+		assert.Equal(t, "[ENHANCED] json: data", jsonResult)
+
+		xmlResult := params.Processors["xml"].Process("data")
+		assert.Equal(t, "[ENHANCED] xml: data", xmlResult)
+
+		// Names should be preserved
+		assert.Equal(t, "json", params.Processors["json"].Name())
+		assert.Equal(t, "xml", params.Processors["xml"].Name())
+	})
+
+	t.Run("single decoration layer", func(t *testing.T) {
+		t.Parallel()
+
+		type DecorationInput struct {
+			fx.In
+			Processors map[string]testProcessor `group:"processors"`
+		}
+
+		type DecorationOutput struct {
+			fx.Out
+			Processors map[string]testProcessor `group:"processors"`
+		}
+
+		decoration := func(input DecorationInput) DecorationOutput {
+			enhanced := make(map[string]testProcessor)
+			for name, processor := range input.Processors {
+				enhanced[name] = &testEnhancedProcessor{
+					wrapped: processor,
+					prefix:  "[DECORATED]",
+				}
+			}
+			return DecorationOutput{Processors: enhanced}
+		}
+
+		type FinalParams struct {
+			fx.In
+			Processors map[string]testProcessor `group:"processors"`
+		}
+
+		var params FinalParams
+		app := NewForTest(t,
+			fx.Provide(
+				fx.Annotate(
+					func() testProcessor { return &testBasicProcessor{name: "base"} },
+					fx.ResultTags(`name:"base" group:"processors"`),
+				),
+			),
+			fx.Decorate(decoration),
+			fx.Populate(&params),
+		)
+
+		err := app.Start(context.Background())
+		defer app.Stop(context.Background())
+		require.NoError(t, err)
+
+		require.Len(t, params.Processors, 1)
+
+		// Test decoration
+		result := params.Processors["base"].Process("test")
+		assert.Equal(t, "[DECORATED] base: test", result)
+	})
+
+	t.Run("decoration preserves map keys", func(t *testing.T) {
+		t.Parallel()
+
+		type DecorationInput struct {
+			fx.In
+			Processors map[string]testProcessor `group:"processors"`
+		}
+
+		type DecorationOutput struct {
+			fx.Out
+			Processors map[string]testProcessor `group:"processors"`
+		}
+
+		var decorationInputKeys []string
+		var decorationOutputKeys []string
+
+		decorateWithKeyTracking := func(input DecorationInput) DecorationOutput {
+			decorationInputKeys = make([]string, 0, len(input.Processors))
+			for key := range input.Processors {
+				decorationInputKeys = append(decorationInputKeys, key)
+			}
+
+			enhanced := make(map[string]testProcessor)
+			for name, processor := range input.Processors {
+				enhanced[name] = &testEnhancedProcessor{
+					wrapped: processor,
+					prefix:  "[TRACKED]",
+				}
+			}
+
+			decorationOutputKeys = make([]string, 0, len(enhanced))
+			for key := range enhanced {
+				decorationOutputKeys = append(decorationOutputKeys, key)
+			}
+
+			return DecorationOutput{Processors: enhanced}
+		}
+
+		type FinalParams struct {
+			fx.In
+			Processors map[string]testProcessor `group:"processors"`
+		}
+
+		var params FinalParams
+		app := NewForTest(t,
+			fx.Provide(
+				fx.Annotate(
+					func() testProcessor { return &testBasicProcessor{name: "alpha"} },
+					fx.ResultTags(`name:"alpha" group:"processors"`),
+				),
+				fx.Annotate(
+					func() testProcessor { return &testBasicProcessor{name: "beta"} },
+					fx.ResultTags(`name:"beta" group:"processors"`),
+				),
+				fx.Annotate(
+					func() testProcessor { return &testBasicProcessor{name: "gamma"} },
+					fx.ResultTags(`name:"gamma" group:"processors"`),
+				),
+			),
+			fx.Decorate(decorateWithKeyTracking),
+			fx.Populate(&params),
+		)
+
+		err := app.Start(context.Background())
+		defer app.Stop(context.Background())
+		require.NoError(t, err)
+
+		require.Len(t, params.Processors, 3)
+
+		// Verify keys are preserved through decoration
+		assert.ElementsMatch(t, []string{"alpha", "beta", "gamma"}, decorationInputKeys)
+		assert.ElementsMatch(t, []string{"alpha", "beta", "gamma"}, decorationOutputKeys)
+
+		// Verify final map has correct keys
+		finalKeys := make([]string, 0, len(params.Processors))
+		for key := range params.Processors {
+			finalKeys = append(finalKeys, key)
+		}
+		assert.ElementsMatch(t, []string{"alpha", "beta", "gamma"}, finalKeys)
 	})
 }
