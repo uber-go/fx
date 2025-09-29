@@ -163,6 +163,9 @@ nav:
       - value-groups/index.md
       - value-groups/feed.md
       - value-groups/consume.md
+      - Maps:
+        - value-groups/maps/feed.md
+        - value-groups/maps/consume.md
   - FAQ: faq.md
   - Community:
     - Contributing: contributing.md
