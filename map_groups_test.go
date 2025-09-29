@@ -444,4 +444,28 @@ func TestMapValueGroupsEdgeCases(t *testing.T) {
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "every entry in a map value groups must have a name")
 	})
+
+	t.Run("invalid map key types should fail", func(t *testing.T) {
+		t.Parallel()
+
+		type InvalidKeyParams struct {
+			fx.In
+			Services map[int]testSimpleService `group:"services"`
+		}
+
+		var params InvalidKeyParams
+		app := NewForTest(t,
+			fx.Provide(
+				fx.Annotate(
+					func() testSimpleService { return &testBasicService{name: "test"} },
+					fx.ResultTags(`name:"test" group:"services"`),
+				),
+			),
+			fx.Populate(&params),
+		)
+
+		err := app.Err()
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "value groups may be consumed as slices or string-keyed maps only")
+	})
 }
