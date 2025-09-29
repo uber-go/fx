@@ -468,5 +468,60 @@ func TestMapValueGroupsEdgeCases(t *testing.T) {
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "value groups may be consumed as slices or string-keyed maps only")
 	})
+
+	t.Run("mixed consumption patterns", func(t *testing.T) {
+		t.Parallel()
+
+		var mapServices map[string]testSimpleService
+		var sliceServices []testSimpleService
+
+		app := fxtest.New(t,
+			fx.Provide(
+				// Named services for map consumption
+				fx.Annotate(
+					func() testSimpleService { return &testBasicService{name: "auth-service"} },
+					fx.ResultTags(`name:"auth" group:"services"`),
+				),
+				fx.Annotate(
+					func() testSimpleService { return &testBasicService{name: "billing-service"} },
+					fx.ResultTags(`name:"billing" group:"services"`),
+				),
+				fx.Annotate(
+					func() testSimpleService { return &testBasicService{name: "metrics-service"} },
+					fx.ResultTags(`name:"metrics" group:"services"`),
+				),
+			),
+			fx.Invoke(fx.Annotate(
+				func(services map[string]testSimpleService) {
+					mapServices = services
+				},
+				fx.ParamTags(`group:"services"`),
+			)),
+			fx.Invoke(fx.Annotate(
+				func(services []testSimpleService) {
+					sliceServices = services
+				},
+				fx.ParamTags(`group:"services"`),
+			)),
+		)
+		defer app.RequireStart().RequireStop()
+
+		// Map consumption should work with named services
+		require.Len(t, mapServices, 3)
+		require.Contains(t, mapServices, "auth")
+		require.Contains(t, mapServices, "billing")
+		require.Contains(t, mapServices, "metrics")
+		assert.Equal(t, "auth-service", mapServices["auth"].GetName())
+		assert.Equal(t, "billing-service", mapServices["billing"].GetName())
+		assert.Equal(t, "metrics-service", mapServices["metrics"].GetName())
+
+		// Slice consumption should also work with the same services
+		require.Len(t, sliceServices, 3)
+		serviceNames := make([]string, len(sliceServices))
+		for i, service := range sliceServices {
+			serviceNames[i] = service.GetName()
+		}
+		assert.ElementsMatch(t, []string{"auth-service", "billing-service", "metrics-service"}, serviceNames)
+	})
 }
 
