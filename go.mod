@@ -17,4 +17,4 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
-replace go.uber.org/dig => github.com/jquirke/dig v0.0.0-20250929003136-0b0022552f09
+replace go.uber.org/dig => github.com/jquirke/dig v0.0.0-20250929071627-bc17fef680e7

@@ -236,6 +236,56 @@ func TestDecorateSuccess(t *testing.T) {
 		require.NoError(t, app.Err())
 	})
 
+	t.Run("decorator with soft map group", func(t *testing.T) {
+		app := fxtest.New(t,
+			fx.Provide(
+				fx.Annotate(
+					func() (string, int) { return "cheeseburger", 15 },
+					fx.ResultTags(`name:"cheese" group:"burger"`, `name:"cheese" group:"potato"`),
+				),
+			),
+			fx.Provide(
+				fx.Annotate(
+					func() (string, int) { return "mushroomburger", 35 },
+					fx.ResultTags(`name:"mushroom" group:"burger"`, `name:"mushroom" group:"potato"`),
+				),
+			),
+			fx.Provide(
+				fx.Annotate(
+					func() string {
+						require.FailNow(t, "should not be called")
+						return "veggieburger"
+					},
+					fx.ResultTags(`name:"veggie" group:"burger"`, `name:"veggie" group:"potato"`),
+				),
+			),
+			fx.Decorate(
+				fx.Annotate(
+					func(burgers map[string]string) map[string]string {
+						retBurg := make(map[string]string)
+						for key, burger := range burgers {
+							retBurg[key] = strings.ToUpper(burger)
+						}
+						return retBurg
+					},
+					fx.ParamTags(`group:"burger,soft"`),
+					fx.ResultTags(`group:"burger"`),
+				),
+			),
+			fx.Invoke(
+				fx.Annotate(
+					func(burgers map[string]string, fries map[string]int) {
+						expected := map[string]string{"cheese": "CHEESEBURGER", "mushroom": "MUSHROOMBURGER"}
+						assert.Equal(t, expected, burgers)
+					},
+					fx.ParamTags(`group:"burger,soft"`, `group:"potato"`),
+				),
+			),
+		)
+		defer app.RequireStart().RequireStop()
+		require.NoError(t, app.Err())
+	})
+
 	t.Run("decorator with optional parameter", func(t *testing.T) {
 		type Config struct {
 			Name string
