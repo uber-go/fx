@@ -469,3 +469,4 @@ func TestMapValueGroupsEdgeCases(t *testing.T) {
 		assert.Contains(t, err.Error(), "value groups may be consumed as slices or string-keyed maps only")
 	})
 }
+

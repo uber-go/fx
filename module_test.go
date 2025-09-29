@@ -722,3 +722,212 @@ func TestModuleFailures(t *testing.T) {
 		}
 	})
 }
+
+// Test types for map value groups in modules
+type moduleTestSimpleService interface {
+	GetName() string
+}
+
+type moduleTestBasicService struct {
+	name string
+}
+
+func (b *moduleTestBasicService) GetName() string {
+	return b.name
+}
+
+type moduleTestHandler interface {
+	Handle(data string) string
+}
+
+type moduleTestEmailHandler struct{}
+
+func (e *moduleTestEmailHandler) Handle(data string) string {
+	return "email: " + data
+}
+
+type moduleTestSlackHandler struct{}
+
+func (s *moduleTestSlackHandler) Handle(data string) string {
+	return "slack: " + data
+}
+
+// TestModuleMapValueGroups tests map value groups across module boundaries
+func TestModuleMapValueGroups(t *testing.T) {
+	t.Parallel()
+
+	t.Run("map consumption across modules", func(t *testing.T) {
+		t.Parallel()
+
+		type ModuleParams struct {
+			fx.In
+			Services map[string]moduleTestSimpleService `group:"services"`
+		}
+
+		// Child module provides services
+		childModule := fx.Module("child",
+			fx.Provide(
+				fx.Annotate(
+					func() moduleTestSimpleService { return &moduleTestBasicService{name: "child-auth"} },
+					fx.ResultTags(`name:"auth" group:"services"`),
+				),
+				fx.Annotate(
+					func() moduleTestSimpleService { return &moduleTestBasicService{name: "child-billing"} },
+					fx.ResultTags(`name:"billing" group:"services"`),
+				),
+			),
+		)
+
+		// Parent level provides more services
+		var params ModuleParams
+		app := fxtest.New(t,
+			childModule,
+			fx.Provide(
+				fx.Annotate(
+					func() moduleTestSimpleService { return &moduleTestBasicService{name: "parent-metrics"} },
+					fx.ResultTags(`name:"metrics" group:"services"`),
+				),
+			),
+			fx.Populate(&params),
+		)
+		defer app.RequireStart().RequireStop()
+
+		// Should see services from both child module and parent level
+		require.Len(t, params.Services, 3)
+		assert.Equal(t, "child-auth", params.Services["auth"].GetName())
+		assert.Equal(t, "child-billing", params.Services["billing"].GetName())
+		assert.Equal(t, "parent-metrics", params.Services["metrics"].GetName())
+	})
+
+	t.Run("nested modules with map groups", func(t *testing.T) {
+		t.Parallel()
+
+		type NestedParams struct {
+			fx.In
+			Handlers map[string]moduleTestHandler `group:"handlers"`
+		}
+
+		// Deeply nested modules
+		innerModule := fx.Module("inner",
+			fx.Provide(
+				fx.Annotate(
+					func() moduleTestHandler { return &moduleTestEmailHandler{} },
+					fx.ResultTags(`name:"email" group:"handlers"`),
+				),
+			),
+		)
+
+		middleModule := fx.Module("middle",
+			innerModule,
+			fx.Provide(
+				fx.Annotate(
+					func() moduleTestHandler { return &moduleTestSlackHandler{} },
+					fx.ResultTags(`name:"slack" group:"handlers"`),
+				),
+			),
+		)
+
+		var params NestedParams
+		app := fxtest.New(t,
+			middleModule,
+			fx.Provide(
+				fx.Annotate(
+					func() moduleTestHandler { return &moduleTestEmailHandler{} },
+					fx.ResultTags(`name:"webhook" group:"handlers"`),
+				),
+			),
+			fx.Populate(&params),
+		)
+		defer app.RequireStart().RequireStop()
+
+		require.Len(t, params.Handlers, 3)
+		assert.Contains(t, params.Handlers, "email")
+		assert.Contains(t, params.Handlers, "slack")
+		assert.Contains(t, params.Handlers, "webhook")
+	})
+
+	t.Run("modules see global group state", func(t *testing.T) {
+		t.Parallel()
+
+		var childServices map[string]moduleTestSimpleService
+		var parentServices map[string]moduleTestSimpleService
+
+		childModule := fx.Module("child",
+			fx.Provide(
+				fx.Annotate(
+					func() moduleTestSimpleService { return &moduleTestBasicService{name: "child-service"} },
+					fx.ResultTags(`name:"child" group:"services"`),
+				),
+			),
+			fx.Invoke(fx.Annotate(
+				func(services map[string]moduleTestSimpleService) {
+					childServices = services
+				},
+				fx.ParamTags(`group:"services"`),
+			)),
+		)
+
+		app := fxtest.New(t,
+			childModule,
+			fx.Provide(
+				fx.Annotate(
+					func() moduleTestSimpleService { return &moduleTestBasicService{name: "parent-service"} },
+					fx.ResultTags(`name:"parent" group:"services"`),
+				),
+			),
+			fx.Invoke(fx.Annotate(
+				func(services map[string]moduleTestSimpleService) {
+					parentServices = services
+				},
+				fx.ParamTags(`group:"services"`),
+			)),
+		)
+		defer app.RequireStart().RequireStop()
+
+		// Both child and parent should see all services (fx groups are global)
+		require.Len(t, childServices, 2)
+		assert.Contains(t, childServices, "child")
+		assert.Contains(t, childServices, "parent")
+		assert.Equal(t, "child-service", childServices["child"].GetName())
+
+		require.Len(t, parentServices, 2)
+		assert.Contains(t, parentServices, "child")
+		assert.Contains(t, parentServices, "parent")
+		assert.Equal(t, "parent-service", parentServices["parent"].GetName())
+	})
+
+	t.Run("name conflicts across modules should fail", func(t *testing.T) {
+		t.Parallel()
+
+		childModule := fx.Module("child",
+			fx.Provide(
+				fx.Annotate(
+					func() moduleTestSimpleService { return &moduleTestBasicService{name: "child-version"} },
+					fx.ResultTags(`name:"service" group:"services"`),
+				),
+			),
+		)
+
+		type ConflictParams struct {
+			fx.In
+			Services map[string]moduleTestSimpleService `group:"services"`
+		}
+
+		var params ConflictParams
+		app := NewForTest(t,
+			childModule,
+			fx.Provide(
+				fx.Annotate(
+					func() moduleTestSimpleService { return &moduleTestBasicService{name: "parent-version"} },
+					fx.ResultTags(`name:"service" group:"services"`), // Same name as child
+				),
+			),
+			fx.Populate(&params),
+		)
+
+		// Should fail due to duplicate names across modules
+		err := app.Err()
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "already provided")
+	})
+}
