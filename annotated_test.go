@@ -1226,6 +1226,36 @@ func TestAnnotate(t *testing.T) {
 		require.NoError(t, app.Err())
 	})
 
+	t.Run("Invoke function with soft map group param", func(t *testing.T) {
+		t.Parallel()
+		newF := func(fooMap map[string]int, bar string) {
+			expected := map[string]int{"executed": 10}
+			assert.Equal(t, expected, fooMap)
+			assert.Equal(t, "hello", bar)
+		}
+		app := fxtest.New(t,
+			fx.Provide(
+				fx.Annotate(
+					func() (int, string) { return 10, "hello" },
+					fx.ResultTags(`name:"executed" group:"foos"`, ``),
+				),
+				fx.Annotate(
+					func() int {
+						require.FailNow(t, "this function should not be called")
+						return 20
+					},
+					fx.ResultTags(`name:"not_executed" group:"foos"`),
+				),
+			),
+			fx.Invoke(
+				fx.Annotate(newF, fx.ParamTags(`group:"foos,soft"`, ``)),
+			),
+		)
+
+		defer app.RequireStart().RequireStop()
+		require.NoError(t, app.Err())
+	})
+
 	t.Run("Invoke variadic function with multiple params", func(t *testing.T) {
 		t.Parallel()
 

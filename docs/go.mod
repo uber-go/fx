@@ -18,3 +18,5 @@ require (
 )
 
 replace go.uber.org/fx => ../
+
+replace go.uber.org/dig => github.com/jquirke/dig v0.0.0-20250929071627-bc17fef680e7
