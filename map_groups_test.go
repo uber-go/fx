@@ -419,7 +419,7 @@ func TestMapValueGroupsEdgeCases(t *testing.T) {
 		type MixedParams struct {
 			fx.In
 			Services     map[string]testSimpleService `group:"mixed"`
-			ServiceSlice []testSimpleService           `group:"mixed"`
+			ServiceSlice []testSimpleService          `group:"mixed"`
 		}
 
 		var params MixedParams
@@ -523,5 +523,64 @@ func TestMapValueGroupsEdgeCases(t *testing.T) {
 		}
 		assert.ElementsMatch(t, []string{"auth-service", "billing-service", "metrics-service"}, serviceNames)
 	})
-}
 
+	t.Run("fx.Out struct with name and group tags", func(t *testing.T) {
+		t.Parallel()
+
+		type LoggerResult struct {
+			fx.Out
+
+			ConsoleLogger mapTestLogger `name:"console" group:"loggers"`
+			FileLogger    mapTestLogger `name:"file" group:"loggers"`
+		}
+
+		type LoggerParams struct {
+			fx.In
+
+			// Individual named access
+			ConsoleLogger mapTestLogger `name:"console"`
+			FileLogger    mapTestLogger `name:"file"`
+			// Map access via group
+			LoggerMap map[string]mapTestLogger `group:"loggers"`
+			// Slice access via group
+			LoggerSlice []mapTestLogger `group:"loggers"`
+		}
+
+		var params LoggerParams
+		app := fxtest.New(t,
+			fx.Provide(func() LoggerResult {
+				return LoggerResult{
+					ConsoleLogger: &mapTestConsoleLogger{name: "console"},
+					FileLogger:    &mapTestFileLogger{name: "file"},
+				}
+			}),
+			fx.Populate(&params),
+		)
+		defer app.RequireStart().RequireStop()
+
+		// Test individual named access
+		require.NotNil(t, params.ConsoleLogger)
+		require.NotNil(t, params.FileLogger)
+		assert.Equal(t, "console", params.ConsoleLogger.Name())
+		assert.Equal(t, "file", params.FileLogger.Name())
+
+		// Test map access - should contain both with their names as keys
+		require.Len(t, params.LoggerMap, 2)
+		assert.Contains(t, params.LoggerMap, "console")
+		assert.Contains(t, params.LoggerMap, "file")
+		assert.Equal(t, "console", params.LoggerMap["console"].Name())
+		assert.Equal(t, "file", params.LoggerMap["file"].Name())
+
+		// Test slice access - should contain both values
+		require.Len(t, params.LoggerSlice, 2)
+		names := make([]string, 0, 2)
+		for _, logger := range params.LoggerSlice {
+			names = append(names, logger.Name())
+		}
+		assert.ElementsMatch(t, []string{"console", "file"}, names)
+
+		// Verify same instances across access patterns
+		assert.Same(t, params.ConsoleLogger, params.LoggerMap["console"])
+		assert.Same(t, params.FileLogger, params.LoggerMap["file"])
+	})
+}

@@ -254,7 +254,8 @@
 // be consumed in multiple ways: individually by name, as a slice for iteration,
 // or as a map for direct key-based access.
 //
-// To provide named values to a group, use both name and group tags:
+// To provide named values to a group, use both name and group annotations.
+// This can be done with fx.Out struct tags:
 //
 //	type NamedHandlerResult struct {
 //		fx.Out
@@ -263,12 +264,14 @@
 //		UserHandler  Handler `name:"user" group:"server"`
 //	}
 //
-// Or with fx.Annotate:
+// Or equivalently with fx.Annotate and fx.ResultTags:
 //
 //	fx.Provide(
 //		fx.Annotate(NewAdminHandler, fx.ResultTags(`name:"admin" group:"server"`)),
 //		fx.Annotate(NewUserHandler, fx.ResultTags(`name:"user" group:"server"`)),
 //	)
+//
+// Both approaches provide the same functionality and can be used interchangeably.
 //
 // Named value groups support multiple consumption patterns:
 //
