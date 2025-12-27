@@ -73,7 +73,7 @@
 //		// ...
 //	}
 //
-// Though it's rarelly necessary to mix the two, constructors can receive any
+// Though it's rarely necessary to mix the two, constructors can receive any
 // combination of parameter structs and parameters.
 //
 //	func NewHandler(p HandlerParams, l *log.Logger) *Handler {
@@ -252,7 +252,7 @@
 // By default, when a constructor declares a dependency on a value group,
 // all values provided to that value group are eagerly instantiated.
 // That is undesirable for cases where an optional component wants to
-// constribute to a value group, but only if it was actually used
+// contribute to a value group, but only if it was actually used
 // by the rest of the application.
 //
 // A soft value group can be thought of as a best-attempt at populating the
