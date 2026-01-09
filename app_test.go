@@ -329,7 +329,7 @@ func TestNewApp(t *testing.T) {
 		//     cannot provide fx_test.t1[name="foo"] from [0].Field0:
 		//     already provided by "reflect".makeFuncStub (/.../reflect/asm_amd64.s:30)
 		assert.Contains(t, err.Error(), `fx.Provide(fx.Annotate(`)
-		assert.Contains(t, err.Error(), `fx.ResultTags(["name:\"foo\""])`)
+		assert.Contains(t, err.Error(), `fx.ResultTags([["name:\"foo\""]])`)
 		assert.Contains(t, err.Error(), "already provided")
 	})
 
