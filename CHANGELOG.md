@@ -11,7 +11,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
-- No changes yet.
+
+### Added
+- Support for map value groups consumption via `map[string]T` for named value groups,
+  enabling both individual named access and map-based access to the same providers.
+- Comprehensive test coverage for map value groups functionality including decoration,
+  edge cases, and validation of slice decorator restrictions.
 
 ## [1.24.0](https://github.com/uber-go/fx/compare/v1.23.0...v1.24.0) - 2025-05-13
 

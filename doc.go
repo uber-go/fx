@@ -247,6 +247,65 @@
 // Note that values in a value group are unordered. Fx makes no guarantees
 // about the order in which these values will be produced.
 //
+// # Named Value Groups and Map Consumption
+//
+// Value groups can be enhanced with names to enable more flexible consumption
+// patterns. When values are provided with both names and group tags, they can
+// be consumed in multiple ways: individually by name, as a slice for iteration,
+// or as a map for direct key-based access.
+//
+// To provide named values to a group, use both name and group annotations.
+// This can be done with fx.Out struct tags:
+//
+//	type NamedHandlerResult struct {
+//		fx.Out
+//
+//		AdminHandler Handler `name:"admin" group:"server"`
+//		UserHandler  Handler `name:"user" group:"server"`
+//	}
+//
+// Or equivalently with fx.Annotate and fx.ResultTags:
+//
+//	fx.Provide(
+//		fx.Annotate(NewAdminHandler, fx.ResultTags(`name:"admin" group:"server"`)),
+//		fx.Annotate(NewUserHandler, fx.ResultTags(`name:"user" group:"server"`)),
+//	)
+//
+// Both approaches provide the same functionality and can be used interchangeably.
+//
+// Named value groups support multiple consumption patterns:
+//
+//	type ServerParams struct {
+//		fx.In
+//
+//		// Map consumption - direct access by name
+//		HandlerMap   map[string]Handler `group:"server"`
+//		// Slice consumption - for iteration
+//		HandlerSlice []Handler          `group:"server"`
+//		// Individual access by name
+//		AdminHandler Handler            `name:"admin"`
+//	}
+//
+//	func NewServer(p ServerParams) *Server {
+//		server := newServer()
+//
+//		// Use map for direct access
+//		if admin, ok := p.HandlerMap["admin"]; ok {
+//			server.SetAdminHandler(admin)
+//		}
+//
+//		// Use slice for iteration
+//		for _, handler := range p.HandlerSlice {
+//			server.Register(handler)
+//		}
+//
+//		return server
+//	}
+//
+// Map consumption is only available for named value groups. All values in
+// the group must have names, and only string-keyed maps (map[string]T) are
+// supported.
+//
 // # Soft Value Groups
 //
 // By default, when a constructor declares a dependency on a value group,

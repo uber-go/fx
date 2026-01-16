@@ -16,3 +16,5 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
+
+replace go.uber.org/dig => github.com/jquirke/dig v0.0.0-20250929071627-bc17fef680e7

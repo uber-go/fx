@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:github.com)",
+      "Bash(gh issue view:*)",
+      "Bash(go test:*)",
+      "Bash(go run:*)",
+      "Bash(go mod why:*)",
+      "Bash(go list:*)",
+      "Read(//Users/qjeremy/go/pkg/mod/github.com/jquirke/dig@v0.0.0-20250929003136-0b0022552f09/**)",
+      "Read(//Users/qjeremy/github/jquirke/**)",
+      "Bash(git checkout:*)",
+      "Bash(sed:*)",
+      "Bash(go vet:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
