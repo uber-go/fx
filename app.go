@@ -159,7 +159,7 @@ func (t stopTimeoutOption) String() string {
 }
 
 // ExitDelay changes the application's exit delay.
-// This controls how long Fx waits before calling os.Exit when exit code 1 is returned.
+// This controls how long Fx waits before calling os.Exit when exit code other than 0 is returned.
 // Defaults to zero (no delay).
 func ExitDelay(v time.Duration) Option {
 	return exitDelayOption(v)
@@ -330,7 +330,7 @@ type App struct {
 	// Timeouts used
 	startTimeout time.Duration
 	stopTimeout  time.Duration
-	// Delay to wait before calling os.Exit when exit code 1 is returned.
+	// Delay to wait before calling os.Exit when exit code other than 0 is returned.
 	exitDelay time.Duration
 	// Decides how we react to errors when building the graph.
 	errorHooks []ErrorHandler
