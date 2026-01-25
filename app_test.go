@@ -1453,6 +1453,82 @@ func TestAppRunTimeout(t *testing.T) {
 	}
 }
 
+// sleepRecordingClock is a fxclock.Clock that records sleep calls via a channel.
+type sleepRecordingClock struct {
+	mock        *fxclock.Mock
+	sleepCalled chan time.Duration
+}
+
+func (s *sleepRecordingClock) Now() time.Time {
+	return s.mock.Now()
+}
+
+func (s *sleepRecordingClock) Since(t time.Time) time.Duration {
+	return s.mock.Since(t)
+}
+
+func (s *sleepRecordingClock) Sleep(d time.Duration) {
+	s.sleepCalled <- d
+	s.mock.Sleep(d)
+}
+
+func (s *sleepRecordingClock) WithTimeout(ctx context.Context, d time.Duration) (context.Context, context.CancelFunc) {
+	return s.mock.WithTimeout(ctx, d)
+}
+
+func TestExitDelay(t *testing.T) {
+	t.Parallel()
+
+	mockClock := fxclock.NewMock()
+	sleepCh := make(chan time.Duration, 1)
+	spy := &sleepRecordingClock{
+		mock:        mockClock,
+		sleepCalled: sleepCh,
+	}
+
+	var exitCalled bool
+	var exitCode int
+
+	exit := func(code int) {
+		exitCalled = true
+		exitCode = code
+	}
+
+	delay := 5 * time.Second
+
+	app := New(
+		ExitDelay(delay),
+		WithExit(exit),
+		WithClock(spy),
+		Invoke(func(s Shutdowner, lc Lifecycle) {
+			lc.Append(Hook{
+				OnStart: func(ctx context.Context) error {
+					return s.Shutdown(ExitCode(1))
+				},
+			})
+		}),
+	)
+
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		app.Run()
+	}()
+
+	// Wait for Sleep to be invoked for the ExitDelay.
+	d := <-sleepCh
+	require.Equal(t, delay, d, "expected ExitDelay to be used")
+
+	assert.False(t, exitCalled, "exit should not be called while sleeping")
+
+	// Allow the sleep to finish by advancing the mock clock.
+	mockClock.Add(d)
+
+	<-done
+	assert.True(t, exitCalled)
+	assert.Equal(t, 1, exitCode)
+}
+
 func TestAppStart(t *testing.T) {
 	t.Parallel()
 
@@ -2679,6 +2755,11 @@ func TestOptionString(t *testing.T) {
 			desc: "StopTimeout",
 			give: StopTimeout(5 * time.Second),
 			want: "fx.StopTimeout(5s)",
+		},
+		{
+			desc: "ExitDelay",
+			give: ExitDelay(5 * time.Second),
+			want: "fx.ExitDelay(5s)",
 		},
 		{
 			desc: "RecoverFromPanics",

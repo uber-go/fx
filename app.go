@@ -158,6 +158,28 @@ func (t stopTimeoutOption) String() string {
 	return fmt.Sprintf("fx.StopTimeout(%v)", time.Duration(t))
 }
 
+// ExitDelay changes the application's exit delay.
+// This controls how long Fx waits before calling os.Exit when exit code 1 is returned.
+// Defaults to zero (no delay).
+func ExitDelay(v time.Duration) Option {
+	return exitDelayOption(v)
+}
+
+type exitDelayOption time.Duration
+
+func (t exitDelayOption) apply(m *module) {
+	if m.parent != nil {
+		m.app.err = fmt.Errorf("fx.ExitDelay Option should be passed to top-level App, " +
+			"not to fx.Module")
+	} else {
+		m.app.exitDelay = time.Duration(t)
+	}
+}
+
+func (t exitDelayOption) String() string {
+	return fmt.Sprintf("fx.ExitDelay(%v)", time.Duration(t))
+}
+
 // RecoverFromPanics causes panics that occur in functions given to [Provide],
 // [Decorate], and [Invoke] to be recovered from.
 // This error can be retrieved as any other error, by using (*App).Err().
@@ -308,6 +330,8 @@ type App struct {
 	// Timeouts used
 	startTimeout time.Duration
 	stopTimeout  time.Duration
+	// Delay to wait before calling os.Exit when exit code 1 is returned.
+	exitDelay time.Duration
 	// Decides how we react to errors when building the graph.
 	errorHooks []ErrorHandler
 	validate   bool
@@ -598,6 +622,12 @@ func (app *App) Run() {
 	// cede control to Fx with they call app.Run. To avoid a breaking
 	// change, never os.Exit for success.
 	if code := app.run(app.Wait); code != 0 {
+		// If exit delay is configured, give the
+		// application a moment to flush buffered logs or perform other
+		// shutdown-related work before calling os.Exit.
+		if app.ExitDelay() > 0 {
+			app.clock.Sleep(app.ExitDelay())
+		}
 		app.exit(code)
 	}
 }
@@ -766,6 +796,13 @@ func (app *App) StartTimeout() time.Duration {
 // [StopTimeout] option.
 func (app *App) StopTimeout() time.Duration {
 	return app.stopTimeout
+}
+
+// ExitDelay returns the configured exit delay.
+// This defaults to zero (no delay) and can be changed with the
+// [ExitDelay] option.
+func (app *App) ExitDelay() time.Duration {
+	return app.exitDelay
 }
 
 func (app *App) dotGraph() (DotGraph, error) {
