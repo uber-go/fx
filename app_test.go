@@ -1479,54 +1479,94 @@ func (s *sleepRecordingClock) WithTimeout(ctx context.Context, d time.Duration) 
 func TestExitDelay(t *testing.T) {
 	t.Parallel()
 
-	mockClock := fxclock.NewMock()
-	sleepCh := make(chan time.Duration, 1)
-	spy := &sleepRecordingClock{
-		mock:        mockClock,
-		sleepCalled: sleepCh,
+	tests := []struct {
+		name             string
+		exitCode         int
+		expectDelayApply bool
+	}{
+		{
+			name:             "non-zero exit code applies delay",
+			exitCode:         1,
+			expectDelayApply: true,
+		},
+		{
+			name:             "zero exit code does not apply delay",
+			exitCode:         0,
+			expectDelayApply: false,
+		},
 	}
 
-	var exitCalled bool
-	var exitCode int
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 
-	exit := func(code int) {
-		exitCalled = true
-		exitCode = code
+			mockClock := fxclock.NewMock()
+			sleepCh := make(chan time.Duration, 1)
+			spy := &sleepRecordingClock{
+				mock:        mockClock,
+				sleepCalled: sleepCh,
+			}
+
+			var exitCalled bool
+			var exitCode int
+
+			exit := func(code int) {
+				exitCalled = true
+				exitCode = code
+			}
+
+			delay := 5 * time.Second
+
+			app := New(
+				ExitDelay(delay),
+				WithExit(exit),
+				WithClock(spy),
+				Invoke(func(s Shutdowner, lc Lifecycle) {
+					lc.Append(Hook{
+						OnStart: func(ctx context.Context) error {
+							return s.Shutdown(ExitCode(tt.exitCode))
+						},
+					})
+				}),
+			)
+
+			done := make(chan struct{})
+			go func() {
+				defer close(done)
+				app.Run()
+			}()
+
+			if tt.expectDelayApply {
+				// Wait for Sleep to be invoked for the ExitDelay.
+				d := <-sleepCh
+				require.Equal(t, delay, d, "expected ExitDelay to be used")
+
+				assert.False(t, exitCalled, "exit should not be called while sleeping")
+
+				// Allow the sleep to finish by advancing the mock clock.
+				mockClock.Add(d)
+			}
+
+			<-done
+
+			if tt.expectDelayApply {
+				// For non-zero exit codes, exit should be called
+				assert.True(t, exitCalled)
+				assert.Equal(t, tt.exitCode, exitCode)
+			} else {
+				// For zero exit code, exit should NOT be called
+				assert.False(t, exitCalled, "exit should not be called for zero exit code")
+
+				// Verify that Sleep was not called for zero exit code
+				select {
+				case d := <-sleepCh:
+					t.Errorf("expected no sleep for zero exit code, but Sleep was called with duration: %v", d)
+				default:
+					// Expected: no sleep call to zero exit code.
+				}
+			}
+		})
 	}
-
-	delay := 5 * time.Second
-
-	app := New(
-		ExitDelay(delay),
-		WithExit(exit),
-		WithClock(spy),
-		Invoke(func(s Shutdowner, lc Lifecycle) {
-			lc.Append(Hook{
-				OnStart: func(ctx context.Context) error {
-					return s.Shutdown(ExitCode(1))
-				},
-			})
-		}),
-	)
-
-	done := make(chan struct{})
-	go func() {
-		defer close(done)
-		app.Run()
-	}()
-
-	// Wait for Sleep to be invoked for the ExitDelay.
-	d := <-sleepCh
-	require.Equal(t, delay, d, "expected ExitDelay to be used")
-
-	assert.False(t, exitCalled, "exit should not be called while sleeping")
-
-	// Allow the sleep to finish by advancing the mock clock.
-	mockClock.Add(d)
-
-	<-done
-	assert.True(t, exitCalled)
-	assert.Equal(t, 1, exitCode)
 }
 
 func TestAppStart(t *testing.T) {

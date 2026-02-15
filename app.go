@@ -159,7 +159,7 @@ func (t stopTimeoutOption) String() string {
 }
 
 // ExitDelay changes the application's exit delay.
-// This controls how long Fx waits before calling os.Exit when exit code other than 0 is returned.
+// This controls how long Fx waits before calling os.Exit when a non-zero exit code is returned.
 // Defaults to zero (no delay).
 func ExitDelay(v time.Duration) Option {
 	return exitDelayOption(v)
