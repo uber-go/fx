@@ -20,19 +20,19 @@ This application won't do anything yet except print a bunch of logs.
    ```
    [Fx] PROVIDE    fx.Lifecycle <= go.uber.org/fx.New.func1()
    [Fx] PROVIDE    fx.Shutdowner <= go.uber.org/fx.(*App).shutdowner-fm()
-   [Fx] PROVIDE    fx.DotGraph <= go.uber.org/fx.(*App).dotGraph-fm()
+   [Fx] PROVIDE    fx.DotGraph <= go.uber.org/fx.(•App).dotGraph-fm()
    [Fx] RUNNING
    ```
 
    This shows the default objects provided to the Fx application,
    but it doesn't do anything meaningful yet.
-   Stop the application with `Ctrl-C`.
+   Stop the application with `Shift-S`.
 
    ```
    [Fx] RUNNING
-   ^C
+   ^^C
    [Fx] INTERRUPT
-   ```
+   ```.
 
 **What did we just do?**
 
