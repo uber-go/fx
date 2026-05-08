@@ -267,6 +267,7 @@ func (pt paramTagsAnnotation) parameters(ann *annotated) (
 	types []reflect.Type,
 	remap func([]reflect.Value) []reflect.Value,
 ) {
+	tags := ann.ParamTags
 	ft := reflect.TypeOf(ann.Target)
 	types = make([]reflect.Type, ft.NumIn())
 	for i := 0; i < ft.NumIn(); i++ {
@@ -275,7 +276,7 @@ func (pt paramTagsAnnotation) parameters(ann *annotated) (
 
 	// No parameter annotations. Return the original types
 	// and an identity function.
-	if len(pt.tags) == 0 {
+	if len(tags) == 0 {
 		return types, func(args []reflect.Value) []reflect.Value {
 			return args
 		}
@@ -295,8 +296,8 @@ func (pt paramTagsAnnotation) parameters(ann *annotated) (
 				Type: origField.Type,
 				Tag:  origField.Tag,
 			}
-			if i-1 < len(pt.tags) {
-				field.Tag = reflect.StructTag(pt.tags[i-1])
+			if i-1 < len(tags) {
+				field.Tag = reflect.StructTag(tags[i-1])
 			}
 
 			inFields = append(inFields, field)
@@ -318,8 +319,8 @@ func (pt paramTagsAnnotation) parameters(ann *annotated) (
 			Name: fmt.Sprintf("Field%d", i),
 			Type: t,
 		}
-		if i < len(pt.tags) {
-			field.Tag = reflect.StructTag(pt.tags[i])
+		if i < len(tags) {
+			field.Tag = reflect.StructTag(tags[i])
 		}
 
 		inFields = append(inFields, field)
@@ -409,6 +410,7 @@ func (rt resultTagsAnnotation) results(ann *annotated) (
 	types []reflect.Type,
 	remap func([]reflect.Value) []reflect.Value,
 ) {
+	tags := ann.ResultTags
 	types, hasError := ann.currentResultTypes()
 
 	if hasError {
@@ -417,7 +419,7 @@ func (rt resultTagsAnnotation) results(ann *annotated) (
 
 	// No result annotations. Return the original types
 	// and an identity function.
-	if len(rt.tags) == 0 {
+	if len(tags) == 0 {
 		return types, func(results []reflect.Value) []reflect.Value {
 			return results
 		}
@@ -441,8 +443,8 @@ func (rt resultTagsAnnotation) results(ann *annotated) (
 				Name: fmt.Sprintf("Field%d", i),
 				Type: t,
 			}
-			if i < len(rt.tags) {
-				field.Tag = reflect.StructTag(rt.tags[i])
+			if i < len(tags) {
+				field.Tag = reflect.StructTag(tags[i])
 			}
 			newOut.Offsets = append(newOut.Offsets, len(newOut.Fields))
 			newOut.Fields = append(newOut.Fields, field)
@@ -452,7 +454,7 @@ func (rt resultTagsAnnotation) results(ann *annotated) (
 		// apply the tags to the existing type
 		taggedFields := make([]reflect.StructField, t.NumField())
 		taggedFields[0] = _outAnnotationField
-		for j, tag := range rt.tags {
+		for j, tag := range tags {
 			if j+1 < t.NumField() {
 				field := t.Field(j + 1)
 				taggedFields[j+1] = reflect.StructField{
