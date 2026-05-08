@@ -248,6 +248,10 @@ func (pt paramTagsAnnotation) apply(ann *annotated) error {
 
 // build builds and returns a constructor after applying a ParamTags annotation
 func (pt paramTagsAnnotation) build(ann *annotated) (any, error) {
+	if ann.paramTagsBuilt {
+		return ann.Target, nil
+	}
+	ann.paramTagsBuilt = true
 	paramTypes, remap := pt.parameters(ann)
 	resultTypes, _ := ann.currentResultTypes()
 
@@ -352,6 +356,73 @@ func (pt paramTagsAnnotation) parameters(ann *annotated) (
 // parameter.
 func ParamTags(tags ...string) Annotation {
 	return paramTagsAnnotation{tags}
+}
+
+type genericParamTagAnnotation struct {
+	typ reflect.Type
+	tag string
+	nth int
+}
+
+var _ Annotation = genericParamTagAnnotation{}
+
+func (pt genericParamTagAnnotation) apply(ann *annotated) error {
+	if err := verifyAnnotateTag(pt.tag); err != nil {
+		return err
+	}
+
+	targetTyp := reflect.TypeOf(ann.Target)
+	if targetTyp == nil || targetTyp.Kind() != reflect.Func {
+		return fmt.Errorf("fx.ParamTag[%v]: must annotate a function, got %T", pt.typ, ann.Target)
+	}
+
+	idx, total := nthOfType(targetTyp, pt.typ, pt.nth, "in")
+
+	if total == 0 {
+		return fmt.Errorf("fx.ParamTag[%v]: %T has no parameters of type %v", pt.typ, ann.Target, pt.typ)
+	}
+	if idx < 0 {
+		return fmt.Errorf("fx.ParamTag[%v]: requested parameter #%d of type %v, but %T has only %d",
+			pt.typ, pt.nth, pt.typ, ann.Target, total)
+	}
+
+	ensureLen(&ann.ParamTags, targetTyp.NumIn())
+
+	if ann.ParamTags[idx] != "" {
+		return fmt.Errorf("fx.ParamTag[%v]: parameter %d of %T already has tag %q",
+			pt.typ, idx, ann.Target, ann.ParamTags[idx])
+	}
+
+	ann.ParamTags[idx] = pt.tag
+	return nil
+}
+
+func (pt genericParamTagAnnotation) build(ann *annotated) (any, error) {
+	return paramTagsAnnotation{}.build(ann) // delegate
+}
+
+// ParamTag is an Annotation that annotates a function parameter of type T.
+//
+// By default, it annotates the first such parameter. If there are multiple parameters of type T,
+// nth selects the 1-based occurrence to annotate.
+//
+// For example, this tags the second [*sql.DB] parameter:
+//
+//	fx.Annotate(constructor, fx.ParamTag[*sql.DB](`name:"ro"`, 2))
+//
+// Multiple ParamTag annotations may be applied to the same function as long as
+// they target different parameters.
+func ParamTag[T any](tag string, nth ...int) Annotation {
+	finalNth := 1
+	if len(nth) > 0 {
+		finalNth = nth[0]
+	}
+
+	return genericParamTagAnnotation{
+		typ: reflect.TypeFor[T](),
+		tag: tag,
+		nth: finalNth,
+	}
 }
 
 type resultTagsAnnotation struct {
@@ -1212,6 +1283,45 @@ func isIn(t reflect.Type) bool {
 		dig.IsIn(reflect.New(t).Elem().Interface()))
 }
 
+// find the index of the n-th occurrence (nth >= 1) of typ in the
+// function funcTyp parameters or results. Also returns the total number of occurrences.
+func nthOfType(funcTyp, typ reflect.Type, nth int, op string) (idx, seen int) {
+	count := funcTyp.NumIn()
+	get := funcTyp.In
+	if op == "out" {
+		count = funcTyp.NumOut()
+		get = funcTyp.Out
+		if count > 0 && funcTyp.Out(count-1) == _typeOfError {
+			count--
+		}
+	}
+
+	idx = -1
+	for i := 0; i < count; i++ {
+		if get(i) != typ {
+			continue
+		}
+
+		seen++
+		if seen == nth {
+			idx = i
+		}
+	}
+
+	return
+}
+
+// grows the slice and fills it with zero values
+func ensureLen[T any](s *[]T, targetLen int) {
+	if len(*s) >= targetLen {
+		return
+	}
+
+	res := make([]T, targetLen)
+	copy(res, *s)
+	*s = res
+}
+
 var _ Annotation = (*asAnnotation)(nil)
 
 // As is an Annotation that annotates the result of a function (i.e. a
@@ -1615,14 +1725,15 @@ func (fr *fromAnnotation) parameters(ann *annotated) (
 }
 
 type annotated struct {
-	Target      any
-	Annotations []Annotation
-	ParamTags   []string
-	ResultTags  []string
-	As          [][]asType
-	From        []reflect.Type
-	FuncPtr     uintptr
-	Hooks       []*lifecycleHookAnnotation
+	Target         any
+	Annotations    []Annotation
+	ParamTags      []string
+	ResultTags     []string
+	As             [][]asType
+	From           []reflect.Type
+	FuncPtr        uintptr
+	Hooks          []*lifecycleHookAnnotation
+	paramTagsBuilt bool
 	// container is used to build private scopes for lifecycle hook functions
 	// added via fx.OnStart and fx.OnStop annotations.
 	container *dig.Container
