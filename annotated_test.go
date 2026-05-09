@@ -2820,19 +2820,20 @@ func TestResultTag(t *testing.T) {
 		assert.Contains(t, err.Error(), "has no return values of type io.Reader")
 	})
 
-	t.Run("impossible to tag error-return", func(t *testing.T) {
+	t.Run("tagging of terminal error is ignored", func(t *testing.T) {
 		t.Parallel()
 
 		err := NewForTest(t,
 			fx.Provide(
 				fx.Annotate(constructor,
+					fx.ResultTag[*DB](`name:"primary"`),
+					fx.ResultTag[*Redis](`name:"primary"`),
 					fx.ResultTag[error](`name:"failure"`),
 				),
 			),
 		).Err()
 
-		require.Error(t, err)
-		assert.Contains(t, err.Error(), "has no return values of type error")
+		require.NoError(t, err)
 	})
 
 	t.Run("errors if nth exceeds count", func(t *testing.T) {

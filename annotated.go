@@ -1362,9 +1362,6 @@ func nthOfType(funcTyp, typ reflect.Type, nth int, op string) (idx, seen int) {
 	if op == "out" {
 		count = funcTyp.NumOut()
 		get = funcTyp.Out
-		if count > 0 && funcTyp.Out(count-1) == _typeOfError {
-			count--
-		}
 	}
 
 	idx = -1
