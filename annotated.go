@@ -463,6 +463,10 @@ func (rt resultTagsAnnotation) apply(ann *annotated) error {
 
 // build builds and returns a constructor after applying a ResultTags annotation
 func (rt resultTagsAnnotation) build(ann *annotated) (any, error) {
+	if ann.resultTagsBuilt {
+		return ann.Target, nil
+	}
+	ann.resultTagsBuilt = true
 	paramTypes := ann.currentParamTypes()
 	resultTypes, remapResults := rt.results(ann)
 	origFn := reflect.ValueOf(ann.Target)
@@ -614,6 +618,73 @@ func (rt resultTagsAnnotation) results(ann *annotated) (
 // ResultTags cannot be used on a function that returns an fx.Out struct.
 func ResultTags(tags ...string) Annotation {
 	return resultTagsAnnotation{tags}
+}
+
+type genericResultTagAnnotation struct {
+	typ reflect.Type
+	tag string
+	nth int
+}
+
+var _ Annotation = genericResultTagAnnotation{}
+
+func (rt genericResultTagAnnotation) apply(ann *annotated) error {
+	if err := verifyAnnotateTag(rt.tag); err != nil {
+		return err
+	}
+
+	targetTyp := reflect.TypeOf(ann.Target)
+	if targetTyp == nil || targetTyp.Kind() != reflect.Func {
+		return fmt.Errorf("fx.ResultTag[%v]: must annotate a function, got %T", rt.typ, ann.Target)
+	}
+
+	idx, total := nthOfType(targetTyp, rt.typ, rt.nth, "out")
+
+	if total == 0 {
+		return fmt.Errorf("fx.ResultTag[%v]: %T has no return values of type %v", rt.typ, ann.Target, rt.typ)
+	}
+	if idx < 0 {
+		return fmt.Errorf("fx.ResultTag[%v]: requested return value #%d of type %v, but %T has only %d",
+			rt.typ, rt.nth, rt.typ, ann.Target, total)
+	}
+
+	ensureLen(&ann.ResultTags, targetTyp.NumOut())
+
+	if ann.ResultTags[idx] != "" {
+		return fmt.Errorf("fx.ResultTag[%v]: return value %d of %T already has tag %q",
+			rt.typ, idx, ann.Target, ann.ResultTags[idx])
+	}
+
+	ann.ResultTags[idx] = rt.tag
+	return nil
+}
+
+func (rt genericResultTagAnnotation) build(ann *annotated) (any, error) {
+	return resultTagsAnnotation{}.build(ann) // delegate
+}
+
+// ResultTag is an Annotation that annotates a function return value of type T.
+//
+// By default, it annotates the first such return value. If there are multiple return
+// values of type T, nth selects the 1-based occurrence to annotate.
+//
+// For example, this tags the second [*sql.DB] return value:
+//
+//	fx.Annotate(constructor, fx.ResultTag[*sql.DB](`name:"ro"`, 2))
+//
+// Multiple ResultTag annotations may be applied to the same function as long as
+// they target different return values.
+func ResultTag[T any](tag string, nth ...int) Annotation {
+	finalNth := 1
+	if len(nth) > 0 {
+		finalNth = nth[0]
+	}
+
+	return genericResultTagAnnotation{
+		typ: reflect.TypeFor[T](),
+		tag: tag,
+		nth: finalNth,
+	}
 }
 
 type outStructInfo struct {
@@ -1725,15 +1796,16 @@ func (fr *fromAnnotation) parameters(ann *annotated) (
 }
 
 type annotated struct {
-	Target         any
-	Annotations    []Annotation
-	ParamTags      []string
-	ResultTags     []string
-	As             [][]asType
-	From           []reflect.Type
-	FuncPtr        uintptr
-	Hooks          []*lifecycleHookAnnotation
-	paramTagsBuilt bool
+	Target          any
+	Annotations     []Annotation
+	ParamTags       []string
+	ResultTags      []string
+	As              [][]asType
+	From            []reflect.Type
+	FuncPtr         uintptr
+	Hooks           []*lifecycleHookAnnotation
+	paramTagsBuilt  bool
+	resultTagsBuilt bool
 	// container is used to build private scopes for lifecycle hook functions
 	// added via fx.OnStart and fx.OnStop annotations.
 	container *dig.Container
