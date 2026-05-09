@@ -2666,7 +2666,7 @@ func TestParamTag(t *testing.T) {
 		).Err()
 
 		require.Error(t, err)
-		assert.Contains(t, err.Error(), "has no parameters of type io.Reader")
+		assert.Contains(t, err.Error(), "has no io.Reader parameters")
 	})
 
 	t.Run("errors if nth exceeds count", func(t *testing.T) {
@@ -2683,8 +2683,25 @@ func TestParamTag(t *testing.T) {
 		).Err()
 
 		require.Error(t, err)
-		assert.Contains(t, err.Error(), "requested parameter #15")
-		assert.Contains(t, err.Error(), "has only 2")
+		assert.Contains(t, err.Error(), "has only 2 *fx_test.DB parameters")
+		assert.Contains(t, err.Error(), "requested #15")
+	})
+
+	t.Run("errors if nth is less than 1", func(t *testing.T) {
+		t.Parallel()
+
+		err := NewForTest(t,
+			fx.Provide(
+				newDB("db1"),
+				newRedis("r1"),
+				fx.Annotate(newService,
+					fx.ParamTag[*DB](`name:"ro"`, 0),
+				),
+			),
+		).Err()
+
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "nth must be >= 1, got 0")
 	})
 
 	t.Run("errors if parameter already has tag", func(t *testing.T) {
@@ -2817,7 +2834,7 @@ func TestResultTag(t *testing.T) {
 		).Err()
 
 		require.Error(t, err)
-		assert.Contains(t, err.Error(), "has no return values of type io.Reader")
+		assert.Contains(t, err.Error(), "has no io.Reader results")
 	})
 
 	t.Run("tagging of terminal error is ignored", func(t *testing.T) {
@@ -2848,8 +2865,23 @@ func TestResultTag(t *testing.T) {
 		).Err()
 
 		require.Error(t, err)
-		assert.Contains(t, err.Error(), "requested return value #15")
-		assert.Contains(t, err.Error(), "has only 2")
+		assert.Contains(t, err.Error(), "has only 2 *fx_test.DB results")
+		assert.Contains(t, err.Error(), "requested #15")
+	})
+
+	t.Run("errors if nth is less than 1", func(t *testing.T) {
+		t.Parallel()
+
+		err := NewForTest(t,
+			fx.Provide(
+				fx.Annotate(constructor,
+					fx.ResultTag[*DB](`name:"ro"`, 0),
+				),
+			),
+		).Err()
+
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "nth must be >= 1, got 0")
 	})
 
 	t.Run("errors if result already has tag", func(t *testing.T) {

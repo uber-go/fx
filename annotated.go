@@ -370,6 +370,9 @@ func (pt genericParamTagAnnotation) apply(ann *annotated) error {
 	if err := verifyAnnotateTag(pt.tag); err != nil {
 		return err
 	}
+	if pt.nth < 1 {
+		return fmt.Errorf("fx.ParamTag[%v]: nth must be >= 1, got %d", pt.typ, pt.nth)
+	}
 
 	targetTyp := reflect.TypeOf(ann.Target)
 	if targetTyp == nil || targetTyp.Kind() != reflect.Func {
@@ -377,13 +380,13 @@ func (pt genericParamTagAnnotation) apply(ann *annotated) error {
 	}
 
 	idx, total := nthOfType(targetTyp, pt.typ, pt.nth, "in")
-
 	if total == 0 {
-		return fmt.Errorf("fx.ParamTag[%v]: %s has no parameters of type %v", pt.typ, fxreflect.FuncName(ann.Target), pt.typ)
+		return fmt.Errorf("fx.ParamTag[%v]: %s has no %v parameters",
+			pt.typ, fxreflect.FuncName(ann.Target), pt.typ)
 	}
 	if idx < 0 {
-		return fmt.Errorf("fx.ParamTag[%v]: requested parameter #%d of type %v, but %s has only %d",
-			pt.typ, pt.nth, pt.typ, fxreflect.FuncName(ann.Target), total)
+		return fmt.Errorf("fx.ParamTag[%v]: %s has only %d %v parameters, requested #%d",
+			pt.typ, fxreflect.FuncName(ann.Target), total, pt.typ, pt.nth)
 	}
 
 	ensureLen(&ann.ParamTags, targetTyp.NumIn())
@@ -632,6 +635,9 @@ func (rt genericResultTagAnnotation) apply(ann *annotated) error {
 	if err := verifyAnnotateTag(rt.tag); err != nil {
 		return err
 	}
+	if rt.nth < 1 {
+		return fmt.Errorf("fx.ResultTag[%v]: nth must be >= 1, got %d", rt.typ, rt.nth)
+	}
 
 	targetTyp := reflect.TypeOf(ann.Target)
 	if targetTyp == nil || targetTyp.Kind() != reflect.Func {
@@ -639,13 +645,13 @@ func (rt genericResultTagAnnotation) apply(ann *annotated) error {
 	}
 
 	idx, total := nthOfType(targetTyp, rt.typ, rt.nth, "out")
-
 	if total == 0 {
-		return fmt.Errorf("fx.ResultTag[%v]: %s has no return values of type %v", rt.typ, fxreflect.FuncName(ann.Target), rt.typ)
+		return fmt.Errorf("fx.ResultTag[%v]: %s has no %v results",
+			rt.typ, fxreflect.FuncName(ann.Target), rt.typ)
 	}
 	if idx < 0 {
-		return fmt.Errorf("fx.ResultTag[%v]: requested return value #%d of type %v, but %s has only %d",
-			rt.typ, rt.nth, rt.typ, fxreflect.FuncName(ann.Target), total)
+		return fmt.Errorf("fx.ResultTag[%v]: %s has only %d %v results, requested #%d",
+			rt.typ, fxreflect.FuncName(ann.Target), total, rt.typ, rt.nth)
 	}
 
 	ensureLen(&ann.ResultTags, targetTyp.NumOut())
