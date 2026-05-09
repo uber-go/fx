@@ -379,18 +379,18 @@ func (pt genericParamTagAnnotation) apply(ann *annotated) error {
 	idx, total := nthOfType(targetTyp, pt.typ, pt.nth, "in")
 
 	if total == 0 {
-		return fmt.Errorf("fx.ParamTag[%v]: %T has no parameters of type %v", pt.typ, ann.Target, pt.typ)
+		return fmt.Errorf("fx.ParamTag[%v]: %s has no parameters of type %v", pt.typ, fxreflect.FuncName(ann.Target), pt.typ)
 	}
 	if idx < 0 {
-		return fmt.Errorf("fx.ParamTag[%v]: requested parameter #%d of type %v, but %T has only %d",
-			pt.typ, pt.nth, pt.typ, ann.Target, total)
+		return fmt.Errorf("fx.ParamTag[%v]: requested parameter #%d of type %v, but %s has only %d",
+			pt.typ, pt.nth, pt.typ, fxreflect.FuncName(ann.Target), total)
 	}
 
 	ensureLen(&ann.ParamTags, targetTyp.NumIn())
 
 	if ann.ParamTags[idx] != "" {
-		return fmt.Errorf("fx.ParamTag[%v]: parameter %d of %T already has tag %q",
-			pt.typ, idx, ann.Target, ann.ParamTags[idx])
+		return fmt.Errorf("fx.ParamTag[%v]: parameter %d of %s already has tag %q",
+			pt.typ, idx, fxreflect.FuncName(ann.Target), ann.ParamTags[idx])
 	}
 
 	ann.ParamTags[idx] = pt.tag
@@ -641,18 +641,18 @@ func (rt genericResultTagAnnotation) apply(ann *annotated) error {
 	idx, total := nthOfType(targetTyp, rt.typ, rt.nth, "out")
 
 	if total == 0 {
-		return fmt.Errorf("fx.ResultTag[%v]: %T has no return values of type %v", rt.typ, ann.Target, rt.typ)
+		return fmt.Errorf("fx.ResultTag[%v]: %s has no return values of type %v", rt.typ, fxreflect.FuncName(ann.Target), rt.typ)
 	}
 	if idx < 0 {
-		return fmt.Errorf("fx.ResultTag[%v]: requested return value #%d of type %v, but %T has only %d",
-			rt.typ, rt.nth, rt.typ, ann.Target, total)
+		return fmt.Errorf("fx.ResultTag[%v]: requested return value #%d of type %v, but %s has only %d",
+			rt.typ, rt.nth, rt.typ, fxreflect.FuncName(ann.Target), total)
 	}
 
 	ensureLen(&ann.ResultTags, targetTyp.NumOut())
 
 	if ann.ResultTags[idx] != "" {
-		return fmt.Errorf("fx.ResultTag[%v]: return value %d of %T already has tag %q",
-			rt.typ, idx, ann.Target, ann.ResultTags[idx])
+		return fmt.Errorf("fx.ResultTag[%v]: return value %d of %s already has tag %q",
+			rt.typ, idx, fxreflect.FuncName(ann.Target), ann.ResultTags[idx])
 	}
 
 	ann.ResultTags[idx] = rt.tag
