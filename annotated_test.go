@@ -2534,3 +2534,369 @@ func TestHookAnnotationFunctionFlexibility(t *testing.T) {
 		})
 	}
 }
+
+func TestParamTag(t *testing.T) {
+	t.Parallel()
+
+	type DB struct {
+		name string
+	}
+	type Redis struct {
+		name string
+	}
+	type Service struct {
+		db      *DB
+		dbRO    *DB
+		redis   *Redis
+		redisRO *Redis
+	}
+
+	newDB := func(name string) func() *DB {
+		return func() *DB {
+			return &DB{name: name}
+		}
+	}
+	newRedis := func(name string) func() *Redis {
+		return func() *Redis {
+			return &Redis{name: name}
+		}
+	}
+	newService := func(db *DB, dbRO *DB, redis *Redis, redisRO *Redis) *Service {
+		return &Service{db: db, dbRO: dbRO, redis: redis, redisRO: redisRO}
+	}
+
+	t.Run("tags first parameter of a type", func(t *testing.T) {
+		t.Parallel()
+
+		var service *Service
+		app := fxtest.New(t,
+			fx.Provide(
+				newDB("db1"),
+				fx.Annotate(newRedis("redis1"), fx.ResultTags(`name:"primary"`)),
+				newRedis("redis2"),
+
+				fx.Annotate(newService,
+					fx.ParamTag[*Redis](`name:"primary"`),
+				),
+			),
+			fx.Populate(&service),
+		)
+		defer app.RequireStart().RequireStop()
+
+		require.NoError(t, app.Err())
+		require.NotNil(t, service)
+
+		assert.Equal(t, "db1", service.db.name)
+		assert.Equal(t, "db1", service.dbRO.name)
+		assert.Equal(t, "redis1", service.redis.name)
+		assert.Equal(t, "redis2", service.redisRO.name)
+	})
+
+	t.Run("tags multiple parameters of the same type", func(t *testing.T) {
+		t.Parallel()
+
+		var service *Service
+		app := fxtest.New(t,
+			fx.Provide(
+				fx.Annotate(newDB("db1"), fx.ResultTags(`name:"primary"`)),
+				fx.Annotate(newDB("db2"), fx.ResultTags(`name:"ro"`)),
+				newRedis("r1"),
+				fx.Annotate(newRedis("r2"), fx.ResultTags(`name:"ro"`)),
+
+				fx.Annotate(newService,
+					fx.ParamTag[*DB](`name:"primary"`),
+					fx.ParamTag[*DB](`name:"ro"`, 2),
+					fx.ParamTag[*Redis](`name:"ro"`, 2),
+				),
+			),
+			fx.Populate(&service),
+		)
+		defer app.RequireStart().RequireStop()
+
+		require.NoError(t, app.Err())
+		require.NotNil(t, service)
+
+		assert.Equal(t, "db1", service.db.name)
+		assert.Equal(t, "db2", service.dbRO.name)
+		assert.Equal(t, "r1", service.redis.name)
+		assert.Equal(t, "r2", service.redisRO.name)
+	})
+
+	t.Run("adds tags after ParamTags", func(t *testing.T) {
+		t.Parallel()
+
+		var service *Service
+		app := fxtest.New(t,
+			fx.Provide(
+				fx.Annotate(newDB("db1"), fx.ResultTags(`name:"primary"`)),
+				fx.Annotate(newDB("db2"), fx.ResultTags(`name:"ro"`)),
+				newRedis("r1"),
+				fx.Annotate(newRedis("r2"), fx.ResultTags(`name:"ro"`)),
+
+				fx.Annotate(newService,
+					fx.ParamTags(``, `name:"ro"`),
+					fx.ParamTag[*DB](`name:"primary"`),
+					fx.ParamTag[*Redis](`name:"ro"`, 2),
+				),
+			),
+			fx.Populate(&service),
+		)
+		defer app.RequireStart().RequireStop()
+
+		require.NoError(t, app.Err())
+		require.NotNil(t, service)
+
+		assert.Equal(t, "db1", service.db.name)
+		assert.Equal(t, "db2", service.dbRO.name)
+		assert.Equal(t, "r1", service.redis.name)
+		assert.Equal(t, "r2", service.redisRO.name)
+	})
+
+	t.Run("errors if type is missing", func(t *testing.T) {
+		t.Parallel()
+
+		err := NewForTest(t,
+			fx.Provide(
+				newDB("db1"),
+				newRedis("r1"),
+				fx.Annotate(newService,
+					fx.ParamTag[io.Reader](`name:"db1"`),
+				),
+			),
+		).Err()
+
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "has no io.Reader parameters")
+	})
+
+	t.Run("errors if nth exceeds count", func(t *testing.T) {
+		t.Parallel()
+
+		err := NewForTest(t,
+			fx.Provide(
+				newDB("db1"),
+				newRedis("r1"),
+				fx.Annotate(newService,
+					fx.ParamTag[*DB](`name:"ro"`, 15),
+				),
+			),
+		).Err()
+
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "has only 2 *fx_test.DB parameters")
+		assert.Contains(t, err.Error(), "requested #15")
+	})
+
+	t.Run("errors if nth is less than 1", func(t *testing.T) {
+		t.Parallel()
+
+		err := NewForTest(t,
+			fx.Provide(
+				newDB("db1"),
+				newRedis("r1"),
+				fx.Annotate(newService,
+					fx.ParamTag[*DB](`name:"ro"`, 0),
+				),
+			),
+		).Err()
+
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "nth must be >= 1, got 0")
+	})
+
+	t.Run("errors if parameter already has tag", func(t *testing.T) {
+		t.Parallel()
+
+		err := NewForTest(t,
+			fx.Provide(
+				newDB("db1"),
+				newRedis("r1"),
+				fx.Annotate(newService,
+					fx.ParamTag[*DB](`name:"ro"`, 2),
+					fx.ParamTag[*DB](`optional:"true"`, 2),
+				),
+			),
+		).Err()
+
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "already has tag")
+	})
+}
+
+func TestResultTag(t *testing.T) {
+	t.Parallel()
+
+	type DB struct {
+		name string
+	}
+	type Redis struct {
+		name string
+	}
+
+	constructor := func() (*DB, *DB, *Redis, *Redis, error) {
+		return &DB{name: "db1"}, &DB{name: "db2"}, &Redis{name: "redis1"}, &Redis{name: "redis2"}, nil
+	}
+
+	t.Run("tags first result of a type", func(t *testing.T) {
+		t.Parallel()
+
+		var db *DB
+		var dbRO *DB
+		var redis *Redis
+		var redisRO *Redis
+
+		err := fxtest.New(t,
+			fx.Provide(fx.Annotate(constructor,
+				fx.ResultTag[*DB](`name:"primary"`),
+				fx.ResultTag[*Redis](`name:"primary"`),
+			)),
+
+			fx.Populate(fx.Annotate(&db, fx.ParamTags(`name:"primary"`))),
+			fx.Populate(&dbRO),
+			fx.Populate(fx.Annotate(&redis, fx.ParamTags(`name:"primary"`))),
+			fx.Populate(&redisRO),
+		).Err()
+
+		require.NoError(t, err)
+		require.Equal(t, "db1", db.name)
+		require.Equal(t, "db2", dbRO.name)
+		require.Equal(t, "redis1", redis.name)
+		require.Equal(t, "redis2", redisRO.name)
+	})
+
+	t.Run("tags multiple results of the same type", func(t *testing.T) {
+		t.Parallel()
+
+		var db *DB
+		var dbRO *DB
+		var redis *Redis
+		var redisRO *Redis
+
+		err := fxtest.New(t,
+			fx.Provide(fx.Annotate(constructor,
+				fx.ResultTag[*DB](`name:"primary"`),
+				fx.ResultTag[*DB](`name:"ro"`, 2),
+				fx.ResultTag[*Redis](`name:"primary"`),
+				fx.ResultTag[*Redis](`name:"ro"`, 2),
+			)),
+
+			fx.Populate(fx.Annotate(&db, fx.ParamTags(`name:"primary"`))),
+			fx.Populate(fx.Annotate(&dbRO, fx.ParamTags(`name:"ro"`))),
+			fx.Populate(fx.Annotate(&redis, fx.ParamTags(`name:"primary"`))),
+			fx.Populate(fx.Annotate(&redisRO, fx.ParamTags(`name:"ro"`))),
+		).Err()
+
+		require.NoError(t, err)
+		require.Equal(t, "db1", db.name)
+		require.Equal(t, "db2", dbRO.name)
+		require.Equal(t, "redis1", redis.name)
+		require.Equal(t, "redis2", redisRO.name)
+	})
+
+	t.Run("adds tags after ResultTags", func(t *testing.T) {
+		t.Parallel()
+
+		var db *DB
+		var dbRO *DB
+		var redis *Redis
+		var redisRO *Redis
+
+		err := fxtest.New(t,
+			fx.Provide(fx.Annotate(constructor,
+				fx.ResultTags(``, `name:"ro"`),
+				fx.ResultTag[*DB](`name:"primary"`),
+				fx.ResultTag[*Redis](`name:"primary"`),
+				fx.ResultTag[*Redis](`name:"ro"`, 2),
+			)),
+
+			fx.Populate(fx.Annotate(&db, fx.ParamTags(`name:"primary"`))),
+			fx.Populate(fx.Annotate(&dbRO, fx.ParamTags(`name:"ro"`))),
+			fx.Populate(fx.Annotate(&redis, fx.ParamTags(`name:"primary"`))),
+			fx.Populate(fx.Annotate(&redisRO, fx.ParamTags(`name:"ro"`))),
+		).Err()
+
+		require.NoError(t, err)
+		require.Equal(t, "db1", db.name)
+		require.Equal(t, "db2", dbRO.name)
+		require.Equal(t, "redis1", redis.name)
+		require.Equal(t, "redis2", redisRO.name)
+	})
+
+	t.Run("errors if type is missing", func(t *testing.T) {
+		t.Parallel()
+
+		err := NewForTest(t,
+			fx.Provide(
+				fx.Annotate(constructor,
+					fx.ResultTag[io.Reader](`name:"primary"`),
+				),
+			),
+		).Err()
+
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "has no io.Reader results")
+	})
+
+	t.Run("tagging of terminal error is ignored", func(t *testing.T) {
+		t.Parallel()
+
+		err := NewForTest(t,
+			fx.Provide(
+				fx.Annotate(constructor,
+					fx.ResultTag[*DB](`name:"primary"`),
+					fx.ResultTag[*Redis](`name:"primary"`),
+					fx.ResultTag[error](`name:"failure"`),
+				),
+			),
+		).Err()
+
+		require.NoError(t, err)
+	})
+
+	t.Run("errors if nth exceeds count", func(t *testing.T) {
+		t.Parallel()
+
+		err := NewForTest(t,
+			fx.Provide(
+				fx.Annotate(constructor,
+					fx.ResultTag[*DB](`name:"ro"`, 15),
+				),
+			),
+		).Err()
+
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "has only 2 *fx_test.DB results")
+		assert.Contains(t, err.Error(), "requested #15")
+	})
+
+	t.Run("errors if nth is less than 1", func(t *testing.T) {
+		t.Parallel()
+
+		err := NewForTest(t,
+			fx.Provide(
+				fx.Annotate(constructor,
+					fx.ResultTag[*DB](`name:"ro"`, 0),
+				),
+			),
+		).Err()
+
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "nth must be >= 1, got 0")
+	})
+
+	t.Run("errors if result already has tag", func(t *testing.T) {
+		t.Parallel()
+
+		err := NewForTest(t,
+			fx.Provide(
+				fx.Annotate(constructor,
+					fx.ResultTag[*DB](`name:"ro"`, 2),
+					fx.ResultTag[*DB](`group:"databases"`, 2),
+				),
+			),
+		).Err()
+
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "already has tag")
+	})
+}
