@@ -30,7 +30,7 @@ var ResultModule = fx.Options(
 )
 
 // Watcher watches for events.
-type Watcher interface{}
+type Watcher any
 
 type watcher struct{}
 
