@@ -58,7 +58,7 @@ var _filter = []ast.Node{
 	&ast.TypeAssertExpr{},
 }
 
-func run(pass *analysis.Pass) (interface{}, error) {
+func run(pass *analysis.Pass) (any, error) {
 	fxeventPkg, ok := findPackage(pass.Pkg, "go.uber.org/fx/fxevent")
 	if !ok {
 		// If the package doesn't import fxevent, and itself isn't
@@ -261,7 +261,7 @@ func (ts *typeSet) Remove(t types.Type) (found bool) {
 
 // Iterate iterates through the type set in an unspecified order.
 func (ts *typeSet) Iterate(f func(types.Type)) {
-	ts.m.Iterate(func(t types.Type, _ interface{}) {
+	ts.m.Iterate(func(t types.Type, _ any) {
 		f(t)
 	})
 }

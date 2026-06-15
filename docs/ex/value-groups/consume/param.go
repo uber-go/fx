@@ -23,7 +23,7 @@ package consume
 import "go.uber.org/fx"
 
 // Watcher watches for events.
-type Watcher interface{}
+type Watcher any
 
 // ParamsModule is the module defined in this file.
 var ParamsModule = fx.Options(

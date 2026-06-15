@@ -82,7 +82,7 @@ it can only be used for non-interface values.
     on runtime reflection to determine the type of the value.
 
     Passing an interface value to `fx.Supply` is a lossy operation:
-    it loses the original interface type, only giving us `interface{}`,
+    it loses the original interface type, only giving us `any`,
     at which point reflection will only reveal the concrete type of the value.
 
     For example, consider:
