@@ -91,14 +91,14 @@ func TestLifecycleStart(t *testing.T) {
 				return nil
 			},
 		})
-		// this event's starter fails, so the stopper shouldnt run
+		// this event's starter fails, so the stopper shouldn't run
 		l.Append(Hook{
 			OnStart: func(context.Context) error {
 				starterCount++
 				return err
 			},
 			OnStop: func(context.Context) error {
-				t.Error("this stopper shouldnt run, since the starter in this event failed")
+				t.Error("this stopper shouldn't run, since the starter in this event failed")
 				return nil
 			},
 		})
