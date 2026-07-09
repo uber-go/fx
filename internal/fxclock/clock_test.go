@@ -149,7 +149,7 @@ func TestMock_Sleep(t *testing.T) {
 		// ok
 	}
 
-	// Avance to the next millisecond, the Sleep should return.
+	// Advance to the next millisecond, the Sleep should return.
 	clock.Add(1 * time.Millisecond)
 	select {
 	case <-ch:

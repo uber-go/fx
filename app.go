@@ -746,7 +746,7 @@ func (app *App) Done() <-chan os.Signal {
 // Wait returns a channel of [ShutdownSignal] to block on after starting the
 // application and function, similar to [App.Done], but with a minor difference:
 // if the app was shut down via [Shutdowner.Shutdown],
-// the exit code (if provied via [ExitCode]) will be available
+// the exit code (if provided via [ExitCode]) will be available
 // in the [ShutdownSignal] struct.
 // Otherwise, the signal that was received will be set.
 func (app *App) Wait() <-chan ShutdownSignal {

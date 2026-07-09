@@ -615,7 +615,7 @@ func TestPrivateProvideWithDecorators(t *testing.T) {
 }
 
 func TestWithLoggerErrorUseDefault(t *testing.T) {
-	// This test cannot be run in paralllel with the others because
+	// This test cannot be run in parallel with the others because
 	// it hijacks stderr.
 
 	// Temporarily hijack stderr and restore it after this test so
