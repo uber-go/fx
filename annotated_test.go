@@ -463,6 +463,15 @@ func TestAnnotatedAs(t *testing.T) {
 			},
 		},
 		{
+			desc: "provide a good stringer via AsType",
+			provide: fx.Provide(
+				fx.Annotate(newAsStringer, fx.AsType[fmt.Stringer]()),
+			),
+			invoke: func(s fmt.Stringer) {
+				assert.Equal(t, s.String(), "a good stringer")
+			},
+		},
+		{
 			desc: "value type implementing interface",
 			provide: fx.Provide(
 				fx.Annotate(func() anotherStringer {
