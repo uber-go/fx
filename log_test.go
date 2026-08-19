@@ -21,6 +21,7 @@
 package fx
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -76,3 +77,24 @@ func TestWithLoggerDecorate(t *testing.T) {
 	assert.NotZero(t, logs.Len(),
 		"should post to replacement logger")
 }
+
+type testPrinter struct {
+	messages []string
+}
+
+func (p *testPrinter) Printf(format string, args ...interface{}) {
+	p.messages = append(p.messages, fmt.Sprintf(format, args...))
+}
+
+func TestWriterFromPrinter(t *testing.T) {
+	t.Parallel()
+
+	p := &testPrinter{}
+	w := writerFromPrinter(p)
+
+	n, err := w.Write([]byte("hello world"))
+	assert.NoError(t, err)
+	assert.Equal(t, 11, n)
+	assert.Equal(t, []string{"hello world"}, p.messages)
+}
+
