@@ -54,7 +54,7 @@
 // lists all the dependencies as fields and change the function to accept that
 // struct instead. The new struct is called a parameter struct.
 //
-// Fx has first class support for parameter structs: any struct embedding
+// Fx has first-class support for parameter structs: any struct embedding
 // fx.In gets treated as a parameter struct, so the individual fields in the
 // struct are supplied via dependency injection. Using a parameter struct, we
 // can make the constructor above much more readable:
