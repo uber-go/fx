@@ -227,9 +227,11 @@ func runDecorator(c container, d decorator, opts ...dig.DecorateOption) (err err
 
 	switch decorator := decorator.(type) {
 	case annotated:
-		if dcor, derr := decorator.Build(); derr == nil {
-			err = c.Decorate(dcor, opts...)
+		var dcor any
+		if dcor, err = decorator.Build(); err != nil {
+			return
 		}
+		err = c.Decorate(dcor, opts...)
 	default:
 		err = c.Decorate(decorator, opts...)
 	}
