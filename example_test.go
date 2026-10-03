@@ -116,14 +116,17 @@ func NewHandler(logger *log.Logger) (http.Handler, error) {
 // constructors are called lazily, we know that NewMux won't be called unless
 // some other function wants to register a handler. This makes it easy to use
 // Fx's Lifecycle to start an HTTP server only if we have handlers registered.
-func NewMux(lc fx.Lifecycle, logger *log.Logger) *http.ServeMux {
+func NewMux(lc fx.Lifecycle, logger *log.Logger) (*http.ServeMux, net.Addr, error) {
 	logger.Print("Executing NewMux.")
 	// First, we construct the mux and server. We don't want to start the server
 	// until all handlers are registered.
 	mux := http.NewServeMux()
 	server := &http.Server{
-		Addr:    "127.0.0.1:8080",
 		Handler: mux,
+	}
+	ln, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		return nil, nil, err
 	}
 	// If NewMux is called, we know that another function is using the mux. In
 	// that case, we'll use the Lifecycle type to register a Hook that starts
@@ -146,10 +149,6 @@ func NewMux(lc fx.Lifecycle, logger *log.Logger) *http.ServeMux {
 		// passed via Go's usual context.Context.
 		OnStart: func(context.Context) error {
 			logger.Print("Starting HTTP server.")
-			ln, err := net.Listen("tcp", server.Addr)
-			if err != nil {
-				return err
-			}
 			go server.Serve(ln)
 			return nil
 		},
@@ -159,7 +158,7 @@ func NewMux(lc fx.Lifecycle, logger *log.Logger) *http.ServeMux {
 		},
 	})
 
-	return mux
+	return mux, ln.Addr(), nil
 }
 
 // Register mounts our HTTP handler on the mux.
@@ -182,6 +181,7 @@ func Register(mux *http.ServeMux, h http.Handler) {
 }
 
 func Example() {
+	var addr net.Addr
 	app := fx.New(
 		// Provide all the constructors we need, which teaches Fx how we'd like to
 		// construct the *log.Logger, http.Handler, and *http.ServeMux types.
@@ -199,6 +199,9 @@ func Example() {
 		// NewMux, we also register Lifecycle hooks to start and stop an HTTP
 		// server.
 		fx.Invoke(Register),
+
+		// Populate the server address so we can query it dynamically.
+		fx.Populate(&addr),
 
 		// This is optional. With this, you can control where Fx logs
 		// its events. In this case, we're using a NopLogger to keep
@@ -222,7 +225,7 @@ func Example() {
 
 	// Normally, we'd block here with <-app.Done(). Instead, we'll make an HTTP
 	// request to demonstrate that our server is running.
-	if _, err := http.Get("http://localhost:8080/"); err != nil {
+	if _, err := http.Get("http://" + addr.String() + "/"); err != nil {
 		log.Fatal(err)
 	}
 
