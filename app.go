@@ -180,6 +180,35 @@ func (o recoverFromPanicsOption) String() string {
 	return "fx.RecoverFromPanics()"
 }
 
+// WithExit provides an option to customize the exit function invoked by
+// [App.Run] upon application startup or shutdown errors, or upon receiving
+// an exit signal.
+//
+// If not specified, Fx defaults to os.Exit.
+//
+// WithExit panics if the provided exit function is nil.
+func WithExit(exit func(code int)) Option {
+	if exit == nil {
+		panic("nil exit function passed to fx.WithExit")
+	}
+	return withExitOption(exit)
+}
+
+type withExitOption func(int)
+
+func (o withExitOption) apply(m *module) {
+	if m.parent != nil {
+		m.app.err = fmt.Errorf("fx.WithExit Option should be passed to top-level App, " +
+			"not to fx.Module")
+	} else {
+		m.app.osExit = o
+	}
+}
+
+func (o withExitOption) String() string {
+	return fmt.Sprintf("fx.WithExit(%v)", fxreflect.FuncName(o))
+}
+
 // WithLogger specifies the [fxevent.Logger] used by Fx to log its own events
 // (e.g. a constructor was provided, a function was invoked, etc.).
 //
@@ -317,7 +346,7 @@ type App struct {
 	// Used to signal shutdowns.
 	receivers signalReceivers
 
-	osExit func(code int) // os.Exit override; used for testing only
+	osExit func(code int) // os.Exit override; defaults to os.Exit if not specified
 }
 
 // provide is a single constructor provided to Fx.
