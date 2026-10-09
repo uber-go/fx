@@ -1260,6 +1260,29 @@ func As(interfaces ...any) Annotation {
 	return &asAnnotation{targets: interfaces}
 }
 
+// AsType is [As](new(T)). Same as errors.AsType versus errors.As.
+//
+// For example,
+//
+//	fx.Provide(
+//	  fx.Annotate(
+//	    bytes.NewBuffer,
+//	    fx.AsType[io.Writer](),
+//	  ),
+//	)
+//
+// Is equivalent to,
+//
+//	fx.Provide(
+//	  fx.Annotate(
+//	    bytes.NewBuffer,
+//	    fx.As(new(io.Writer)),
+//	  ),
+//	)
+func AsType[T any]() Annotation {
+	return As(new(T))
+}
+
 // Self returns a special value that can be passed to [As] to indicate
 // that a type should be provided as its original type, in addition to whatever other
 // types it gets provided as via other [As] annotations.

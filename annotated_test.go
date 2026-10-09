@@ -463,6 +463,15 @@ func TestAnnotatedAs(t *testing.T) {
 			},
 		},
 		{
+			desc: "provide a good stringer via AsType",
+			provide: fx.Provide(
+				fx.Annotate(newAsStringer, fx.AsType[fmt.Stringer]()),
+			),
+			invoke: func(s fmt.Stringer) {
+				assert.Equal(t, s.String(), "a good stringer")
+			},
+		},
+		{
 			desc: "value type implementing interface",
 			provide: fx.Provide(
 				fx.Annotate(func() anotherStringer {
@@ -888,6 +897,22 @@ func TestAnnotatedAsFailures(t *testing.T) {
 				),
 			),
 			errorContains: "argument must be a pointer to an interface: got string",
+		},
+		{
+			desc:          "provide when an illegal type AsType",
+			provide:       fx.Provide(fx.Annotate(newAsStringer, fx.AsType[io.Writer]())),
+			invoke:        func() {},
+			errorContains: "asStringer does not implement io.Writer",
+		},
+		{
+			desc: "non-interface argument to AsType",
+			provide: fx.Provide(
+				fx.Annotate(
+					newAsStringer,
+					fx.AsType[string](),
+				),
+			),
+			errorContains: "argument must be a pointer to an interface: got *string",
 		},
 	}
 
@@ -2533,4 +2558,80 @@ func TestHookAnnotationFunctionFlexibility(t *testing.T) {
 			require.True(t, called.Load())
 		})
 	}
+}
+
+func TestAnnotatedAsType(t *testing.T) {
+	t.Parallel()
+
+	t.Run("provides interface implementation", func(t *testing.T) {
+		t.Parallel()
+
+		var invoked bool
+		app := fxtest.New(t,
+			fx.Provide(
+				fx.Annotate(
+					func() *bytes.Buffer {
+						return bytes.NewBufferString("hello fx")
+					},
+					fx.AsType[io.Reader](),
+				),
+			),
+			fx.Invoke(func(r io.Reader) {
+				invoked = true
+				data, err := io.ReadAll(r)
+				require.NoError(t, err)
+				assert.Equal(t, "hello fx", string(data))
+			}),
+		)
+		app.RequireStart().RequireStop()
+		assert.True(t, invoked)
+	})
+
+	t.Run("provides multiple interfaces on single constructor", func(t *testing.T) {
+		t.Parallel()
+
+		var invoked bool
+		app := fxtest.New(t,
+			fx.Provide(
+				fx.Annotate(
+					func() *bytes.Buffer {
+						return bytes.NewBufferString("test data")
+					},
+					fx.AsType[io.Reader](),
+					fx.AsType[io.Writer](),
+				),
+			),
+			fx.Invoke(func(r io.Reader, w io.Writer) {
+				invoked = true
+				assert.NotNil(t, r)
+				assert.NotNil(t, w)
+			}),
+		)
+		app.RequireStart().RequireStop()
+		assert.True(t, invoked)
+	})
+
+	t.Run("works alongside fx.Self", func(t *testing.T) {
+		t.Parallel()
+
+		var invoked bool
+		app := fxtest.New(t,
+			fx.Provide(
+				fx.Annotate(
+					func() *bytes.Buffer {
+						return bytes.NewBufferString("self data")
+					},
+					fx.As(fx.Self()),
+					fx.AsType[io.Reader](),
+				),
+			),
+			fx.Invoke(func(buf *bytes.Buffer, r io.Reader) {
+				invoked = true
+				assert.NotNil(t, buf)
+				assert.NotNil(t, r)
+			}),
+		)
+		app.RequireStart().RequireStop()
+		assert.True(t, invoked)
+	})
 }
