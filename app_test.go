@@ -2619,6 +2619,158 @@ func TestErrorHook(t *testing.T) {
 	})
 }
 
+func TestWithExit(t *testing.T) {
+	t.Parallel()
+
+	t.Run("PanicsOnNil", func(t *testing.T) {
+		t.Parallel()
+
+		assert.PanicsWithValue(t, "nil exit function passed to fx.WithExit", func() {
+			WithExit(nil)
+		})
+	})
+
+	t.Run("CannotGiveToModule", func(t *testing.T) {
+		t.Parallel()
+
+		mod := Module("MyModule", WithExit(func(int) {}))
+		app := New(mod)
+		err := app.Err()
+		require.Error(t, err)
+		assert.Contains(t, err.Error(),
+			"fx.WithExit Option should be passed to top-level App, not to fx.Module")
+	})
+
+	t.Run("StartupErrorExits", func(t *testing.T) {
+		t.Parallel()
+
+		var exitCode int
+		called := false
+		exit := func(code int) {
+			called = true
+			exitCode = code
+		}
+
+		app := New(
+			WithExit(exit),
+			Invoke(func(lc Lifecycle) {
+				lc.Append(Hook{
+					OnStart: func(context.Context) error {
+						return errors.New("startup failed")
+					},
+				})
+			}),
+		)
+
+		app.Run()
+		assert.True(t, called, "expected custom exit function to be called on startup error")
+		assert.Equal(t, 1, exitCode)
+	})
+
+	t.Run("ShutdownErrorExits", func(t *testing.T) {
+		t.Parallel()
+
+		var exitCode int
+		called := false
+		exit := func(code int) {
+			called = true
+			exitCode = code
+		}
+
+		app := New(
+			WithExit(exit),
+			Invoke(func(sd Shutdowner, lc Lifecycle) {
+				lc.Append(Hook{
+					OnStart: func(context.Context) error {
+						return sd.Shutdown()
+					},
+					OnStop: func(context.Context) error {
+						return errors.New("stop failed")
+					},
+				})
+			}),
+		)
+
+		app.Run()
+		assert.True(t, called, "expected custom exit function to be called on shutdown error")
+		assert.Equal(t, 1, exitCode)
+	})
+
+	t.Run("ShutdownWithExitCode", func(t *testing.T) {
+		t.Parallel()
+
+		var exitCode int
+		called := false
+		exit := func(code int) {
+			called = true
+			exitCode = code
+		}
+
+		app := New(
+			WithExit(exit),
+			Invoke(func(sd Shutdowner, lc Lifecycle) {
+				lc.Append(Hook{
+					OnStart: func(context.Context) error {
+						return sd.Shutdown(ExitCode(42))
+					},
+				})
+			}),
+		)
+
+		app.Run()
+		assert.True(t, called, "expected custom exit function to be called with Shutdowner exit code")
+		assert.Equal(t, 42, exitCode)
+	})
+
+	t.Run("SuccessDoesNotExit", func(t *testing.T) {
+		t.Parallel()
+
+		called := false
+		exit := func(code int) {
+			called = true
+		}
+
+		app := New(
+			WithExit(exit),
+			Invoke(func(sd Shutdowner, lc Lifecycle) {
+				lc.Append(Hook{
+					OnStart: func(context.Context) error {
+						return sd.Shutdown()
+					},
+				})
+			}),
+		)
+
+		app.Run()
+		assert.False(t, called, "expected custom exit function not to be called on clean shutdown")
+	})
+
+	t.Run("LastOptionWins", func(t *testing.T) {
+		t.Parallel()
+
+		firstCalled := false
+		secondCalled := false
+		first := func(int) { firstCalled = true }
+		second := func(int) { secondCalled = true }
+
+		app := New(
+			WithExit(first),
+			WithExit(second),
+			Invoke(func(lc Lifecycle) {
+				lc.Append(Hook{
+					OnStart: func(context.Context) error {
+						return errors.New("fail")
+					},
+				})
+			}),
+		)
+
+		app.Run()
+		assert.False(t, firstCalled, "first exit function should be overwritten")
+		assert.True(t, secondCalled, "second exit function should be called")
+	})
+}
+
 func TestOptionString(t *testing.T) {
 	t.Parallel()
 
@@ -2715,6 +2867,11 @@ func TestOptionString(t *testing.T) {
 			give: Replace(bytes.NewReader(nil)),
 			want: "fx.Replace(*bytes.Reader)",
 		},
+		{
+			desc: "WithExit",
+			give: WithExit(testExitFunc),
+			want: "fx.WithExit(go.uber.org/fx_test.testExitFunc())",
+		},
 	}
 
 	for _, tt := range tests {
@@ -2755,3 +2912,6 @@ func (h testErrorHandler) HandleError(err error) {
 func (h testErrorHandler) String() string {
 	return h.t.Name()
 }
+
+func testExitFunc(int) {}
+
