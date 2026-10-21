@@ -22,6 +22,7 @@ package fx_test
 
 import (
 	"errors"
+	"io"
 	"strings"
 	"testing"
 
@@ -440,6 +441,31 @@ func TestDecorateFailure(t *testing.T) {
 		err := app.Err()
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "major sadness")
+	})
+
+	t.Run("annotated decorator build failure is returned", func(t *testing.T) {
+		type Logger struct {
+			Name string
+		}
+
+		app := NewForTest(t,
+			fx.Provide(func() *Logger {
+				return &Logger{Name: "root"}
+			}),
+			fx.Decorate(
+				fx.Annotate(
+					func(l *Logger) *Logger {
+						return l
+					},
+					fx.As(new(io.Reader)),
+				),
+			),
+			fx.Invoke(func(*Logger) {}),
+		)
+
+		err := app.Err()
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "invalid fx.As")
 	})
 
 	t.Run("all decorator dependencies must be provided", func(t *testing.T) {

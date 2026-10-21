@@ -229,6 +229,8 @@ func runDecorator(c container, d decorator, opts ...dig.DecorateOption) (err err
 	case annotated:
 		if dcor, derr := decorator.Build(); derr == nil {
 			err = c.Decorate(dcor, opts...)
+		} else {
+			err = derr
 		}
 	default:
 		err = c.Decorate(decorator, opts...)
