@@ -11,7 +11,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
-- No changes yet.
+
+### Added
+- `fx.Annotate` calls can be nested to compose annotations and lifecycle hooks.
+  Inner hooks can use concrete results before an outer `fx.As` exposes interfaces.
 
 ## [1.24.0](https://github.com/uber-go/fx/compare/v1.23.0...v1.24.0) - 2025-05-13
 

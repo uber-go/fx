@@ -93,7 +93,7 @@ func Supply(values ...any) Option {
 			private = true
 			continue
 		case annotated:
-			value.Target, typ = newSupplyConstructor(value.Target)
+			value, typ = value.withValueConstructor(newSupplyConstructor)
 			ctor = value
 		case Annotated:
 			value.Target, typ = newSupplyConstructor(value.Target)

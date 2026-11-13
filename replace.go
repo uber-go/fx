@@ -81,7 +81,7 @@ func Replace(values ...any) Option {
 		switch value := value.(type) {
 		case annotated:
 			var typ reflect.Type
-			value.Target, typ = newReplaceDecorator(value.Target)
+			value, typ = value.withValueConstructor(newReplaceDecorator)
 			decorators[i] = value
 			types[i] = typ
 		default:
