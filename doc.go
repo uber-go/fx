@@ -174,6 +174,10 @@
 // Constructors that declare optional dependencies MUST gracefully handle
 // situations in which those dependencies are absent.
 //
+// The optional tag does not suppress errors returned by constructors.
+// If a constructor is called to build an optional dependency and returns an
+// error, application initialization fails.
+//
 // The optional tag also allows adding new dependencies without breaking
 // existing consumers of the constructor.
 //
