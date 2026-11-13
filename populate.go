@@ -79,13 +79,13 @@ func Populate(targets ...any) Option {
 		)
 		switch t := t.(type) {
 		case annotated:
-			rt = reflect.TypeOf(t.Target)
-			tag = reflect.StructTag(t.ParamTags[0])
-			targets[i] = t.Target
+			rt = reflect.TypeOf(t.originalTarget())
+			tag = reflect.StructTag(t.firstParamTag())
+			targets[i] = t.originalTarget()
 		default:
 			rt = reflect.TypeOf(t)
 		}
-		if rt.Kind() != reflect.Ptr {
+		if rt == nil || rt.Kind() != reflect.Ptr {
 			return Error(fmt.Errorf("failed to Populate: target %v is not a pointer type, got %T", i+1, t))
 		}
 		fields[i+1] = reflect.StructField{

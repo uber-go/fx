@@ -295,8 +295,9 @@ func (pt paramTagsAnnotation) parameters(ann *annotated) (
 				Type: origField.Type,
 				Tag:  origField.Tag,
 			}
-			if i-1 < len(pt.tags) {
-				field.Tag = reflect.StructTag(pt.tags[i-1])
+			tagIndex := ann.paramIndex(i - 1)
+			if tagIndex >= 0 && tagIndex < len(pt.tags) {
+				field.Tag = reflect.StructTag(pt.tags[tagIndex])
 			}
 
 			inFields = append(inFields, field)
@@ -318,8 +319,9 @@ func (pt paramTagsAnnotation) parameters(ann *annotated) (
 			Name: fmt.Sprintf("Field%d", i),
 			Type: t,
 		}
-		if i < len(pt.tags) {
-			field.Tag = reflect.StructTag(pt.tags[i])
+		tagIndex := ann.paramIndex(i)
+		if tagIndex >= 0 && tagIndex < len(pt.tags) {
+			field.Tag = reflect.StructTag(pt.tags[tagIndex])
 		}
 
 		inFields = append(inFields, field)
@@ -411,16 +413,15 @@ func (rt resultTagsAnnotation) results(ann *annotated) (
 ) {
 	types, hasError := ann.currentResultTypes()
 
-	if hasError {
-		types = types[:len(types)-1]
-	}
-
 	// No result annotations. Return the original types
 	// and an identity function.
 	if len(rt.tags) == 0 {
 		return types, func(results []reflect.Value) []reflect.Value {
 			return results
 		}
+	}
+	if hasError {
+		types = types[:len(types)-1]
 	}
 
 	// if there's no Out struct among the return types, there was no As annotation applied
@@ -452,17 +453,35 @@ func (rt resultTagsAnnotation) results(ann *annotated) (
 		// apply the tags to the existing type
 		taggedFields := make([]reflect.StructField, t.NumField())
 		taggedFields[0] = _outAnnotationField
-		for j, tag := range rt.tags {
-			if j+1 < t.NumField() {
-				field := t.Field(j + 1)
-				taggedFields[j+1] = reflect.StructField{
-					Name: field.Name,
-					Type: field.Type,
-					Tag:  reflect.StructTag(tag),
-				}
+		for j := 1; j < t.NumField(); j++ {
+			taggedFields[j] = t.Field(j)
+			if j-1 < len(rt.tags) {
+				taggedFields[j].Tag = reflect.StructTag(rt.tags[j-1])
 			}
 		}
 		existingOuts = append(existingOuts, reflect.StructOf(taggedFields))
+	}
+
+	// A previous annotation layer may already have grouped every result.
+	// Retag those groups without introducing an empty leading result object.
+	if len(newOut.Offsets) == 0 {
+		outTypes := append([]reflect.Type(nil), existingOuts...)
+		if hasError {
+			outTypes = append(outTypes, _typeOfError)
+		}
+		return outTypes, func(results []reflect.Value) []reflect.Value {
+			out := make([]reflect.Value, len(results))
+			for i, t := range existingOuts {
+				out[i] = reflect.New(t).Elem()
+				for j := 1; j < t.NumField(); j++ {
+					out[i].Field(j).Set(results[i].Field(j))
+				}
+			}
+			if hasError {
+				out[len(out)-1] = results[len(results)-1]
+			}
+			return out
+		}
 	}
 
 	resType := reflect.StructOf(newOut.Fields)
@@ -754,6 +773,9 @@ func (la *lifecycleHookAnnotation) buildHookInstaller(ann *annotated) (
 	err error,
 ) {
 	paramTypes = ann.currentParamTypes()
+	if !lifecycleExists(paramTypes) {
+		ann.implicitLifecycle = true
+	}
 	paramTypes, remapParams = injectLifecycle(paramTypes)
 
 	resultTypes, hasError := ann.currentResultTypes()
@@ -1107,9 +1129,10 @@ func (la *lifecycleHookAnnotation) buildHook(fn func(context.Context) error) (ho
 //		FieldB B `name:"B"`
 //	}
 //
-// Only one OnStart annotation may be applied to a given function at a time,
-// however functions may be annotated with other types of lifecycle Hooks, such
-// as OnStop. The hook function passed into OnStart cannot take any arguments
+// Each call to [Annotate] may contain one OnStart annotation, alongside other
+// types of lifecycle hooks such as [OnStop]. Nested Annotate calls may add
+// additional OnStart hooks, which run from the innermost call to the outermost.
+// The hook function passed into OnStart cannot take any arguments
 // outside of the annotated constructor's existing dependencies or results, except
 // a context.Context.
 func OnStart(onStart any) Annotation {
@@ -1171,9 +1194,10 @@ func OnStart(onStart any) Annotation {
 //		FieldB B `name:"B"`
 //	}
 //
-// Only one OnStop annotation may be applied to a given function at a time,
-// however functions may be annotated with other types of lifecycle Hooks, such
-// as OnStart. The hook function passed into OnStop cannot take any arguments
+// Each call to [Annotate] may contain one OnStop annotation, alongside other
+// types of lifecycle hooks such as [OnStart]. Nested Annotate calls may add
+// additional OnStop hooks, which run from the outermost call to the innermost.
+// The hook function passed into OnStop cannot take any arguments
 // outside of the annotated constructor's existing dependencies or results, except
 // a context.Context.
 func OnStop(onStop any) Annotation {
@@ -1563,9 +1587,10 @@ func (fr *fromAnnotation) parameters(ann *annotated) (
 				Type: origField.Type,
 				Tag:  origField.Tag,
 			}
-			if i-1 < len(fr.types) {
-				t := fr.types[i-1]
-				if !t.Implements(field.Type) {
+			paramIndex := ann.paramIndex(i - 1)
+			if paramIndex >= 0 && paramIndex < len(fr.types) {
+				t := fr.types[paramIndex]
+				if field.Type.Kind() != reflect.Interface || !t.Implements(field.Type) {
 					return nil, nil, fmt.Errorf("invalid fx.From: %v does not implement %v", t, field.Type)
 				}
 				field.Type = t
@@ -1590,9 +1615,10 @@ func (fr *fromAnnotation) parameters(ann *annotated) (
 			Name: fmt.Sprintf("Field%d", i),
 			Type: t,
 		}
-		if i < len(fr.types) {
-			t := fr.types[i]
-			if !t.Implements(field.Type) {
+		paramIndex := ann.paramIndex(i)
+		if paramIndex >= 0 && paramIndex < len(fr.types) {
+			t := fr.types[paramIndex]
+			if field.Type.Kind() != reflect.Interface || !t.Implements(field.Type) {
 				return nil, nil, fmt.Errorf("invalid fx.From: %v does not implement %v", t, field.Type)
 			}
 			field.Type = t
@@ -1624,6 +1650,47 @@ type annotated struct {
 	// container is used to build private scopes for lifecycle hook functions
 	// added via fx.OnStart and fx.OnStop annotations.
 	container *dig.Container
+	// implicitLifecycle is true only when a hook added the first parameter (or
+	// first field in a generated In object), rather than the user declaring it.
+	implicitLifecycle bool
+}
+
+func (ann annotated) originalTarget() any {
+	if inner, ok := ann.Target.(annotated); ok {
+		return inner.originalTarget()
+	}
+	return ann.Target
+}
+
+// paramIndex excludes a lifecycle dependency introduced by an inner layer
+// from positional parameter annotations.
+func (ann annotated) paramIndex(i int) int {
+	if ann.implicitLifecycle {
+		return i - 1
+	}
+	return i
+}
+
+// withValueConstructor replaces the value at the bottom of an annotation chain
+// without modifying the template that may be reused by another application.
+func (ann annotated) withValueConstructor(wrap func(any) (any, reflect.Type)) (annotated, reflect.Type) {
+	var typ reflect.Type
+	if inner, ok := ann.Target.(annotated); ok {
+		ann.Target, typ = inner.withValueConstructor(wrap)
+	} else {
+		ann.Target, typ = wrap(ann.Target)
+	}
+	return ann, typ
+}
+
+func (ann annotated) firstParamTag() string {
+	if len(ann.ParamTags) > 0 {
+		return ann.ParamTags[0]
+	}
+	if inner, ok := ann.Target.(annotated); ok {
+		return inner.firstParamTag()
+	}
+	return ""
 }
 
 func (ann annotated) String() string {
@@ -1648,14 +1715,27 @@ func (ann annotated) String() string {
 // Build builds and returns a constructor based on fx.In/fx.Out params and
 // results wrapping the original constructor passed to fx.Annotate.
 func (ann *annotated) Build() (any, error) {
-	ann.container = dig.New()
-	ft := reflect.TypeOf(ann.Target)
-	if ft.Kind() != reflect.Func {
-		return nil, fmt.Errorf("must provide constructor function, got %v (%T)", ann.Target, ann.Target)
+	original := ann.originalTarget()
+	ft := reflect.TypeOf(original)
+	if ft == nil || ft.Kind() != reflect.Func {
+		return nil, fmt.Errorf("must provide constructor function, got %v (%T)", original, original)
 	}
+	inner, nested := ann.Target.(annotated)
+	if nested {
+		target, err := inner.Build()
+		if err != nil {
+			return nil, err
+		}
+		ann.Target = target
+		ann.implicitLifecycle = inner.implicitLifecycle
+	}
+	ann.container = dig.New()
 
-	if err := ann.typeCheckOrigFn(); err != nil {
-		return nil, fmt.Errorf("invalid annotation function %T: %w", ann.Target, err)
+	if err := ann.typeCheckOrigFn(original); err != nil {
+		return nil, fmt.Errorf("invalid annotation function %T: %w", original, err)
+	}
+	if nested && (len(ann.As) > 0 || len(ann.ResultTags) > 0) {
+		ann.flattenResultGroups()
 	}
 
 	ann.applyOptionalTag()
@@ -1685,6 +1765,69 @@ func (ann *annotated) Build() (any, error) {
 		}
 	}
 	return ann.Target, nil
+}
+
+// flattenResultGroups presents all results of an inner layer as one result
+// object. In particular, an outer annotation must see every projection added
+// by multiple As annotations, not just the fields of the first result object.
+func (ann *annotated) flattenResultGroups() {
+	resultTypes, hasError := ann.currentResultTypes()
+	if hasError {
+		resultTypes = resultTypes[:len(resultTypes)-1]
+	}
+	if len(resultTypes) < 2 {
+		return
+	}
+	var hasOut bool
+	for _, t := range resultTypes {
+		hasOut = hasOut || isOut(t)
+	}
+	if !hasOut {
+		return
+	}
+
+	type resultField struct{ result, field int }
+	var mapping []resultField
+	fields := []reflect.StructField{_outAnnotationField}
+	for i, t := range resultTypes {
+		if !isOut(t) {
+			fields = append(fields, reflect.StructField{
+				Name: fmt.Sprintf("Field%d", len(mapping)),
+				Type: t,
+			})
+			mapping = append(mapping, resultField{i, -1})
+			continue
+		}
+		for j := 1; j < t.NumField(); j++ {
+			field := t.Field(j)
+			field.Name = fmt.Sprintf("Field%d", len(mapping))
+			fields = append(fields, field)
+			mapping = append(mapping, resultField{i, j})
+		}
+	}
+	outType := reflect.StructOf(fields)
+	outTypes := []reflect.Type{outType}
+	if hasError {
+		outTypes = append(outTypes, _typeOfError)
+	}
+	origFn := reflect.ValueOf(ann.Target)
+	fnType := reflect.FuncOf(ann.currentParamTypes(), outTypes, false)
+	ann.Target = reflect.MakeFunc(fnType, func(args []reflect.Value) []reflect.Value {
+		results := origFn.Call(args)
+		out := reflect.New(outType).Elem()
+		for i, m := range mapping {
+			value := results[m.result]
+			if m.field >= 0 {
+				value = value.Field(m.field)
+			}
+			out.Field(i + 1).Set(value)
+		}
+		values := []reflect.Value{out}
+		if hasError {
+			values = append(values, results[len(results)-1])
+		}
+		return values
+	}).Interface()
 }
 
 // applyOptionalTag checks if function being annotated is variadic
@@ -1755,8 +1898,8 @@ func (ann *annotated) cleanUpAsResults() {
 // - returns an fx.Out struct as a result and has either a ResultTags or an As annotation
 // - takes in an fx.In struct as a parameter and has either a ParamTags or a From annotation
 // - has an error result not as the last result.
-func (ann *annotated) typeCheckOrigFn() error {
-	ft := reflect.TypeOf(ann.Target)
+func (ann *annotated) typeCheckOrigFn(original any) error {
+	ft := reflect.TypeOf(original)
 	numOut := ft.NumOut()
 	for i := range numOut {
 		ot := ft.Out(i)
@@ -1764,7 +1907,7 @@ func (ann *annotated) typeCheckOrigFn() error {
 			return fmt.Errorf(
 				"only the last result can be an error: "+
 					"%v (%v) returns error as result %d",
-				fxreflect.FuncName(ann.Target), ft, i)
+				fxreflect.FuncName(original), ft, i)
 		}
 		if ot.Kind() != reflect.Struct {
 			continue
@@ -1848,7 +1991,7 @@ func (ann *annotated) currentParamTypes() []reflect.Type {
 //	   return result{GW: NewGateway(p.RO, p.RW)}
 //	})
 //
-// Using the same annotation multiple times is invalid.
+// Repeating ParamTags or ResultTags within a single Annotate call is invalid.
 // For example, the following will fail with an error:
 //
 //	fx.Provide(
@@ -1862,6 +2005,20 @@ func (ann *annotated) currentParamTypes() []reflect.Type {
 //
 // If more tags are given than the number of parameters/results, only
 // the ones up to the number of parameters/results will be applied.
+//
+// # Nested annotations
+//
+// Annotate may wrap the result of another Annotate call. The inner call is
+// applied first, and the outer call operates on the resulting parameter and
+// result types and tags. Tags supplied by the outer call replace the tags at
+// those positions; tags at other positions are preserved. If the inner call
+// uses multiple [As] annotations, their results are addressed in As order.
+//
+// Each call may add its own [OnStart] and [OnStop] hooks. Start hooks run from
+// the innermost call to the outermost, and stop hooks run in reverse order.
+// A hook can use the dependencies and results of its own annotation layer.
+// For example, an inner call can register hooks that use a concrete result,
+// while an outer call exposes that result as an interface with [As].
 //
 // # Variadic functions
 //
@@ -1900,6 +2057,12 @@ func (ann *annotated) currentParamTypes() []reflect.Type {
 //	}
 func Annotate(t any, anns ...Annotation) any {
 	result := annotated{Target: t}
+	if failure, ok := t.(annotationError); ok {
+		return failure
+	}
+	// Applying annotations records metadata. Use the original function for
+	// checks such as From's variadic check, but retain the layers for Build.
+	result.Target = result.originalTarget()
 	for _, ann := range anns {
 		if err := ann.apply(&result); err != nil {
 			return annotationError{
@@ -1908,6 +2071,7 @@ func Annotate(t any, anns ...Annotation) any {
 			}
 		}
 	}
+	result.Target = t
 	result.Annotations = anns
 	return result
 }
